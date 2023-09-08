@@ -46,9 +46,9 @@ cvar_t team = {CVAR_USERINFO | CVAR_SAVE, "team", "none", "QW team (4 character 
 cvar_t skin = {CVAR_USERINFO | CVAR_SAVE, "skin", "", "QW player skin name (example: base)"};
 cvar_t noaim = {CVAR_USERINFO | CVAR_SAVE, "noaim", "1", "QW option to disable vertical autoaim"};
 cvar_t r_fixtrans_auto = {0, "r_fixtrans_auto", "0", "automatically fixtrans textures (when set to 2, it also saves the fixed versions to a fixtrans directory)"};
-qboolean allowcheats = false;
+qbool allowcheats = false;
 
-extern qboolean host_shuttingdown;
+extern qbool host_shuttingdown;
 extern cvar_t developer_entityparsing;
 
 /*
@@ -175,13 +175,13 @@ static void Host_Status_f (void)
 		{
 			if (sv.protocol == PROTOCOL_QUAKE && svs.maxclients <= 99)
 			{
-				// LordHavoc: this is very touchy because we must maintain ProQuake compatible status output
+				// LadyHavoc: this is very touchy because we must maintain ProQuake compatible status output
 				print ("#%-2u %-16.16s  %3d  %2d:%02d:%02d" NEWLINE, i + 1, client->name, frags, hours, minutes, seconds);
 				print ("   %s" NEWLINE, ip_48);
 			}
 			else
 			{
-				// LordHavoc: no real restrictions here, not a ProQuake-compatible protocol anyway...
+				// LadyHavoc: no real restrictions here, not a ProQuake-compatible protocol anyway...
 				print ("#%-3u %-16.16s %4d  %2d:%02d:%02d" NEWLINE, i + 1, client->name, frags, hours, minutes, seconds);
 				print ("   %s" NEWLINE, ip_48);
 			}
@@ -255,7 +255,7 @@ static void Host_Notarget_f (void)
 		SV_ClientPrint("notarget ON\n");
 }
 
-qboolean noclip_anglehack;
+qbool noclip_anglehack;
 
 static void Host_Noclip_f (void)
 {
@@ -417,12 +417,12 @@ static void Host_Map_f (void)
 #ifdef CONFIG_MENU
 	// remove menu
 	if (key_dest == key_menu || key_dest == key_menu_grabbed)
-		MR_ToggleMenu(0);
+		MR_ToggleMenu(0); // conexit
 #endif
 	key_dest = key_game;
 
 	// Baker 4001
-	Console_Exit_If_Needed_ ()
+	Console_Exit_If_Needed_ () // conexit
 
 	svs.serverflags = 0;			// haven't completed an episode yet
 	allowcheats = sv_cheats.integer != 0;
@@ -598,7 +598,7 @@ void Host_Savegame_to(prvm_prog_t *prog, const char *name)
 	int		i, k, l, numbuffers, lightstyles = 64;
 	char	comment[SAVEGAME_COMMENT_LENGTH+1];
 	char	line[MAX_INPUTLINE];
-	qboolean isserver;
+	qbool isserver;
 	char	*s;
 
 	// first we have to figure out if this can be saved in 64 lightstyles
@@ -625,7 +625,7 @@ void Host_Savegame_to(prvm_prog_t *prog, const char *name)
 	else
 		dpsnprintf(comment, sizeof(comment), "(crash dump of %s progs)", prog->name);
 	// convert space to _ to make stdio happy
-	// LordHavoc: convert control characters to _ as well
+	// LadyHavoc: convert control characters to _ as well
 	for (i=0 ; i<SAVEGAME_COMMENT_LENGTH ; i++)
 		if (ISWHITESPACEORCONTROL(comment[i]))
 			comment[i] = '_';
@@ -746,7 +746,7 @@ static void Host_Savegame_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	char	name[MAX_QPATH];
-	qboolean deadflag = false;
+	qbool deadflag = false;
 
 	if (!sv.active)
 	{
@@ -1143,7 +1143,7 @@ static void Host_Name_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int i, j;
-	qboolean valid_colors;
+	qbool valid_colors;
 	const char *newNameSource;
 	char newName[sizeof(host_client->name)];
 
@@ -1392,16 +1392,16 @@ static void Host_Version_f (void)
 	Con_PrintLinef ("Version: %s build %s", gamename, buildstring);
 }
 
-static void Host_Say(qboolean teamonly)
+static void Host_Say(qbool teamonly)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	client_t *save;
 	int j, quoted;
 	const char *p1;
 	char *p2;
-	// LordHavoc: long say messages
+	// LadyHavoc: long say messages
 	char text[1024];
-	qboolean fromServer = false;
+	qbool fromServer = false;
 
 	if (cmd_source == src_command)
 	{
@@ -1481,8 +1481,8 @@ static void Host_Tell_f(void)
 	client_t *save;
 	int j;
 	const char *p1, *p2;
-	char text[MAX_INPUTLINE]; // LordHavoc: FIXME: temporary buffer overflow fix (was 64)
-	qboolean fromServer = false;
+	char text[MAX_INPUTLINE]; // LadyHavoc: FIXME: temporary buffer overflow fix (was 64)
+	qbool fromServer = false;
 
 	if (cmd_source == src_command)
 	{
@@ -1620,7 +1620,7 @@ static void Host_Color(int changetop, int changebottom)
 
 	top &= 15;
 	bottom &= 15;
-	// LordHavoc: allowing skin colormaps 14 and 15 by commenting this out
+	// LadyHavoc: allowing skin colormaps 14 and 15 by commenting this out
 	//if (top > 13)
 	//	top = 13;
 	//if (bottom > 13)
@@ -1836,8 +1836,8 @@ static void Host_Pause_f (void)
 /*
 ======================
 Host_PModel_f
-LordHavoc: only supported for Nehahra, I personally think this is dumb, but Mindcrime won't listen.
-LordHavoc: correction, Mindcrime will be removing pmodel in the future, but it's still stuck here for compatibility.
+LadyHavoc: only supported for Nehahra, I personally think this is dumb, but Mindcrime won't listen.
+LadyHavoc: correction, Mindcrime will be removing pmodel in the future, but it's still stuck here for compatibility.
 ======================
 */
 cvar_t cl_pmodel = {CVAR_SAVE | CVAR_NQUSERINFOHACK, "_cl_pmodel", "0", "internal storage cvar for current player model number in nehahra (changed by pmodel command)"};
@@ -1926,8 +1926,8 @@ static void Host_Spawn_f (void)
 	// again in the first 5 seconds after connecting
 	host_client->nametime = 0;
 
-	// LordHavoc: moved this above the QC calls at FrikaC's request
-	// LordHavoc: commented this out
+	// LadyHavoc: moved this above the QC calls at FrikaC's request
+	// LadyHavoc: commented this out
 	//if (host_client->netconnection)
 	//	SZ_Clear (&host_client->netconnection->message);
 
@@ -2060,7 +2060,7 @@ static void Host_Begin_f (void)
 	}
 	host_client->begun = true;
 
-	// LordHavoc: note: this code also exists in SV_DropClient
+	// LadyHavoc: note: this code also exists in SV_DropClient
 	if (sv.loadgame)
 	{
 		int i;
@@ -2091,7 +2091,7 @@ static void Host_Kick_f (void)
 	const char *message = NULL;
 	client_t *save;
 	int i;
-	qboolean byNumber = false;
+	qbool byNumber = false;
 
 	if (!sv.active)
 		return;
@@ -2469,7 +2469,7 @@ static void Host_Startdemos_f (void)
 	for (i=1 ; i<c+1 ; i++)
 		strlcpy (cls.demos[i-1], Cmd_Argv(i), sizeof (cls.demos[i-1]));
 
-	// LordHavoc: clear the remaining slots
+	// LadyHavoc: clear the remaining slots
 	for (;i <= MAX_DEMOS;i++)
 		cls.demos[i-1][0] = 0;
 
@@ -2529,7 +2529,7 @@ static void Host_SendCvar_f (void)
 	if (cls.state == ca_connected)
 	{
 		c = Cvar_FindVar(cvarname);
-		// LordHavoc: if there is no such cvar or if it is private, send a
+		// LadyHavoc: if there is no such cvar or if it is private, send a
 		// reply indicating that it has no value
 		if(!c || (c->flags & CVAR_PRIVATE))
 			Cmd_ForwardStringToServer(va(vabuf, sizeof(vabuf), "sentcvar %s", cvarname));

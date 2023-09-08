@@ -482,7 +482,7 @@ static void highpass3_limited(vec3_t value, vec_t fracx, vec_t limitx, vec_t fra
  *   viewmodelmatrix_nobob
  *   viewmodelmatrix_withbob
  */
-void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewangles, qboolean teleported, qboolean clonground, qboolean clcmdjump, float clstatsviewheight, qboolean cldead, qboolean clintermission, const vec3_t clvelocity)
+void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewangles, qbool teleported, qbool clonground, qbool clcmdjump, float clstatsviewheight, qbool cldead, qbool clintermission, const vec3_t clvelocity)
 {
 	float vieworg[3], viewangles[3], smoothtime;
 	float gunorg[3], gunangles[3];
@@ -757,9 +757,9 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 						bob_limit *= min(trace1fraction, trace2fraction);
 					}
 
-					// LordHavoc: this code is *weird*, but not replacable (I think it
+					// LadyHavoc: this code is *weird*, but not replacable (I think it
 					// should be done in QC on the server, but oh well, quake is quake)
-					// LordHavoc: figured out bobup: the time at which the sin is at 180
+					// LadyHavoc: figured out bobup: the time at which the sin is at 180
 					// degrees (which allows lengthening or squishing the peak or valley)
 					cycle = cl.time / cl_bobcycle.value;
 					cycle -= (int) cycle;
@@ -944,7 +944,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 void V_CalcRefdef (void)
 {
 	entity_t *ent;
-	qboolean cldead;
+	qbool cldead;
 
 	if (cls.state == ca_connected && cls.signon == SIGNONS && !cl.csqc_server2csqcentitynumber[cl.viewentity])
 	{
@@ -1072,7 +1072,7 @@ void V_CalcViewBlend(void)
 		cl.cshifts[CSHIFT_VCSHIFT].destcolor[2] = v_cshift.destcolor[2];
 		cl.cshifts[CSHIFT_VCSHIFT].percent = v_cshift.percent;
 
-		// LordHavoc: fixed V_CalcBlend
+		// LadyHavoc: fixed V_CalcBlend
 		for (j = 0;j < NUM_CSHIFTS;j++) {
 			a2 = bound(0.0f, cl.cshifts[j].percent * (1.0f / 255.0f), 1.0f);
 			if (a2 > 0)

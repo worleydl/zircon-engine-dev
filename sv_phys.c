@@ -146,7 +146,7 @@ trace_t SV_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 
 	if (type == MOVE_MISSILE)
 	{
-		// LordHavoc: modified this, was = -15, now -= 15
+		// LadyHavoc: modified this, was = -15, now -= 15
 		for (i = 0;i < 3;i++)
 		{
 			clipmins2[i] -= 15;
@@ -295,7 +295,7 @@ trace_t SV_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 
 	if (type == MOVE_MISSILE)
 	{
-		// LordHavoc: modified this, was = -15, now -= 15
+		// LadyHavoc: modified this, was = -15, now -= 15
 		for (i = 0;i < 3;i++)
 		{
 			clipmins2[i] -= 15;
@@ -407,7 +407,7 @@ trace_t SV_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	int i, bodysupercontents;
 	int passedictprog;
 	float pitchsign = 1;
-	qboolean pointtrace;
+	qbool pointtrace;
 	prvm_edict_t *traceowner, *touch;
 	trace_t trace;
 	// temporary storage because prvm_vec_t may differ from vec_t
@@ -462,7 +462,7 @@ trace_t SV_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 
 	if (type == MOVE_MISSILE)
 	{
-		// LordHavoc: modified this, was = -15, now -= 15
+		// LadyHavoc: modified this, was = -15, now -= 15
 		for (i = 0;i < 3;i++)
 		{
 			clipmins2[i] -= 15;
@@ -658,7 +658,7 @@ int SV_EntitiesInBox(const vec3_t mins, const vec3_t maxs, int maxedicts, prvm_e
 	vec3_t paddedmins, paddedmaxs;
 	if (maxedicts < 1 || resultedicts == NULL)
 		return 0;
-	// LordHavoc: discovered this actually causes its own bugs (dm6 teleporters being too close to info_teleport_destination)
+	// LadyHavoc: discovered this actually causes its own bugs (dm6 teleporters being too close to info_teleport_destination)
 	//VectorSet(paddedmins, mins[0] - 10, mins[1] - 10, mins[2] - 1);
 	//VectorSet(paddedmaxs, maxs[0] + 10, maxs[1] + 10, maxs[2] + 1);
 	VectorCopy(mins, paddedmins);
@@ -1033,13 +1033,13 @@ void SV_CheckVelocity (prvm_edict_t *ent)
 		}
 	}
 
-	// LordHavoc: a hack to ensure that the (rather silly) id1 quakec
+	// LadyHavoc: a hack to ensure that the (rather silly) id1 quakec
 	// player_run/player_stand1 does not horribly malfunction if the
 	// velocity becomes a denormalized float
 	if (VectorLength2(PRVM_serveredictvector(ent, velocity)) < 0.0001)
 		VectorClear(PRVM_serveredictvector(ent, velocity));
 
-	// LordHavoc: max velocity fix, inspired by Maddes's source fixes, but this is faster
+	// LadyHavoc: max velocity fix, inspired by Maddes's source fixes, but this is faster
 	wishspeed = DotProduct(PRVM_serveredictvector(ent, velocity), PRVM_serveredictvector(ent, velocity));
 	if (wishspeed > sv_maxvelocity.value * sv_maxvelocity.value)
 	{
@@ -1060,7 +1060,7 @@ in a frame.  Not used for pushmove objects, because they must be exact.
 Returns false if the entity removed itself.
 =============
 */
-static qboolean SV_RunThink (prvm_edict_t *ent)
+static qbool SV_RunThink (prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int iterations;
@@ -1174,9 +1174,9 @@ If stepnormal is not NULL, the plane normal of any vertical wall hit will be sto
 ============
 */
 static float SV_Gravity (prvm_edict_t *ent);
-static qboolean SV_PushEntity (trace_t *trace, prvm_edict_t *ent, vec3_t push, qboolean dolink);
+static qbool SV_PushEntity (trace_t *trace, prvm_edict_t *ent, vec3_t push, qbool dolink);
 #define MAX_CLIP_PLANES 5
-static int SV_FlyMove (prvm_edict_t *ent, float time, qboolean applygravity, float *stepnormal, int hitsupercontentsmask, int skipsupercontentsmask, float stepheight)
+static int SV_FlyMove (prvm_edict_t *ent, float time, qbool applygravity, float *stepnormal, int hitsupercontentsmask, int skipsupercontentsmask, float stepheight)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int blocked, bumpcount;
@@ -1371,7 +1371,7 @@ static int SV_FlyMove (prvm_edict_t *ent, float time, qboolean applygravity, flo
 				break;
 			}
 			CrossProduct(planes[0], planes[1], dir);
-			// LordHavoc: thanks to taniwha of QuakeForge for pointing out this fix for slowed falling in corners
+			// LadyHavoc: thanks to taniwha of QuakeForge for pointing out this fix for slowed falling in corners
 			VectorNormalize(dir);
 			d = DotProduct(dir, PRVM_serveredictvector(ent, velocity));
 			VectorScale(dir, d, PRVM_serveredictvector(ent, velocity));
@@ -1391,13 +1391,13 @@ static int SV_FlyMove (prvm_edict_t *ent, float time, qboolean applygravity, flo
 	/*
 	if ((blocked & 1) == 0 && bumpcount > 1)
 	{
-		// LordHavoc: fix the 'fall to your death in a wedge corner' glitch
+		// LadyHavoc: fix the 'fall to your death in a wedge corner' glitch
 		// flag ONGROUND if there's ground under it
 		trace = SV_TraceBox(PRVM_serveredictvector(ent, origin), PRVM_serveredictvector(ent, mins), PRVM_serveredictvector(ent, maxs), end, MOVE_NORMAL, ent, hitsupercontentsmask, skipsupercontentsmask);
 	}
 	*/
 
-	// LordHavoc: this came from QW and allows you to get out of water more easily
+	// LadyHavoc: this came from QW and allows you to get out of water more easily
 	if (sv_gameplayfix_easierwaterjump.integer && ((int)PRVM_serveredictfloat(ent, flags) & FL_WATERJUMP) && !(blocked & 8))
 		VectorCopy(primal_velocity, PRVM_serveredictvector(ent, velocity));
 
@@ -1439,7 +1439,7 @@ PUSHMOVE
 ===============================================================================
 */
 
-static qboolean SV_NudgeOutOfSolid_PivotIsKnownGood(prvm_edict_t *ent, vec3_t pivot)
+static qbool SV_NudgeOutOfSolid_PivotIsKnownGood(prvm_edict_t *ent, vec3_t pivot)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int bump;
@@ -1520,7 +1520,7 @@ static qboolean SV_NudgeOutOfSolid_PivotIsKnownGood(prvm_edict_t *ent, vec3_t pi
 	return true;
 }
 
-qboolean SV_NudgeOutOfSolid(prvm_edict_t *ent)
+qbool SV_NudgeOutOfSolid(prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int bump, pass;
@@ -1569,7 +1569,7 @@ The trace struct is filled with the trace that has been done.
 Returns true if the push did not result in the entity being teleported by QC code.
 ============
 */
-static qboolean SV_PushEntity (trace_t *trace, prvm_edict_t *ent, vec3_t push, qboolean dolink)
+static qbool SV_PushEntity (trace_t *trace, prvm_edict_t *ent, vec3_t push, qbool dolink)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int solid;
@@ -1657,7 +1657,7 @@ static void SV_PushMove (prvm_edict_t *pusher, float movetime)
 	int i, e, index;
 	int pusherowner, pusherprog;
 	int checkcontents;
-	qboolean rotated;
+	qbool rotated;
 	float savesolid, movetime2, pushltime;
 	vec3_t mins, maxs, move, move1, moveangle, pushorig, pushang, a, forward, left, up, org, pushermins, pushermaxs, checkorigin, checkmins, checkmaxs;
 	int num_moved;
@@ -1677,13 +1677,13 @@ static void SV_PushMove (prvm_edict_t *pusher, float movetime)
 
 	switch ((int) PRVM_serveredictfloat(pusher, solid))
 	{
-	// LordHavoc: valid pusher types
+	// LadyHavoc: valid pusher types
 	case SOLID_BSP:
 	case SOLID_BBOX:
 	case SOLID_SLIDEBOX:
-	case SOLID_CORPSE: // LordHavoc: this would be weird...
+	case SOLID_CORPSE: // LadyHavoc: this would be weird...
 		break;
-	// LordHavoc: no collisions
+	// LadyHavoc: no collisions
 	case SOLID_NOT:
 	case SOLID_TRIGGER:
 		VectorMA (PRVM_serveredictvector(pusher, origin), movetime, PRVM_serveredictvector(pusher, velocity), PRVM_serveredictvector(pusher, origin));
@@ -2071,7 +2071,7 @@ static unstickresult_t SV_UnstickEntityReturnOffset (prvm_edict_t *ent, vec3_t o
 	return UNSTICK_STUCK;
 }
 
-qboolean SV_UnstickEntity (prvm_edict_t *ent)
+qbool SV_UnstickEntity (prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	vec3_t offset;
@@ -2135,7 +2135,7 @@ static void SV_CheckStuck (prvm_edict_t *ent)
 SV_CheckWater
 =============
 */
-static qboolean SV_CheckWater (prvm_edict_t *ent)
+static qbool SV_CheckWater (prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int cont;
@@ -2288,7 +2288,7 @@ static void SV_WalkMove (prvm_edict_t *ent)
 	int type;
 	vec3_t upmove, downmove, start_origin, start_velocity, stepnormal, originalmove_origin, originalmove_velocity, entmins, entmaxs;
 	trace_t downtrace, trace;
-	qboolean applygravity;
+	qbool applygravity;
 
 	// if frametime is 0 (due to client sending the same timestamp twice),
 	// don't move
@@ -2449,7 +2449,7 @@ static void SV_WalkMove (prvm_edict_t *ent)
 		// this has been disabled so that you can't jump when you are stepping
 		// up while already jumping (also known as the Quake2 double jump bug)
 #if 0
-		// LordHavoc: disabled this check so you can walk on monsters/players
+		// LadyHavoc: disabled this check so you can walk on monsters/players
 		//if (PRVM_serveredictfloat(ent, solid) == SOLID_BSP)
 		{
 			//Con_Printf("onground\n");
@@ -2491,7 +2491,7 @@ static void SV_Physics_Follow (prvm_edict_t *ent)
 	vec3_t vf, vr, vu, angles, v;
 	prvm_edict_t *e;
 
-	// LordHavoc: implemented rotation on MOVETYPE_FOLLOW objects
+	// LadyHavoc: implemented rotation on MOVETYPE_FOLLOW objects
 	e = PRVM_PROG_TO_EDICT(PRVM_serveredictedict(ent, aiment));
 	if (PRVM_serveredictvector(e, angles)[0] == PRVM_serveredictvector(ent, punchangle)[0] && PRVM_serveredictvector(e, angles)[1] == PRVM_serveredictvector(ent, punchangle)[1] && PRVM_serveredictvector(e, angles)[2] == PRVM_serveredictvector(ent, punchangle)[2])
 	{
@@ -2538,7 +2538,7 @@ static void SV_CheckWaterTransition (prvm_edict_t *ent)
 {
 	vec3_t entorigin;
 	prvm_prog_t *prog = SVVM_prog;
-	// LordHavoc: bugfixes in this function are keyed to the sv_gameplayfix_bugfixedcheckwatertransition cvar - if this cvar is 0 then all the original bugs should be reenabled for compatibility
+	// LadyHavoc: bugfixes in this function are keyed to the sv_gameplayfix_bugfixedcheckwatertransition cvar - if this cvar is 0 then all the original bugs should be reenabled for compatibility
 	int cont;
 	VectorCopy(PRVM_serveredictvector(ent, origin), entorigin);
 	cont = Mod_Q1BSP_NativeContentsFromSuperContents(NULL, SV_PointSuperContents(entorigin));
@@ -2683,7 +2683,7 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 			ent_gravity = PRVM_serveredictfloat(ent, gravity);
 			if (!ent_gravity)
 				ent_gravity = 1.0f;
-			// LordHavoc: fixed grenades not bouncing when fired down a slope
+			// LadyHavoc: fixed grenades not bouncing when fired down a slope
 			if (sv_gameplayfix_grenadebouncedownslopes.integer)
 				d = fabs(DotProduct(trace.plane.normal, PRVM_serveredictvector(ent, velocity)));
 			else
@@ -2824,7 +2824,7 @@ static void SV_Physics_Entity (prvm_edict_t *ent)
 	// (if an ent spawns a higher numbered ent, it moves in the same frame,
 	//  but if it spawns a lower numbered ent, it doesn't - this never moves
 	//  ents in the first frame regardless)
-	qboolean runmove = ent->priv.server->move;
+	qbool runmove = ent->priv.server->move;
 	ent->priv.server->move = true;
 	if (!runmove && sv_gameplayfix_delayprojectiles.integer > 0)
 		return;
@@ -2842,7 +2842,7 @@ static void SV_Physics_Entity (prvm_edict_t *ent)
 		SV_Physics_Pusher (ent);
 		break;
 	case MOVETYPE_NONE:
-		// LordHavoc: manually inlined the thinktime check here because MOVETYPE_NONE is used on so many objects
+		// LadyHavoc: manually inlined the thinktime check here because MOVETYPE_NONE is used on so many objects
 		if (PRVM_serveredictfloat(ent, nextthink) > 0 && PRVM_serveredictfloat(ent, nextthink) <= sv.time + sv.frametime)
 			SV_RunThink (ent);
 		break;
@@ -3078,7 +3078,7 @@ static void SV_Physics_ClientEntity(prvm_edict_t *ent)
 		SV_Physics_Pusher (ent);
 		break;
 	case MOVETYPE_NONE:
-		// LordHavoc: manually inlined the thinktime check here because MOVETYPE_NONE is used on so many objects
+		// LadyHavoc: manually inlined the thinktime check here because MOVETYPE_NONE is used on so many objects
 		if (PRVM_serveredictfloat(ent, nextthink) > 0 && PRVM_serveredictfloat(ent, nextthink) <= sv.time + sv.frametime)
 			SV_RunThink (ent);
 		break;
@@ -3228,7 +3228,7 @@ void SV_Physics (void)
 	if (PRVM_serverglobalfloat(force_retouch) > 0)
 		PRVM_serverglobalfloat(force_retouch) = max(0, PRVM_serverglobalfloat(force_retouch) - 1);
 
-	// LordHavoc: endframe support
+	// LadyHavoc: endframe support
 	if (PRVM_serverfunction(EndFrame))
 	{
 		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(prog->edicts);

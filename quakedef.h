@@ -409,7 +409,7 @@ extern char engineversionshort[128];
 #endif
 #include "csprogs.h"
 
-extern qboolean noclip_anglehack;
+extern qbool noclip_anglehack;
 
 extern cvar_t developer;
 extern cvar_t developer_extra;
@@ -513,8 +513,8 @@ extern cvar_t sessionid;
 
 #ifdef SSE_POSSIBLE
 // runtime detection of SSE/SSE2 capabilities for x86
-qboolean Sys_HaveSSE(void);
-qboolean Sys_HaveSSE2(void);
+qbool Sys_HaveSSE(void);
+qbool Sys_HaveSSE2(void);
 #else
 #define Sys_HaveSSE() false
 #define Sys_HaveSSE2() false

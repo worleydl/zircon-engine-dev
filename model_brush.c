@@ -70,7 +70,7 @@ static texture_t mod_q1bsp_texture_lava;
 static texture_t mod_q1bsp_texture_slime;
 static texture_t mod_q1bsp_texture_water;
 
-static qboolean Mod_Q3BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end);
+static qbool Mod_Q3BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end);
 
 void Mod_BrushInit(void)
 {
@@ -149,7 +149,7 @@ static mleaf_t *Mod_Q1BSP_PointInLeaf(dp_model_t *model, const vec3_t p)
 	if (model == NULL)
 		return NULL;
 
-	// LordHavoc: modified to start at first clip node,
+	// LadyHavoc: modified to start at first clip node,
 	// in other words: first node of the (sub)model
 	node = model->brush.data_nodes + model->brushq1.hulls[0].firstclipnode;
 	while (node->plane)
@@ -990,7 +990,7 @@ static void Mod_Q1BSP_TraceBox(struct model_s *model, const frameblend_t *frameb
 		rhc.hull = &model->brushq1.hulls[0]; // 0x0x0
 	else if (model->brush.ishlbsp)
 	{
-		// LordHavoc: this has to have a minor tolerance (the .1) because of
+		// LadyHavoc: this has to have a minor tolerance (the .1) because of
 		// minor float precision errors from the box being transformed around
 		if (boxsize[0] < 32.1)
 		{
@@ -1004,7 +1004,7 @@ static void Mod_Q1BSP_TraceBox(struct model_s *model, const frameblend_t *frameb
 	}
 	else
 	{
-		// LordHavoc: this has to have a minor tolerance (the .1) because of
+		// LadyHavoc: this has to have a minor tolerance (the .1) because of
 		// minor float precision errors from the box being transformed around
 		if (boxsize[0] < 32.1)
 			rhc.hull = &model->brushq1.hulls[1]; // 32x32x56
@@ -1182,7 +1182,7 @@ void Collision_ClipTrace_Point(trace_t *trace, const vec3_t cmins, const vec3_t 
 	}
 }
 
-static qboolean Mod_Q1BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end)
+static qbool Mod_Q1BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end)
 {
 	trace_t trace;
 	Mod_Q1BSP_TraceLine(model, NULL, NULL, &trace, start, end, SUPERCONTENTS_VISBLOCKERMASK, 0);
@@ -1298,11 +1298,11 @@ static int Mod_Q1BSP_LightPoint_RecursiveBSPNode(dp_model_t *model, vec3_t ambie
 					w11 = (    dsfrac) * (    dtfrac) * (1.0f / 128.0f);
 
 					// values for pointer math
-					line3 = lmwidth * 3; // LordHavoc: *3 for colored lighting
-					size3 = lmwidth * lmheight * 3; // LordHavoc: *3 for colored lighting
+					line3 = lmwidth * 3; // LadyHavoc: *3 for colored lighting
+					size3 = lmwidth * lmheight * 3; // LadyHavoc: *3 for colored lighting
 
 					// look up the pixel
-					lightmap = surface->lightmapinfo->samples + dti * line3 + dsi*3; // LordHavoc: *3 for colored lighting
+					lightmap = surface->lightmapinfo->samples + dti * line3 + dsi*3; // LadyHavoc: *3 for colored lighting
 
 					// bilinear filter each lightmap style, and sum them
 					for (maps = 0;maps < MAXLIGHTMAPS && surface->lightmapinfo->styles[maps] != 255;maps++)
@@ -1453,7 +1453,7 @@ static int Mod_Q1BSP_TraceLineAgainstSurfacesRecursiveBSPNode(RecursiveHullCheck
 		}
 
 		// the line intersects, find intersection point
-		// LordHavoc: this uses the original trace for maximum accuracy
+		// LadyHavoc: this uses the original trace for maximum accuracy
 		if (plane->type < 3)
 		{
 			t1 = t->start[plane->type] - plane->dist;
@@ -1720,7 +1720,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 	FS_StripExtension(s, mapname, sizeof(mapname));
 
 	// just to work around bounds checking when debugging with it (array index out of bounds error thing)
-	// LordHavoc: mostly rewritten map texture loader
+	// LadyHavoc: mostly rewritten map texture loader
 	for (i = 0;i < nummiptex;i++)
 	{
 		doffset = MSG_ReadLittleLong(sb);
@@ -1768,12 +1768,12 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		if ((mtwidth & 15) || (mtheight & 15))
 			Con_DPrintLinef ("%s: warning: texture \"%s\" is not 16 aligned", loadmodel->model_name, name);
 
-		// LordHavoc: force all names to lowercase
+		// LadyHavoc: force all names to lowercase
 		for (j = 0;name[j];j++)
 			if (name[j] >= 'A' && name[j] <= 'Z')
 				name[j] += 'a' - 'A';
 
-		// LordHavoc: backup the texture_t because q3 shader loading overwrites it
+		// LadyHavoc: backup the texture_t because q3 shader loading overwrites it
 		backuptex = loadmodel->data_textures[i];
 		if (name[0] && Mod_LoadTextureFromQ3Shader(loadmodel->data_textures + i, name, /*warnmissing, fallback, defaulttexflags*/ false, false, 0))
 			continue;
@@ -1818,7 +1818,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 
 		if (cls.state != ca_dedicated)
 		{
-			// LordHavoc: HL sky textures are entirely different than quake
+			// LadyHavoc: HL sky textures are entirely different than quake
 			if (!loadmodel->brush.ishlbsp && !strncmp(tx->name, "sky", 3) && mtwidth == mtheight * 2)
 			{
 				data = loadimagepixelsbgra(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s/%s", mapname, tx->name), false, false, false, NULL);
@@ -1868,7 +1868,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				if (skinframe)
 					tx->skinframes[0] = skinframe;
 			}
-			// LordHavoc: some Tenebrae textures get replaced by black
+			// LadyHavoc: some Tenebrae textures get replaced by black
 			if (!strncmp(tx->name, "*glassmirror", 12)) // Tenebrae
 				tx->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_MIPMAP | TEXF_ALPHA, zerotrans, 1, 1, false);
 			else if (!strncmp(tx->name, "mirror", 6)) // Tenebrae
@@ -1878,7 +1878,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		tx->basematerialflags = MATERIALFLAG_WALL;
 		if (tx->name[0] == '*')
 		{ // ground xero - AU21 LOAD
-			// LordHavoc: some turbulent textures should not be affected by wateralpha
+			// LadyHavoc: some turbulent textures should not be affected by wateralpha
 			if (!strncmp(tx->name, "*glassmirror", 12)) // Tenebrae
 				tx->basematerialflags |= MATERIALFLAG_NOSHADOW | MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_REFLECTION;
 			else if (!strncmp(tx->name,"*lava",5)
@@ -2046,12 +2046,12 @@ static void Mod_Q1BSP_LoadLighting(dp_model_t *mod, sizebuf_t *sb)
 	extern cvar_t external_lits;
 
 	fs_offset_t filesize  = 0;
-	if (loadmodel->brush.ishlbsp) { // LordHavoc: load the colored lighting data straight
+	if (loadmodel->brush.ishlbsp) { // LadyHavoc: load the colored lighting data straight
 		loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, sb->cursize);
 		for (i = 0;i < sb->cursize;i++)
 			loadmodel->brushq1.lightdata[i] = sb->data[i] >>= 1;
 	} else {
-		// LordHavoc: hope is not lost yet, check for a .lit file to load
+		// LadyHavoc: hope is not lost yet, check for a .lit file to load
 		if (!external_lits.value) {
 			data = NULL;
 		} else {
@@ -2103,7 +2103,7 @@ static void Mod_Q1BSP_LoadLighting(dp_model_t *mod, sizebuf_t *sb)
 				data = NULL;
 			}
 		} // if data
-		// LordHavoc: oh well, expand the white lighting data
+		// LadyHavoc: oh well, expand the white lighting data
 		if (!sb->cursize)
 			return;
 		loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, sb->cursize*3);
@@ -2612,7 +2612,11 @@ static void Mod_Q1BSP_LoadFaces(sizebuf_t *sb)
 		{
 			for (j = 0;j < 2;j++)
 			{
-				val = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + surface->lightmapinfo->texinfo->vecs[j][3];
+				//val = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + surface->lightmapinfo->texinfo->vecs[j][3];
+
+				#define DotProduct222(a,b) ((double)(a)[0]*(double)(b)[0]+(double)(a)[1]*(double)(b)[1]+(double)(a)[2]*(double)(b)[2])
+
+				val = DotProduct222((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + (double)surface->lightmapinfo->texinfo->vecs[j][3];
 				texmins[j] = min(texmins[j], val);
 				texmaxs[j] = max(texmaxs[j], val);
 			}
@@ -2644,9 +2648,9 @@ static void Mod_Q1BSP_LoadFaces(sizebuf_t *sb)
 			}
 #endif
 		}
-		else if (loadmodel->brush.ishlbsp || loadmodel->brush.isq2bsp) // LordHavoc: HalfLife map (bsp version 30)
+		else if (loadmodel->brush.ishlbsp || loadmodel->brush.isq2bsp) // LadyHavoc: HalfLife map (bsp version 30)
 			surface->lightmapinfo->samples = loadmodel->brushq1.lightdata + lightmapoffset;
-		else // LordHavoc: white lighting (bsp version 29)
+		else // LadyHavoc: white lighting (bsp version 29)
 		{
 			surface->lightmapinfo->samples = loadmodel->brushq1.lightdata + (lightmapoffset * 3);
 			if (loadmodel->brushq1.nmaplightdata)
@@ -2739,7 +2743,7 @@ static void Mod_Q1BSP_LoadFaces(sizebuf_t *sb)
 				v = ((DotProduct(((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3), surface->lightmapinfo->texinfo->vecs[1]) + surface->lightmapinfo->texinfo->vecs[1][3]) + 8 - surface->lightmapinfo->texturemins[1]) * (1.0 / 16.0);
 				(loadmodel->surfmesh.data_texcoordlightmap2f + 2 * surface->num_firstvertex)[i * 2 + 0] = u * uscale + ubase;
 				(loadmodel->surfmesh.data_texcoordlightmap2f + 2 * surface->num_firstvertex)[i * 2 + 1] = v * vscale + vbase;
-				// LordHavoc: calc lightmap data offset for vertex lighting to use
+				// LadyHavoc: calc lightmap data offset for vertex lighting to use
 				iu = (int) u;
 				iv = (int) v;
 				(loadmodel->surfmesh.data_lightmapoffsets + surface->num_firstvertex)[i] = (bound(0, iv, tmax) * ssize + bound(0, iu, smax)) * 3;
@@ -2877,7 +2881,7 @@ static void Mod_Q1BSP_LoadNodes(sizebuf_t *sb)
 
 		for (j=0 ; j<2 ; j++)
 		{
-			// LordHavoc: this code supports broken bsp files produced by
+			// LadyHavoc: this code supports broken bsp files produced by
 			// arguire qbsp which can produce more than 32768 nodes, any value
 			// below count is assumed to be a node number, any other value is
 			// assumed to be a leaf number
@@ -3004,7 +3008,7 @@ static void Mod_Q1BSP_LoadLeafs(sizebuf_t *sb)
 	}
 }
 
-static qboolean Mod_Q1BSP_CheckWaterAlphaSupport(void)
+static qbool Mod_Q1BSP_CheckWaterAlphaSupport(void)
 {
 	int i, j;
 	mleaf_t *leaf;
@@ -3074,7 +3078,7 @@ static void Mod_Q1BSP_LoadClipnodes(sizebuf_t *sb, hullinfo_t *hullinfo)
 		}
 		else
 		{
-			// LordHavoc: this code supports arguire qbsp's broken clipnodes indices (more than 32768 clipnodes), values above count are assumed to be contents values
+			// LadyHavoc: this code supports arguire qbsp's broken clipnodes indices (more than 32768 clipnodes), values above count are assumed to be contents values
 			out->children[0] = (unsigned short)MSG_ReadLittleShort(sb);
 			out->children[1] = (unsigned short)MSG_ReadLittleShort(sb);
 			if (out->children[0] >= count)
@@ -3185,7 +3189,7 @@ static void Mod_Q1BSP_LoadMapBrushes(void)
 #if 0
 // unfinished
 	int submodel, numbrushes;
-	qboolean firstbrush;
+	qbool firstbrush;
 	char *text, *maptext;
 	char mapfilename[MAX_QPATH];
 	FS_StripExtension (loadmodel->name, mapfilename, sizeof (mapfilename));
@@ -3721,7 +3725,7 @@ static void Mod_Q1BSP_FatPVS_RecursiveBSPNode(dp_model_t *model, const vec3_t or
 
 //Calculates a PVS that is the inclusive or of all leafs within radius pixels
 //of the given point.
-static int Mod_Q1BSP_FatPVS(dp_model_t *model, const vec3_t org, vec_t radius, unsigned char *pvsbuffer, int pvsbufferlength, qboolean merge)
+static int Mod_Q1BSP_FatPVS(dp_model_t *model, const vec3_t org, vec_t radius, unsigned char *pvsbuffer, int pvsbufferlength, qbool merge)
 {
 	int bytes = model->brush.num_pvsclusterbytes;
 	bytes = min(bytes, pvsbufferlength);
@@ -3966,7 +3970,7 @@ void Mod_Q1BSP_Load (dp_model_t *mod, void *buffer, void *bufferend)
 	if (loadmodel->brush.numsubmodels)
 		loadmodel->brush.submodels = (dp_model_t **)Mem_Alloc(loadmodel->mempool, loadmodel->brush.numsubmodels * sizeof(dp_model_t *));
 
-	// LordHavoc: to clear the fog around the original quake submodel code, I
+	// LadyHavoc: to clear the fog around the original quake submodel code, I
 	// will explain:
 	// first of all, some background info on the submodels:
 	// model 0 is the map model (the world, named maps/e1m1.bsp for example)
@@ -3977,7 +3981,7 @@ void Mod_Q1BSP_Load (dp_model_t *mod, void *buffer, void *bufferend)
 	// the number i), at the end of the loop it duplicates the model to become
 	// the next submodel, and loops back to set up the new submodel.
 
-	// LordHavoc: now the explanation of my sane way (which works identically):
+	// LadyHavoc: now the explanation of my sane way (which works identically):
 	// set up the world model, then on each submodel copy from the world model
 	// and set up the submodel with the respective model info.
 	totalstylesurfaces = 0;
@@ -4001,7 +4005,7 @@ void Mod_Q1BSP_Load (dp_model_t *mod, void *buffer, void *bufferend)
 	datapointer = (unsigned char *)Mem_Alloc(mod->mempool, mod->num_surfaces * sizeof(int) + totalstyles * sizeof(model_brush_lightstyleinfo_t) + totalstylesurfaces * sizeof(int *));
 	for (i = 0;i < mod->brush.numsubmodels;i++)
 	{
-		// LordHavoc: this code was originally at the end of this loop, but
+		// LadyHavoc: this code was originally at the end of this loop, but
 		// has been transformed to something more readable at the start here.
 
 		if (i > 0)
@@ -4132,7 +4136,7 @@ void Mod_Q1BSP_Load (dp_model_t *mod, void *buffer, void *bufferend)
 		}
 		else
 		{
-			// LordHavoc: empty submodel(lacrima.bsp has such a glitch)
+			// LadyHavoc: empty submodel(lacrima.bsp has such a glitch)
 			Con_PrintLinef ("warning: empty submodel *%d in %s", i+1, loadmodel->model_name);
 		}
 		//mod->brushq1.num_visleafs = bm->visleafs;
@@ -4513,7 +4517,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 
 static void Mod_Q2BSP_LoadLighting(sizebuf_t *sb)
 {
-	// LordHavoc: this fits exactly the same format that we use in .lit files
+	// LadyHavoc: this fits exactly the same format that we use in .lit files
 	loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, sb->cursize);
 	MSG_ReadBytes(sb, sb->cursize, loadmodel->brushq1.lightdata);
 }
@@ -4645,7 +4649,7 @@ static void Mod_Q2BSP_LoadBrushes(sizebuf_t *sb)
 	int i, j, firstside, numsides, contents, count, maxplanes, q3surfaceflags, supercontents;
 	colplanef_t *planes;
 	int structsize = 12;
-	qboolean brushmissingtextures;
+	qbool brushmissingtextures;
 	int numbrushesmissingtextures = 0;
 	int numcreatedtextures = 0;
 
@@ -5527,7 +5531,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 	unsigned char *mergeddeluxepixels;
 	unsigned char *mergebuf;
 	char mapname[MAX_QPATH];
-	qboolean external;
+	qbool external;
 	unsigned char *inpixels[10000]; // max count q3map2 can output (it uses 4 digits)
 	char vabuf[1024];
 
@@ -5861,7 +5865,7 @@ static void Mod_Q3BSP_LoadFaces(lump_t *l)
 	float *v;
 	patchtess_t *patchtess = NULL;
 	int patchtesscount = 0;
-	qboolean again;
+	qbool again;
 
 	in = (q3dface_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
@@ -6637,7 +6641,7 @@ static void Mod_Q3BSP_LightPoint(dp_model_t *model, const vec3_t p, vec3_t ambie
 	{
 	case RENDERPATH_GL20:
 	case RENDERPATH_GLES2:
-		// LordHavoc: FIXME: is this true?
+		// LadyHavoc: FIXME: is this true?
 		stylescale = 1; // added while render
 		break;
 	case RENDERPATH_GL11:
@@ -6764,7 +6768,7 @@ static int Mod_Q3BSP_TraceLineOfSight_RecursiveNodeCheck(mnode_t *node, double p
 	return ((mleaf_t *)node)->clusterindex < 0;
 }
 
-static qboolean Mod_Q3BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end)
+static qbool Mod_Q3BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end)
 {
 	if (model->brush.submodel || mod_q3bsp_tracelineofsight_brushes.integer)
 	{
@@ -7147,7 +7151,7 @@ int Mod_CollisionBIH_PointSuperContents(struct model_s *model, int frame, const 
 	return trace.startsupercontents;
 }
 
-qboolean Mod_CollisionBIH_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end)
+qbool Mod_CollisionBIH_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end)
 {
 	trace_t trace;
 	Mod_CollisionBIH_TraceLine(model, NULL, NULL, &trace, start, end, SUPERCONTENTS_VISBLOCKERMASK, 0);
@@ -7569,7 +7573,7 @@ void Mod_CollisionBIH_TraceLineAgainstSurfaces(dp_model_t *model, const frameble
 }
 
 
-bih_t *Mod_MakeCollisionBIH(dp_model_t *model, qboolean userendersurfaces, bih_t *out)
+bih_t *Mod_MakeCollisionBIH(dp_model_t *model, qbool userendersurfaces, bih_t *out)
 {
 	int j;
 	int bihnumleafs;

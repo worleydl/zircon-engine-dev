@@ -1,4 +1,4 @@
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CORE_SDL)
 // Baker: command line .txt support
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
@@ -292,11 +292,11 @@ void Sys_InitConsole (void)
 	houtput = GetStdHandle (STD_OUTPUT_HANDLE);
 	hinput = GetStdHandle (STD_INPUT_HANDLE);
 
-	// LordHavoc: can't check cls.state because it hasn't been initialized yet
+	// LadyHavoc: can't check cls.state because it hasn't been initialized yet
 	// if (cls.state == ca_dedicated)
 	if (COM_CheckParm("-dedicated"))
 	{
-		//if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE)) // LordHavoc: on Windows XP this is never 0 or invalid, but hinput is invalid
+		//if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE)) // LadyHavoc: on Windows XP this is never 0 or invalid, but hinput is invalid
 		{
 			if (!AllocConsole ())
 				Sys_Error ("Couldn't create dedicated server console (error code %x)", (unsigned int)GetLastError());
@@ -459,7 +459,7 @@ int main (int argc, const char* argv[])
 }
 #endif
 
-qboolean sys_supportsdlgetticks = false;
+qbool sys_supportsdlgetticks = false;
 unsigned int Sys_SDL_GetTicks (void)
 {
 	Sys_Error("Called Sys_SDL_GetTicks on non-SDL target");
@@ -618,4 +618,4 @@ const char *Sys_Binary_URL_SBuf (void)
 	}
 	return binary_url;
 }
-#endif #if 0 //#endif
+#endif // defined(_WIN32) && !defined(CORE_SDL)

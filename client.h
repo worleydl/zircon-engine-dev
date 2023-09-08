@@ -326,7 +326,7 @@ typedef struct rtlight_s
 	/// this is R_GetCubemap(rtlight->cubemapname)
 	rtexture_t *currentcubemap;
 	/// set by R_Shadow_PrepareLight to decide whether R_Shadow_DrawLight should draw it
-	qboolean draw;
+	qbool draw;
 	/// these fields are set by R_Shadow_PrepareLight for later drawing
 	int cached_numlightentities;
 	int cached_numlightentities_noselfshadow;
@@ -481,7 +481,7 @@ typedef struct frameblend_s
 }
 frameblend_t;
 
-// LordHavoc: this struct is intended for the renderer but some fields are
+// LadyHavoc: this struct is intended for the renderer but some fields are
 // used by the client.
 //
 // The renderer should not rely on any changes to this struct to be persistent
@@ -598,7 +598,7 @@ typedef struct entity_persistent_s
 	vec_t lerpdeltatime; // lerp
 	float muzzleflash; // muzzleflash intensity, fades over time
 	float trail_time; // residual error accumulation for particle trail spawning (to keep spacing across frames)
-	qboolean trail_allowed; // set to false by teleports, true by update code, prevents bad lerps
+	qbool trail_allowed; // set to false by teleports, true by update code, prevents bad lerps
 }
 entity_persistent_t;
 
@@ -643,14 +643,14 @@ typedef struct usercmd_s
 	int buttons;
 	int impulse;
 	unsigned int sequence;
-	qboolean applied; // if false we're still accumulating a move
-	qboolean predicted; // if true the sequence should be sent as 0
+	qbool applied; // if false we're still accumulating a move
+	qbool predicted; // if true the sequence should be sent as 0
 
 	// derived properties
 	double frametime;
-	qboolean canjump;
-	qboolean jump;
-	qboolean crouch;
+	qbool canjump;
+	qbool jump;
+	qbool crouch;
 } usercmd_t;
 
 typedef struct lightstyle_s
@@ -731,9 +731,9 @@ typedef struct capturevideostate_s
 	double framerate;
 	int framestep;
 	int framestepframe;
-	qboolean active;
-	qboolean realtime;
-	qboolean error;
+	qbool active;
+	qbool realtime;
+	qbool error;
 	int soundrate;
 	int soundchannels;
 	int frame;
@@ -808,16 +808,16 @@ typedef struct client_static_s
 
 // demo recording info must be here, because record is started before
 // entering a map (and clearing client_state_t)
-	qboolean demorecording;
+	qbool demorecording;
 	fs_offset_t demo_lastcsprogssize;
 	int demo_lastcsprogscrc;
-	qboolean demoplayback;
-	qboolean demostarting; // set if currently starting a demo, to stop -demo from quitting when switching to another demo
-	qboolean timedemo;
+	qbool demoplayback;
+	qbool demostarting; // set if currently starting a demo, to stop -demo from quitting when switching to another demo
+	qbool timedemo;
 	// -1 = use normal cd track
 	int forcetrack;
 	qfile_t *demofile;
-	// realtime at second frame of timedemo (LordHavoc: changed to double)
+	// realtime at second frame of timedemo (LadyHavoc: changed to double)
 	double td_starttime;
 	int td_frames; // total frames parsed
 	double td_onesecondnexttime;
@@ -827,13 +827,13 @@ typedef struct client_static_s
 	double td_onesecondmaxfps;
 	double td_onesecondavgfps;
 	int td_onesecondavgcount;
-	// LordHavoc: pausedemo
-	qboolean demopaused;
+	// LadyHavoc: pausedemo
+	qbool demopaused;
 
 	// sound mixer statistics for showsound display
 	cl_soundstats_t soundstats;
 
-	qboolean connect_trying;
+	qbool connect_trying;
 	int connect_remainingtries;
 	double connect_nextsendtime;
 	lhnetsocket_t *connect_mysocket;
@@ -883,7 +883,7 @@ typedef struct client_static_s
 	double qw_downloadspeedtime;
 	int qw_downloadspeedcount;
 	int qw_downloadspeedrate;
-	qboolean qw_download_deflate;
+	qbool qw_download_deflate;
 
 	// current file upload buffer (for uploading screenshots to server)
 	unsigned char *qw_uploaddata;
@@ -928,9 +928,9 @@ extern client_static_t	cls;
 //[515]: csqc
 typedef struct
 {
-	qboolean drawworld;
-	qboolean drawenginesbar;
-	qboolean drawcrosshair;
+	qbool drawworld;
+	qbool drawenginesbar;
+	qbool drawcrosshair;
 }csqc_vidvars_t;
 
 typedef enum
@@ -957,7 +957,7 @@ typedef struct particletype_s
 {
 	pblend_t blendmode;
 	porientation_t orientation;
-	qboolean lighting;
+	qbool lighting;
 }
 particletype_t;
 
@@ -1052,7 +1052,7 @@ cl_locnode_t;
 
 typedef struct showlmp_s
 {
-	qboolean	isactive;
+	qbool	isactive;
 	float		x;
 	float		y;
 	char		label[32];
@@ -1121,19 +1121,19 @@ typedef struct client_state_s
 	// this is used primarily by teleporters, and when spectating players
 	// special checking of the old fixangle[1] is used to differentiate
 	// between teleporting and spectating
-	qboolean fixangle[2];
+	qbool fixangle[2];
 
 	// client movement simulation
 	// these fields are only updated by CL_ClientMovement (called by CL_SendMove after parsing each network packet)
 	// set by CL_ClientMovement_Replay functions
-	qboolean movement_predicted;
+	qbool movement_predicted;
 	// if true the CL_ClientMovement_Replay function will update origin, etc
-	qboolean movement_replay;
+	qbool movement_replay;
 	// simulated data (this is valid even if cl.movement is false)
 	vec3_t movement_origin;
 	vec3_t movement_velocity;
 	// whether the replay should allow a jump at the first sequence
-	qboolean movement_replay_canjump;
+	qbool movement_replay_canjump;
 
 	// previous gun angles (for leaning effects)
 	vec3_t gunangles_prev;
@@ -1149,27 +1149,27 @@ typedef struct client_state_s
 // pitch drifting vars
 	float idealpitch;
 	float pitchvel;
-	qboolean nodrift;
+	qbool nodrift;
 	float driftmove;
 	double laststop;
 
 //[515]: added for csqc purposes
 	float sensitivityscale;
 	csqc_vidvars_t csqc_vidvars;	//[515]: these parms must be set to true by default
-	qboolean csqc_wantsmousemove;
-	qboolean csqc_paused; // vortex: int because could be flags
+	qbool csqc_wantsmousemove;
+	qbool csqc_paused; // vortex: int because could be flags
 	struct model_s *csqc_model_precache[MAX_MODELS];
 
 	// local amount for smoothing stepups
 	//float crouch;
 
 	// sent by server
-	qboolean paused;
-	qboolean onground;
-	qboolean inwater;
+	qbool paused;
+	qbool onground;
+	qbool inwater;
 
 	// used by bob
-	qboolean oldonground;
+	qbool oldonground;
 	double lastongroundtime;
 	double hitgroundtime;
 	float bob2_smooth;
@@ -1246,7 +1246,7 @@ typedef struct client_state_s
 	sfx_t *sfx_ric3;
 	sfx_t *sfx_r_exp3;
 	// indicates that the file "sound/misc/talk2.wav" was found (for use by team chat messages)
-	qboolean foundtalk2wav;
+	qbool foundtalk2wav;
 
 // refresh related state
 
@@ -1344,10 +1344,10 @@ typedef struct client_state_s
 	int loadsound_current;
 	int downloadsound_current;
 	int loadsound_total;
-	qboolean downloadcsqc;
-	qboolean loadcsqc;
-	qboolean loadbegun;
-	qboolean loadfinished;
+	qbool downloadcsqc;
+	qbool loadcsqc;
+	qbool loadbegun;
+	qbool loadfinished;
 
 	// quakeworld stuff
 
@@ -1365,7 +1365,7 @@ typedef struct client_state_s
 
 	// unused: indicates whether the player is spectating
 	// use cl.scores[cl.playerentity-1].qw_spectator instead
-	//qboolean qw_spectator;
+	//qbool qw_spectator;
 
 	// last time an input packet was sent
 	double lastpackettime;
@@ -1428,13 +1428,13 @@ typedef struct client_state_s
 	// csqc stuff:
 	// server entity number corresponding to a clientside entity
 	unsigned short csqc_server2csqcentitynumber[MAX_EDICTS];
-	qboolean csqc_loaded;
+	qbool csqc_loaded;
 	vec3_t csqc_vieworigin;
 	vec3_t csqc_viewangles;
 	vec3_t csqc_vieworiginfromengine;
 	vec3_t csqc_viewanglesfromengine;
 	matrix4x4_t csqc_viewmodelmatrixfromengine;
-	qboolean csqc_usecsqclistener;
+	qbool csqc_usecsqclistener;
 	matrix4x4_t csqc_listenermatrix;
 	char csqc_printtextbuf[MAX_INPUTLINE];
 
@@ -1583,7 +1583,7 @@ void CL_Effect(vec3_t org, int modelindex, int startframe, int framecount, float
 void CL_ClearState (void);
 void CL_ExpandEntities(int num);
 void CL_ExpandCSQCRenderEntities(int num);
-void CL_SetInfo(const char *key, const char *value, qboolean send, qboolean allowstarkey, qboolean allowmodel, qboolean quiet);
+void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstarkey, qbool allowmodel, qbool quiet);
 
 
 void CL_UpdateWorld (void);
@@ -1622,7 +1622,7 @@ void CL_Parse_DumpPacket(void);
 void CL_Parse_ErrorCleanUp(void);
 void QW_CL_StartUpload(unsigned char *data, int size);
 extern cvar_t qport;
-void CL_KeepaliveMessage(qboolean readmessages); // call this during loading of large content
+void CL_KeepaliveMessage(qbool readmessages); // call this during loading of large content
 
 //
 // view
@@ -1666,7 +1666,7 @@ extern cvar_t cl_decals_fadetime;
 void CL_Particles_Clear(void);
 void CL_Particles_Init(void);
 void CL_Particles_Shutdown(void);
-particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, int pcolor1, int pcolor2, int ptex, float psize, float psizeincrease, float palpha, float palphafade, float pgravity, float pbounce, float px, float py, float pz, float pvx, float pvy, float pvz, float pairfriction, float pliquidfriction, float originjitter, float velocityjitter, qboolean pqualityreduction, float lifetime, float stretch, pblend_t blendmode, porientation_t orientation, int staincolor1, int staincolor2, int staintex, float stainalpha, float stainsize, float angle, float spin, float tint[4]);
+particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, int pcolor1, int pcolor2, int ptex, float psize, float psizeincrease, float palpha, float palphafade, float pgravity, float pbounce, float px, float py, float pz, float pvx, float pvy, float pvz, float pairfriction, float pliquidfriction, float originjitter, float velocityjitter, qbool pqualityreduction, float lifetime, float stretch, pblend_t blendmode, porientation_t orientation, int staincolor1, int staincolor2, int staintex, float stainalpha, float stainsize, float angle, float spin, float tint[4]);
 
 typedef enum effectnameindex_s
 {
@@ -1713,8 +1713,8 @@ effectnameindex_t;
 int CL_ParticleEffectIndexForName(const char *name);
 const char *CL_ParticleEffectNameForIndex(int i);
 void CL_ParticleEffect(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor);
-void CL_ParticleTrail(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qboolean spawndlight, qboolean spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
-void CL_ParticleBox(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qboolean spawndlight, qboolean spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
+void CL_ParticleTrail(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
+void CL_ParticleBox(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
 void CL_ParseParticleEffect (void);
 void CL_ParticleCube (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, vec_t gravity, vec_t randomvel);
 void CL_ParticleRain (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, int type);
@@ -1729,7 +1729,7 @@ void Debug_PolygonEnd(void);
 
 #include "cl_screen.h"
 
-extern qboolean sb_showscores;
+extern qbool sb_showscores;
 
 float RSurf_FogVertex(const vec3_t p);
 float RSurf_FogPoint(const vec3_t p);
@@ -1780,8 +1780,8 @@ typedef struct r_refdef_view_s
 	vec3_t up;
 	int numfrustumplanes;
 	mplane_t frustum[6];
-	qboolean useclipplane;
-	qboolean usecustompvs; // uses r_refdef.viewcache.pvsbits as-is rather than computing it
+	qbool useclipplane;
+	qbool usecustompvs; // uses r_refdef.viewcache.pvsbits as-is rather than computing it
 	mplane_t clipplane;
 	float frustum_x, frustum_y;
 	vec3_t frustumcorner[4];
@@ -1805,16 +1805,16 @@ typedef struct r_refdef_view_s
 	float colorscale;
 
 	// whether to call R_ClearScreen before rendering stuff
-	qboolean clear;
+	qbool clear;
 	// if true, don't clear or do any post process effects (bloom, etc)
-	qboolean isoverlay;
+	qbool isoverlay;
 	// if true, this is the MAIN view (which is, after CSQC, copied into the scene for use e.g. by r_speeds 1, showtex, prydon cursor)
-	qboolean ismain;
+	qbool ismain;
 
 	// whether to draw r_showtris and such, this is only true for the main
 	// view render, all secondary renders (mirrors, portals, cameras,
 	// distortion effects, etc) omit such debugging information
-	qboolean showdebug;
+	qbool showdebug;
 
 	// these define which values to use in GL_CullFace calls to request frontface or backface culling
 	int cullface_front;
@@ -1846,7 +1846,7 @@ typedef struct r_refdef_viewcache_s
 	unsigned char *world_leafvisible;
 	unsigned char *world_surfacevisible;
 	// if true, the view is currently in a leaf without pvs data
-	qboolean world_novis;
+	qbool world_novis;
 }
 r_refdef_viewcache_t;
 
@@ -1854,7 +1854,7 @@ r_refdef_viewcache_t;
 // maybe also refactor some of the functions to support different setting sources (ie. fogenabled, etc.) for different scenes
 typedef struct r_refdef_scene_s {
 	// whether to call S_ExtraUpdate during render to reduce sound chop
-	qboolean extraupdate;
+	qbool extraupdate;
 
 	// (client gameworld) time for rendering time based effects
 	double time;
@@ -1874,7 +1874,7 @@ typedef struct r_refdef_scene_s {
 	entity_render_t *tempentities;
 	int numtempentities;
 	int maxtempentities;
-	qboolean expandtempentities;
+	qbool expandtempentities;
 
 	// renderable dynamic lights
 	rtlight_t *lights[MAX_DLIGHTS];
@@ -1889,10 +1889,10 @@ typedef struct r_refdef_scene_s {
 
 	float ambient;
 
-	qboolean rtworld;
-	qboolean rtworldshadows;
-	qboolean rtdlight;
-	qboolean rtdlightshadows;
+	qbool rtworld;
+	qbool rtworldshadows;
+	qbool rtdlight;
+	qbool rtdlightshadows;
 } r_refdef_scene_t;
 
 typedef struct r_refdef_s
@@ -1922,7 +1922,7 @@ typedef struct r_refdef_s
 
 	float fogplane[4];
 	float fogplaneviewdist;
-	qboolean fogplaneviewabove;
+	qbool fogplaneviewabove;
 	float fogheightfade;
 	float fogcolor[3];
 	float fogrange;
@@ -1941,8 +1941,8 @@ typedef struct r_refdef_s
 	float fog_end;
 	float fog_height;
 	float fog_fadedepth;
-	qboolean fogenabled;
-	qboolean oldgl_fogenable;
+	qbool fogenabled;
+	qbool oldgl_fogenable;
 
 	// new flexible texture height fog (overrides normal fog)
 	char fog_height_texturename[64]; // note: must be 64 for the sscanf code
@@ -1956,7 +1956,7 @@ typedef struct r_refdef_s
 	int draw2dstage; // 0 = no, 1 = yes, other value = needs setting up again
 
 	// true during envmap command capture
-	qboolean envmap;
+	qbool envmap;
 
 	// brightness of world lightmaps and related lighting
 	// (often reduced when world rtlights are enabled)
@@ -1998,9 +1998,9 @@ typedef struct cl_clientmovement_state_s
 	vec3_t mins;
 	vec3_t maxs;
 	// currently on the ground
-	qboolean onground;
+	qbool onground;
 	// currently crouching
-	qboolean crouched;
+	qbool crouched;
 	// what kind of water (SUPERCONTENTS_LAVA for instance)
 	int watertype;
 	// how deep
@@ -2031,7 +2031,7 @@ void SCR_CaptureVideo_SoundFrame(const portable_sampleframe_t *paintbuffer, size
 void V_DriftPitch(void);
 void V_FadeViewFlashs(void);
 void V_CalcViewBlend(void);
-void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewangles, qboolean teleported, qboolean clonground, qboolean clcmdjump, float clstatsviewheight, qboolean cldead, qboolean clintermission, const vec3_t clvelocity);
+void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewangles, qbool teleported, qbool clonground, qbool clcmdjump, float clstatsviewheight, qbool cldead, qbool clintermission, const vec3_t clvelocity);
 void V_CalcRefdef(void);
 void CL_Locs_Reload_f(void);
 

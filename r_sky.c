@@ -20,7 +20,7 @@ static matrix4x4_t skyinversematrix;
 typedef struct suffixinfo_s
 {
 	const char *suffix;
-	qboolean flipx, flipy, flipdiagonal;
+	qbool flipx, flipy, flipdiagonal;
 }
 suffixinfo_t;
 static const suffixinfo_t suffix[3][6] =
@@ -159,7 +159,7 @@ int R_SetSkyBox(const char *sky)
 	return R_LoadSkyBox();
 }
 
-// LordHavoc: added LoadSky console command
+// LadyHavoc: added LoadSky console command
 static void LoadSky_f (void)
 {
 	switch (Cmd_Argc())
@@ -373,7 +373,7 @@ static void skyspherecalc(void)
 static void R_SkySphere(void)
 {
 	double speedscale;
-	static qboolean skysphereinitialized = false;
+	static qbool skysphereinitialized = false;
 	matrix4x4_t scroll1matrix, scroll2matrix;
 	if (!skysphereinitialized)
 	{

@@ -42,11 +42,11 @@ typedef struct cachepic_s
 	// flags - CACHEPICFLAG_NEWPIC for example
 	unsigned int flags;
 	// has alpha?
-	qboolean hasalpha;
+	qbool hasalpha;
 	// name of pic
 	char name[MAX_QPATH];
 	// allow to override/free the texture
-	qboolean allow_free_tex;
+	qbool allow_free_tex;
 }
 cachepic_t;
 
@@ -173,16 +173,16 @@ void DrawQ_Fill(float x, float y, float width, float height, float red, float gr
 // the color is tinted by the provided base color
 // if r_textshadow is not zero, an additional instance of the text is drawn first at an offset with an inverted shade of gray (black text produces a white shadow, brightly colored text produces a black shadow)
 extern float DrawQ_Color[4];
-float DrawQ_String(float x, float y, const char *text, size_t maxlen, float scalex, float scaley, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt);
-float DrawQ_String_Scale(float x, float y, const char *text, size_t maxlen, float sizex, float sizey, float scalex, float scaley, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt);
-float DrawQ_TextWidth(const char *text, size_t maxlen, float w, float h, qboolean ignorecolorcodes, const dp_font_t *fnt);
-float DrawQ_TextWidth_UntilWidth(const char *text, size_t *maxlen, float w, float h, qboolean ignorecolorcodes, const dp_font_t *fnt, float maxWidth);
-float DrawQ_TextWidth_UntilWidth_TrackColors(const char *text, size_t *maxlen, float w, float h, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt, float maxwidth);
-float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *maxlen, float w, float h, float sw, float sh, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt, float maxwidth);
+float DrawQ_String(float x, float y, const char *text, size_t maxlen, float scalex, float scaley, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt);
+float DrawQ_String_Scale(float x, float y, const char *text, size_t maxlen, float sizex, float sizey, float scalex, float scaley, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt);
+float DrawQ_TextWidth(const char *text, size_t maxlen, float w, float h, qbool ignorecolorcodes, const dp_font_t *fnt);
+float DrawQ_TextWidth_UntilWidth(const char *text, size_t *maxlen, float w, float h, qbool ignorecolorcodes, const dp_font_t *fnt, float maxWidth);
+float DrawQ_TextWidth_UntilWidth_TrackColors(const char *text, size_t *maxlen, float w, float h, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt, float maxwidth);
+float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *maxlen, float w, float h, float sw, float sh, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt, float maxwidth);
 // draw a very fancy pic (per corner texcoord/color control), the order is tl, tr, bl, br
 void DrawQ_SuperPic(float x, float y, cachepic_t *pic, float width, float height, float s1, float t1, float r1, float g1, float b1, float a1, float s2, float t2, float r2, float g2, float b2, float a2, float s3, float t3, float r3, float g3, float b3, float a3, float s4, float t4, float r4, float g4, float b4, float a4, int flags);
 // draw a triangle mesh
-void DrawQ_Mesh(drawqueuemesh_t *mesh, int flags, qboolean hasalpha);
+void DrawQ_Mesh(drawqueuemesh_t *mesh, int flags, qbool hasalpha);
 // set the clipping area
 void DrawQ_SetClipArea(float x, float y, float width, float height);
 // reset the clipping area
@@ -190,12 +190,12 @@ void DrawQ_ResetClipArea(void);
 // draw a line
 void DrawQ_Line(float width, float x1, float y1, float x2, float y2, float r, float g, float b, float alpha, int flags);
 // draw a lot of lines (call R_Mesh_PrepareVertices_Generic first)
-void DrawQ_Lines(float width, int numlines, int flags, qboolean hasalpha);
+void DrawQ_Lines(float width, int numlines, int flags, qbool hasalpha);
 // draw a line loop
 void DrawQ_LineLoop(drawqueuemesh_t *mesh, int flags);
 // resets r_refdef.draw2dstage
 void DrawQ_Finish(void);
-void DrawQ_ProcessDrawFlag(int flags, qboolean alpha); // sets GL_DepthMask and GL_BlendFunc
+void DrawQ_ProcessDrawFlag(int flags, qbool alpha); // sets GL_DepthMask and GL_BlendFunc
 void DrawQ_RecalcView(void); // use this when changing r_refdef.view.* from e.g. csqc
 
 rtexture_t *Draw_GetPicTexture(cachepic_t *pic);

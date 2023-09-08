@@ -50,8 +50,8 @@ Memory is cleared / released when a server or client begins, not when they end.
 // how many frames have occurred
 // (checked by Host_Error and Host_SaveConfig_f)
 int host_framecount = 0;
-// LordHavoc: set when quit is executed
-qboolean host_shuttingdown = false;
+// LadyHavoc: set when quit is executed
+qbool host_shuttingdown = false;
 
 // the accumulated mainloop time since application started (with filtering), without any slowmo or clamping
 double realtime;
@@ -124,7 +124,7 @@ void Host_Error (const char *error, ...)
 {
 	static char hosterrorstring1[MAX_INPUTLINE]; // THREAD UNSAFE
 	static char hosterrorstring2[MAX_INPUTLINE]; // THREAD UNSAFE
-	static qboolean hosterror = false;
+	static qbool hosterror = false;
 	va_list argptr;
 
 	// turn off rcon redirect if it was active when the crash occurred
@@ -137,7 +137,7 @@ void Host_Error (const char *error, ...)
 
 	Con_PrintLinef ("Host_Error: %s", hosterrorstring1);
 
-	// LordHavoc: if crashing very early, or currently shutting down, do
+	// LadyHavoc: if crashing very early, or currently shutting down, do
 	// Sys_Error instead
 	if (host_framecount < 3 || host_shuttingdown)
 		Sys_Error ("Host_Error: %s", hosterrorstring1);
@@ -290,7 +290,7 @@ static void Host_SaveConfig_to(const char *file)
 
 // dedicated servers initialize the host but don't parse and set the
 // config.cfg cvars
-	// LordHavoc: don't save a config if it crashed in startup
+	// LadyHavoc: don't save a config if it crashed in startup
 	if (host_framecount >= 3 && cls.state != ca_dedicated && !COM_CheckParm("-benchmark") && !COM_CheckParm("-capturedemo"))
 	{
 		// Baker 1024: Prevent stale values of vid_width or vid_height writing to config
@@ -484,7 +484,7 @@ Called when the player is getting totally kicked off the host
 if (crash = true), don't bother sending signofs
 =====================
 */
-void SV_DropClient(qboolean crash)
+void SV_DropClient(qbool crash)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int i;
@@ -500,7 +500,7 @@ void SV_DropClient(qboolean crash)
 		// tell the client to be gone
 		if (!crash)
 		{
-			// LordHavoc: no opportunity for resending, so use unreliable 3 times
+			// LadyHavoc: no opportunity for resending, so use unreliable 3 times
 			unsigned char bufdata[8];
 			sizebuf_t buf;
 			memset(&buf, 0, sizeof(buf));
@@ -514,7 +514,7 @@ void SV_DropClient(qboolean crash)
 	}
 
 	// call qc ClientDisconnect function
-	// LordHavoc: don't call QC if server is dead (avoids recursive
+	// LadyHavoc: don't call QC if server is dead (avoids recursive
 	// Host_Error in some mods when they run out of edicts)
 	if (host_client->clientconnectcalled && sv.active && host_client->edict)
 	{
@@ -698,7 +698,7 @@ void Host_Main(void)
 	double wait;
 	int pass1, pass2, pass3, i;
 	char vabuf[1024];
-	qboolean playing;
+	qbool playing;
 
 	Host_Init();
 
@@ -975,11 +975,12 @@ void Host_Main(void)
 			}
 			else if (vid_activewindow && cl_maxfps.value >= 1 && !cls.timedemo)
 			{
-				qboolean is_active_hosting_server = sv.active && cls.state != ca_disconnected && svs.maxclients > 1;
+				qbool is_active_hosting_server = sv.active && cls.state != ca_disconnected && svs.maxclients > 1;
 				if ( (
-#ifdef _WIN32
-					!vid.factive || 
-#endif
+//#ifdef _WIN32
+//					!vid.factive || 
+					!vid_activewindow ||
+//#endif
 						key_consoleactive || key_dest == key_menu) && is_active_hosting_server == false)
 					clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxconsole_menu_fps.value); // Baker 1017.3
 				else
@@ -1109,7 +1110,7 @@ void Host_Main(void)
 
 //============================================================================
 
-qboolean vid_opened = false;
+qbool vid_opened = false;
 void Host_StartVideo(void)
 {
 	if (!vid_opened && cls.state != ca_dedicated)
@@ -1127,12 +1128,12 @@ void Host_StartVideo(void)
 char engineversion[128];
 char engineversionshort[128];
 
-qboolean sys_nostdout = false;
+qbool sys_nostdout = false;
 
-extern qboolean host_stuffcmdsrun;
+extern qbool host_stuffcmdsrun;
 
 static qfile_t *locksession_fh = NULL;
-static qboolean locksession_run = false;
+static qbool locksession_run = false;
 static void Host_InitSession(void)
 {
 	int i;
@@ -1204,15 +1205,15 @@ static void Host_Init (void)
 	if (COM_CheckParm("-profilegameonly"))
 		Sys_AllowProfiling(false);
 
-	// LordHavoc: quake never seeded the random number generator before... heh
+	// LadyHavoc: quake never seeded the random number generator before... heh
 	if (COM_CheckParm("-benchmark"))
 		srand(0); // predictable random sequence for -benchmark
 	else
 		srand((unsigned int)time(NULL));
 
 	// FIXME: this is evil, but possibly temporary
-	// LordHavoc: doesn't seem very temporary...
-	// LordHavoc: made this a saved cvar
+	// LadyHavoc: doesn't seem very temporary...
+	// LadyHavoc: made this a saved cvar
 // COMMANDLINEOPTION: Console: -developer enables warnings and other notices (RECOMMENDED for mod developers)
 	if (COM_CheckParm("-developer"))
 	{
@@ -1280,11 +1281,20 @@ static void Host_Init (void)
 	//dpsnprintf (engineversion, sizeof (engineversion), "%s %s %s", gamename, os, buildstring);
 	dpsnprintf (engineversion, sizeof (engineversion), "%s %s %s", gamename, os, buildstring);
 	//dpsnprintf (engineversionshort, sizeof (engineversionshort), "Zircon - %s", buildstringshort);
+	
+	const char *sfmt = "%s " // ...
+		#if !defined(_MSC_VER) && defined(_WIN32)
+			"CB "
+		#endif // CORE_SDL
+		#ifdef CORE_SDL
+			"SDL2 "
+		#endif // CORE_SDL
 #ifdef _DEBUG
-	dpsnprintf (engineversionshort, sizeof (engineversionshort), "%s (D) %s", gamename, buildstringshort);
-#else
-	dpsnprintf (engineversionshort, sizeof (engineversionshort), "%s %s", gamename, buildstringshort);
-#endif
+			"(D) "
+		#endif // _DEBUG
+		"%s";
+
+	c_dpsnprintf2 (engineversionshort, sfmt, gamename, buildstringshort);
 
 	Con_PrintLinef ("%s", engineversion);
 
@@ -1437,7 +1447,7 @@ to run quit through here before the final handoff to the sys code.
 */
 void Host_Shutdown(void)
 {
-	static qboolean isdown = false;
+	static qbool isdown = false;
 
 	if (isdown)
 	{

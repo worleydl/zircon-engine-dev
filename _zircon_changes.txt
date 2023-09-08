@@ -21,17 +21,41 @@ Zircon is DarkPlaces with:
 
 There are several dozen minor improvements to provide a great as possible and polished experience using Zircon.  It is hoped that many/most/all of these changes will eventually find their way into official DarkPlaces, however Zircon will always exist as a separate engine with the intention of adding some new QuakeC extensions and other new features.  As an example, one thought is make Zircon support 3D menus in CSQC instead of simply 2D menus.
 
-Zircon test mods are: Quake, Nehahra, Hipnotic, the game Xonotic and the Quake 1.5 mod.  Testing of Zircon has been done in single player, on Quake servers especially coop and on Quakeworld servers.
+Zircon test mods are: Quake, Nehahra, Hipnotic, the game Xonotic and the Quake 1.5 mod and Quake Combat +.  Testing of Zircon has been done in single player, on Quake servers especially coop and on Quakeworld servers.
 
 The cut-copy paste is not yet compatible with utf-8 enabled, which does not affect Quake but does affect Xonotic.  This is on the todo list.
 
 Baker
+
+// September 6 Release
+1. Quake Remaster HUD / Q 64 (sbar_quake 2) fixed ammo icon with axe selected.
+2. SDL2 build: better mouse cursor behavior, shows clearly during demoplay.
+3. SDL2 build: fixed missing Window title bar icon (sdl2.dll update seemed to fix).
+4. SDL2 build, Windows: fixed fullscreen modes not listing
+5. SDL2 build, Windows: fixed fps cap
+6. SDL2 build, Windows: fixed minimumized crash
+7. SDL2 build: use "zircon_command_line.txt" if in same folder as .exe
+8. 64-bit lightmaps fix that originated in Quakespasm (untested, not sure of a test map)
+9. SDL2 build: Autocomplete was acting slightly different in SDL2 build, resolved.
+10. zircon_command_line.txt --> if exists in folder with .exe will act as command line if no command line is used.
+	zircon_command_line.txt --> "-game travail"
+			In above example: Travail game would start if zircon.exe is started.
+11. zircon_command_line.txt now works on Linux.			
+
+ISSUE: Some versions of SDL2.dll, SDL2 sound startup is unable to find a matching sound setup resulting in no sound.
+WATCHING: Make sure all of the many ways to exit and enter the console clear selection and hightlight.  They look like they do ...
+TODO: r_waterwarp 2 while connected to a server can act up.
+TODO: see if static build of SDL2 can be made to work, crazy to fight other engines possibly incompatible DLL versions. (32 bit, 64 bit, 2.X 2.1X.X 2.2X.X etc)
+TODO: Discovered -basedir cmdline opt acts weird with particles (effectinfo?) folder (WHY?)
+TODO: -basedir cmdline opt may behave inappropriately in other circumstances
+NOTE: SDL2 dll must be in folder with .exe on Windows at startup.  Cannot easily go into bin32 folder due to sdl lib main().
 
 // September 1 Release
 1. Fix bug of warp deformation 2 affecting lianas in Arcane Dimensions and other non-lava surfaces.
 2. Removed DX9 renderer pathways.  Current DarkPlaces does not use.
 3. Codeblocks Windows project file for Zircon, can build SDL2 builds only for Windows. (Distant todo: make it work on Linux also).
 4. Reorganization of source code, in part to support Android builds in the future using SDL2. (Currently, it does not compile in full and if it did, it would not run.  The Android code in DarkPlaces is not for SDL2.).
+5. Notes: Windows SDL2 compiled with VC has no sound in either the release or debug builds.  The CodeBlocks builds have sound in both.  None of the SDL Win builds have app icons in the title bar while running (fix that).
 
 // August 25 Release
 1. Quake 64 / Quake Remaster HUD available (sbar_quake 2)

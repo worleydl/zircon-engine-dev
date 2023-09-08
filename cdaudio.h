@@ -20,18 +20,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct cl_cdstate_s
 {
-	qboolean Valid;
-	qboolean Playing;
-	qboolean PlayLooping;
+	qbool Valid;
+	qbool Playing;
+	qbool PlayLooping;
 	unsigned char PlayTrack;
 }
 cl_cdstate_t;
 
 //extern cl_cdstate_t cd;
 
-extern qboolean cdValid;
-extern qboolean cdPlaying;
-extern qboolean cdPlayLooping;
+extern qbool cdValid;
+extern qbool cdPlaying;
+extern qbool cdPlayLooping;
 extern unsigned char cdPlayTrack;
 
 extern cvar_t cdaudioinitialized;
@@ -39,8 +39,8 @@ extern cvar_t cdaudioinitialized;
 int CDAudio_Init(void);
 void CDAudio_Open(void);
 void CDAudio_Close(void);
-void CDAudio_Play(int track, qboolean looping);
-void CDAudio_Play_byName (const char *trackname, qboolean looping, qboolean tryreal, float startposition);
+void CDAudio_Play(int track, qbool looping);
+void CDAudio_Play_byName (const char *trackname, qbool looping, qbool tryreal, float startposition);
 void CDAudio_Stop(void);
 void CDAudio_Pause(void);
 void CDAudio_Resume(void);
@@ -48,7 +48,7 @@ int CDAudio_Startup(void);
 void CDAudio_Shutdown(void);
 void CDAudio_Update(void);
 float CDAudio_GetPosition(void);
-void CDAudio_StartPlaylist(qboolean resume);
+void CDAudio_StartPlaylist(qbool resume);
 
 // Prototypes of the system dependent functions
 void CDAudio_SysEject (void);

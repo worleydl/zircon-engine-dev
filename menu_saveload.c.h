@@ -63,7 +63,7 @@ void M_Menu_Save_f (void)
 	if (!sv.active)
 		return;
 #if 1
-	// LordHavoc: allow saving multiplayer games
+	// LadyHavoc: allow saving multiplayer games
 	if (cl.islocalgame && cl.intermission)
 		return;
 #else

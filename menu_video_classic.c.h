@@ -199,10 +199,10 @@ static void M_Menu_Video_AdjustSliders (int dir)
 			if (menu_video_resolutions[menu_video_resolution].width < 600)
 				continue;
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(CORE_SDL)
 			if (menu_video_resolutions[menu_video_resolution].width > vid.desktop_width)
 				continue;
-#endif
+#endif // defined(WIN32) && !defined(CORE_SDL)
 
 			if (menu_video_resolutions[menu_video_resolution].width >= vid_minwidth.integer && menu_video_resolutions[menu_video_resolution].height >= vid_minheight.integer)
 				break;

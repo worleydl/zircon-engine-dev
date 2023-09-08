@@ -46,7 +46,7 @@ static cvar_t sv_masters [] =
 	{CVAR_SAVE, "sv_master2", "", "user-chosen master server 2"},
 	{CVAR_SAVE, "sv_master3", "", "user-chosen master server 3"},
 	{CVAR_SAVE, "sv_master4", "", "user-chosen master server 4"},
-	{0, "sv_masterextra1", "ghdigital.com", "ghdigital.com - default master server 1 (admin: LordHavoc)"}, // admin: LordHavoc
+	{0, "sv_masterextra1", "ghdigital.com", "ghdigital.com - default master server 1 (admin: LadyHavoc)"}, // admin: LadyHavoc
 	{0, "sv_masterextra2", "dpmaster.deathmask.net", "dpmaster.deathmask.net - default master server 2 (admin: Willis)"}, // admin: Willis
 	{0, "sv_masterextra3", "dpmaster.tchr.no", "dpmaster.tchr.no - default master server 3 (admin: tChr)"}, // admin: tChr
 	{0, NULL, NULL, NULL}
@@ -117,8 +117,8 @@ challenge_t challenges[MAX_CHALLENGES];
 
 #ifdef CONFIG_MENU
 /// this is only false if there are still servers left to query
-static qboolean serverlist_querysleep = true;
-static qboolean serverlist_paused = false;
+static qbool serverlist_querysleep = true;
+static qbool serverlist_paused = false;
 /// this is pushed a second or two ahead of realtime whenever a master server
 /// reply is received, to avoid issuing queries while master replies are still
 /// flooding in (which would make a mess of the ping times)
@@ -162,7 +162,7 @@ int serverlist_maxcachecount = 0;
 int serverlist_cachecount = 0;
 serverlist_entry_t *serverlist_cache = NULL;
 
-qboolean serverlist_consoleoutput;
+qbool serverlist_consoleoutput;
 
 static int nFavorites = 0;
 static lhnetaddress_t favorites[MAX_FAVORITESERVERS];
@@ -218,7 +218,7 @@ static void _ServerList_ViewList_Helper_Remove( int index )
 }
 
 /// \returns true if A should be inserted before B
-static qboolean _ServerList_Entry_Compare( serverlist_entry_t *A, serverlist_entry_t *B )
+static qbool _ServerList_Entry_Compare( serverlist_entry_t *A, serverlist_entry_t *B )
 {
 	int result = 0; // > 0 if for numbers A > B and for text if A < B
 
@@ -300,7 +300,7 @@ static qboolean _ServerList_Entry_Compare( serverlist_entry_t *A, serverlist_ent
 	return A < B;
 }
 
-static qboolean _ServerList_CompareInt( int A, serverlist_maskop_t op, int B )
+static qbool _ServerList_CompareInt( int A, serverlist_maskop_t op, int B )
 {
 	// This should actually be done with some intermediate and end-of-function return
 	switch( op ) {
@@ -326,7 +326,7 @@ static qboolean _ServerList_CompareInt( int A, serverlist_maskop_t op, int B )
 	}
 }
 
-static qboolean _ServerList_CompareStr( const char *A, serverlist_maskop_t op, const char *B )
+static qbool _ServerList_CompareStr( const char *A, serverlist_maskop_t op, const char *B )
 {
 	int i;
 	char bufferA[ 1400 ], bufferB[ 1400 ]; // should be more than enough
@@ -368,7 +368,7 @@ static qboolean _ServerList_CompareStr( const char *A, serverlist_maskop_t op, c
 	}
 }
 
-static qboolean _ServerList_Entry_Mask( serverlist_mask_t *mask, serverlist_info_t *info )
+static qbool _ServerList_Entry_Mask( serverlist_mask_t *mask, serverlist_info_t *info )
 {
 	if( !_ServerList_CompareInt( info->ping, mask->tests[SLIF_PING], mask->info.ping ) )
 		return false;
@@ -580,7 +580,7 @@ static void _ServerList_Test(void)
 #endif
 
 
-void ServerList_QueryList(qboolean resetcache, qboolean querydp, qboolean queryqw, qboolean consoleoutput)
+void ServerList_QueryList(qbool resetcache, qbool querydp, qbool queryqw, qbool consoleoutput)
 {
 	masterquerytime = realtime;
 	masterquerycount = 0;
@@ -672,7 +672,7 @@ int NetConn_WriteString(lhnetsocket_t *mysocket, const char *string, const lhnet
 	return NetConn_Write(mysocket, string, (int)strlen(string), peeraddress);
 }
 
-qboolean NetConn_CanSend(netconn_t *conn)
+qbool NetConn_CanSend(netconn_t *conn)
 {
 	conn->outgoing_packetcounter = (conn->outgoing_packetcounter + 1) % NETGRAPH_PACKETS;
 	conn->outgoing_netgraph[conn->outgoing_packetcounter].time            = realtime;
@@ -727,7 +727,7 @@ static int NetConn_AddCryptoFlag(crypto_t *crypto)
 	return flag;
 }
 
-int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolversion_t protocol, int rate, int burstsize, qboolean quakesignon_suppressreliables)
+int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolversion_t protocol, int rate, int burstsize, qbool quakesignon_suppressreliables)
 {
 	int totallen = 0;
 	unsigned char sendbuffer[NET_HEADERSIZE+NET_MAXMESSAGE];
@@ -744,7 +744,7 @@ int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolvers
 	if (protocol == PROTOCOL_QUAKEWORLD)
 	{
 		int packetLen;
-		qboolean sendreliable;
+		qbool sendreliable;
 
 		// note that it is ok to send empty messages to the qw server,
 		// otherwise it won't respond to us at all
@@ -935,12 +935,12 @@ int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolvers
 	return 0;
 }
 
-qboolean NetConn_HaveClientPorts(void)
+qbool NetConn_HaveClientPorts(void)
 {
 	return !!cl_numsockets;
 }
 
-qboolean NetConn_HaveServerPorts(void)
+qbool NetConn_HaveServerPorts(void)
 {
 	return !!sv_numsockets;
 }
@@ -1011,7 +1011,7 @@ void NetConn_CloseServerPorts(void)
 			LHNET_CloseSocket(sv_sockets[sv_numsockets - 1]);
 }
 
-static qboolean NetConn_OpenServerPort(const char *addressstring, lhnetaddresstype_t addresstype, int defaultport, int range)
+static qbool NetConn_OpenServerPort(const char *addressstring, lhnetaddresstype_t addresstype, int defaultport, int range)
 {
 	lhnetaddress_t address;
 	lhnetsocket_t *s;
@@ -1072,7 +1072,7 @@ void NetConn_OpenServerPorts(int opennetports)
 	if (opennetports)
 	{
 #ifndef NOSUPPORTIPV6
-		qboolean ip4success = NetConn_OpenServerPort(net_address.string, LHNETADDRESSTYPE_INET4, port, 100);
+		qbool ip4success = NetConn_OpenServerPort(net_address.string, LHNETADDRESSTYPE_INET4, port, 100);
 		NetConn_OpenServerPort(net_address_ipv6.string, LHNETADDRESSTYPE_INET6, port, ip4success ? 1 : 100);
 #else
 		NetConn_OpenServerPort(net_address.string, LHNETADDRESSTYPE_INET4, port, 100);
@@ -1110,7 +1110,7 @@ netconn_t *NetConn_Open(lhnetsocket_t *mysocket, lhnetaddress_t *peeraddress)
 	conn->message.data = conn->messagedata;
 	conn->message.maxsize = sizeof(conn->messagedata);
 	conn->message.cursize = 0;
-	// LordHavoc: (inspired by ProQuake) use a short connect timeout to
+	// LadyHavoc: (inspired by ProQuake) use a short connect timeout to
 	// reduce effectiveness of connection request floods
 	conn->timeout = realtime + net_connecttimeout.value;
 	LHNETADDRESS_ToString(&conn->peeraddress, conn->address, sizeof(conn->address), true);
@@ -1212,7 +1212,7 @@ static int NetConn_ReceivedMessage(netconn_t *conn, const unsigned char *data, s
 	if (protocol == PROTOCOL_QUAKEWORLD)
 	{
 		unsigned int sequence, sequence_ack;
-		qboolean reliable_ack, reliable_message;
+		qbool reliable_ack, reliable_message;
 		int count;
 		//int qport;
 
@@ -1692,7 +1692,7 @@ static void NetConn_ClientParsePacket_ServerList_UpdateCache(int n)
 }
 
 // returns true, if it's sensible to continue the processing
-static qboolean NetConn_ClientParsePacket_ServerList_PrepareQuery( int protocol, const char *ipstring, qboolean isfavorite ) {
+static qbool NetConn_ClientParsePacket_ServerList_PrepareQuery( int protocol, const char *ipstring, qbool isfavorite ) {
 	int n;
 	serverlist_entry_t *entry;
 
@@ -1735,7 +1735,7 @@ static qboolean NetConn_ClientParsePacket_ServerList_PrepareQuery( int protocol,
 	return true;
 }
 
-static void NetConn_ClientParsePacket_ServerList_ParseDPList(lhnetaddress_t *senderaddress, const unsigned char *data, int length, qboolean isextended)
+static void NetConn_ClientParsePacket_ServerList_ParseDPList(lhnetaddress_t *senderaddress, const unsigned char *data, int length, qbool isextended)
 {
 	masterreplycount++;
 	if (serverlist_consoleoutput)
@@ -1814,7 +1814,7 @@ static void NetConn_ClientParsePacket_ServerList_ParseDPList(lhnetaddress_t *sen
 
 static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *data, int length, lhnetaddress_t *peeraddress)
 {
-	qboolean fromserver;
+	qbool fromserver;
 	int ret, c;
 	char *string, addressstring2[128];
 	char stringbuf[16384];
@@ -2303,7 +2303,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			if (developer_extra.integer)
 				Con_DPrintf("Datagram_ParseConnectionless: received CCREP_SERVER_INFO from %s.\n", addressstring2);
 #ifdef CONFIG_MENU
-			// LordHavoc: because the quake server may report weird addresses
+			// LadyHavoc: because the quake server may report weird addresses
 			// we just ignore it and keep the real address
 			MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
 			// search the cache for this server and update it
@@ -2530,7 +2530,7 @@ static void NetConn_BuildChallengeString(char *buffer, int bufferlength)
 }
 
 /// (div0) build the full response only if possible; better a getinfo response than no response at all if getstatus won't fit
-static qboolean NetConn_BuildStatusResponse(const char* challenge, char* out_msg, size_t out_size, qboolean fullstatus)
+static qbool NetConn_BuildStatusResponse(const char* challenge, char* out_msg, size_t out_size, qbool fullstatus)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	char qcstatus[256];
@@ -2696,7 +2696,7 @@ bad:
 	return false;
 }
 
-static qboolean NetConn_PreventFlood(lhnetaddress_t *peeraddress, server_floodaddress_t *floodlist, size_t floodlength, double floodtime, qboolean renew)
+static qbool NetConn_PreventFlood(lhnetaddress_t *peeraddress, server_floodaddress_t *floodlist, size_t floodlength, double floodtime, qbool renew)
 {
 	size_t floodslotnum, bestfloodslotnum;
 	double bestfloodtime;
@@ -2759,9 +2759,9 @@ void NetConn_ClearFlood(lhnetaddress_t *peeraddress, server_floodaddress_t *floo
 	}
 }
 
-typedef qboolean (*rcon_matchfunc_t) (lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen);
+typedef qbool (*rcon_matchfunc_t) (lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen);
 
-static qboolean hmac_mdfour_time_matching(lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen)
+static qbool hmac_mdfour_time_matching(lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen)
 {
 	char mdfourbuf[16];
 	long t1, t2;
@@ -2777,7 +2777,7 @@ static qboolean hmac_mdfour_time_matching(lhnetaddress_t *peeraddress, const cha
 	return !memcmp(mdfourbuf, hash, 16);
 }
 
-static qboolean hmac_mdfour_challenge_matching(lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen)
+static qbool hmac_mdfour_challenge_matching(lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen)
 {
 	char mdfourbuf[16];
 	int i;
@@ -2806,7 +2806,7 @@ static qboolean hmac_mdfour_challenge_matching(lhnetaddress_t *peeraddress, cons
 	return true;
 }
 
-static qboolean plaintext_matching(lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen)
+static qbool plaintext_matching(lhnetaddress_t *peeraddress, const char *password, const char *hash, const char *s, int slen)
 {
 	return String_Does_Match(password, hash);
 }
@@ -2816,9 +2816,9 @@ static const char *RCon_Authenticate(lhnetaddress_t *peeraddress, const char *pa
 {
 	const char *text, *userpass_start, *userpass_end, *userpass_startpass;
 	static char buf[MAX_INPUTLINE];
-	qboolean hasquotes;
-	qboolean restricted = false;
-	qboolean have_usernames = false;
+	qbool hasquotes;
+	qbool restricted = false;
+	qbool have_usernames = false;
 	static char vabuf[1024];
 
 	userpass_start = rcon_password.string;
@@ -2910,7 +2910,7 @@ allow:
 	return va(vabuf, sizeof(vabuf), "%srcon", restricted ? "restricted " : "");
 }
 
-static void RCon_Execute(lhnetsocket_t *mysocket, lhnetaddress_t *peeraddress, const char *addressstring2, const char *userlevel, const char *s, const char *endpos, qboolean proquakeprotocol)
+static void RCon_Execute(lhnetsocket_t *mysocket, lhnetaddress_t *peeraddress, const char *addressstring2, const char *userlevel, const char *s, const char *endpos, qbool proquakeprotocol)
 {
 	if(userlevel)
 	{
@@ -2954,7 +2954,7 @@ static int NetConn_ServerParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 	double besttime;
 	char *string, response[1400], addressstring2[128];
 	static char stringbuf[16384]; // server only
-	qboolean islocal = (LHNETADDRESS_GetAddressType(peeraddress) == LHNETADDRESSTYPE_LOOP);
+	qbool islocal = (LHNETADDRESS_GetAddressType(peeraddress) == LHNETADDRESSTYPE_LOOP);
 	char senddata[NET_HEADERSIZE+NET_MAXMESSAGE+CRYPTO_HEADERSIZE];
 	size_t sendlength, response_len;
 	char infostringvalue[MAX_INPUTLINE];
@@ -3638,7 +3638,7 @@ void NetConn_SleepMicroseconds(int microseconds)
 }
 
 #ifdef CONFIG_MENU
-void NetConn_QueryMasters(qboolean querydp, qboolean queryqw)
+void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 {
 	int i, j;
 	int masternum;

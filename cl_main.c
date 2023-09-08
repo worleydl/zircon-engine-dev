@@ -170,7 +170,7 @@ void CL_ClearState(void)
 	cl.decals = (decal_t *) Mem_Alloc(cls.levelmempool, cl.max_decals * sizeof(decal_t));
 	cl.showlmps = NULL;
 
-	// LordHavoc: have to set up the baseline info for alpha and other stuff
+	// LadyHavoc: have to set up the baseline info for alpha and other stuff
 	for (i = 0;i < cl.max_entities;i++)
 	{
 		cl.entities[i].state_baseline = defaultstate;
@@ -218,10 +218,10 @@ void CL_ClearState(void)
 	CL_Screen_NewMap();
 }
 
-void CL_SetInfo(const char *key, const char *value, qboolean send, qboolean allowstarkey, qboolean allowmodel, qboolean quiet)
+void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstarkey, qbool allowmodel, qbool quiet)
 {
 	int i;
-	qboolean fail = false;
+	qbool fail = false;
 	char vabuf[1024];
 	if (!allowstarkey && key[0] == '*')
 		fail = true;
@@ -630,7 +630,7 @@ static float CL_LerpPoint(void)
 	if (cl_nettimesyncboundmode.integer == 1)
 		cl.time = bound(cl.mtime[1], cl.time, cl.mtime[0]);
 
-	// LordHavoc: lerp in listen games as the server is being capped below the client (usually)
+	// LadyHavoc: lerp in listen games as the server is being capped below the client (usually)
 	if (cl.mtime[0] <= cl.mtime[1])
 	{
 		cl.time = cl.mtime[0];
@@ -940,7 +940,7 @@ void CL_SetEntityColormapColors(entity_render_t *ent, int colormap)
 }
 
 // note this is a recursive function, recursionlimit should be 32 or so on the initial call
-static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qboolean interpolate)
+static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interpolate)
 {
 	const matrix4x4_t *matrix;
 	matrix4x4_t blendmatrix, tempmatrix, matrix2;
@@ -1220,7 +1220,7 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 	// handle particle trails and such effects now that we know where this
 	// entity is in the world...
 	trailtype = EFFECT_NONE;
-	// LordHavoc: if the entity has no effects, don't check each
+	// LadyHavoc: if the entity has no effects, don't check each
 	if (e->render.effects & (EF_BRIGHTFIELD | EF_FLAME | EF_STARDUST))
 	{
 		if (e->render.effects & EF_BRIGHTFIELD)
@@ -1243,7 +1243,7 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 	// muzzleflash fades over time
 	if (e->persistent.muzzleflash > 0)
 		e->persistent.muzzleflash -= bound(0, cl.time - cl.oldtime, 0.1) * 20;
-	// LordHavoc: if the entity has no effects, don't check each
+	// LadyHavoc: if the entity has no effects, don't check each
 	if (e->render.effects && !(e->render.crflags & RENDER_VIEWMODEL))
 	{
 		if (e->render.effects & EF_GIB)
@@ -1258,7 +1258,7 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 			trailtype = EFFECT_TR_ROCKET;
 		else if (e->render.effects & EF_GRENADE)
 		{
-			// LordHavoc: e->render.alpha == -1 is for Nehahra dem compatibility (cigar smoke)
+			// LadyHavoc: e->render.alpha == -1 is for Nehahra dem compatibility (cigar smoke)
 			trailtype = e->render.alpha == -1 ? EFFECT_TR_NEHAHRASMOKE : EFFECT_TR_GRENADE;
 		}
 		else if (e->render.effects & EF_TRACER3)
@@ -1450,7 +1450,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 	dlightcolor[0] = 0;
 	dlightcolor[1] = 0;
 	dlightcolor[2] = 0;
-	// LordHavoc: if the entity has no effects, don't check each
+	// LadyHavoc: if the entity has no effects, don't check each
 	if (e->render.effects & (EF_BRIGHTFIELD | EF_DIMLIGHT | EF_BRIGHTLIGHT | EF_RED | EF_BLUE | EF_FLAME | EF_STARDUST)) {
 		if (e->render.effects & EF_BRIGHTFIELD)
 		{
@@ -1471,7 +1471,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 			dlightcolor[1] += 3.00f;
 			dlightcolor[2] += 3.00f;
 		}
-		// LordHavoc: more effects
+		// LadyHavoc: more effects
 		if (e->render.effects & EF_RED) // red
 		{
 			dlightradius = max(dlightradius, 200);
@@ -1507,7 +1507,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		R_RTLight_Update(&r_refdef.scene.templights[r_refdef.scene.numlights], false, &tempmatrix, color, -1, NULL, true, 0, 0.25, 0, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
-	// LordHavoc: if the model has no flags, don't check each
+	// LadyHavoc: if the model has no flags, don't check each
 	if (e->render.model && e->render.effects && !(e->render.crflags & RENDER_VIEWMODEL))
 	{
 		if (e->render.effects & EF_GIB)
@@ -1522,13 +1522,13 @@ static void CL_LinkNetworkEntity(entity_t *e)
 			trailtype = EFFECT_TR_ROCKET;
 		else if (e->render.effects & EF_GRENADE)
 		{
-			// LordHavoc: e->render.alpha == -1 is for Nehahra dem compatibility (cigar smoke)
+			// LadyHavoc: e->render.alpha == -1 is for Nehahra dem compatibility (cigar smoke)
 			trailtype = e->render.alpha == -1 ? EFFECT_TR_NEHAHRASMOKE : EFFECT_TR_GRENADE;
 		}
 		else if (e->render.effects & EF_TRACER3)
 			trailtype = EFFECT_TR_VORESPIKE;
 	}
-	// LordHavoc: customizable glow
+	// LadyHavoc: customizable glow
 	if (e->state_current.glowsize)
 	{
 		// * 4 for the expansion from 0-255 to 0-1023 range,
@@ -1726,7 +1726,7 @@ void CL_Beam_CalculatePositions(const beam_t *b, vec3_t start, vec3_t end)
 	{
 		if (cl_beams_quakepositionhack.integer && !chase_active.integer)
 		{
-			// LordHavoc: this is a stupid hack from Quake that makes your
+			// LadyHavoc: this is a stupid hack from Quake that makes your
 			// lightning appear to come from your waist and cover less of your
 			// view
 			// in Quake this hack was applied to all players (causing the
@@ -1738,7 +1738,7 @@ void CL_Beam_CalculatePositions(const beam_t *b, vec3_t start, vec3_t end)
 		{
 			vec3_t dir, localend;
 			vec_t len;
-			// LordHavoc: this updates the beam direction to match your
+			// LadyHavoc: this updates the beam direction to match your
 			// viewangles
 			VectorSubtract(end, start, dir);
 			len = VectorLength(dir);
@@ -1964,7 +1964,7 @@ void CL_UpdateWorld(void)
 	r_refdef.scene.time = cl.time;
 }
 
-// LordHavoc: pausedemo command
+// LadyHavoc: pausedemo command
 static void CL_PauseDemo_f (void)
 {
 	cls.demopaused = !cls.demopaused;
@@ -2277,11 +2277,11 @@ void CL_Locs_Reload_f(void)
 
 	CL_Locs_Clear_f();
 
-	// try maps/something.loc first (LordHavoc: where I think they should be)
+	// try maps/something.loc first (LadyHavoc: where I think they should be)
 	dpsnprintf(locfilename, sizeof(locfilename), "%s.loc", cl.worldnamenoextension);
 	filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, false, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 	if (!filedata) {
-		// try proquake name as well (LordHavoc: I hate path mangling)
+		// try proquake name as well (LadyHavoc: I hate path mangling)
 		dpsnprintf(locfilename, sizeof(locfilename), "locs/%s.loc", cl.worldbasename);
 		filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, false, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 		if (!filedata)
@@ -2484,7 +2484,7 @@ void CL_Init (void)
 	Cmd_AddCommand ("fog", CL_Fog_f, "set global fog parameters (density red green blue [alpha [mindist [maxdist [top [fadedepth]]]]])");
 	Cmd_AddCommand ("fog_heighttexture", CL_Fog_HeightTexture_f, "set global fog parameters (density red green blue alpha mindist maxdist top depth textures/mapname/fogheight.tga)");
 
-	// LordHavoc: added pausedemo
+	// LadyHavoc: added pausedemo
 	Cmd_AddCommand ("pausedemo", CL_PauseDemo_f, "pause demo playback (can also safely pause demo recording if using QUAKE, QUAKEDP or NEHAHRAMOVIE protocol, useful for making movies)");
 
 	Cmd_AddCommand ("cl_areastats", CL_AreaStats_f, "prints statistics on entity culling during collision traces");

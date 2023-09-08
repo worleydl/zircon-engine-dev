@@ -1,3 +1,5 @@
+#ifdef CORE_SDL
+
 /*
 Copyright (C) 2004 Andreas Kirsch
 
@@ -17,7 +19,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include <math.h>
-#include <SDL.h>
+#ifdef _MSC_VER
+	#include <SDL2/SDL.h>
+#else
+	#include <SDL.h>
+#endif // _MSC_VER
 
 #include "quakedef.h"
 
@@ -91,7 +97,7 @@ Create "snd_renderbuffer" with the proper sound format if the call is successful
 May return a suggested format if the requested format isn't available
 ====================
 */
-qboolean SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
+qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 {
 	unsigned int buffersize;
 	SDL_AudioSpec wantspec;
@@ -222,7 +228,7 @@ SndSys_LockRenderBuffer
 Get the exclusive lock on "snd_renderbuffer"
 ====================
 */
-qboolean SndSys_LockRenderBuffer (void)
+qbool SndSys_LockRenderBuffer (void)
 {
 	SDL_LockAudio();
 	return true;
@@ -252,3 +258,5 @@ void SndSys_SendKeyEvents(void)
 {
 	// not supported
 }
+
+#endif // CORE_SDL

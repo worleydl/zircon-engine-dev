@@ -31,7 +31,7 @@ typedef struct server_static_s
 	/// episode completion information
 	int serverflags;
 	/// cleared when at SV_SpawnServer
-	qboolean changelevel_issued;
+	qbool changelevel_issued;
 	/// server infostring
 	char serverinfo[MAX_SERVERINFO_STRING];
 	// performance data
@@ -55,8 +55,8 @@ typedef struct server_static_s
 	unsigned char *csqc_progdata_deflated;
 
 	// independent server thread (when running client)
-	qboolean threaded; // true if server is running on separate thread
-	qboolean volatile threadstop;
+	qbool threaded; // true if server is running on separate thread
+	qbool volatile threadstop;
 	void *threadmutex;
 	void *thread;
 } server_static_t;
@@ -77,12 +77,12 @@ server_floodaddress_t;
 typedef struct server_s
 {
 	/// false if only a net client
-	qboolean active;
+	qbool active;
 
-	qboolean paused;
+	qbool paused;
 	double pausedstart;
 	/// handle connections specially
-	qboolean loadgame;
+	qbool loadgame;
 
 	/// one of the PROTOCOL_ values
 	protocolversion_t protocol;
@@ -114,12 +114,12 @@ typedef struct server_s
 	char worldnamenoextension[MAX_QPATH]; // maps/%s
 	struct model_s *worldmodel;
 	// NULL terminated
-	// LordHavoc: precaches are now MAX_QPATH rather than a pointer
+	// LadyHavoc: precaches are now MAX_QPATH rather than a pointer
 	// updated by SV_ModelIndex
 	char model_precache[MAX_MODELS][MAX_QPATH];
 	struct model_s *models[MAX_MODELS];
 	// NULL terminated
-	// LordHavoc: precaches are now MAX_QPATH rather than a pointer
+	// LadyHavoc: precaches are now MAX_QPATH rather than a pointer
 	// updated by SV_SoundIndex
 	char sound_precache[MAX_SOUNDS][MAX_QPATH];
 	char lightstyles[MAX_LIGHTSTYLES][64];
@@ -134,7 +134,7 @@ typedef struct server_s
 	unsigned char reliable_datagram_buf[NET_MAXMESSAGE];
 
 	sizebuf_t signon;
-	/// LordHavoc: increased signon message buffer from 8192
+	/// LadyHavoc: increased signon message buffer from 8192
 	unsigned char signon_buf[NET_MAXMESSAGE];
 
 	/// connection flood blocking
@@ -143,7 +143,7 @@ typedef struct server_s
 	server_floodaddress_t connectfloodaddresses[MAX_CONNECTFLOODADDRESSES];
 	server_floodaddress_t getstatusfloodaddresses[MAX_GETSTATUSFLOODADDRESSES];
 
-	qboolean particleeffectnamesloaded;
+	qbool particleeffectnamesloaded;
 	char particleeffectname[MAX_PARTICLEEFFECTNAME][MAX_QPATH];
 
 	int writeentitiestoclient_stats_culled_pvs;
@@ -189,15 +189,15 @@ typedef struct csqcentityframedb_s
 typedef struct client_s
 {
 	/// false = empty client slot
-	qboolean active;
+	qbool active;
 	/// false = don't do ClientDisconnect on drop
-	qboolean clientconnectcalled;
+	qbool clientconnectcalled;
 	/// false = don't allow spawn
-	qboolean prespawned;
+	qbool prespawned;
 	/// false = don't allow begin
-	qboolean spawned;
+	qbool spawned;
 	/// false = don't send datagrams
-	qboolean begun;
+	qbool begun;
 	/// 1 = send svc_serverinfo and advance to 2, 2 doesn't send, then advances to 0 (allowing unlimited sending) when prespawn is received
 	int sendsignon;
 
@@ -232,7 +232,7 @@ typedef struct client_s
 	/// ping_times[num_pings%NUM_PING_TIMES]
 	int num_pings;
 #endif
-	/// LordHavoc: can be used for prediction or whatever...
+	/// LadyHavoc: can be used for prediction or whatever...
 	float ping;
 
 	/// this is used by sv_clmovement_minping code
@@ -297,12 +297,12 @@ typedef struct client_s
 	// information on an active download if any
 	qfile_t *download_file;
 	int download_expectedposition; ///< next position the client should ack
-	qboolean download_started;
+	qbool download_started;
 	char download_name[MAX_QPATH];
-	qboolean download_deflate;
+	qbool download_deflate;
 
 	// fixangle data
-	qboolean fixangle_angles_set;
+	qbool fixangle_angles_set;
 	vec3_t fixangle_angles;
 
 	/// demo recording
@@ -346,9 +346,9 @@ typedef struct client_s
 #define	SOLID_BBOX				2		///< touch on edge, block
 #define	SOLID_SLIDEBOX			3		///< touch on edge, but not an onground
 #define	SOLID_BSP				4		///< bsp clip, touch on edge, block
-// LordHavoc: corpse code
+// LadyHavoc: corpse code
 #define	SOLID_CORPSE			5		///< same as SOLID_BBOX, except it behaves as SOLID_NOT against SOLID_SLIDEBOX objects (players/monsters)
-// LordHavoc: physics
+// LadyHavoc: physics
 // VorteX: now these fields are deprecated, as geomtype is more flexible
 #define	SOLID_PHYSICS_BOX		32		///< physics object (mins, maxs, mass, origin, axis_forward, axis_left, axis_up, velocity, spinvelocity)
 #define	SOLID_PHYSICS_SPHERE	33		///< physics object (mins, maxs, mass, origin, axis_forward, axis_left, axis_up, velocity, spinvelocity)
@@ -522,11 +522,11 @@ void SV_Init (void);
 
 void SV_StartParticle (vec3_t org, vec3_t dir, int color, int count);
 void SV_StartEffect (vec3_t org, int modelindex, int startframe, int framecount, int framerate);
-void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int volume, float attenuation, qboolean reliable, float speed);
+void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int volume, float attenuation, qbool reliable, float speed);
 void SV_StartPointSound (vec3_t origin, const char *sample, int volume, float attenuation, float speed);
 
 void SV_ConnectClient (int clientnum, netconn_t *netconnection);
-void SV_DropClient (qboolean crash);
+void SV_DropClient (qbool crash);
 
 void SV_SendClientMessages(void);
 
@@ -562,9 +562,9 @@ void SV_Physics (void);
 void SV_Physics_ClientMove (void);
 //void SV_Physics_ClientEntity (prvm_edict_t *ent);
 
-qboolean SV_PlayerCheckGround (prvm_edict_t *ent);
-qboolean SV_CheckBottom (prvm_edict_t *ent);
-qboolean SV_movestep (prvm_edict_t *ent, vec3_t move, qboolean relink, qboolean noenemy, qboolean settrace);
+qbool SV_PlayerCheckGround (prvm_edict_t *ent);
+qbool SV_CheckBottom (prvm_edict_t *ent);
+qbool SV_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool noenemy, qbool settrace);
 
 /*! Needs to be called any time an entity changes origin, mins, maxs, or solid
  * sets ent->v.absmin and ent->v.absmax
@@ -577,11 +577,11 @@ void SV_LinkEdict_TouchAreaGrid_Call(prvm_edict_t *touch, prvm_edict_t *ent); //
 /*! move an entity that is stuck by small amounts in various directions to try to nudge it back into the collision hull
  * returns true if it found a better place
  */
-qboolean SV_UnstickEntity (prvm_edict_t *ent);
+qbool SV_UnstickEntity (prvm_edict_t *ent);
 /*! move an entity that is stuck out of the surface it is stuck in (can move large amounts)
  * returns true if it found a better place
  */
-qboolean SV_NudgeOutOfSolid(prvm_edict_t *ent);
+qbool SV_NudgeOutOfSolid(prvm_edict_t *ent);
 
 /// calculates hitsupercontentsmask for a generic qc entity
 int SV_GenericHitSuperContentsMask(const prvm_edict_t *edict);
@@ -591,7 +591,7 @@ trace_t SV_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 trace_t SV_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask);
 int SV_EntitiesInBox(const vec3_t mins, const vec3_t maxs, int maxedicts, prvm_edict_t **resultedicts);
 
-qboolean SV_CanSeeBox(int numsamples, vec_t enlarge, vec3_t eye, vec3_t entboxmins, vec3_t entboxmaxs);
+qbool SV_CanSeeBox(int numsamples, vec_t enlarge, vec3_t eye, vec3_t entboxmins, vec3_t entboxmaxs);
 
 int SV_PointSuperContents(const vec3_t point);
 
@@ -611,7 +611,7 @@ void SV_SetupVM(void);
 const char *Host_TimingReport(char *buf, size_t buflen); ///< for output in Host_Status_f
 
 int SV_GetPitchSign(prvm_prog_t *prog, prvm_edict_t *ent);
-void SV_GetEntityMatrix(prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qboolean viewmatrix);
+void SV_GetEntityMatrix(prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qbool viewmatrix);
 
 void SV_StartThread(void);
 void SV_StopThread(void);

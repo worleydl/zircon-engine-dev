@@ -1,3 +1,4 @@
+#ifdef CORE_SDL
 /*
 Copyright (C) 2003  T. Joseph Carter
 
@@ -22,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include <SDL2/SDL.h>
 #else
 	#include <SDL.h>
-#endif
+#endif // _MSC_VER
 
 
 #include <stdio.h>
@@ -31,55 +32,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "image.h"
 #include "utf8lib.h"
 
-#ifndef __IPHONEOS__
-#ifdef MACOSX
-#include <Carbon/Carbon.h>
-#include <IOKit/hidsystem/IOHIDLib.h>
-#include <IOKit/hidsystem/IOHIDParameter.h>
-#include <IOKit/hidsystem/event_status_driver.h>
-static cvar_t apple_mouse_noaccel = {CVAR_SAVE, "apple_mouse_noaccel", "1", "disables mouse acceleration while DarkPlaces is active"};
-static qboolean vid_usingnoaccel;
-static double originalMouseSpeed = -1.0;
-io_connect_t IN_GetIOHandle(void)
-{
-	io_connect_t iohandle = MACH_PORT_NULL;
-	kern_return_t status;
-	io_service_t iohidsystem = MACH_PORT_NULL;
-	mach_port_t masterport;
-
-	status = IOMasterPort(MACH_PORT_NULL, &masterport);
-	if(status != KERN_SUCCESS)
-		return 0;
-
-	iohidsystem = IORegistryEntryFromPath(masterport, kIOServicePlane ":/IOResources/IOHIDSystem");
-	if(!iohidsystem)
-		return 0;
-
-	status = IOServiceOpen(iohidsystem, mach_task_self(), kIOHIDParamConnectType, &iohandle);
-	IOObjectRelease(iohidsystem);
-
-	return iohandle;
-}
-#endif
-#endif
 
 #ifdef WIN32
-#define SDL_R_RESTART
+	#define SDL_R_RESTART
 #endif
 
 // Tell startup code that we have a client
 int cl_available = true;
 
-qboolean vid_supportrefreshrate = false;
+qbool vid_supportrefreshrate = false;
 
-static qboolean vid_usingmouse = false;
-static qboolean vid_usingmouse_relativeworks = false; // SDL2 workaround for unimplemented RelativeMouse mode
-static qboolean vid_usinghidecursor = false;
-static qboolean vid_hasfocus = false;
-static qboolean vid_isfullscreen;
-#if SDL_MAJOR_VERSION != 1
-static qboolean vid_usingvsync = false;
-#endif
+static qbool vid_usingmouse = false;
+static qbool vid_usingmouse_relativeworks = false; // SDL2 workaround for unimplemented RelativeMouse mode
+static qbool vid_usinghidecursor = false;
+static qbool vid_hasfocus = false;
+static qbool vid_isfullscreen;
+
+static qbool vid_usingvsync = false;
 static SDL_Joystick *vid_sdljoystick = NULL;
 // GAME_STEELSTORM specific
 static cvar_t *steelstorm_showing_map = NULL; // detect but do not create the cvar
@@ -89,46 +58,23 @@ static int win_half_width = 50;
 static int win_half_height = 50;
 static int video_bpp;
 
-#if SDL_MAJOR_VERSION == 1
-static SDL_Surface *video_screen;
-static int video_flags;
-#else
 static SDL_GLContext context;
 static SDL_Window *window;
 static int window_flags;
-#endif
-
 static vid_mode_t desktop_mode;
 
-/////////////////////////
 // Input handling
-////
-//TODO: Add error checking
 
 #ifndef SDLK_PERCENT
-#define SDLK_PERCENT '%'
-#if SDL_MAJOR_VERSION == 1
-#define SDLK_PRINTSCREEN SDLK_PRINT
-#define SDLK_SCROLLLOCK SDLK_SCROLLOCK
-#define SDLK_NUMLOCKCLEAR SDLK_NUMLOCK
-#define SDLK_KP_1 SDLK_KP1
-#define SDLK_KP_2 SDLK_KP2
-#define SDLK_KP_3 SDLK_KP3
-#define SDLK_KP_4 SDLK_KP4
-#define SDLK_KP_5 SDLK_KP5
-#define SDLK_KP_6 SDLK_KP6
-#define SDLK_KP_7 SDLK_KP7
-#define SDLK_KP_8 SDLK_KP8
-#define SDLK_KP_9 SDLK_KP9
-#define SDLK_KP_0 SDLK_KP0
-#endif
+	#define SDLK_PERCENT '%'
 #endif
 
 static int MapKey( unsigned int sdlkey )
 {
 	switch(sdlkey)
 	{
-	default: return 0;
+	// sdlkey can be Unicode codepoint for non-ascii keys, which are valid
+	default:                      return sdlkey & SDLK_SCANCODE_MASK ? 0 : sdlkey;
 //	case SDLK_UNKNOWN:            return K_UNKNOWN;
 	case SDLK_RETURN:             return K_ENTER;
 	case SDLK_ESCAPE:             return K_ESCAPE;
@@ -344,7 +290,6 @@ static int MapKey( unsigned int sdlkey )
 	case SDLK_RALT:               return K_ALT;
 //	case SDLK_RGUI:               return K_RGUI;
 //	case SDLK_MODE:               return K_MODE;
-#if SDL_MAJOR_VERSION != 1
 //	case SDLK_AUDIONEXT:          return K_AUDIONEXT;
 //	case SDLK_AUDIOPREV:          return K_AUDIOPREV;
 //	case SDLK_AUDIOSTOP:          return K_AUDIOSTOP;
@@ -370,22 +315,16 @@ static int MapKey( unsigned int sdlkey )
 //	case SDLK_KBDILLUMUP:         return K_KBDILLUMUP;
 //	case SDLK_EJECT:              return K_EJECT;
 //	case SDLK_SLEEP:              return K_SLEEP;
-#endif
 	}
 }
 
-qboolean VID_HasScreenKeyboardSupport(void)
+qbool VID_HasScreenKeyboardSupport(void)
 {
-#if SDL_MAJOR_VERSION != 1
 	return SDL_HasScreenKeyboardSupport() != SDL_FALSE;
-#else
-	return false;
-#endif
 }
 
-void VID_ShowKeyboard(qboolean show)
+void VID_ShowKeyboard(qbool show)
 {
-#if SDL_MAJOR_VERSION != 1
 	if (!SDL_HasScreenKeyboardSupport())
 		return;
 
@@ -399,95 +338,32 @@ void VID_ShowKeyboard(qboolean show)
 		if (SDL_IsTextInputActive())
 			SDL_StopTextInput();
 	}
-#endif
 }
 
-qboolean VID_ShowingKeyboard(void)
+qbool VID_ShowingKeyboard(void)
 {
-#if SDL_MAJOR_VERSION != 1
 	return SDL_IsTextInputActive() != 0;
-#else
-	return false;
-#endif
 }
 
-void VID_SetMouse(qboolean fullscreengrab, qboolean relative, qboolean hidecursor)
+void VID_SetMouse(qbool fullscreengrab, qbool relative, qbool hidecursor)
 {
-#ifndef DP_MOBILETOUCH
-#ifdef MACOSX
-	if(relative)
-		if(vid_usingmouse && (vid_usingnoaccel != !!apple_mouse_noaccel.integer))
-			VID_SetMouse(false, false, false); // ungrab first!
-#endif
-	if (vid_usingmouse != relative)
-	{
+	if (hidecursor) {
+		hidecursor = hidecursor;
+	}
+	if (vid_usingmouse != relative) {
 		vid_usingmouse = relative;
 		cl_ignoremousemoves = 2;
-#if SDL_MAJOR_VERSION == 1
-		SDL_WM_GrabInput( relative ? SDL_GRAB_ON : SDL_GRAB_OFF );
-#else
 		vid_usingmouse_relativeworks = SDL_SetRelativeMouseMode(relative ? SDL_TRUE : SDL_FALSE) == 0;
-//		Con_Printf("VID_SetMouse(%i, %i, %i) relativeworks = %i\n", (int)fullscreengrab, (int)relative, (int)hidecursor, (int)vid_usingmouse_relativeworks);
-#endif
-#ifdef MACOSX
-		if(relative)
-		{
-			// Save the status of mouse acceleration
-			originalMouseSpeed = -1.0; // in case of error
-			if(apple_mouse_noaccel.integer)
-			{
-				io_connect_t mouseDev = IN_GetIOHandle();
-				if(mouseDev != 0)
-				{
-					if(IOHIDGetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), &originalMouseSpeed) == kIOReturnSuccess)
-					{
-						Con_DPrintf("previous mouse acceleration: %f\n", originalMouseSpeed);
-						if(IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), -1.0) != kIOReturnSuccess)
-						{
-							Con_Print("Could not disable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
-							Cvar_SetValueQuick(&apple_mouse_noaccel, 0);
-						}
-					}
-					else
-					{
-						Con_Print("Could not disable mouse acceleration (failed at IOHIDGetAccelerationWithKey).\n");
-						Cvar_SetValueQuick(&apple_mouse_noaccel, 0);
-					}
-					IOServiceClose(mouseDev);
-				}
-				else
-				{
-					Con_Print("Could not disable mouse acceleration (failed at IO_GetIOHandle).\n");
-					Cvar_SetValueQuick(&apple_mouse_noaccel, 0);
-				}
-			}
-
-			vid_usingnoaccel = !!apple_mouse_noaccel.integer;
-		}
-		else
-		{
-			if(originalMouseSpeed != -1.0)
-			{
-				io_connect_t mouseDev = IN_GetIOHandle();
-				if(mouseDev != 0)
-				{
-					Con_DPrintf("restoring mouse acceleration to: %f\n", originalMouseSpeed);
-					if(IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), originalMouseSpeed) != kIOReturnSuccess)
-						Con_Print("Could not re-enable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
-					IOServiceClose(mouseDev);
-				}
-				else
-					Con_Print("Could not re-enable mouse acceleration (failed at IO_GetIOHandle).\n");
-			}
-		}
-#endif
 	}
-	if (vid_usinghidecursor != hidecursor)
-	{
+	WARP_X_ (VM_CL_setcursormode)
+#ifdef CORE_SDL // How is CSQC hide/show cursor working?
+	hidecursor = false; // HACK
+#endif
+
+	if (vid_usinghidecursor != hidecursor) {
 		vid_usinghidecursor = hidecursor;
 		SDL_ShowCursor( hidecursor ? SDL_DISABLE : SDL_ENABLE);
 	}
-#endif
 }
 
 // multitouch[10][] represents the mouse pointer
@@ -502,14 +378,14 @@ float multitouch[MAXFINGERS][3];
 int multitouchs[MAXFINGERS];
 
 // modified heavily by ELUAN
-static qboolean VID_TouchscreenArea(int corner, float px, float py, float pwidth, float pheight, const char *icon, float textheight, const char *text, float *resultmove, qboolean *resultbutton, keynum_t key, const char *typedtext, float deadzone, float oversizepixels_x, float oversizepixels_y, qboolean iamexclusive)
+static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, float pheight, const char *icon, float textheight, const char *text, float *resultmove, qbool *resultbutton, keynum_t key, const char *typedtext, float deadzone, float oversizepixels_x, float oversizepixels_y, qbool iamexclusive)
 {
 	int finger;
 	float fx, fy, fwidth, fheight;
 	float overfx, overfy, overfwidth, overfheight;
 	float rel[3];
 	float sqsum;
-	qboolean button = false;
+	qbool button = false;
 	VectorClear(rel);
 	if (pwidth > 0 && pheight > 0)
 	{
@@ -615,11 +491,11 @@ static qboolean VID_TouchscreenArea(int corner, float px, float py, float pwidth
 
 // ELUAN:
 // not reentrant, but we only need one mouse cursor anyway...
-static void VID_TouchscreenCursor(float px, float py, float pwidth, float pheight, qboolean *resultbutton, keynum_t key)
+static void VID_TouchscreenCursor(float px, float py, float pwidth, float pheight, qbool *resultbutton, keynum_t key)
 {
 	int finger;
 	float fx, fy, fwidth, fheight;
-	qboolean button = false;
+	qbool button = false;
 	static int cursorfinger = -1;
 	static int cursorfreemovement = false;
 	static int canclick = false;
@@ -791,8 +667,8 @@ static void IN_Move_TouchScreen_SteelStorm(void)
 	int i, numfingers;
 	float xscale, yscale;
 	float move[3], aim[3];
-	static qboolean oldbuttons[128];
-	static qboolean buttons[128];
+	static qbool oldbuttons[128];
+	static qbool buttons[128];
 	keydest_t keydest = (key_consoleactive & KEY_CONSOLEACTIVE_USER) ? key_console : key_dest;
 	memcpy(oldbuttons, buttons, sizeof(oldbuttons));
 	memset(multitouchs, 0, sizeof(multitouchs));
@@ -904,8 +780,8 @@ static void IN_Move_TouchScreen_Quake(void)
 {
 	int x, y;
 	float move[3], aim[3], click[3];
-	static qboolean oldbuttons[128];
-	static qboolean buttons[128];
+	static qbool oldbuttons[128];
+	static qbool buttons[128];
 	keydest_t keydest = (key_consoleactive & KEY_CONSOLEACTIVE_USER) ? key_console : key_dest;
 	memcpy(oldbuttons, buttons, sizeof(oldbuttons));
 	memset(multitouchs, 0, sizeof(multitouchs));
@@ -974,7 +850,7 @@ void IN_Move( void )
 	static int old_x = 0, old_y = 0;
 	static int stuck = 0;
 	static keydest_t oldkeydest;
-	static qboolean oldshowkeyboard;
+	static qbool oldshowkeyboard;
 	int x, y;
 	vid_joystate_t joystate;
 	keydest_t keydest = (key_consoleactive & KEY_CONSOLEACTIVE_USER) ? key_console : key_dest;
@@ -1018,11 +894,8 @@ void IN_Move( void )
 				// we need 2 frames to initialize the center position
 				if(!stuck)
 				{
-#if SDL_MAJOR_VERSION == 1
-					SDL_WarpMouse(win_half_width, win_half_height);
-#else
 					SDL_WarpMouseInWindow(window, win_half_width, win_half_height);
-#endif
+
 					SDL_GetMouseState(&x, &y);
 					SDL_GetRelativeMouseState(&x, &y);
 					++stuck;
@@ -1033,11 +906,7 @@ void IN_Move( void )
 					SDL_GetMouseState(&x, &y);
 					old_x = x - win_half_width;
 					old_y = y - win_half_height;
-#if SDL_MAJOR_VERSION == 1
-					SDL_WarpMouse(win_half_width, win_half_height);
-#else
 					SDL_WarpMouseInWindow(window, win_half_width, win_half_height);
-#endif
 				}
 			} else {
 				SDL_GetRelativeMouseState( &x, &y );
@@ -1060,7 +929,7 @@ void IN_Move( void )
 ////
 
 #ifdef SDL_R_RESTART
-static qboolean sdl_needs_restart;
+static qbool sdl_needs_restart;
 static void sdl_start(void)
 {
 }
@@ -1078,14 +947,6 @@ static keynum_t buttonremap[] =
 	K_MOUSE1,
 	K_MOUSE3,
 	K_MOUSE2,
-#if SDL_MAJOR_VERSION == 1
-	// TODO Find out how SDL maps these buttons. It looks like we should
-	// still include these for sdl2? At least the button indexes don't
-	// differ between SDL1 and SDL2 for me, thus this array should stay the
-	// same (in X11 button order).
-	K_MWHEELUP,
-	K_MWHEELDOWN,
-#endif
 	K_MOUSE4,
 	K_MOUSE5,
 	K_MOUSE6,
@@ -1101,129 +962,30 @@ static keynum_t buttonremap[] =
 	K_MOUSE16,
 };
 
-#if SDL_MAJOR_VERSION == 1
-// SDL
-void Sys_SendKeyEvents( void )
-{
-	static qboolean sound_active = true;
-	int keycode;
-	SDL_Event event;
-
-	VID_EnableJoystick(true);
-
-	while( SDL_PollEvent( &event ) )
-		switch( event.type ) {
-			case SDL_QUIT:
-				Host_Quit_f (); //Sys_Quit (0);
-				break;
-			case SDL_KEYDOWN:
-			case SDL_KEYUP:
-				keycode = MapKey(event.key.keysym.sym);
-				if (!VID_JoyBlockEmulatedKeys(keycode))
-				{
-					if(keycode == K_NUMLOCK || keycode == K_CAPSLOCK)
-					{
-						// simulate down followed by up
-						Key_Event(keycode, event.key.keysym.unicode, true);
-						Key_Event(keycode, event.key.keysym.unicode, false);
-						break;
-					}
-					Key_Event(keycode, event.key.keysym.unicode, (event.key.state == SDL_PRESSED));
-				}
-				break;
-			case SDL_ACTIVEEVENT:
-				if( event.active.state & SDL_APPACTIVE )
-				{
-					if( event.active.gain )
-						vid_hidden = false;
-					else
-						vid_hidden = true;
-				}
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-			case SDL_MOUSEBUTTONUP:
-				if (!vid_touchscreen.integer)
-				if (event.button.button > 0 && event.button.button <= ARRAY_COUNT(buttonremap))
-					Key_Event( buttonremap[event.button.button - 1], 0, event.button.state == SDL_PRESSED );
-				break;
-			case SDL_JOYBUTTONDOWN:
-			case SDL_JOYBUTTONUP:
-			case SDL_JOYAXISMOTION:
-			case SDL_JOYBALLMOTION:
-			case SDL_JOYHATMOTION:
-				break;
-			case SDL_VIDEOEXPOSE:
-				break;
-			case SDL_VIDEORESIZE:
-				if(vid_resizable.integer < 2 || vid_isfullscreen)
-				{
-					vid.width = event.resize.w;
-					vid.height = event.resize.h;
-					if (!vid_isfullscreen)
-						video_screen = SDL_SetVideoMode(vid.width, vid.height, video_bpp, video_flags);
-#ifdef SDL_R_RESTART
-					// better not call R_Modules_Restart from here directly, as this may wreak havoc...
-					// so, let's better queue it for next frame
-					if(!sdl_needs_restart)
-					{
-						Cbuf_AddTextLine ( NEWLINE "r_restart");
-						sdl_needs_restart = true;
-					}
-#endif
-				}
-				break;
-#if SDL_MAJOR_VERSION != 1
-			case SDL_TEXTEDITING:
-				break;
-			case SDL_TEXTINPUT:
-				break;
-#endif
-			case SDL_MOUSEMOTION:
-				break;
-			default:
-				Con_DPrintf("Received unrecognized SDL_Event type 0x%x\n", event.type);
-				break;
-		}
-
-	// enable/disable sound on focus gain/loss
-	if ((!vid_hidden && vid_activewindow) || !snd_mutewhenidle.integer)
-	{
-		if (!sound_active)
-		{
-			S_UnblockSound ();
-			sound_active = true;
-		}
-	}
-	else
-	{
-		if (sound_active)
-		{
-			S_BlockSound ();
-			sound_active = false;
-		}
-	}
-}
-
-#else
-
 //#define DEBUGSDLEVENTS
 
 // SDL2
 void Sys_SendKeyEvents( void )
 {
-	static qboolean sound_active = true;
+	static qbool sound_active = true;
 	int keycode;
 	int i;
+	const char *chp;
+	qbool isdown;
 	Uchar unicode;
 	SDL_Event event;
 
 	VID_EnableJoystick(true);
 
-	while( SDL_PollEvent( &event ) )
+	while( SDL_PollEvent( &event ) ) {
+#ifdef DEBUGSDLEVENTS		
+		Con_DPrintLinef ("event.type: %d", event.type);
+#endif
+		loop_start:
 		switch( event.type ) {
 			case SDL_QUIT:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_QUIT\n");
+				Con_DPrintLinef ("SDL_Event: SDL_QUIT");
 #endif
 				Sys_Quit(0);
 				break;
@@ -1231,21 +993,44 @@ void Sys_SendKeyEvents( void )
 			case SDL_KEYUP:
 #ifdef DEBUGSDLEVENTS
 				if (event.type == SDL_KEYDOWN)
-					Con_DPrintf("SDL_Event: SDL_KEYDOWN %i\n", event.key.keysym.sym);
+					Con_DPrintLinef ("SDL_Event: SDL_KEYDOWN %d", event.key.keysym.sym);
 				else
-					Con_DPrintf("SDL_Event: SDL_KEYUP %i\n", event.key.keysym.sym);
+					Con_DPrintLinef ("SDL_Event: SDL_KEYUP %d", event.key.keysym.sym);
 #endif
 				keycode = MapKey(event.key.keysym.sym);
+				isdown = (event.key.state == SDL_PRESSED);
+				unicode = 0;
+				if(isdown)
+				{
+					if(SDL_PollEvent(&event))
+					{
+						if(event.type == SDL_TEXTINPUT)
+						{
+							// combine key code from SDL_KEYDOWN event and character
+							// from SDL_TEXTINPUT event in a single Key_Event call
+#ifdef DEBUGSDLEVENTS
+							Con_DPrintf("SDL_Event: SDL_TEXTINPUT - text: %s\n", event.text.text);
+#endif
+							unicode = u8_getchar_utf8_enabled(event.text.text + (int)u8_bytelen(event.text.text, 0), NULL);
+						}
+						else
+						{
+							if (!VID_JoyBlockEmulatedKeys(keycode))
+								Key_Event(keycode, 0, isdown);
+							goto loop_start;
+						}
+					}
+				}
 				if (!VID_JoyBlockEmulatedKeys(keycode))
-					Key_Event(keycode, 0, (event.key.state == SDL_PRESSED));
+					Key_Event(keycode, unicode, isdown);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
 #ifdef DEBUGSDLEVENTS
 				if (event.type == SDL_MOUSEBUTTONDOWN)
-					Con_DPrintf("SDL_Event: SDL_MOUSEBUTTONDOWN\n");
+					Con_DPrintLinef ("SDL_Event: SDL_MOUSEBUTTONDOWN");
 				else
-					Con_DPrintf("SDL_Event: SDL_MOUSEBUTTONUP\n");
+					Con_DPrintLinef ("SDL_Event: SDL_MOUSEBUTTONUP");
 #endif
 				if (!vid_touchscreen.integer)
 				if (event.button.button > 0 && event.button.button <= ARRAY_COUNT(buttonremap))
@@ -1271,12 +1056,12 @@ void Sys_SendKeyEvents( void )
 			case SDL_JOYBALLMOTION:
 			case SDL_JOYHATMOTION:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_JOY*\n");
+				Con_DPrintLinef ("SDL_Event: SDL_JOY*");
 #endif
 				break;
 			case SDL_WINDOWEVENT:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_WINDOWEVENT %i\n", (int)event.window.event);
+				Con_DPrintLinef ("SDL_Event: SDL_WINDOWEVENT %d", (int)event.window.event);
 #endif
 				//if (event.window.windowID == window) // how to compare?
 				{
@@ -1290,13 +1075,13 @@ void Sys_SendKeyEvents( void )
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 #ifdef DEBUGSDLEVENTS
-						Con_DPrintf("SDL_Event: SDL_WINDOWEVENT_EXPOSED\n");
+						Con_DPrintLinef ("SDL_Event: SDL_WINDOWEVENT_EXPOSED");
 #endif
 						break;
 					case SDL_WINDOWEVENT_MOVED:
 						break;
 					case SDL_WINDOWEVENT_RESIZED:
-						if(vid_resizable.integer < 2)
+						if (vid_resizable.integer < 2)
 						{
 							vid.width = event.window.data1;
 							vid.height = event.window.data2;
@@ -1312,10 +1097,13 @@ void Sys_SendKeyEvents( void )
 						}
 						break;
 					case SDL_WINDOWEVENT_MINIMIZED:
+						vid.minimized = true;
 						break;
 					case SDL_WINDOWEVENT_MAXIMIZED:
+						vid.minimized = false;
 						break;
 					case SDL_WINDOWEVENT_RESTORED:
+						vid.minimized = false;
 						break;
 					case SDL_WINDOWEVENT_ENTER:
 						break;
@@ -1335,77 +1123,78 @@ void Sys_SendKeyEvents( void )
 				break;
 			case SDL_TEXTEDITING:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_TEXTEDITING - composition = %s, cursor = %d, selection lenght = %d\n", event.edit.text, event.edit.start, event.edit.length);
+				Con_DPrintLinef ("SDL_Event: SDL_TEXTEDITING - composition = %s, cursor = %d, selection lenght = %d", event.edit.text, event.edit.start, event.edit.length);
 #endif
 				// FIXME!  this is where composition gets supported
 				break;
 			case SDL_TEXTINPUT:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_TEXTINPUT - text: %s\n", event.text.text);
+				Con_DPrintLinef ("SDL_Event: SDL_TEXTINPUT - text: %s", event.text.text);
 #endif
 				// convert utf8 string to char
 				// NOTE: this code is supposed to run even if utf8enable is 0
-				unicode = u8_getchar_utf8_enabled(event.text.text + (int)u8_bytelen(event.text.text, 0), NULL);
-				Key_Event(K_TEXT, unicode, true);
-				Key_Event(K_TEXT, unicode, false);
+				chp = event.text.text;
+				while (*chp != 0)
+				{
+					// input the chars one by one (there can be multiple chars when e.g. using an "input method")
+					unicode = u8_getchar_utf8_enabled(chp, &chp);
+					Key_Event(K_TEXT, unicode, true);
+					Key_Event(K_TEXT, unicode, false);
+				}
 				break;
 			case SDL_MOUSEMOTION:
 				break;
 			case SDL_FINGERDOWN:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_FINGERDOWN for finger %i\n", (int)event.tfinger.fingerId);
+				Con_DPrintLinef ("SDL_FINGERDOWN for finger %d", (int)event.tfinger.fingerId);
 #endif
-				for (i = 0;i < MAXFINGERS-1;i++)
-				{
-					if (!multitouch[i][0])
-					{
+				for (i = 0;i < MAXFINGERS - 1; i ++) {
+					if (!multitouch[i][0]) {
 						multitouch[i][0] = event.tfinger.fingerId + 1;
 						multitouch[i][1] = event.tfinger.x;
 						multitouch[i][2] = event.tfinger.y;
 						// TODO: use event.tfinger.pressure?
 						break;
 					}
-				}
-				if (i == MAXFINGERS-1)
-					Con_DPrintf("Too many fingers at once!\n");
+				} // for
+				if (i == MAXFINGERS - 1)
+					Con_DPrintLinef ("Too many fingers at once!");
 				break;
 			case SDL_FINGERUP:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_FINGERUP for finger %i\n", (int)event.tfinger.fingerId);
+				Con_DPrintLinef ("SDL_FINGERUP for finger %d", (int)event.tfinger.fingerId);
 #endif
-				for (i = 0;i < MAXFINGERS-1;i++)
-				{
-					if (multitouch[i][0] == event.tfinger.fingerId + 1)
-					{
+				for (i = 0; i < MAXFINGERS-1; i++) {
+					if (multitouch[i][0] == event.tfinger.fingerId + 1) {
 						multitouch[i][0] = 0;
 						break;
 					}
-				}
-				if (i == MAXFINGERS-1)
-					Con_DPrintf("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event\n");
+				} // for
+				if (i == MAXFINGERS - 1)
+					Con_DPrintLinef ("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event");
 				break;
 			case SDL_FINGERMOTION:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_FINGERMOTION for finger %i\n", (int)event.tfinger.fingerId);
+				Con_DPrintLinef ("SDL_FINGERMOTION for finger %d", (int)event.tfinger.fingerId);
 #endif
-				for (i = 0;i < MAXFINGERS-1;i++)
-				{
-					if (multitouch[i][0] == event.tfinger.fingerId + 1)
-					{
+				for (i = 0;i < MAXFINGERS - 1; i++) {
+					if (multitouch[i][0] == event.tfinger.fingerId + 1) {
 						multitouch[i][1] = event.tfinger.x;
 						multitouch[i][2] = event.tfinger.y;
 						break;
 					}
-				}
-				if (i == MAXFINGERS-1)
-					Con_DPrintf("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event\n");
+				} // for
+				
+				if (i == MAXFINGERS - 1)
+					Con_DPrintLinef ("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event");
 				break;
 			default:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("Received unrecognized SDL_Event type 0x%x\n", event.type);
+				Con_DPrintLinef ("Received unrecognized SDL_Event type 0x%x", event.type);
 #endif
 				break;
-		}
+		} // sw et
+	} // while
 
 	// enable/disable sound on focus gain/loss
 	if ((!vid_hidden && vid_activewindow) || !snd_mutewhenidle.integer)
@@ -1425,19 +1214,18 @@ void Sys_SendKeyEvents( void )
 		}
 	}
 }
-#endif
 
 /////////////////
 // Video system
 ////
 
 #ifdef USE_GLES2
-#ifndef qglClear
-#ifdef __IPHONEOS__
-#include <OpenGLES/ES2/gl.h>
-#else
-#include <SDL_opengles.h>
-#endif
+	#ifndef qglClear
+	#ifdef __IPHONEOS__
+		#include <OpenGLES/ES2/gl.h>
+	#else
+		#include <SDL_opengles.h>
+	#endif
 
 //#define PRECALL //Con_Printf("GLCALL %s:%i\n", __FILE__, __LINE__)
 #define PRECALL
@@ -1662,11 +1450,8 @@ void wrapglVertexAttrib4fv(GLuint index, const GLfloat *v) {PRECALL;glVertexAttr
 void wrapglGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {PRECALL;glGetVertexAttribfv(index, pname, params);POSTCALL;}
 void wrapglGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {PRECALL;glGetVertexAttribiv(index, pname, params);POSTCALL;}
 void wrapglGetVertexAttribPointerv(GLuint index, GLenum pname, GLvoid **pointer) {PRECALL;glGetVertexAttribPointerv(index, pname, pointer);POSTCALL;}
-#endif
+#endif // !USE_GLES2
 
-#if SDL_MAJOR_VERSION == 1
-#define SDL_GL_ExtensionSupported(x) (strstr(gl_extensions, x) || strstr(gl_platformextensions, x))
-#endif
 
 void GLES_Init(void)
 {
@@ -1907,7 +1692,7 @@ void GLES_Init(void)
 	Con_DPrintf("GL_EXTENSIONS: %s\n", gl_extensions);
 	Con_DPrintf("%s_EXTENSIONS: %s\n", gl_platform, gl_platformextensions);
 	
-	// LordHavoc: report supported extensions
+	// LadyHavoc: report supported extensions
 	Con_DPrintf("\nQuakeC extensions for server and client: %s\nQuakeC extensions for menu: %s\n", vm_sv_extensions, vm_m_extensions );
 
 	// GLES devices in general do not like GL_BGRA, so use GL_RGBA
@@ -2030,15 +1815,10 @@ void *GL_GetProcAddress(const char *name)
 	return p;
 }
 
-static qboolean vid_sdl_initjoysticksystem = false;
+static qbool vid_sdl_initjoysticksystem = false;
 
 void VID_Init (void)
 {
-#ifndef __IPHONEOS__
-#ifdef MACOSX
-	Cvar_RegisterVariable(&apple_mouse_noaccel);
-#endif
-#endif
 #ifdef DP_MOBILETOUCH
 	Cvar_SetValueQuick(&vid_touchscreen, 1);
 #endif
@@ -2056,11 +1836,11 @@ void VID_Init (void)
 }
 
 static int vid_sdljoystickindex = -1;
-void VID_EnableJoystick(qboolean enable)
+void VID_EnableJoystick(qbool enable)
 {
 	int index = joy_enable.integer > 0 ? joy_index.integer : -1;
 	int numsdljoysticks;
-	qboolean success = false;
+	qbool success = false;
 	int sharedcount = 0;
 	int sdlindex = -1;
 	sharedcount = VID_Shared_SetJoystick(index);
@@ -2080,19 +1860,16 @@ void VID_EnableJoystick(qboolean enable)
 	{
 		vid_sdljoystickindex = sdlindex;
 		// close SDL joystick if active
-		if (vid_sdljoystick)
+		if (vid_sdljoystick) {
 			SDL_JoystickClose(vid_sdljoystick);
-		vid_sdljoystick = NULL;
+			vid_sdljoystick = NULL;
+		}
 		if (sdlindex >= 0)
 		{
 			vid_sdljoystick = SDL_JoystickOpen(sdlindex);
 			if (vid_sdljoystick)
 			{
-#if SDL_MAJOR_VERSION == 1
-				const char *joystickname = SDL_JoystickName(sdlindex);
-#else
 				const char *joystickname = SDL_JoystickName(vid_sdljoystick);
-#endif
 				Con_Printf("Joystick %i opened (SDL_Joystick %i is \"%s\" with %i axes, %i buttons, %i balls)\n", index, sdlindex, joystickname, (int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
 			}
 			else
@@ -2110,297 +1887,80 @@ void VID_EnableJoystick(qboolean enable)
 		Cvar_SetValueQuick(&joy_active, success ? 1 : 0);
 }
 
-#if SDL_MAJOR_VERSION == 1
-// set the icon (we dont use SDL here since it would be too much a PITA)
-#ifdef WIN32
-#include "resource.h"
-#include <SDL_syswm.h>
-static SDL_Surface *VID_WrapSDL_SetVideoMode(int screenwidth, int screenheight, int screenbpp, int screenflags)
-{
-	SDL_Surface *screen = NULL;
-	SDL_SysWMinfo info;
-	HICON icon;
-	SDL_WM_SetCaption( gamename, NULL );
-	screen = SDL_SetVideoMode(screenwidth, screenheight, screenbpp, screenflags);
-	if (screen)
+#ifdef _WIN32
+	#ifdef _MSC_VER
+		#include <SDL2/SDL_syswm.h> // To expose things like HWND to us.
+	#else
+		#include <SDL_syswm.h> // To expose things like HWND to us.
+	#endif // _MSC_VER
+
+	#include <windows.h>
+
+	//cbool Shell_Platform_Icon_Window_Set (sys_handle_t cw)
+	int SetWIke (SDL_Window *cw)
 	{
-		// get the HWND handle
-		SDL_VERSION( &info.version );
-		if (SDL_GetWMInfo(&info))
-		{
-			icon = LoadIcon( GetModuleHandle( NULL ), MAKEINTRESOURCE( IDI_ICON1 ) );
-#ifndef _W64 //If Windows 64bit data types don't exist
-#ifndef SetClassLongPtr
-#define SetClassLongPtr SetClassLong
-#endif
-#ifndef GCLP_HICON
-#define GCLP_HICON GCL_HICON
-#endif
-#ifndef LONG_PTR
-#define LONG_PTR LONG
-#endif
-#endif
-			SetClassLongPtr( info.window, GCLP_HICON, (LONG_PTR)icon );
+		
+		HINSTANCE		hInst = GetModuleHandle(NULL);
+		#define IDI_ICON1         1
+		HICON hIcon = LoadIcon (hInst, MAKEINTRESOURCE (IDI_ICON1)) ;
+		SDL_SysWMinfo wminfo = {0};
+		
+	//	if (!gAppIcon)
+	//		return false;
+
+		if (SDL_GetWindowWMInfo((SDL_Window*) cw, &wminfo) != SDL_TRUE) {
+			//logd (SPRINTSFUNC_ "Couldn't get hwnd", __func__);
+			return false;
+		}
+		else {
+
+			HWND hWnd = wminfo.info.win.window;
+			
+
+			SetClassLong (hWnd /*hwnd*/, GCL_HICON, (LONG) hIcon/*gAppIcon*/); // This is the class icon, not the window icon. No effect.
+			return true;
 		}
 	}
-	return screen;
-}
-#elif defined(MACOSX)
-static SDL_Surface *VID_WrapSDL_SetVideoMode(int screenwidth, int screenheight, int screenbpp, int screenflags)
-{
-	SDL_Surface *screen = NULL;
-	SDL_WM_SetCaption( gamename, NULL );
-	screen = SDL_SetVideoMode(screenwidth, screenheight, screenbpp, screenflags);
-	// we don't use SDL_WM_SetIcon here because the icon in the .app should be used
-	return screen;
-}
-#else
-// Adding the OS independent XPM version --blub
-#include "darkplaces.xpm"
-#include "nexuiz.xpm"
-#if SDL_MAJOR_VERSION == 1
-#if SDL_VIDEO_DRIVER_X11 && !SDL_VIDEO_DRIVER_QUARTZ
-#include <SDL_syswm.h>
-#endif
-#endif
-static SDL_Surface *icon = NULL;
-static SDL_Surface *VID_WrapSDL_SetVideoMode(int screenwidth, int screenheight, int screenbpp, int screenflags)
-{
-	/*
-	 * Somewhat restricted XPM reader. Only supports XPMs saved by GIMP 2.4 at
-	 * default settings with less than 91 colors and transparency.
-	 */
+//			//SendMessage(hWnd, WM_SETICON, ICON_BIG,  (LPARAM) gAppIcon);
+//			//SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) gAppIcon);
+//
+//#if 1 // Remove maximize button if found
+//			{	DWORD dwStyle = (DWORD)GetWindowLong(hWnd, GWL_STYLE);
+//				logd ("Checking for maximize button");
+//				if (dwStyle & WS_MAXIMIZEBOX) {
+//					logd ("Found maximize button");
+//					dwStyle &= (~WS_MAXIMIZEBOX);
+//					SetWindowLong (hWnd, GWL_STYLE, dwStyle);
+//					SetWindowPos (hWnd, 0, 0, 0, 0, 0, SWP_DRAWFRAME | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
+//					logd ("Removed maximize button");
+//				}
+//			}
+//#endif
+//		}
+//		return true;
+//	}
+//Shell_Platform_Icon_Window_Set (sysplat.mainwindow);
+//void SetWIke (SDL_Window *sdlxwindow)
+//{
+//	HINSTANCE		hInst = GetModuleHandle(NULL);
+//	#define IDI_ICON1                       1
+//
+//	HICON hIcon = LoadIcon (hInst, MAKEINTRESOURCE (IDI_ICON1)) ;
+//	if (hIcon) {
+//		SDL_SysWMinfo wminfo;
+//		//SDL_VERSION(&wminfo.version);
+//		//if (SDL_GetWindowWMInfo(sdlWindow,&wminfo) == 1){
+//		HWND hwnd = wminfo.info.win.window;
+//		SetClassLong(hwnd, GCL_HICON, hIcon);
+//	}
+//}
 
-	int width, height, colors, isize, i, j;
-	int thenone = -1;
-	static SDL_Color palette[256];
-	unsigned short palenc[256]; // store color id by char
-	char *xpm;
-	char **idata, *data;
-	const SDL_version *version;
-	SDL_Surface *screen = NULL;
-
-	if (icon)
-		SDL_FreeSurface(icon);
-	icon = NULL;
-	version = SDL_Linked_Version();
-	// only use non-XPM icon support in SDL v1.3 and higher
-	// SDL v1.2 does not support "smooth" transparency, and thus is better
-	// off the xpm way
-	if(version->major >= 2 || (version->major == 1 && version->minor >= 3))
-	{
-		data = (char *) loadimagepixelsbgra("darkplaces-icon", false, false, false, NULL);
-		if(data)
-		{
-			unsigned int red = 0x00FF0000;
-			unsigned int green = 0x0000FF00;
-			unsigned int blue = 0x000000FF;
-			unsigned int alpha = 0xFF000000;
-			width = image_width;
-			height = image_height;
-
-			// reallocate with malloc, as this is in tempmempool (do not want)
-			xpm = data;
-			data = (char *) malloc(width * height * 4);
-			memcpy(data, xpm, width * height * 4);
-			Mem_Free(xpm);
-			xpm = NULL;
-
-			icon = SDL_CreateRGBSurface(SDL_SRCALPHA, width, height, 32, LittleLong(red), LittleLong(green), LittleLong(blue), LittleLong(alpha));
-
-			if (icon)
-				icon->pixels = data;
-			else
-			{
-				Con_Printf(	"Failed to create surface for the window Icon!\n"
-						"%s\n", SDL_GetError());
-				free(data);
-			}
-		}
-	}
-
-	// we only get here if non-XPM icon was missing, or SDL version is not
-	// sufficient for transparent non-XPM icons
-	if(!icon)
-	{
-		xpm = (char *) FS_LoadFile("darkplaces-icon.xpm", tempmempool, false, NULL, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-		idata = NULL;
-		if(xpm)
-			idata = XPM_DecodeString(xpm);
-		if(!idata)
-			idata = ENGINE_ICON;
-		if(xpm)
-			Mem_Free(xpm);
-
-		data = idata[0];
-
-		if(sscanf(data, "%i %i %i %i", &width, &height, &colors, &isize) == 4)
-		{
-			if(isize == 1)
-			{
-				for(i = 0; i < colors; ++i)
-				{
-					unsigned int r, g, b;
-					char idx;
-
-					if(sscanf(idata[i+1], "%c c #%02x%02x%02x", &idx, &r, &g, &b) != 4)
-					{
-						char foo[2];
-						if(sscanf(idata[i+1], "%c c Non%1[e]", &idx, foo) != 2) // I take the DailyWTF credit for this. --div0
-							break;
-						else
-						{
-							palette[i].r = 255; // color key
-							palette[i].g = 0;
-							palette[i].b = 255;
-							thenone = i; // weeeee
-							palenc[(unsigned char) idx] = i;
-						}
-					}
-					else
-					{
-						palette[i].r = r - (r == 255 && g == 0 && b == 255); // change 255/0/255 pink to 254/0/255 for color key
-						palette[i].g = g;
-						palette[i].b = b;
-						palenc[(unsigned char) idx] = i;
-					}
-				}
-
-				if (i == colors)
-				{
-					// allocate the image data
-					data = (char*) malloc(width*height);
-
-					for(j = 0; j < height; ++j)
-					{
-						for(i = 0; i < width; ++i)
-						{
-							// casting to the safest possible datatypes ^^
-							data[j * width + i] = palenc[((unsigned char*)idata[colors+j+1])[i]];
-						}
-					}
-
-					if(icon != NULL)
-					{
-						// SDL_FreeSurface should free the data too
-						// but for completeness' sake...
-						if(icon->flags & SDL_PREALLOC)
-						{
-							free(icon->pixels);
-							icon->pixels = NULL; // safety
-						}
-						SDL_FreeSurface(icon);
-					}
-
-					icon = SDL_CreateRGBSurface(SDL_SRCCOLORKEY, width, height, 8, 0,0,0,0);// rmask, gmask, bmask, amask); no mask needed
-					// 8 bit surfaces get an empty palette allocated according to the docs
-					// so it's a palette image for sure :) no endian check necessary for the mask
-
-					if(icon)
-					{
-						icon->pixels = data;
-						SDL_SetPalette(icon, SDL_PHYSPAL|SDL_LOGPAL, palette, 0, colors);
-						SDL_SetColorKey(icon, SDL_SRCCOLORKEY, thenone);
-					}
-					else
-					{
-						Con_Printf(	"Failed to create surface for the window Icon!\n"
-								"%s\n", SDL_GetError());
-						free(data);
-					}
-				}
-				else
-				{
-					Con_Printf("This XPM's palette looks odd. Can't continue.\n");
-				}
-			}
-			else
-			{
-				// NOTE: Only 1-char colornames are supported
-				Con_Printf("This XPM's palette is either huge or idiotically unoptimized. It's key size is %i\n", isize);
-			}
-		}
-		else
-		{
-			// NOTE: Only 1-char colornames are supported
-			Con_Printf("Sorry, but this does not even look similar to an XPM.\n");
-		}
-	}
-
-	if (icon)
-		SDL_WM_SetIcon(icon, NULL);
-
-	SDL_WM_SetCaption( gamename, NULL );
-	screen = SDL_SetVideoMode(screenwidth, screenheight, screenbpp, screenflags);
-
-#if SDL_MAJOR_VERSION == 1
-// LordHavoc: info.info.x11.lock_func and accompanying code do not seem to compile with SDL 1.3
-#if SDL_VIDEO_DRIVER_X11 && !SDL_VIDEO_DRIVER_QUARTZ
-
-	version = SDL_Linked_Version();
-	// only use non-XPM icon support in SDL v1.3 and higher
-	// SDL v1.2 does not support "smooth" transparency, and thus is better
-	// off the xpm way
-	if(screen && (!(version->major >= 2 || (version->major == 1 && version->minor >= 3))))
-	{
-		// in this case, we did not set the good icon yet
-		SDL_SysWMinfo info;
-		SDL_VERSION(&info.version);
-		if(SDL_GetWMInfo(&info) == 1 && info.subsystem == SDL_SYSWM_X11)
-		{
-			data = (char *) loadimagepixelsbgra("darkplaces-icon", false, false, false, NULL);
-			if(data)
-			{
-				// use _NET_WM_ICON too
-				static long netwm_icon[MAX_NETWM_ICON];
-				int pos = 0;
-				int i = 1;
-				char vabuf[1024];
-
-				while(data)
-				{
-					if(pos + 2 * image_width * image_height < MAX_NETWM_ICON)
-					{
-						netwm_icon[pos++] = image_width;
-						netwm_icon[pos++] = image_height;
-						for(i = 0; i < image_height; ++i)
-							for(j = 0; j < image_width; ++j)
-								netwm_icon[pos++] = BuffLittleLong((unsigned char *) &data[(i*image_width+j)*4]);
-					}
-					else
-					{
-						Con_Printf("Skipping NETWM icon #%d because there is no space left\n", i);
-					}
-					++i;
-					Mem_Free(data);
-					data = (char *) loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "darkplaces-icon%d", i), false, false, false, NULL);
-				}
-
-				info.info.x11.lock_func();
-				{
-					Atom net_wm_icon = XInternAtom(info.info.x11.display, "_NET_WM_ICON", false);
-					XChangeProperty(info.info.x11.display, info.info.x11.wmwindow, net_wm_icon, XA_CARDINAL, 32, PropModeReplace, (const unsigned char *) netwm_icon, pos);
-				}
-				info.info.x11.unlock_func();
-			}
-		}
-	}
-#endif
-#endif
-	return screen;
-}
-
-#endif
-#endif
+#endif // _WIN32
 
 static void VID_OutputVersion(void)
 {
 	SDL_version version;
-#if SDL_MAJOR_VERSION == 1
-	version = *SDL_Linked_Version();
-#else
 	SDL_GetVersion(&version);
-#endif
 	Con_Printf(	"Linked against SDL version %d.%d.%d\n"
 					"Using SDL library version %d.%d.%d\n",
 					SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
@@ -2410,6 +1970,11 @@ static void VID_OutputVersion(void)
 #ifdef WIN32
 static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 {
+	int workWidth;
+	int workHeight;
+	int titleBarPixels = 2;
+	int screenHeight;
+	RECT workArea;
 	LONG width = mode->width; // vid_width
 	LONG height = mode->height; // vid_height
 
@@ -2420,16 +1985,14 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 	rect->bottom = height;
 	AdjustWindowRectEx(rect, WS_CAPTION|WS_THICKFRAME, false, 0);
 
-	RECT workArea;
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
-	int workWidth = workArea.right - workArea.left;
-	int workHeight = workArea.bottom - workArea.top;
+	workWidth = workArea.right - workArea.left;
+	workHeight = workArea.bottom - workArea.top;
 
 	// SDL forces the window height to be <= screen height - 27px (on Win8.1 - probably intended for the title bar) 
 	// If the task bar is docked to the the left screen border and we move the window to negative y,
 	// there would be some part of the regular desktop visible on the bottom of the screen.
-	int titleBarPixels = 2;
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	screenHeight = GetSystemMetrics(SM_CYSCREEN);
 	if (screenHeight == workHeight)
 		titleBarPixels = -rect->top;
 
@@ -2451,18 +2014,16 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 }
 #endif
 
-static qboolean VID_InitModeGL(viddef_mode_t *mode)
+
+static qbool VID_InitModeGL(viddef_mode_t *mode)
 {
-#if SDL_MAJOR_VERSION == 1
-	static int notfirstvideomode = false;
-	int flags = SDL_OPENGL;
-#else
 	int windowflags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
+	// currently SDL_WINDOWPOS_UNDEFINED behaves exactly like SDL_WINDOWPOS_CENTERED, this might change some day
+	// https://trello.com/c/j56vUcwZ/81-centered-vs-undefined-window-position
 	int xPos = SDL_WINDOWPOS_UNDEFINED;
 	int yPos = SDL_WINDOWPOS_UNDEFINED;
-#endif
-#ifndef USE_GLES2
 	int i;
+#ifndef USE_GLES2
 	const char *drivername;
 #endif
 
@@ -2470,24 +2031,9 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 	win_half_height = mode->height>>1;
 
 	if(vid_resizable.integer)
-#if SDL_MAJOR_VERSION == 1
-		flags |= SDL_RESIZABLE;
-#else
 		windowflags |= SDL_WINDOW_RESIZABLE;
-#endif
 
 	VID_OutputVersion();
-
-#if SDL_MAJOR_VERSION == 1
-	/*
-	SDL 1.2 Hack
-		We cant switch from one OpenGL video mode to another.
-		Thus we first switch to some stupid 2D mode and then back to OpenGL.
-	*/
-	if (notfirstvideomode)
-		SDL_SetVideoMode( 0, 0, 0, 0 );
-	notfirstvideomode = true;
-#endif
 
 #ifndef USE_GLES2
 	// SDL usually knows best
@@ -2497,19 +2043,13 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 	i = COM_CheckParm("-gl_driver");
 	if (i && i < com_argc - 1)
 		drivername = com_argv[i + 1];
-	if (SDL_GL_LoadLibrary(drivername) < 0)
-	{
+	if (SDL_GL_LoadLibrary(drivername) < 0) {
 		Con_Printf("Unable to load GL driver \"%s\": %s\n", drivername, SDL_GetError());
 		return false;
 	}
 #endif
 
-#ifdef DP_MOBILETOUCH
-	// mobile platforms are always fullscreen, we'll get the resolution after opening the window
-	mode->fullscreen = true;
-	// hide the menu with SDL_WINDOW_BORDERLESS
-	windowflags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
-#endif
+
 #ifndef USE_GLES2
 	if ((qglGetString = (const GLubyte* (GLAPIENTRY *)(GLenum name))GL_GetProcAddress("glGetString")) == NULL)
 	{
@@ -2522,26 +2062,6 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 	// Knghtbrd: should do platform-specific extension string function here
 
 	vid_isfullscreen = false;
-#if SDL_MAJOR_VERSION == 1
-	{
-		const SDL_VideoInfo *vi = SDL_GetVideoInfo();
-		desktop_mode.width = vi->current_w;
-		desktop_mode.height = vi->current_h;
-		desktop_mode.bpp = vi->vfmt->BitsPerPixel;
-		desktop_mode.pixelheight_num = 1;
-		desktop_mode.pixelheight_denom = 1; // SDL does not provide this
-		if (mode->fullscreen) {
-			if (vid_desktopfullscreen.integer)
-			{
-				mode->width = vi->current_w;
-				mode->height = vi->current_h;
-				mode->bitsperpixel = vi->vfmt->BitsPerPixel;
-			}
-			flags |= SDL_FULLSCREEN;
-			vid_isfullscreen = true;
-		}
-	}
-#else
 	{
 		if (mode->fullscreen) {
 			if (vid_desktopfullscreen.integer)
@@ -2564,7 +2084,6 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 #endif
 		}
 	}
-#endif
 	//flags |= SDL_HWSURFACE;
 
 	SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
@@ -2592,32 +2111,13 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 		SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, mode->samples);
 	}
 
-#if SDL_MAJOR_VERSION == 1
-	if (vid_vsync.integer)
-		SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 1);
-	else
-		SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 0);
-#else
 #ifdef USE_GLES2
 	SDL_GL_SetAttribute (SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	SDL_GL_SetAttribute (SDL_GL_RETAINED_BACKING, 1);
 #endif
-#endif
 
 	video_bpp = mode->bitsperpixel;
-#if SDL_MAJOR_VERSION == 1
-	video_flags = flags;
-	video_screen = VID_WrapSDL_SetVideoMode(mode->width, mode->height, mode->bitsperpixel, flags);
-	if (video_screen == NULL)
-	{
-		Con_Printf("Failed to set video mode to %ix%i: %s\n", mode->width, mode->height, SDL_GetError());
-		VID_Shutdown();
-		return false;
-	}
-	mode->width = video_screen->w;
-	mode->height = video_screen->h;
-#else
 	window_flags = windowflags;
 	window = SDL_CreateWindow(gamename, xPos, yPos, mode->width, mode->height, windowflags);
 	if (window == NULL)
@@ -2626,6 +2126,11 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 		VID_Shutdown();
 		return false;
 	}
+
+#if defined(_WIN32)
+	SetWIke (window);
+#endif
+
 	SDL_GetWindowSize(window, &mode->width, &mode->height);
 	context = SDL_GL_CreateContext(window);
 	if (context == NULL)
@@ -2634,20 +2139,14 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 		VID_Shutdown();
 		return false;
 	}
-#endif
 
 
-#if SDL_MAJOR_VERSION == 1
-	// init keyboard
-	SDL_EnableUNICODE( SDL_ENABLE );
-	// enable key repeat since everyone expects it
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-#endif
 
-#if SDL_MAJOR_VERSION != 1
+
+
 	SDL_GL_SetSwapInterval(vid_vsync.integer != 0);
 	vid_usingvsync = (vid_vsync.integer != 0);
-#endif
+
 
 	gl_platform = "SDL";
 	gl_platformextensions = "";
@@ -2664,9 +2163,6 @@ static qboolean VID_InitModeGL(viddef_mode_t *mode)
 	vid_usingmouse = false;
 	vid_usinghidecursor = false;
 		
-#if SDL_MAJOR_VERSION == 1
-	SDL_WM_GrabInput(SDL_GRAB_OFF);
-#endif
 	return true;
 }
 
@@ -2677,8 +2173,7 @@ extern cvar_t gl_info_version;
 extern cvar_t gl_info_platform;
 extern cvar_t gl_info_driver;
 
-
-qboolean VID_InitMode(viddef_mode_t *mode)
+qbool VID_InitMode(viddef_mode_t *mode)
 {
 	// GAME_STEELSTORM specific
 	steelstorm_showing_map = Cvar_FindVar("steelstorm_showing_map");
@@ -2687,10 +2182,9 @@ qboolean VID_InitMode(viddef_mode_t *mode)
 	if (!SDL_WasInit(SDL_INIT_VIDEO) && SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
 
-#if SDL_MAJOR_VERSION != 1
 	Cvar_SetValueQuick(&vid_touchscreen_supportshowkeyboard, SDL_HasScreenKeyboardSupport() ? 1 : 0);
-#endif
-		return VID_InitModeGL(mode);
+	
+	return VID_InitModeGL(mode);
 }
 
 void VID_Shutdown (void)
@@ -2699,21 +2193,8 @@ void VID_Shutdown (void)
 	VID_SetMouse(false, false, false);
 	VID_RestoreSystemGamma();
 
-#if SDL_MAJOR_VERSION == 1
-#ifndef WIN32
-#ifndef MACOSX
-	if (icon)
-		SDL_FreeSurface(icon);
-	icon = NULL;
-#endif
-#endif
-#endif
-
-
-#if SDL_MAJOR_VERSION != 1
 	SDL_DestroyWindow(window);
 	window = NULL;
-#endif
 
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
@@ -2725,33 +2206,17 @@ void VID_Shutdown (void)
 
 int VID_SetGamma (unsigned short *ramps, int rampsize)
 {
-#if SDL_MAJOR_VERSION == 1
-	return !SDL_SetGammaRamp (ramps, ramps + rampsize, ramps + rampsize*2);
-#else
 	return !SDL_SetWindowGammaRamp (window, ramps, ramps + rampsize, ramps + rampsize*2);
-#endif
 }
 
 int VID_GetGamma (unsigned short *ramps, int rampsize)
 {
-#if SDL_MAJOR_VERSION == 1
-	return !SDL_GetGammaRamp (ramps, ramps + rampsize, ramps + rampsize*2);
-#else
 	return !SDL_GetWindowGammaRamp (window, ramps, ramps + rampsize, ramps + rampsize*2);
-#endif
 }
 
 void VID_Finish (void)
 {
-#if SDL_MAJOR_VERSION == 1
-	Uint8 appstate;
-
-	//react on appstate changes
-	appstate = SDL_GetAppState();
-
-	vid_hidden = !(appstate & SDL_APPACTIVE);
-	vid_hasfocus = (appstate & SDL_APPINPUTFOCUS) != 0;
-#endif
+	qbool vid_usevsync;
 	vid_activewindow = !vid_hidden && vid_hasfocus;
 
 	VID_UpdateGamma(false, 256);
@@ -2769,25 +2234,16 @@ void VID_Finish (void)
 			if (r_speeds.integer == 2 || gl_finish.integer)
 				GL_Finish();
 
-#if SDL_MAJOR_VERSION != 1
-{
-	qboolean vid_usevsync;
-	vid_usevsync = (vid_vsync.integer && !cls.timedemo);
-	if (vid_usingvsync != vid_usevsync)
-	{
-		vid_usingvsync = vid_usevsync;
-		if (SDL_GL_SetSwapInterval(vid_usevsync != 0) >= 0)
-			Con_DPrintf("Vsync %s\n", vid_usevsync ? "activated" : "deactivated");
-		else
-			Con_DPrintf("ERROR: can't %s vsync\n", vid_usevsync ? "activate" : "deactivate");
-	}
-}
-#endif
-#if SDL_MAJOR_VERSION == 1
-			SDL_GL_SwapBuffers();
-#else
+			vid_usevsync = (vid_vsync.integer && !cls.timedemo);
+			if (vid_usingvsync != vid_usevsync)
+			{
+				vid_usingvsync = vid_usevsync;
+				if (SDL_GL_SetSwapInterval(vid_usevsync != 0) >= 0)
+					Con_DPrintf("Vsync %s\n", vid_usevsync ? "activated" : "deactivated");
+				else
+					Con_DPrintf("ERROR: can't %s vsync\n", vid_usevsync ? "activate" : "deactivate");
+			}
 			SDL_GL_SwapWindow(window);
-#endif
 			break;
 		} // switch
 	}
@@ -2795,7 +2251,6 @@ void VID_Finish (void)
 
 vid_mode_t *VID_GetDesktopMode(void)
 {
-#if SDL_MAJOR_VERSION != 1
 	SDL_DisplayMode mode;
 	int bpp;
 	Uint32 rmask, gmask, bmask, amask;
@@ -2810,35 +2265,12 @@ vid_mode_t *VID_GetDesktopMode(void)
 	// TODO check whether this actually works, or whether we do still need
 	// a read-window-size-after-entering-desktop-fullscreen hack for
 	// multiscreen setups.
-#endif
 	return &desktop_mode;
 }
 
 size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 {
 	size_t k = 0;
-#if SDL_MAJOR_VERSION == 1
-	SDL_Rect **vidmodes;
-	int bpp = SDL_GetVideoInfo()->vfmt->BitsPerPixel;
-#ifdef WIN64
-	SDL_Rect **ENDRECT = (SDL_Rect**)-1LL;
-#else
-	SDL_Rect **ENDRECT = (SDL_Rect**)-1;
-#endif
-
-	for(vidmodes = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE); vidmodes && vidmodes != ENDRECT && *vidmodes; ++vidmodes)
-	{
-		if(k >= maxcount)
-			break;
-		modes[k].width = (*vidmodes)->w;
-		modes[k].height = (*vidmodes)->h;
-		modes[k].bpp = bpp;
-		modes[k].refreshrate = 60; // no support for refresh rate in SDL
-		modes[k].pixelheight_num = 1;
-		modes[k].pixelheight_denom = 1; // SDL does not provide this
-		++k;
-	}
-#else
 	int modenum;
 	int nummodes = SDL_GetNumDisplayModes(0);
 	SDL_DisplayMode mode;
@@ -2856,6 +2288,7 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 		modes[k].pixelheight_denom = 1; // SDL does not provide this
 		k++;
 	}
-#endif
 	return k;
 }
+
+#endif // CORE_SDL

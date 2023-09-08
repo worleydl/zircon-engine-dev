@@ -29,13 +29,13 @@ typedef struct cmdalias_s
 	struct cmdalias_s *next;
 	char name[MAX_ALIAS_NAME];
 	char *value;
-	qboolean initstate; // indicates this command existed at init
+	qbool initstate; // indicates this command existed at init
 	char *initialvalue; // backup copy of value at init
 } cmdalias_t;
 
 static cmdalias_t *cmd_alias;
 
-static qboolean cmd_wait;
+static qbool cmd_wait;
 
 static mempool_t *cmd_mempool;
 
@@ -292,7 +292,7 @@ static void Cbuf_Execute_Deferred (void)
 Cbuf_Execute
 ============
 */
-static qboolean Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmdalias_t *alias );
+static qbool Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmdalias_t *alias );
 void Cbuf_Execute (void)
 {
 	int i;
@@ -300,10 +300,10 @@ void Cbuf_Execute (void)
 	char line[MAX_INPUTLINE];
 	char preprocessed[MAX_INPUTLINE];
 	char *firstchar;
-	qboolean quotes;
+	qbool quotes;
 	char *comment;
 
-	// LordHavoc: making sure the tokenizebuffer doesn't get filled up by repeated crashes
+	// LadyHavoc: making sure the tokenizebuffer doesn't get filled up by repeated crashes
 	cmd_tokenizebufferpos = 0;
 
 	while (cmd_text.cursize)
@@ -423,7 +423,7 @@ quake +prog jctest.qp +cmd amlev1
 quake -nosound +cmd amlev1
 ===============
 */
-qboolean host_stuffcmdsrun = false;
+qbool host_stuffcmdsrun = false;
 static void Cmd_StuffCmds_f (void)
 {
 	int		i, j, l;
@@ -481,7 +481,7 @@ static void Cmd_Exec(const char *filename)
 {
 	char *f;
 	size_t filenameLen = strlen(filename);
-	qboolean isdefaultcfg =
+	qbool isdefaultcfg =
 		String_Does_Match(filename, "default.cfg") ||
 		(filenameLen >= 12 && String_Does_Match(filename + filenameLen - 12, "/default.cfg"));
 
@@ -1041,8 +1041,8 @@ typedef struct cmd_function_s
 	const char *description;
 	xcommand_t consolefunction;
 	xcommand_t clientfunction;
-	qboolean csqcfunc;
-	qboolean initstate; // indicates this command existed at init
+	qbool csqcfunc;
+	qbool initstate; // indicates this command existed at init
 } cmd_function_t;
 
 static int cmd_argc;
@@ -1054,7 +1054,7 @@ cmd_source_t cmd_source;
 
 static cmd_function_t *cmd_functions;		// possible commands to execute
 
-static const char *Cmd_GetDirectCvarValue(const char *varname, cmdalias_t *alias, qboolean *is_multiple)
+static const char *Cmd_GetDirectCvarValue(const char *varname, cmdalias_t *alias, qbool *is_multiple)
 {
 	cvar_t *cvar;
 	long argno;
@@ -1121,11 +1121,11 @@ static const char *Cmd_GetDirectCvarValue(const char *varname, cmdalias_t *alias
 	return NULL;
 }
 
-qboolean Cmd_QuoteString(char *out, size_t outlen, const char *in, const char *quoteset, qboolean putquotes)
+qbool Cmd_QuoteString(char *out, size_t outlen, const char *in, const char *quoteset, qbool putquotes)
 {
-	qboolean quote_quot = !!strchr(quoteset, '"');
-	qboolean quote_backslash = !!strchr(quoteset, '\\');
-	qboolean quote_dollar = !!strchr(quoteset, '$');
+	qbool quote_quot = !!strchr(quoteset, '"');
+	qbool quote_backslash = !!strchr(quoteset, '\\');
+	qbool quote_dollar = !!strchr(quoteset, '$');
 
 	if(putquotes)
 	{
@@ -1186,8 +1186,8 @@ static const char *Cmd_GetCvarValue(const char *var, size_t varlen, cmdalias_t *
 	static char varval[MAX_INPUTLINE]; // cmd_mutex
 	const char *varstr = NULL;
 	char *varfunc;
-	qboolean required = false;
-	qboolean optional = false;
+	qbool required = false;
+	qbool optional = false;
 	static char asis[] = "asis"; // just to suppress const char warnings
 
 	if(varlen >= MAX_INPUTLINE)
@@ -1241,7 +1241,7 @@ static const char *Cmd_GetCvarValue(const char *var, size_t varlen, cmdalias_t *
 		varstr = Cmd_GetDirectCvarValue(Cmd_GetDirectCvarValue(varname + 1, alias, NULL), alias, NULL);
 	else
 	{
-		qboolean is_multiple = false;
+		qbool is_multiple = false;
 		// Exception: $* and $n- don't use the quoted form by default
 		varstr = Cmd_GetDirectCvarValue(varname, alias, &is_multiple);
 		if(is_multiple)
@@ -1296,7 +1296,7 @@ Cmd_PreprocessString
 
 Preprocesses strings and replaces $*, $param#, $cvar accordingly. Also strips comments.
 */
-static qboolean Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmdalias_t *alias ) {
+static qbool Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmdalias_t *alias ) {
 	const char *in;
 	size_t eat, varlen;
 	unsigned outlen;
@@ -1429,7 +1429,7 @@ static void Cmd_ExecuteAlias (cmdalias_t *alias)
 {
 	static char buffer[ MAX_INPUTLINE ]; // cmd_mutex
 	static char buffer2[ MAX_INPUTLINE ]; // cmd_mutex
-	qboolean ret = Cmd_PreprocessString( alias->value, buffer, sizeof(buffer) - 2, alias );
+	qbool ret = Cmd_PreprocessString( alias->value, buffer, sizeof(buffer) - 2, alias );
 	if(!ret)
 		return;
 	// insert at start of command buffer, so that aliases execute in order
@@ -1457,7 +1457,7 @@ static void Cmd_List_f (void)
 	const char *partial;
 	size_t len;
 	int count;
-	qboolean ispattern;
+	qbool ispattern;
 
 	if (Cmd_Argc() > 1)
 	{
@@ -1499,7 +1499,7 @@ static void Cmd_Apropos_f(void)
 	cmdalias_t *alias;
 	const char *partial;
 	int count;
-	qboolean ispattern;
+	qbool ispattern;
 	char vabuf[1024];
 
 	if (Cmd_Argc() > 1)
@@ -1777,7 +1777,7 @@ void Cmd_AddCommand (const char *cmd_name, xcommand_t function, const char *desc
 Cmd_Exists
 ============
 */
-qboolean Cmd_Exists (const char *cmd_name)
+qbool Cmd_Exists (const char *cmd_name)
 {
 	cmd_function_t	*cmd;
 
@@ -1874,7 +1874,7 @@ const char **Cmd_CompleteBuildList (const char *partial, int is_from_nothing)
 	return buf;
 }
 
-// written by LordHavoc
+// written by LadyHavoc
 void Cmd_CompleteCommandPrint (const char *partial, int is_from_nothing)
 {
 	cmd_function_t *cmd;
@@ -1912,7 +1912,7 @@ const char *Cmd_CompleteAlias (const char *partial, int is_from_nothing)
 	return NULL;
 }
 
-// written by LordHavoc
+// written by LadyHavoc
 void Cmd_CompleteAliasPrint (const char *partial, int is_from_nothing)
 {
 	cmdalias_t *alias;
@@ -2000,7 +2000,7 @@ A complete command line has been parsed, so try to execute it
 FIXME: lookupnoadd the token to speed search?
 ============
 */
-void Cmd_ExecuteString (const char *text, cmd_source_t src, qboolean lockmutex)
+void Cmd_ExecuteString (const char *text, cmd_source_t src, qbool lockmutex)
 {
 	int oldpos;
 	int found;
@@ -2107,7 +2107,7 @@ void Cmd_ForwardStringToServer (const char *s)
 	if (!cls.netcon)
 		return;
 
-	// LordHavoc: thanks to Fuh for bringing the pure evil of SZ_Print to my
+	// LadyHavoc: thanks to Fuh for bringing the pure evil of SZ_Print to my
 	// attention, it has been eradicated from here, its only (former) use in
 	// all of darkplaces.
 	if (cls.protocol == PROTOCOL_QUAKEWORLD)

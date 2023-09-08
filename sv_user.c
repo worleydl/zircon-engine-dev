@@ -103,7 +103,7 @@ void SV_SetIdealPitch (void)
 static vec3_t wishdir, forward, right, up;
 static float wishspeed;
 
-static qboolean onground;
+static qbool onground;
 
 /*
 ==================
@@ -343,7 +343,7 @@ static void SV_AirMove (void)
 	vec3_t wishvel;
 	float fmove, smove, temp;
 
-	// LordHavoc: correct quake movement speed bug when looking up/down
+	// LadyHavoc: correct quake movement speed bug when looking up/down
 	wishvel[0] = wishvel[2] = 0;
 	wishvel[1] = PRVM_serveredictvector(host_client->edict, angles)[1];
 	AngleVectors (wishvel, forward, right, up);
@@ -406,7 +406,7 @@ void SV_ClientThink (void)
 	// make sure the velocity is sane (not a NaN)
 	SV_CheckVelocity(host_client->edict);
 
-	// LordHavoc: QuakeC replacement for SV_ClientThink (player movement)
+	// LadyHavoc: QuakeC replacement for SV_ClientThink (player movement)
 	if (PRVM_serverfunction(SV_PlayerPhysics) && sv_playerphysicsqc.integer)
 	{
 		PRVM_serverglobalfloat(time) = sv.time;
@@ -807,7 +807,7 @@ void SV_ApplyClientMove (void)
 	PRVM_serveredictfloat(host_client->edict, ping_movementloss) = movementloss / (float) NETGRAPH_PACKETS;
 }
 
-static qboolean SV_FrameLost(int framenum)
+static qbool SV_FrameLost(int framenum)
 {
 	if (host_client->entitydatabase5)
 	{

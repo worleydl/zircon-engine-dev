@@ -35,7 +35,7 @@ key up events are sent even if in console mode
 char		key_line[MAX_INPUTLINE];
 int			key_linepos;
 int			key_sellength;
-qboolean	key_insert = true;	// insert key toggle (for editing)
+qbool	key_insert = true;	// insert key toggle (for editing)
 keydest_t	key_dest;
 int			key_consoleactive;
 char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
@@ -43,7 +43,7 @@ char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
 int			history_line;
 char		history_savedline[MAX_INPUTLINE];
 char		history_searchstring[MAX_INPUTLINE];
-qboolean	history_matchfound = false;
+qbool	history_matchfound = false;
 conbuffer_t history;
 
 extern cvar_t	con_textsize;
@@ -141,7 +141,7 @@ Key_Console (int key, int unicode)
 	}
 #endif
 
-	// LordHavoc: copied most of this from Q2 to improve keyboard handling
+	// LadyHavoc: copied most of this from Q2 to improve keyboard handling
 	switch (key) {
 	case K_KP_SLASH:		key = '/';	break;
 	case K_KP_MINUS:		key = '-';	break;
@@ -217,7 +217,7 @@ Key_Console (int key, int unicode)
 		key_line[1] = 0;	// EvilTypeGuy: null terminate
 		key_linepos = 1;
 		
-		Selection_Line_Reset_Clear (); // ENTER
+		Selection_Line_Reset_Clear (); // ENTER  // conexit
 
 		//if (con_zircon_enter_removes_backscroll.value) {
 			con_backscroll = 0; history_line = -1; // Au 15
@@ -447,7 +447,7 @@ Key_Console (int key, int unicode)
 #ifdef CONFIG_MENU
 		//if (!q && down) {
 			WARP_X_ (M_ToggleMenu)
-			if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER))
+			if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER)) // conexit
 				Con_ToggleConsole_f ();
 			WARP_X_ (M_ToggleMenu)
 

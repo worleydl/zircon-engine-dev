@@ -45,12 +45,12 @@ rtexturepool_t *r_main_texturepool;
 
 static int r_textureframe = 0; ///< used only by R_GetCurrentTexture
 
-static qboolean r_loadnormalmap;
-static qboolean r_loadgloss;
-qboolean r_loadfog;
-static qboolean r_loaddds;
-static qboolean r_savedds;
-static qboolean r_gpuskeletal;
+static qbool r_loadnormalmap;
+static qbool r_loadgloss;
+qbool r_loadfog;
+static qbool r_loaddds;
+static qbool r_savedds;
+static qbool r_gpuskeletal;
 
 //
 // screen size info
@@ -267,7 +267,7 @@ cvar_t r_buffermegs[R_BUFFERDATA_COUNT] =
 extern cvar_t v_glslgamma;
 extern cvar_t v_glslgamma_2d;
 
-extern qboolean v_flipped_state;
+extern qbool v_flipped_state;
 
 r_framebufferstate_t r_fb;
 
@@ -595,7 +595,7 @@ static void R_BuildFogHeightTexture(void)
 	r_refdef.fog_height_table2d = (unsigned char *)Mem_Alloc(r_main_mempool, size * size * 4);
 	memcpy(r_refdef.fog_height_table1d, inpixels, size * 4);
 	Mem_Free(inpixels);
-	// LordHavoc: now the magic - what is that table2d for?  it is a cooked
+	// LadyHavoc: now the magic - what is that table2d for?  it is a cooked
 	// average fog color table accounting for every fog layer between a point
 	// and the camera.  (Note: attenuation is handled separately!)
 	for (y = 0;y < size;y++)
@@ -748,7 +748,7 @@ typedef struct r_glsl_permutation_s
 	unsigned int permutation;
 
 	/// indicates if we have tried compiling this permutation already
-	qboolean compiled;
+	qbool compiled;
 	/// 0 if compilation failed
 	int program;
 	// texture units assigned to each detected uniform
@@ -907,9 +907,9 @@ static int shaderstaticparms_count = 0;
 static unsigned int r_compileshader_staticparms[(SHADERSTATICPARMS_COUNT_15 + 0x1F) >> 5] = {0};
 #define R_COMPILESHADER_STATICPARM_ENABLE(p) r_compileshader_staticparms[(p) >> 5] |= (1 << ((p) & 0x1F))
 
-extern qboolean r_shadow_shadowmapsampler;
+extern qbool r_shadow_shadowmapsampler;
 extern int r_shadow_shadowmappcf;
-qboolean R_CompileShader_CheckStaticParms(void)
+qbool R_CompileShader_CheckStaticParms(void)
 {
 	static int r_compileshader_staticparms_save[(SHADERSTATICPARMS_COUNT_15 + 0x1F) >> 5];
 	memcpy(r_compileshader_staticparms_save, r_compileshader_staticparms, sizeof(r_compileshader_staticparms));
@@ -1035,12 +1035,12 @@ static char *R_ShaderStrCat(const char **strings)
 }
 
 WARP_X_CALLERS_ (3)
-static char *R_GetShaderText(const char *filename, qboolean printfromdisknotice, qboolean builtinonly)
+static char *R_GetShaderText(const char *filename, qbool printfromdisknotice, qbool builtinonly)
 {
 	char *shaderstring;
 	if (!filename || !filename[0])
 		return NULL;
-	// LordHavoc: note that FS_LoadFile appends a 0 byte to make it a valid string, so does R_ShaderStrCat
+	// LadyHavoc: note that FS_LoadFile appends a 0 byte to make it a valid string, so does R_ShaderStrCat
 	if (String_Does_Match(filename, "glsl/default.glsl"))
 	{
 		if (builtinonly)
@@ -1493,7 +1493,7 @@ static void R_GLSL_DumpShader_f(void)
 	}
 }
 
-void R_SetupShader_Generic(rtexture_t *first, rtexture_t *second, int texturemode, int rgbscale, qboolean usegamma, qboolean notrippy, qboolean suppresstexalpha)
+void R_SetupShader_Generic(rtexture_t *first, rtexture_t *second, int texturemode, int rgbscale, qbool usegamma, qbool notrippy, qbool suppresstexalpha)
 {
 	unsigned int permutation = 0;
 	if (r_trippy.integer && !notrippy)
@@ -1549,12 +1549,12 @@ void R_SetupShader_Generic(rtexture_t *first, rtexture_t *second, int texturemod
 	}
 }
 
-void R_SetupShader_Generic_NoTexture(qboolean usegamma, qboolean notrippy)
+void R_SetupShader_Generic_NoTexture(qbool usegamma, qbool notrippy)
 {
 	R_SetupShader_Generic(NULL, NULL, GL_MODULATE, 1, usegamma, notrippy, false);
 }
 
-void R_SetupShader_DepthOrShadow(qboolean notrippy, qboolean depthrgb, qboolean skeletal)
+void R_SetupShader_DepthOrShadow(qbool notrippy, qbool depthrgb, qbool skeletal)
 {
 	unsigned int permutation = 0;
 	if (r_trippy.integer && !notrippy)
@@ -1586,15 +1586,15 @@ void R_SetupShader_DepthOrShadow(qboolean notrippy, qboolean depthrgb, qboolean 
 	}
 }
 
-extern qboolean r_shadow_usingdeferredprepass;
+extern qbool r_shadow_usingdeferredprepass;
 extern rtexture_t *r_shadow_attenuationgradienttexture;
 extern rtexture_t *r_shadow_attenuation2dtexture;
 extern rtexture_t *r_shadow_attenuation3dtexture;
-extern qboolean r_shadow_usingshadowmap2d;
-extern qboolean r_shadow_usingshadowmaportho;
+extern qbool r_shadow_usingshadowmap2d;
+extern qbool r_shadow_usingshadowmaportho;
 extern float r_shadow_shadowmap_texturescale[2];
 extern float r_shadow_shadowmap_parameters[4];
-extern qboolean r_shadow_shadowmapvsdct;
+extern qbool r_shadow_shadowmapvsdct;
 extern rtexture_t *r_shadow_shadowmap2ddepthbuffer;
 extern rtexture_t *r_shadow_shadowmap2ddepthtexture;
 extern rtexture_t *r_shadow_shadowmapvsdcttexture;
@@ -1652,7 +1652,7 @@ static int R_BlendFuncFlags(int src, int dst)
 	return r;
 }
 
-void R_SetupShader_Surface(const vec3_t lightcolorbase, qboolean modellighting, float ambientscale, float diffusescale, float specularscale, rsurfacepass_t rsurfacepass, int texturenumsurfaces, const msurface_t **texturesurfacelist, void *surfacewaterplane, qboolean notrippy)
+void R_SetupShader_Surface(const vec3_t lightcolorbase, qbool modellighting, float ambientscale, float diffusescale, float specularscale, rsurfacepass_t rsurfacepass, int texturenumsurfaces, const msurface_t **texturesurfacelist, void *surfacewaterplane, qbool notrippy)
 {
 	// select a permutation of the lighting shader appropriate to this
 	// combination of texture, entity, light source, and fogging, only use the
@@ -2406,7 +2406,7 @@ skinframe_t *R_SkinFrame_FindNextByName( skinframe_t *last, const char *name ) {
 	return NULL;
 }
 
-skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewidth, int compareheight, int comparecrc, qboolean add)
+skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewidth, int compareheight, int comparecrc, qbool add)
 {
 	skinframe_t *item;
 	int hashindex;
@@ -2507,7 +2507,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 	}
 
 extern cvar_t gl_picmip;
-skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qboolean complain)
+skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain)
 {
 	int j;
 	unsigned char *pixels;
@@ -2517,7 +2517,7 @@ skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qboole
 	int basepixels_height = 0;
 	skinframe_t *skinframe;
 	rtexture_t *ddsbase = NULL;
-	qboolean ddshasalpha = false;
+	qbool ddshasalpha = false;
 	float ddsavgcolor[4];
 	char basename[MAX_QPATH];
 	int miplevel = R_PicmipForFlags(textureflags);
@@ -2728,7 +2728,7 @@ skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qboole
 }
 
 // this is only used by .spr32 sprites, HL .spr files, HL .bsp files
-skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, const unsigned char *skindata, int width, int height, qboolean sRGB)
+skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, const unsigned char *skindata, int width, int height, qbool sRGB)
 {
 	int i;
 	skinframe_t *skinframe;
@@ -2863,7 +2863,7 @@ skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, i
 	return skinframe;
 }
 
-static void R_SkinFrame_GenerateTexturesFromQPixels(skinframe_t *skinframe, qboolean colormapped)
+static void R_SkinFrame_GenerateTexturesFromQPixels(skinframe_t *skinframe, qbool colormapped)
 {
 	int width;
 	int height;
@@ -3022,7 +3022,7 @@ skinframe_t *R_SkinFrame_LoadMissing(void)
 typedef struct suffixinfo_s
 {
 	const char *suffix;
-	qboolean flipx, flipy, flipdiagonal;
+	qbool flipx, flipy, flipdiagonal;
 }
 suffixinfo_t;
 static suffixinfo_t suffix[3][6] =
@@ -3637,7 +3637,7 @@ void GL_Init (void)
 
 	VID_CheckExtensions();
 
-	// LordHavoc: report supported extensions
+	// LadyHavoc: report supported extensions
 #ifdef CONFIG_MENU
 	Con_DPrintf("\nQuakeC extensions for server and client: %s\nQuakeC extensions for menu: %s\n", vm_sv_extensions, vm_m_extensions );
 #else
@@ -3749,7 +3749,7 @@ int R_CullBoxCustomPlanes(const vec3_t mins, const vec3_t maxs, int numplanes, c
 
 //==================================================================================
 
-// LordHavoc: this stores temporary data used within the same frame
+// LadyHavoc: this stores temporary data used within the same frame
 
 typedef struct r_framedata_mem_s
 {
@@ -3774,7 +3774,7 @@ void R_FrameData_Reset(void)
 	}
 }
 
-static void R_FrameData_Resize(qboolean mustgrow)
+static void R_FrameData_Resize(qbool mustgrow)
 {
 	size_t wantedsize;
 	wantedsize = (size_t)(r_framedatasize.value * 1024*1024);
@@ -3907,7 +3907,7 @@ void R_BufferData_Reset(void)
 }
 
 // resize buffer as needed (this actually makes a new one, the old one will be recycled next frame)
-static void R_BufferData_Resize(r_bufferdata_type_t type, qboolean mustgrow, size_t minsize)
+static void R_BufferData_Resize(r_bufferdata_type_t type, qbool mustgrow, size_t minsize)
 {
 	r_bufferdata_buffer_t *mem = r_bufferdata_buffer[r_bufferdata_cycle][type];
 	size_t size;
@@ -4022,7 +4022,7 @@ r_meshbuffer_t *R_BufferData_Store(size_t datasize, const void *data, r_bufferda
 
 //==================================================================================
 
-// LordHavoc: animcache originally written by Echon, rewritten since then
+// LadyHavoc: animcache originally written by Echon, rewritten since then
 
 /**
  * Animation cache prevents re-generating mesh data for an animated model
@@ -4094,7 +4094,7 @@ static void R_AnimCache_UpdateEntityMeshBuffers(entity_render_t *ent, int numver
 	}
 }
 
-qboolean R_AnimCache_GetEntity(entity_render_t *ent, qboolean wantnormals, qboolean wanttangents)
+qbool R_AnimCache_GetEntity(entity_render_t *ent, qbool wantnormals, qbool wanttangents)
 {
 	dp_model_t *model = ent->model;
 	int numvertices;
@@ -4184,8 +4184,8 @@ qboolean R_AnimCache_GetEntity(entity_render_t *ent, qboolean wantnormals, qbool
 void R_AnimCache_CacheVisibleEntities(void)
 {
 	int i;
-	qboolean wantnormals = true;
-	qboolean wanttangents = !r_showsurfaces.integer;
+	qbool wantnormals = true;
+	qbool wanttangents = !r_showsurfaces.integer;
 
 	switch(vid.renderpath)
 	{
@@ -4220,7 +4220,7 @@ static void R_View_UpdateEntityLighting (void)
 	entity_render_t *ent;
 	vec3_t tempdiffusenormal, avg;
 	vec_t f, fa, fd, fdd;
-	qboolean skipunseen = r_shadows.integer != 1; //|| R_Shadow_ShadowMappingEnabled();
+	qbool skipunseen = r_shadows.integer != 1; //|| R_Shadow_ShadowMappingEnabled();
 
 	for (i = 0;i < r_refdef.scene.numentities;i++)
 	{
@@ -4372,7 +4372,7 @@ static void R_View_UpdateEntityLighting (void)
 
 #define MAX_LINEOFSIGHTTRACES 64
 
-static qboolean R_CanSeeBox(int numsamples, vec_t enlarge, vec3_t eye, vec3_t entboxmins, vec3_t entboxmaxs)
+static qbool R_CanSeeBox(int numsamples, vec_t enlarge, vec3_t eye, vec3_t entboxmins, vec3_t entboxmaxs)
 {
 	int i;
 	vec3_t boxmins, boxmaxs;
@@ -4785,7 +4785,7 @@ static void R_View_SetFrustum(const int *scissor)
 	for (i = 0;i < r_refdef.view.numfrustumplanes;i++)
 		PlaneClassify(r_refdef.view.frustum + i);
 
-	// LordHavoc: note to all quake engine coders, Quake had a special case
+	// LadyHavoc: note to all quake engine coders, Quake had a special case
 	// for 90 degrees which assumed a square view (wrong), so I removed it,
 	// Quake2 has it disabled as well.
 
@@ -4843,14 +4843,14 @@ static void R_GetScaledViewSize(int width, int height, int *outwidth, int *outhe
 	*outheight = (int)ceil(height * scale);
 }
 
-void R_SetupView(qboolean allowwaterclippingplane, int fbo, rtexture_t *depthtexture, rtexture_t *colortexture)
+void R_SetupView(qbool allowwaterclippingplane, int fbo, rtexture_t *depthtexture, rtexture_t *colortexture)
 {
 	const float *customclipplane = NULL;
 	float plane[4];
 	int /*rtwidth,*/ rtheight, scaledwidth, scaledheight;
 	if (r_refdef.view.useclipplane && allowwaterclippingplane)
 	{
-		// LordHavoc: couldn't figure out how to make this approach the
+		// LadyHavoc: couldn't figure out how to make this approach the
 		vec_t dist = r_refdef.view.clipplane.dist - r_water_clippingplanebias.value;
 		vec_t viewdist = DotProduct(r_refdef.view.origin, r_refdef.view.clipplane.normal);
 		if (viewdist < r_refdef.view.clipplane.dist + r_water_clippingplanebias.value)
@@ -5008,7 +5008,7 @@ static void R_Water_StartFrame(void)
 	int i;
 	int waterwidth, waterheight, texturewidth, textureheight, camerawidth, cameraheight;
 	r_waterstate_waterplane_t *p;
-	qboolean usewaterfbo = (r_viewfbo.integer >= 1 || r_water_fbo.integer >= 1) && vid.support.ext_framebuffer_object && vid.support.arb_texture_non_power_of_two && vid.samples < 2;
+	qbool usewaterfbo = (r_viewfbo.integer >= 1 || r_water_fbo.integer >= 1) && vid.support.ext_framebuffer_object && vid.support.arb_texture_non_power_of_two && vid.samples < 2;
 
 	if (vid.width > (int)vid.maxtexturesize_2d || vid.height > (int)vid.maxtexturesize_2d)
 		return;
@@ -5226,7 +5226,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 	int planeindex, qualityreduction = 0, old_r_dynamic = 0, old_r_shadows = 0, old_r_worldrtlight = 0, old_r_dlight = 0, old_r_particles = 0, old_r_decals = 0;
 	r_waterstate_waterplane_t *p;
 	vec3_t visorigin;
-	qboolean usewaterfbo = (r_viewfbo.integer >= 1 || r_water_fbo.integer >= 1) && vid.support.ext_framebuffer_object && vid.support.arb_texture_non_power_of_two && vid.samples < 2;
+	qbool usewaterfbo = (r_viewfbo.integer >= 1 || r_water_fbo.integer >= 1) && vid.support.ext_framebuffer_object && vid.support.arb_texture_non_power_of_two && vid.samples < 2;
 	char vabuf[1024];
 
 	originalview = r_refdef.view;
@@ -5502,7 +5502,7 @@ static void R_Bloom_StartFrame(void)
 	int i;
 	int bloomtexturewidth, bloomtextureheight, screentexturewidth, screentextureheight;
 	int viewwidth, viewheight;
-	qboolean useviewfbo = r_viewfbo.integer >= 1 && vid.support.ext_framebuffer_object && vid.support.arb_texture_non_power_of_two && vid.samples < 2;
+	qbool useviewfbo = r_viewfbo.integer >= 1 && vid.support.ext_framebuffer_object && vid.support.arb_texture_non_power_of_two && vid.samples < 2;
 	textype_t textype = TEXTYPE_COLORBUFFER;
 
 	switch (vid.renderpath)
@@ -6220,7 +6220,7 @@ R_GetScenePointer
 */
 r_refdef_scene_t * R_GetScenePointer( r_refdef_scene_type_t scenetype )
 {
-	// of course, we could also add a qboolean that provides a lock state and a ReleaseScenePointer function..
+	// of course, we could also add a qbool that provides a lock state and a ReleaseScenePointer function..
 	if( scenetype == r_currentscenetype ) {
 		return &r_refdef.scene;
 	} else {
@@ -6425,10 +6425,10 @@ static void R_DrawLocs(void);
 static void R_DrawEntityBBoxes(void);
 static void R_DrawModelDecals(void);
 extern cvar_t cl_decals_newsystem;
-extern qboolean r_shadow_usingdeferredprepass;
+extern qbool r_shadow_usingdeferredprepass;
 void R_RenderScene(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture)
 {
-	qboolean shadowmapping = false;
+	qbool shadowmapping = false;
 
 	if (r_timereport_active)
 		R_TimeReport("beginscene");
@@ -7033,7 +7033,7 @@ void R_Mesh_AddBrushMeshFromPlanes(rmesh_t *mesh, int numplanes, mplane_t *plane
 	}
 }
 
-static void R_Texture_AddLayer(texture_t *t, qboolean depthmask, int blendfunc1, int blendfunc2, texturelayertype_t type, rtexture_t *texture, const matrix4x4_t *matrix, float r, float g, float b, float a)
+static void R_Texture_AddLayer(texture_t *t, qbool depthmask, int blendfunc1, int blendfunc2, texturelayertype_t type, rtexture_t *texture, const matrix4x4_t *matrix, float r, float g, float b, float a)
 {
 	texturelayer_t *layer;
 	layer = t->currentlayers + t->currentnumlayers++;
@@ -7049,7 +7049,7 @@ static void R_Texture_AddLayer(texture_t *t, qboolean depthmask, int blendfunc1,
 	layer->color[3] = a;
 }
 
-static qboolean R_TestQ3WaveFunc(q3wavefunc_t func, const float *parms)
+static qbool R_TestQ3WaveFunc(q3wavefunc_t func, const float *parms)
 {
 	if(parms[0] == 0 && parms[1] == 0)
 		return false;
@@ -7295,7 +7295,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 		t->currentmaterialflags |= MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
 	else if (t->currentalpha < 1)
 		t->currentmaterialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
-	// LordHavoc: prevent bugs where code checks add or alpha at higher priority than customblend by clearing these flags
+	// LadyHavoc: prevent bugs where code checks add or alpha at higher priority than customblend by clearing these flags
 	if (t->currentmaterialflags & MATERIALFLAG_CUSTOMBLEND)
 		t->currentmaterialflags &= ~(MATERIALFLAG_ADD | MATERIALFLAG_ALPHA);
 	if (rsurface.ent_flags & RENDER_DOUBLESIDED)
@@ -7427,7 +7427,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	if (t->currentmaterialflags & MATERIALFLAG_WALL)
 	{
 		int blendfunc1, blendfunc2;
-		qboolean depthmask;
+		qbool depthmask;
 		if (t->currentmaterialflags & MATERIALFLAG_ADD)
 		{
 			blendfunc1 = GL_SRC_ALPHA;
@@ -7647,7 +7647,7 @@ void RSurf_ActiveWorldEntity(void)
 	rsurface.forcecurrenttextureupdate = false;
 }
 
-void RSurf_ActiveModelEntity(const entity_render_t *ent, qboolean wantnormals, qboolean wanttangents, qboolean prepass)
+void RSurf_ActiveModelEntity(const entity_render_t *ent, qbool wantnormals, qbool wanttangents, qbool prepass)
 {
 	dp_model_t *model = ent->model;
 	//if (rsurface.entity == ent && (!model->surfmesh.isanimated || (!wantnormals && !wanttangents)))
@@ -7899,7 +7899,7 @@ void RSurf_ActiveModelEntity(const entity_render_t *ent, qboolean wantnormals, q
 	rsurface.forcecurrenttextureupdate = false;
 }
 
-void RSurf_ActiveCustomEntity(const matrix4x4_t *matrix, const matrix4x4_t *inversematrix, int entflags, double shadertime, float r, float g, float b, float a, int numvertices, const float *vertex3f, const float *texcoord2f, const float *normal3f, const float *svector3f, const float *tvector3f, const float *color4f, int numtriangles, const int *element3i, const unsigned short *element3s, qboolean wantnormals, qboolean wanttangents)
+void RSurf_ActiveCustomEntity(const matrix4x4_t *matrix, const matrix4x4_t *inversematrix, int entflags, double shadertime, float r, float g, float b, float a, int numvertices, const float *vertex3f, const float *texcoord2f, const float *normal3f, const float *svector3f, const float *tvector3f, const float *color4f, int numtriangles, const int *element3i, const unsigned short *element3s, qbool wantnormals, qbool wanttangents)
 {
 	rsurface.entity = r_refdef.scene.worldentity;
 	rsurface.skeleton = NULL;
@@ -8118,8 +8118,8 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 	int batchnumtriangles;
 	int needsupdate;
 	int i, j;
-	qboolean gaps;
-	qboolean dynamicvertex;
+	qbool gaps;
+	qbool dynamicvertex;
 	float amplitude;
 	float animpos;
 	float center[3], forward[3], right[3], up[3], v[3], newforward[3], newright[3], newup[3];
@@ -9461,7 +9461,7 @@ static int RSurf_FindWaterPlaneForSurface(const msurface_t *surface)
 	vec3_t vert;
 	const float *v;
 	r_waterstate_waterplane_t *p;
-	qboolean prepared = false;
+	qbool prepared = false;
 	bestd = 0;
 	for (planeindex = 0, p = r_fb.water.waterplanes;planeindex < r_fb.water.numwaterplanes;planeindex++, p++)
 	{
@@ -9605,7 +9605,7 @@ static void RSurf_DrawBatch_GL11_ApplyAmbient(void)
 	}
 }
 
-static void RSurf_DrawBatch_GL11_Lightmap(float r, float g, float b, float a, qboolean applycolor, qboolean applyfog)
+static void RSurf_DrawBatch_GL11_Lightmap(float r, float g, float b, float a, qbool applycolor, qbool applyfog)
 {
 	// TODO: optimize
 	rsurface.passcolor4f = NULL;
@@ -9621,7 +9621,7 @@ static void RSurf_DrawBatch_GL11_Lightmap(float r, float g, float b, float a, qb
 	RSurf_DrawBatch();
 }
 
-static void RSurf_DrawBatch_GL11_Unlit(float r, float g, float b, float a, qboolean applycolor, qboolean applyfog)
+static void RSurf_DrawBatch_GL11_Unlit(float r, float g, float b, float a, qbool applycolor, qbool applyfog)
 {
 	// TODO: optimize applyfog && applycolor case
 	// just apply fog if necessary, and tint the fog color array if necessary
@@ -9635,7 +9635,7 @@ static void RSurf_DrawBatch_GL11_Unlit(float r, float g, float b, float a, qbool
 	RSurf_DrawBatch();
 }
 
-static void RSurf_DrawBatch_GL11_VertexColor(float r, float g, float b, float a, qboolean applycolor, qboolean applyfog)
+static void RSurf_DrawBatch_GL11_VertexColor(float r, float g, float b, float a, qbool applycolor, qbool applyfog)
 {
 	// TODO: optimize
 	rsurface.passcolor4f = rsurface.batchlightmapcolor4f;
@@ -9687,7 +9687,7 @@ static void RSurf_DrawBatch_GL11_ApplyFakeLight(void)
 	}
 }
 
-static void RSurf_DrawBatch_GL11_FakeLight(float r, float g, float b, float a, qboolean applycolor, qboolean applyfog)
+static void RSurf_DrawBatch_GL11_FakeLight(float r, float g, float b, float a, qbool applycolor, qbool applyfog)
 {
 	RSurf_DrawBatch_GL11_ApplyFakeLight();
 	if (applyfog)   RSurf_DrawBatch_GL11_ApplyFog();
@@ -9697,7 +9697,7 @@ static void RSurf_DrawBatch_GL11_FakeLight(float r, float g, float b, float a, q
 	RSurf_DrawBatch();
 }
 
-static void RSurf_DrawBatch_GL11_ApplyVertexShade(float *r, float *g, float *b, float *a, qboolean *applycolor)
+static void RSurf_DrawBatch_GL11_ApplyVertexShade(float *r, float *g, float *b, float *a, qbool *applycolor)
 {
 	int i;
 	float f;
@@ -9750,7 +9750,7 @@ static void RSurf_DrawBatch_GL11_ApplyVertexShade(float *r, float *g, float *b, 
 	}
 }
 
-static void RSurf_DrawBatch_GL11_VertexShade(float r, float g, float b, float a, qboolean applycolor, qboolean applyfog)
+static void RSurf_DrawBatch_GL11_VertexShade(float r, float g, float b, float a, qbool applycolor, qbool applyfog)
 {
 	RSurf_DrawBatch_GL11_ApplyVertexShade(&r, &g, &b, &a, &applycolor);
 	if (applyfog)   RSurf_DrawBatch_GL11_ApplyFog();
@@ -9802,7 +9802,7 @@ static void R_DrawTextureSurfaceList_Sky(int texturenumsurfaces, const msurface_
 	skyrenderlater = true;
 	RSurf_SetupDepthAndCulling();
 	GL_DepthMask(true);
-	// LordHavoc: HalfLife maps have freaky skypolys so don't use
+	// LadyHavoc: HalfLife maps have freaky skypolys so don't use
 	// skymasking on them, and Quake3 never did sky masking (unlike
 	// software Quake and software Quake2), so disable the sky masking
 	// in Quake3 maps as it causes problems with q3map2 sky tricks,
@@ -9841,7 +9841,7 @@ static void R_DrawTextureSurfaceList_Sky(int texturenumsurfaces, const msurface_
 
 extern rtexture_t *r_shadow_prepasslightingdiffusetexture;
 extern rtexture_t *r_shadow_prepasslightingspeculartexture;
-static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth, qboolean prepass)
+static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool prepass)
 {
 	if (r_fb.water.renderingscene && (rsurface.texture->currentmaterialflags & (MATERIALFLAG_WATERSHADER | MATERIALFLAG_REFRACTION | MATERIALFLAG_REFLECTION | MATERIALFLAG_CAMERA)))
 		return;
@@ -9901,11 +9901,11 @@ static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface
 	RSurf_DrawBatch();
 }
 
-static void R_DrawTextureSurfaceList_GL13(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth)
+static void R_DrawTextureSurfaceList_GL13(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth)
 {
 	// OpenGL 1.3 path - anything not completely ancient
-	qboolean applycolor;
-	qboolean applyfog;
+	qbool applycolor;
+	qbool applyfog;
 	int layerindex;
 	const texturelayer_t *layer;
 	RSurf_PrepareVerticesForBatch(BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_NORMAL | ((!rsurface.uselightmaptexture && !(rsurface.texture->currentmaterialflags & MATERIALFLAG_FULLBRIGHT)) ? BATCHNEED_ARRAY_VERTEXCOLOR : 0) | BATCHNEED_ARRAY_TEXCOORD | (rsurface.modeltexcoordlightmap2f ? BATCHNEED_ARRAY_LIGHTMAP : 0) | BATCHNEED_NOGAPS, texturenumsurfaces, texturesurfacelist);
@@ -10009,10 +10009,10 @@ static void R_DrawTextureSurfaceList_GL13(int texturenumsurfaces, const msurface
 	}
 }
 
-static void R_DrawTextureSurfaceList_GL11(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth)
+static void R_DrawTextureSurfaceList_GL11(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth)
 {
 	// OpenGL 1.1 - crusty old voodoo path
-	qboolean applyfog;
+	qbool applyfog;
 	int layerindex;
 	const texturelayer_t *layer;
 	RSurf_PrepareVerticesForBatch(BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_NORMAL | ((!rsurface.uselightmaptexture && !(rsurface.texture->currentmaterialflags & MATERIALFLAG_FULLBRIGHT)) ? BATCHNEED_ARRAY_VERTEXCOLOR : 0) | BATCHNEED_ARRAY_TEXCOORD | (rsurface.modeltexcoordlightmap2f ? BATCHNEED_ARRAY_LIGHTMAP : 0) | BATCHNEED_NOGAPS, texturenumsurfaces, texturesurfacelist);
@@ -10114,7 +10114,7 @@ static void R_DrawTextureSurfaceList_GL11(int texturenumsurfaces, const msurface
 	}
 }
 
-static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth)
+static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth)
 {
 	int vi;
 	int j;
@@ -10192,7 +10192,7 @@ static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const 
 		}
 		else if (rsurface.texture->currentmaterialflags & MATERIALFLAG_MODELLIGHT)
 		{
-			qboolean applycolor = true;
+			qbool applycolor = true;
 			float one = 1.0;
 
 			RSurf_PrepareVerticesForBatch(BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_NORMAL | BATCHNEED_NOGAPS, texturenumsurfaces, texturesurfacelist);
@@ -10300,7 +10300,7 @@ static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const 
 	}
 }
 
-static void R_DrawWorldTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth, qboolean prepass)
+static void R_DrawWorldTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool prepass)
 {
 	CHECKGLERROR
 	RSurf_SetupDepthAndCulling();
@@ -10327,7 +10327,7 @@ static void R_DrawWorldTextureSurfaceList(int texturenumsurfaces, const msurface
 	CHECKGLERROR
 }
 
-static void R_DrawModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth, qboolean prepass)
+static void R_DrawModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool prepass)
 {
 	CHECKGLERROR
 	RSurf_SetupDepthAndCulling();
@@ -10388,7 +10388,7 @@ static void R_DrawSurface_TransparentCallback(const entity_render_t *ent, const 
 
 	if (r_transparentdepthmasking.integer)
 	{
-		qboolean setup = false;
+		qbool setup = false;
 		for (i = 0;i < numsurfaces;i = j)
 		{
 			j = i + 1;
@@ -10522,7 +10522,7 @@ static void R_DrawTextureSurfaceList_DepthOnly(int texturenumsurfaces, const msu
 	RSurf_DrawBatch();
 }
 
-static void R_ProcessWorldTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth, qboolean depthonly, qboolean prepass)
+static void R_ProcessWorldTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool depthonly, qbool prepass)
 {
 	CHECKGLERROR
 	if (depthonly)
@@ -10554,7 +10554,7 @@ static void R_ProcessWorldTextureSurfaceList(int texturenumsurfaces, const msurf
 	CHECKGLERROR
 }
 
-static void R_QueueWorldSurfaceList(int numsurfaces, const msurface_t **surfacelist, int flagsmask, qboolean writedepth, qboolean depthonly, qboolean prepass)
+static void R_QueueWorldSurfaceList(int numsurfaces, const msurface_t **surfacelist, int flagsmask, qbool writedepth, qbool depthonly, qbool prepass)
 {
 	int i, j;
 	texture_t *texture;
@@ -10600,7 +10600,7 @@ static void R_QueueWorldSurfaceList(int numsurfaces, const msurface_t **surfacel
 	R_FrameData_ReturnToMark();
 }
 
-static void R_ProcessModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qboolean writedepth, qboolean depthonly, qboolean prepass)
+static void R_ProcessModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool depthonly, qbool prepass)
 {
 	CHECKGLERROR
 	if (depthonly)
@@ -10632,7 +10632,7 @@ static void R_ProcessModelTextureSurfaceList(int texturenumsurfaces, const msurf
 	CHECKGLERROR
 }
 
-static void R_QueueModelSurfaceList(entity_render_t *ent, int numsurfaces, const msurface_t **surfacelist, int flagsmask, qboolean writedepth, qboolean depthonly, qboolean prepass)
+static void R_QueueModelSurfaceList(entity_render_t *ent, int numsurfaces, const msurface_t **surfacelist, int flagsmask, qbool writedepth, qbool depthonly, qbool prepass)
 {
 	int i, j;
 	texture_t *texture;
@@ -10771,7 +10771,7 @@ static void R_DecalSystem_SpawnTriangle(decalsystem_t *decalsystem, const float 
 	if (decalsystem->maxdecals <= decalsystem->numdecals)
 	{
 		decalsystem_t old = *decalsystem;
-		qboolean useshortelements;
+		qbool useshortelements;
 		decalsystem->maxdecals = max(16, decalsystem->maxdecals * 2);
 		useshortelements = decalsystem->maxdecals * 3 <= 65536;
 		decalsystem->decals = (tridecal_t *)Mem_Alloc(cls.levelmempool, decalsystem->maxdecals * (sizeof(tridecal_t) + sizeof(float[3][3]) + sizeof(float[3][2]) + sizeof(float[3][4]) + sizeof(int[3]) + (useshortelements ? sizeof(unsigned short[3]) : 0)));
@@ -10841,7 +10841,7 @@ extern cvar_t cl_decals_bias;
 extern cvar_t cl_decals_models;
 extern cvar_t cl_decals_newsystem_intensitymultiplier;
 // baseparms, parms, temps
-static void R_DecalSystem_SplatTriangle(decalsystem_t *decalsystem, float r, float g, float b, float a, float s1, float t1, float s2, float t2, unsigned int decalsequence, qboolean dynamic, float (*planes)[4], matrix4x4_t *projection, int triangleindex, int surfaceindex)
+static void R_DecalSystem_SplatTriangle(decalsystem_t *decalsystem, float r, float g, float b, float a, float s1, float t1, float s2, float t2, unsigned int decalsequence, qbool dynamic, float (*planes)[4], matrix4x4_t *projection, int triangleindex, int surfaceindex)
 {
 	int cornerindex;
 	int index;
@@ -10938,7 +10938,7 @@ static void R_DecalSystem_SplatEntity(entity_render_t *ent, const vec3_t worldor
 {
 	matrix4x4_t projection;
 	decalsystem_t *decalsystem;
-	qboolean dynamic;
+	qbool dynamic;
 	dp_model_t *model;
 	const msurface_t *surface;
 	const msurface_t *surfaces;
@@ -11456,7 +11456,7 @@ static void R_DrawDebugModel(void)
 	{
 		int triangleindex;
 		int bihleafindex;
-		qboolean cullbox = false;
+		qbool cullbox = false;
 		const q3mbrush_t *brush;
 		const bih_t *bih = &model->collision_bih;
 		const bih_leaf_t *bihleaf;
@@ -11619,7 +11619,7 @@ static void R_DrawDebugModel(void)
 
 int r_maxsurfacelist = 0;
 const msurface_t **r_surfacelist = NULL;
-void R_DrawWorldSurfaces(qboolean skysurfaces, qboolean writedepth, qboolean depthonly, qboolean debug, qboolean prepass)
+void R_DrawWorldSurfaces(qbool skysurfaces, qbool writedepth, qbool depthonly, qbool debug, qbool prepass)
 {
 	int i, j, endj, flagsmask;
 	dp_model_t *model = r_refdef.scene.worldmodel;
@@ -11714,7 +11714,7 @@ void R_DrawWorldSurfaces(qboolean skysurfaces, qboolean writedepth, qboolean dep
 	rsurface.entity = NULL; // used only by R_GetCurrentTexture and RSurf_ActiveWorldEntity/RSurf_ActiveModelEntity
 }
 
-void R_DrawModelSurfaces(entity_render_t *ent, qboolean skysurfaces, qboolean writedepth, qboolean depthonly, qboolean debug, qboolean prepass)
+void R_DrawModelSurfaces(entity_render_t *ent, qbool skysurfaces, qbool writedepth, qbool depthonly, qbool debug, qbool prepass)
 {
 	int i, j, endj, flagsmask;
 	dp_model_t *model = ent->model;
@@ -11844,7 +11844,7 @@ void R_DrawModelSurfaces(entity_render_t *ent, qboolean skysurfaces, qboolean wr
 	rsurface.entity = NULL; // used only by R_GetCurrentTexture and RSurf_ActiveWorldEntity/RSurf_ActiveModelEntity
 }
 
-void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qboolean writedepth, qboolean prepass)
+void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool writedepth, qbool prepass)
 {
 	static texture_t texture;
 	static msurface_t surface;
@@ -11879,7 +11879,7 @@ void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, i
 	R_DrawModelTextureSurfaceList(1, &surfacelist, writedepth, prepass);
 }
 
-void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qboolean writedepth, qboolean prepass)
+void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool writedepth, qbool prepass)
 {
 	static msurface_t surface;
 	const msurface_t *surfacelist = &surface;

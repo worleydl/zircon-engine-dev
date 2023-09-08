@@ -102,7 +102,7 @@ static void M_Setup_Draw (void)
 	Hotspots_Add (menu_x + 48, menu_y + 140, 320, 8 + 1, 1, hotspottype_button);
 
 
-	// LordHavoc: rewrote this code greatly
+	// LadyHavoc: rewrote this code greatly
 	if (menuplyr_load) {
 		unsigned char *f;
 		fs_offset_t filesize;

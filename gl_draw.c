@@ -289,7 +289,7 @@ static const embeddedpic_t embeddedpics[] =
 	{NULL, 0, 0, NULL}
 };
 
-static rtexture_t *draw_generatepic(const char *name, qboolean quiet)
+static rtexture_t *draw_generatepic(const char *name, qbool quiet)
 {
 	const embeddedpic_t *p;
 	for (p = embeddedpics;p->name;p++)
@@ -322,9 +322,9 @@ cachepic_t *Draw_CachePic_Flags(const char *path, unsigned int cachepicflags)
 	char lmpname[MAX_QPATH];
 	int texflags;
 	int j;
-	qboolean ddshasalpha;
+	qbool ddshasalpha;
 	float ddsavgcolor[4];
-	qboolean loaded = false;
+	qbool loaded = false;
 	char vabuf[1024];
 
 	texflags = TEXF_ALPHA;
@@ -523,7 +523,7 @@ rtexture_t *Draw_GetPicTexture(cachepic_t *pic)
 	{
 		if (pic->tex == NULL && r_texture_dds_load.integer != 0)
 		{
-			qboolean ddshasalpha;
+			qbool ddshasalpha;
 			float ddsavgcolor[4];
 			pic->tex = R_LoadTextureDDSFile(drawtexturepool, va(vabuf, sizeof(vabuf), "dds/%s.dds", pic->name), vid.sRGB2D, pic->texflags, &ddshasalpha, ddsavgcolor, 0, false);
 		}
@@ -638,7 +638,7 @@ static float snap_to_pixel_x(float x, float roundUpAt);
 extern int con_linewidth; // to force rewrapping
 // loadfont console gfx/conchars,gfx/fallback 8 12 16 24 32
 WARP_X_ (LoadFont_f)
-void LoadFont(qboolean override, const char *fname, dp_font_t *fnt, float scale, float voffset)
+void LoadFont(qbool override, const char *fname, dp_font_t *fnt, float scale, float voffset)
 {
 	int i, ch;
 	float maxwidth;
@@ -788,7 +788,7 @@ void LoadFont(qboolean override, const char *fname, dp_font_t *fnt, float scale,
 }
 
 extern cvar_t developer_font;
-dp_font_t *FindFont(const char *title, qboolean allocate_new)
+dp_font_t *FindFont(const char *title, qbool allocate_new)
 {
 	int i, oldsize;
 
@@ -1092,7 +1092,7 @@ static void _DrawQ_Setup(void) // see R_ResetViewRendering2D
 	R_ResetViewRendering2D_Common(0, NULL, NULL, vid_conwidth.integer, vid_conheight.integer);
 }
 
-qboolean r_draw2d_force = false;
+qbool r_draw2d_force = false;
 static void _DrawQ_SetupAndProcessDrawFlag(int flags, cachepic_t *pic, float alpha)
 {
 	_DrawQ_Setup();
@@ -1100,7 +1100,7 @@ static void _DrawQ_SetupAndProcessDrawFlag(int flags, cachepic_t *pic, float alp
 		return;
 	DrawQ_ProcessDrawFlag(flags, (alpha < 1) || (pic && pic->hasalpha));
 }
-void DrawQ_ProcessDrawFlag(int flags, qboolean alpha)
+void DrawQ_ProcessDrawFlag(int flags, qbool alpha)
 {
 	if(flags == DRAWFLAG_ADDITIVE)
 	{
@@ -1305,8 +1305,8 @@ void DrawQ_Fill(float x, float y, float width, float height, float red, float gr
 static const vec4_t string_colors[] =
 {
 	// Quake3 colors
-	// LordHavoc: why on earth is cyan before magenta in Quake3?
-	// LordHavoc: note: Doom3 uses white for [0] and [7]
+	// LadyHavoc: why on earth is cyan before magenta in Quake3?
+	// LadyHavoc: note: Doom3 uses white for [0] and [7]
 	/*0*/		{0.0, 0.0, 0.0, 1.0}, // black 0
 	/*1*/		{1.0, 0.0, 0.0, 1.0}, // red 1											//{0.75, 0.50, 0.50, 1.0}, // Baker 1007 soft purple
 	
@@ -1333,7 +1333,7 @@ static const vec4_t string_colors[] =
 
 #define STRING_COLORS_COUNT	(sizeof(string_colors) / sizeof(vec4_t))
 
-static void DrawQ_GetTextColor(float color[4], int colorindex, float r, float g, float b, float a, qboolean shadow)
+static void DrawQ_GetTextColor(float color[4], int colorindex, float r, float g, float b, float a, qbool shadow)
 {
 	float C = r_textcontrast.value;
 	float B = r_textbrightness.value;
@@ -1355,7 +1355,7 @@ static void DrawQ_GetTextColor(float color[4], int colorindex, float r, float g,
 }
 
 // NOTE: this function always draws exactly one character if maxwidth <= 0
-float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *maxlen, float w, float h, float sw, float sh, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt, float maxwidth)
+float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *maxlen, float w, float h, float sw, float sh, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt, float maxwidth)
 {
 	const char *text_start = text;
 	int colorindex = STRING_COLOR_DEFAULT;
@@ -1372,8 +1372,8 @@ float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *max
 	//ft2_font_map_t *prevmap = NULL;
 	ft2_font_t *ft2 = fnt->ft2;
 	// float ftbase_x;
-	qboolean snap = true;
-	qboolean least_one = false;
+	qbool snap = true;
+	qbool least_one = false;
 	float dw; // display w
 	//float dh; // display h
 	const float *width_of;
@@ -1544,7 +1544,7 @@ float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *max
 }
 
 float DrawQ_Color[4];
-float DrawQ_String_Scale(float startx, float starty, const char *text, size_t maxlen, float w, float h, float sw, float sh, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt)
+float DrawQ_String_Scale(float startx, float starty, const char *text, size_t maxlen, float w, float h, float sw, float sh, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt)
 {
 	int shadow, colorindex = STRING_COLOR_DEFAULT;
 	size_t i;
@@ -1565,7 +1565,7 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 	const char *text_start = text;
 	float kx, ky;
 	ft2_font_t *ft2 = fnt->ft2;
-	qboolean snap = true;
+	qbool snap = true;
 	float pix_x, pix_y;
 	size_t bytes_left;
 	float dw, dh;
@@ -1895,22 +1895,22 @@ out:
 	return x;
 }
 
-float DrawQ_String(float startx, float starty, const char *text, size_t maxlen, float w, float h, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt)
+float DrawQ_String(float startx, float starty, const char *text, size_t maxlen, float w, float h, float basered, float basegreen, float baseblue, float basealpha, int flags, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt)
 {
 	return DrawQ_String_Scale(startx, starty, text, maxlen, w, h, 1, 1, basered, basegreen, baseblue, basealpha, flags, outcolor, ignorecolorcodes, fnt);
 }
 
-float DrawQ_TextWidth_UntilWidth_TrackColors(const char *text, size_t *maxlen, float w, float h, int *outcolor, qboolean ignorecolorcodes, const dp_font_t *fnt, float maxwidth)
+float DrawQ_TextWidth_UntilWidth_TrackColors(const char *text, size_t *maxlen, float w, float h, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt, float maxwidth)
 {
 	return DrawQ_TextWidth_UntilWidth_TrackColors_Scale(text, maxlen, w, h, 1, 1, outcolor, ignorecolorcodes, fnt, maxwidth);
 }
 
-float DrawQ_TextWidth(const char *text, size_t maxlen, float w, float h, qboolean ignorecolorcodes, const dp_font_t *fnt)
+float DrawQ_TextWidth(const char *text, size_t maxlen, float w, float h, qbool ignorecolorcodes, const dp_font_t *fnt)
 {
 	return DrawQ_TextWidth_UntilWidth(text, &maxlen, w, h, ignorecolorcodes, fnt, 1000000000);
 }
 
-float DrawQ_TextWidth_UntilWidth(const char *text, size_t *maxlen, float w, float h, qboolean ignorecolorcodes, const dp_font_t *fnt, float maxWidth)
+float DrawQ_TextWidth_UntilWidth(const char *text, size_t *maxlen, float w, float h, qbool ignorecolorcodes, const dp_font_t *fnt, float maxWidth)
 {
 	return DrawQ_TextWidth_UntilWidth_TrackColors(text, maxlen, w, h, NULL, ignorecolorcodes, fnt, maxWidth);
 }
@@ -1918,7 +1918,7 @@ float DrawQ_TextWidth_UntilWidth(const char *text, size_t *maxlen, float w, floa
 #if 0
 // not used
 // no ^xrgb management
-static int DrawQ_BuildColoredText(char *output2c, size_t maxoutchars, const char *text, int maxreadchars, qboolean ignorecolorcodes, int *outcolor)
+static int DrawQ_BuildColoredText(char *output2c, size_t maxoutchars, const char *text, int maxreadchars, qbool ignorecolorcodes, int *outcolor)
 {
 	int color, numchars = 0;
 	char *outputend2c = output2c + maxoutchars - 2;
@@ -1993,7 +1993,7 @@ void DrawQ_SuperPic(float x, float y, cachepic_t *pic, float width, float height
 	R_Mesh_Draw(0, 4, 0, 2, polygonelement3i, NULL, 0, polygonelement3s, NULL, 0);
 }
 
-void DrawQ_Mesh (drawqueuemesh_t *mesh, int flags, qboolean hasalpha)
+void DrawQ_Mesh (drawqueuemesh_t *mesh, int flags, qbool hasalpha)
 {
 	_DrawQ_Setup();
 	if(!r_draw2d.integer && !r_draw2d_force)
@@ -2077,7 +2077,7 @@ void DrawQ_Line (float width, float x1, float y1, float x2, float y2, float r, f
 	}
 }
 
-void DrawQ_Lines (float width, int numlines, int flags, qboolean hasalpha)
+void DrawQ_Lines (float width, int numlines, int flags, qbool hasalpha)
 {
 	_DrawQ_SetupAndProcessDrawFlag(flags, NULL, hasalpha ? 0.5f : 1.0f);
 

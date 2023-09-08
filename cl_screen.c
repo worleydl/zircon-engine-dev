@@ -142,7 +142,7 @@ extern cvar_t r_fog_clear;
 
 int jpeg_supported = false;
 
-qboolean	scr_initialized;		// ready to draw
+qbool	scr_initialized;		// ready to draw
 
 float		scr_con_current;
 int			scr_con_margin_bottom;
@@ -153,7 +153,7 @@ static void SCR_ScreenShot_f (void);
 static void R_Envmap_f (void);
 
 // backend
-void R_ClearScreen(qboolean fogcolor);
+void R_ClearScreen(qbool fogcolor);
 
 /*
 ===============================================================================
@@ -808,7 +808,7 @@ static void SCR_SetUpToDrawConsole (void)
 	if (scr_menuforcewhiledisconnected.integer && key_dest == key_game && cls.state == ca_disconnected)
 	{
 		if (framecounter >= 2)
-			MR_ToggleMenu(1);
+			MR_ToggleMenu(1); // conexit
 		else
 			framecounter++;
 	}
@@ -862,7 +862,7 @@ SCR_BeginLoadingPlaque
 
 ================
 */
-void SCR_BeginLoadingPlaque (qboolean startup)
+void SCR_BeginLoadingPlaque (qbool startup)
 {
 	// save console log up to this point to log_file if it was set by configs
 	Log_Start();
@@ -1572,8 +1572,8 @@ void SCR_ScreenShot_f (void)
 	char filename[MAX_QPATH];
 	unsigned char *buffer1;
 	unsigned char *buffer2;
-	qboolean jpeg = (scr_screenshot_jpeg.integer != 0);
-	qboolean png = (scr_screenshot_png.integer != 0) && !jpeg;
+	qbool jpeg = (scr_screenshot_jpeg.integer != 0);
+	qbool png = (scr_screenshot_png.integer != 0) && !jpeg;
 	char vabuf[1024];
 
 	if (Cmd_Argc() == 2)
@@ -1972,7 +1972,7 @@ struct envmapinfo_s
 {
 	float angles[3];
 	const char *name;
-	qboolean flipx, flipy, flipdiagonaly;
+	qbool flipx, flipy, flipdiagonaly;
 }
 envmapinfo[12] =
 {
@@ -2078,7 +2078,7 @@ void SHOWLMP_decodeshow(void)
 	float x, y;
 	strlcpy (lmplabel,MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (lmplabel));
 	strlcpy (picname, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (picname));
-	if (gamemode == GAME_NEHAHRA) // LordHavoc: nasty old legacy junk
+	if (gamemode == GAME_NEHAHRA) // LadyHavoc: nasty old legacy junk
 	{
 		x = MSG_ReadByte(&cl_message);
 		y = MSG_ReadByte(&cl_message);
@@ -2133,10 +2133,10 @@ void SHOWLMP_drawall(void)
 
 // buffer1: 4*w*h
 // buffer2: 3*w*h (or 4*w*h if screenshotting alpha too)
-qboolean SCR_ScreenShot(char *filename, unsigned char *buffer1, unsigned char *buffer2, int x, int y, int width, int height, qboolean flipx, qboolean flipy, qboolean flipdiagonal, qboolean jpeg, qboolean png, qboolean gammacorrect, qboolean keep_alpha)
+qbool SCR_ScreenShot(char *filename, unsigned char *buffer1, unsigned char *buffer2, int x, int y, int width, int height, qbool flipx, qbool flipy, qbool flipdiagonal, qbool jpeg, qbool png, qbool gammacorrect, qbool keep_alpha)
 {
 	int	indices[4] = {0,1,2,3}; // BGRA
-	qboolean ret;
+	qbool ret;
 
 	GL_ReadPixelsBGRA(x, y, width, height, buffer1);
 
@@ -2231,7 +2231,7 @@ static void SCR_DrawTouchscreenOverlay(void)
 	}
 }
 
-void R_ClearScreen(qboolean fogcolor)
+void R_ClearScreen(qbool fogcolor)
 {
 	float clearcolor[4];
 	if (scr_screenshot_alpha.integer)
@@ -2246,7 +2246,7 @@ void R_ClearScreen(qboolean fogcolor)
 		VectorCopy(r_refdef.fogcolor, clearcolor);
 	}
 	// clear depth is 1.0
-	// LordHavoc: we use a stencil centered around 128 instead of 0,
+	// LadyHavoc: we use a stencil centered around 128 instead of 0,
 	// to avoid clamping interfering with strange shadow volume
 	// drawing orders
 	// clear the screen
@@ -2340,8 +2340,8 @@ cldraw2d0:
 			r_refdef.view.z = 0;
 		}
 
-		// LordHavoc: viewzoom (zoom in for sniper rifles, etc)
-		// LordHavoc: this is designed to produce widescreen fov values
+		// LadyHavoc: viewzoom (zoom in for sniper rifles, etc)
+		// LadyHavoc: this is designed to produce widescreen fov values
 		// when the screen is wider than 4/3 width/height aspect, to do
 		// this it simply assumes the requested fov is the vertical fov
 		// for a 4x3 display, if the ratio is not 4x3 this makes the fov
@@ -2614,8 +2614,8 @@ typedef struct loadingscreenstack_s
 }
 loadingscreenstack_t;
 static loadingscreenstack_t *loadingscreenstack = NULL;
-static qboolean loadingscreendone = false;
-static qboolean loadingscreencleared = false;
+static qbool loadingscreendone = false;
+static qbool loadingscreencleared = false;
 static float loadingscreenheight = 0;
 rtexture_t *loadingscreentexture = NULL;
 static float loadingscreentexture_vertex3f[12];
@@ -2670,7 +2670,7 @@ void SCR_UpdateLoadingScreenIfShown(void)
 		SCR_UpdateLoadingScreen(loadingscreencleared, false);
 }
 
-void SCR_PushLoadingScreen (qboolean redraw, const char *msg, float len_in_parent)
+void SCR_PushLoadingScreen (qbool redraw, const char *msg, float len_in_parent)
 {
 	loadingscreenstack_t *s = (loadingscreenstack_t *) Z_Malloc(sizeof(loadingscreenstack_t));
 	s->prev = loadingscreenstack;
@@ -2696,7 +2696,7 @@ void SCR_PushLoadingScreen (qboolean redraw, const char *msg, float len_in_paren
 		SCR_UpdateLoadingScreenIfShown();
 }
 
-void SCR_PopLoadingScreen (qboolean redraw)
+void SCR_PopLoadingScreen (qbool redraw)
 {
 	loadingscreenstack_t *s = loadingscreenstack;
 
@@ -2715,7 +2715,7 @@ void SCR_PopLoadingScreen (qboolean redraw)
 		SCR_UpdateLoadingScreenIfShown();
 }
 
-void SCR_ClearLoadingScreen (qboolean redraw)
+void SCR_ClearLoadingScreen (qbool redraw)
 {
 	while(loadingscreenstack)
 		SCR_PopLoadingScreen(redraw && !loadingscreenstack->prev);
@@ -2812,7 +2812,7 @@ static cachepic_t *loadingscreenpic;
 static float loadingscreenpic_vertex3f[12];
 static float loadingscreenpic_texcoord2f[8];
 
-static void SCR_DrawLoadingScreen_SharedSetup (qboolean clear)
+static void SCR_DrawLoadingScreen_SharedSetup (qbool clear)
 {
 	r_viewport_t viewport;
 	float x, y, w, h, sw, sh, f;
@@ -2887,7 +2887,7 @@ static void SCR_DrawLoadingScreen_SharedSetup (qboolean clear)
 	loadingscreenpic_texcoord2f[6] = 0;loadingscreenpic_texcoord2f[7] = 1;
 }
 
-static void SCR_DrawLoadingScreen (qboolean clear)
+static void SCR_DrawLoadingScreen (qbool clear)
 {
 	// we only need to draw the image if it isn't already there
 	GL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2908,7 +2908,7 @@ static void SCR_DrawLoadingScreen (qboolean clear)
 	SCR_DrawLoadingStack();
 }
 
-static void SCR_DrawLoadingScreen_SharedFinish (qboolean clear)
+static void SCR_DrawLoadingScreen_SharedFinish (qbool clear)
 {
 	R_Mesh_Finish();
 	// refresh
@@ -2917,7 +2917,7 @@ static void SCR_DrawLoadingScreen_SharedFinish (qboolean clear)
 
 static double loadingscreen_lastupdate;
 
-void SCR_UpdateLoadingScreen (qboolean clear, qboolean startup)
+void SCR_UpdateLoadingScreen (qbool clear, qbool startup)
 {
 	keydest_t	old_key_dest;
 	int			old_key_consoleactive;
@@ -3006,12 +3006,12 @@ void SCR_UpdateLoadingScreen (qboolean clear, qboolean startup)
 	key_consoleactive = old_key_consoleactive;
 }
 
-qboolean R_Stereo_ColorMasking(void)
+qbool R_Stereo_ColorMasking(void)
 {
 	return r_stereo_redblue.integer || r_stereo_redgreen.integer || r_stereo_redcyan.integer;
 }
 
-qboolean R_Stereo_Active(void)
+qbool R_Stereo_Active(void)
 {
 	return (vid.stereobuffer || r_stereo_sidebyside.integer || r_stereo_horizontal.integer || r_stereo_vertical.integer || R_Stereo_ColorMasking());
 }
@@ -3343,9 +3343,22 @@ cldraw2d4:
 		// Baker: Make mouse cursor show in menu
 		//VID_SetMouse(vid.fullscreen, vid_mouse.integer && !in_client_mouse && !vid_touchscreen.integer, !vid_touchscreen.integer);
 		VID_SetMouse(vid.fullscreen, false, false);
-	else
-		VID_SetMouse(vid.fullscreen, vid_mouse.integer && !cl.csqc_wantsmousemove && cl_prydoncursor.integer <= 0 && (!cls.demoplayback || cl_demo_mousegrab.integer) && !vid_touchscreen.integer, !vid_touchscreen.integer);
+	else {
+		int shall_hide = !vid_touchscreen.integer /*0*/;
+		if (!shall_hide ) {
+			shall_hide =shall_hide ;
+		}
+		VID_SetMouse(vid.fullscreen, 
+			/*relative*/
+			vid_mouse.integer /*1*/ && 
+			!cl.csqc_wantsmousemove /*?*/  && 
+			cl_prydoncursor.integer <= 0 /*0*/ && 
+				(!cls.demoplayback || cl_demo_mousegrab.integer)  && 
+				!vid_touchscreen.integer, 
 
+				!vid_touchscreen.integer /*0*/
+		);
+	} // if
 	VID_Finish();
 }
 

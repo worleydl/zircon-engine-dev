@@ -23,7 +23,7 @@
 
 int Thread_Init(void);
 void Thread_Shutdown(void);
-qboolean Thread_HasThreads(void);
+qbool Thread_HasThreads(void);
 void *_Thread_CreateMutex(const char *filename, int fileline);
 void _Thread_DestroyMutex(void *mutex, const char *filename, int fileline);
 int _Thread_LockMutex(void *mutex, const char *filename, int fileline);

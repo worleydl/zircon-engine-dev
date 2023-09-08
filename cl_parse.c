@@ -192,10 +192,10 @@ cvar_t cl_nettimesyncboundmode = {CVAR_SAVE, "cl_nettimesyncboundmode", "6", "me
 cvar_t cl_nettimesyncboundtolerance = {CVAR_SAVE, "cl_nettimesyncboundtolerance", "0.25", "how much error is tolerated by bounding check, as a fraction of frametime, 0.25 = up to 25% margin of error tolerated, 1 = use only new time, 0 = use only old time (same effect as setting cl_nettimesyncfactor to 1)"};
 cvar_t cl_iplog_name = {CVAR_SAVE, "cl_iplog_name", "darkplaces_iplog.txt", "name of iplog file containing player addresses for iplog_list command and automatic ip logging when parsing status command"};
 
-static qboolean QW_CL_CheckOrDownloadFile(const char *filename);
+static qbool QW_CL_CheckOrDownloadFile(const char *filename);
 static void QW_CL_RequestNextDownload(void);
 static void QW_CL_NextUpload(void);
-//static qboolean QW_CL_IsUploading(void);
+//static qbool QW_CL_IsUploading(void);
 static void QW_CL_StopUpload(void);
 
 /*
@@ -305,17 +305,17 @@ so the server doesn't disconnect.
 */
 
 static unsigned char olddata[NET_MAXMESSAGE];
-void CL_KeepaliveMessage (qboolean readmessages)
+void CL_KeepaliveMessage (qbool readmessages)
 {
 	static double lastdirtytime = 0;
-	static qboolean recursive = false;
+	static qbool recursive = false;
 	double dirtytime;
 	double deltatime;
 	static double countdownmsg = 0;
 	static double countdownupdate = 0;
 	sizebuf_t old;
 
-	qboolean thisrecursive;
+	qbool thisrecursive;
 
 	thisrecursive = recursive;
 	recursive = true;
@@ -366,7 +366,7 @@ void CL_KeepaliveMessage (qboolean readmessages)
 		unsigned char		buf[4];
 		countdownmsg = 5;
 		// write out a nop
-		// LordHavoc: must use unreliable because reliable could kill the sigon message!
+		// LadyHavoc: must use unreliable because reliable could kill the sigon message!
 		Con_Print("--> client to server keepalive\n");
 		memset(&msg, 0, sizeof(msg));
 		msg.data = buf;
@@ -380,11 +380,11 @@ void CL_KeepaliveMessage (qboolean readmessages)
 
 void CL_ParseEntityLump(char *entdata)
 {
-	qboolean loadedsky = false;
+	qbool loadedsky = false;
 	const char *data;
 	char key[128], value[MAX_INPUTLINE];
-	FOG_clear(); // LordHavoc: no fog until set
-	// LordHavoc: default to the map's sky (q3 shader parsing sets this)
+	FOG_clear(); // LadyHavoc: no fog until set
+	// LadyHavoc: default to the map's sky (q3 shader parsing sets this)
 	R_SetSkyBox(cl.worldmodel->brush.skybox);
 	data = entdata;
 	if (!data)
@@ -556,7 +556,7 @@ static void CL_SetupWorldModel(void)
 	}
 }
 
-static qboolean QW_CL_CheckOrDownloadFile(const char *filename)
+static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 {
 	qfile_t *file;
 	char vabuf[1024];
@@ -978,7 +978,7 @@ void QW_CL_StartUpload(unsigned char *data, int size)
 }
 
 #if 0
-qboolean QW_CL_IsUploading(void)
+qbool QW_CL_IsUploading(void)
 {
 	return cls.qw_uploaddata != NULL;
 }
@@ -1103,7 +1103,7 @@ static void CL_UpdateItemsAndWeapon(void)
 #define LOADPROGRESSWEIGHT_WORLDMODEL      30.0
 #define LOADPROGRESSWEIGHT_WORLDMODEL_INIT  2.0
 
-static void CL_BeginDownloads(qboolean aborteddownload)
+static void CL_BeginDownloads(qbool aborteddownload)
 {
 	char vabuf[1024];
 	// quakeworld works differently
@@ -1666,11 +1666,11 @@ static void CL_SignonReply (void)
 	case 2:
 		if (cls.netcon)
 		{
-			// LordHavoc: quake sent the player info here but due to downloads
+			// LadyHavoc: quake sent the player info here but due to downloads
 			// it is sent earlier instead
 			// CL_SendPlayerInfo();
 
-			// LordHavoc: changed to begin a loading stage and issue this when done
+			// LadyHavoc: changed to begin a loading stage and issue this when done
 			MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 			MSG_WriteString (&cls.netcon->message, "spawn");
 		}
@@ -2242,7 +2242,7 @@ static void CL_ParseClientdata (void)
 		}
 	}
 
-	// LordHavoc: hipnotic demos don't have this bit set but should
+	// LadyHavoc: hipnotic demos don't have this bit set but should
 	if (bits & SU_ITEMS || 
 		isin11 (cls.protocol, 
 				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
@@ -2701,7 +2701,7 @@ static void CL_ParseTempEntity(void)
 					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
 			}
 			break;
-			// LordHavoc: added for improved blood splatters
+			// LadyHavoc: added for improved blood splatters
 		case TE_BLOOD:
 			// blood puff
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
@@ -2727,7 +2727,7 @@ static void CL_ParseTempEntity(void)
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_PLASMABURN, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			break;
-			// LordHavoc: added for improved gore
+			// LadyHavoc: added for improved gore
 		case TE_BLOODSHOWER:
 			// vaporized body
 			MSG_ReadVector(&cl_message, pos, cls.protocol); // mins
@@ -2916,7 +2916,7 @@ static void CL_ParseTempEntity(void)
 			break;
 	// PGM 01/21/97
 
-	// LordHavoc: for compatibility with the Nehahra movie...
+	// LadyHavoc: for compatibility with the Nehahra movie...
 		case TE_LIGHTNING4NEH:
 			CL_ParseBeam(Mod_ForName(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), true, false, NULL), false);
 			break;
@@ -3028,13 +3028,13 @@ typedef struct cl_iplog_item_s
 }
 cl_iplog_item_t;
 
-static qboolean cl_iplog_loaded = false;
+static qbool cl_iplog_loaded = false;
 static int cl_iplog_numitems = 0;
 static int cl_iplog_maxitems = 0;
 static cl_iplog_item_t *cl_iplog_items;
 
 static void CL_IPLog_Load(void);
-static void CL_IPLog_Add(const char *address, const char *name, qboolean checkexisting, qboolean addtofile)
+static void CL_IPLog_Add(const char *address, const char *name, qbool checkexisting, qbool addtofile)
 {
 	int i;
 	size_t sz_name, sz_address;
@@ -3182,7 +3182,7 @@ static void CL_IPLog_List_f(void)
 }
 
 // look for anything interesting like player IP addresses or ping reports
-static qboolean CL_ExaminePrintString (const char *text)
+static qbool CL_ExaminePrintString (const char *text)
 {
 	int len;
 	const char *t;
@@ -3213,7 +3213,7 @@ static qboolean CL_ExaminePrintString (const char *text)
 
 	if (cl.parsingtextmode == CL_PARSETEXTMODE_PING) {
 		// if anything goes wrong, we'll assume this is not a ping report
-		qboolean expected = cl.parsingtextexpectingpingforscores != 0;
+		qbool expected = cl.parsingtextexpectingpingforscores != 0;
 		cl.parsingtextexpectingpingforscores = 0;
 		cl.parsingtextmode = CL_PARSETEXTMODE_NONE;
 		t = text;
@@ -3431,11 +3431,11 @@ void CL_ParseServerMessage(void)
 	unsigned char		cmdlog[32];
 	const char		*cmdlogname[32], *temp;
 	int			cmdindex, cmdcount = 0;
-	qboolean	qwplayerupdatereceived;
-	qboolean	strip_pqc;
+	qbool	qwplayerupdatereceived;
+	qbool	strip_pqc;
 	char vabuf[1024];
 
-	// LordHavoc: moved demo message writing from before the packet parse to
+	// LadyHavoc: moved demo message writing from before the packet parse to
 	// after the packet parse so that CL_Stop_f can be called by cl_autodemo
 	// code in CL_ParseServerinfo
 	//if (cls.demorecording)
@@ -3495,7 +3495,7 @@ void CL_ParseServerMessage(void)
 			cmdlogname[cmdindex] = qw_svc_strings[cmd];
 			if (!cmdlogname[cmdindex])
 			{
-				// LordHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
+				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
 				const char *d = "<unknown>";
 				cmdlogname[cmdindex] = d;
 			}
@@ -3844,7 +3844,7 @@ void CL_ParseServerMessage(void)
 				// Baker: hit test here (demo play hits here immed Q start)  Does not happen on start map.
 				// I only get this for the Quake demos, my own demo record does not hit here.
 				//
-				// LordHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
+				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
 				temp = "entity";
 				cmdlogname[cmdindex] = temp;
 				SHOWNET("fast update");
@@ -3861,7 +3861,7 @@ void CL_ParseServerMessage(void)
 			cmdlogname[cmdindex] = svc_strings[cmd];
 			if (!cmdlogname[cmdindex])
 			{
-				// LordHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
+				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
 				const char *d = "<unknown>";
 				cmdlogname[cmdindex] = d;
 			}
@@ -4000,7 +4000,7 @@ void CL_ParseServerMessage(void)
 					Host_Error("svc_setview >= MAX_EDICTS");
 				if (cl.viewentity >= cl.max_entities)
 					CL_ExpandEntities(cl.viewentity);
-				// LordHavoc: assume first setview recieved is the real player entity
+				// LadyHavoc: assume first setview recieved is the real player entity
 				if (!cl.realplayerentity)
 					cl.realplayerentity = cl.viewentity;
 				// update cl.playerentity to this one if it is a valid player
@@ -4143,7 +4143,7 @@ void CL_ParseServerMessage(void)
 
 			case svc_signonnum:
 				i = MSG_ReadByte(&cl_message);
-				// LordHavoc: it's rude to kick off the client if they missed the
+				// LadyHavoc: it's rude to kick off the client if they missed the
 				// reconnect somehow, so allow signon 1 even if at signon 1
 				if (i <= cls.signon && i != 1)
 					Host_Error ("Received signon %i when at %i", i, cls.signon);
@@ -4299,7 +4299,7 @@ void CL_ParseServerMessage(void)
 
 	parsingerror = false;
 
-	// LordHavoc: this was at the start of the function before cl_autodemo was
+	// LadyHavoc: this was at the start of the function before cl_autodemo was
 	// implemented
 	if (cls.demorecording)
 	{

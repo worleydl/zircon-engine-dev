@@ -60,7 +60,7 @@
 	DWORD (WINAPI *qXInputGetState)(DWORD index, xinput_state_t *state);
 	DWORD (WINAPI *qXInputGetKeystroke)(DWORD index, DWORD reserved, xinput_keystroke_t *keystroke);
 
-	qboolean vid_xinputinitialized = false;
+	qbool vid_xinputinitialized = false;
 	int vid_xinputindex = -1;
 #endif // WIN32 xinput
 
@@ -68,17 +68,17 @@
 viddef_t vid;
 
 // AK FIXME -> input_dest
-qboolean in_client_mouse = true;
+qbool in_client_mouse = true;
 
 // AK where should it be placed ?
 float in_mouse_x, in_mouse_y;
 float in_windowmouse_x, in_windowmouse_y;
 
-// LordHavoc: if window is hidden, don't update screen
-qboolean vid_hidden = true;
-// LordHavoc: if window is not the active window, don't hog as much CPU time,
+// LadyHavoc: if window is hidden, don't update screen
+qbool vid_hidden = true;
+// LadyHavoc: if window is not the active window, don't hog as much CPU time,
 // let go of the mouse, turn off sound, and restore system gamma ramps...
-qboolean vid_activewindow = true;
+qbool vid_activewindow = true;
 
 vid_joystate_t vid_joystate;
 
@@ -141,7 +141,7 @@ cvar_t gl_info_platform = {CVAR_READONLY, "gl_info_platform", "", "indicates GL 
 cvar_t gl_info_driver = {CVAR_READONLY, "gl_info_driver", "", "name of driver library (opengl32.dll, libGL.so.1, or whatever)."};
 
 // whether hardware gamma ramps are currently in effect
-qboolean vid_usinghwgamma = false;
+qbool vid_usinghwgamma = false;
 
 int vid_gammarampsize = 0;
 unsigned short *vid_gammaramps = NULL;
@@ -532,7 +532,7 @@ void (GLAPIENTRY *qglBlendFuncSeparate)(GLenum sfactorRGB, GLenum dfactorRGB, GL
 #define sscanf sscanf_s
 #endif
 
-qboolean GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *funcs, const char *disableparm, int silent)
+qbool GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *funcs, const char *disableparm, int silent)
 {
 	int failed = false;
 	const dllfunction_t *func;
@@ -570,14 +570,13 @@ qboolean GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *fun
 		}
 	}
 
-	if(ext == 0) // opengl version
-	{
+	if (ext == 0) { // opengl version
 		if (sscanf(gl_version, "%d.%d", &curr_version.major, &curr_version.minor) < 2)
 			curr_version.major = curr_version.minor = 1;
 
 		if (curr_version.major < min_version.major || (curr_version.major == min_version.major && curr_version.minor < min_version.minor))
 		{
-			Con_DPrintf("not detected (OpenGL %d.%d loaded)\n", curr_version.major, curr_version.minor);
+			Con_DPrintLinef ("not detected (OpenGL %d.%d loaded)", curr_version.major, curr_version.minor);
 			return false;
 		}
 	}
@@ -590,9 +589,9 @@ qboolean GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *fun
 		if (!(*func->funcvariable = (void *) GL_GetProcAddress(func->name)))
 		{
 			if (ext && !silent)
-				Con_DPrintf("%s is missing function \"%s\" - broken driver!\n", minglver_or_ext, func->name);
+				Con_DPrintLinef ("%s is missing function \"%s\" - broken driver!", minglver_or_ext, func->name);
 			if (!ext)
-				Con_Printf("OpenGL %s core features are missing function \"%s\" - broken driver!\n", minglver_or_ext, func->name);
+				Con_PrintLinef ("OpenGL %s core features are missing function \"%s\" - broken driver!", minglver_or_ext, func->name);
 			failed = true;
 		}
 	}
@@ -603,7 +602,7 @@ qboolean GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *fun
 	dpsnprintf(extstr, sizeof(extstr), "%s %s ", gl_info_extensions.string, minglver_or_ext);
 	Cvar_SetQuick(&gl_info_extensions, extstr);
 
-	Con_DPrint("enabled\n");
+	Con_DPrintLinef ("enabled");
 	return true;
 }
 
@@ -1067,7 +1066,7 @@ void VID_CheckExtensions(void)
 	vid.support.arb_texture_env_combine = GL_CheckExtension("GL_ARB_texture_env_combine", NULL, "-nocombine", false) || GL_CheckExtension("GL_EXT_texture_env_combine", NULL, "-nocombine", false);
 	vid.support.arb_texture_gather = GL_CheckExtension("GL_ARB_texture_gather", NULL, "-notexturegather", false);
 #ifndef __APPLE__
-	// LordHavoc: too many bugs on OSX!
+	// LadyHavoc: too many bugs on OSX!
 	vid.support.arb_texture_non_power_of_two = GL_CheckExtension("GL_ARB_texture_non_power_of_two", NULL, "-notexturenonpoweroftwo", false);
 #endif
 	vid.support.arb_vertex_buffer_object = GL_CheckExtension("GL_ARB_vertex_buffer_object", vbofuncs, "-novbo", false);
@@ -1235,7 +1234,7 @@ float VID_JoyState_GetAxis(const vid_joystate_t *joystate, int axis, float fsens
 	return value * fsensitivity;
 }
 
-qboolean VID_JoyBlockEmulatedKeys(int keycode)
+qbool VID_JoyBlockEmulatedKeys(int keycode)
 {
 	int j;
 	vid_joystate_t joystate;
@@ -1317,7 +1316,7 @@ void VID_Shared_BuildJoyState_Finish(vid_joystate_t *joystate)
 	joystate->button[35] = r < 0.0f;
 }
 
-static void VID_KeyEventForButton(qboolean oldbutton, qboolean newbutton, int key, double *timer)
+static void VID_KeyEventForButton(qbool oldbutton, qbool newbutton, int key, double *timer)
 {
 	if (oldbutton)
 	{
@@ -1472,7 +1471,7 @@ static float cachegamma, cachebrightness, cachecontrast, cacheblack[3], cachegre
 static int cachecolorenable, cachehwgamma;
 
 unsigned int vid_gammatables_serial = 0; // so other subsystems can poll if gamma parameters have changed
-qboolean vid_gammatables_trivial = true;
+qbool vid_gammatables_trivial = true;
 void VID_BuildGammaTables(unsigned short *ramps, int rampsize)
 {
 	if (cachecolorenable)
@@ -1495,7 +1494,7 @@ void VID_BuildGammaTables(unsigned short *ramps, int rampsize)
 			ramps[i] = (int)floor(bound(0.0f, Image_sRGBFloatFromLinearFloat(ramps[i] / 65535.0f), 1.0f) * 65535.0f + 0.5f);
 	}
 
-	// LordHavoc: this code came from Ben Winslow and Zinx Verituse, I have
+	// LadyHavoc: this code came from Ben Winslow and Zinx Verituse, I have
 	// immensely butchered it to work with variable framerates and fit in with
 	// the rest of darkplaces.
 	if (v_psycho.integer)
@@ -1535,14 +1534,14 @@ void VID_BuildGammaTables(unsigned short *ramps, int rampsize)
 	}
 }
 
-void VID_UpdateGamma(qboolean force, int rampsize)
+void VID_UpdateGamma(qbool force, int rampsize)
 {
 	cvar_t *c;
 	float f;
 	int wantgamma;
-	qboolean gamma_changed = false;
+	qbool gamma_changed = false;
 
-	// LordHavoc: don't mess with gamma tables if running dedicated
+	// LadyHavoc: don't mess with gamma tables if running dedicated
 	if (cls.state == ca_dedicated)
 		return;
 
@@ -1937,8 +1936,8 @@ static void VID_CloseSystems(void)
 	R_Modules_Shutdown();
 }
 
-qboolean vid_commandlinecheck = true;
-extern qboolean vid_opened;
+qbool vid_commandlinecheck = true;
+extern qbool vid_opened;
 
 void VID_Restart_f(void)
 {
@@ -2080,7 +2079,7 @@ static int VID_SortModes_Compare(const void *a_, const void *b_)
 		return -1;
 	return 0;
 }
-size_t VID_SortModes(vid_mode_t *modes, size_t count, qboolean usebpp, qboolean userefreshrate, qboolean useaspect)
+size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool userefreshrate, qbool useaspect)
 {
 	size_t i;
 	if(count == 0)

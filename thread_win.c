@@ -1,3 +1,5 @@
+#if defined(_WIN32) && !defined(CORE_SDL)
+
 #include "quakedef.h"
 #include "thread.h"
 #include <process.h>
@@ -14,7 +16,7 @@ void Thread_Shutdown(void)
 {
 }
 
-qboolean Thread_HasThreads(void)
+qbool Thread_HasThreads(void)
 {
 #ifdef THREADDISABLE
 	return false;
@@ -301,3 +303,5 @@ void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 	}
 	Thread_UnlockMutex(b->mutex);
 }
+
+#endif // defined(_WIN32) && !defined(CORE_SDL)

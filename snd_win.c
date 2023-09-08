@@ -1,4 +1,4 @@
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CORE_SDL) 
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -86,7 +86,7 @@ static const GUID MY_KSDATAFORMAT_SUBTYPE_PCM =
 
 extern HWND mainwindow;
 static cvar_t snd_wav_partitionsize = {CVAR_SAVE, "snd_wav_partitionsize", "1024", "controls sound delay in samples, values too low will cause crackling, too high will cause delayed sounds"};
-static qboolean sndsys_registeredcvars = false;
+static qbool sndsys_registeredcvars = false;
 
 #ifdef SUPPORTDIRECTX
 HRESULT (WINAPI *pDirectSoundCreate)(GUID FAR *lpGUID, LPDIRECTSOUND FAR *lplpDS, IUnknown FAR *pUnkOuter);
@@ -99,18 +99,18 @@ static unsigned int wav_buffer_size;
 
 // DirectSound output: 64KB in 1 buffer
 //#define SECONDARY_BUFFER_SIZE(fmt_ptr) ((fmt_ptr)->width * (fmt_ptr)->channels * (fmt_ptr)->speed / 2)
-// LordHavoc: changed this to be a multiple of 32768
+// LadyHavoc: changed this to be a multiple of 32768
 #define SECONDARY_BUFFER_SIZE(fmt_ptr) ((fmt_ptr)->channels * 32768)
 
 typedef enum sndinitstat_e {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 
 #ifdef SUPPORTDIRECTX
-static qboolean	dsound_init;
+static qbool	dsound_init;
 static unsigned int dsound_time;
-static qboolean	primary_format_set;
+static qbool	primary_format_set;
 #endif
 
-static qboolean	wav_init;
+static qbool	wav_init;
 
 static int	snd_sent, snd_completed;
 
@@ -145,7 +145,7 @@ LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
 HINSTANCE hInstDS;
 #endif
 
-qboolean SNDDMA_InitWav (void);
+qbool SNDDMA_InitWav (void);
 #ifdef SUPPORTDIRECTX
 sndinitstat SNDDMA_InitDirect (void);
 #endif
@@ -156,7 +156,7 @@ sndinitstat SNDDMA_InitDirect (void);
 SndSys_BuildWaveFormat
 ==================
 */
-static qboolean SndSys_BuildWaveFormat (const snd_format_t* requested, WAVEFORMATEXTENSIBLE* fmt_ptr)
+static qbool SndSys_BuildWaveFormat (const snd_format_t* requested, WAVEFORMATEXTENSIBLE* fmt_ptr)
 {
 	WAVEFORMATEX* pfmtex;
 
@@ -169,7 +169,7 @@ static qboolean SndSys_BuildWaveFormat (const snd_format_t* requested, WAVEFORMA
 	pfmtex->nBlockAlign = pfmtex->nChannels * pfmtex->wBitsPerSample / 8;
 	pfmtex->nAvgBytesPerSec = pfmtex->nSamplesPerSec * pfmtex->nBlockAlign;
 
-	// LordHavoc: disabled this WAVE_FORMAT_EXTENSIBLE support because it does not seem to be working
+	// LadyHavoc: disabled this WAVE_FORMAT_EXTENSIBLE support because it does not seem to be working
 #if 0
 	if (requested->channels <= 2)
 	{
@@ -432,7 +432,7 @@ SndSys_InitMmsystem
 Crappy windows multimedia base
 ==================
 */
-static qboolean SndSys_InitMmsystem (const snd_format_t* requested)
+static qbool SndSys_InitMmsystem (const snd_format_t* requested)
 {
 	WAVEFORMATEXTENSIBLE format;
 	int				i;
@@ -547,10 +547,10 @@ Create "snd_renderbuffer" with the proper sound format if the call is successful
 May return a suggested format if the requested format isn't available
 ====================
 */
-qboolean SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
+qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 {
 #ifdef SUPPORTDIRECTX
-	qboolean wavonly;
+	qbool wavonly;
 #endif
 	sndinitstat	stat;
 
@@ -817,7 +817,7 @@ SndSys_LockRenderBuffer
 Get the exclusive lock on "snd_renderbuffer"
 ====================
 */
-qboolean SndSys_LockRenderBuffer (void)
+qbool SndSys_LockRenderBuffer (void)
 {
 #ifdef SUPPORTDIRECTX
 	int reps;
@@ -897,4 +897,4 @@ void SndSys_SendKeyEvents(void)
 	// not supported
 }
 
-#endif #if 0 //#endif
+#endif // defined(_WIN32) && defined(!CORE_SDL) 

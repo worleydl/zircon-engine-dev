@@ -172,13 +172,13 @@ static prvm_required_field_t m_required_globals[] =
 
 static int m_numrequiredglobals = sizeof(m_required_globals) / sizeof(m_required_globals[0]);
 
-void MR_SetRouting (qboolean forceold);
+void MR_SetRouting (qbool forceold);
 
 void MVM_error_cmd(const char *format, ...) DP_FUNC_PRINTF(1);
 void MVM_error_cmd(const char *format, ...)
 {
 	prvm_prog_t *prog = MVM_prog;
-	static qboolean processingError = false;
+	static qbool processingError = false;
 	char errorstring[MAX_INPUTLINE];
 	va_list argptr;
 
@@ -246,12 +246,12 @@ static void MVM_count_edicts(prvm_prog_t *prog)
 	Con_Printf("active    :%3i\n", active);
 }
 
-static qboolean MVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
+static qbool MVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 {
 	return true;
 }
 
-static void MP_KeyEvent (int key, int ascii, qboolean downevent)
+static void MP_KeyEvent (int key, int ascii, qbool downevent)
 {
 	prvm_prog_t *prog = MVM_prog;
 
@@ -385,14 +385,14 @@ static void MP_Init (void)
 //============================================================================
 // Menu router
 
-void (*MR_KeyEvent) (int key, int ascii, qboolean downevent);
+void (*MR_KeyEvent) (int key, int ascii, qbool downevent);
 void (*MR_Draw) (void);
 void (*MR_ToggleMenu) (int mode);
 void (*MR_Shutdown) (void);
 void (*MR_NewMap) (void);
 int (*MR_GetServerListEntryCategory) (const serverlist_entry_t *entry);
 
-void MR_SetRouting(qboolean forceold)
+void MR_SetRouting(qbool forceold)
 {
 	// if the menu prog isnt available or forceqmenu ist set, use the old menu
 	if(!FS_FileExists(menu_progs.string) || forceqmenu.integer || forceold)

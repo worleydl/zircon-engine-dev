@@ -108,7 +108,7 @@ snd_buffer_t *Snd_CreateSndBuffer (const unsigned char *samples, unsigned int sa
 Snd_AppendToSndBuffer
 ====================
 */
-qboolean Snd_AppendToSndBuffer (snd_buffer_t* sb, const unsigned char *samples, unsigned int sampleframes, const snd_format_t* format)
+qbool Snd_AppendToSndBuffer (snd_buffer_t* sb, const unsigned char *samples, unsigned int sampleframes, const snd_format_t* format)
 {
 	size_t srclength, outcount;
 	unsigned char *out_data;
@@ -301,7 +301,7 @@ qboolean Snd_AppendToSndBuffer (snd_buffer_t* sb, const unsigned char *samples, 
 S_LoadSound
 ==============
 */
-qboolean S_LoadSound (sfx_t *sfx, qboolean complain)
+qbool S_LoadSound (sfx_t *sfx, qbool complain)
 {
 	char namebuffer[MAX_QPATH + 16];
 	size_t len;
@@ -327,7 +327,7 @@ qboolean S_LoadSound (sfx_t *sfx, qboolean complain)
 
 	SCR_PushLoadingScreen(true, sfx->name, 1);
 
-	// LordHavoc: if the sound filename does not begin with sound/, try adding it
+	// LadyHavoc: if the sound filename does not begin with sound/, try adding it
 	if (strncasecmp(sfx->name, "sound/", 6))
 	{
 		dpsnprintf (namebuffer, sizeof(namebuffer), "sound/%s", sfx->name);
@@ -345,7 +345,7 @@ qboolean S_LoadSound (sfx_t *sfx, qboolean complain)
 		}
 	}
 
-	// LordHavoc: then try without the added sound/ as wav and ogg
+	// LadyHavoc: then try without the added sound/ as wav and ogg
 	dpsnprintf (namebuffer, sizeof(namebuffer), "%s", sfx->name);
 	len = strlen(namebuffer);
 	// request foo.wav: tries foo.wav, then foo.ogg

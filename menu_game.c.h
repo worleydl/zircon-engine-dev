@@ -437,7 +437,7 @@ static gamelevels_t *gameoptions_levels  = NULL;
 static int	startepisode;
 static int	startlevel;
 static int maxplayers;
-static qboolean m_serverInfoMessage = false;
+static qbool m_serverInfoMessage = false;
 static double m_serverInfoMessageTime;
 
 void M_Menu_GameOptions_f (void)

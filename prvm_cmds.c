@@ -21,7 +21,7 @@ extern cvar_t prvm_backtraceforwarnings;
 extern dllhandle_t ode_dll;
 #endif
 
-// LordHavoc: changed this to NOT use a return statement, so that it can be used in functions that must return a value
+// LadyHavoc: changed this to NOT use a return statement, so that it can be used in functions that must return a value
 void VM_Warning(prvm_prog_t *prog, const char *fmt, ...)
 {
 	va_list argptr;
@@ -49,8 +49,8 @@ void VM_Warning(prvm_prog_t *prog, const char *fmt, ...)
 
 // TODO DONE: move vm_files and vm_fssearchlist to prvm_prog_t struct
 // TODO: move vm_files and vm_fssearchlist back [9/13/2006 Black]
-// TODO: (move vm_files and vm_fssearchlist to prvm_prog_t struct again) [2007-01-23 LordHavoc]
-// TODO: will this war ever end? [2007-01-23 LordHavoc]
+// TODO: (move vm_files and vm_fssearchlist to prvm_prog_t struct again) [2007-01-23 LadyHavoc]
+// TODO: will this war ever end? [2007-01-23 LadyHavoc]
 
 void VM_CheckEmptyString(prvm_prog_t *prog, const char *s)
 {
@@ -84,7 +84,7 @@ void VM_GenerateFrameGroupBlend(prvm_prog_t *prog, framegroupblend_t *framegroup
 	framegroupblend[0].lerp = 1 - framegroupblend[1].lerp - framegroupblend[2].lerp - framegroupblend[3].lerp;
 }
 
-// LordHavoc: quite tempting to break apart this function to reuse the
+// LadyHavoc: quite tempting to break apart this function to reuse the
 //            duplicated code, but I suspect it is better for performance
 //            this way
 void VM_FrameBlendFromFrameGroupBlend(frameblend_t *frameblend, const framegroupblend_t *framegroupblend, const dp_model_t *model, double curtime)
@@ -263,7 +263,7 @@ checkextension(extensionname)
 */
 
 // kind of helper function
-static qboolean checkextension(prvm_prog_t *prog, const char *name)
+static qbool checkextension(prvm_prog_t *prog, const char *name)
 {
 	int len;
 	const char *e, *start;
@@ -620,7 +620,7 @@ void VM_localcmd(prvm_prog_t *prog)
 	Cbuf_AddText(string);
 }
 
-static qboolean PRVM_Cvar_ReadOk(const char *string)
+static qbool PRVM_Cvar_ReadOk(const char *string)
 {
 	cvar_t *cvar;
 	cvar = Cvar_FindVar(string);
@@ -1026,7 +1026,7 @@ void VM_find(prvm_prog_t *prog)
 	f = PRVM_G_INT(OFS_PARM1);
 	s = PRVM_G_STRING(OFS_PARM2);
 
-	// LordHavoc: apparently BloodMage does a find(world, weaponmodel, "") and
+	// LadyHavoc: apparently BloodMage does a find(world, weaponmodel, "") and
 	// expects it to find all the monsters, so we must be careful to support
 	// searching for ""
 
@@ -1057,7 +1057,7 @@ VM_findfloat
   entity	findentity(entity start, .entity field, entity match)
 =========
 */
-// LordHavoc: added this for searching float, int, and entity reference fields
+// LadyHavoc: added this for searching float, int, and entity reference fields
 void VM_findfloat(prvm_prog_t *prog)
 {
 	int		e;
@@ -1118,7 +1118,7 @@ void VM_findchain(prvm_prog_t *prog)
 	f = PRVM_G_INT(OFS_PARM0);
 	s = PRVM_G_STRING(OFS_PARM1);
 
-	// LordHavoc: apparently BloodMage does a find(world, weaponmodel, "") and
+	// LadyHavoc: apparently BloodMage does a find(world, weaponmodel, "") and
 	// expects it to find all the monsters, so we must be careful to support
 	// searching for ""
 
@@ -1149,7 +1149,7 @@ entity	findchainfloat(.string field, float match)
 entity	findchainentity(.string field, entity match)
 =========
 */
-// LordHavoc: chained search for float, int, and entity reference fields
+// LadyHavoc: chained search for float, int, and entity reference fields
 // entity(.string field, float match) findchainfloat = #403;
 void VM_findchainfloat(prvm_prog_t *prog)
 {
@@ -1196,7 +1196,7 @@ VM_findflags
 entity	findflags(entity start, .float field, float match)
 ========================
 */
-// LordHavoc: search for flags in float fields
+// LadyHavoc: search for flags in float fields
 void VM_findflags(prvm_prog_t *prog)
 {
 	prvm_int_t	e;
@@ -1236,7 +1236,7 @@ VM_findchainflags
 entity	findchainflags(.float field, float match)
 ========================
 */
-// LordHavoc: chained search for flags in float fields
+// LadyHavoc: chained search for flags in float fields
 void VM_findchainflags(prvm_prog_t *prog)
 {
 	prvm_int_t		i;
@@ -1683,7 +1683,7 @@ float min(float a, float b, ...[float])
 void VM_min(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNTRANGE(2, 8, VM_min);
-	// LordHavoc: 3+ argument enhancement suggested by FrikaC
+	// LadyHavoc: 3+ argument enhancement suggested by FrikaC
 	if (prog->argc >= 3)
 	{
 		int i;
@@ -1709,7 +1709,7 @@ float	max(float a, float b, ...[float])
 void VM_max(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNTRANGE(2, 8, VM_max);
-	// LordHavoc: 3+ argument enhancement suggested by FrikaC
+	// LadyHavoc: 3+ argument enhancement suggested by FrikaC
 	if (prog->argc >= 3)
 	{
 		int i;
@@ -2554,7 +2554,7 @@ clientcommand(float client, string s) (for client and menu)
 =========
 */
 //void(entity e, string s) clientcommand = #440; // executes a command string as if it came from the specified client
-//this function originally written by KrimZon, made shorter by LordHavoc
+//this function originally written by KrimZon, made shorter by LadyHavoc
 void VM_clcommand (prvm_prog_t *prog)
 {
 	client_t *temp_client;
@@ -2584,8 +2584,8 @@ float tokenize(string s)
 =========
 */
 //float(string s) tokenize = #441; // takes apart a string into individal words (access them with argv), returns how many
-//this function originally written by KrimZon, made shorter by LordHavoc
-//20040203: rewritten by LordHavoc (no longer uses allocations)
+//this function originally written by KrimZon, made shorter by LadyHavoc
+//20040203: rewritten by LadyHavoc (no longer uses allocations)
 static int num_tokens = 0;
 static int tokens[VM_STRINGTEMP_LENGTH / 2];
 static int tokens_startpos[VM_STRINGTEMP_LENGTH / 2];
@@ -2731,7 +2731,7 @@ void VM_tokenizebyseparator (prvm_prog_t *prog)
 }
 
 //string(float n) argv = #442; // returns a word from the tokenized string (returns nothing for an invalid index)
-//this function originally written by KrimZon, made shorter by LordHavoc
+//this function originally written by KrimZon, made shorter by LadyHavoc
 void VM_argv (prvm_prog_t *prog)
 {
 	int token_num;
@@ -5314,7 +5314,7 @@ static const char *detect_match_rule(char *pattern, int *matchrule)
 }
 
 // todo: support UTF8
-static qboolean match_rule(const char *string, int max_string, const char *pattern, int patternlength, int rule)
+static qbool match_rule(const char *string, int max_string, const char *pattern, int patternlength, int rule)
 {
 	const char *mid;
 
@@ -5442,7 +5442,7 @@ void VM_buf_cvarlist(prvm_prog_t *prog)
 	const char *partial, *antipartial;
 	size_t len, antilen;
 	size_t alloclen;
-	qboolean ispattern, antiispattern;
+	qbool ispattern, antiispattern;
 	int n;
 	prvm_stringbuffer_t	*stringbuffer;
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_buf_cvarlist);
@@ -6203,7 +6203,7 @@ void VM_uri_get (prvm_prog_t *prog)
 {
 	const char *url;
 	float id;
-	qboolean ret;
+	qbool ret;
 	uri_to_prog_t *handle;
 	const char *posttype = NULL;
 	const char *postseparator = NULL;
@@ -6876,7 +6876,7 @@ static void animatemodel(prvm_prog_t *prog, dp_model_t *model, prvm_edict_t *ed)
 {
 	skeleton_t *skeleton;
 	int skeletonindex = -1;
-	qboolean need = false;
+	qbool need = false;
 	struct animatemodel_cache *animatemodel_cache;
 	if (!prog->animatemodel_cache)
 	{

@@ -6,7 +6,7 @@
 
 static const char *m_quit_message[9];
 static int		m_quit_prevstate;
-static qboolean	wasInMenus;
+static qbool	wasInMenus;
 
 
 static int M_QuitMessage(const char *line1, const char *line2, const char *line3, const char *line4, const char *line5, const char *line6, const char *line7, const char *line8)

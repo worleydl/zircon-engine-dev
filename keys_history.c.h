@@ -123,7 +123,7 @@ static void Key_History_Push (void)
 		history_matchfound = false;
 }
 
-static qboolean Key_History_Get_foundCommand(void)
+static qbool Key_History_Get_foundCommand(void)
 {
 	if (!history_matchfound)
 		return false;

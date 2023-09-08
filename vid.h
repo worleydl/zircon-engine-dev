@@ -40,41 +40,41 @@ renderpath_t;
 
 typedef struct viddef_support_s
 {
-	qboolean gl20shaders;
-	qboolean gl20shaders130; // indicates glBindFragDataLocation is available
+	qbool gl20shaders;
+	qbool gl20shaders130; // indicates glBindFragDataLocation is available
 	int glshaderversion; // typical values: 100 110 120 130 140 ...
-	qboolean amd_texture_texture4;
-	qboolean arb_depth_texture;
-	qboolean arb_draw_buffers;
-	qboolean arb_framebuffer_object;
-	qboolean arb_multitexture;
-	qboolean arb_occlusion_query;
-	qboolean arb_query_buffer_object;
-	qboolean arb_shadow;
-	qboolean arb_texture_compression;
-	qboolean arb_texture_cube_map;
-	qboolean arb_texture_env_combine;
-	qboolean arb_texture_gather;
-	qboolean arb_texture_non_power_of_two;
-	qboolean arb_vertex_buffer_object;
-	qboolean arb_uniform_buffer_object;
-	qboolean ati_separate_stencil;
-	qboolean ext_blend_minmax;
-	qboolean ext_blend_subtract;
-	qboolean ext_blend_func_separate;
-	qboolean ext_draw_range_elements;
-	qboolean ext_framebuffer_object;
-	qboolean ext_packed_depth_stencil;
-	qboolean ext_stencil_two_side;
-	qboolean ext_texture_3d;
-	qboolean ext_texture_compression_s3tc;
-	qboolean ext_texture_edge_clamp;
-	qboolean ext_texture_filter_anisotropic;
-	qboolean ext_texture_srgb;
-	qboolean arb_texture_float;
-	qboolean arb_half_float_pixel;
-	qboolean arb_half_float_vertex;
-	qboolean arb_multisample;
+	qbool amd_texture_texture4;
+	qbool arb_depth_texture;
+	qbool arb_draw_buffers;
+	qbool arb_framebuffer_object;
+	qbool arb_multitexture;
+	qbool arb_occlusion_query;
+	qbool arb_query_buffer_object;
+	qbool arb_shadow;
+	qbool arb_texture_compression;
+	qbool arb_texture_cube_map;
+	qbool arb_texture_env_combine;
+	qbool arb_texture_gather;
+	qbool arb_texture_non_power_of_two;
+	qbool arb_vertex_buffer_object;
+	qbool arb_uniform_buffer_object;
+	qbool ati_separate_stencil;
+	qbool ext_blend_minmax;
+	qbool ext_blend_subtract;
+	qbool ext_blend_func_separate;
+	qbool ext_draw_range_elements;
+	qbool ext_framebuffer_object;
+	qbool ext_packed_depth_stencil;
+	qbool ext_stencil_two_side;
+	qbool ext_texture_3d;
+	qbool ext_texture_compression_s3tc;
+	qbool ext_texture_edge_clamp;
+	qbool ext_texture_filter_anisotropic;
+	qbool ext_texture_srgb;
+	qbool arb_texture_float;
+	qbool arb_half_float_pixel;
+	qbool arb_half_float_vertex;
+	qbool arb_multisample;
 }
 viddef_support_t;
 
@@ -83,10 +83,10 @@ typedef struct viddef_mode_s
 	int width;
 	int height;
 	int bitsperpixel;
-	qboolean fullscreen;
+	qbool fullscreen;
 	float refreshrate;
-	qboolean userefreshrate;
-	qboolean stereobuffer;
+	qbool userefreshrate;
+	qbool stereobuffer;
 	int samples;
 }
 viddef_mode_t;
@@ -99,21 +99,21 @@ typedef struct viddef_s
 	int width;
 	int height;
 	int bitsperpixel;
-	qboolean fullscreen;
+	qbool fullscreen;
 	float refreshrate;
-	qboolean userefreshrate;
-	qboolean stereobuffer;
+	qbool userefreshrate;
+	qbool stereobuffer;
 	int samples;
-	qboolean stencil;
-	qboolean sRGB2D; // whether 2D rendering is sRGB corrected (based on sRGBcapable2D)
-	qboolean sRGB3D; // whether 3D rendering is sRGB corrected (based on sRGBcapable3D)
-	qboolean sRGBcapable2D; // whether 2D rendering can be sRGB corrected (renderpath, v_hwgamma)
-	qboolean sRGBcapable3D; // whether 3D rendering can be sRGB corrected (renderpath, v_hwgamma)
+	qbool stencil;
+	qbool sRGB2D; // whether 2D rendering is sRGB corrected (based on sRGBcapable2D)
+	qbool sRGB3D; // whether 3D rendering is sRGB corrected (based on sRGBcapable3D)
+	qbool sRGBcapable2D; // whether 2D rendering can be sRGB corrected (renderpath, v_hwgamma)
+	qbool sRGBcapable3D; // whether 3D rendering can be sRGB corrected (renderpath, v_hwgamma)
 
 	renderpath_t renderpath;
-	qboolean forcevbo; // some renderpaths can not operate without it
-	qboolean useinterleavedarrays; // required by some renderpaths
-	qboolean allowalphatocoverage; // indicates the GL_AlphaToCoverage function works on this renderpath and framebuffer
+	qbool forcevbo; // some renderpaths can not operate without it
+	qbool useinterleavedarrays; // required by some renderpaths
+	qbool allowalphatocoverage; // indicates the GL_AlphaToCoverage function works on this renderpath and framebuffer
 
 	unsigned int texunits;
 	unsigned int teximageunits;
@@ -160,7 +160,7 @@ typedef struct vid_joystate_s
 {
 	float axis[MAXJOYAXIS]; // -1 to +1
 	unsigned char button[MAXJOYBUTTON]; // 0 or 1
-	qboolean is360; // indicates this joystick is a Microsoft Xbox 360 Controller For Windows
+	qbool is360; // indicates this joystick is a Microsoft Xbox 360 Controller For Windows
 }
 vid_joystate_t;
 
@@ -177,14 +177,14 @@ void VID_BuildJoyState(vid_joystate_t *joystate);
 void VID_Shared_BuildJoyState_Begin(vid_joystate_t *joystate);
 void VID_Shared_BuildJoyState_Finish(vid_joystate_t *joystate);
 int VID_Shared_SetJoystick(int index);
-qboolean VID_JoyBlockEmulatedKeys(int keycode);
-void VID_EnableJoystick(qboolean enable);
+qbool VID_JoyBlockEmulatedKeys(int keycode);
+void VID_EnableJoystick(qbool enable);
 
-extern qboolean vid_hidden;
-extern qboolean vid_activewindow;
+extern qbool vid_hidden;
+extern qbool vid_activewindow;
 extern cvar_t vid_hardwaregammasupported;
-extern qboolean vid_usinghwgamma;
-extern qboolean vid_supportrefreshrate;
+extern qbool vid_usinghwgamma;
+extern qbool vid_supportrefreshrate;
 
 extern cvar_t vid_fullscreen;
 extern cvar_t vid_width;
@@ -251,7 +251,7 @@ extern const char *gl_platformextensions;
 extern char gl_driver[256];
 
 void *GL_GetProcAddress(const char *name);
-qboolean GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *funcs, const char *disableparm, int silent);
+qbool GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *funcs, const char *disableparm, int silent);
 
 void VID_Shared_Init(void);
 
@@ -270,7 +270,7 @@ int VID_SetMode (int modenum);
 // sets the mode; only used by the Quake engine for resetting to mode 0 (the
 // base mode) on memory allocation failures
 
-qboolean VID_InitMode(viddef_mode_t *mode);
+qbool VID_InitMode(viddef_mode_t *mode);
 // allocates and opens an appropriate OpenGL context (and its window)
 
 
@@ -284,16 +284,16 @@ int VID_SetGamma(unsigned short *ramps, int rampsize);
 int VID_GetGamma(unsigned short *ramps, int rampsize);
 // makes sure ramp arrays are big enough and calls VID_GetGamma/VID_SetGamma
 // (ONLY to be called from VID_Finish!)
-void VID_UpdateGamma(qboolean force, int rampsize);
+void VID_UpdateGamma(qbool force, int rampsize);
 // turns off hardware gamma ramps immediately
 // (called from various shutdown/deactivation functions)
 void VID_RestoreSystemGamma(void);
 
-qboolean VID_HasScreenKeyboardSupport(void);
-void VID_ShowKeyboard(qboolean show);
-qboolean VID_ShowingKeyboard(void);
+qbool VID_HasScreenKeyboardSupport(void);
+void VID_ShowKeyboard(qbool show);
+qbool VID_ShowingKeyboard(void);
 
-void VID_SetMouse (qboolean fullscreengrab, qboolean relative, qboolean hidecursor);
+void VID_SetMouse (qbool fullscreengrab, qbool relative, qbool hidecursor);
 void VID_Finish (void);
 
 void VID_Restart_f(void);
@@ -302,7 +302,7 @@ void VID_Start(void);
 void VID_Stop(void);
 
 extern unsigned int vid_gammatables_serial; // so other subsystems can poll if gamma parameters have changed; this starts with 0 and gets increased by 1 each time the gamma parameters get changed and VID_BuildGammaTables should be called again
-extern qboolean vid_gammatables_trivial; // this is set to true if all color control values are at default setting, and it therefore would make no sense to use the gamma table
+extern qbool vid_gammatables_trivial; // this is set to true if all color control values are at default setting, and it therefore would make no sense to use the gamma table
 void VID_BuildGammaTables(unsigned short *ramps, int rampsize); // builds the current gamma tables into an array (needs 3*rampsize items)
 
 typedef struct
@@ -313,7 +313,7 @@ typedef struct
 vid_mode_t;
 vid_mode_t *VID_GetDesktopMode(void);
 size_t VID_ListModes(vid_mode_t *modes, size_t maxcount);
-size_t VID_SortModes(vid_mode_t *modes, size_t count, qboolean usebpp, qboolean userefreshrate, qboolean useaspect);
+size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool userefreshrate, qbool useaspect);
 
 
 #endif

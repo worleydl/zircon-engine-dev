@@ -56,7 +56,7 @@ cachepic_t *sb_face_quad;
 cachepic_t *sb_face_invuln;
 cachepic_t *sb_face_invis_invuln;
 
-qboolean sb_showscores;
+qbool sb_showscores;
 
 int sb_lines;			// scan lines to draw
 
@@ -752,7 +752,7 @@ Sbar_DrawScoreboard
 static void Sbar_DrawScoreboard (void)
 {
 	Sbar_SoloScoreboard ();
-	// LordHavoc: changed to draw the deathmatch overlays in any multiplayer mode
+	// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
 	//if (cl.gametype == GAME_DEATHMATCH)
 	if ((cls.demoplayback && cl.gametype == GAME_DEATHMATCH) || (!cl.islocalgame && !cls.demoplayback) && key_dest == key_game)
 		Sbar_DeathmatchOverlay ();
@@ -1088,7 +1088,7 @@ void Sbar_ShowFPS(void)
 	char blurstring[32];
 	char topspeedstring[48];
 	char texstring[MAX_QPATH];
-	qboolean red = false;
+	qbool red = false;
 	soundstring[0] = 0;
 	posstring[0] = 0;
 	angstring[0] = 0;
@@ -1172,7 +1172,7 @@ void Sbar_ShowFPS(void)
 			fps_strings++;
 		}
 		if (showtopspeed.integer) {
-			qboolean topspeed_latched = false, topspeedxy_latched = false;
+			qbool topspeed_latched = false, topspeedxy_latched = false;
 			get_showspeed_unit(showtopspeed.integer, &f, &unit);
 			if (speed >= topspeed || current_time - top_time > 3)
 			{
@@ -1570,7 +1570,7 @@ static void SBar_Quake()
 {
 	sbar_x = (vid_conwidth.integer - 320)/2;
 	sbar_y = vid_conheight.integer - SBAR_HEIGHT;
-	// LordHavoc: changed to draw the deathmatch overlays in any multiplayer mode
+	// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
 	if (sbar_quake.integer == 1) {
 		float cols = ceil (vid_conwidth.integer / 64.0);
 
@@ -1652,6 +1652,7 @@ static void SBar_Quake()
 			else if (cl.stats_sv[STAT_ITEMS] & IT_CELLS)				iface = sb_ammo[3];
 		}
 
+		if (!iface) goto no_ammo;
 		// Sbar_DrawPic (224, 0, sb_ammo[0]);
 		DrawQ_Pic (															// AMMO
 			rcol1,		// x
@@ -1670,7 +1671,7 @@ static void SBar_Quake()
 			3,											// numdigits
 			/*coloridx*/ cl.stats_sv[STAT_AMMO] <= 10	// 0 or 1 is red
 		);
-
+no_ammo:
 		// Q64 ammo ike over
 		// Q64 armor start
 		iface = NULL;
@@ -1843,7 +1844,7 @@ no_armor:
 		}
 
 #if 0
-		// LordHavoc: changed to draw the deathmatch overlays in any multiplayer mode
+		// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
 		if (!cls.demoplayback && (!cl.islocalgame || cl.gametype != GAME_COOP)) {
 			Sbar_MiniDeathmatchOverlay (sbar_x + 324, vid_conheight.integer - 8*8);
 			Sbar_Score(24);
@@ -1897,7 +1898,7 @@ Sbar_DeathmatchOverlay
 static float Sbar_PrintScoreboardItem (scoreboard_t *s, float x, float y)
 {
 	int minutes;
-	qboolean myself = false;
+	qbool myself = false;
 	unsigned char *c;
 	char vabuf[1024];
 	minutes = (int)((cl.intermission ? cl.completed_time - s->qw_entertime : cl.time - s->qw_entertime) / 60.0);

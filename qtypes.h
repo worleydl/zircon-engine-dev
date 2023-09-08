@@ -6,9 +6,9 @@
 #undef false
 
 #ifndef __cplusplus
-typedef enum qboolean_e {false, true} qboolean;
+typedef enum qboolean_e {false, true} qbool;
 #else
-typedef bool qboolean;
+typedef bool qbool;
 #endif
 
 #ifndef NULL
@@ -35,8 +35,8 @@ typedef bool qboolean;
 #define RESTRICT
 #endif
 
-// LordHavoc: upgrade the prvm to double precision for better time values
-// LordHavoc: to be enabled when bugs are worked out...
+// LadyHavoc: upgrade the prvm to double precision for better time values
+// LadyHavoc: to be enabled when bugs are worked out...
 //#define PRVM_64
 #ifdef PRVM_64
 typedef double prvm_vec_t;

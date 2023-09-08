@@ -37,9 +37,9 @@ cvar_t prvm_cl_gamecommands = {0, "prvm_cl_gamecommands", "", "Space delimited l
 cvar_t prvm_cl_progfields = {0, "prvm_cl_progfields", "", "Space delimited list of CL prog fieldnames.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};
 
 cvar_t prvm_menu_gamecommands = {0, "prvm_menu_gamecommands", "", "Space delimited list of GameCommands for MENU.  Set via progs to provide engine information for console autocomplete of menu_cmd [Zircon]"};
-// LordHavoc: prints every opcode as it executes - warning: this is significant spew
+// LadyHavoc: prints every opcode as it executes - warning: this is significant spew
 cvar_t prvm_traceqc = {0, "prvm_traceqc", "0", "prints every QuakeC statement as it is executed (only for really thorough debugging!)"};
-// LordHavoc: counts usage of each QuakeC statement
+// LadyHavoc: counts usage of each QuakeC statement
 cvar_t prvm_statementprofiling = {0, "prvm_statementprofiling", "0", "counts how many times each QuakeC statement has been executed, these counts are displayed in prvm_printfunction output (if enabled)"};
 cvar_t prvm_timeprofiling = {0, "prvm_timeprofiling", "0", "counts how long each function has been executed, these counts are displayed in prvm_profile output (if enabled)"};
 cvar_t prvm_coverage = {0, "prvm_coverage", "0", "report and count coverage events (1: per-function, 2: coverage() builtin, 4: per-statement)"};
@@ -53,7 +53,7 @@ cvar_t prvm_reuseedicts_startuptime = {0, "prvm_reuseedicts_startuptime", "2", "
 cvar_t prvm_reuseedicts_neverinsameframe = {0, "prvm_reuseedicts_neverinsameframe", "1", "never allows re-use of freed entity slots during same frame"};
 
 static double prvm_reuseedicts_always_allow = 0;
-qboolean prvm_runawaycheck = true;
+qbool prvm_runawaycheck = true;
 
 //============================================================================
 // mempool handling
@@ -235,7 +235,7 @@ PRVM_ED_CanAlloc
 Returns if this particular edict could get allocated by PRVM_ED_Alloc
 =================
 */
-qboolean PRVM_ED_CanAlloc(prvm_prog_t *prog, prvm_edict_t *e)
+qbool PRVM_ED_CanAlloc(prvm_prog_t *prog, prvm_edict_t *e)
 {
 	if(!e->priv.required->free)
 		return false;
@@ -457,11 +457,11 @@ static char *PRVM_ValueString (prvm_prog_t *prog, etype_t type, prvm_eval_t *val
 		dpsnprintf (line, linelength, "void");
 		break;
 	case ev_float:
-		// LordHavoc: changed from %5.1f to %10.4f
+		// LadyHavoc: changed from %5.1f to %10.4f
 		dpsnprintf (line, linelength, FLOAT_LOSSLESS_FORMAT, val->_float);
 		break;
 	case ev_vector:
-		// LordHavoc: changed from %5.1f to %10.4f
+		// LadyHavoc: changed from %5.1f to %10.4f
 		dpsnprintf (line, linelength, "'" VECTOR_LOSSLESS_FORMAT "'", val->vector[0], val->vector[1], val->vector[2]);
 		break;
 	case ev_pointer:
@@ -616,8 +616,8 @@ PRVM_ED_Print
 For debugging
 =============
 */
-// LordHavoc: optimized this to print out Qmuch more quickly (tempstring)
-// LordHavoc: changed to print out every 4096 characters (incase there are a lot of fields to print)
+// LadyHavoc: optimized this to print out Qmuch more quickly (tempstring)
+// LadyHavoc: changed to print out every 4096 characters (incase there are a lot of fields to print)
 void PRVM_ED_Print (prvm_prog_t *prog, prvm_edict_t *ed, const char *wildcard_fieldname, const char *class_match, const char *targetname_match)
 {
 	size_t	l;
@@ -1151,7 +1151,7 @@ Can parse either fields or globals
 returns false if error
 =============
 */
-qboolean PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, ddef_t *key, const char *s, qboolean parsebackslash)
+qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, ddef_t *key, const char *s, qbool parsebackslash)
 {
 	int i, l;
 	char *new_p;
@@ -1447,8 +1447,8 @@ Used for initial level load and for savegames.
 const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_t *ent)
 {
 	ddef_t *key;
-	qboolean anglehack;
-	qboolean init;
+	qbool anglehack;
+	qbool init;
 	char keyname[256];
 	size_t n;
 
@@ -2288,13 +2288,13 @@ void PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * da
 		prog->numfielddefs++;
 	}
 
-	// LordHavoc: TODO: reorder globals to match engine struct
-	// LordHavoc: TODO: reorder fields to match engine struct
+	// LadyHavoc: TODO: reorder globals to match engine struct
+	// LadyHavoc: TODO: reorder fields to match engine struct
 #define remapglobal(index) (index)
 #define remapfield(index) (index)
 
 	// copy globals
-	// FIXME: LordHavoc: this uses a crude way to identify integer constants, rather than checking for matching globaldefs and checking their type
+	// FIXME: LadyHavoc: this uses a crude way to identify integer constants, rather than checking for matching globaldefs and checking their type
 	for (i = 0;i < prog->progs_numglobals;i++)
 	{
 		u.i = LittleLong(inglobals[i]);
@@ -2315,7 +2315,7 @@ void PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * da
 		}
 	}
 
-	// LordHavoc: TODO: support 32bit progs statement formats
+	// LadyHavoc: TODO: support 32bit progs statement formats
 	// copy, remap globals in statements, bounds check
 	for (i = 0;i < prog->progs_numstatements;i++)
 	{
@@ -2488,7 +2488,7 @@ void PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * da
 	// in CSQC we really shouldn't be able to change how stuff works... sorry for now
 	// later idea: include a list of authorized .po file checksums with the csprogs
 	{
-		qboolean deftrans = prog == CLVM_prog;
+		qbool deftrans = prog == CLVM_prog;
 		const char *realfilename = (prog != CLVM_prog ? filename : csqc_progname.string);
 		if(deftrans) // once we have dotranslate_ strings, ALWAYS use the opt-in method!
 		{
@@ -3165,7 +3165,7 @@ void PRVM_Prog_Init(prvm_prog_t *prog)
 	prog->leaktest_active = prvm_leaktest.integer != 0;
 }
 
-// LordHavoc: turned PRVM_EDICT_NUM into a #define for speed reasons
+// LadyHavoc: turned PRVM_EDICT_NUM into a #define for speed reasons
 unsigned int PRVM_EDICT_NUM_ERROR(prvm_prog_t *prog, unsigned int n, const char *filename, int fileline)
 {
 	prog->error_cmd("PRVM_EDICT_NUM: %s: bad number %i (called at %s:%i)", prog->name, n, filename, fileline);
@@ -3407,7 +3407,7 @@ void PRVM_FreeString(prvm_prog_t *prog, int num)
 		prog->error_cmd("PRVM_FreeString: invalid string offset %i", num);
 }
 
-static qboolean PRVM_IsStringReferenced(prvm_prog_t *prog, string_t string)
+static qbool PRVM_IsStringReferenced(prvm_prog_t *prog, string_t string)
 {
 	int i, j;
 
@@ -3438,7 +3438,7 @@ static qboolean PRVM_IsStringReferenced(prvm_prog_t *prog, string_t string)
 	return false;
 }
 
-static qboolean PRVM_IsEdictRelevant(prvm_prog_t *prog, prvm_edict_t *edict)
+static qbool PRVM_IsEdictRelevant(prvm_prog_t *prog, prvm_edict_t *edict)
 {
 	char vabuf[1024];
 	char vabuf2[1024];
@@ -3490,7 +3490,7 @@ static qboolean PRVM_IsEdictRelevant(prvm_prog_t *prog, prvm_edict_t *edict)
 	return false;
 }
 
-static qboolean PRVM_IsEdictReferenced(prvm_prog_t *prog, prvm_edict_t *edict, int mark)
+static qbool PRVM_IsEdictReferenced(prvm_prog_t *prog, prvm_edict_t *edict, int mark)
 {
 	int i, j;
 	int edictnum = PRVM_NUM_FOR_EDICT(edict);
@@ -3533,7 +3533,7 @@ static qboolean PRVM_IsEdictReferenced(prvm_prog_t *prog, prvm_edict_t *edict, i
 static void PRVM_MarkReferencedEdicts(prvm_prog_t *prog)
 {
 	int i, j;
-	qboolean found_new;
+	qbool found_new;
 	int stage;
 
 	// Stage 1: world, all entities that are relevant, and all entities that are referenced by globals.
@@ -3586,7 +3586,7 @@ static void PRVM_MarkReferencedEdicts(prvm_prog_t *prog)
 void PRVM_LeakTest(prvm_prog_t *prog)
 {
 	int i, j;
-	qboolean leaked = false;
+	qbool leaked = false;
 
 	if(!prog->leaktest_active)
 		return;

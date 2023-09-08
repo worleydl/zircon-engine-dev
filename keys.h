@@ -362,7 +362,7 @@ typedef enum keydest_e { key_game, key_message, key_menu, key_menu_grabbed, key_
 extern	char		key_line[MAX_INPUTLINE];
 extern	int			key_linepos;
 extern	int			key_sellength;
-extern	qboolean	key_insert;	// insert key toggle (for editing)
+extern	qbool	key_insert;	// insert key toggle (for editing)
 extern	keydest_t	key_dest;
 // key_consoleactive bits
 // user wants console (halfscreen)
@@ -383,7 +383,7 @@ void Key_WriteBindings(qfile_t *f);
 void Key_Init(void);
 void Key_Shutdown(void);
 void Key_Init_Cvars(void);
-void Key_Event(int key, int ascii, qboolean down);
+void Key_Event(int key, int ascii, qbool down);
 void Key_ReleaseAll (void);
 void Key_ClearStates (void); // FIXME: should this function still exist? Or should Key_ReleaseAll be used instead when shutting down a vid driver?
 void Key_EventQueue_Block(void);
@@ -394,10 +394,10 @@ void Key_Release_Keys (void); // Baker 1002.1
 void Key_History_Write (void);
 
 
-qboolean Key_SetBinding (int keynum, int bindmap, const char *binding);
+qbool Key_SetBinding (int keynum, int bindmap, const char *binding);
 const char *Key_GetBind (int key, int bindmap);
 void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bindmap);
-qboolean Key_SetBindMap(int fg, int bg);
+qbool Key_SetBindMap(int fg, int bg);
 void Key_GetBindMap(int *fg, int *bg);
 
 extern int history_line; // Au 15

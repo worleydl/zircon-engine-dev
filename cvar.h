@@ -125,7 +125,7 @@ typedef struct cvar_s
 	const char *defstring;
 
 	// values at init (for Cvar_RestoreInitState)
-	qboolean initstate; // indicates this existed at init
+	qbool initstate; // indicates this existed at init
 	int initflags;
 	const char *initstring;
 	const char *initdescription;
@@ -188,7 +188,7 @@ const char *Cvar_CompleteVariable (const char *partial, int is_from_nothing);
 
 void Cvar_CompleteCvarPrint (const char *partial, int is_from_nothing);
 
-qboolean Cvar_Command (void);
+qbool Cvar_Command (void);
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)

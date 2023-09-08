@@ -1,4 +1,4 @@
-#ifndef CORE_SDL
+#if defined(_WIN32) && !defined(CORE_SDL)
 
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
@@ -63,7 +63,7 @@ static HINSTANCE gldll;
 // Tell startup code that we have a client
 int cl_available = true;
 
-qboolean vid_supportrefreshrate = true;
+qbool vid_supportrefreshrate = true;
 
 static int (WINAPI *qwglChoosePixelFormat)(HDC, CONST PIXELFORMATDESCRIPTOR *);
 static int (WINAPI *qwglDescribePixelFormat)(HDC, int, UINT, LPPIXELFORMATDESCRIPTOR);
@@ -112,12 +112,12 @@ static dllfunction_t wglpixelformatfuncs[] =
 
 static DEVMODE gdevmode, initialdevmode;
 static vid_mode_t desktop_mode;
-static qboolean vid_initialized = false;
-static qboolean vid_wassuspended = false;
-static qboolean vid_usingmouse = false;
-static qboolean vid_usinghidecursor = false;
-static qboolean vid_usingvsync = false;
-static qboolean vid_usevsync = false;
+static qbool vid_initialized = false;
+static qbool vid_wassuspended = false;
+static qbool vid_usingmouse = false;
+static qbool vid_usinghidecursor = false;
+static qbool vid_usingvsync = false;
+static qbool vid_usevsync = false;
 static HICON hIcon;
 
 // used by cd_win.c and snd_win.c
@@ -127,30 +127,30 @@ static HDC	 baseDC;
 static HGLRC baseRC;
 
 
-static qboolean vid_isfullscreen;
+static qbool vid_isfullscreen;
 
 
 LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void AppActivate(BOOL fActive, BOOL minimize);
 static void ClearAllStates(void);
-qboolean VID_InitModeGL(viddef_mode_t *mode);
-qboolean VID_InitModeSOFT(viddef_mode_t *mode);
+qbool VID_InitModeGL(viddef_mode_t *mode);
+qbool VID_InitModeSOFT(viddef_mode_t *mode);
 
 //====================================
 
 static int window_x, window_y;
 
-static qboolean mouseinitialized;
+static qbool mouseinitialized;
 
 #ifdef SUPPORTDIRECTX
-static qboolean dinput;
+static qbool dinput;
 #define DINPUT_BUFFERSIZE           16
 #define iDirectInputCreate(a,b,c,d)	pDirectInputCreate(a,b,c,d)
 
 static HRESULT (WINAPI *pDirectInputCreate)(HINSTANCE hinst, DWORD dwVersion, LPDIRECTINPUT * lplpDirectInput, LPUNKNOWN punkOuter);
 #endif
 
-// LordHavoc: thanks to backslash for this support for mouse buttons 4 and 5
+// LadyHavoc: thanks to backslash for this support for mouse buttons 4 and 5
 /* backslash :: imouse explorer buttons */
 /* These are #ifdefed out for non-Win2K in the February 2001 version of
    MS's platform SDK, but we need them for compilation. . . */
@@ -163,7 +163,7 @@ static HRESULT (WINAPI *pDirectInputCreate)(HINSTANCE hinst, DWORD dwVersion, LP
    #define MK_XBUTTON2         0x0040
 #endif
 #ifndef MK_XBUTTON3
-// LordHavoc: lets hope this allows more buttons in the future...
+// LadyHavoc: lets hope this allows more buttons in the future...
    #define MK_XBUTTON3         0x0080
    #define MK_XBUTTON4         0x0100
    #define MK_XBUTTON5         0x0200
@@ -178,7 +178,7 @@ static int			mouse_oldbuttonstate;
 
 static unsigned int uiWheelMessage;
 #ifdef SUPPORTDIRECTX
-static qboolean	dinput_acquired;
+static qbool	dinput_acquired;
 
 static unsigned int		mstate_di;
 #endif
@@ -197,7 +197,7 @@ static void AdjustWindowBounds(int fullscreen, int *width, int *height, viddef_m
 
 //====================================
 
-qboolean vid_reallyhidden = true;
+qbool vid_reallyhidden = true;
 
 void VID_Finish (void)
 {
@@ -262,7 +262,7 @@ static int MapKey (int key, int virtualkey)
 {
 	int result;
 	int modified = (key >> 16) & 255;
-	qboolean is_extended = false;
+	qbool is_extended = false;
 
 	if (modified < 128 && scantokey[modified])
 		result = scantokey[modified];
@@ -360,7 +360,7 @@ void AppActivate(BOOL fActive, BOOL minimize)
 *
 ****************************************************************************/
 {
-	static qboolean sound_active = false;  // initially blocked by Sys_InitConsole()
+	static qbool sound_active = false;  // initially blocked by Sys_InitConsole()
 	 
 	vid_activewindow = fActive != FALSE;
 	vid_reallyhidden = minimize != FALSE;
@@ -400,7 +400,7 @@ void AppActivate(BOOL fActive, BOOL minimize)
 				}
 			}
 
-			// LordHavoc: from dabb, fix for alt-tab bug in NVidia drivers
+			// LadyHavoc: from dabb, fix for alt-tab bug in NVidia drivers
 			if (gldll)
 				MoveWindow(mainwindow,0,0,gdevmode.dmPelsWidth,gdevmode.dmPelsHeight,false);
 		}
@@ -735,7 +735,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 	WCHAR unicode[UNICODE_BUFFER_LENGTH];
 	int		vkey;
 	int		charlength;
-	qboolean down = false;
+	qbool down = false;
 
 	if ( uMsg == uiWheelMessage )
 		uMsg = WM_MOUSEWHEEL;
@@ -849,7 +849,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 				temp |= 16;
 			/* :: backslash */
 
-			// LordHavoc: lets hope this allows more buttons in the future...
+			// LadyHavoc: lets hope this allows more buttons in the future...
 			if (wParam & MK_XBUTTON3)
 				temp |= 32;
 			if (wParam & MK_XBUTTON4)
@@ -1116,7 +1116,7 @@ void Vid_CL_Frame_Start (void) // CLX
 	}
 }
 
-qboolean VID_InitModeGL(viddef_mode_t *mode)
+qbool VID_InitModeGL(viddef_mode_t *mode)
 {
 	int i;
 	HDC hdc;
@@ -1150,7 +1150,7 @@ qboolean VID_InitModeGL(viddef_mode_t *mode)
 	const char *gldrivername;
 	int depth;
 	DEVMODE thismode;
-	qboolean foundmode, foundgoodmode;
+	qbool foundmode, foundgoodmode;
 	int *a;
 	float *af;
 	int attribs[128];
@@ -1614,7 +1614,7 @@ static void AdjustWindowBounds(int fullscreen, int *width, int *height, viddef_m
 
 
 
-qboolean VID_InitMode(viddef_mode_t *mode)
+qbool VID_InitMode(viddef_mode_t *mode)
 {
 	return VID_InitModeGL(mode);
 }
@@ -1623,7 +1623,7 @@ qboolean VID_InitMode(viddef_mode_t *mode)
 static void IN_Shutdown(void);
 void VID_Shutdown (void)
 {
-	qboolean isgl;
+	qbool isgl;
 	if(vid_initialized == false)
 		return;
 
@@ -1659,9 +1659,9 @@ void VID_Shutdown (void)
 	vid_isfullscreen = false;
 }
 
-void VID_SetMouse(qboolean fullscreengrab, qboolean relative, qboolean hidecursor)
+void VID_SetMouse(qbool fullscreengrab, qbool relative, qbool hidecursor)
 {
-	static qboolean restore_spi;
+	static qbool restore_spi;
 	static int originalmouseparms[3];
 
 	if (!mouseinitialized)
@@ -1751,10 +1751,10 @@ void VID_BuildJoyState(vid_joystate_t *joystate)
 	VID_Shared_BuildJoyState_Finish(joystate);
 }
 
-void VID_EnableJoystick(qboolean enable)
+void VID_EnableJoystick(qbool enable)
 {
 	int index = joy_enable.integer > 0 ? joy_index.integer : -1;
-	qboolean success = false;
+	qbool success = false;
 	int sharedcount = 0;
 	sharedcount = VID_Shared_SetJoystick(index);
 	if (index >= 0 && index < sharedcount)
@@ -1774,7 +1774,7 @@ void VID_EnableJoystick(qboolean enable)
 IN_InitDInput
 ===========
 */
-static qboolean IN_InitDInput (void)
+static qbool IN_InitDInput (void)
 {
     HRESULT		hr;
 	DIPROPDWORD	dipdw = {
@@ -2124,4 +2124,4 @@ void VID_Init(void)
 	IN_Init();
 }
 
-#endif // !CORE_SDL
+#endif // defined(_WIN32) && !defined(CORE_SDL)

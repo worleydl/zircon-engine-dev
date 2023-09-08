@@ -181,7 +181,7 @@ static void R_RotateSprite(const mspriteframe_t *frame, vec3_t origin, vec3_t le
 		// Now that we've kicked center-hotspotted sprites, rotate using the appropriate matrix :)
 
 		// determine the angle of a sprite, we could only do that once though and
-		// add a `qboolean initialized' to the mspriteframe_t struct... let's get the direction vector of it :)
+		// add a `qbool initialized' to the mspriteframe_t struct... let's get the direction vector of it :)
 
 		angle = atan(dir[1] / dir[0]) * 180.0f/M_PI;
 
@@ -381,7 +381,7 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 		break;
 	}
 
-	// LordHavoc: interpolated sprite rendering
+	// LadyHavoc: interpolated sprite rendering
 	for (i = 0;i < MAX_FRAMEBLENDS;i++)
 	{
 		if (ent->frameblend[i].lerp >= 0.01f)

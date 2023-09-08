@@ -109,7 +109,7 @@ void Cmd_AddCommand (const char *cmd_name, xcommand_t function, const char *desc
 // The cmd_name is referenced later, so it should not be in temp memory
 
 /// used by the cvar code to check for cvar / command name overlap
-qboolean Cmd_Exists (const char *cmd_name);
+qbool Cmd_Exists (const char *cmd_name);
 
 /// attempts to match a partial command for automatic command line completion
 /// returns NULL if nothing fits
@@ -150,7 +150,7 @@ int Cmd_CheckParm (const char *parm);
 
 /// Parses a single line of text into arguments and tries to execute it.
 /// The text can come from the command buffer, a remote client, or stdin.
-void Cmd_ExecuteString (const char *text, cmd_source_t src, qboolean lockmutex);
+void Cmd_ExecuteString (const char *text, cmd_source_t src, qbool lockmutex);
 
 /// adds the string as a clc_stringcmd to the client message.
 /// (used when there is no reason to generate a local command to do it)
@@ -171,7 +171,7 @@ void Cmd_Print(const char *text);
 /// "\"\\$"). Returns true on success, and false on overrun (in which case out
 /// will contain a part of the quoted string). If putquotes is set, the
 /// enclosing quote marks are also put.
-qboolean Cmd_QuoteString(char *out, size_t outlen, const char *in, const char *quoteset, qboolean putquotes);
+qbool Cmd_QuoteString(char *out, size_t outlen, const char *in, const char *quoteset, qbool putquotes);
 
 void Cmd_ClearCsqcFuncs (void);
 

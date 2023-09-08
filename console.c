@@ -514,14 +514,14 @@ cvar_t condump_stripcolors = {CVAR_SAVE, "condump_stripcolors", "1", "strip colo
 int con_linewidth;
 int con_vislines;
 
-qboolean con_initialized;
+qbool con_initialized;
 
 // used for server replies to rcon command
 lhnetsocket_t *rcon_redirect_sock = NULL;
 lhnetaddress_t *rcon_redirect_dest = NULL;
 int rcon_redirect_bufferpos = 0;
 char rcon_redirect_buffer[1400];
-qboolean rcon_redirect_proquakeprotocol = false;
+qbool rcon_redirect_proquakeprotocol = false;
 
 // generic functions for console buffers
 
@@ -845,7 +845,7 @@ static void Log_DestBuffer_Flush_NoLock(void)
 	lhnetaddress_t log_dest_addr;
 	lhnetsocket_t *log_dest_socket;
 	const char *s = log_dest_udp.string;
-	qboolean have_opened_temp_sockets = false;
+	qbool have_opened_temp_sockets = false;
 	if(s) if(log_dest_buffer_pos > 5)
 	{
 		++log_dest_buffer_appending;
@@ -998,7 +998,7 @@ Log_ConPrint
 */
 void Log_ConPrint (const char *msg)
 {
-	static qboolean inprogress = false;
+	static qbool inprogress = false;
 
 	// don't allow feedback loops with memory error reports
 	if (inprogress)
@@ -1213,7 +1213,7 @@ void Con_CheckResize (void)
 }
 
 //[515]: the simplest command ever
-//LordHavoc: not so simple after I made it print usage...
+//LadyHavoc: not so simple after I made it print usage...
 static void Con_Maps_f (void)
 {
 	if (Cmd_Argc() > 2)
@@ -1408,7 +1408,7 @@ static void Con_PrintToHistory(const char *txt, int mask)
 	}
 }
 
-void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qboolean proquakeprotocol)
+void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qbool proquakeprotocol)
 {
 	rcon_redirect_sock = sock;
 	rcon_redirect_dest = dest;
@@ -1563,7 +1563,7 @@ Con_MaskPrint
 */
 extern cvar_t timestamps;
 extern cvar_t timeformat;
-extern qboolean sys_nostdout;
+extern qbool sys_nostdout;
 void Con_MaskPrint(int additionalmask, const char *msg)
 {
 	static int mask = 0;
@@ -2153,7 +2153,7 @@ static float Con_WordWidthFunc(void *passthrough, const char *w, size_t *length,
 	}
 }
 
-static int Con_CountLineFunc(void *passthrough, const char *line, size_t length, float width, qboolean isContinuation)
+static int Con_CountLineFunc(void *passthrough, const char *line, size_t length, float width, qbool isContinuation)
 {
 	(void) passthrough;
 	(void) line;
@@ -2163,7 +2163,7 @@ static int Con_CountLineFunc(void *passthrough, const char *line, size_t length,
 	return 1;
 }
 
-static int Con_DisplayLineFunc(void *passthrough, const char *line, size_t length, float width, qboolean isContinuation)
+static int Con_DisplayLineFunc(void *passthrough, const char *line, size_t length, float width, qbool isContinuation)
 {
 	con_text_info_t *ti = (con_text_info_t *) passthrough;
 
@@ -2353,7 +2353,7 @@ void Con_DrawNotify (void)
 		char charbuf16[16];
 		cursor = u8_encodech(0xE00A + ((int)(realtime * con_cursorspeed)&1), NULL, charbuf16);
 
-		// LordHavoc: speedup, and other improvements
+		// LadyHavoc: speedup, and other improvements
 		if (chat_mode < 0)
 			dpsnprintf(temptext, sizeof(temptext), "]%s%s", chat_buffer, cursor);
 		else if(chat_mode)
@@ -2605,9 +2605,9 @@ Prints not only map filename, but also
 its format (q1/q2/q3/hl) and even its message
 */
 //[515]: here is an ugly hack.. two gotos... oh my... *but it works*
-//LordHavoc: rewrote bsp type detection, rewrote message extraction to do proper worldspawn parsing
-//LordHavoc: added .ent file loading, and redesigned error handling to still try the .ent file even if the map format is not recognized, this also eliminated one goto
-//LordHavoc: FIXME: man this GetMapList is STILL ugly code even after my cleanups...
+//LadyHavoc: rewrote bsp type detection, rewrote message extraction to do proper worldspawn parsing
+//LadyHavoc: added .ent file loading, and redesigned error handling to still try the .ent file even if the map format is not recognized, this also eliminated one goto
+//LadyHavoc: FIXME: man this GetMapList is STILL ugly code even after my cleanups...
 
 
 int GetMapList (const char *s, char *completedname, int completednamebufferlength, int is_menu_fill, int is_autocomplete, int is_suppress_print )
@@ -2932,7 +2932,7 @@ static int Nicks_strncasecmp(char *a, char *b, unsigned int a_len)
 	// if A contains a non-alphanumeric, B must contain it as well though!
 	while(a_len)
 	{
-		qboolean alnum_a, alnum_b;
+		qbool alnum_a, alnum_b;
 
 		if(tolower(*a) == tolower(*b))
 		{
@@ -2967,7 +2967,7 @@ static int Nicks_strncasecmp(char *a, char *b, unsigned int a_len)
 
    Count the number of possible nicks to complete
  */
-static int Nicks_CompleteCountPossible(char *line, int pos, char *s, qboolean isCon)
+static int Nicks_CompleteCountPossible(char *line, int pos, char *s, qbool isCon)
 {
 	char name[128];
 	int i, p;
@@ -3226,7 +3226,7 @@ static const char **Nicks_CompleteBuildList(int count)
 */
 static int Nicks_AddLastColor(char *buffer, int pos)
 {
-	qboolean quote_added = false;
+	qbool quote_added = false;
 	int match;
 	int color = STRING_COLOR_DEFAULT + '0';
 	char r = 0, g = 0, b = 0;
@@ -4219,13 +4219,13 @@ static void Con_Folder_f (void)
 	WARP_X_ ("dir", "folder", FS_AddGameHierarchy)
 
 	char sgdwork[1024];
-	c_strlcpy (sgdwork, fs_gamedir);
-	File_URL_Remove_TrailSlash (sgdwork);
+		c_strlcpy (sgdwork, fs_gamedir); // "id1/"
+		File_URL_Remove_TrailSlash (sgdwork); // "id1"
 
-	const char *slastcom = File_URL_SkipPath(sgdwork);
+	const char *slastcom = File_URL_SkipPath(sgdwork); // "id1"
 	char sgamedirlast[1024];
-	c_strlcpy (sgamedirlast, slastcom);
-	File_URL_Remove_TrailSlash (sgamedirlast); // sgamedirlast is like "id1" or "travail" or whatever
+		c_strlcpy (sgamedirlast, slastcom);  // "id1"
+		File_URL_Remove_TrailSlash (sgamedirlast);  // "id1" // sgamedirlast is like "id1" or "travail" or whatever
 	
 	int is_underdir = Cmd_Argc() == 2 ? true : false;
 

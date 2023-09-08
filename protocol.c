@@ -54,7 +54,7 @@ entity_state_t defaultstate =
 	{32, 32, 32},//unsigned char glowmod[3];
 };
 
-// LordHavoc: I own protocol ranges 96, 97, 3500-3599
+// LadyHavoc: I own protocol ranges 96, 97, 3500-3599
 
 struct protocolversioninfo_s
 {
@@ -212,10 +212,10 @@ void EntityFrameQuake_ReadEntity(int bits)
 	if (bits & U_VIEWMODEL)	s.flags |= RENDER_VIEWMODEL;
 	if (bits & U_EXTERIORMODEL)	s.flags |= RENDER_EXTERIORMODEL;
 
-	// LordHavoc: to allow playback of the Nehahra movie
+	// LadyHavoc: to allow playback of the Nehahra movie
 	if (cls.protocol == PROTOCOL_NEHAHRAMOVIE && (bits & U_EXTEND1))
 	{
-		// LordHavoc: evil format
+		// LadyHavoc: evil format
 		int i = (int)MSG_ReadFloat(&cl_message);
 		int j = (int)(MSG_ReadFloat(&cl_message) * 255.0f);
 		if (i == 2)
@@ -299,7 +299,7 @@ void EntityFrameCSQC_LostFrame(client_t *client, int framenum)
 {
 	// marks a frame as lost
 	int i, j;
-	qboolean valid;
+	qbool valid;
 	int ringfirst, ringlast;
 	static int recoversendflags[MAX_EDICTS]; // client only
 	csqcentityframedb_t *d;
@@ -429,11 +429,11 @@ static void EntityFrameCSQC_DeallocFrame(client_t *client, int framenum)
 //[515]: we use only one array per-client for SendEntity feature
 // TODO: add some handling for entity send priorities, to better deal with huge
 // amounts of csqc networked entities
-qboolean EntityFrameCSQC_WriteFrame (sizebuf_t *msg, int maxsize, int numnumbers, const unsigned short *numbers, int framenum)
+qbool EntityFrameCSQC_WriteFrame (sizebuf_t *msg, int maxsize, int numnumbers, const unsigned short *numbers, int framenum)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int num, number, end, sendflags;
-	qboolean sectionstarted = false;
+	qbool sectionstarted = false;
 	const unsigned short *n;
 	prvm_edict_t *ed;
 	client_t *client = svs.clients + sv.writeentitiestoclient_clientnumber;
@@ -693,7 +693,7 @@ void Protocol_WriteStatsReliable(void)
 }
 
 
-qboolean EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, const entity_state_t **states)
+qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, const entity_state_t **states)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	const entity_state_t *s;
@@ -701,7 +701,7 @@ qboolean EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates,
 	int i, bits;
 	sizebuf_t buf;
 	unsigned char data[128];
-	qboolean success = false;
+	qbool success = false;
 
 	// prepare the buffer
 	memset(&buf, 0, sizeof(buf));
@@ -730,7 +730,7 @@ qboolean EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates,
 		if (s->flags & RENDER_EXTERIORMODEL)
 			bits |= U_EXTERIORMODEL;
 
-		// LordHavoc: old stuff, but rewritten to have more exact tolerances
+		// LadyHavoc: old stuff, but rewritten to have more exact tolerances
 		baseline = prog->edicts[s->number].priv.server->baseline;
 		if (baseline.origin[0] != s->origin[0])
 			bits |= U_ORIGIN1;
@@ -957,7 +957,7 @@ void EntityState_WriteFields(const entity_state_t *ent, sizebuf_t *msg, unsigned
 	}
 	else
 	{
-		// LordHavoc: have to write flags first, as they can modify protocol
+		// LadyHavoc: have to write flags first, as they can modify protocol
 		if (bits & E_FLAGS)
 			MSG_WriteByte(msg, ent->flags);
 		if (ent->flags & RENDER_LOWPRECISION)
@@ -1405,7 +1405,7 @@ void EntityFrame_AddFrame_Server(entityframe_database_t *d, vec3_t eye, int fram
 }
 
 // (server) writes a frame to network stream
-qboolean EntityFrame_WriteFrame(sizebuf_t *msg, int maxsize, entityframe_database_t *d, int numstates, const entity_state_t **states, int viewentnum)
+qbool EntityFrame_WriteFrame(sizebuf_t *msg, int maxsize, entityframe_database_t *d, int numstates, const entity_state_t **states, int viewentnum)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int i, onum, number;
@@ -1881,7 +1881,7 @@ void EntityFrame4_CL_ReadFrame(void)
 		EntityFrame4_ResetDatabase(d);
 }
 
-qboolean EntityFrame4_WriteFrame(sizebuf_t *msg, int maxsize, entityframe4_database_t *d, int numstates, const entity_state_t **states)
+qbool EntityFrame4_WriteFrame(sizebuf_t *msg, int maxsize, entityframe4_database_t *d, int numstates, const entity_state_t **states)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	const entity_state_t *e, *s;
@@ -2827,7 +2827,7 @@ void EntityFrame5_AckFrame(entityframe5_database_t *d, int framenum)
 			d->packetlog[i].packetnumber = 0;
 }
 
-qboolean EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database_t *d, int numstates, const entity_state_t **states, int viewentnum, unsigned int movesequence, qboolean need_empty)
+qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database_t *d, int numstates, const entity_state_t **states, int viewentnum, unsigned int movesequence, qbool need_empty)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	const entity_state_t *n;
@@ -3267,9 +3267,9 @@ void EntityFrameQW_FreeDatabase(entityframeqw_database_t *d)
 	Mem_Free(d);
 }
 
-void EntityFrameQW_CL_ReadFrame(qboolean delta)
+void EntityFrameQW_CL_ReadFrame(qbool delta)
 {
-	qboolean invalid = false;
+	qbool invalid = false;
 	int number, oldsnapindex, newsnapindex, oldindex, newindex, oldnum, newnum;
 	entity_t *ent;
 	entityframeqw_database_t *d;

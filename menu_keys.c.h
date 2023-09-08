@@ -266,7 +266,7 @@ static void M_Keys_Draw (void)
 
 		Key_FindKeysForCommand (bindnames[i][0], keys, NUMKEYS, 0);
 
-		// LordHavoc: redesigned to print more than 2 keys, inspired by Tomaz's MiniRacer
+		// LadyHavoc: redesigned to print more than 2 keys, inspired by Tomaz's MiniRacer
 		if (keys[0] == -1) {
 			strlcpy(keystring, "", sizeof(keystring));
 		} else {

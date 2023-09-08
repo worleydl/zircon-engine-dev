@@ -132,8 +132,8 @@ static unsigned int soundtime = 0;
 static unsigned int oldpaintedtime = 0;
 static unsigned int extrasoundtime = 0;
 static double snd_starttime = 0.0;
-qboolean snd_threaded = false;
-qboolean snd_usethreadedmixing = false;
+qbool snd_threaded = false;
+qbool snd_usethreadedmixing = false;
 
 vec3_t listener_origin;
 matrix4x4_t listener_basematrix;
@@ -145,11 +145,11 @@ mempool_t *snd_mempool;
 // Linked list of known sfx
 static sfx_t *known_sfx = NULL;
 
-static qboolean sound_spatialized = false;
+static qbool sound_spatialized = false;
 
-qboolean simsound = false;
+qbool simsound = false;
 
-static qboolean recording_sound = false;
+static qbool recording_sound = false;
 
 int snd_blocked = 0;
 static int current_swapstereo = false;
@@ -261,7 +261,7 @@ static const char* ambient_names [2] = { "sound/ambience/water1.wav", "sound/amb
 // Functions
 // ====================================================================
 
-void S_FreeSfx (sfx_t *sfx, qboolean force);
+void S_FreeSfx (sfx_t *sfx, qbool force);
 
 static void S_Play_Common (float fvol, float attenuation)
 {
@@ -373,76 +373,6 @@ int S_GetSoundChannels(void)
 }
 
 
-static qboolean S_ChooseCheaperFormat (snd_format_t* format, qboolean fixed_speed, qboolean fixed_width, qboolean fixed_channels)
-{
-	static const snd_format_t thresholds [] =
-	{
-		// speed			width			channels
-		{ SND_MIN_SPEED,	SND_MIN_WIDTH,	SND_MIN_CHANNELS },
-		{ 11025,			1,				2 },
-		{ 22050,			2,				2 },
-		{ 44100,			2,				2 },
-		{ 48000,			2,				6 },
-		{ 96000,			2,				6 },
-		{ SND_MAX_SPEED,	SND_MAX_WIDTH,	SND_MAX_CHANNELS },
-	};
-	const unsigned int nb_thresholds = sizeof(thresholds) / sizeof(thresholds[0]);
-	unsigned int speed_level, width_level, channels_level;
-
-	// If we have reached the minimum values, there's nothing more we can do
-	if ((format->speed == thresholds[0].speed || fixed_speed) &&
-		(format->width == thresholds[0].width || fixed_width) &&
-		(format->channels == thresholds[0].channels || fixed_channels))
-		return false;
-
-	// Check the min and max values
-	#define CHECK_BOUNDARIES(param)								\
-	if (format->param < thresholds[0].param)					\
-	{															\
-		format->param = thresholds[0].param;					\
-		return true;											\
-	}															\
-	if (format->param > thresholds[nb_thresholds - 1].param)	\
-	{															\
-		format->param = thresholds[nb_thresholds - 1].param;	\
-		return true;											\
-	}
-	CHECK_BOUNDARIES(speed);
-	CHECK_BOUNDARIES(width);
-	CHECK_BOUNDARIES(channels);
-	#undef CHECK_BOUNDARIES
-
-	// Find the level of each parameter
-	#define FIND_LEVEL(param)									\
-	param##_level = 0;											\
-	while (param##_level < nb_thresholds - 1)					\
-	{															\
-		if (format->param <= thresholds[param##_level].param)	\
-			break;												\
-																\
-		param##_level++;										\
-	}
-	FIND_LEVEL(speed);
-	FIND_LEVEL(width);
-	FIND_LEVEL(channels);
-	#undef FIND_LEVEL
-
-	// Decrease the parameter with the highest level to the previous level
-	if (channels_level >= speed_level && channels_level >= width_level && !fixed_channels)
-	{
-		format->channels = thresholds[channels_level - 1].channels;
-		return true;
-	}
-	if (speed_level >= width_level && !fixed_speed)
-	{
-		format->speed = thresholds[speed_level - 1].speed;
-		return true;
-	}
-
-	format->width = thresholds[width_level - 1].width;
-	return true;
-}
-
 
 #define SWAP_LISTENERS(l1, l2, tmpl) { tmpl = (l1); (l1) = (l2); (l2) = tmpl; }
 
@@ -529,7 +459,6 @@ static void S_SetChannelLayout (void)
 
 void S_Startup (void)
 {
-	qboolean fixed_speed, fixed_width, fixed_channels;
 	snd_format_t chosen_fmt;
 	static snd_format_t prev_render_format = {0, 0, 0};
 	char* env;
@@ -540,10 +469,6 @@ void S_Startup (void)
 
 	if (!snd_initialized.integer)
 		return;
-
-	fixed_speed = false;
-	fixed_width = false;
-	fixed_channels = false;
 
 	// Get the starting sound format from the cvars
 	chosen_fmt.speed = snd_speed.integer;
@@ -562,7 +487,6 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
-		fixed_channels = true;
 	}
 #if _MSC_VER >= 1400
 	_dupenv_s(&env, &envlen, "QUAKE_SOUND_SPEED");
@@ -575,7 +499,6 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
-		fixed_speed = true;
 	}
 #if _MSC_VER >= 1400
 	_dupenv_s(&env, &envlen, "QUAKE_SOUND_SAMPLEBITS");
@@ -588,7 +511,6 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
-		fixed_width = true;
 	}
 
 	// Parse the command line to see if the player wants a particular sound format
@@ -596,41 +518,35 @@ void S_Startup (void)
 	if (COM_CheckParm ("-sndquad") != 0)
 	{
 		chosen_fmt.channels = 4;
-		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndstereo sets sound output to stereo
 	else if (COM_CheckParm ("-sndstereo") != 0)
 	{
 		chosen_fmt.channels = 2;
-		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndmono sets sound output to mono
 	else if (COM_CheckParm ("-sndmono") != 0)
 	{
 		chosen_fmt.channels = 1;
-		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndspeed <hz> chooses sound output rate (supported values are 48000, 44100, 32000, 24000, 22050, 16000, 11025 (quake), 8000)
 	i = COM_CheckParm ("-sndspeed");
 	if (0 < i && i < com_argc - 1)
 	{
 		chosen_fmt.speed = atoi (com_argv[i + 1]);
-		fixed_speed = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndbits <bits> chooses 8 bit or 16 bit sound output
 	i = COM_CheckParm ("-sndbits");
 	if (0 < i && i < com_argc - 1)
 	{
 		chosen_fmt.width = atoi (com_argv[i + 1]) / 8;
-		fixed_width = true;
 	}
 
 #if 0
-	// LordHavoc: now you can with the resampler...
+	// LadyHavoc: now you can with the resampler...
 	// You can't change sound speed after start time (not yet supported)
 	if (prev_render_format.speed != 0)
 	{
-		fixed_speed = true;
 		if (chosen_fmt.speed != prev_render_format.speed)
 		{
 			Con_Printf("S_Startup: sound speed has changed! This is NOT supported yet. Falling back to previous speed (%u Hz)\n",
@@ -644,73 +560,44 @@ void S_Startup (void)
 	if (chosen_fmt.speed < SND_MIN_SPEED)
 	{
 		chosen_fmt.speed = SND_MIN_SPEED;
-		fixed_speed = false;
 	}
 	else if (chosen_fmt.speed > SND_MAX_SPEED)
 	{
 		chosen_fmt.speed = SND_MAX_SPEED;
-		fixed_speed = false;
 	}
 
 	if (chosen_fmt.width < SND_MIN_WIDTH)
 	{
 		chosen_fmt.width = SND_MIN_WIDTH;
-		fixed_width = false;
+	}
+	else if (chosen_fmt.width == 3)
+	{
+		chosen_fmt.width = 4;
 	}
 	else if (chosen_fmt.width > SND_MAX_WIDTH)
 	{
 		chosen_fmt.width = SND_MAX_WIDTH;
-		fixed_width = false;
 	}
 
 	if (chosen_fmt.channels < SND_MIN_CHANNELS)
 	{
 		chosen_fmt.channels = SND_MIN_CHANNELS;
-		fixed_channels = false;
 	}
 	else if (chosen_fmt.channels > SND_MAX_CHANNELS)
 	{
 		chosen_fmt.channels = SND_MAX_CHANNELS;
-		fixed_channels = false;
 	}
 
 	// create the sound buffer used for sumitting the samples to the plaform-dependent module
 	if (!simsound)
 	{
-		snd_format_t suggest_fmt;
-		qboolean accepted;
-
-		accepted = false;
-		do
-		{
 			Con_Printf("S_Startup: initializing sound output format: %dHz, %d bit, %d channels...\n",
-						chosen_fmt.speed, chosen_fmt.width * 8,
+					chosen_fmt.speed,
+					chosen_fmt.width,
 						chosen_fmt.channels);
 
-			memset(&suggest_fmt, 0, sizeof(suggest_fmt));
-			accepted = SndSys_Init(&chosen_fmt, &suggest_fmt);
-
-			if (!accepted)
+		if (!SndSys_Init(&chosen_fmt, NULL))
 			{
-				Con_Printf("S_Startup: sound output initialization FAILED\n");
-
-				// If the module is suggesting another one
-				if (suggest_fmt.speed != 0)
-				{
-					memcpy(&chosen_fmt, &suggest_fmt, sizeof(chosen_fmt));
-					Con_Printf ("           Driver has suggested %dHz, %d bit, %d channels. Retrying...\n",
-								suggest_fmt.speed, suggest_fmt.width * 8,
-								suggest_fmt.channels);
-				}
-				// Else, try to find a less resource-demanding format
-				else if (!S_ChooseCheaperFormat (&chosen_fmt, fixed_speed, fixed_width, fixed_channels))
-					break;
-			}
-		} while (!accepted);
-
-		// If we haven't found a suitable format
-		if (!accepted)
-		{
 			Con_Print("S_Startup: SndSys_Init failed.\n");
 			sound_spatialized = false;
 			return;
@@ -756,7 +643,9 @@ void S_Startup (void)
 		extrasoundtime = 0;
 	snd_renderbuffer->startframe = soundtime;
 	snd_renderbuffer->endframe = soundtime;
+#ifdef CONFIG_VIDEO_CAPTURE
 	recording_sound = false;
+#endif
 }
 
 void S_Shutdown(void)
@@ -1025,7 +914,7 @@ sfx_t *S_FindName (const char *name)
 S_FreeSfx
 ==================
 */
-void S_FreeSfx (sfx_t *sfx, qboolean force)
+void S_FreeSfx (sfx_t *sfx, qbool force)
 {
 	unsigned int i;
 
@@ -1130,7 +1019,7 @@ void S_PurgeUnused(void)
 S_PrecacheSound
 ==================
 */
-sfx_t *S_PrecacheSound (const char *name, qboolean complain, qboolean levelsound)
+sfx_t *S_PrecacheSound (const char *name, qbool complain, qbool levelsound)
 {
 	sfx_t *sfx;
 
@@ -1187,7 +1076,7 @@ float S_SoundLength(const char *name)
 S_IsSoundPrecached
 ==================
 */
-qboolean S_IsSoundPrecached (const sfx_t *sfx)
+qbool S_IsSoundPrecached (const sfx_t *sfx)
 {
 	return (sfx != NULL && sfx->fetcher != NULL) || (sfx == &changevolume_sfx);
 }
@@ -1294,7 +1183,7 @@ Spatializes a channel
 =================
 */
 extern cvar_t cl_gameplayfix_soundsmovewithentities;
-static void SND_Spatialize_WithSfx(channel_t *ch, qboolean isstatic, sfx_t *sfx)
+static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 {
 	int i;
 	double f;
@@ -1458,7 +1347,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qboolean isstatic, sfx_t *sfx)
 	ch->mixspeed = mixspeed;
 
 	// anything coming from the view entity will always be full volume
-	// LordHavoc: make sounds with ATTN_NONE have no spatialization
+	// LadyHavoc: make sounds with ATTN_NONE have no spatialization
 	if (ch->entnum == cl.viewentity || ch->entnum == CL_VM_GetViewEntity() || ch->distfade == 0)
 	{
 		ch->prologic_invert = 1;
@@ -1490,7 +1379,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qboolean isstatic, sfx_t *sfx)
 		intensity = mastervol * f;
 		if (intensity > 0)
 		{
-			qboolean occluded = false;
+			qbool occluded = false;
 			if (snd_spatialization_occlusion.integer)
 			{
 				if(snd_spatialization_occlusion.integer & 1)
@@ -1606,7 +1495,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qboolean isstatic, sfx_t *sfx)
 				ch->volume[i] = 0;
 	}
 }
-static void SND_Spatialize(channel_t *ch, qboolean isstatic)
+static void SND_Spatialize(channel_t *ch, qbool isstatic)
 {
 	sfx_t *sfx = ch->sfx;
 	SND_Spatialize_WithSfx(ch, isstatic, sfx);
@@ -1617,7 +1506,7 @@ static void SND_Spatialize(channel_t *ch, qboolean isstatic)
 // Start a sound effect
 // =======================================================================
 
-static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int flags, vec3_t origin, float fvol, float attenuation, qboolean isstatic, int entnum, int entchannel, int startpos, float fspeed)
+static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int flags, vec3_t origin, float fvol, float attenuation, qbool isstatic, int entnum, int entchannel, int startpos, float fspeed)
 {
 	if (!sfx)
 	{
@@ -1751,7 +1640,7 @@ int S_StartSound (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float f
 	return S_StartSound_StartPosition_Flags(entnum, entchannel, sfx, origin, fvol, attenuation, 0, CHANNELFLAG_NONE, 1.0f);
 }
 
-void S_StopChannel (unsigned int channel_ind, qboolean lockmutex, qboolean freesfx)
+void S_StopChannel (unsigned int channel_ind, qbool lockmutex, qbool freesfx)
 {
 	channel_t *ch;
 	sfx_t *sfx;
@@ -1782,7 +1671,7 @@ void S_StopChannel (unsigned int channel_ind, qboolean lockmutex, qboolean frees
 }
 
 
-qboolean S_SetChannelFlag (unsigned int ch_ind, unsigned int flag, qboolean value)
+qbool S_SetChannelFlag (unsigned int ch_ind, unsigned int flag, qbool value)
 {
 	if (ch_ind >= total_channels)
 		return false;
@@ -1821,10 +1710,8 @@ void S_StopAllSounds (void)
 	if (snd_renderbuffer == NULL)
 		return;
 
-#ifdef CONFIG_CD
 	// stop CD audio because it may be using a faketrack
 	CDAudio_Stop();
-#endif
 
 	if (simsound || SndSys_LockRenderBuffer ())
 	{
@@ -1848,7 +1735,7 @@ void S_StopAllSounds (void)
 	}
 }
 
-void S_PauseGameSounds (qboolean toggle)
+void S_PauseGameSounds (qbool toggle)
 {
 	unsigned int i;
 
@@ -2009,11 +1896,13 @@ static void S_PaintAndSubmit (void)
 		usesoundtimehack = 1;
 		newsoundtime = (unsigned int)((double)cl.mtime[0] * (double)snd_renderbuffer->format.speed);
 	}
+#ifdef CONFIG_VIDEO_CAPTURE
 	else if (cls.capturevideo.soundrate && !cls.capturevideo.realtime) // SUPER NASTY HACK to record non-realtime sound
 	{
 		usesoundtimehack = 2;
 		newsoundtime = (unsigned int)((double)cls.capturevideo.frame * (double)snd_renderbuffer->format.speed / (double)cls.capturevideo.framerate);
 	}
+#endif
 	else if (simsound)
 	{
 		usesoundtimehack = 3;
@@ -2021,7 +1910,11 @@ static void S_PaintAndSubmit (void)
 	}
 	else
 	{
+#ifdef CONFIG_VIDEO_CAPTURE
 		snd_usethreadedmixing = snd_threaded && !cls.capturevideo.soundrate;
+#else
+		snd_usethreadedmixing = snd_threaded;
+#endif
 		usesoundtimehack = 0;
 		newsoundtime = SndSys_GetSoundTime();
 	}
@@ -2055,6 +1948,7 @@ static void S_PaintAndSubmit (void)
 	newsoundtime += extrasoundtime;
 	if (newsoundtime < soundtime)
 	{
+#ifdef CONFIG_VIDEO_CAPTURE
 		if ((cls.capturevideo.soundrate != 0) != recording_sound)
 		{
 			unsigned int additionaltime;
@@ -2073,11 +1967,16 @@ static void S_PaintAndSubmit (void)
 						extrasoundtime);
 		}
 		else if (!soundtimehack)
+#else
+		if (!soundtimehack)
+#endif
 			Con_Printf("S_PaintAndSubmit: WARNING: newsoundtime < soundtime (%u < %u)\n",
 					   newsoundtime, soundtime);
 	}
 	soundtime = newsoundtime;
+#ifdef CONFIG_VIDEO_CAPTURE
 	recording_sound = (cls.capturevideo.soundrate != 0);
+#endif
 
 	// Lock submitbuffer
 	if (!simsound && !SndSys_LockRenderBuffer())
@@ -2313,15 +2212,10 @@ void S_ExtraUpdate (void)
 	S_PaintAndSubmit();
 }
 
-qboolean S_LocalSound (const char *sound)
+qbool S_LocalSoundEx (const char *sound, int chan, float fvol)
 {
 	sfx_t	*sfx;
 	int		ch_ind;
-
-	//if (String_Does_Match (sound, "sound/misc/menu1.wav")) {
-	//	sound=sound;
-	//}
-
 
 	if (!snd_initialized.integer || nosound.integer)
 		return true;
@@ -2339,10 +2233,15 @@ qboolean S_LocalSound (const char *sound)
 	// fun fact: in Quake 1, this used -1 "replace any entity channel",
 	// which we no longer support anyway
 	// changed by Black in r4297 "Changed S_LocalSound to play multiple sounds at a time."
-	ch_ind = S_StartSound (cl.viewentity, 0, sfx, vec3_origin, 1, 0);
+	ch_ind = S_StartSound (cl.viewentity, chan, sfx, vec3_origin, fvol, 0);
 	if (ch_ind < 0)
 		return false;
 
 	channels[ch_ind].flags |= CHANNELFLAG_LOCALSOUND;
 	return true;
+}
+
+qbool S_LocalSound (const char *sound)
+{
+	return S_LocalSoundEx(sound, 0, 1);
 }

@@ -30,9 +30,9 @@ extern int con_backscroll;
 extern cvar_t con_zircon_autocomplete;
 //extern cvar_t con_zircon_enter_removes_backscroll; // Au 15
 
-extern qboolean con_initialized;
+extern qbool con_initialized;
 
-void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qboolean proquakeprotocol);
+void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qbool proquakeprotocol);
 void Con_Rcon_Redirect_End(void);
 void Con_Rcon_Redirect_Abort(void);
 
@@ -98,7 +98,7 @@ extern int modlist_numenabled;			//number of enabled (or in process to be..) mod
 
 typedef struct modlist_entry_s
 {
-	qboolean loaded;	// used to determine whether this entry is loaded and running
+	qbool loaded;	// used to determine whether this entry is loaded and running
 	int enabled;		// index to array of modlist_enabled
 
 	// name of the modification, this is (will...be) displayed on the menu entry
@@ -161,7 +161,7 @@ con_lineinfo_t;
 
 typedef struct conbuffer_s
 {
-	qboolean active;
+	qbool active;
 	int textsize;
 	char *text;
 	int maxlines; //4096!

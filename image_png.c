@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006  Serge "(515)" Ziryukin, Forest "LordHavoc" Hale
+	Copyright (C) 2006  Serge "(515)" Ziryukin, Ashley Rose Hale (LadyHavoc)
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 //[515]: png implemented into DP ONLY FOR TESTING 2d stuff with csqc
 // so delete this bullshit :D
 //
-//LordHavoc: rewrote most of this.
+//LadyHavoc: rewrote most of this.
 
 #include "quakedef.h"
 #include "image.h"
@@ -140,7 +140,7 @@ PNG_OpenLibrary
 Try to load the PNG DLL
 ====================
 */
-qboolean PNG_OpenLibrary (void)
+qbool PNG_OpenLibrary (void)
 {
 	const char* dllnames [] =
 	{
@@ -254,7 +254,7 @@ static struct
 	qfile_t *outfile;
 } my_png;
 
-//LordHavoc: removed __cdecl prefix, added overrun protection, and rewrote this to be more efficient
+//LadyHavoc: removed __cdecl prefix, added overrun protection, and rewrote this to be more efficient
 static void PNG_fReadData(void *png, unsigned char *data, size_t length)
 {
 	size_t l;
@@ -474,7 +474,7 @@ PNG_SaveImage_preflipped
 Save a preflipped PNG image to a file
 ====================
 */
-qboolean PNG_SaveImage_preflipped (const char *filename, int width, int height, qboolean has_alpha, unsigned char *data)
+qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbool has_alpha, unsigned char *data)
 {
 	unsigned int offset, linesize;
 	qfile_t* file = NULL;

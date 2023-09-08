@@ -57,7 +57,7 @@ void Mod_SpriteInit (void)
 	Cvar_RegisterVariable(&r_track_sprites_scaleh);
 }
 
-static void Mod_SpriteSetupTexture(texture_t *texture, skinframe_t *skinframe, qboolean fullbright, qboolean additive)
+static void Mod_SpriteSetupTexture(texture_t *texture, skinframe_t *skinframe, qbool fullbright, qbool additive)
 {
 	if (!skinframe)
 		skinframe = R_SkinFrame_LoadMissing();
@@ -88,10 +88,10 @@ static void Mod_SpriteSetupTexture(texture_t *texture, skinframe_t *skinframe, q
 
 extern cvar_t gl_texturecompression_sprites;
 
-static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version, const unsigned int *palette, qboolean additive)
+static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version, const unsigned int *palette, qbool additive)
 {
 	int					i, j, groupframes, realframes, x, y, origin[2], width, height;
-	qboolean			fullbright;
+	qbool			fullbright;
 	dspriteframetype_t	*pinframetype;
 	dspriteframe_t		*pinframe;
 	dspritegroup_t		*pingroup;
@@ -106,7 +106,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 	if (loadmodel->numframes < 1)
 		Host_Error ("Mod_Sprite_SharedSetup: Invalid # of frames: %d", loadmodel->numframes);
 
-	// LordHavoc: hack to allow sprites to be non-fullbright
+	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
 	for (i = 0; i < MAX_QPATH && loadmodel->model_name[i]; i++)
 		if (loadmodel->model_name[i] == '!')
@@ -381,7 +381,7 @@ void Mod_IDSP_Load(dp_model_t *mod, void *buffer, void *bufferend)
 void Mod_IDS2_Load(dp_model_t *mod, void *buffer, void *bufferend)
 {
 	int i, version;
-	qboolean fullbright;
+	qbool fullbright;
 	const dsprite2_t *pinqsprite;
 	skinframe_t *skinframe;
 	float modelradius;
@@ -411,7 +411,7 @@ void Mod_IDS2_Load(dp_model_t *mod, void *buffer, void *bufferend)
 	loadmodel->sprite.sprnum_type = SPR_VP_PARALLEL;
 	loadmodel->synctype = ST_SYNC;
 
-	// LordHavoc: hack to allow sprites to be non-fullbright
+	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
 	for (i = 0;i < MAX_QPATH && loadmodel->model_name[i];i++)
 		if (loadmodel->model_name[i] == '!')

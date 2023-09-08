@@ -725,7 +725,7 @@ static void PRVM_StatementCoverageEvent(prvm_prog_t *prog, mfunction_t *func, in
 #define OPC ((prvm_eval_t *)&prog->globals.fp[st->operand[2]])
 extern cvar_t prvm_traceqc;
 extern cvar_t prvm_statementprofiling;
-extern qboolean prvm_runawaycheck;
+extern qbool prvm_runawaycheck;
 
 #ifdef PROFILING
 #ifdef CONFIG_MENU
@@ -756,7 +756,7 @@ void MVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessag
 	unsigned int cached_max_edicts = prog->max_edicts;
 	// these do not change
 	mstatement_t *cached_statements = prog->statements;
-	qboolean cached_allowworldwrites = prog->allowworldwrites;
+	qbool cached_allowworldwrites = prog->allowworldwrites;
 	unsigned int cached_flag = prog->flag;
 
 	calltime = Sys_DirtyTime();
@@ -863,7 +863,7 @@ void CLVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessa
 	unsigned int cached_max_edicts = prog->max_edicts;
 	// these do not change
 	mstatement_t *cached_statements = prog->statements;
-	qboolean cached_allowworldwrites = prog->allowworldwrites;
+	qbool cached_allowworldwrites = prog->allowworldwrites;
 	unsigned int cached_flag = prog->flag;
 
 	calltime = Sys_DirtyTime();
@@ -974,7 +974,7 @@ void PRVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessa
 	unsigned int cached_max_edicts = prog->max_edicts;
 	// these do not change
 	mstatement_t *cached_statements = prog->statements;
-	qboolean cached_allowworldwrites = prog->allowworldwrites;
+	qbool cached_allowworldwrites = prog->allowworldwrites;
 	unsigned int cached_flag = prog->flag;
 
 	calltime = Sys_DirtyTime();

@@ -238,7 +238,7 @@ static void CSQC_SetGlobals (double frametime)
 		VectorCopy(cl.csqc_vieworiginfromengine, cl.csqc_vieworigin);
 		VectorCopy(cl.csqc_viewanglesfromengine, cl.csqc_viewangles);
 
-		// LordHavoc: Spike says not to do this, but without pmove_org the
+		// LadyHavoc: Spike says not to do this, but without pmove_org the
 		// CSQC is useless as it can't alter the view origin without
 		// completely replacing it
 		Matrix4x4_OriginFromMatrix(&cl.entities[cl.viewentity].render.matrix, pmove_org);
@@ -287,7 +287,7 @@ void CSQC_Think (prvm_edict_t *ed)
 
 extern cvar_t cl_noplayershadow;
 extern cvar_t r_equalize_entities_fullbright;
-qboolean CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
+qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int renderflags;
@@ -346,7 +346,7 @@ qboolean CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 	if (!VectorLength2(entrender->glowmod))
 		VectorSet(entrender->glowmod, 1, 1, 1);
 
-	// LordHavoc: use the CL_GetTagMatrix function on self to ensure consistent behavior (duplicate code would be bad)
+	// LadyHavoc: use the CL_GetTagMatrix function on self to ensure consistent behavior (duplicate code would be bad)
 	CL_GetTagMatrix(prog, &entrender->matrix, ed, 0);
 
 	// set up the animation data
@@ -434,10 +434,10 @@ qboolean CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 // 1 = keyup, key, character (EXT_CSQC)
 // 2 = mousemove relative, x, y (EXT_CSQC)
 // 3 = mousemove absolute, x, y (DP_CSQC)
-qboolean CL_VM_InputEvent (int eventtype, float x, float y)
+qbool CL_VM_InputEvent (int eventtype, float x, float y)
 {
 	prvm_prog_t *prog = CLVM_prog;
-	qboolean r;
+	qbool r;
 
 	if(!cl.csqc_loaded)
 		return false;
@@ -461,7 +461,7 @@ qboolean CL_VM_InputEvent (int eventtype, float x, float y)
 
 extern r_refdef_view_t csqc_original_r_refdef_view;
 extern r_refdef_view_t csqc_main_r_refdef_view;
-qboolean CL_VM_UpdateView (double frametime)
+qbool CL_VM_UpdateView (double frametime)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	vec3_t emptyvector;
@@ -499,11 +499,11 @@ qboolean CL_VM_UpdateView (double frametime)
 	return true;
 }
 
-qboolean CL_VM_ConsoleCommand (const char *cmd)
+qbool CL_VM_ConsoleCommand (const char *cmd)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int restorevm_tempstringsbuf_cursize;
-	qboolean r = false;
+	qbool r = false;
 	if(!cl.csqc_loaded)
 		return false;
 	CSQC_BEGIN
@@ -521,11 +521,11 @@ qboolean CL_VM_ConsoleCommand (const char *cmd)
 	return r;
 }
 
-qboolean CL_VM_Parse_TempEntity (void)
+qbool CL_VM_Parse_TempEntity (void)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int			t;
-	qboolean	r = false;
+	qbool	r = false;
 	if(!cl.csqc_loaded)
 		return false;
 	CSQC_BEGIN
@@ -714,10 +714,10 @@ void CL_VM_UpdateShowingScoresState (int showingscores)
 		CSQC_END
 	}
 }
-qboolean CL_VM_Event_Sound(int sound_num, float fvolume, int channel, float attenuation, int ent, vec3_t pos, int flags, float speed)
+qbool CL_VM_Event_Sound(int sound_num, float fvolume, int channel, float attenuation, int ent, vec3_t pos, int flags, float speed)
 {
 	prvm_prog_t *prog = CLVM_prog;
-	qboolean r = false;
+	qbool r = false;
 	if(cl.csqc_loaded)
 	{
 		CSQC_BEGIN
@@ -824,7 +824,7 @@ void CSQC_ReadEntities (void)
 				}
 				else
 				{
-					// LordHavoc: removing an entity that is already gone on
+					// LadyHavoc: removing an entity that is already gone on
 					// the csqc side is possible for legitimate reasons (such
 					// as a repeat of the remove message), so no warning is
 					// needed
@@ -929,14 +929,14 @@ static void CLVM_count_edicts(prvm_prog_t *prog)
 	Con_Printf("touch     :%3i\n", solid);
 }
 
-static qboolean CLVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
+static qbool CLVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 {
 	return true;
 }
 
 // returns true if the packet is valid, false if end of file is reached
 // used for dumping the CSQC download into demo files
-qboolean MakeDownloadPacket(const char *filename, unsigned char *data, size_t len, int crc, int cnt, sizebuf_t *buf, int protocol)
+qbool MakeDownloadPacket(const char *filename, unsigned char *data, size_t len, int crc, int cnt, sizebuf_t *buf, int protocol)
 {
 	int packetsize = buf->maxsize - 7; // byte short long
 	int npackets = ((int)len + packetsize - 1) / (packetsize);
@@ -1176,13 +1176,13 @@ void CL_VM_ShutDown (void)
 	cl.csqc_loaded = false;
 }
 
-qboolean CL_VM_GetEntitySoundOrigin(int entnum, vec3_t out)
+qbool CL_VM_GetEntitySoundOrigin(int entnum, vec3_t out)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	prvm_edict_t *ed;
 	dp_model_t *mod;
 	matrix4x4_t matrix;
-	qboolean r = 0;
+	qbool r = 0;
 
 	CSQC_BEGIN;
 
@@ -1206,10 +1206,10 @@ qboolean CL_VM_GetEntitySoundOrigin(int entnum, vec3_t out)
 	return r;
 }
 
-qboolean CL_VM_TransformView(int entnum, matrix4x4_t *viewmatrix, mplane_t *clipplane, vec3_t visorigin)
+qbool CL_VM_TransformView(int entnum, matrix4x4_t *viewmatrix, mplane_t *clipplane, vec3_t visorigin)
 {
 	prvm_prog_t *prog = CLVM_prog;
-	qboolean ret = false;
+	qbool ret = false;
 	prvm_edict_t *ed;
 	vec3_t forward, left, up, origin, ang;
 	matrix4x4_t mat, matq;

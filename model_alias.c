@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #ifdef SSE_POSSIBLE
-static qboolean r_skeletal_use_sse_defined = false;
+static qbool r_skeletal_use_sse_defined = false;
 cvar_t r_skeletal_use_sse = {0, "r_skeletal_use_sse", "1", "use SSE for skeletal model animation"};
 #endif
 cvar_t r_skeletal_debugbone = {0, "r_skeletal_debugbone", "-1", "development cvar for testing skeletal model code"};
@@ -623,13 +623,13 @@ static void Mod_BuildBaseBonePoses(void)
 	Mem_Free(basebonepose);
 }
 
-static qboolean Mod_Alias_CalculateBoundingBox(void)
+static qbool Mod_Alias_CalculateBoundingBox(void)
 {
 	int vnum;
-	qboolean firstvertex = true;
+	qbool firstvertex = true;
 	float dist, yawradius, radius;
 	float *v;
-	qboolean isanimated = false;
+	qbool isanimated = false;
 	VectorClear(loadmodel->normalmins);
 	VectorClear(loadmodel->normalmaxs);
 	yawradius = 0;
@@ -1910,7 +1910,7 @@ void Mod_ZYMOTICMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend)
 	}
 
 	// model bbox
-	// LordHavoc: actually we blow this away later with Mod_Alias_CalculateBoundingBox()
+	// LadyHavoc: actually we blow this away later with Mod_Alias_CalculateBoundingBox()
 	modelradius = pheader->radius;
 	for (i = 0;i < 3;i++)
 	{
@@ -2277,7 +2277,7 @@ void Mod_DARKPLACESMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend)
 	loadmodel->AnimateVertices = Mod_Skeletal_AnimateVertices;
 
 	// model bbox
-	// LordHavoc: actually we blow this away later with Mod_Alias_CalculateBoundingBox()
+	// LadyHavoc: actually we blow this away later with Mod_Alias_CalculateBoundingBox()
 	for (i = 0;i < 3;i++)
 	{
 		loadmodel->normalmins[i] = pheader->mins[i];
@@ -3299,7 +3299,7 @@ void Mod_INTERQUAKEMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend)
 		Host_Error ("Mod_INTERQUAKEMODEL_Load: %s is not an Inter-Quake Model %d", loadmodel->model_name, (int)(pend - pbase));
 
 	// copy struct (otherwise it may be misaligned)
-	// LordHavoc: okay it's definitely not misaligned here, but for consistency...
+	// LadyHavoc: okay it's definitely not misaligned here, but for consistency...
 	memcpy(&header, pbase, sizeof(iqmheader_t));
 
 	if (memcmp(header.id, "INTERQUAKEMODEL", 16))

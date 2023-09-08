@@ -126,7 +126,7 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 
 	if( mod ) {
 		// TODO: check if this breaks needed consistency and maybe add a cvar for it too?? [1/10/2008 Black]
-		// LordHavoc: erm you broke it by commenting this out - setmodel must do setsize or else the qc can't find out the model size, and ssqc does this by necessity, consistency.
+		// LadyHavoc: erm you broke it by commenting this out - setmodel must do setsize or else the qc can't find out the model size, and ssqc does this by necessity, consistency.
 		SetMinMaxSize (prog, e, mod->normalmins, mod->normalmaxs);
 	}
 	else
@@ -204,7 +204,7 @@ static void VM_CL_sound (prvm_prog_t *prog)
 		flags = 0;
 	else
 	{
-		// LordHavoc: we only let the qc set certain flags, others are off-limits
+		// LadyHavoc: we only let the qc set certain flags, others are off-limits
 		flags = (int)PRVM_G_FLOAT(OFS_PARM6) & (CHANNELFLAG_RELIABLE | CHANNELFLAG_FORCELOOP | CHANNELFLAG_PAUSED);
 	}
 
@@ -316,7 +316,7 @@ if the tryents flag is set.
 tracebox (vector1, vector mins, vector maxs, vector2, tryents)
 =================
 */
-// LordHavoc: added this for my own use, VERY useful, similar to traceline
+// LadyHavoc: added this for my own use, VERY useful, similar to traceline
 static void VM_CL_tracebox (prvm_prog_t *prog)
 {
 	vec3_t	v1, v2, m1, m2;
@@ -366,7 +366,7 @@ static trace_t CL_Trace_Toss (prvm_prog_t *prog, prvm_edict_t *tossent, prvm_edi
 		gravity = 1.0f;
 	gravity *= cl.movevars_gravity * 0.05;
 
-	for (i = 0;i < 200;i++) // LordHavoc: sanity check; never trace more than 10 seconds
+	for (i = 0;i < 200;i++) // LadyHavoc: sanity check; never trace more than 10 seconds
 	{
 		PRVM_clientedictvector(tossent, velocity)[2] -= gravity;
 		VectorMA (PRVM_clientedictvector(tossent, angles), 0.05, PRVM_clientedictvector(tossent, avelocity), PRVM_clientedictvector(tossent, angles));
@@ -492,7 +492,7 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 		// (note: this is the reason you can't blow up fallen zombies)
 		if (PRVM_clientedictfloat(ent, solid) == SOLID_NOT && !sv_gameplayfix_blowupfallenzombies.integer)
 			continue;
-		// LordHavoc: compare against bounding box rather than center so it
+		// LadyHavoc: compare against bounding box rather than center so it
 		// doesn't miss large objects, and use DotProduct instead of Length
 		// for a major speedup
 		VectorSubtract(org, PRVM_clientedictvector(ent, origin), eorg);
@@ -1100,7 +1100,7 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 	int pflags = PFLAGS_CORONA | PFLAGS_FULLDYNAMIC;
 	float coronaintensity = 1;
 	float coronasizescale = 0.25;
-	qboolean castshadow = true;
+	qbool castshadow = true;
 	float ambientscale = 0;
 	float diffusescale = 1;
 	float specularscale = 1;
@@ -1359,7 +1359,7 @@ static void VM_CL_boxparticles (prvm_prog_t *prog)
 	vec3_t origin_from, origin_to, dir_from, dir_to;
 	float count;
 	int flags;
-	qboolean istrail;
+	qbool istrail;
 	float tintmins[4], tintmaxs[4], fade;
 	VM_SAFEPARMCOUNTRANGE(7, 8, VM_CL_boxparticles);
 
@@ -2400,7 +2400,7 @@ int CL_GetPitchSign(prvm_prog_t *prog, prvm_edict_t *ent)
 	return 1;
 }
 
-void CL_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qboolean viewmatrix)
+void CL_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qbool viewmatrix)
 {
 	float scale;
 	float pitchsign = 1;
@@ -2512,9 +2512,9 @@ int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int
 		if (PRVM_clientedictfloat(ent, health) > 0 && cl_bob.value && cl_bobcycle.value)
 		{
 			double bob, cycle;
-			// LordHavoc: this code is *weird*, but not replacable (I think it
+			// LadyHavoc: this code is *weird*, but not replacable (I think it
 			// should be done in QC on the server, but oh well, quake is quake)
-			// LordHavoc: figured out bobup: the time at which the sin is at 180
+			// LadyHavoc: figured out bobup: the time at which the sin is at 180
 			// degrees (which allows lengthening or squishing the peak or valley)
 			cycle = cl.time/cl_bobcycle.value;
 			cycle -= (int)cycle;
@@ -2636,7 +2636,7 @@ static void VM_CL_gettaginfo (prvm_prog_t *prog)
 typedef struct vmparticletheme_s
 {
 	unsigned short typeindex;
-	qboolean initialized;
+	qbool initialized;
 	pblend_t blendmode;
 	porientation_t orientation;
 	int color1;
@@ -2652,7 +2652,7 @@ typedef struct vmparticletheme_s
 	float liquidfriction;
 	float originjitter;
 	float velocityjitter;
-	qboolean qualityreduction;
+	qbool qualityreduction;
 	float lifetime;
 	float stretch;
 	int staincolor1;
@@ -2670,8 +2670,8 @@ typedef struct vmparticletheme_s
 typedef struct vmparticlespawner_s
 {
 	mempool_t			*pool;
-	qboolean			initialized;
-	qboolean			verified;
+	qbool			initialized;
+	qbool			verified;
 	vmparticletheme_t	*themes;
 	int					max_themes;
 }vmparticlespawner_t;
@@ -3357,7 +3357,7 @@ static void VM_DrawPolygonCallback (const entity_render_t *ent, const rtlight_t 
 
 static void VMPolygons_Store(vmpolygons_t *polys)
 {
-	qboolean hasalpha;
+	qbool hasalpha;
 	int i;
 
 	// detect if we have alpha
@@ -3415,7 +3415,7 @@ static void VMPolygons_Store(vmpolygons_t *polys)
 }
 
 // TODO: move this into the client code and clean-up everything else, too! [1/6/2008 Black]
-// LordHavoc: agreed, this is a mess
+// LadyHavoc: agreed, this is a mess
 void VM_CL_AddPolygonsToMeshQueue (prvm_prog_t *prog)
 {
 	int i;
@@ -3605,7 +3605,7 @@ is not a staircase.
 
 =============
 */
-static qboolean CL_CheckBottom (prvm_edict_t *ent)
+static qbool CL_CheckBottom (prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	vec3_t	mins, maxs, start, stop;
@@ -3674,7 +3674,7 @@ The move will be adjusted for slopes and stairs, but if the move isn't
 possible, no move is done and false is returned
 =============
 */
-static qboolean CL_movestep (prvm_edict_t *ent, vec3_t move, qboolean relink, qboolean noenemy, qboolean settrace)
+static qbool CL_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool noenemy, qbool settrace)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	float		dz;
@@ -3804,7 +3804,7 @@ static void VM_CL_walkmove (prvm_prog_t *prog)
 	vec3_t	move;
 	mfunction_t	*oldf;
 	int 	oldself;
-	qboolean	settrace;
+	qbool	settrace;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_walkmove);
 
@@ -4296,11 +4296,11 @@ static void VM_CL_V_CalcRefdef(prvm_prog_t *prog)
 	matrix4x4_t entrendermatrix;
 	vec3_t clviewangles;
 	vec3_t clvelocity;
-	qboolean teleported;
-	qboolean clonground;
-	qboolean clcmdjump;
-	qboolean cldead;
-	qboolean clintermission;
+	qbool teleported;
+	qbool clonground;
+	qbool clcmdjump;
+	qbool cldead;
+	qbool clintermission;
 	float clstatsviewheight;
 	prvm_edict_t *ent;
 	int flags;
@@ -4741,7 +4741,7 @@ NULL,							// #396
 NULL,							// #397
 NULL,							// #398
 NULL,							// #399
-// LordHavoc's range #400-#499
+// LadyHavoc's range #400-#499
 VM_CL_copyentity,				// #400 void(entity from, entity to) copyentity (DP_QC_COPYENTITY)
 NULL,							// #401 void(entity ent, float colors) setcolor (DP_QC_SETCOLOR)
 VM_findchain,					// #402 entity(.string fld, string match) findchain (DP_QC_FINDCHAIN)

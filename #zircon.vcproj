@@ -220,7 +220,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="c:\zircon\zircon_sdl_debug.exe"
+				OutputFile="c:\zircon\zircon_sdl2_debug.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="./xtra/SDK/SDL2-devel-2.0.8-VC/SDL2-2.0.8/lib/x86"
 				GenerateDebugInformation="true"
@@ -298,7 +298,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="c:\zircon\zircon_sdl.exe"
+				OutputFile="c:\zircon\zircon_sdl2.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="./xtra/SDK/SDL2-devel-2.0.8-VC/SDL2-2.0.8/lib/x86"
 				GenerateDebugInformation="true"
@@ -793,6 +793,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\snd_sdl.c"
+				>
+			</File>
+			<File
 				RelativePath=".\snd_wav.c"
 				>
 			</File>
@@ -885,12 +889,36 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\thread_sdl.c"
+				>
+			</File>
+			<File
 				RelativePath=".\thread_win.c"
 				>
 			</File>
 			<File
 				RelativePath=".\utf8lib.c"
 				>
+			</File>
+			<File
+				RelativePath=".\vid_sdl.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\vid_shared.c"
@@ -1363,26 +1391,6 @@
 			<File
 				RelativePath=".\android\app\src\main\res\values\strings.xml"
 				>
-			</File>
-			<File
-				RelativePath=".\vid_sdl.c"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<Filter
 				Name="m"

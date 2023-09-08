@@ -47,7 +47,7 @@ extern int iszirc;
 
 static int NehGameType;
 void menu_state_set_nova (int ee);
-static qboolean m_missingdata = false;
+static qbool m_missingdata = false;
 
 int menu_state_reenter = 0; // To renter at maps menu
 
@@ -146,7 +146,7 @@ static void M_GameOptions_Key (int key, int ascii);
 static void M_ServerList_Key (int key, int ascii);
 static void M_ModList_Key (int key, int ascii);
 
-static qboolean	m_entersound;		///< play after drawing a frame, so caching won't disrupt the sound
+static qbool	m_entersound;		///< play after drawing a frame, so caching won't disrupt the sound
 
 // Baker: These are windowed modes and focused on 4:3 aspect ratio
 // In modern times, 16:9 or 8:5 is more what we want.
@@ -168,7 +168,7 @@ video_resolution_t video_resolutions_hardcoded[] =
 // this is the number of the default mode (640x480) in the list above
 int video_resolutions_hardcoded_count = sizeof(video_resolutions_hardcoded) / sizeof(*video_resolutions_hardcoded) - 1;
 
-static qboolean menu_video_resolutions_forfullscreen;
+static qbool menu_video_resolutions_forfullscreen;
 
 static void M_Menu_Video_FindResolution(int w, int h, float a);
 
@@ -754,7 +754,7 @@ static void M_Credits_Key (int key, int ascii)
 //=============================================================================
 /* Menu Subsystem */
 
-static void M_KeyEvent(int key, int ascii, qboolean downevent);
+static void M_KeyEvent(int key, int ascii, qbool downevent);
 static void M_Draw(void);
 void M_ToggleMenu(int mode);
 static void M_Shutdown(void);
@@ -806,7 +806,7 @@ void M_Shutdown(void)
 
 WARP_X_ (M_Draw)
 
-void M_KeyEvent (int key, int ascii, qboolean downevent)
+void M_KeyEvent (int key, int ascii, qbool downevent)
 {
 	if (!downevent)
 		return;

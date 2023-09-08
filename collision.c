@@ -919,7 +919,7 @@ void Collision_TraceLineBrushFloat(trace_t *trace, const vec3_t linestart, const
 	}
 }
 
-qboolean Collision_PointInsideBrushFloat(const vec3_t point, const colbrushf_t *brush)
+qbool Collision_PointInsideBrushFloat(const vec3_t point, const colbrushf_t *brush)
 {
 	int nplane;
 	const colplanef_t *plane;
@@ -1163,7 +1163,7 @@ void Collision_BrushForBox(colboxbrushf_t *boxbrush, const vec3_t mins, const ve
 //pseudocode for detecting line/sphere overlap without calculating an impact point
 //linesphereorigin = sphereorigin - linestart;linediff = lineend - linestart;linespherefrac = DotProduct(linesphereorigin, linediff) / DotProduct(linediff, linediff);return VectorLength2(linesphereorigin - bound(0, linespherefrac, 1) * linediff) >= sphereradius*sphereradius;
 
-// LordHavoc: currently unused, but tested
+// LadyHavoc: currently unused, but tested
 // note: this can be used for tracing a moving sphere vs a stationary sphere,
 // by simply adding the moving sphere's radius to the sphereradius parameter,
 // all the results are correct (impactpoint, impactnormal, and fraction)
@@ -1419,7 +1419,7 @@ collision_cachedtrace_parameters_t;
 
 typedef struct collision_cachedtrace_s
 {
-	qboolean valid;
+	qbool valid;
 	collision_cachedtrace_parameters_t p;
 	trace_t result;
 }
@@ -1437,9 +1437,9 @@ static unsigned int *collision_cachedtrace_arrayfullhashindex;
 static unsigned int *collision_cachedtrace_arrayhashindex;
 static unsigned int *collision_cachedtrace_arraynext;
 static unsigned char *collision_cachedtrace_arrayused;
-static qboolean collision_cachedtrace_rebuildhash;
+static qbool collision_cachedtrace_rebuildhash;
 
-void Collision_Cache_Reset(qboolean resetlimits)
+void Collision_Cache_Reset(qbool resetlimits)
 {
 	if (collision_cachedtrace_hash)
 		Mem_Free(collision_cachedtrace_hash);
@@ -1801,7 +1801,7 @@ void Collision_ClipToWorld(trace_t *trace, dp_model_t *model, const vec3_t tstar
 	Collision_ClipExtendFinish(&extendtraceinfo);
 }
 
-void Collision_ClipLineToGenericEntity(trace_t *trace, dp_model_t *model, const frameblend_t *frameblend, const skeleton_t *skeleton, const vec3_t bodymins, const vec3_t bodymaxs, int bodysupercontents, matrix4x4_t *matrix, matrix4x4_t *inversematrix, const vec3_t tstart, const vec3_t tend, int hitsupercontentsmask, int skipsupercontentsmask, float extend, qboolean hitsurfaces)
+void Collision_ClipLineToGenericEntity(trace_t *trace, dp_model_t *model, const frameblend_t *frameblend, const skeleton_t *skeleton, const vec3_t bodymins, const vec3_t bodymaxs, int bodysupercontents, matrix4x4_t *matrix, matrix4x4_t *inversematrix, const vec3_t tstart, const vec3_t tend, int hitsupercontentsmask, int skipsupercontentsmask, float extend, qbool hitsurfaces)
 {
 	vec3_t starttransformed, endtransformed;
 	extendtraceinfo_t extendtraceinfo;
@@ -1827,7 +1827,7 @@ void Collision_ClipLineToGenericEntity(trace_t *trace, dp_model_t *model, const 
 	Matrix4x4_TransformPositivePlane(matrix, trace->plane.normal[0], trace->plane.normal[1], trace->plane.normal[2], trace->plane.dist, trace->plane.normal_and_dist);
 }
 
-void Collision_ClipLineToWorld(trace_t *trace, dp_model_t *model, const vec3_t tstart, const vec3_t tend, int hitsupercontentsmask, int skipsupercontentsmask, float extend, qboolean hitsurfaces)
+void Collision_ClipLineToWorld(trace_t *trace, dp_model_t *model, const vec3_t tstart, const vec3_t tend, int hitsupercontentsmask, int skipsupercontentsmask, float extend, qbool hitsurfaces)
 {
 	extendtraceinfo_t extendtraceinfo;
 	Collision_ClipExtendPrepare(&extendtraceinfo, trace, tstart, tend, extend);
@@ -1871,7 +1871,7 @@ void Collision_ClipPointToWorld(trace_t *trace, dp_model_t *model, const vec3_t 
 	VectorCopy(start, trace->endpos);
 }
 
-void Collision_CombineTraces(trace_t *cliptrace, const trace_t *trace, void *touch, qboolean isbmodel)
+void Collision_CombineTraces(trace_t *cliptrace, const trace_t *trace, void *touch, qbool isbmodel)
 {
 	// take the 'best' answers from the new trace and combine with existing data
 	if (trace->allsolid)

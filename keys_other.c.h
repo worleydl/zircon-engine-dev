@@ -162,7 +162,7 @@ Key_KeynumToString (int keynum, char *tinystr, size_t tinystrlength)
 }
 
 
-qboolean
+qbool
 Key_SetBinding (int keynum, int bindmap, const char *binding)
 {
 	char *newbinding;
@@ -197,7 +197,7 @@ void Key_GetBindMap(int *fg, int *bg)
 		*bg = key_bmap2;
 }
 
-qboolean Key_SetBindMap(int fg, int bg)
+qbool Key_SetBindMap(int fg, int bg)
 {
 	if(fg >= MAX_BINDMAPS)
 		return false;
@@ -570,14 +570,14 @@ typedef struct eventqueueitem_s
 {
 	int key;
 	int ascii;
-	qboolean down;
+	qbool down;
 }
 eventqueueitem_t;
 static int events_blocked = 0;
 static eventqueueitem_t eventqueue[32];
 static unsigned eventqueue_idx = 0;
 
-static void Key_EventQueue_Add(int key, int ascii, qboolean down)
+static void Key_EventQueue_Add(int key, int ascii, qbool down)
 {
 	if(eventqueue_idx < sizeof(eventqueue) / sizeof(*eventqueue))
 	{
@@ -604,13 +604,13 @@ void Key_EventQueue_Unblock(void)
 	eventqueue_idx = 0;
 }
 
-qboolean ignore_enter_up = false; // Baker 2000
+qbool ignore_enter_up = false; // Baker 2000
 
 void
-Key_Event (int key, int ascii, qboolean down)
+Key_Event (int key, int ascii, qbool down)
 {
 	const char *bind;
-	qboolean q;
+	qbool q;
 	keydest_t keydest = key_dest;
 	char vabuf[1024];
 
@@ -717,11 +717,11 @@ Key_Event (int key, int ascii, qboolean down)
 					if (key_consoleactive & KEY_CONSOLEACTIVE_FORCED) {
 						key_consoleactive &= ~KEY_CONSOLEACTIVE_USER;
 #ifdef CONFIG_MENU
-						MR_ToggleMenu(1);
+						MR_ToggleMenu(1); // conexit
 #endif
 					}
 					else
-						Con_ToggleConsole_f();
+						Con_ToggleConsole_f(); // conexit
 				}
 				break;
 
@@ -743,7 +743,7 @@ Key_Event (int key, int ascii, qboolean down)
 #ifdef CONFIG_MENU
 				if (!q && down) {
 					WARP_X_ (M_ToggleMenu)
-					MR_ToggleMenu(1);
+					MR_ToggleMenu(1); // conexit
 				}
 #endif
 				break;
