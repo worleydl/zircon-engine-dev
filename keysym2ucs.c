@@ -1,4 +1,4 @@
-#ifndef _WIN32
+#if 0 // glx
 /* $XFree86$
  * This module converts keysym values into the corresponding ISO 10646
  * (UCS, Unicode) values.
@@ -816,7 +816,7 @@ struct codepair {
   { 0x20ac, 0x20ac }, /*                    EuroSign € EURO SIGN */
 };
 
-extern long keysym2ucs(KeySym keysym); // LordHavoc: suppress warning just in this case, it's not worth having a header file for this...
+extern long keysym2ucs(KeySym keysym); // LadyHavoc: suppress warning just in this case, it's not worth having a header file for this...
 long keysym2ucs(KeySym keysym)
 {
     int min = 0;
@@ -848,4 +848,4 @@ long keysym2ucs(KeySym keysym)
     /* no matching Unicode value found */
     return -1;
 }
-#endif
+#endif // 0 glx

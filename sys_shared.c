@@ -5,6 +5,7 @@
 #endif
 
 #include "quakedef.h"
+//#include "taskqueue.h"
 #include "thread.h"
 
 #define SUPPORTDLL
@@ -17,6 +18,9 @@
 #pragma comment(lib, "winmm.lib")
 #endif
 #else
+# ifdef __FreeBSD__
+#  include <sys/sysctl.h>
+# endif
 # include <unistd.h>
 # include <fcntl.h>
 # include <sys/time.h>
@@ -48,7 +52,7 @@ void Sys_Quit (int returnvalue)
 	Cbuf_UnlockThreadMutex();
 	SV_UnlockThreadMutex();
 
-	if (COM_CheckParm("-profilegameonly"))
+	if (Sys_CheckParm("-profilegameonly"))
 		Sys_AllowProfiling(false);
 	host_shuttingdown = true;
 	Host_Shutdown();
@@ -109,7 +113,7 @@ static qbool Sys_LoadLibraryFunctions(dllhandle_t dllhandle, const dllfunction_t
 	return false;
 }
 
-qbool Sys_LoadLibrary (const char** dllnames, dllhandle_t* handle, const dllfunction_t *fcts)
+qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllfunction_t *fcts)
 {
 #ifdef SUPPORTDLL
 	const dllfunction_t *func;
@@ -129,7 +133,7 @@ qbool Sys_LoadLibrary (const char** dllnames, dllhandle_t* handle, const dllfunc
 		return true;
 	}
 	else
-		Sys_UnloadLibrary(&dllhandle);
+		Sys_FreeLibrary(&dllhandle);
 notfound:
 #endif
 #endif
@@ -159,7 +163,7 @@ notfound:
 		if (Sys_LoadLibraryFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(com_argv[0], '/'))))
 			break;
 		else
-			Sys_UnloadLibrary (&dllhandle);
+			Sys_FreeLibrary (&dllhandle);
 	}
 
 	// see if the names can be loaded relative to the executable path
@@ -183,7 +187,7 @@ notfound:
 			if (Sys_LoadLibraryFunctions(dllhandle, fcts, true, dllnames[i+1] != NULL))
 				break;
 			else
-				Sys_UnloadLibrary (&dllhandle);
+				Sys_FreeLibrary (&dllhandle);
 		}
 	}
 
@@ -203,7 +207,7 @@ notfound:
 #endif
 }
 
-void Sys_UnloadLibrary (dllhandle_t* handle)
+void Sys_FreeLibrary (dllhandle_t* handle)
 {
 #ifdef SUPPORTDLL
 	if (handle == NULL || *handle == NULL)
@@ -552,13 +556,13 @@ static int CPUID_Features(void)
 qbool Sys_HaveSSE(void)
 {
 	// COMMANDLINEOPTION: SSE: -nosse disables SSE support and detection
-	if(COM_CheckParm("-nosse"))
+	if(Sys_CheckParm("-nosse"))
 		return false;
 #ifdef SSE_PRESENT
 	return true;
 #else
 	// COMMANDLINEOPTION: SSE: -forcesse enables SSE support and disables detection
-	if(COM_CheckParm("-forcesse") || COM_CheckParm("-forcesse2"))
+	if(Sys_CheckParm("-forcesse") || Sys_CheckParm("-forcesse2"))
 		return true;
 	if(CPUID_Features() & (1 << 25))
 		return true;
@@ -569,13 +573,13 @@ qbool Sys_HaveSSE(void)
 qbool Sys_HaveSSE2(void)
 {
 	// COMMANDLINEOPTION: SSE2: -nosse2 disables SSE2 support and detection
-	if(COM_CheckParm("-nosse") || COM_CheckParm("-nosse2"))
+	if(Sys_CheckParm("-nosse") || Sys_CheckParm("-nosse2"))
 		return false;
 #ifdef SSE2_PRESENT
 	return true;
 #else
 	// COMMANDLINEOPTION: SSE2: -forcesse2 enables SSE2 support and disables detection
-	if(COM_CheckParm("-forcesse2"))
+	if(Sys_CheckParm("-forcesse2"))
 		return true;
 	if((CPUID_Features() & (3 << 25)) == (3 << 25)) // SSE is 1<<25, SSE2 is 1<<26
 		return true;
@@ -595,7 +599,7 @@ void Sys_InitProcessNice (void)
 {
 	struct rlimit lim;
 	nicepossible = false;
-	if(COM_CheckParm("-nonice"))
+	if(Sys_CheckParm("-nonice"))
 		return;
 	errno = 0;
 	nicelevel = getpriority(PRIO_PROCESS, 0);

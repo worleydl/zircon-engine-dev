@@ -85,7 +85,7 @@ static void Host_Status_f (void)
 		// if running a client, try to send over network so the client's status report parser will see the report
 		if (cls.state == ca_connected)
 		{
-			Cmd_ForwardToServer ();
+			Cmd_ForwardToServer_f ();
 			return;
 		}
 		print = Con_Printf;
@@ -331,7 +331,7 @@ static void Host_Ping_f (void)
 		// if running a client, try to send over network so the client's ping report parser will see the report
 		if (cls.state == ca_connected)
 		{
-			Cmd_ForwardToServer ();
+			Cmd_ForwardToServer_f ();
 			return;
 		}
 		print = Con_Printf;
@@ -1412,7 +1412,7 @@ static void Host_Say(qbool teamonly)
 		}
 		else
 		{
-			Cmd_ForwardToServer ();
+			Cmd_ForwardToServer_f ();
 			return;
 		}
 	}
@@ -1490,7 +1490,7 @@ static void Host_Tell_f(void)
 			fromServer = true;
 		else
 		{
-			Cmd_ForwardToServer ();
+			Cmd_ForwardToServer_f ();
 			return;
 		}
 	}
@@ -1801,7 +1801,7 @@ static void Host_Pause_f (void)
 		// if running a client, try to send over network so the pause is handled by the server
 		if (cls.state == ca_connected)
 		{
-			Cmd_ForwardToServer ();
+			Cmd_ForwardToServer_f ();
 			return;
 		}
 		print = Con_Printf;
@@ -1862,7 +1862,7 @@ static void Host_PModel_f (void)
 			return;
 		Cvar_SetValue ("_cl_pmodel", i);
 		if (cls.state == ca_connected)
-			Cmd_ForwardToServer ();
+			Cmd_ForwardToServer_f ();
 		return;
 	}
 
@@ -2317,7 +2317,7 @@ static void Host_Viewmodel_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t	*e;
-	dp_model_t	*m;
+	model_t	*m;
 
 	if (!sv.active)
 		return;
@@ -2346,7 +2346,7 @@ static void Host_Viewframe_f (void)
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t	*e;
 	int		f;
-	dp_model_t	*m;
+	model_t	*m;
 
 	if (!sv.active)
 		return;
@@ -2365,7 +2365,7 @@ static void Host_Viewframe_f (void)
 }
 
 
-static void PrintFrameName (dp_model_t *m, int frame)
+static void PrintFrameName (model_t *m, int frame)
 {
 	if (m->animscenes)
 		Con_Printf("frame %i: %s\n", frame, m->animscenes[frame].name);
@@ -2382,7 +2382,7 @@ static void Host_Viewnext_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t	*e;
-	dp_model_t	*m;
+	model_t	*m;
 
 	if (!sv.active)
 		return;
@@ -2409,7 +2409,7 @@ static void Host_Viewprev_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t	*e;
-	dp_model_t	*m;
+	model_t	*m;
 
 	if (!sv.active)
 		return;
@@ -2445,7 +2445,7 @@ static void Host_Startdemos_f (void)
 {
 	int		i, c;
 
-	if (cls.state == ca_dedicated || COM_CheckParm("-listen") || COM_CheckParm("-benchmark") || COM_CheckParm("-demo") || COM_CheckParm("-capturedemo"))
+	if (cls.state == ca_dedicated || Sys_CheckParm("-listen") || Sys_CheckParm("-benchmark") || Sys_CheckParm("-demo") || Sys_CheckParm("-capturedemo"))
 		return;
 
 	if (nostartdemos.value) {
@@ -2532,9 +2532,9 @@ static void Host_SendCvar_f (void)
 		// LadyHavoc: if there is no such cvar or if it is private, send a
 		// reply indicating that it has no value
 		if(!c || (c->flags & CVAR_PRIVATE))
-			Cmd_ForwardStringToServer(va(vabuf, sizeof(vabuf), "sentcvar %s", cvarname));
+			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "sentcvar %s", cvarname));
 		else
-			Cmd_ForwardStringToServer(va(vabuf, sizeof(vabuf), "sentcvar %s \"%s\"", c->name, c->string));
+			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "sentcvar %s \"%s\"", c->name, c->string));
 		return;
 	}
 	if(!sv.active)// || !PRVM_serverfunction(SV_ParseClientCommand))

@@ -4,7 +4,7 @@
 // cause large (I think they will) parts are from pr_cmds the same copyright like in pr_cmds
 // also applies here
 
-#include "quakedef.h"
+#include "darkplaces.h"
 
 #include "prvm_cmds.h"
 #include "libcurl.h"
@@ -87,7 +87,7 @@ void VM_GenerateFrameGroupBlend(prvm_prog_t *prog, framegroupblend_t *framegroup
 // LadyHavoc: quite tempting to break apart this function to reuse the
 //            duplicated code, but I suspect it is better for performance
 //            this way
-void VM_FrameBlendFromFrameGroupBlend(frameblend_t *frameblend, const framegroupblend_t *framegroupblend, const dp_model_t *model, double curtime)
+void VM_FrameBlendFromFrameGroupBlend(frameblend_t *frameblend, const framegroupblend_t *framegroupblend, const model_t *model, double curtime)
 {
 	int sub2, numframes, f, i, k;
 	int isfirstframegroup = true;
@@ -108,7 +108,7 @@ void VM_FrameBlendFromFrameGroupBlend(frameblend_t *frameblend, const framegroup
 		return;
 	}
 
-	nolerp = (model->type == mod_sprite) ? !r_lerpsprites.integer : !r_lerpmodels.integer;
+	nolerp = ((model->type == mod_sprite) ? !r_lerpsprites.integer : !r_lerpmodels.integer) || (model->nolerp == true);
 	numframes = model->numframes;
 	for (k = 0, g = framegroupblend;k < MAX_FRAMEGROUPBLENDS;k++, g++)
 	{
@@ -188,7 +188,7 @@ void VM_FrameBlendFromFrameGroupBlend(frameblend_t *frameblend, const framegroup
 	}
 }
 
-void VM_UpdateEdictSkeleton(prvm_prog_t *prog, prvm_edict_t *ed, const dp_model_t *edmodel, const frameblend_t *frameblend)
+void VM_UpdateEdictSkeleton(prvm_prog_t *prog, prvm_edict_t *ed, const model_t *edmodel, const frameblend_t *frameblend)
 {
 	if (ed->priv.server->skeleton.model != edmodel)
 	{
@@ -2192,7 +2192,7 @@ void VM_strdecolorize(prvm_prog_t *prog)
 	// Prepare Strings
 	VM_SAFEPARMCOUNT(1,VM_strdecolorize);
 	szString = PRVM_G_STRING(OFS_PARM0);
-	COM_StringDecolorize(szString, 0, szNewString, sizeof(szNewString), TRUE);
+	COM_StringDecolorize(szString, 0, szNewString, sizeof(szNewString), true);
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, szNewString);
 }
 
@@ -4105,122 +4105,8 @@ void VM_setbindmaps (prvm_prog_t *prog)
 			PRVM_G_FLOAT(OFS_RETURN) = 1;
 }
 
-// CL_Video interface functions
 
-/*
-========================
-VM_cin_open
 
-float cin_open(string file, string name)
-========================
-*/
-void VM_cin_open(prvm_prog_t *prog)
-{
-	const char *file;
-	const char *name;
-
-	VM_SAFEPARMCOUNT( 2, VM_cin_open );
-
-	file = PRVM_G_STRING( OFS_PARM0 );
-	name = PRVM_G_STRING( OFS_PARM1 );
-
-	VM_CheckEmptyString(prog,  file );
-    VM_CheckEmptyString(prog,  name );
-
-	if( CL_OpenVideo( file, name, MENUOWNER, "" ) )
-		PRVM_G_FLOAT( OFS_RETURN ) = 1;
-	else
-		PRVM_G_FLOAT( OFS_RETURN ) = 0;
-}
-
-/*
-========================
-VM_cin_close
-
-void cin_close(string name)
-========================
-*/
-void VM_cin_close(prvm_prog_t *prog)
-{
-	const char *name;
-
-	VM_SAFEPARMCOUNT( 1, VM_cin_close );
-
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
-
-	CL_CloseVideo( CL_GetVideoByName( name ) );
-}
-
-/*
-========================
-VM_cin_setstate
-void cin_setstate(string name, float type)
-========================
-*/
-void VM_cin_setstate(prvm_prog_t *prog)
-{
-	const char *name;
-	clvideostate_t 	state;
-	clvideo_t		*video;
-
-	VM_SAFEPARMCOUNT( 2, VM_cin_netstate );
-
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
-
-	state = (clvideostate_t)((int)PRVM_G_FLOAT( OFS_PARM1 ));
-
-	video = CL_GetVideoByName( name );
-	if( video && state > CLVIDEO_UNUSED && state < CLVIDEO_STATECOUNT )
-		CL_SetVideoState( video, state );
-}
-
-/*
-========================
-VM_cin_getstate
-
-float cin_getstate(string name)
-========================
-*/
-void VM_cin_getstate(prvm_prog_t *prog)
-{
-	const char *name;
-	clvideo_t		*video;
-
-	VM_SAFEPARMCOUNT( 1, VM_cin_getstate );
-
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
-
-	video = CL_GetVideoByName( name );
-	if( video )
-		PRVM_G_FLOAT( OFS_RETURN ) = (int)video->state;
-	else
-		PRVM_G_FLOAT( OFS_RETURN ) = 0;
-}
-
-/*
-========================
-VM_cin_restart
-
-void cin_restart(string name)
-========================
-*/
-void VM_cin_restart(prvm_prog_t *prog)
-{
-	const char *name;
-	clvideo_t		*video;
-
-	VM_SAFEPARMCOUNT( 1, VM_cin_restart );
-
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
-
-	video = CL_GetVideoByName( name );
-	if( video )
-		CL_RestartVideo( video );
-}
 
 /*
 ========================
@@ -4869,7 +4755,7 @@ void VM_buf_copy (prvm_prog_t *prog)
 ========================
 VM_buf_sort
 sort buffer by beginnings of strings (cmplength defaults it's length)
-"backward == TRUE" means that sorting goes upside-down
+"backward == true" means that sorting goes upside-down
 void buf_sort(float bufhandle, float cmplength, float backward) = #464;
 ========================
 */
@@ -5008,7 +4894,7 @@ void VM_bufstr_set (prvm_prog_t *prog)
 ========================
 VM_bufstr_add
 adds string to buffer in first free slot and returns its index
-"order == TRUE" means that string will be added after last "full" slot
+"order == true" means that string will be added after last "full" slot
 float bufstr_add(float bufhandle, string str, float order) = #467;
 ========================
 */
@@ -5642,7 +5528,7 @@ void VM_uncolorstring (prvm_prog_t *prog)
 	// Prepare Strings
 	VM_SAFEPARMCOUNT(1, VM_uncolorstring);
 	szString = PRVM_G_STRING(OFS_PARM0);
-	COM_StringDecolorize(szString, 0, szNewString, sizeof(szNewString), TRUE);
+	COM_StringDecolorize(szString, 0, szNewString, sizeof(szNewString), true);
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, szNewString);
 	
 }
@@ -6834,7 +6720,7 @@ finished:
 
 // surface querying
 
-static dp_model_t *getmodel(prvm_prog_t *prog, prvm_edict_t *ed)
+static model_t *getmodel(prvm_prog_t *prog, prvm_edict_t *ed)
 {
 	if (prog == SVVM_prog)
 		return SV_GetModelFromEdict(ed);
@@ -6846,7 +6732,7 @@ static dp_model_t *getmodel(prvm_prog_t *prog, prvm_edict_t *ed)
 
 struct animatemodel_cache
 {
-	dp_model_t *model;
+	model_t *model;
 	frameblend_t frameblend[MAX_FRAMEBLENDS];
 	skeleton_t *skeleton_p;
 	skeleton_t skeleton;
@@ -6872,7 +6758,7 @@ static void animatemodel_reset(prvm_prog_t *prog)
 	Mem_Free(prog->animatemodel_cache);
 }
 
-static void animatemodel(prvm_prog_t *prog, dp_model_t *model, prvm_edict_t *ed)
+static void animatemodel(prvm_prog_t *prog, model_t *model, prvm_edict_t *ed)
 {
 	skeleton_t *skeleton;
 	int skeletonindex = -1;
@@ -6970,7 +6856,7 @@ static void applytransform_forward_normal(prvm_prog_t *prog, const vec3_t in, pr
 	VectorCopy(p, out);
 }
 
-static void clippointtosurface(prvm_prog_t *prog, prvm_edict_t *ed, dp_model_t *model, msurface_t *surface, vec3_t p, vec3_t out)
+static void clippointtosurface(prvm_prog_t *prog, prvm_edict_t *ed, model_t *model, msurface_t *surface, vec3_t p, vec3_t out)
 {
 	int i, j, k;
 	float *v[3], facenormal[3], edgenormal[3], sidenormal[3], temp[3], offsetdist, dist, bestdist;
@@ -7007,7 +6893,7 @@ static void clippointtosurface(prvm_prog_t *prog, prvm_edict_t *ed, dp_model_t *
 	}
 }
 
-static msurface_t *getsurface(dp_model_t *model, int surfacenum)
+static msurface_t *getsurface(model_t *model, int surfacenum)
 {
 	if (surfacenum < 0 || surfacenum >= model->nummodelsurfaces)
 		return NULL;
@@ -7018,7 +6904,7 @@ static msurface_t *getsurface(dp_model_t *model, int surfacenum)
 //PF_getsurfacenumpoints, // #434 float(entity e, float s) getsurfacenumpoints = #434;
 void VM_getsurfacenumpoints(prvm_prog_t *prog)
 {
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	VM_SAFEPARMCOUNT(2, VM_getsurfacenumpoints);
 	// return 0 if no such surface
@@ -7035,7 +6921,7 @@ void VM_getsurfacenumpoints(prvm_prog_t *prog)
 void VM_getsurfacepoint(prvm_prog_t *prog)
 {
 	prvm_edict_t *ed;
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	int pointnum;
 	vec3_t result;
@@ -7063,7 +6949,7 @@ void VM_getsurfacepoint(prvm_prog_t *prog)
 void VM_getsurfacepointattribute(prvm_prog_t *prog)
 {
 	prvm_edict_t *ed;
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	int pointnum;
 	int attributetype;
@@ -7133,7 +7019,7 @@ void VM_getsurfacepointattribute(prvm_prog_t *prog)
 //PF_getsurfacenormal,    // #436 vector(entity e, float s) getsurfacenormal = #436;
 void VM_getsurfacenormal(prvm_prog_t *prog)
 {
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	vec3_t normal;
 	vec3_t result;
@@ -7152,7 +7038,7 @@ void VM_getsurfacenormal(prvm_prog_t *prog)
 //PF_getsurfacetexture,   // #437 string(entity e, float s) getsurfacetexture = #437;
 void VM_getsurfacetexture(prvm_prog_t *prog)
 {
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	VM_SAFEPARMCOUNT(2, VM_getsurfacetexture);
 	PRVM_G_INT(OFS_RETURN) = OFS_NULL;
@@ -7167,7 +7053,7 @@ void VM_getsurfacenearpoint(prvm_prog_t *prog)
 	vec3_t clipped, p;
 	vec_t dist, bestdist;
 	prvm_edict_t *ed;
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	vec3_t point;
 	VM_SAFEPARMCOUNT(2, VM_getsurfacenearpoint);
@@ -7214,7 +7100,7 @@ void VM_getsurfacenearpoint(prvm_prog_t *prog)
 void VM_getsurfaceclippedpoint(prvm_prog_t *prog)
 {
 	prvm_edict_t *ed;
-	dp_model_t *model;
+	model_t *model;
 	msurface_t *surface;
 	vec3_t p, out, inp;
 	VM_SAFEPARMCOUNT(3, VM_te_getsurfaceclippedpoint);
@@ -7232,7 +7118,7 @@ void VM_getsurfaceclippedpoint(prvm_prog_t *prog)
 //PF_getsurfacenumtriangles, // #??? float(entity e, float s) getsurfacenumtriangles = #???;
 void VM_getsurfacenumtriangles(prvm_prog_t *prog)
 {
-       dp_model_t *model;
+       model_t *model;
        msurface_t *surface;
        VM_SAFEPARMCOUNT(2, VM_SV_getsurfacenumtriangles);
        // return 0 if no such surface
@@ -7249,7 +7135,7 @@ void VM_getsurfacetriangle(prvm_prog_t *prog)
 {
        const vec3_t d = {-1, -1, -1};
        prvm_edict_t *ed;
-       dp_model_t *model;
+       model_t *model;
        msurface_t *surface;
        int trinum;
        VM_SAFEPARMCOUNT(3, VM_SV_getsurfacetriangle);

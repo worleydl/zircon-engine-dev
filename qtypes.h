@@ -2,22 +2,20 @@
 #ifndef QTYPES_H
 #define QTYPES_H
 
-#undef true
-#undef false
-
-#ifndef __cplusplus
-typedef enum qboolean_e {false, true} qbool;
+//#pragma message ("qtypes")
+#ifdef _MSC_VER
+#include "vc_stdint.h"
 #else
+#include <stdint.h>
+#include <stdbool.h>
+#include <inttypes.h>
+#endif // WIN32 // _MSC_VER
+
+
 typedef bool qbool;
-#endif
 
 #ifndef NULL
 #define NULL ((void *)0)
-#endif
-
-#ifndef FALSE
-#define FALSE false
-#define TRUE true
 #endif
 
 // up / down
@@ -29,23 +27,40 @@ typedef bool qbool;
 // fall over
 #define	ROLL	2
 
-#if defined(__GNUC__) || (defined(_MSC_VER) && _MSC_VER >= 1400)
+#if defined(__GNUC__) || (__clang__) || (__TINYC__) || (defined(_MSC_VER) && _MSC_VER >= 1400)
 #define RESTRICT __restrict
 #else
 #define RESTRICT
 #endif
+
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef intptr_t iptr;
+typedef uintptr_t uptr;
 
 // LadyHavoc: upgrade the prvm to double precision for better time values
 // LadyHavoc: to be enabled when bugs are worked out...
 //#define PRVM_64
 #ifdef PRVM_64
 typedef double prvm_vec_t;
-typedef long long prvm_int_t;
-typedef unsigned long long prvm_uint_t;
+typedef int64_t prvm_int_t;
+typedef uint64_t prvm_uint_t;
+#define PRVM_PRIi PRIi64
+#define PRVM_PRIu PRIu64
 #else
 typedef float prvm_vec_t;
-typedef int prvm_int_t;
-typedef unsigned int prvm_uint_t;
+typedef int32_t prvm_int_t;
+typedef uint32_t prvm_uint_t;
+#define PRVM_PRIi PRIi32
+#define PRVM_PRIu PRIu32
 #endif
 typedef prvm_vec_t prvm_vec3_t[3];
 
@@ -57,9 +72,4 @@ typedef float vec_t;
 typedef vec_t vec2_t[2];
 typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
-typedef vec_t vec5_t[5];
-typedef vec_t vec6_t[6];
-typedef vec_t vec7_t[7];
-typedef vec_t vec8_t[8];
-
 #endif

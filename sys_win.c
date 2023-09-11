@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qtypes.h"
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include <errno.h>
 #include "resource.h"
 #include "conproc.h"
@@ -294,7 +294,7 @@ void Sys_InitConsole (void)
 
 	// LadyHavoc: can't check cls.state because it hasn't been initialized yet
 	// if (cls.state == ca_dedicated)
-	if (COM_CheckParm("-dedicated"))
+	if (Sys_CheckParm("-dedicated"))
 	{
 		//if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE)) // LadyHavoc: on Windows XP this is never 0 or invalid, but hinput is invalid
 		{
@@ -312,19 +312,19 @@ void Sys_InitConsole (void)
 #define atoi _atoi64
 #endif
 	// give QHOST a chance to hook into the console
-		if ((t = COM_CheckParm ("-HFILE")) > 0)
+		if ((t = Sys_CheckParm ("-HFILE")) > 0)
 		{
 			if (t < com_argc)
 				hFile = (HANDLE)atoi (com_argv[t+1]);
 		}
 
-		if ((t = COM_CheckParm ("-HPARENT")) > 0)
+		if ((t = Sys_CheckParm ("-HPARENT")) > 0)
 		{
 			if (t < com_argc)
 				heventParent = (HANDLE)atoi (com_argv[t+1]);
 		}
 
-		if ((t = COM_CheckParm ("-HCHILD")) > 0)
+		if ((t = Sys_CheckParm ("-HCHILD")) > 0)
 		{
 			if (t < com_argc)
 				heventChild = (HANDLE)atoi (com_argv[t+1]);

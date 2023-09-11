@@ -38,7 +38,7 @@ static const char *WIN_CLASSNAME_CLASS1 = "ZirconWindowClass";
 #endif
 #endif
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include <windows.h>
 #include <mmsystem.h>
 #ifdef SUPPORTDIRECTX
@@ -209,10 +209,7 @@ void VID_Finish (void)
 	{
 		switch(vid.renderpath)
 		{
-		case RENDERPATH_GL11:
-		case RENDERPATH_GL13:
 		case RENDERPATH_GL20:
-		case RENDERPATH_GLES1:
 		case RENDERPATH_GLES2:
 			if (vid_usingvsync != vid_usevsync)
 			{
@@ -1244,7 +1241,7 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 
 	gldrivername = "opengl32.dll";
 // COMMANDLINEOPTION: Windows WGL: -gl_driver <drivername> selects a GL driver library, default is opengl32.dll, useful only for 3dfxogl.dll or 3dfxvgl.dll, if you don't know what this is for, you don't need it
-	i = COM_CheckParm("-gl_driver");
+	i = Sys_CheckParm("-gl_driver");
 	if (i && i < com_argc - 1)
 		gldrivername = com_argv[i + 1];
 	if (!GL_OpenLibrary(gldrivername))
@@ -1698,7 +1695,7 @@ void VID_SetMouse(qbool fullscreengrab, qbool relative, qbool hidecursor)
 
 				// change mouse settings to turn off acceleration
 // COMMANDLINEOPTION: Windows GDI Input: -noforcemparms disables setting of mouse parameters (not used with -dinput, windows only)
-				if (!COM_CheckParm ("-noforcemparms") && SystemParametersInfo (SPI_GETMOUSE, 0, originalmouseparms, 0)) {
+				if (!Sys_CheckParm ("-noforcemparms") && SystemParametersInfo (SPI_GETMOUSE, 0, originalmouseparms, 0)) {
 					int newmouseparms[3];
 					newmouseparms[0] = 0; // threshold to double movement (only if accel level is >= 1)
 					newmouseparms[1] = 0; // threshold to quadruple movement (only if accel level is >= 2)
@@ -1872,14 +1869,14 @@ IN_StartupMouse
 */
 static void IN_StartupMouse (void)
 {
-	if (COM_CheckParm ("-nomouse"))
+	if (Sys_CheckParm ("-nomouse"))
 		return;
 
 	mouseinitialized = true;
 
 #ifdef SUPPORTDIRECTX
 // COMMANDLINEOPTION: Windows Input: -dinput enables DirectInput for mouse input
-	if (COM_CheckParm ("-dinput"))
+	if (Sys_CheckParm ("-dinput"))
 		dinput = IN_InitDInput ();
 
 	if (dinput)

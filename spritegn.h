@@ -51,6 +51,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define SPRITE2_VERSION		2
 
+typedef enum synctype_e {ST_SYNC=0, ST_RAND } synctype_t;
+
 typedef struct dsprite_s
 {
 	int			ident;

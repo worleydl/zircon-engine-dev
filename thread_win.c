@@ -1,6 +1,6 @@
 #if defined(_WIN32) && !defined(CORE_SDL)
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "thread.h"
 #include <process.h>
 

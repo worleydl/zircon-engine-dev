@@ -1,3 +1,5 @@
+#ifdef CONFIG_VIDEO_CAPTURE
+
 #include "quakedef.h"
 #include "cap_avi.h"
 
@@ -718,3 +720,5 @@ void SCR_CaptureVideo_Avi_BeginVideo(void)
 		}
 	}
 }
+
+#endif // CONFIG_VIDEO_CAPTURE

@@ -26,7 +26,7 @@
 //
 //LadyHavoc: rewrote most of this.
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "image.h"
 #include "image_png.h"
 
@@ -172,12 +172,12 @@ qbool PNG_OpenLibrary (void)
 		return true;
 
 	// Load the DLL
-	if(!Sys_LoadLibrary (dllnames, &png_dll, pngfuncs))
+	if(!Sys_LoadDependency (dllnames, &png_dll, pngfuncs))
 		return false;
 	if(qpng_access_version_number() / 100 >= 104)
-		if(!Sys_LoadLibrary (dllnames, &png14_dll, png14funcs))
+		if(!Sys_LoadDependency (dllnames, &png14_dll, png14funcs))
 		{
-			Sys_UnloadLibrary (&png_dll);
+			Sys_FreeLibrary (&png_dll);
 			return false;
 		}
 	return true;
@@ -193,8 +193,8 @@ Unload the PNG DLL
 */
 void PNG_CloseLibrary (void)
 {
-	Sys_UnloadLibrary (&png14_dll);
-	Sys_UnloadLibrary (&png_dll);
+	Sys_FreeLibrary (&png14_dll);
+	Sys_FreeLibrary (&png_dll);
 }
 
 /*
@@ -511,7 +511,6 @@ qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbo
 
 	// NOTE: this relies on jmp_buf being the first thing in the png structure
 	// created by libpng! (this is correct for libpng 1.2.x)
-#ifdef __cplusplus
 #ifdef WIN64
 	if (setjmp((_JBTYPE *)png))
 #elif defined(MACOSX) || defined(WIN32)
@@ -519,10 +518,7 @@ qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbo
 #elif defined(__ANDROID__)
 	if (setjmp((long *)png))
 #else
-	if (setjmp((__jmp_buf_tag *)png))
-#endif
-#else
-	if (setjmp(png))
+	if (setjmp((struct __jmp_buf_tag *)png))
 #endif
 	{
 		qpng_destroy_write_struct(&png, &pnginfo);

@@ -203,7 +203,7 @@ void MVM_error_cmd(const char *format, ...)
 	key_dest = key_game;
 
 	// init the normal menu now -> this will also correct the menu router pointers
-	MR_SetRouting (TRUE);
+	MR_SetRouting (true);
 
 	// reset the active scene, too (to be on the safe side ;))
    R_SelectScene( RST_CLIENT );
@@ -423,7 +423,7 @@ void MR_Restart(void)
 {
 	if(MR_Shutdown)
 		MR_Shutdown ();
-	MR_SetRouting (FALSE);
+	MR_SetRouting (false);
 }
 
 static void Call_MR_ToggleMenu_f(void)
@@ -572,15 +572,15 @@ void MR_Init(void)
 
 	// use -forceqmenu to use always the normal quake menu (it sets forceqmenu to 1)
 // COMMANDLINEOPTION: Client: -forceqmenu disables menu.dat (same as +forceqmenu 1)
-	if(COM_CheckParm("-forceqmenu"))
+	if(Sys_CheckParm("-forceqmenu"))
 		Cvar_SetValueQuick(&forceqmenu,1);
 	// use -useqmenu for debugging proposes, cause it starts
 	// the normal quake menu only the first time
 // COMMANDLINEOPTION: Client: -useqmenu causes the first time you open the menu to use the quake menu, then reverts to menu.dat (if forceqmenu is 0)
-	if(COM_CheckParm("-useqmenu"))
-		MR_SetRouting (TRUE);
+	if(Sys_CheckParm("-useqmenu"))
+		MR_SetRouting (true);
 	else
-		MR_SetRouting (FALSE);
+		MR_SetRouting (false);
 }
 
 

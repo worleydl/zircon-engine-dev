@@ -1,11 +1,8 @@
 // Baker: vid_fullscreen_width, vid_window_width
 
-#include "quakedef.h"
-#ifdef CONFIG_CD
+#include "darkplaces.h"
 #include "cdaudio.h"
-#endif
 #include "image.h"
-
 
 #ifdef WIN32
 	//#include <XInput.h>
@@ -83,11 +80,11 @@ qbool vid_activewindow = true;
 vid_joystate_t vid_joystate;
 
 #ifdef WIN32
-cvar_t joy_xinputavailable = {CVAR_READONLY, "joy_xinputavailable", "0", "indicates which devices are being reported by the Windows XInput API (first controller = 1, second = 2, third = 4, fourth = 8, added together)"};
+cvar_t joy_xinputavailable = {CF_CLIENT | CF_READONLY, "joy_xinputavailable", "0", "indicates which devices are being reported by the Windows XInput API (first controller = 1, second = 2, third = 4, fourth = 8, added together)"};
 #endif
-cvar_t joy_active = {CVAR_READONLY, "joy_active", "0", "indicates that a joystick is active (detected and enabled)"};
-cvar_t joy_detected = {CVAR_READONLY, "joy_detected", "0", "number of joysticks detected by engine"};
-cvar_t joy_enable = {CVAR_SAVE, "joy_enable", "0", "enables joystick support"};
+cvar_t joy_active = {CF_CLIENT | CF_READONLY, "joy_active", "0", "indicates that a joystick is active (detected and enabled)"};
+cvar_t joy_detected = {CF_CLIENT | CF_READONLY, "joy_detected", "0", "number of joysticks detected by engine"};
+cvar_t joy_enable = {CF_CLIENT | CF_ARCHIVE, "joy_enable", "0", "enables joystick support"};
 cvar_t joy_index = {0, "joy_index", "0", "selects which joystick to use if you have multiple (0 uses the first controller, 1 uses the second, ...)"};
 cvar_t joy_axisforward = {0, "joy_axisforward", "1", "which joystick axis to query for forward/backward movement"};
 cvar_t joy_axisside = {0, "joy_axisside", "0", "which joystick axis to query for right/left movement"};
@@ -107,8 +104,8 @@ cvar_t joy_sensitivityup = {0, "joy_sensitivityup", "1", "movement multiplier"};
 cvar_t joy_sensitivitypitch = {0, "joy_sensitivitypitch", "1", "movement multiplier"};
 cvar_t joy_sensitivityyaw = {0, "joy_sensitivityyaw", "-1", "movement multiplier"};
 cvar_t joy_sensitivityroll = {0, "joy_sensitivityroll", "1", "movement multiplier"};
-cvar_t joy_axiskeyevents = {CVAR_SAVE, "joy_axiskeyevents", "0", "generate uparrow/leftarrow etc. keyevents for joystick axes, use if your joystick driver is not generating them"};
-cvar_t joy_axiskeyevents_deadzone = {CVAR_SAVE, "joy_axiskeyevents_deadzone", "0.5", "deadzone value for axes"};
+cvar_t joy_axiskeyevents = {CF_CLIENT | CF_ARCHIVE, "joy_axiskeyevents", "0", "generate uparrow/leftarrow etc. keyevents for joystick axes, use if your joystick driver is not generating them"};
+cvar_t joy_axiskeyevents_deadzone = {CF_CLIENT | CF_ARCHIVE, "joy_axiskeyevents_deadzone", "0.5", "deadzone value for axes"};
 cvar_t joy_x360_axisforward = {0, "joy_x360_axisforward", "1", "which joystick axis to query for forward/backward movement"};
 cvar_t joy_x360_axisside = {0, "joy_x360_axisside", "0", "which joystick axis to query for right/left movement"};
 cvar_t joy_x360_axisup = {0, "joy_x360_axisup", "-1", "which joystick axis to query for up/down movement"};
@@ -130,15 +127,15 @@ cvar_t joy_x360_sensitivityroll = {0, "joy_x360_sensitivityroll", "1", "movement
 
 
 // we don't know until we try it!
-cvar_t vid_hardwaregammasupported = {CVAR_READONLY,"vid_hardwaregammasupported","1", "indicates whether hardware gamma is supported (updated by attempts to set hardware gamma ramps)"};
+cvar_t vid_hardwaregammasupported = {CF_CLIENT | CF_READONLY,"vid_hardwaregammasupported","1", "indicates whether hardware gamma is supported (updated by attempts to set hardware gamma ramps)"};
 
 // VorteX: more info cvars, mostly set in VID_CheckExtensions
-cvar_t gl_info_vendor = {CVAR_READONLY, "gl_info_vendor", "", "indicates brand of graphics chip"};
-cvar_t gl_info_renderer = {CVAR_READONLY, "gl_info_renderer", "", "indicates graphics chip model and other information"};
-cvar_t gl_info_version = {CVAR_READONLY, "gl_info_version", "", "indicates version of current renderer. begins with 1.0.0, 1.1.0, 1.2.0, 1.3.1 etc."};
-cvar_t gl_info_extensions = {CVAR_READONLY, "gl_info_extensions", "", "indicates extension list found by engine, space separated."};
-cvar_t gl_info_platform = {CVAR_READONLY, "gl_info_platform", "", "indicates GL platform: WGL, GLX, or AGL."};
-cvar_t gl_info_driver = {CVAR_READONLY, "gl_info_driver", "", "name of driver library (opengl32.dll, libGL.so.1, or whatever)."};
+cvar_t gl_info_vendor = {CF_CLIENT | CF_READONLY, "gl_info_vendor", "", "indicates brand of graphics chip"};
+cvar_t gl_info_renderer = {CF_CLIENT | CF_READONLY, "gl_info_renderer", "", "indicates graphics chip model and other information"};
+cvar_t gl_info_version = {CF_CLIENT | CF_READONLY, "gl_info_version", "", "indicates version of current renderer. begins with 1.0.0, 1.1.0, 1.2.0, 1.3.1 etc."};
+cvar_t gl_info_extensions = {CF_CLIENT | CF_READONLY, "gl_info_extensions", "", "indicates extension list found by engine, space separated."};
+cvar_t gl_info_platform = {CF_CLIENT | CF_READONLY, "gl_info_platform", "", "indicates GL platform: WGL, GLX, or AGL."};
+cvar_t gl_info_driver = {CF_CLIENT | CF_READONLY, "gl_info_driver", "", "name of driver library (opengl32.dll, libGL.so.1, or whatever)."};
 
 // whether hardware gamma ramps are currently in effect
 qbool vid_usinghwgamma = false;
@@ -147,20 +144,20 @@ int vid_gammarampsize = 0;
 unsigned short *vid_gammaramps = NULL;
 unsigned short *vid_systemgammaramps = NULL;
 
-cvar_t vid_fullscreen = {CVAR_SAVE, "vid_fullscreen", "1", "use fullscreen (1) or windowed (0)"};
-cvar_t vid_width = {CVAR_SAVE, "vid_width", "1024", "resolution"}; // Baker 1020 old default was 640 -- I feel this is necessary as default.cfg should not contain a video mode, right?
-cvar_t vid_height = {CVAR_SAVE, "vid_height", "768", "resolution"}; // Baker 1020 old default was 480
+cvar_t vid_fullscreen = {CF_CLIENT | CF_ARCHIVE, "vid_fullscreen", "1", "use fullscreen (1) or windowed (0)"};
+cvar_t vid_width = {CF_CLIENT | CF_ARCHIVE, "vid_width", "1024", "resolution"}; // Baker 1020 old default was 640 -- I feel this is necessary as default.cfg should not contain a video mode, right?
+cvar_t vid_height = {CF_CLIENT | CF_ARCHIVE, "vid_height", "768", "resolution"}; // Baker 1020 old default was 480
 
-cvar_t vid_fullscreen_width = {CVAR_SAVE, "_vid_fullscreen_width", "1024", "most recent user set fullscreen width for ALT-ENTER [Zircon]"}; // Baker 2000
-cvar_t vid_fullscreen_height = {CVAR_SAVE, "_vid_fullscreen_height", "768", "most recent user set fullscreen height for ALT-ENTER [Zircon]"}; // Baker 2000
-cvar_t vid_window_width = {CVAR_SAVE, "_vid_window_width", "1200", "most recent user set windowed width for ALT-ENTER [Zircon]"}; // Baker 2000
-cvar_t vid_window_height = {CVAR_SAVE, "_vid_window_height", "640", "most recent user set windowed height for ALT-ENTER [Zircon]"}; // Baker 2000
+cvar_t vid_fullscreen_width = {CF_CLIENT | CF_ARCHIVE, "_vid_fullscreen_width", "1024", "most recent user set fullscreen width for ALT-ENTER [Zircon]"}; // Baker 2000
+cvar_t vid_fullscreen_height = {CF_CLIENT | CF_ARCHIVE, "_vid_fullscreen_height", "768", "most recent user set fullscreen height for ALT-ENTER [Zircon]"}; // Baker 2000
+cvar_t vid_window_width = {CF_CLIENT | CF_ARCHIVE, "_vid_window_width", "1200", "most recent user set windowed width for ALT-ENTER [Zircon]"}; // Baker 2000
+cvar_t vid_window_height = {CF_CLIENT | CF_ARCHIVE, "_vid_window_height", "640", "most recent user set windowed height for ALT-ENTER [Zircon]"}; // Baker 2000
 
-cvar_t vid_bitsperpixel = {CVAR_SAVE, "vid_bitsperpixel", "32", "how many bits per pixel to render at (32 or 16, 32 is recommended)"};
-cvar_t vid_samples = {CVAR_SAVE, "vid_samples", "1", "how many anti-aliasing samples per pixel to request from the graphics driver (4 is recommended, 1 is faster)"};
-cvar_t vid_refreshrate = {CVAR_SAVE, "vid_refreshrate", "60", "refresh rate to use, in hz (higher values flicker less, if supported by your monitor)"};
-cvar_t vid_userefreshrate = {CVAR_SAVE, "vid_userefreshrate", "0", "set this to 1 to make vid_refreshrate used, or to 0 to let the engine choose a sane default"};
-cvar_t vid_stereobuffer = {CVAR_SAVE, "vid_stereobuffer", "0", "enables 'quad-buffered' stereo rendering for stereo shutterglasses, HMD (head mounted display) devices, or polarized stereo LCDs, if supported by your drivers"};
+cvar_t vid_bitsperpixel = {CF_CLIENT | CF_ARCHIVE, "vid_bitsperpixel", "32", "how many bits per pixel to render at (32 or 16, 32 is recommended)"};
+cvar_t vid_samples = {CF_CLIENT | CF_ARCHIVE, "vid_samples", "1", "how many anti-aliasing samples per pixel to request from the graphics driver (4 is recommended, 1 is faster)"};
+cvar_t vid_refreshrate = {CF_CLIENT | CF_ARCHIVE, "vid_refreshrate", "60", "refresh rate to use, in hz (higher values flicker less, if supported by your monitor)"};
+cvar_t vid_userefreshrate = {CF_CLIENT | CF_ARCHIVE, "vid_userefreshrate", "0", "set this to 1 to make vid_refreshrate used, or to 0 to let the engine choose a sane default"};
+cvar_t vid_stereobuffer = {CF_CLIENT | CF_ARCHIVE, "vid_stereobuffer", "0", "enables 'quad-buffered' stereo rendering for stereo shutterglasses, HMD (head mounted display) devices, or polarized stereo LCDs, if supported by your drivers"};
 // the density cvars are completely optional, set and use when something needs to have a density-independent size.
 // TODO: set them when changing resolution, setting them from the commandline will be independent from the resolution - use only if you have a native fixed resolution.
 // values for the Samsung Galaxy SIII, Snapdragon version: 2.000000 density, 304.799988 xdpi, 303.850464 ydpi
@@ -168,41 +165,41 @@ cvar_t vid_touchscreen_density = {0, "vid_touchscreen_density", "2.0", "Standard
 cvar_t vid_touchscreen_xdpi = {0, "vid_touchscreen_xdpi", "300", "Horizontal DPI of the screen (only valid on Android currently)"};
 cvar_t vid_touchscreen_ydpi = {0, "vid_touchscreen_ydpi", "300", "Vertical DPI of the screen (only valid on Android currently)"};
 
-cvar_t vid_vsync = {CVAR_SAVE, "vid_vsync", "0", "sync to vertical blank, prevents 'tearing' (seeing part of one frame and part of another on the screen at the same time), automatically disabled when doing timedemo benchmarks"};
-cvar_t vid_mouse = {CVAR_SAVE, "vid_mouse", "1", "whether to use the mouse in windowed mode (fullscreen always does)"};
-cvar_t vid_grabkeyboard = {CVAR_SAVE, "vid_grabkeyboard", "0", "whether to grab the keyboard when mouse is active (prevents use of volume control keys, music player keys, etc on some keyboards)"};
+cvar_t vid_vsync = {CF_CLIENT | CF_ARCHIVE, "vid_vsync", "0", "sync to vertical blank, prevents 'tearing' (seeing part of one frame and part of another on the screen at the same time), automatically disabled when doing timedemo benchmarks"};
+cvar_t vid_mouse = {CF_CLIENT | CF_ARCHIVE, "vid_mouse", "1", "whether to use the mouse in windowed mode (fullscreen always does)"};
+cvar_t vid_grabkeyboard = {CF_CLIENT | CF_ARCHIVE, "vid_grabkeyboard", "0", "whether to grab the keyboard when mouse is active (prevents use of volume control keys, music player keys, etc on some keyboards)"};
 cvar_t vid_minwidth = {0, "vid_minwidth", "0", "minimum vid_width that is acceptable (to be set in default.cfg in mods)"};
 cvar_t vid_minheight = {0, "vid_minheight", "0", "minimum vid_height that is acceptable (to be set in default.cfg in mods)"};
 cvar_t vid_gl13 = {0, "vid_gl13", "1", "enables faster rendering using OpenGL 1.3 features (such as GL_ARB_texture_env_combine extension)"};
 cvar_t vid_gl20 = {0, "vid_gl20", "1", "enables faster rendering using OpenGL 2.0 features (such as GL_ARB_fragment_shader extension)"};
 cvar_t gl_finish = {0, "gl_finish", "0", "make the cpu wait for the graphics processor at the end of each rendered frame (can help with strange input or video lag problems on some machines)"};
-cvar_t vid_sRGB = {CVAR_SAVE, "vid_sRGB", "0", "if hardware is capable, modify rendering to be gamma corrected for the sRGB color standard (computer monitors, TVs), recommended"};
-cvar_t vid_sRGB_fallback = {CVAR_SAVE, "vid_sRGB_fallback", "0", "do an approximate sRGB fallback if not properly supported by hardware (2: also use the fallback if framebuffer is 8bit, 3: always use the fallback even if sRGB is supported)"};
+cvar_t vid_sRGB = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB", "0", "if hardware is capable, modify rendering to be gamma corrected for the sRGB color standard (computer monitors, TVs), recommended"};
+cvar_t vid_sRGB_fallback = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB_fallback", "0", "do an approximate sRGB fallback if not properly supported by hardware (2: also use the fallback if framebuffer is 8bit, 3: always use the fallback even if sRGB is supported)"};
 
 cvar_t vid_touchscreen = {0, "vid_touchscreen", "0", "Use touchscreen-style input (no mouse grab, track mouse motion only while button is down, screen areas for mimicing joystick axes and buttons"};
 cvar_t vid_touchscreen_showkeyboard = {0, "vid_touchscreen_showkeyboard", "0", "shows the platform's screen keyboard for text entry, can be set by csqc or menu qc if it wants to receive text input, does nothing if the platform has no screen keyboard"};
-cvar_t vid_touchscreen_supportshowkeyboard = {CVAR_READONLY, "vid_touchscreen_supportshowkeyboard", "0", "indicates if the platform supports a virtual keyboard"};
-cvar_t vid_stick_mouse = {CVAR_SAVE, "vid_stick_mouse", "0", "have the mouse stuck in the center of the screen" };
-cvar_t vid_resizable = {CVAR_SAVE, "vid_resizable", "0", "0: window not resizable, 1: resizable, 2: window can be resized but the framebuffer isn't adjusted" }; // Baker: This DP feature doesn't do anything, no supporting code.
-cvar_t vid_desktopfullscreen = {CVAR_SAVE, "vid_desktopfullscreen", "0", "force desktop resolution for fullscreen; also use some OS dependent tricks for better fullscreen integration"};
+cvar_t vid_touchscreen_supportshowkeyboard = {CF_CLIENT | CF_READONLY, "vid_touchscreen_supportshowkeyboard", "0", "indicates if the platform supports a virtual keyboard"};
+cvar_t vid_stick_mouse = {CF_CLIENT | CF_ARCHIVE, "vid_stick_mouse", "0", "have the mouse stuck in the center of the screen" };
+cvar_t vid_resizable = {CF_CLIENT | CF_ARCHIVE, "vid_resizable", "0", "0: window not resizable, 1: resizable, 2: window can be resized but the framebuffer isn't adjusted" }; // Baker: This DP feature doesn't do anything, no supporting code.
+cvar_t vid_desktopfullscreen = {CF_CLIENT | CF_ARCHIVE, "vid_desktopfullscreen", "0", "force desktop resolution for fullscreen; also use some OS dependent tricks for better fullscreen integration"};
 
-cvar_t v_gamma = {CVAR_SAVE, "v_gamma", "1", "inverse gamma correction value, a brightness effect that does not affect white or black, and tends to make the image grey and dull"};
-cvar_t v_contrast = {CVAR_SAVE, "v_contrast", "1", "brightness of white (values above 1 give a brighter image with increased color saturation, unlike v_gamma)"};
-cvar_t v_brightness = {CVAR_SAVE, "v_brightness", "0", "brightness of black, useful for monitors that are too dark"};
-cvar_t v_contrastboost = {CVAR_SAVE, "v_contrastboost", "1", "by how much to multiply the contrast in dark areas (1 is no change)"};
-cvar_t v_color_enable = {CVAR_SAVE, "v_color_enable", "0", "enables black-grey-white color correction curve controls"};
-cvar_t v_color_black_r = {CVAR_SAVE, "v_color_black_r", "0", "desired color of black"};
-cvar_t v_color_black_g = {CVAR_SAVE, "v_color_black_g", "0", "desired color of black"};
-cvar_t v_color_black_b = {CVAR_SAVE, "v_color_black_b", "0", "desired color of black"};
-cvar_t v_color_grey_r = {CVAR_SAVE, "v_color_grey_r", "0.5", "desired color of grey"};
-cvar_t v_color_grey_g = {CVAR_SAVE, "v_color_grey_g", "0.5", "desired color of grey"};
-cvar_t v_color_grey_b = {CVAR_SAVE, "v_color_grey_b", "0.5", "desired color of grey"};
-cvar_t v_color_white_r = {CVAR_SAVE, "v_color_white_r", "1", "desired color of white"};
-cvar_t v_color_white_g = {CVAR_SAVE, "v_color_white_g", "1", "desired color of white"};
-cvar_t v_color_white_b = {CVAR_SAVE, "v_color_white_b", "1", "desired color of white"};
-cvar_t v_hwgamma = {CVAR_SAVE, "v_hwgamma", "0", "enables use of hardware gamma correction ramps if available (note: does not work very well on Windows2000 and above), values are 0 = off, 1 = attempt to use hardware gamma, 2 = use hardware gamma whether it works or not"};
-cvar_t v_glslgamma = {CVAR_SAVE, "v_glslgamma", "1", "enables use of GLSL to apply gamma correction ramps if available (note: overrides v_hwgamma)"};
-cvar_t v_glslgamma_2d = {CVAR_SAVE, "v_glslgamma_2d", "0", "applies GLSL gamma to 2d pictures (HUD, fonts)"};
+cvar_t v_gamma = {CF_CLIENT | CF_ARCHIVE, "v_gamma", "1", "inverse gamma correction value, a brightness effect that does not affect white or black, and tends to make the image grey and dull"};
+cvar_t v_contrast = {CF_CLIENT | CF_ARCHIVE, "v_contrast", "1", "brightness of white (values above 1 give a brighter image with increased color saturation, unlike v_gamma)"};
+cvar_t v_brightness = {CF_CLIENT | CF_ARCHIVE, "v_brightness", "0", "brightness of black, useful for monitors that are too dark"};
+cvar_t v_contrastboost = {CF_CLIENT | CF_ARCHIVE, "v_contrastboost", "1", "by how much to multiply the contrast in dark areas (1 is no change)"};
+cvar_t v_color_enable = {CF_CLIENT | CF_ARCHIVE, "v_color_enable", "0", "enables black-grey-white color correction curve controls"};
+cvar_t v_color_black_r = {CF_CLIENT | CF_ARCHIVE, "v_color_black_r", "0", "desired color of black"};
+cvar_t v_color_black_g = {CF_CLIENT | CF_ARCHIVE, "v_color_black_g", "0", "desired color of black"};
+cvar_t v_color_black_b = {CF_CLIENT | CF_ARCHIVE, "v_color_black_b", "0", "desired color of black"};
+cvar_t v_color_grey_r = {CF_CLIENT | CF_ARCHIVE, "v_color_grey_r", "0.5", "desired color of grey"};
+cvar_t v_color_grey_g = {CF_CLIENT | CF_ARCHIVE, "v_color_grey_g", "0.5", "desired color of grey"};
+cvar_t v_color_grey_b = {CF_CLIENT | CF_ARCHIVE, "v_color_grey_b", "0.5", "desired color of grey"};
+cvar_t v_color_white_r = {CF_CLIENT | CF_ARCHIVE, "v_color_white_r", "1", "desired color of white"};
+cvar_t v_color_white_g = {CF_CLIENT | CF_ARCHIVE, "v_color_white_g", "1", "desired color of white"};
+cvar_t v_color_white_b = {CF_CLIENT | CF_ARCHIVE, "v_color_white_b", "1", "desired color of white"};
+cvar_t v_hwgamma = {CF_CLIENT | CF_ARCHIVE, "v_hwgamma", "0", "enables use of hardware gamma correction ramps if available (note: does not work very well on Windows2000 and above), values are 0 = off, 1 = attempt to use hardware gamma, 2 = use hardware gamma whether it works or not"};
+cvar_t v_glslgamma = {CF_CLIENT | CF_ARCHIVE, "v_glslgamma", "1", "enables use of GLSL to apply gamma correction ramps if available (note: overrides v_hwgamma)"};
+cvar_t v_glslgamma_2d = {CF_CLIENT | CF_ARCHIVE, "v_glslgamma_2d", "0", "applies GLSL gamma to 2d pictures (HUD, fonts)"};
 cvar_t v_psycho = {0, "v_psycho", "0", "easter egg"};
 
 // brand of graphics chip
@@ -555,7 +552,7 @@ qbool GL_CheckExtension(const char *minglver_or_ext, const dllfunction_t *funcs,
 	for (func = funcs;func && func->name;func++)
 		*func->funcvariable = NULL;
 
-	if (disableparm && (COM_CheckParm(disableparm) || COM_CheckParm("-safe")))
+	if (disableparm && (Sys_CheckParm(disableparm) || Sys_CheckParm("-safe")))
 	{
 		Con_DPrint("disabled by commandline\n");
 		return false;
@@ -997,7 +994,7 @@ void VID_ClearExtensions(void)
 
 	// clear the extension flags
 	memset(&vid.support, 0, sizeof(vid.support));
-	vid.renderpath = RENDERPATH_GL11;
+	vid.renderpath = RENDERPATH_UDEF;
 	vid.sRGBcapable2D = false;
 	vid.sRGBcapable3D = false;
 	vid.useinterleavedarrays = false;
@@ -1174,25 +1171,26 @@ void VID_CheckExtensions(void)
 		Con_Printf("vid.support.gl20shaders %i\n", vid.support.gl20shaders);
 		vid.allowalphatocoverage = true; // but see below, it may get turned to false again if GL_SAMPLES_ARB is <= 1
 	}
-	else if (vid.support.arb_texture_env_combine && vid.texunits >= 2 && vid_gl13.integer)
-	{
-		qglGetIntegerv(GL_MAX_TEXTURE_UNITS, (GLint*)&vid.texunits);
-		vid.texunits = bound(1, vid.texunits, MAX_TEXTUREUNITS);
-		vid.teximageunits = vid.texunits;
-		vid.texarrayunits = vid.texunits;
-		Con_DPrintf("Using GL1.3 rendering path - %i texture units, single pass rendering\n", vid.texunits);
-		vid.renderpath = RENDERPATH_GL13;
-		vid.sRGBcapable2D = false;
-		vid.sRGBcapable3D = false;
-		vid.useinterleavedarrays = false;
-	}
+	//else if (vid.support.arb_texture_env_combine && vid.texunits >= 2 && vid_gl13.integer)
+	//{
+	//	qglGetIntegerv(GL_MAX_TEXTURE_UNITS, (GLint*)&vid.texunits);
+	//	vid.texunits = bound(1, vid.texunits, MAX_TEXTUREUNITS);
+	//	vid.teximageunits = vid.texunits;
+	//	vid.texarrayunits = vid.texunits;
+	//	Con_DPrintf("Using GL1.3 rendering path - %i texture units, single pass rendering\n", vid.texunits);
+	//	vid.renderpath = RENDERPATH_GL13;
+	//	vid.sRGBcapable2D = false;
+	//	vid.sRGBcapable3D = false;
+	//	vid.useinterleavedarrays = false;
+	//}
 	else
 	{
+		// KILL?
 		vid.texunits = bound(1, vid.texunits, MAX_TEXTUREUNITS);
 		vid.teximageunits = vid.texunits;
 		vid.texarrayunits = vid.texunits;
 		Con_DPrintf("Using GL1.1 rendering path - %i texture units, two pass rendering\n", vid.texunits);
-		vid.renderpath = RENDERPATH_GL11;
+		vid.renderpath = RENDERPATH_UDEF;
 		vid.sRGBcapable2D = false;
 		vid.sRGBcapable3D = false;
 		vid.useinterleavedarrays = false;
@@ -1553,10 +1551,6 @@ void VID_UpdateGamma(qbool force, int rampsize)
 		if (v_glslgamma.integer)
 			wantgamma = 0;
 		break;
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
-	case RENDERPATH_GLES1:
-		break;
 	}
 	if(!vid_activewindow)
 		wantgamma = 0;
@@ -1816,7 +1810,7 @@ void VID_Shared_Init(void)
 	//Cvar_RegisterVariable(&joy_x360_sensitivityroll);
 
 #ifdef WIN32
-	Sys_LoadLibrary(xinputdllnames, &xinputdll_dll, xinputdllfuncs);
+	Sys_LoadDependency(xinputdllnames, &xinputdll_dll, xinputdllfuncs);
 #endif
 
 	Cmd_AddCommand("force_centerview", Force_CenterView_f, "recenters view (stops looking up/down)");
@@ -1864,8 +1858,6 @@ static int VID_Mode(int fullscreen, int width, int height, int bpp, float refres
 
 		switch(vid.renderpath)
 		{
-		case RENDERPATH_GL11:
-		case RENDERPATH_GL13:
 		case RENDERPATH_GL20:
 #ifdef GL_STEREO
 			{
@@ -1971,8 +1963,8 @@ void VID_Restart_f(void)
 		}
 		Cvar_SetValueQuick (&vid_conwidth,  vid.width * vid_conscale_auto.value);
 		Cvar_SetValueQuick (&vid_conheight, vid.height * vid_conscale_auto.value);
-		Flag_Remove_From (vid_conwidth.flags,  CVAR_READONLY);
-		Flag_Remove_From (vid_conheight.flags,  CVAR_READONLY);
+		Flag_Remove_From (vid_conwidth.flags,  CF_CLIENT | CF_READONLY);
+		Flag_Remove_From (vid_conheight.flags,  CF_CLIENT | CF_READONLY);
 	}
 
 	VID_OpenSystems();
@@ -1998,18 +1990,18 @@ void VID_Start(void)
 		// interpret command-line parameters
 		vid_commandlinecheck = false;
 // COMMANDLINEOPTION: Video: -window performs +vid_fullscreen 0
-		if (COM_CheckParm("-window") || COM_CheckParm("-safe"))
+		if (Sys_CheckParm("-window") || Sys_CheckParm("-safe"))
 			Cvar_SetValueQuick(&vid_fullscreen, false);
 // COMMANDLINEOPTION: Video: -fullscreen performs +vid_fullscreen 1
-		if (COM_CheckParm("-fullscreen"))
+		if (Sys_CheckParm("-fullscreen"))
 			Cvar_SetValueQuick(&vid_fullscreen, true);
 		width = 0;
 		height = 0;
 // COMMANDLINEOPTION: Video: -width <pixels> performs +vid_width <pixels> and also +vid_height <pixels*3/4> if only -width is specified (example: -width 1024 sets 1024x768 mode)
-		if ((i = COM_CheckParm("-width")) != 0)
+		if ((i = Sys_CheckParm("-width")) != 0)
 			width = atoi(com_argv[i+1]);
 // COMMANDLINEOPTION: Video: -height <pixels> performs +vid_height <pixels> and also +vid_width <pixels*4/3> if only -height is specified (example: -height 768 sets 1024x768 mode)
-		if ((i = COM_CheckParm("-height")) != 0)
+		if ((i = Sys_CheckParm("-height")) != 0)
 			height = atoi(com_argv[i+1]);
 		if (width == 0)
 			width = height * 4 / 3;
@@ -2020,16 +2012,16 @@ void VID_Start(void)
 		if (height)
 			Cvar_SetValueQuick(&vid_height, height);
 // COMMANDLINEOPTION: Video: -bpp <bits> performs +vid_bitsperpixel <bits> (example -bpp 32 or -bpp 16)
-		if ((i = COM_CheckParm("-bpp")) != 0)
+		if ((i = Sys_CheckParm("-bpp")) != 0)
 			Cvar_SetQuick(&vid_bitsperpixel, com_argv[i+1]);
 // COMMANDLINEOPTION: Video: -density <multiplier> performs +vid_touchscreen_density <multiplier> (example -density 1 or -density 1.5)
-		if ((i = COM_CheckParm("-density")) != 0)
+		if ((i = Sys_CheckParm("-density")) != 0)
 			Cvar_SetQuick(&vid_touchscreen_density, com_argv[i+1]);
 // COMMANDLINEOPTION: Video: -xdpi <dpi> performs +vid_touchscreen_xdpi <dpi> (example -xdpi 160 or -xdpi 320)
-		if ((i = COM_CheckParm("-touchscreen_xdpi")) != 0)
+		if ((i = Sys_CheckParm("-touchscreen_xdpi")) != 0)
 			Cvar_SetQuick(&vid_touchscreen_xdpi, com_argv[i+1]);
 // COMMANDLINEOPTION: Video: -ydpi <dpi> performs +vid_touchscreen_ydpi <dpi> (example -ydpi 160 or -ydpi 320)
-		if ((i = COM_CheckParm("-touchscreen_ydpi")) != 0)
+		if ((i = Sys_CheckParm("-touchscreen_ydpi")) != 0)
 			Cvar_SetQuick(&vid_touchscreen_ydpi, com_argv[i+1]);
 	}
 

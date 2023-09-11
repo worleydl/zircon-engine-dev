@@ -31,9 +31,9 @@ typedef struct cmdalias_s
 	char *value;
 	qbool initstate; // indicates this command existed at init
 	char *initialvalue; // backup copy of value at init
-} cmdalias_t;
+} cmd_alias_t;
 
-static cmdalias_t *cmd_alias;
+static cmd_alias_t *cmd_alias;
 
 static qbool cmd_wait;
 
@@ -292,7 +292,7 @@ static void Cbuf_Execute_Deferred (void)
 Cbuf_Execute
 ============
 */
-static qbool Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmdalias_t *alias );
+static qbool Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmd_alias_t *alias );
 void Cbuf_Execute (void)
 {
 	int i;
@@ -488,7 +488,7 @@ static void Cmd_Exec(const char *filename)
 	if (String_Does_Match(filename, "config.cfg"))
 	{
 		filename = CONFIGFILENAME;
-		if (COM_CheckParm("-noconfig"))
+		if (Sys_CheckParm("-noconfig"))
 			return; // don't execute config.cfg
 	}
 
@@ -916,7 +916,7 @@ Creates a new command that executes a command string (possibly ; seperated)
 */
 static void Cmd_Alias_f (void)
 {
-	cmdalias_t	*a;
+	cmd_alias_t	*a;
 	char		cmd[MAX_INPUTLINE];
 	int			i, c;
 	const char		*s;
@@ -949,9 +949,9 @@ static void Cmd_Alias_f (void)
 
 	if (!a)
 	{
-		cmdalias_t *prev, *current;
+		cmd_alias_t *prev, *current;
 
-		a = (cmdalias_t *)Z_Malloc (sizeof(cmdalias_t));
+		a = (cmd_alias_t *)Z_Malloc (sizeof(cmd_alias_t));
 		strlcpy (a->name, s, sizeof (a->name));
 		// insert it at the right alphanumeric position
 		for( prev = NULL, current = cmd_alias ; current && strcmp( current->name, a->name ) < 0 ; prev = current, current = current->next )
@@ -992,7 +992,7 @@ Remove existing aliases.
 */
 static void Cmd_UnAlias_f (void)
 {
-	cmdalias_t	*a, *p;
+	cmd_alias_t	*a, *p;
 	int i;
 	const char *s;
 
@@ -1054,7 +1054,7 @@ cmd_source_t cmd_source;
 
 static cmd_function_t *cmd_functions;		// possible commands to execute
 
-static const char *Cmd_GetDirectCvarValue(const char *varname, cmdalias_t *alias, qbool *is_multiple)
+static const char *Cmd_GetDirectCvarValue(const char *varname, cmd_alias_t *alias, qbool *is_multiple)
 {
 	cvar_t *cvar;
 	long argno;
@@ -1180,7 +1180,7 @@ fail:
 	return false;
 }
 
-static const char *Cmd_GetCvarValue(const char *var, size_t varlen, cmdalias_t *alias)
+static const char *Cmd_GetCvarValue(const char *var, size_t varlen, cmd_alias_t *alias)
 {
 	static char varname[MAX_INPUTLINE]; // cmd_mutex
 	static char varval[MAX_INPUTLINE]; // cmd_mutex
@@ -1296,7 +1296,7 @@ Cmd_PreprocessString
 
 Preprocesses strings and replaces $*, $param#, $cvar accordingly. Also strips comments.
 */
-static qbool Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmdalias_t *alias ) {
+static qbool Cmd_PreprocessString( const char *intext, char *outtext, unsigned maxoutlen, cmd_alias_t *alias ) {
 	const char *in;
 	size_t eat, varlen;
 	unsigned outlen;
@@ -1425,7 +1425,7 @@ Cmd_ExecuteAlias
 Called for aliases and fills in the alias into the cbuffer
 ============
 */
-static void Cmd_ExecuteAlias (cmdalias_t *alias)
+static void Cmd_ExecuteAlias (cmd_alias_t *alias)
 {
 	static char buffer[ MAX_INPUTLINE ]; // cmd_mutex
 	static char buffer2[ MAX_INPUTLINE ]; // cmd_mutex
@@ -1496,7 +1496,7 @@ static void Cmd_Apropos_f(void)
 {
 	cmd_function_t *cmd;
 	cvar_t *cvar;
-	cmdalias_t *alias;
+	cmd_alias_t *alias;
 	const char *partial;
 	int count;
 	qbool ispattern;
@@ -1560,6 +1560,7 @@ void Cmd_Init (void)
 		cmd_text_mutex = Thread_CreateMutex();
 }
 
+void Cvar_Reset_f (void);
 void Cmd_Init_Commands (void)
 {
 //
@@ -1570,7 +1571,7 @@ void Cmd_Init_Commands (void)
 	Cmd_AddCommand ("echo",Cmd_Echo_f, "print a message to the console (useful in scripts)");
 	Cmd_AddCommand ("alias",Cmd_Alias_f, "create a script function (parameters are passed in as $X (being X a number), $* for all parameters, $X- for all parameters starting from $X). Without arguments show the list of all alias");
 	Cmd_AddCommand ("unalias",Cmd_UnAlias_f, "remove an alias");
-	Cmd_AddCommand ("cmd", Cmd_ForwardToServer, "send a console commandline to the server (used by some mods)");
+	Cmd_AddCommand ("cmd", Cmd_ForwardToServer_f, "send a console commandline to the server (used by some mods)");
 	Cmd_AddCommand ("wait", Cmd_Wait_f, "make script execution wait for next rendered frame");
 	Cmd_AddCommand ("set", Cvar_Set_f, "create or change the value of a console variable");
 	Cmd_AddCommand ("seta", Cvar_SetA_f, "create or change the value of a console variable that will be saved to config.cfg");
@@ -1599,6 +1600,7 @@ void Cmd_Init_Commands (void)
 	Cmd_AddCommand( "toggle", Cmd_Toggle_f, "toggles a console variable's values (use for more info)");
 	Cmd_AddCommand( "inc", Cmd_Inc_f, "Increases value of cvar by 1 or provided amount [Zircon]");
 	Cmd_AddCommand( "dec", Cmd_Dec_f, "Decreases value of cvar by 1 or provided amount [Zircon]");
+	Cmd_AddCommand ("cvar_reset", Cvar_Reset_f, "lists all console variables beginning with the specified prefix or matching the specified wildcard pattern");
 }
 
 /*
@@ -1896,7 +1898,7 @@ void Cmd_CompleteCommandPrint (const char *partial, int is_from_nothing)
 */
 const char *Cmd_CompleteAlias (const char *partial, int is_from_nothing)
 {
-	cmdalias_t *alias;
+	cmd_alias_t *alias;
 	size_t len;
 
 	len = strlen(partial);
@@ -1915,7 +1917,7 @@ const char *Cmd_CompleteAlias (const char *partial, int is_from_nothing)
 // written by LadyHavoc
 void Cmd_CompleteAliasPrint (const char *partial, int is_from_nothing)
 {
-	cmdalias_t *alias;
+	cmd_alias_t *alias;
 	size_t len = strlen(partial);
 	// Loop through the alias list and print all matches
 	for (alias = cmd_alias; alias; alias = alias->next)
@@ -1935,7 +1937,7 @@ void Cmd_CompleteAliasPrint (const char *partial, int is_from_nothing)
 */
 int Cmd_CompleteAliasCountPossible (const char *partial, int is_from_nothing)
 {
-	cmdalias_t	*alias;
+	cmd_alias_t	*alias;
 	size_t		len;
 	int			h;
 
@@ -1968,7 +1970,7 @@ int Cmd_CompleteAliasCountPossible (const char *partial, int is_from_nothing)
 */
 const char **Cmd_CompleteAliasBuildList (const char *partial, int is_from_nothing)
 {
-	cmdalias_t *alias;
+	cmd_alias_t *alias;
 	size_t len = 0;
 	size_t bpos = 0;
 	size_t sizeofbuf = (Cmd_CompleteAliasCountPossible (partial, is_from_nothing) + 1) * sizeof (const char *);
@@ -2005,7 +2007,7 @@ void Cmd_ExecuteString (const char *text, cmd_source_t src, qbool lockmutex)
 	int oldpos;
 	int found;
 	cmd_function_t *cmd;
-	cmdalias_t *a;
+	cmd_alias_t *a;
 	if (lockmutex)
 		Cbuf_LockThreadMutex();
 	oldpos = cmd_tokenizebufferpos;
@@ -2035,7 +2037,7 @@ void Cmd_ExecuteString (const char *text, cmd_source_t src, qbool lockmutex)
 					if (cls.state == ca_connected)
 					{
 						// forward remote commands to the server for execution
-						Cmd_ForwardToServer();
+						Cmd_ForwardToServer_f();
 					}
 					else
 						Con_Printf("Can not send command \"%s\", not connected.\n", Cmd_Argv(0));
@@ -2090,12 +2092,12 @@ done:
 
 /*
 ===================
-Cmd_ForwardStringToServer
+CL_ForwardToServer
 
 Sends an entire command string over to the server, unprocessed
 ===================
 */
-void Cmd_ForwardStringToServer (const char *s)
+void CL_ForwardToServer (const char *s)
 {
 	char temp[128];
 	if (cls.state != ca_connected)
@@ -2221,7 +2223,7 @@ Cmd_ForwardToServer
 Sends the entire command line over to the server
 ===================
 */
-void Cmd_ForwardToServer (void)
+void Cmd_ForwardToServer_f (void)
 {
 	const char *s;
 	char vabuf[1024];
@@ -2238,7 +2240,7 @@ void Cmd_ForwardToServer (void)
 	// don't send an empty forward message if the user tries "cmd" by itself
 	if (!s || !*s)
 		return;
-	Cmd_ForwardStringToServer(s);
+	CL_ForwardToServer(s);
 }
 
 
@@ -2273,7 +2275,7 @@ int Cmd_CheckParm (const char *parm)
 void Cmd_SaveInitState(void)
 {
 	cmd_function_t *f;
-	cmdalias_t *a;
+	cmd_alias_t *a;
 	for (f = cmd_functions;f;f = f->next)
 		f->initstate = true;
 	for (a = cmd_alias;a;a = a->next)
@@ -2287,7 +2289,7 @@ void Cmd_SaveInitState(void)
 void Cmd_RestoreInitState(void)
 {
 	cmd_function_t *f, **fp;
-	cmdalias_t *a, **ap;
+	cmd_alias_t *a, **ap;
 	for (fp = &cmd_functions;(f = *fp);)
 	{
 		if (f->initstate)

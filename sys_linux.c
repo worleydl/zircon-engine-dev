@@ -13,7 +13,7 @@
 
 #include <signal.h>
 
-#include "quakedef.h"
+#include "darkplaces.h"
 
 // =======================================================================
 // General routines
@@ -152,10 +152,10 @@ int main (int argc, char **argv)
 	Sys_ProvideSelfFD();
 
 	// COMMANDLINEOPTION: sdl: -noterminal disables console output on stdout
-	if(COM_CheckParm("-noterminal"))
+	if(Sys_CheckParm("-noterminal"))
 		outfd = -1;
 	// COMMANDLINEOPTION: sdl: -stderr moves console output to stderr
-	else if(COM_CheckParm("-stderr"))
+	else if(Sys_CheckParm("-stderr"))
 		outfd = 2;
 	else
 		outfd = 1;

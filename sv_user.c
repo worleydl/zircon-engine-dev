@@ -21,11 +21,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sv_user.c -- server code for moving users
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "sv_demo.h"
 #define DEBUGMOVES 0
 
-static usercmd_t cmd;
+static usercmd_t usercmd;
 extern cvar_t sv_autodemo_perclient;
 
 /*
@@ -243,9 +243,9 @@ void SV_NoClip_Move (void)
 	AngleVectors(v_angle, forward, right, up);
 
 	for (i=0 ; i<3 ; i++)
-		wishvel[i] = forward[i]*cmd.forwardmove + right[i]*cmd.sidemove;
+		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
 
-	wishvel[2] += cmd.upmove;
+	wishvel[2] += usercmd.upmove;
 
 	fwishspeed = VectorLength(wishvel);
 	if (fwishspeed > sv_maxspeed.value)
@@ -271,12 +271,12 @@ static void SV_WaterMove (void)
 	AngleVectors(v_angle, forward, right, up);
 
 	for (i=0 ; i<3 ; i++)
-		wishvel[i] = forward[i]*cmd.forwardmove + right[i]*cmd.sidemove;
+		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
 
-	if (!cmd.forwardmove && !cmd.sidemove && !cmd.upmove)
+	if (!usercmd.forwardmove && !usercmd.sidemove && !usercmd.upmove)
 		wishvel[2] -= 60;		// drift towards bottom
 	else
-		wishvel[2] += cmd.upmove;
+		wishvel[2] += usercmd.upmove;
 
 	fwishspeed = VectorLength(wishvel);
 	if (fwishspeed > sv_maxspeed.value)
@@ -348,8 +348,8 @@ static void SV_AirMove (void)
 	wishvel[1] = PRVM_serveredictvector(host_client->edict, angles)[1];
 	AngleVectors (wishvel, forward, right, up);
 
-	fmove = cmd.forwardmove;
-	smove = cmd.sidemove;
+	fmove = usercmd.forwardmove;
+	smove = usercmd.sidemove;
 
 // hack to not let you back into teleporter
 	if (sv.time < PRVM_serveredictfloat(host_client->edict, teleport_time) && fmove < 0)
@@ -359,7 +359,7 @@ static void SV_AirMove (void)
 		wishvel[i] = forward[i]*fmove + right[i]*smove;
 
 	if ((int)PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_WALK)
-		wishvel[2] += cmd.upmove;
+		wishvel[2] += usercmd.upmove;
 
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalizeLength(wishdir);
@@ -427,7 +427,7 @@ void SV_ClientThink (void)
 	if (PRVM_serveredictfloat(host_client->edict, health) <= 0)
 		return;
 
-	cmd = host_client->cmd;
+	usercmd = host_client->cmd;
 
 	// angles
 	// show 1/3 the pitch angle and all the roll angle
@@ -448,16 +448,6 @@ void SV_ClientThink (void)
 		return;
 	}
 
-	/*
-	// Player is (somehow) outside of the map, or flying, or noclipping
-	if (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_NOCLIP && (PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_FLY || SV_TestEntityPosition (host_client->edict)))
-	//if (PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_NOCLIP || PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_FLY || SV_TestEntityPosition (host_client->edict))
-	{
-		SV_FreeMove ();
-		return;
-	}
-	*/
-
 	// walk
 	if ((PRVM_serveredictfloat(host_client->edict, waterlevel) >= 2) && (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_NOCLIP))
 	{
@@ -472,7 +462,6 @@ void SV_ClientThink (void)
 		SV_CheckVelocity(host_client->edict);
 		return;
 	}
-
 
 	SV_AirMove ();
 	SV_CheckVelocity(host_client->edict);
@@ -583,7 +572,7 @@ static void SV_ReadClientMove (void)
 		sv_readmoves[sv_numreadmoves++] = *move;
 
 	// movement packet loss tracking
-	if(move->sequence)
+	if(move->sequence) // SEPUS
 	{
 		if(move->sequence > host_client->movement_highestsequence_seen)
 		{

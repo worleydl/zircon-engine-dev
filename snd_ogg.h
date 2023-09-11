@@ -24,6 +24,8 @@
 #ifndef SND_OGG_H
 #define SND_OGG_H
 
+#include "qtypes.h"
+struct sfx_s;
 
 qbool OGG_OpenLibrary (void);
 void OGG_CloseLibrary (void);

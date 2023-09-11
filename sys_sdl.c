@@ -35,7 +35,7 @@
 
 #endif //  WIN32
 
-#include "quakedef.h"
+#include "darkplaces.h"
 
 // =======================================================================
 // General routines
@@ -267,7 +267,7 @@ int main (int argc, char *argv[])
 		const char *s_fp = "zircon_command_line.txt"; // File_Getcwd_SBuf not needed
 		if (File_Exists (s_fp)) {
 			size_t s_temp_size = 0; const char *s_temp = (const char *)File_To_String_Alloc (s_fp, &s_temp_size);
-			c_strlcpy (cmdline_fake, "quake_engine "); // arg0 is engine and ignored by COM_CheckParm
+			c_strlcpy (cmdline_fake, "quake_engine "); // arg0 is engine and ignored by Sys_CheckParm
 			if (s_temp) {
 				c_strlcat (cmdline_fake, s_temp);
 				String_Edit_Whitespace_To_Space (cmdline_fake); // Make tabs, newlines into spaces.
@@ -286,10 +286,10 @@ int main (int argc, char *argv[])
 	Sys_ProvideSelfFD();
 
 	// COMMANDLINEOPTION: sdl: -noterminal disables console output on stdout
-	if(COM_CheckParm("-noterminal"))
+	if(Sys_CheckParm("-noterminal"))
 		outfd = -1;
 	// COMMANDLINEOPTION: sdl: -stderr moves console output to stderr
-	else if(COM_CheckParm("-stderr"))
+	else if(Sys_CheckParm("-stderr"))
 		outfd = 2;
 	else
 		outfd = 1;

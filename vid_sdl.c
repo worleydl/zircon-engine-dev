@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "image.h"
 #include "utf8lib.h"
 
@@ -2040,7 +2040,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	drivername = NULL;
 
 // COMMANDLINEOPTION: SDL GL: -gl_driver <drivername> selects a GL driver library, default is whatever SDL recommends, useful only for 3dfxogl.dll/3dfxvgl.dll or fxmesa or similar, if you don't know what this is for, you don't need it
-	i = COM_CheckParm("-gl_driver");
+	i = Sys_CheckParm("-gl_driver");
 	if (i && i < com_argc - 1)
 		drivername = com_argv[i + 1];
 	if (SDL_GL_LoadLibrary(drivername) < 0) {
@@ -2225,10 +2225,7 @@ void VID_Finish (void)
 	{
 		switch(vid.renderpath)
 		{
-		case RENDERPATH_GL11:
-		case RENDERPATH_GL13:
 		case RENDERPATH_GL20:
-		case RENDERPATH_GLES1:
 		case RENDERPATH_GLES2:
 			CHECKGLERROR
 			if (r_speeds.integer == 2 || gl_finish.integer)

@@ -19,18 +19,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // r_surf.c: surface-related refresh code
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "r_shadow.h"
 #include "portals.h"
 #include "csprogs.h"
 #include "image.h"
 
-cvar_t r_ambient = {0, "r_ambient", "0", "brightens map, value is 0-128"};
-cvar_t r_lockpvs = {0, "r_lockpvs", "0", "disables pvs switching, allows you to walk around and inspect what is visible from a given location in the map (anything not visible from your current location will not be drawn)"};
-cvar_t r_lockvisibility = {0, "r_lockvisibility", "0", "disables visibility updates, allows you to walk around and inspect what is visible from a given viewpoint in the map (anything offscreen at the moment this is enabled will not be drawn)"};
-cvar_t r_useportalculling = {0, "r_useportalculling", "2", "improve framerate with r_novis 1 by using portal culling - still not as good as compiled visibility data in the map, but it helps (a value of 2 forces use of this even with vis data, which improves framerates in maps without too much complexity, but hurts in extremely complex maps, which is why 2 is not the default mode)"};
-cvar_t r_usesurfaceculling = {0, "r_usesurfaceculling", "1", "skip off-screen surfaces (1 = cull surfaces if the map is likely to benefit, 2 = always cull surfaces)"};
-cvar_t r_q3bsp_renderskydepth = {0, "r_q3bsp_renderskydepth", "0", "draws sky depth masking in q3 maps (as in q1 maps), this means for example that sky polygons can hide other things"};
+cvar_t r_ambient = {CF_CLIENT, "r_ambient", "0", "brightens map, value is 0-128"};
+cvar_t r_lockpvs = {CF_CLIENT, "r_lockpvs", "0", "disables pvs switching, allows you to walk around and inspect what is visible from a given location in the map (anything not visible from your current location will not be drawn)"};
+cvar_t r_lockvisibility = {CF_CLIENT, "r_lockvisibility", "0", "disables visibility updates, allows you to walk around and inspect what is visible from a given viewpoint in the map (anything offscreen at the moment this is enabled will not be drawn)"};
+cvar_t r_useportalculling = {CF_CLIENT, "r_useportalculling", "1", "improve framerate with r_novis 1 by using portal culling - still not as good as compiled visibility data in the map, but it helps (a value of 2 forces use of this even with vis data, which improves framerates in maps without too much complexity, but hurts in extremely complex maps, which is why 2 is not the default mode)"}; // SEPUS
+cvar_t r_usesurfaceculling = {CF_CLIENT, "r_usesurfaceculling", "1", "skip off-screen surfaces (1 = cull surfaces if the map is likely to benefit, 2 = always cull surfaces)"};
+cvar_t r_q3bsp_renderskydepth = {CF_CLIENT, "r_q3bsp_renderskydepth", "0", "draws sky depth masking in q3 maps (as in q1 maps), this means for example that sky polygons can hide other things"};
 
 /*
 ===============
@@ -39,12 +39,12 @@ R_BuildLightMap
 Combine and scale multiple lightmaps into the 8.8 format in blocklights
 ===============
 */
-void R_BuildLightMap (const entity_render_t *ent, msurface_t *surface)
+void R_BuildLightMap (const entity_render_t *ent, msurface_t *surface) // JMARK
 {
 	int smax, tmax, i, size, size3, maps, l;
 	int *bl, scale;
 	unsigned char *lightmap, *out, *stain;
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	int *intblocklights;
 	unsigned char *templight;
 
@@ -123,7 +123,7 @@ void R_BuildLightMap (const entity_render_t *ent, msurface_t *surface)
 
 	if(vid_sRGB.integer && vid_sRGB_fallback.integer && !vid.sRGB3D)
 		Image_MakesRGBColorsFromLinear_Lightmap(templight, templight, size);
-	R_UpdateTexture(surface->lightmaptexture, templight, surface->lightmapinfo->lightmaporigin[0], surface->lightmapinfo->lightmaporigin[1], 0, smax, tmax, 1);
+	R_UpdateTexture(surface->lightmaptexture, templight, surface->lightmapinfo->lightmaporigin[0], surface->lightmapinfo->lightmaporigin[1], 0, smax, tmax, 1); // JMARK
 
 	// update the surface's deluxemap if it has one
 	if (surface->deluxemaptexture != r_texture_blanknormalmap)
@@ -161,11 +161,11 @@ void R_BuildLightMap (const entity_render_t *ent, msurface_t *surface)
 			l = (int)(n[2] * 128 + 128);out[0] = bound(0, l, 255);
 			out[3] = 255;
 		}
-		R_UpdateTexture(surface->deluxemaptexture, templight, surface->lightmapinfo->lightmaporigin[0], surface->lightmapinfo->lightmaporigin[1], 0, smax, tmax, 1);
+		R_UpdateTexture(surface->deluxemaptexture, templight, surface->lightmapinfo->lightmaporigin[0], surface->lightmapinfo->lightmaporigin[1], 0, smax, tmax, 1); // JMARK
 	}
 }
 
-static void R_StainNode (mnode_t *node, dp_model_t *model, const vec3_t origin, float radius, const float fcolor[8])
+static void R_StainNode (mnode_t *node, model_t *model, const vec3_t origin, float radius, const float fcolor[8])
 {
 	float ndist, a, ratio, maxdist, maxdist2, maxdist3, invradius, sdtable[256], td, dist2;
 	msurface_t *surface, *endsurface;
@@ -292,7 +292,7 @@ void R_Stain (const vec3_t origin, float radius, int cr1, int cg1, int cb1, int 
 	int n;
 	float fcolor[8];
 	entity_render_t *ent;
-	dp_model_t *model;
+	model_t *model;
 	vec3_t org;
 	if (r_refdef.scene.worldmodel == NULL || !r_refdef.scene.worldmodel->brush.data_nodes || !r_refdef.scene.worldmodel->brushq1.lightdata)
 		return;
@@ -373,7 +373,7 @@ void R_DrawPortals(void)
 	int i, leafnum;
 	mportal_t *portal;
 	float center[3], f;
-	dp_model_t *model = r_refdef.scene.worldmodel;
+	model_t *model = r_refdef.scene.worldmodel;
 	if (model == NULL)
 		return;
 	for (leafnum = 0;leafnum < r_refdef.scene.worldmodel->brush.num_leafs;leafnum++)
@@ -405,7 +405,7 @@ static void R_View_WorldVisibility_CullSurfaces(void)
 	int surfaceindexend;
 	unsigned char *surfacevisible;
 	msurface_t *surfaces;
-	dp_model_t *model = r_refdef.scene.worldmodel;
+	model_t *model = r_refdef.scene.worldmodel;
 	if (!model)
 		return;
 	if (r_trippy.integer)
@@ -426,7 +426,7 @@ void R_View_WorldVisibility(qbool forcenovis)
 	int i, j, *mark;
 	mleaf_t *leaf;
 	mleaf_t *viewleaf;
-	dp_model_t *model = r_refdef.scene.worldmodel;
+	model_t *model = r_refdef.scene.worldmodel;
 
 	if (!model)
 		return;
@@ -577,7 +577,7 @@ void R_View_WorldVisibility(qbool forcenovis)
         R_View_WorldVisibility_CullSurfaces();
 }
 
-void R_Q1BSP_DrawSky(entity_render_t *ent)
+void R_Mod_DrawSky(entity_render_t *ent)
 {
 	if (ent->model == NULL)
 		return;
@@ -587,10 +587,10 @@ void R_Q1BSP_DrawSky(entity_render_t *ent)
 		R_DrawModelSurfaces(ent, true, true, false, false, false);
 }
 
-void R_Q1BSP_DrawAddWaterPlanes(entity_render_t *ent)
+void R_Mod_DrawAddWaterPlanes(entity_render_t *ent)
 {
 	int i, j, n, flagsmask;
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	msurface_t *surfaces;
 	if (model == NULL)
 		return;
@@ -630,9 +630,9 @@ void R_Q1BSP_DrawAddWaterPlanes(entity_render_t *ent)
 	rsurface.entity = NULL; // used only by R_GetCurrentTexture and RSurf_ActiveWorldEntity/RSurf_ActiveModelEntity
 }
 
-void R_Q1BSP_Draw(entity_render_t *ent)
+void R_Mod_Draw(entity_render_t *ent)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	if (model == NULL)
 		return;
 	if (ent == r_refdef.scene.worldentity)
@@ -641,9 +641,9 @@ void R_Q1BSP_Draw(entity_render_t *ent)
 		R_DrawModelSurfaces(ent, false, true, false, false, false);
 }
 
-void R_Q1BSP_DrawDepth(entity_render_t *ent)
+void R_Mod_DrawDepth(entity_render_t *ent)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	if (model == NULL || model->surfmesh.isanimated)
 		return;
 	GL_ColorMask(0,0,0,0);
@@ -659,7 +659,7 @@ void R_Q1BSP_DrawDepth(entity_render_t *ent)
 	GL_ColorMask(r_refdef.view.colormask[0], r_refdef.view.colormask[1], r_refdef.view.colormask[2], 1);
 }
 
-void R_Q1BSP_DrawDebug(entity_render_t *ent)
+void R_Mod_DrawDebug(entity_render_t *ent)
 {
 	if (ent->model == NULL)
 		return;
@@ -669,9 +669,9 @@ void R_Q1BSP_DrawDebug(entity_render_t *ent)
 		R_DrawModelSurfaces(ent, false, false, false, true, false);
 }
 
-void R_Q1BSP_DrawPrepass(entity_render_t *ent)
+void R_Mod_DrawPrepass(entity_render_t *ent)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	if (model == NULL)
 		return;
 	if (ent == r_refdef.scene.worldentity)
@@ -682,7 +682,7 @@ void R_Q1BSP_DrawPrepass(entity_render_t *ent)
 
 typedef struct r_q1bsp_getlightinfo_s
 {
-	dp_model_t *model;
+	model_t *model;
 	vec3_t relativelightorigin;
 	float lightradius;
 	int *outleaflist;
@@ -1203,7 +1203,7 @@ static int R_Q1BSP_GetLightInfo_comparefunc(const void *ap, const void *bp)
 
 extern cvar_t r_shadow_sortsurfaces;
 
-void R_Q1BSP_GetLightInfo(entity_render_t *ent, vec3_t relativelightorigin, float lightradius, vec3_t outmins, vec3_t outmaxs, int *outleaflist, unsigned char *outleafpvs, int *outnumleafspointer, int *outsurfacelist, unsigned char *outsurfacepvs, int *outnumsurfacespointer, unsigned char *outshadowtrispvs, unsigned char *outlighttrispvs, unsigned char *visitingleafpvs, int numfrustumplanes, const mplane_t *frustumplanes)
+void R_Mod_GetLightInfo(entity_render_t *ent, vec3_t relativelightorigin, float lightradius, vec3_t outmins, vec3_t outmaxs, int *outleaflist, unsigned char *outleafpvs, int *outnumleafspointer, int *outsurfacelist, unsigned char *outsurfacepvs, int *outnumsurfacespointer, unsigned char *outshadowtrispvs, unsigned char *outlighttrispvs, unsigned char *visitingleafpvs, int numfrustumplanes, const mplane_t *frustumplanes)
 {
 	r_q1bsp_getlightinfo_t info;
 	VectorCopy(relativelightorigin, info.relativelightorigin);
@@ -1288,9 +1288,9 @@ void R_Q1BSP_GetLightInfo(entity_render_t *ent, vec3_t relativelightorigin, floa
 		qsort(info.outsurfacelist, info.outnumsurfaces, sizeof(*info.outsurfacelist), R_Q1BSP_GetLightInfo_comparefunc);
 }
 
-void R_Q1BSP_CompileShadowVolume(entity_render_t *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist)
+void R_Mod_CompileShadowVolume(entity_render_t *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	msurface_t *surface;
 	int surfacelistindex;
 	float projectdistance = relativelightdirection ? lightradius : lightradius + model->radius*2 + r_shadow_projectdistance.value;
@@ -1314,7 +1314,7 @@ extern cvar_t r_polygonoffset_submodel_factor;
 extern cvar_t r_polygonoffset_submodel_offset;
 void R_Q1BSP_DrawShadowVolume(entity_render_t *ent, const vec3_t relativelightorigin, const vec3_t relativelightdirection, float lightradius, int modelnumsurfaces, const int *modelsurfacelist, const vec3_t lightmins, const vec3_t lightmaxs)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	const msurface_t *surface;
 	int modelsurfacelistindex;
 	float projectdistance = relativelightdirection ? lightradius : lightradius + model->radius*2 + r_shadow_projectdistance.value;
@@ -1362,9 +1362,9 @@ void R_Q1BSP_DrawShadowVolume(entity_render_t *ent, const vec3_t relativelightor
 	R_FrameData_ReturnToMark();
 }
 
-void R_Q1BSP_CompileShadowMap(entity_render_t *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist)
+void R_Mod_CompileShadowMap(entity_render_t *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	msurface_t *surface;
 	int surfacelistindex;
 	int sidetotals[6] = { 0, 0, 0, 0, 0, 0 }, sidemasks = 0;
@@ -1390,9 +1390,9 @@ void R_Q1BSP_CompileShadowMap(entity_render_t *ent, vec3_t relativelightorigin, 
 
 static const msurface_t *batchsurfacelist[RSURF_MAX_BATCHSURFACES];
 
-void R_Q1BSP_DrawShadowMap(int side, entity_render_t *ent, const vec3_t relativelightorigin, const vec3_t relativelightdirection, float lightradius, int modelnumsurfaces, const int *modelsurfacelist, const unsigned char *surfacesides, const vec3_t lightmins, const vec3_t lightmaxs)
+void R_Mod_DrawShadowMap(int side, entity_render_t *ent, const vec3_t relativelightorigin, const vec3_t relativelightdirection, float lightradius, int modelnumsurfaces, const int *modelsurfacelist, const unsigned char *surfacesides, const vec3_t lightmins, const vec3_t lightmaxs)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	const msurface_t *surface;
 	int modelsurfacelistindex, batchnumsurfaces;
 	// check the box in modelspace, it was already checked in worldspace
@@ -1469,9 +1469,9 @@ static void R_Q1BSP_DrawLight_TransparentCallback(const entity_render_t *ent, co
 }
 
 extern qbool r_shadow_usingdeferredprepass;
-void R_Q1BSP_DrawLight(entity_render_t *ent, int numsurfaces, const int *surfacelist, const unsigned char *lighttrispvs)
+void R_Mod_DrawLight(entity_render_t *ent, int numsurfaces, const int *surfacelist, const unsigned char *lighttrispvs)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	const msurface_t *surface;
 	int i, k, kend, l, endsurface, batchnumsurfaces, texturenumsurfaces;
 	const msurface_t **texturesurfacelist;
@@ -1555,7 +1555,7 @@ void R_Q1BSP_DrawLight(entity_render_t *ent, int numsurfaces, const int *surface
 //Made by [515]
 static void R_ReplaceWorldTexture (void)
 {
-	dp_model_t		*m;
+	model_t		*m;
 	texture_t	*t;
 	int			i;
 	const char	*r, *newt;
@@ -1606,7 +1606,7 @@ static void R_ListWorldTextures (void)
 		Con_PrintLinef ("There is no worldmodel");
 		return;
 	}
-	dp_model_t		*m;
+	model_t		*m;
 	m = r_refdef.scene.worldmodel;
 	int c  = Cmd_Argc();
 	const char *spartial = Cmd_Argv(1);

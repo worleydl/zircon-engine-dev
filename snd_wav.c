@@ -22,10 +22,10 @@
 */
 
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "snd_main.h"
 #include "snd_wav.h"
-
+#include "sound.h"
 
 typedef struct wavinfo_s
 {
@@ -344,5 +344,6 @@ qbool S_LoadWavFile (const char *filename, sfx_t *sfx)
 	sfx->loopstart = min(sfx->loopstart, sfx->total_length);
 	sfx->flags &= ~SFXFLAG_STREAMED;
 
+	Mem_Free(data); // we already got a copy of this in fetcher_data // SEPUS
 	return true;
 }

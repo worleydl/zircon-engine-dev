@@ -20,7 +20,7 @@
 		Boston, MA  02111-1307, USA
 */
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "cl_video.h"
 #include "utf8lib.h"
 #include "csprogs.h"

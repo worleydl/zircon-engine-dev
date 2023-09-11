@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #include "qtypes.h"
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "snd_main.h"
 
 // ==============================================================================
@@ -303,7 +303,7 @@ static sndinitstat SndSys_InitDirectSound (const snd_format_t* requested)
 	primary_format_set = false;
 
 // COMMANDLINEOPTION: Windows DirectSound: -snoforceformat uses the format that DirectSound returns, rather than forcing it
-	if (!COM_CheckParm ("-snoforceformat"))
+	if (!Sys_CheckParm ("-snoforceformat"))
 	{
 		if (DS_OK == IDirectSound_CreateSoundBuffer(pDS, &dsbuf, &pDSPBuf, NULL))
 		{
@@ -323,7 +323,7 @@ static sndinitstat SndSys_InitDirectSound (const snd_format_t* requested)
 	}
 
 // COMMANDLINEOPTION: Windows DirectSound: -primarysound locks the sound hardware for exclusive use
-	if (!primary_format_set || !COM_CheckParm ("-primarysound"))
+	if (!primary_format_set || !Sys_CheckParm ("-primarysound"))
 	{
 		HRESULT result;
 
@@ -564,7 +564,7 @@ qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 
 #ifdef SUPPORTDIRECTX
 // COMMANDLINEOPTION: Windows Sound: -wavonly uses wave sound instead of DirectSound
-	wavonly = (COM_CheckParm ("-wavonly") != 0);
+	wavonly = (Sys_CheckParm ("-wavonly") != 0);
 	dsound_init = false;
 #endif
 	wav_init = false;

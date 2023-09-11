@@ -19,7 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // cvar.c -- dynamic variable tracking
 
-#include "quakedef.h"
+#include "darkplaces.h"
+#include "cvar.h" // courtesy
 
 const char *cvar_dummy_description = "custom cvar";
 
@@ -849,6 +850,43 @@ void Cvar_ResetToDefaults_NoSaveOnly_f (void)
 	for (var = cvar_vars ; var ; var = var->next)
 		if ((var->flags & (CVAR_NORESETTODEFAULTS | CVAR_SAVE)) == 0)
 			Cvar_SetQuick(var, var->defstring);
+}
+
+WARP_X_ ()
+void Cvar_Reset_f (void)
+{
+	int numargs = Cmd_Argc();
+	cvar_t *cvCVar;
+	switch (numargs) {
+		
+	default:// no args or such
+			Con_PrintLinef ("cvar_reset - Usage\n  cvar_reset <variable> - reset to default value");
+			break;
+
+	case 2:	cvCVar = Cvar_FindVar( Cmd_Argv(1) );  
+			if (!cvCVar) { 
+				Con_PrintLinef ("Variable %s not found",  Cmd_Argv(1) ); 
+				break; 
+			}
+
+			if (Have_Flag (cvCVar->flags, CVAR_NORESETTODEFAULTS)) {
+				// msg
+				Con_PrintLinef ("%s is CVAR_NORESETTODEFAULTS, no reset possible");
+				break; 
+			} 
+
+			if (Have_Flag (cvCVar->flags, CVAR_READONLY)) {
+				// msg
+				Con_PrintLinef ("%s is CVAR_READONLY, no reset possible");
+				break; 
+			} 
+
+			Cvar_SetQuick(cvCVar, cvCVar->defstring);
+			break;
+	} // sw
+
+	
+	// fail comes here
 }
 
 

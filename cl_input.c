@@ -302,55 +302,6 @@ static void IN_BestWeapon (void)
 	// if we couldn't find any of the weapons, there's nothing more we can do...
 }
 
-#if 0
-void IN_CycleWeapon (void)
-{
-	int i, n;
-	int first = -1;
-	qbool found = false;
-	const char *t;
-	if (Cmd_Argc() < 2)
-	{
-		Con_Printf("bestweapon requires 1 or more parameters\n");
-		return;
-	}
-	for (i = 1;i < Cmd_Argc();i++)
-	{
-		t = Cmd_Argv(i);
-		// figure out which weapon this character refers to
-		for (n = 0;n < IN_BESTWEAPON_MAX && in_bestweapon_info[n].impulse;n++)
-		{
-			if (String_Does_Match(in_bestweapon_info[n].name, t))
-			{
-				// we found out what weapon this character refers to
-				// check if the inventory contains the weapon and enough ammo
-				if ((cl.stats[STAT_ITEMS] & in_bestweapon_info[n].weaponbit) && (cl.stats[in_bestweapon_info[n].ammostat] >= in_bestweapon_info[n].ammomin))
-				{
-					// we found one of the weapons the player wanted
-					if(first == -1)
-						first = n;
-					if(found)
-					{
-						in_impulse = in_bestweapon_info[n].impulse;
-						return;
-					}
-					if(cl.stats[STAT_ACTIVEWEAPON] == in_bestweapon_info[n].activeweaponcode)
-						found = true;
-				}
-				break;
-			}
-		}
-		// if we couldn't identify the weapon we just ignore it and continue checking for other weapons
-	}
-	if(first != -1)
-	{
-		in_impulse = in_bestweapon_info[first].impulse;
-		return;
-	}
-	// if we couldn't find any of the weapons, there's nothing more we can do...
-}
-#endif
-
 /*
 ===============
 CL_KeyState
@@ -410,56 +361,56 @@ float CL_KeyState (kbutton_t *key)
 
 //==========================================================================
 
-cvar_t cl_upspeed = {CVAR_SAVE, "cl_upspeed","400","vertical movement speed (while swimming or flying)"};
-cvar_t cl_forwardspeed = {CVAR_SAVE, "cl_forwardspeed","400","forward movement speed"};
-cvar_t cl_backspeed = {CVAR_SAVE, "cl_backspeed","400","backward movement speed"};
-cvar_t cl_sidespeed = {CVAR_SAVE, "cl_sidespeed","350","strafe movement speed"};
+cvar_t cl_upspeed = {CF_CLIENT | CF_ARCHIVE, "cl_upspeed","400","vertical movement speed (while swimming or flying)"};
+cvar_t cl_forwardspeed = {CF_CLIENT | CF_ARCHIVE, "cl_forwardspeed","400","forward movement speed"};
+cvar_t cl_backspeed = {CF_CLIENT | CF_ARCHIVE, "cl_backspeed","400","backward movement speed"};
+cvar_t cl_sidespeed = {CF_CLIENT | CF_ARCHIVE, "cl_sidespeed","350","strafe movement speed"};
 
-cvar_t cl_movespeedkey = {CVAR_SAVE, "cl_movespeedkey","2.0","how much +speed multiplies keyboard movement speed"};
-cvar_t cl_movecliptokeyboard = {0, "cl_movecliptokeyboard", "0", "if set to 1, any move is clipped to the nine keyboard states; if set to 2, only the direction is clipped, not the amount"};
+cvar_t cl_movespeedkey = {CF_CLIENT | CF_ARCHIVE, "cl_movespeedkey","2.0","how much +speed multiplies keyboard movement speed"};
+cvar_t cl_movecliptokeyboard = {CF_CLIENT, "cl_movecliptokeyboard", "0", "if set to 1, any move is clipped to the nine keyboard states; if set to 2, only the direction is clipped, not the amount"};
 
-cvar_t cl_yawspeed = {CVAR_SAVE, "cl_yawspeed","140","keyboard yaw turning speed"};
-cvar_t cl_pitchspeed = {CVAR_SAVE, "cl_pitchspeed","150","keyboard pitch turning speed"};
+cvar_t cl_yawspeed = {CF_CLIENT | CF_ARCHIVE, "cl_yawspeed","140","keyboard yaw turning speed"};
+cvar_t cl_pitchspeed = {CF_CLIENT | CF_ARCHIVE, "cl_pitchspeed","150","keyboard pitch turning speed"};
 
-cvar_t cl_anglespeedkey = {CVAR_SAVE, "cl_anglespeedkey","1.5","how much +speed multiplies keyboard turning speed"};
+cvar_t cl_anglespeedkey = {CF_CLIENT | CF_ARCHIVE, "cl_anglespeedkey","1.5","how much +speed multiplies keyboard turning speed"};
 
-cvar_t cl_movement = {CVAR_SAVE, "cl_movement", "0", "enables clientside prediction of your player movement on DP servers (use cl_nopred for QWSV servers)"};
-cvar_t cl_movement_replay = {0, "cl_movement_replay", "1", "use engine prediction"};
-cvar_t cl_movement_nettimeout = {CVAR_SAVE, "cl_movement_nettimeout", "0.3", "stops predicting moves when server is lagging badly (avoids major performance problems), timeout in seconds"};
-cvar_t cl_movement_minping = {CVAR_SAVE, "cl_movement_minping", "0", "whether to use prediction when ping is lower than this value in milliseconds"};
-cvar_t cl_movement_track_canjump = {CVAR_SAVE, "cl_movement_track_canjump", "1", "track if the player released the jump key between two jumps to decide if he is able to jump or not; when off, this causes some \"sliding\" slightly above the floor when the jump key is held too long; if the mod allows repeated jumping by holding space all the time, this has to be set to zero too"};
-cvar_t cl_movement_maxspeed = {0, "cl_movement_maxspeed", "320", "how fast you can move (should match sv_maxspeed)"};
-cvar_t cl_movement_maxairspeed = {0, "cl_movement_maxairspeed", "30", "how fast you can move while in the air (should match sv_maxairspeed)"};
-cvar_t cl_movement_stopspeed = {0, "cl_movement_stopspeed", "100", "speed below which you will be slowed rapidly to a stop rather than sliding endlessly (should match sv_stopspeed)"};
-cvar_t cl_movement_friction = {0, "cl_movement_friction", "4", "how fast you slow down (should match sv_friction)"};
-cvar_t cl_movement_wallfriction = {0, "cl_movement_wallfriction", "1", "how fast you slow down while sliding along a wall (should match sv_wallfriction)"};
-cvar_t cl_movement_waterfriction = {0, "cl_movement_waterfriction", "-1", "how fast you slow down (should match sv_waterfriction), if less than 0 the cl_movement_friction variable is used instead"};
-cvar_t cl_movement_edgefriction = {0, "cl_movement_edgefriction", "1", "how much to slow down when you may be about to fall off a ledge (should match edgefriction)"};
-cvar_t cl_movement_stepheight = {0, "cl_movement_stepheight", "18", "how tall a step you can step in one instant (should match sv_stepheight)"};
-cvar_t cl_movement_accelerate = {0, "cl_movement_accelerate", "10", "how fast you accelerate (should match sv_accelerate)"};
-cvar_t cl_movement_airaccelerate = {0, "cl_movement_airaccelerate", "-1", "how fast you accelerate while in the air (should match sv_airaccelerate), if less than 0 the cl_movement_accelerate variable is used instead"};
-cvar_t cl_movement_wateraccelerate = {0, "cl_movement_wateraccelerate", "-1", "how fast you accelerate while in water (should match sv_wateraccelerate), if less than 0 the cl_movement_accelerate variable is used instead"};
-cvar_t cl_movement_jumpvelocity = {0, "cl_movement_jumpvelocity", "270", "how fast you move upward when you begin a jump (should match the quakec code)"};
-cvar_t cl_movement_airaccel_qw = {0, "cl_movement_airaccel_qw", "1", "ratio of QW-style air control as opposed to simple acceleration (reduces speed gain when zigzagging) (should match sv_airaccel_qw); when < 0, the speed is clamped against the maximum allowed forward speed after the move"};
-cvar_t cl_movement_airaccel_sideways_friction = {0, "cl_movement_airaccel_sideways_friction", "0", "anti-sideways movement stabilization (should match sv_airaccel_sideways_friction); when < 0, only so much friction is applied that braking (by accelerating backwards) cannot be stronger"};
-cvar_t cl_nopred = {CVAR_SAVE, "cl_nopred", "0", "(QWSV only) disables player movement prediction when playing on QWSV servers (this setting is separate from cl_movement because player expectations are different when playing on DP vs QW servers)"};
+cvar_t cl_movement = {CF_CLIENT | CF_ARCHIVE, "cl_movement", "0", "enables clientside prediction of your player movement on DP servers (use cl_nopred for QWSV servers)"};
+cvar_t cl_movement_replay = {CF_CLIENT, "cl_movement_replay", "1", "use engine prediction"};
+cvar_t cl_movement_nettimeout = {CF_CLIENT | CF_ARCHIVE, "cl_movement_nettimeout", "0.3", "stops predicting moves when server is lagging badly (avoids major performance problems), timeout in seconds"};
+cvar_t cl_movement_minping = {CF_CLIENT | CF_ARCHIVE, "cl_movement_minping", "0", "whether to use prediction when ping is lower than this value in milliseconds"};
+cvar_t cl_movement_track_canjump = {CF_CLIENT | CF_ARCHIVE, "cl_movement_track_canjump", "1", "track if the player released the jump key between two jumps to decide if he is able to jump or not; when off, this causes some \"sliding\" slightly above the floor when the jump key is held too long; if the mod allows repeated jumping by holding space all the time, this has to be set to zero too"};
+cvar_t cl_movement_maxspeed = {CF_CLIENT, "cl_movement_maxspeed", "320", "how fast you can move (should match sv_maxspeed)"};
+cvar_t cl_movement_maxairspeed = {CF_CLIENT, "cl_movement_maxairspeed", "30", "how fast you can move while in the air (should match sv_maxairspeed)"};
+cvar_t cl_movement_stopspeed = {CF_CLIENT, "cl_movement_stopspeed", "100", "speed below which you will be slowed rapidly to a stop rather than sliding endlessly (should match sv_stopspeed)"};
+cvar_t cl_movement_friction = {CF_CLIENT, "cl_movement_friction", "4", "how fast you slow down (should match sv_friction)"};
+cvar_t cl_movement_wallfriction = {CF_CLIENT, "cl_movement_wallfriction", "1", "how fast you slow down while sliding along a wall (should match sv_wallfriction)"};
+cvar_t cl_movement_waterfriction = {CF_CLIENT, "cl_movement_waterfriction", "-1", "how fast you slow down (should match sv_waterfriction), if less than 0 the cl_movement_friction variable is used instead"};
+cvar_t cl_movement_edgefriction = {CF_CLIENT, "cl_movement_edgefriction", "1", "how much to slow down when you may be about to fall off a ledge (should match edgefriction)"};
+cvar_t cl_movement_stepheight = {CF_CLIENT, "cl_movement_stepheight", "18", "how tall a step you can step in one instant (should match sv_stepheight)"};
+cvar_t cl_movement_accelerate = {CF_CLIENT, "cl_movement_accelerate", "10", "how fast you accelerate (should match sv_accelerate)"};
+cvar_t cl_movement_airaccelerate = {CF_CLIENT, "cl_movement_airaccelerate", "-1", "how fast you accelerate while in the air (should match sv_airaccelerate), if less than 0 the cl_movement_accelerate variable is used instead"};
+cvar_t cl_movement_wateraccelerate = {CF_CLIENT, "cl_movement_wateraccelerate", "-1", "how fast you accelerate while in water (should match sv_wateraccelerate), if less than 0 the cl_movement_accelerate variable is used instead"};
+cvar_t cl_movement_jumpvelocity = {CF_CLIENT, "cl_movement_jumpvelocity", "270", "how fast you move upward when you begin a jump (should match the quakec code)"};
+cvar_t cl_movement_airaccel_qw = {CF_CLIENT, "cl_movement_airaccel_qw", "1", "ratio of QW-style air control as opposed to simple acceleration (reduces speed gain when zigzagging) (should match sv_airaccel_qw); when < 0, the speed is clamped against the maximum allowed forward speed after the move"};
+cvar_t cl_movement_airaccel_sideways_friction = {CF_CLIENT, "cl_movement_airaccel_sideways_friction", "0", "anti-sideways movement stabilization (should match sv_airaccel_sideways_friction); when < 0, only so much friction is applied that braking (by accelerating backwards) cannot be stronger"};
+cvar_t cl_nopred = {CF_CLIENT | CF_ARCHIVE, "cl_nopred", "0", "(QWSV only) disables player movement prediction when playing on QWSV servers (this setting is separate from cl_movement because player expectations are different when playing on DP vs QW servers)"};
 
-cvar_t in_pitch_min = {0, "in_pitch_min", "-90", "how far you can aim upward (quake used -70)"};
-cvar_t in_pitch_max = {0, "in_pitch_max", "90", "how far you can aim downward (quake used 80)"};
+cvar_t in_pitch_min = {CF_CLIENT, "in_pitch_min", "-90", "how far you can aim upward (quake used -70)"};
+cvar_t in_pitch_max = {CF_CLIENT, "in_pitch_max", "90", "how far you can aim downward (quake used 80)"};
 
-cvar_t m_filter = {CVAR_SAVE, "m_filter","0", "smoothes mouse movement, less responsive but smoother aiming"};
-cvar_t m_accelerate = {CVAR_SAVE, "m_accelerate","1", "mouse acceleration factor (try 2)"};
-cvar_t m_accelerate_minspeed = {CVAR_SAVE, "m_accelerate_minspeed","5000", "below this speed, no acceleration is done"};
-cvar_t m_accelerate_maxspeed = {CVAR_SAVE, "m_accelerate_maxspeed","10000", "above this speed, full acceleration is done"};
-cvar_t m_accelerate_filter = {CVAR_SAVE, "m_accelerate_filter","0.1", "mouse acceleration factor filtering"};
+cvar_t m_filter = {CF_CLIENT | CF_ARCHIVE, "m_filter","0", "smoothes mouse movement, less responsive but smoother aiming"};
+cvar_t m_accelerate = {CF_CLIENT | CF_ARCHIVE, "m_accelerate","1", "mouse acceleration factor (try 2)"};
+cvar_t m_accelerate_minspeed = {CF_CLIENT | CF_ARCHIVE, "m_accelerate_minspeed","5000", "below this speed, no acceleration is done"};
+cvar_t m_accelerate_maxspeed = {CF_CLIENT | CF_ARCHIVE, "m_accelerate_maxspeed","10000", "above this speed, full acceleration is done"};
+cvar_t m_accelerate_filter = {CF_CLIENT | CF_ARCHIVE, "m_accelerate_filter","0.1", "mouse acceleration factor filtering"};
 
-cvar_t cl_netfps = {CVAR_SAVE, "cl_netfps","72", "how many input packets to send to server each second"};
-cvar_t cl_netrepeatinput = {CVAR_SAVE, "cl_netrepeatinput", "1", "how many packets in a row can be lost without movement issues when using cl_movement (technically how many input messages to repeat in each packet that have not yet been acknowledged by the server), only affects DP7 and later servers (Quake uses 0, QuakeWorld uses 2, and just for comparison Quake3 uses 1)"};
-cvar_t cl_netimmediatebuttons = {CVAR_SAVE, "cl_netimmediatebuttons", "1", "sends extra packets whenever your buttons change or an impulse is used (basically: whenever you click fire or change weapon)"};
+cvar_t cl_netfps = {CF_CLIENT | CF_ARCHIVE, "cl_netfps","72", "how many input packets to send to server each second"};
+cvar_t cl_netrepeatinput = {CF_CLIENT | CF_ARCHIVE, "cl_netrepeatinput", "1", "how many packets in a row can be lost without movement issues when using cl_movement (technically how many input messages to repeat in each packet that have not yet been acknowledged by the server), only affects DP7 and later servers (Quake uses 0, QuakeWorld uses 2, and just for comparison Quake3 uses 1)"};
+cvar_t cl_netimmediatebuttons = {CF_CLIENT | CF_ARCHIVE, "cl_netimmediatebuttons", "1", "sends extra packets whenever your buttons change or an impulse is used (basically: whenever you click fire or change weapon)"};
 
-cvar_t cl_nodelta = {0, "cl_nodelta", "0", "disables delta compression of non-player entities in QW network protocol"};
+cvar_t cl_nodelta = {CF_CLIENT, "cl_nodelta", "0", "disables delta compression of non-player entities in QW network protocol"};
 
-cvar_t cl_csqc_generatemousemoveevents = {0, "cl_csqc_generatemousemoveevents", "1", "enables calls to CSQC_InputEvent with type 2, for compliance with EXT_CSQC spec"};
+cvar_t cl_csqc_generatemousemoveevents = {CF_CLIENT, "cl_csqc_generatemousemoveevents", "1", "enables calls to CSQC_InputEvent with type 2, for compliance with EXT_CSQC spec"};
 
 extern cvar_t v_flipped;
 
@@ -1298,7 +1249,7 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 	vec_t wishspeed;
 	vec_t addspeed;
 	vec_t accelspeed;
-	vec_t f;
+	vec_t speed;
 	vec_t gravity;
 	vec3_t forward;
 	vec3_t right;
@@ -1341,8 +1292,8 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 			wishspeed *= 0.5;
 
 		// apply edge friction
-		f = sqrt(s->velocity[0] * s->velocity[0] + s->velocity[1] * s->velocity[1]);
-		if (f > 0)
+		speed = sqrt(s->velocity[0] * s->velocity[0] + s->velocity[1] * s->velocity[1]);
+		if (speed > 0)
 		{
 			friction = cl.movevars_friction;
 			if (cl.movevars_edgefriction != 1)
@@ -1352,7 +1303,7 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 				// note: QW uses the full player box for the trace, and yet still
 				// uses s->origin[2] + s->mins[2], which is clearly an bug, but
 				// this mimics it for compatibility
-				VectorSet(neworigin2, s->origin[0] + s->velocity[0]*(16/f), s->origin[1] + s->velocity[1]*(16/f), s->origin[2] + s->mins[2]);
+				VectorSet(neworigin2, s->origin[0] + s->velocity[0]*(16/speed), s->origin[1] + s->velocity[1]*(16/speed), s->origin[2] + s->mins[2]);
 				VectorSet(neworigin3, neworigin2[0], neworigin2[1], neworigin2[2] - 34);
 				if (cls.protocol == PROTOCOL_QUAKEWORLD)
 					trace = CL_TraceBox(neworigin2, s->mins, s->maxs, neworigin3, MOVE_NORMAL, s->self, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY | SUPERCONTENTS_PLAYERCLIP, 0, collision_extendmovelength.value, true, true, NULL, true);
@@ -1362,9 +1313,9 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 					friction *= cl.movevars_edgefriction;
 			}
 			// apply ground friction
-			f = 1 - s->cmd.frametime * friction * ((f < cl.movevars_stopspeed) ? (cl.movevars_stopspeed / f) : 1);
-			f = max(f, 0);
-			VectorScale(s->velocity, f, s->velocity);
+			speed = 1 - s->cmd.frametime * friction * ((speed < cl.movevars_stopspeed) ? (cl.movevars_stopspeed / speed) : 1);
+			speed = max(speed, 0);
+			VectorScale(s->velocity, speed, s->velocity);
 		}
 		addspeed = wishspeed - DotProduct(s->velocity, wishdir);
 		if (addspeed > 0)
@@ -1465,7 +1416,7 @@ static void CL_ClientMovement_PlayerMove(cl_clientmovement_state_t *s)
 		CL_ClientMovement_Physics_Walk(s);
 }
 
-extern cvar_t slowmo;
+//extern cvar_t slowmo;
 void CL_UpdateMoveVars(void)
 {
 	if (cls.protocol == PROTOCOL_QUAKEWORLD)
@@ -2229,9 +2180,6 @@ void CL_InitInput (void)
 
 	// LadyHavoc: added bestweapon command
 	Cmd_AddCommand ("bestweapon", IN_BestWeapon, "send an impulse number to server to select the first usable weapon out of several (example: 8 7 6 5 4 3 2 1)");
-#if 0
-	Cmd_AddCommand ("cycleweapon", IN_CycleWeapon, "send an impulse number to server to select the next usable weapon out of several (example: 9 4 8) if you are holding one of these, and choose the first one if you are holding none of these");
-#endif
 	Cmd_AddCommand ("register_bestweapon", IN_BestWeapon_Register_f, "(for QC usage only) change weapon parameters to be used by bestweapon; stuffcmd this in ClientConnect");
 
 	Cvar_RegisterVariable(&cl_movecliptokeyboard);

@@ -2,6 +2,8 @@
 #ifndef CL_SCREEN_H
 #define CL_SCREEN_H
 
+#include "qtypes.h"
+
 void SHOWLMP_decodehide(void);
 void SHOWLMP_decodeshow(void);
 void SHOWLMP_drawall(void);

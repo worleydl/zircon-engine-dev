@@ -64,38 +64,26 @@ client_t *host_client;
 jmp_buf host_abortframe;
 
 // pretend frames take this amount of time (in seconds), 0 = realtime
-cvar_t host_framerate = {0, "host_framerate","0", "locks frame timing to this value in seconds, 0.05 is 20fps for example, note that this can easily run too fast, use cl_maxfps if you want to limit your framerate instead, or sys_ticrate to limit server speed"};
-cvar_t cl_maxphysicsframesperserverframe = {0, "cl_maxphysicsframesperserverframe","10", "maximum number of physics frames per server frame"};
+cvar_t host_framerate = {CF_CLIENT | CF_SERVER, "host_framerate","0", "locks frame timing to this value in seconds, 0.05 is 20fps for example, note that this can easily run too fast, use cl_maxfps if you want to limit your framerate instead, or sys_ticrate to limit server speed"};
 // shows time used by certain subsystems
-cvar_t host_speeds = {0, "host_speeds","0", "reports how much time is used in server/graphics/sound"};
-cvar_t host_maxwait = {0, "host_maxwait","1000", "maximum sleep time requested from the operating system in millisecond. Larger sleeps will be done using multiple host_maxwait length sleeps. Lowering this value will increase CPU load, but may help working around problems with accuracy of sleep times."};
-cvar_t host_path_protection = {0, "host_path_protection","1", "Preventing wrong .lit or .ent or .rtlights files for a map by limiting search based on where the map itself resides.. [Zircon]"};
+cvar_t host_speeds = {CF_CLIENT | CF_SERVER, "host_speeds","0", "reports how much time is used in server/graphics/sound"};
+cvar_t host_maxwait = {CF_CLIENT | CF_SERVER, "host_maxwait","1000", "maximum sleep time requested from the operating system in millisecond. Larger sleeps will be done using multiple host_maxwait length sleeps. Lowering this value will increase CPU load, but may help working around problems with accuracy of sleep times."};
+//cvar_t host_path_protection = {0, //"host_path_protection","1", "Preventing wrong .lit or .ent //or .rtlights files for a map by limiting search based on //where the map itself resides.. [Zircon]"};
 
-cvar_t cl_minfps = {CVAR_SAVE, "cl_minfps", "40", "minimum fps target - while the rendering performance is below this, it will drift toward lower quality"};
-cvar_t cl_minfps_fade = {CVAR_SAVE, "cl_minfps_fade", "1", "how fast the quality adapts to varying framerate"};
-cvar_t cl_minfps_qualitymax = {CVAR_SAVE, "cl_minfps_qualitymax", "1", "highest allowed drawdistance multiplier"};
-cvar_t cl_minfps_qualitymin = {CVAR_SAVE, "cl_minfps_qualitymin", "0.25", "lowest allowed drawdistance multiplier"};
-cvar_t cl_minfps_qualitymultiply = {CVAR_SAVE, "cl_minfps_qualitymultiply", "0.2", "multiplier for quality changes in quality change per second render time (1 assumes linearity of quality and render time)"};
-cvar_t cl_minfps_qualityhysteresis = {CVAR_SAVE, "cl_minfps_qualityhysteresis", "0.05", "reduce all quality increments by this to reduce flickering"};
-cvar_t cl_minfps_qualitystepmax = {CVAR_SAVE, "cl_minfps_qualitystepmax", "0.1", "maximum quality change in a single frame"};
-cvar_t cl_minfps_force = {0, "cl_minfps_force", "0", "also apply quality reductions in timedemo/capturevideo"};
-cvar_t cl_maxfps = {CVAR_SAVE, "cl_maxfps", "144", "maximum fps cap, 0 = unlimited, if game is running faster than this it will wait before running another frame (useful to make cpu time available to other programs) [Zircon default]"};
-cvar_t cl_maxfps_alwayssleep = {0, "cl_maxfps_alwayssleep","1", "gives up some processing time to other applications each frame, value in milliseconds, disabled if cl_maxfps is 0"};
-cvar_t cl_maxidlefps = {CVAR_SAVE, "cl_maxidlefps", "20", "maximum fps cap when the game is not the active window (makes cpu time available to other programs"};
-cvar_t cl_maxconsole_menu_fps = {0, "cl_maxconsole_menu_fps", "72", "maximum fps cap when console is up or menu is up and not hosting a game [Zircon]"}; // Baker 1017.1
 
-cvar_t developer = {CVAR_SAVE, "developer","0", "shows debugging messages and information (recommended for all developers and level designers); the value -1 also suppresses buffering and logging these messages"};
-cvar_t developer_extra = {0, "developer_extra", "0", "prints additional debugging messages, often very verbose!"};
-cvar_t developer_insane = {0, "developer_insane", "0", "prints huge streams of information about internal workings, entire contents of files being read/written, etc.  Not recommended!"};
-cvar_t developer_loadfile = {0, "developer_loadfile","0", "prints name and size of every file loaded via the FS_LoadFile function (which is almost everything)"};
-cvar_t developer_loading = {0, "developer_loading","0", "prints information about files as they are loaded or unloaded successfully"};
-cvar_t developer_entityparsing = {0, "developer_entityparsing", "0", "prints detailed network entities information each time a packet is received"};
 
-cvar_t timestamps = {CVAR_SAVE, "timestamps", "0", "prints timestamps on console messages"};
-cvar_t timeformat = {CVAR_SAVE, "timeformat", "[%Y-%m-%d %H:%M:%S] ", "time format to use on timestamped console messages"};
+cvar_t developer = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "developer","0", "shows debugging messages and information (recommended for all developers and level designers); the value -1 also suppresses buffering and logging these messages"};
+cvar_t developer_extra = {CF_CLIENT | CF_SERVER, "developer_extra", "0", "prints additional debugging messages, often very verbose!"};
+cvar_t developer_insane = {CF_CLIENT | CF_SERVER, "developer_insane", "0", "prints huge streams of information about internal workings, entire contents of files being read/written, etc.  Not recommended!"};
+cvar_t developer_loadfile = {CF_CLIENT | CF_SERVER, "developer_loadfile","0", "prints name and size of every file loaded via the FS_LoadFile function (which is almost everything)"};
+cvar_t developer_loading = {CF_CLIENT | CF_SERVER, "developer_loading","0", "prints information about files as they are loaded or unloaded successfully"};
+cvar_t developer_entityparsing = {CF_CLIENT, "developer_entityparsing", "0", "prints detailed network entities information each time a packet is received"};
 
-cvar_t sessionid = {CVAR_READONLY, "sessionid", "", "ID of the current session (use the -sessionid parameter to set it); this is always either empty or begins with a dot (.)"};
-cvar_t locksession = {0, "locksession", "0", "Lock the session? 0 = no, 1 = yes and abort on failure, 2 = yes and continue on failure"};
+cvar_t timestamps = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "timestamps", "0", "prints timestamps on console messages"};
+cvar_t timeformat = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "timeformat", "[%Y-%m-%d %H:%M:%S] ", "time format to use on timestamped console messages"};
+
+cvar_t sessionid = {CF_CLIENT | CF_SERVER | CF_READONLY, "sessionid", "", "ID of the current session (use the -sessionid parameter to set it); this is always either empty or begins with a dot (.)"};
+cvar_t locksession = {CF_CLIENT | CF_SERVER, "locksession", "0", "Lock the session? 0 = no, 1 = yes and abort on failure, 2 = yes and continue on failure"};
 
 /*
 ================
@@ -191,14 +179,14 @@ static void Host_ServerOptions (void)
 // COMMANDLINEOPTION: Server: -listen [playerlimit] starts a multiplayer server with graphical client, like singleplayer but other players can connect, default playerlimit is 8
 	// if no client is in the executable or -dedicated is specified on
 	// commandline, start a dedicated server
-	i = COM_CheckParm ("-dedicated");
+	i = Sys_CheckParm ("-dedicated");
 	if (i || !cl_available)
 	{
 		cls.state = ca_dedicated;
 		// check for -dedicated specifying how many players
 		if (i && i + 1 < com_argc && atoi (com_argv[i+1]) >= 1)
 			svs.maxclients = atoi (com_argv[i+1]);
-		if (COM_CheckParm ("-listen"))
+		if (Sys_CheckParm ("-listen"))
 			Con_Printf ("Only one of -dedicated or -listen can be specified\n");
 		// default sv_public on for dedicated servers (often hosted by serious administrators), off for listen servers (often hosted by clueless users)
 		Cvar_SetValue("sv_public", 1);
@@ -207,7 +195,7 @@ static void Host_ServerOptions (void)
 	{
 		// client exists and not dedicated, check if -listen is specified
 		cls.state = ca_disconnected;
-		i = COM_CheckParm ("-listen");
+		i = Sys_CheckParm ("-listen");
 		if (i)
 		{
 			// default players unless specified
@@ -244,23 +232,11 @@ static void Host_InitLocal (void)
 	Cmd_AddCommand ("saveconfig", Host_SaveConfig_f, "save settings to config.cfg (or a specified filename) immediately (also automatic when quitting)");
 	Cmd_AddCommand ("loadconfig", Host_LoadConfig_f, "reset everything and reload configs");
 
-	Cvar_RegisterVariable (&cl_maxphysicsframesperserverframe);
 	Cvar_RegisterVariable (&host_framerate);
 	Cvar_RegisterVariable (&host_speeds);
 	Cvar_RegisterVariable (&host_maxwait);
-	Cvar_RegisterVariable (&host_path_protection);
-	Cvar_RegisterVariable (&cl_minfps);
-	Cvar_RegisterVariable (&cl_minfps_fade);
-	Cvar_RegisterVariable (&cl_minfps_qualitymax);
-	Cvar_RegisterVariable (&cl_minfps_qualitymin);
-	Cvar_RegisterVariable (&cl_minfps_qualitystepmax);
-	Cvar_RegisterVariable (&cl_minfps_qualityhysteresis);
-	Cvar_RegisterVariable (&cl_minfps_qualitymultiply);
-	Cvar_RegisterVariable (&cl_minfps_force);
-	Cvar_RegisterVariable (&cl_maxfps);
-	Cvar_RegisterVariable (&cl_maxfps_alwayssleep);
-	Cvar_RegisterVariable (&cl_maxidlefps);
-	Cvar_RegisterVariable (&cl_maxconsole_menu_fps); // Baker 1017.2
+//	Cvar_RegisterVariable (&host_path_protection);
+
 
 	Cvar_RegisterVariable (&developer);
 	Cvar_RegisterVariable (&developer_extra);
@@ -272,7 +248,6 @@ static void Host_InitLocal (void)
 	Cvar_RegisterVariable (&timestamps);
 	Cvar_RegisterVariable (&timeformat);
 
-	Cvar_RegisterVariable (&sv_writepicture_quality);
 	Cvar_RegisterVariable (&r_texture_jpeg_fastpicmip);
 }
 
@@ -291,7 +266,7 @@ static void Host_SaveConfig_to(const char *file)
 // dedicated servers initialize the host but don't parse and set the
 // config.cfg cvars
 	// LadyHavoc: don't save a config if it crashed in startup
-	if (host_framecount >= 3 && cls.state != ca_dedicated && !COM_CheckParm("-benchmark") && !COM_CheckParm("-capturedemo"))
+	if (host_framecount >= 3 && cls.state != ca_dedicated && !Sys_CheckParm("-benchmark") && !Sys_CheckParm("-capturedemo"))
 	{
 		// Baker 1024: Prevent stale values of vid_width or vid_height writing to config
 		Cvar_SetValueQuick (&vid_width, vid.width);
@@ -688,6 +663,8 @@ Runs all active servers
 ==================
 */
 static void Host_Init(void);
+extern cvar_t cl_maxidlefps, cl_maxfps_alwayssleep, cl_maxconsole_menu_fps, cl_maxfps, cl_maxphysicsframesperserverframe;
+
 void Host_Main(void)
 {
 	double time1 = 0;
@@ -962,6 +939,8 @@ void Host_Main(void)
 			Collision_Cache_NewFrame();
 			R_TimeReport("photoncache");
 			// decide the simulation time
+#ifdef CONFIG_VIDEO_CAPTURE
+			// decide the simulation time
 			if (cls.capturevideo.active)
 			{
 				//***
@@ -974,6 +953,10 @@ void Host_Main(void)
 				}
 			}
 			else if (vid_activewindow && cl_maxfps.value >= 1 && !cls.timedemo)
+#else
+			if (vid_activewindow && cl_maxfps.value >= 1 && !cls.timedemo)
+#endif // CONFIG_VIDEO_CAPTURE
+
 			{
 				qbool is_active_hosting_server = sv.active && cls.state != ca_disconnected && svs.maxclients > 1;
 				if ( (
@@ -1141,7 +1124,7 @@ static void Host_InitSession(void)
 	Cvar_RegisterVariable(&locksession);
 
 	// load the session ID into the read-only cvar
-	if ((i = COM_CheckParm("-sessionid")) && (i + 1 < com_argc))
+	if ((i = Sys_CheckParm("-sessionid")) && (i + 1 < com_argc))
 	{
 		char vabuf[1024];
 		if(com_argv[i+1][0] == '.')
@@ -1155,7 +1138,7 @@ void Host_LockSession(void)
 	if(locksession_run)
 		return;
 	locksession_run = true;
-	if(locksession.integer != 0 && !COM_CheckParm("-readonly"))
+	if(locksession.integer != 0 && !Sys_CheckParm("-readonly"))
 	{
 		char vabuf[1024];
 		char *p = va(vabuf, sizeof(vabuf), "%slock%s", *fs_userdir ? fs_userdir : fs_basedir, sessionid.string);
@@ -1202,11 +1185,11 @@ static void Host_Init (void)
 	const char* os;
 	char vabuf[1024];
 
-	if (COM_CheckParm("-profilegameonly"))
+	if (Sys_CheckParm("-profilegameonly"))
 		Sys_AllowProfiling(false);
 
 	// LadyHavoc: quake never seeded the random number generator before... heh
-	if (COM_CheckParm("-benchmark"))
+	if (Sys_CheckParm("-benchmark"))
 		srand(0); // predictable random sequence for -benchmark
 	else
 		srand((unsigned int)time(NULL));
@@ -1215,13 +1198,13 @@ static void Host_Init (void)
 	// LadyHavoc: doesn't seem very temporary...
 	// LadyHavoc: made this a saved cvar
 // COMMANDLINEOPTION: Console: -developer enables warnings and other notices (RECOMMENDED for mod developers)
-	if (COM_CheckParm("-developer"))
+	if (Sys_CheckParm("-developer"))
 	{
 		developer.value = developer.integer = 1;
 		developer.string = "1";
 	}
 
-	if (COM_CheckParm("-developer2") || COM_CheckParm("-developer3"))
+	if (Sys_CheckParm("-developer2") || Sys_CheckParm("-developer3"))
 	{
 		developer.value = developer.integer = 1;
 		developer.string = "1";
@@ -1235,14 +1218,14 @@ static void Host_Init (void)
 		developer_memorydebug.string = "1";
 	}
 
-	if (COM_CheckParm("-developer3"))
+	if (Sys_CheckParm("-developer3"))
 	{
 		gl_paranoid.integer = 1;gl_paranoid.string = "1";
 		gl_printcheckerror.integer = 1;gl_printcheckerror.string = "1";
 	}
 
 // COMMANDLINEOPTION: Console: -nostdout disables text output to the terminal the game was launched from
-	if (COM_CheckParm("-nostdout"))
+	if (Sys_CheckParm("-nostdout"))
 		sys_nostdout = 1;
 
 	// used by everything
@@ -1316,8 +1299,6 @@ static void Host_Init (void)
 
 	NetConn_Init();
 	Curl_Init();
-	//PR_Init();
-	//PR_Cmd_Init();
 	PRVM_Init();
 	Mod_Init();
 	World_Init();
@@ -1375,7 +1356,6 @@ static void Host_Init (void)
 
 	// put up the loading image so the user doesn't stare at a black screen...
 	SCR_BeginLoadingPlaque(true);
-
 #ifdef CONFIG_MENU
 	if (cls.state != ca_dedicated)
 	{
@@ -1385,7 +1365,7 @@ static void Host_Init (void)
 
 	// check for special benchmark mode
 // COMMANDLINEOPTION: Client: -benchmark <demoname> runs a timedemo and quits, results of any timedemo can be found in gamedir/benchmark.log (for example id1/benchmark.log)
-	i = COM_CheckParm("-benchmark");
+	i = Sys_CheckParm("-benchmark");
 	if (i && i + 1 < com_argc)
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying)
 	{
@@ -1395,7 +1375,7 @@ static void Host_Init (void)
 
 	// check for special demo mode
 // COMMANDLINEOPTION: Client: -demo <demoname> runs a playdemo and quits
-	i = COM_CheckParm("-demo");
+	i = Sys_CheckParm("-demo");
 	if (i && i + 1 < com_argc)
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying)
 	{
@@ -1403,16 +1383,18 @@ static void Host_Init (void)
 		Cbuf_Execute();
 	}
 
+#ifdef CONFIG_VIDEO_CAPTURE
 // COMMANDLINEOPTION: Client: -capturedemo <demoname> captures a playdemo and quits
-	i = COM_CheckParm("-capturedemo");
+	i = Sys_CheckParm("-capturedemo");
 	if (i && i + 1 < com_argc)
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying)
 	{
 		Cbuf_AddTextLine (va(vabuf, sizeof(vabuf), "playdemo %s" NEWLINE "cl_capturevideo 1", com_argv[i + 1]));
 		Cbuf_Execute();
 	}
+#endif // CONFIG_VIDEO_CAPTURE
 
-	if (cls.state == ca_dedicated || COM_CheckParm("-listen"))
+	if (cls.state == ca_dedicated || Sys_CheckParm("-listen"))
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying)
 	{
 		Cbuf_AddTextLine ("startmap_dm");
@@ -1435,7 +1417,6 @@ static void Host_Init (void)
 	if (cls.state != ca_dedicated)
 		SV_StartThread();
 }
-
 
 /*
 ===============

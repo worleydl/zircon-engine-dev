@@ -154,12 +154,12 @@ void Cmd_ExecuteString (const char *text, cmd_source_t src, qbool lockmutex);
 
 /// adds the string as a clc_stringcmd to the client message.
 /// (used when there is no reason to generate a local command to do it)
-void Cmd_ForwardStringToServer (const char *s);
+void CL_ForwardToServer (const char *s);
 
 /// adds the current command line as a clc_stringcmd to the client message.
 /// things like godmode, noclip, etc, are commands directed to the server,
 /// so when they are typed in at the console, they will need to be forwarded.
-void Cmd_ForwardToServer (void);
+void Cmd_ForwardToServer_f (void);
 
 /// used by command functions to send output to either the graphics console or
 /// passed as a print message to the client

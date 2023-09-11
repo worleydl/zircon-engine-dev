@@ -1,4 +1,5 @@
 #ifndef THREAD_H
+#define THREAD_H
 
 // enable Sys_PrintfToTerminal calls on nearly every threading call
 //#define THREADDEBUG
@@ -39,4 +40,4 @@ void *_Thread_CreateBarrier(unsigned int count, const char *filename, int fileli
 void _Thread_DestroyBarrier(void *barrier, const char *filename, int fileline);
 void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline);
 
-#endif
+#endif // ! THREAD_H

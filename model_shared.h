@@ -21,7 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef MODEL_SHARED_H
 #define MODEL_SHARED_H
 
-typedef enum synctype_e {ST_SYNC=0, ST_RAND } synctype_t;
 
 /*
 
@@ -737,12 +736,6 @@ msurface_t;
 #include "model_sprite.h"
 #include "model_alias.h"
 
-typedef struct model_sprite_s
-{
-	int				sprnum_type;
-	mspriteframe_t	*sprdata_frames;
-}
-model_sprite_t;
 
 struct trace_s;
 
@@ -1096,14 +1089,15 @@ typedef struct model_s
 	qbool lit;
 	float lightmapscale;
 
+	qbool nolerp; // SEPUS
 	loadinfo_s	loadinfox;
 }
-dp_model_t;
+model_t;
 
 //============================================================================
 
 // model loading
-extern dp_model_t *loadmodel;
+extern model_t *loadmodel;
 extern unsigned char *mod_base;
 // sky/water subdivision
 //extern cvar_t gl_subdivide_size;
@@ -1113,16 +1107,16 @@ extern cvar_t r_enableshadowvolumes;
 
 void Mod_Init (void);
 void Mod_Reload (void);
-dp_model_t *Mod_LoadModel(dp_model_t *mod, qbool crash, qbool checkdisk);
-dp_model_t *Mod_FindName (const char *name, const char *parentname);
-dp_model_t *Mod_ForName (const char *name, qbool crash, qbool checkdisk, const char *parentname);
-void Mod_UnloadModel (dp_model_t *mod);
+model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk);
+model_t *Mod_FindName (const char *name, const char *parentname);
+model_t *Mod_ForName (const char *name, qbool crash, qbool checkdisk, const char *parentname);
+void Mod_UnloadModel (model_t *mod);
 
 void Mod_ClearUsed(void);
 void Mod_PurgeUnused(void);
-void Mod_RemoveStaleWorldModels(dp_model_t *skip); // only used during loading!
+void Mod_RemoveStaleWorldModels(model_t *skip); // only used during loading!
 
-extern dp_model_t *loadmodel;
+extern model_t *loadmodel;
 extern char loadname[32];	// for hunk tags
 
 int Mod_BuildVertexRemapTableFromElements(int numelements, const int *elements, int numvertices, int *remapvertices);
@@ -1132,7 +1126,7 @@ void Mod_BuildNormals(int firstvertex, int numvertices, int numtriangles, const 
 void Mod_BuildTextureVectorsFromNormals(int firstvertex, int numvertices, int numtriangles, const float *vertex3f, const float *texcoord2f, const float *normal3f, const int *elements, float *svector3f, float *tvector3f, qbool areaweighting);
 
 void Mod_AllocSurfMesh(mempool_t *mempool, int numvertices, int numtriangles, qbool lightmapoffsets, qbool vertexcolors, qbool neighbors);
-void Mod_MakeSortedSurfaces(dp_model_t *mod);
+void Mod_MakeSortedSurfaces(model_t *mod);
 
 // called specially by brush model loaders before generating submodels
 // automatically called after model loader returns
@@ -1148,7 +1142,7 @@ shadowmesh_t *Mod_ShadowMesh_Finish(mempool_t *mempool, shadowmesh_t *firstmesh,
 void Mod_ShadowMesh_CalcBBox(shadowmesh_t *firstmesh, vec3_t mins, vec3_t maxs, vec3_t center, float *radius);
 void Mod_ShadowMesh_Free(shadowmesh_t *mesh);
 
-void Mod_CreateCollisionMesh(dp_model_t *mod);
+void Mod_CreateCollisionMesh(model_t *mod);
 
 void Mod_FreeQ3Shaders(void);
 void Mod_LoadQ3Shaders(void);
@@ -1209,42 +1203,42 @@ void Mod_BrushInit(void);
 int Mod_Q1BSP_NativeContentsFromSuperContents(struct model_s *model, int supercontents);
 int Mod_Q1BSP_SuperContentsFromNativeContents(struct model_s *model, int nativecontents);
 // used for loading wal files in Mod_LoadTextureFromQ3Shader
-int Mod_Q2BSP_SuperContentsFromNativeContents(dp_model_t *model, int nativecontents);
-int Mod_Q2BSP_NativeContentsFromSuperContents(dp_model_t *model, int supercontents);
+int Mod_Q2BSP_SuperContentsFromNativeContents(model_t *model, int nativecontents);
+int Mod_Q2BSP_NativeContentsFromSuperContents(model_t *model, int supercontents);
 
 // a lot of model formats use the Q1BSP code, so here are the prototypes...
 struct entity_render_s;
-void R_Q1BSP_DrawAddWaterPlanes(struct entity_render_s *ent);
-void R_Q1BSP_DrawSky(struct entity_render_s *ent);
-void R_Q1BSP_Draw(struct entity_render_s *ent);
-void R_Q1BSP_DrawDepth(struct entity_render_s *ent);
-void R_Q1BSP_DrawDebug(struct entity_render_s *ent);
-void R_Q1BSP_DrawPrepass(struct entity_render_s *ent);
-void R_Q1BSP_GetLightInfo(struct entity_render_s *ent, vec3_t relativelightorigin, float lightradius, vec3_t outmins, vec3_t outmaxs, int *outleaflist, unsigned char *outleafpvs, int *outnumleafspointer, int *outsurfacelist, unsigned char *outsurfacepvs, int *outnumsurfacespointer, unsigned char *outshadowtrispvs, unsigned char *outlighttrispvs, unsigned char *visitingleafpvs, int numfrustumplanes, const mplane_t *frustumplanes);
-void R_Q1BSP_CompileShadowMap(struct entity_render_s *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist);
-void R_Q1BSP_DrawShadowMap(int side, struct entity_render_s *ent, const vec3_t relativelightorigin, const vec3_t relativelightdirection, float lightradius, int modelnumsurfaces, const int *modelsurfacelist, const unsigned char *surfacesides, const vec3_t lightmins, const vec3_t lightmaxs);
-void R_Q1BSP_CompileShadowVolume(struct entity_render_s *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist);
+void R_Mod_DrawAddWaterPlanes(struct entity_render_s *ent);
+void R_Mod_DrawSky(struct entity_render_s *ent);
+void R_Mod_Draw(struct entity_render_s *ent);
+void R_Mod_DrawDepth(struct entity_render_s *ent);
+void R_Mod_DrawDebug(struct entity_render_s *ent);
+void R_Mod_DrawPrepass(struct entity_render_s *ent);
+void R_Mod_GetLightInfo(struct entity_render_s *ent, vec3_t relativelightorigin, float lightradius, vec3_t outmins, vec3_t outmaxs, int *outleaflist, unsigned char *outleafpvs, int *outnumleafspointer, int *outsurfacelist, unsigned char *outsurfacepvs, int *outnumsurfacespointer, unsigned char *outshadowtrispvs, unsigned char *outlighttrispvs, unsigned char *visitingleafpvs, int numfrustumplanes, const mplane_t *frustumplanes);
+void R_Mod_CompileShadowMap(struct entity_render_s *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist);
+void R_Mod_DrawShadowMap(int side, struct entity_render_s *ent, const vec3_t relativelightorigin, const vec3_t relativelightdirection, float lightradius, int modelnumsurfaces, const int *modelsurfacelist, const unsigned char *surfacesides, const vec3_t lightmins, const vec3_t lightmaxs);
+void R_Mod_CompileShadowVolume(struct entity_render_s *ent, vec3_t relativelightorigin, vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist);
 void R_Q1BSP_DrawShadowVolume(struct entity_render_s *ent, const vec3_t relativelightorigin, const vec3_t relativelightdirection, float lightradius, int numsurfaces, const int *surfacelist, const vec3_t lightmins, const vec3_t lightmaxs);
-void R_Q1BSP_DrawLight(struct entity_render_s *ent, int numsurfaces, const int *surfacelist, const unsigned char *trispvs);
+void R_Mod_DrawLight(struct entity_render_s *ent, int numsurfaces, const int *surfacelist, const unsigned char *trispvs);
 
 // Collision optimization using Bounding Interval Hierarchy
-void Mod_CollisionBIH_TracePoint(dp_model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, int hitsupercontentsmask, int skipsupercontentsmask);
-void Mod_CollisionBIH_TraceLine(dp_model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, const vec3_t end, int hitsupercontentsmask, int skipsupercontentsmask);
-void Mod_CollisionBIH_TraceBox(dp_model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, const vec3_t boxmins, const vec3_t boxmaxs, const vec3_t end, int hitsupercontentsmask, int skipsupercontentsmask);
-void Mod_CollisionBIH_TraceBrush(dp_model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, struct colbrushf_s *start, struct colbrushf_s *end, int hitsupercontentsmask, int skipsupercontentsmask);
-void Mod_CollisionBIH_TracePoint_Mesh(dp_model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, int hitsupercontentsmask, int skipsupercontentsmask);
+void Mod_CollisionBIH_TracePoint(model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, int hitsupercontentsmask, int skipsupercontentsmask);
+void Mod_CollisionBIH_TraceLine(model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, const vec3_t end, int hitsupercontentsmask, int skipsupercontentsmask);
+void Mod_CollisionBIH_TraceBox(model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, const vec3_t boxmins, const vec3_t boxmaxs, const vec3_t end, int hitsupercontentsmask, int skipsupercontentsmask);
+void Mod_CollisionBIH_TraceBrush(model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, struct colbrushf_s *start, struct colbrushf_s *end, int hitsupercontentsmask, int skipsupercontentsmask);
+void Mod_CollisionBIH_TracePoint_Mesh(model_t *model, const struct frameblend_s *frameblend, const skeleton_t *skeleton, struct trace_s *trace, const vec3_t start, int hitsupercontentsmask, int skipsupercontentsmask);
 qbool Mod_CollisionBIH_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end);
 int Mod_CollisionBIH_PointSuperContents(struct model_s *model, int frame, const vec3_t point);
 int Mod_CollisionBIH_PointSuperContents_Mesh(struct model_s *model, int frame, const vec3_t point);
-bih_t *Mod_MakeCollisionBIH(dp_model_t *model, qbool userendersurfaces, bih_t *out);
+bih_t *Mod_MakeCollisionBIH(model_t *model, qbool userendersurfaces, bih_t *out);
 
 // alias models
 struct frameblend_s;
 struct skeleton_s;
 void Mod_AliasInit(void);
-int Mod_Alias_GetTagMatrix(const dp_model_t *model, const struct frameblend_s *frameblend, const struct skeleton_s *skeleton, int tagindex, matrix4x4_t *outmatrix);
-int Mod_Alias_GetTagIndexForName(const dp_model_t *model, unsigned int skin, const char *tagname);
-int Mod_Alias_GetExtendedTagInfoForIndex(const dp_model_t *model, unsigned int skin, const struct frameblend_s *frameblend, const struct skeleton_s *skeleton, int tagindex, int *parentindex, const char **tagname, matrix4x4_t *tag_localmatrix);
+int Mod_Alias_GetTagMatrix(const model_t *model, const struct frameblend_s *frameblend, const struct skeleton_s *skeleton, int tagindex, matrix4x4_t *outmatrix);
+int Mod_Alias_GetTagIndexForName(const model_t *model, unsigned int skin, const char *tagname);
+int Mod_Alias_GetExtendedTagInfoForIndex(const model_t *model, unsigned int skin, const struct frameblend_s *frameblend, const struct skeleton_s *skeleton, int tagindex, int *parentindex, const char **tagname, matrix4x4_t *tag_localmatrix);
 
 void Mod_Skeletal_FreeBuffers(void);
 
@@ -1252,19 +1246,19 @@ void Mod_Skeletal_FreeBuffers(void);
 void Mod_SpriteInit(void);
 
 // loaders
-void Mod_Q1BSP_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_IBSP_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_MAP_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_OBJ_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_IDP0_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_IDP2_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_IDP3_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_ZYMOTICMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_DARKPLACESMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_PSKMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_IDSP_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_IDS2_Load(dp_model_t *mod, void *buffer, void *bufferend);
-void Mod_INTERQUAKEMODEL_Load(dp_model_t *mod, void *buffer, void *bufferend);
+void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_MAP_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend);
+void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend);
 
 #endif	// MODEL_SHARED_H
 

@@ -223,7 +223,7 @@ tridecal_t;
 
 typedef struct decalsystem_s
 {
-	dp_model_t *model;
+	model_t *model;
 	double lastupdatetime;
 	int maxdecals;
 	int freedecal;
@@ -290,7 +290,7 @@ typedef struct rtlight_s
 	char cubemapname[64];
 	/// light style to monitor for brightness
 	int style;
-	/// whether light should render shadows
+	/// whether light should render shadows (see castshadows for whether it actually does this frame)
 	int shadow;
 	/// intensity of corona to render
 	vec_t corona;
@@ -306,7 +306,7 @@ typedef struct rtlight_s
 	int flags;
 
 	// generated properties
-	/// used only for shadow volumes
+	/// used only for casting shadows
 	vec3_t shadoworigin;
 	/// culling
 	vec3_t cullmins;
@@ -507,7 +507,7 @@ typedef struct entity_render_s
 	float transparent_offset;
 
 	// NULL = no model
-	dp_model_t *model;
+	model_t *model;
 	// number of the entity represents, or 0 for non-network entities
 	int entitynumber;
 	// literal colormap colors for renderer, if both are 0 0 0 it is not colormapped
@@ -803,7 +803,7 @@ typedef struct client_static_s
 	int demonum;
 	// list of demos in loop
 	char demos[MAX_DEMOS][MAX_DEMONAME];
-	// the actively playing demo (set by CL_PlayDemo_f)
+	// the actively playing demo (set by CL_PlayDemo)
 	char demoname[MAX_QPATH];
 
 // demo recording info must be here, because record is started before
@@ -898,8 +898,10 @@ typedef struct client_static_s
 	// extra user info for the "connect" command
 	char connect_userinfo[MAX_USERINFO_STRING];
 
+#ifdef CONFIG_VIDEO_CAPTURE
 	// video capture stuff
 	capturevideostate_t capturevideo;
+#endif
 
 	// crypto channel
 	crypto_t crypto;
@@ -984,7 +986,7 @@ typedef struct decal_s
 	// fields not used by rendering: (36 bytes in 32bit, 40 bytes in 64bit)
 	float			time2; // used for decal fade
 	unsigned int	owner; // decal stuck to this entity
-	dp_model_t			*ownermodel; // model the decal is stuck to (used to make sure the entity is still alive)
+	model_t			*ownermodel; // model the decal is stuck to (used to make sure the entity is still alive)
 	vec3_t			relativeorigin; // decal at this location in entity's coordinate space
 	vec3_t			relativenormal; // decal oriented this way relative to entity's coordinate space
 }
@@ -1234,10 +1236,10 @@ typedef struct client_state_s
 	int gametype;
 
 	// models and sounds used by engine code (particularly cl_parse.c)
-	dp_model_t *model_bolt;
-	dp_model_t *model_bolt2;
-	dp_model_t *model_bolt3;
-	dp_model_t *model_beam;
+	model_t *model_bolt;
+	model_t *model_bolt2;
+	model_t *model_bolt3;
+	model_t *model_beam;
 	sfx_t *sfx_wizhit;
 	sfx_t *sfx_knighthit;
 	sfx_t *sfx_tink1;
@@ -1570,7 +1572,7 @@ void CL_ValidateState(entity_state_t *s);
 void CL_MoveLerpEntityStates(entity_t *ent);
 void CL_LerpUpdate(entity_t *e);
 void CL_ParseTEnt (void);
-void CL_NewBeam (int ent, vec3_t start, vec3_t end, dp_model_t *m, int lightning);
+void CL_NewBeam (int ent, vec3_t start, vec3_t end, model_t *m, int lightning);
 void CL_RelinkBeams (void);
 void CL_Beam_CalculatePositions (const beam_t *b, vec3_t start, vec3_t end);
 void CL_ClientMovement_Replay(void);
@@ -1863,7 +1865,7 @@ typedef struct r_refdef_scene_s {
 	entity_render_t *worldentity;
 
 	// same as worldentity->model
-	dp_model_t *worldmodel;
+	model_t *worldmodel;
 
 	// renderable entities (excluding world)
 	entity_render_t **entities;

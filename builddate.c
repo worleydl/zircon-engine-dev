@@ -7,7 +7,6 @@ const char *buildstring =
 		__TIME__ " " __DATE__ " "
 	#endif
 
-
 #ifdef SVNREVISION
 STRINGIFY(SVNREVISION)
 #else

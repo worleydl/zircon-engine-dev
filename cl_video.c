@@ -626,7 +626,7 @@ static void CL_PlayVideo_f(void)
 
 	Host_StartVideo();
 
-	if (COM_CheckParm("-benchmark"))
+	if (Sys_CheckParm("-benchmark"))
 		return;
 
 	if (Cmd_Argc() < 2)

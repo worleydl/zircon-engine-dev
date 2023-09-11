@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sv_move.c -- monster movement
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "prvm_cmds.h"
 
 /*
@@ -413,7 +413,7 @@ static qbool SV_CloseEnough (prvm_edict_t *ent, prvm_edict_t *goal, float dist)
 
 /*
 ======================
-SV_MoveToGoal
+VM_SV_MoveToGoal
 
 ======================
 */
@@ -422,7 +422,7 @@ void VM_SV_MoveToGoal(prvm_prog_t *prog)
 	prvm_edict_t		*ent, *goal;
 	float		dist;
 
-	VM_SAFEPARMCOUNT(1, SV_MoveToGoal);
+	VM_SAFEPARMCOUNT(1, VM_SV_MoveToGoal);
 
 	ent = PRVM_PROG_TO_EDICT(PRVM_serverglobaledict(self));
 	goal = PRVM_PROG_TO_EDICT(PRVM_serveredictedict(ent, goalentity));

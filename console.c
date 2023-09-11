@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 #include <time.h>
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "thread.h"
 
 // for u8_encodech
@@ -182,7 +182,7 @@ int GetXTextureListWorld_Count (const char *s_prefix)
 		return 0;
 	}
 
-	dp_model_t		*m = r_refdef.scene.worldmodel;
+	model_t		*m = r_refdef.scene.worldmodel;
 
 	stringlist_t	matchedSet;
 	stringlistinit  (&matchedSet); // this does not allocate
@@ -1100,7 +1100,7 @@ Con_ToggleConsole_f
 */
 void Con_ToggleConsole_f (void)
 {
-	if (COM_CheckParm ("-noconsole"))
+	if (Sys_CheckParm ("-noconsole"))
 		if (Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER) == false)
 			return; // only allow the key bind to turn off console
 
@@ -1298,7 +1298,7 @@ void Con_Init (void)
 
 	// support for the classic Quake option
 // COMMANDLINEOPTION: Console: -condebug logs console messages to qconsole.log, see also log_file
-	if (COM_CheckParm ("-condebug") != 0)
+	if (Sys_CheckParm ("-condebug") != 0)
 		Cvar_SetQuick (&log_file, "zircon_log.log"); // 
 
 	// register our cvars

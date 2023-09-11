@@ -1,5 +1,5 @@
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "r_shadow.h"
 
 extern cvar_t r_labelsprites_scale;
@@ -208,7 +208,7 @@ static float spritetexcoord2f[4*2] = {0, 1, 0, 0, 1, 0, 1, 1};
 static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, const rtlight_t *rtlight, int numsurfaces, int *surfacelist)
 {
 	int i;
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	vec3_t left, up, org, mforward, mleft, mup, middle;
 	float scale, dx, dy, hud_vs_screen;
 	int edge = 0;
@@ -392,7 +392,9 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 			frame = model->sprite.sprdata_frames + ent->frameblend[i].subframe;
 			texture = R_GetCurrentTexture(model->data_textures + ent->frameblend[i].subframe);
 		
-			// lit sprite by lightgrid if it is not fullbright, lit only ambient
+			// sprites are fullbright by default, but if this one is not fullbright we
+			// need to combine the lighting into ambient as sprite lighting is not
+			// directional
 			if (!(texture->currentmaterialflags & MATERIALFLAG_FULLBRIGHT))
 				VectorAdd(ent->modellight_ambient, ent->modellight_diffuse, rsurface.modellight_ambient); // sprites dont use lightdirection
 

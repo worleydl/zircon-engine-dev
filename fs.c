@@ -40,7 +40,7 @@
 # include <unistd.h>
 #endif
 
-#include "quakedef.h"
+#include "darkplaces.h"
 
 #if TARGET_OS_IPHONE
 // include SDL for IPHONEOS code
@@ -384,9 +384,9 @@ char fs_gamedirs[MAX_GAMEDIRS][MAX_QPATH];
 gamedir_t *fs_all_gamedirs = NULL;
 int fs_all_gamedirs_count = 0;
 
-cvar_t scr_screenshot_name = {CVAR_NORESETTODEFAULTS, "scr_screenshot_name","dp", "prefix name for saved screenshots (changes based on -game commandline, as well as which game mode is running; the date is encoded using strftime escapes)"};
-cvar_t fs_empty_files_in_pack_mark_deletions = {0, "fs_empty_files_in_pack_mark_deletions", "0", "if enabled, empty files in a pak/pk3 count as not existing but cancel the search in further packs, effectively allowing patch pak/pk3 files to 'delete' files"};
-cvar_t cvar_fs_gamedir = {CVAR_READONLY | CVAR_NORESETTODEFAULTS, "fs_gamedir", "", "the list of currently selected gamedirs (use the 'gamedir' command to change this)"};
+cvar_t scr_screenshot_name = {CF_CLIENT | CF_PERSISTENT, "scr_screenshot_name","dp", "prefix name for saved screenshots (changes based on -game commandline, as well as which game mode is running; the date is encoded using strftime escapes)"};
+cvar_t fs_empty_files_in_pack_mark_deletions = {CF_CLIENT | CF_SERVER, "fs_empty_files_in_pack_mark_deletions", "0", "if enabled, empty files in a pak/pk3 count as not existing but cancel the search in further packs, effectively allowing patch pak/pk3 files to 'delete' files"};
+cvar_t cvar_fs_gamedir = {CF_CLIENT | CF_SERVER | CF_READONLY | CF_PERSISTENT, "fs_gamedir", "", "the list of currently selected gamedirs (use the 'gamedir' command to change this)"};
 
 
 /*
@@ -497,7 +497,7 @@ Unload the Zlib DLL
 static void PK3_CloseLibrary (void)
 {
 #ifndef LINK_TO_ZLIB
-	Sys_UnloadLibrary (&zlib_dll);
+	Sys_FreeLibrary (&zlib_dll);
 #endif
 }
 
@@ -537,7 +537,7 @@ static qbool PK3_OpenLibrary (void)
 		return true;
 
 	// Load the DLL
-	return Sys_LoadLibrary (dllnames, &zlib_dll, zlibfuncs);
+	return Sys_LoadDependency (dllnames, &zlib_dll, zlibfuncs);
 #endif
 }
 
@@ -926,7 +926,7 @@ static packfile_t* FS_AddFileToPack (const char* name, pack_t* pack,
 
 static void FS_mkdir (const char *path)
 {
-	if(COM_CheckParm("-readonly"))
+	if(Sys_CheckParm("-readonly"))
 		return;
 
 #if WIN32
@@ -1459,11 +1459,11 @@ void FS_Rescan (void)
 	else
 		Cvar_SetQuick (&scr_screenshot_name, gamescreenshotname);
 	
-	if((i = COM_CheckParm("-modname")) && i < com_argc - 1)
+	if((i = Sys_CheckParm("-modname")) && i < com_argc - 1)
 		strlcpy(com_modname, com_argv[i+1], sizeof(com_modname));
 
 	// If "-condebug" is in the command line, remove the previous log file
-	if (COM_CheckParm ("-condebug") != 0)
+	if (Sys_CheckParm ("-condebug") != 0)
 		unlink (va(vabuf, sizeof(vabuf), "%s/qconsole.log", fs_gamedir));
 
 	// look for the pop.lmp file and set registered to true if it is found
@@ -1800,7 +1800,7 @@ void FS_Init_SelfPack (void)
 	fs_mempool = Mem_AllocPool("file management", 0, NULL);
 
 	// Load darkplaces.opt from the FS.
-	if (!COM_CheckParm("-noopt"))
+	if (!Sys_CheckParm("-noopt"))
 	{
 		char *buf = (char *) FS_SysLoadFile("darkplaces.opt", tempmempool, true, NULL);
 		if(buf)
@@ -1810,12 +1810,12 @@ void FS_Init_SelfPack (void)
 
 #ifndef USE_RWOPS
 	// Provide the SelfPack.
-	if (!COM_CheckParm("-noselfpack")) {
+	if (!Sys_CheckParm("-noselfpack")) {
 		if (com_selffd >= 0) {
 			fs_selfpack = FS_LoadPackPK3FromFD(com_argv[0], com_selffd, true);
 			if(fs_selfpack) {
 				FS_AddSelfPack();
-				if (!COM_CheckParm("-noopt")) {
+				if (!Sys_CheckParm("-noopt")) {
 					char *buf = (char *) FS_LoadFile("darkplaces.opt", tempmempool, true, NULL, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 					if(buf)
 						COM_InsertFlags(buf);
@@ -1860,7 +1860,7 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 		break;
 	case USERDIRMODE_MYGAMES:
 		if (!shfolder_dll)
-			Sys_LoadLibrary(shfolderdllnames, &shfolder_dll, shfolderfuncs);
+			Sys_LoadDependency(shfolderdllnames, &shfolder_dll, shfolderfuncs);
 		mydocsdir[0] = 0;
 		if (qSHGetFolderPath && qSHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, mydocsdir) == S_OK)
 		{
@@ -1886,9 +1886,9 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 		return -1;
 	case USERDIRMODE_SAVEDGAMES:
 		if (!shell32_dll)
-			Sys_LoadLibrary(shell32dllnames, &shell32_dll, shell32funcs);
+			Sys_LoadDependency(shell32dllnames, &shell32_dll, shell32funcs);
 		if (!ole32_dll)
-			Sys_LoadLibrary(ole32dllnames, &ole32_dll, ole32funcs);
+			Sys_LoadDependency(ole32dllnames, &ole32_dll, ole32funcs);
 		if (qSHGetKnownFolderPath && qCoInitializeEx && qCoTaskMemFree && qCoUninitialize)
 		{
 			savedgamesdir[0] = 0;
@@ -2015,7 +2015,7 @@ void FS_Init (void)
 	// -basedir <path>
 	// Overrides the system supplied base directory (under GAMENAME)
 // COMMANDLINEOPTION: Filesystem: -basedir <path> chooses what base directory the game data is in, inside this there should be a data directory for the game (for example id1)
-	i = COM_CheckParm ("-basedir");
+	i = Sys_CheckParm ("-basedir");
 	if (i && i < com_argc-1)
 	{
 		strlcpy (fs_basedir, com_argv[i+1], sizeof (fs_basedir));
@@ -2069,9 +2069,9 @@ void FS_Init (void)
 		strlcat(fs_basedir, "/", sizeof(fs_basedir));
 
 	// Add the personal game directory
-	if((i = COM_CheckParm("-userdir")) && i < com_argc - 1)
+	if((i = Sys_CheckParm("-userdir")) && i < com_argc - 1)
 		dpsnprintf(fs_userdir, sizeof(fs_userdir), "%s/", com_argv[i+1]);
-	else if (COM_CheckParm("-nohome"))
+	else if (Sys_CheckParm("-nohome"))
 		*fs_userdir = 0; // user wants roaming installation, no userdir
 	else
 	{
@@ -2088,9 +2088,9 @@ void FS_Init (void)
 			preferreduserdirmode = USERDIRMODE_NOHOME;
 # endif
 		// check what limitations the user wants to impose
-		if (COM_CheckParm("-home")) preferreduserdirmode = USERDIRMODE_HOME;
-		if (COM_CheckParm("-mygames")) preferreduserdirmode = USERDIRMODE_MYGAMES;
-		if (COM_CheckParm("-savedgames")) preferreduserdirmode = USERDIRMODE_SAVEDGAMES;
+		if (Sys_CheckParm("-home")) preferreduserdirmode = USERDIRMODE_HOME;
+		if (Sys_CheckParm("-mygames")) preferreduserdirmode = USERDIRMODE_MYGAMES;
+		if (Sys_CheckParm("-savedgames")) preferreduserdirmode = USERDIRMODE_SAVEDGAMES;
 		// gather the status of the possible userdirs
 		for (dirmode = 0;dirmode < USERDIRMODE_COUNT;dirmode++)
 		{
@@ -2124,9 +2124,9 @@ void FS_Init (void)
 #ifdef WIN32
 	// Baker 7000 nohome is the behavior on Windows unless userdir specified regardless of game
 	// Or -home
-	if ((i = COM_CheckParm("-userdir")) && i < com_argc - 1) {
+	if ((i = Sys_CheckParm("-userdir")) && i < com_argc - 1) {
 
-	} else if ((i = COM_CheckParm("-home"))/**/) {
+	} else if ((i = Sys_CheckParm("-home"))/**/) {
 
 	} else {
 		*fs_userdir = 0; // user wants roaming installation, no userdir
@@ -2208,9 +2208,9 @@ void FS_Shutdown (void)
 	PK3_CloseLibrary ();
 
 #ifdef WIN32
-	Sys_UnloadLibrary (&shfolder_dll);
-	Sys_UnloadLibrary (&shell32_dll);
-	Sys_UnloadLibrary (&ole32_dll);
+	Sys_FreeLibrary (&shfolder_dll);
+	Sys_FreeLibrary (&shell32_dll);
+	Sys_FreeLibrary (&ole32_dll);
 #endif
 
 	if (fs_mutex)
@@ -2264,7 +2264,7 @@ static filedesc_t FS_SysOpenFiledesc(const char *filepath, const char *mode, qbo
 	if (nonblocking)
 		opt |= O_NONBLOCK;
 
-	if(COM_CheckParm("-readonly") && mod != O_RDONLY)
+	if(Sys_CheckParm("-readonly") && mod != O_RDONLY)
 		return FILEDESC_INVALID;
 
 #if USE_RWOPS
@@ -2608,7 +2608,7 @@ static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int
 					goto failout;
 				}
 
-				if (hit_limiter == false && host_path_protection.value && String_Does_Match_Caseless (search->filename, ploadinfo_in->searchpathx)) {
+				if (hit_limiter == false && 0 /*host_path_protection.value*/ && String_Does_Match_Caseless (search->filename, ploadinfo_in->searchpathx)) {
 					if (developer_loading.value) {
 						Con_PrintLinef ("Found limit at %s limit is %s", search->filename, ploadinfo_in->searchpathx);
 					}
@@ -2641,7 +2641,6 @@ static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int
 				return search;
 			}
 		}
-
 	}
 
 failout:
@@ -2808,6 +2807,7 @@ qfile_t *FS_OpenRealFile2 (const char *filepath, const char *mode, qbool quiet)
 		FS_CreatePath (real_path);
 	return FS_SysOpen (real_path, mode, false);
 }
+
 
 /*
 ====================

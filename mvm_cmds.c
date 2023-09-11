@@ -1,4 +1,4 @@
-#include "quakedef.h"
+#include "darkplaces.h"
 
 #include "prvm_cmds.h"
 #include "clvm_cmds.h"
@@ -171,7 +171,7 @@ vector	getresolution(float number)
 static void VM_M_getresolution(prvm_prog_t *prog)
 {
 	int nr, fs;
-	VM_SAFEPARMCOUNTRANGE(1, 2, VM_getresolution);
+	VM_SAFEPARMCOUNTRANGE(1, 2, VM_M_getresolution);
 
 	nr = (int)PRVM_G_FLOAT(OFS_PARM0);
 
@@ -521,7 +521,7 @@ static void VM_M_getserverlistnumber(prvm_prog_t *prog)
 	const serverlist_entry_t *cache;
 	int hostnr;
 
-	VM_SAFEPARMCOUNT(2, VM_M_getserverliststring);
+	VM_SAFEPARMCOUNT(2, VM_M_getserverlistnumber);
 
 	PRVM_G_INT(OFS_RETURN) = OFS_NULL;
 
@@ -868,7 +868,7 @@ static void VM_M_crypto_getmykeyfp(prvm_prog_t *prog)
 	int i;
 	char keyfp[FP64_SIZE + 1];
 
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykey);
+	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykeyfp);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, keyfp, sizeof(keyfp), NULL, 0, NULL))
@@ -890,7 +890,7 @@ static void VM_M_crypto_getmyidfp(prvm_prog_t *prog)
 	int i;
 	char idfp[FP64_SIZE + 1];
 
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykey);
+	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmyidfp);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, NULL, 0, idfp, sizeof(idfp), NULL))
@@ -912,7 +912,7 @@ static void VM_M_crypto_getmyidstatus(prvm_prog_t *prog)
 	int i;
 	qbool issigned;
 
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykey);
+	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmyidstatus);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, NULL, 0, NULL, 0, &issigned))
@@ -930,6 +930,122 @@ static void VM_M_crypto_getmyidstatus(prvm_prog_t *prog)
 	}
 }
 
+// CL_Video interface functions
+
+/*
+========================
+VM_cin_open
+
+float cin_open(string file, string name)
+========================
+*/
+void VM_cin_open(prvm_prog_t *prog)
+{
+	const char *file;
+	const char *name;
+
+	VM_SAFEPARMCOUNT( 2, VM_cin_open );
+
+	file = PRVM_G_STRING( OFS_PARM0 );
+	name = PRVM_G_STRING( OFS_PARM1 );
+
+	VM_CheckEmptyString(prog,  file );
+    VM_CheckEmptyString(prog,  name );
+
+	if( CL_OpenVideo( file, name, MENUOWNER, "" ) )
+		PRVM_G_FLOAT( OFS_RETURN ) = 1;
+	else
+		PRVM_G_FLOAT( OFS_RETURN ) = 0;
+}
+
+/*
+========================
+VM_cin_close
+
+void cin_close(string name)
+========================
+*/
+void VM_cin_close(prvm_prog_t *prog)
+{
+	const char *name;
+
+	VM_SAFEPARMCOUNT( 1, VM_cin_close );
+
+	name = PRVM_G_STRING( OFS_PARM0 );
+	VM_CheckEmptyString(prog,  name );
+
+	CL_CloseVideo( CL_GetVideoByName( name ) );
+}
+
+/*
+========================
+VM_cin_setstate
+void cin_setstate(string name, float type)
+========================
+*/
+void VM_cin_setstate(prvm_prog_t *prog)
+{
+	const char *name;
+	clvideostate_t 	state;
+	clvideo_t		*video;
+
+	VM_SAFEPARMCOUNT( 2, VM_cin_setstate );
+
+	name = PRVM_G_STRING( OFS_PARM0 );
+	VM_CheckEmptyString(prog,  name );
+
+	state = (clvideostate_t)((int)PRVM_G_FLOAT( OFS_PARM1 ));
+
+	video = CL_GetVideoByName( name );
+	if( video && state > CLVIDEO_UNUSED && state < CLVIDEO_STATECOUNT )
+		CL_SetVideoState( video, state );
+}
+
+/*
+========================
+VM_cin_getstate
+
+float cin_getstate(string name)
+========================
+*/
+void VM_cin_getstate(prvm_prog_t *prog)
+{
+	const char *name;
+	clvideo_t		*video;
+
+	VM_SAFEPARMCOUNT( 1, VM_cin_getstate );
+
+	name = PRVM_G_STRING( OFS_PARM0 );
+	VM_CheckEmptyString(prog,  name );
+
+	video = CL_GetVideoByName( name );
+	if( video )
+		PRVM_G_FLOAT( OFS_RETURN ) = (int)video->state;
+	else
+		PRVM_G_FLOAT( OFS_RETURN ) = 0;
+}
+
+/*
+========================
+VM_cin_restart
+
+void cin_restart(string name)
+========================
+*/
+void VM_cin_restart(prvm_prog_t *prog)
+{
+	const char *name;
+	clvideo_t		*video;
+
+	VM_SAFEPARMCOUNT( 1, VM_cin_restart );
+
+	name = PRVM_G_STRING( OFS_PARM0 );
+	VM_CheckEmptyString(prog,  name );
+
+	video = CL_GetVideoByName( name );
+	if( video )
+		CL_RestartVideo( video );
+}
 prvm_builtin_t vm_m_builtins[] = {
 NULL,									//   #0 NULL function (not callable)
 VM_checkextension,				//   #1
@@ -1624,6 +1740,7 @@ void MVM_init_cmd(prvm_prog_t *prog)
 	scene->maxentities = MAX_EDICTS + 256 + 512;
 	scene->entities = (entity_render_t **)Mem_Alloc(prog->progs_mempool, sizeof(entity_render_t *) * scene->maxentities);
 
+	// LadyHavoc: what is this for?
 	scene->ambient = 32.0f;
 }
 

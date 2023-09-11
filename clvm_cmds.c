@@ -92,7 +92,7 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 {
 	prvm_edict_t	*e;
 	const char		*m;
-	dp_model_t *mod;
+	model_t *mod;
 	int				i;
 
 	VM_SAFEPARMCOUNT(2, VM_CL_setmodel);
@@ -420,7 +420,7 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 {
 	const char	*name;
 	int			i;
-	dp_model_t		*m;
+	model_t		*m;
 
 	VM_SAFEPARMCOUNT(1, VM_CL_precache_model);
 
@@ -436,7 +436,7 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 	if (m && m->loaded) {
 		for (i = 0;i < MAX_MODELS;i++) {
 			if (!cl.csqc_model_precache[i]) {
-				cl.csqc_model_precache[i] = (dp_model_t*)m;
+				cl.csqc_model_precache[i] = (model_t*)m;
 				PRVM_G_FLOAT(OFS_RETURN) = -(i+1);
 				return;
 			}
@@ -1296,7 +1296,7 @@ static void VM_CL_setmodelindex (prvm_prog_t *prog)
 //#334 string(float mdlindex) modelnameforindex (EXT_CSQC)
 static void VM_CL_modelnameforindex (prvm_prog_t *prog)
 {
-	dp_model_t *model;
+	model_t *model;
 
 	VM_SAFEPARMCOUNT(1, VM_CL_modelnameforindex);
 
@@ -2317,7 +2317,7 @@ static void VM_CL_setattachment (prvm_prog_t *prog)
 	const char *tagname;
 	int modelindex;
 	int tagindex;
-	dp_model_t *model;
+	model_t *model;
 	VM_SAFEPARMCOUNT(3, VM_CL_setattachment);
 
 	e = PRVM_G_EDICT(OFS_PARM0);
@@ -2361,7 +2361,7 @@ static void VM_CL_setattachment (prvm_prog_t *prog)
 
 static int CL_GetTagIndex (prvm_prog_t *prog, prvm_edict_t *e, const char *tagname)
 {
-	dp_model_t *model = CL_GetModelFromEdict(e);
+	model_t *model = CL_GetModelFromEdict(e);
 	if (model)
 		return Mod_Alias_GetTagIndexForName(model, (int)PRVM_clientedictfloat(e, skin), tagname);
 	else
@@ -2371,7 +2371,7 @@ static int CL_GetTagIndex (prvm_prog_t *prog, prvm_edict_t *e, const char *tagna
 static int CL_GetExtendedTagInfo (prvm_prog_t *prog, prvm_edict_t *e, int tagindex, int *parentindex, const char **tagname, matrix4x4_t *tag_localmatrix)
 {
 	int r;
-	dp_model_t *model;
+	model_t *model;
 
 	*tagname = NULL;
 	*parentindex = 0;
@@ -2394,7 +2394,7 @@ static int CL_GetExtendedTagInfo (prvm_prog_t *prog, prvm_edict_t *e, int tagind
 
 int CL_GetPitchSign(prvm_prog_t *prog, prvm_edict_t *ent)
 {
-	dp_model_t *model;
+	model_t *model;
 	if ((model = CL_GetModelFromEdict(ent)) && model->type == mod_alias)
 		return -1;
 	return 1;
@@ -2432,7 +2432,7 @@ void CL_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out,
 
 static int CL_GetEntityLocalTagMatrix(prvm_prog_t *prog, prvm_edict_t *ent, int tagindex, matrix4x4_t *out)
 {
-	dp_model_t *model;
+	model_t *model;
 	if (tagindex >= 0
 	 && (model = CL_GetModelFromEdict(ent))
 	 && model->animscenes)
@@ -2461,7 +2461,7 @@ int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int
 	int ret;
 	int attachloop;
 	matrix4x4_t entitymatrix, tagmatrix, attachmatrix;
-	dp_model_t *model;
+	model_t *model;
 
 	*out = identitymatrix; // warnings and errors return identical matrix
 
@@ -2579,7 +2579,7 @@ static void VM_CL_gettaginfo (prvm_prog_t *prog)
 	const char *tagname;
 	int returncode;
 	vec3_t forward, left, up, origin;
-	const dp_model_t *model;
+	const model_t *model;
 
 	VM_SAFEPARMCOUNT(2, VM_CL_gettaginfo);
 
@@ -3936,7 +3936,7 @@ static void VM_CL_checkpvs (prvm_prog_t *prog)
 static void VM_CL_skel_create(prvm_prog_t *prog)
 {
 	int modelindex = (int)PRVM_G_FLOAT(OFS_PARM0);
-	dp_model_t *model = CL_GetModelByIndex(modelindex);
+	model_t *model = CL_GetModelByIndex(modelindex);
 	skeleton_t *skeleton;
 	int i;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
@@ -3966,7 +3966,7 @@ static void VM_CL_skel_build(prvm_prog_t *prog)
 	float retainfrac = PRVM_G_FLOAT(OFS_PARM3);
 	int firstbone = PRVM_G_FLOAT(OFS_PARM4) - 1;
 	int lastbone = PRVM_G_FLOAT(OFS_PARM5) - 1;
-	dp_model_t *model = CL_GetModelByIndex(modelindex);
+	model_t *model = CL_GetModelByIndex(modelindex);
 	int numblends;
 	int bonenum;
 	int blendindex;
@@ -4209,7 +4209,7 @@ static void VM_CL_skel_delete(prvm_prog_t *prog)
 static void VM_CL_frameforname(prvm_prog_t *prog)
 {
 	int modelindex = (int)PRVM_G_FLOAT(OFS_PARM0);
-	dp_model_t *model = CL_GetModelByIndex(modelindex);
+	model_t *model = CL_GetModelByIndex(modelindex);
 	const char *name = PRVM_G_STRING(OFS_PARM1);
 	int i;
 	PRVM_G_FLOAT(OFS_RETURN) = -1;
@@ -4229,7 +4229,7 @@ static void VM_CL_frameforname(prvm_prog_t *prog)
 static void VM_CL_frameduration(prvm_prog_t *prog)
 {
 	int modelindex = (int)PRVM_G_FLOAT(OFS_PARM0);
-	dp_model_t *model = CL_GetModelByIndex(modelindex);
+	model_t *model = CL_GetModelByIndex(modelindex);
 	int framenum = (int)PRVM_G_FLOAT(OFS_PARM1);
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 	if (!model || !model->animscenes || framenum < 0 || framenum >= model->numframes)

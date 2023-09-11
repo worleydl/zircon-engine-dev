@@ -1,12 +1,12 @@
 // Baker: sky
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "image.h"
 
 // FIXME: fix skybox after vid_restart
-cvar_t r_sky = {CVAR_SAVE, "r_sky", "1", "enables sky rendering (black otherwise)"};
-cvar_t r_skyscroll1 = {CVAR_SAVE, "r_skyscroll1", "1", "speed at which upper clouds layer scrolls in quake sky"};
-cvar_t r_skyscroll2 = {CVAR_SAVE, "r_skyscroll2", "2", "speed at which lower clouds layer scrolls in quake sky"};
+cvar_t r_sky = {CF_CLIENT | CF_ARCHIVE, "r_sky", "1", "enables sky rendering (black otherwise)"};
+cvar_t r_skyscroll1 = {CF_CLIENT | CF_ARCHIVE, "r_skyscroll1", "1", "speed at which upper clouds layer scrolls in quake sky"};
+cvar_t r_skyscroll2 = {CF_CLIENT | CF_ARCHIVE, "r_skyscroll2", "2", "speed at which lower clouds layer scrolls in quake sky"};
 int skyrenderlater;
 int skyrendermasked;
 

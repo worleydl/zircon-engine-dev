@@ -991,6 +991,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cl_video_libavw.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\client.h"
 				>
 			</File>
@@ -1036,6 +1040,10 @@
 			</File>
 			<File
 				RelativePath=".\cvar.h"
+				>
+			</File>
+			<File
+				RelativePath=".\darkplaces.h"
 				>
 			</File>
 			<File
@@ -1320,6 +1328,10 @@
 			</File>
 			<File
 				RelativePath=".\utf8lib.h"
+				>
+			</File>
+			<File
+				RelativePath=".\vc_stdint.h"
 				>
 			</File>
 			<File

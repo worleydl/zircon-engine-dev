@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "thread.h"
 #include "lhnet.h"
 
@@ -1558,7 +1558,7 @@ static void NetConn_ConnectionEstablished(lhnetsocket_t *mysocket, lhnetaddress_
 	// reset move sequence numbering on this new connection
 	cls.servermovesequence = 0;
 	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-		Cmd_ForwardStringToServer("new");
+		CL_ForwardToServer("new");
 	if (cls.protocol == PROTOCOL_QUAKE)
 	{
 		// write a keepalive (clc_nop) as it seems to greatly improve the
@@ -3921,7 +3921,7 @@ void NetConn_Init(void)
 	Cvar_RegisterVariable(&gameversion_min);
 	Cvar_RegisterVariable(&gameversion_max);
 // COMMANDLINEOPTION: Server: -ip <ipaddress> sets the ip address of this machine for purposes of networking (default 0.0.0.0 also known as INADDR_ANY), use only if you have multiple network adapters and need to choose one specifically.
-	if ((i = COM_CheckParm("-ip")) && i + 1 < com_argc)
+	if ((i = Sys_CheckParm("-ip")) && i + 1 < com_argc)
 	{
 		if (LHNETADDRESS_FromString(&tempaddress, com_argv[i + 1], 0) == 1)
 		{
@@ -3932,7 +3932,7 @@ void NetConn_Init(void)
 			Con_Printf("-ip option used, but unable to parse the address \"%s\"\n", com_argv[i + 1]);
 	}
 // COMMANDLINEOPTION: Server: -port <portnumber> sets the port to use for a server (default 26000, the same port as QUAKE itself), useful if you host multiple servers on your machine
-	if (((i = COM_CheckParm("-port")) || (i = COM_CheckParm("-ipport")) || (i = COM_CheckParm("-udpport"))) && i + 1 < com_argc)
+	if (((i = Sys_CheckParm("-port")) || (i = Sys_CheckParm("-ipport")) || (i = Sys_CheckParm("-udpport"))) && i + 1 < com_argc)
 	{
 		i = atoi(com_argv[i + 1]);
 		if (i >= 0 && i < 65536)

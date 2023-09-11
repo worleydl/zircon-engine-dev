@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include <SDL.h>
 #endif // _MSC_VER
 
-#include "quakedef.h"
+#include "darkplaces.h"
 
 #include "snd_main.h"
 
@@ -124,10 +124,10 @@ qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 	wantspec.samples = CeilPowerOf2(buffersize);  // needs to be a power of 2 on some platforms.
 
 	Con_Printf("Wanted audio Specification:\n"
-				"\tChannels  : %i\n"
-				"\tFormat    : 0x%X\n"
-				"\tFrequency : %i\n"
-				"\tSamples   : %i\n",
+				"    Channels  : %i\n"
+				"    Format    : 0x%X\n"
+				"    Frequency : %i\n"
+				"    Samples   : %i\n",
 				wantspec.channels, wantspec.format, wantspec.freq, wantspec.samples);
 
 	if( SDL_OpenAudio( &wantspec, &obtainspec ) )
@@ -137,10 +137,10 @@ qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 	}
 
 	Con_Printf("Obtained audio specification:\n"
-				"\tChannels  : %i\n"
-				"\tFormat    : 0x%X\n"
-				"\tFrequency : %i\n"
-				"\tSamples   : %i\n",
+				"    Channels  : %i\n"
+				"    Format    : 0x%X\n"
+				"    Frequency : %i\n"
+				"    Samples   : %i\n",
 				obtainspec.channels, obtainspec.format, obtainspec.freq, obtainspec.samples);
 
 	// If we haven't obtained what we wanted

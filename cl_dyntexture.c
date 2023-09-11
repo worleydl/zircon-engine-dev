@@ -1,6 +1,6 @@
 // Andreas Kirsch 07
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "cl_dyntexture.h"
 
 typedef struct dyntexture_s {

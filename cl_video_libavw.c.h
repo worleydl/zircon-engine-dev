@@ -357,11 +357,11 @@ static qbool LibAvW_OpenLibrary(void)
 	int errorcode;
 
 	// COMMANDLINEOPTION: Video: -nolibavw disables libavcodec wrapper support
-	if (COM_CheckParm("-nolibavw"))
+	if (Sys_CheckParm("-nolibavw"))
 		return false;
 
 	// load DLL's
-	Sys_LoadLibrary(dllnames_libavw, &libavw_dll, libavwfuncs);
+	Sys_LoadDependency(dllnames_libavw, &libavw_dll, libavwfuncs);
 	if (!libavw_dll)
 		return false;
 
@@ -369,7 +369,7 @@ static qbool LibAvW_OpenLibrary(void)
 	if ((errorcode = qLibAvW_Init(&libavw_message)))
 	{
 		Con_Printf("LibAvW failed to initialize: %s\n", qLibAvW_ErrorString(errorcode));
-		Sys_UnloadLibrary(&libavw_dll);
+		Sys_FreeLibrary(&libavw_dll);
 	}
 
 	Cvar_RegisterVariable(&cl_video_libavw_minwidth);
@@ -381,6 +381,6 @@ static qbool LibAvW_OpenLibrary(void)
 
 static void LibAvW_CloseLibrary(void)
 {
-	Sys_UnloadLibrary(&libavw_dll);
+	Sys_FreeLibrary(&libavw_dll);
 }
 

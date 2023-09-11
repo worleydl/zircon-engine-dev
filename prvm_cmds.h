@@ -191,7 +191,7 @@ float	getserverlistindexforkey(string key)
 		addwantedserverlistkey(string key)
 */
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "progdefs.h"
 #include "progsvm.h"
 #include "clprogdefs.h"

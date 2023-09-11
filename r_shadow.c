@@ -134,7 +134,7 @@ CubeMap, 2D+1D Attenuation Texturing, and Light Projection Filtering, as
 demonstrated by the game Doom3.
 */
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "r_shadow.h"
 #include "cl_collision.h"
 #include "portals.h"
@@ -474,9 +474,6 @@ static void R_Shadow_SetShadowMode(void)
 				r_shadow_shadowmapsampler = false;
 			r_shadow_shadowmode = R_SHADOW_SHADOWMODE_SHADOWMAP2D;
 			break;
-		case RENDERPATH_GL11:
-		case RENDERPATH_GL13:
-		case RENDERPATH_GLES1:
 		case RENDERPATH_GLES2:
 			break;
 		}
@@ -591,10 +588,6 @@ static void r_shadow_start(void)
 		r_shadow_bouncegrid_state.capable = vid.support.ext_texture_3d;
 		break;
 		// these renderpaths do not currently have the code to display the bouncegrid, so disable it on them...
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
-	case RENDERPATH_GLES1:
-		break;
 	} // switch
 }
 
@@ -1992,18 +1985,6 @@ void R_Shadow_RenderMode_Begin(void)
 	case RENDERPATH_GLES2:
 		r_shadow_lightingrendermode = R_SHADOW_RENDERMODE_LIGHT_GLSL;
 		break;
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
-	case RENDERPATH_GLES1:
-		if (r_textureunits.integer >= 2 && vid.texunits >= 2 && r_shadow_texture3d.integer && r_shadow_attenuation3dtexture)
-			r_shadow_lightingrendermode = R_SHADOW_RENDERMODE_LIGHT_VERTEX3DATTEN;
-		else if (r_textureunits.integer >= 3 && vid.texunits >= 3)
-			r_shadow_lightingrendermode = R_SHADOW_RENDERMODE_LIGHT_VERTEX2D1DATTEN;
-		else if (r_textureunits.integer >= 2 && vid.texunits >= 2)
-			r_shadow_lightingrendermode = R_SHADOW_RENDERMODE_LIGHT_VERTEX2DATTEN;
-		else
-			r_shadow_lightingrendermode = R_SHADOW_RENDERMODE_LIGHT_VERTEX;
-		break;
 	}
 
 	CHECKGLERROR
@@ -2181,10 +2162,7 @@ init_done:
 		GL_ColorMask(0,0,0,0);
 	switch(vid.renderpath)
 	{
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
 	case RENDERPATH_GL20:
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		GL_CullFace(r_refdef.view.cullface_back);
 		// OpenGL lets us scissor larger than the viewport, so go ahead and clear all views at once
@@ -3846,7 +3824,7 @@ void R_RTLight_Compile(rtlight_t *rtlight)
 	int numsurfaces, numleafs, numleafpvsbytes, numshadowtrispvsbytes, numlighttrispvsbytes;
 	int lighttris, shadowtris, shadowzpasstris, shadowzfailtris;
 	entity_render_t *ent = r_refdef.scene.worldentity;
-	dp_model_t *model = r_refdef.scene.worldmodel;
+	model_t *model = r_refdef.scene.worldmodel;
 	unsigned char *data;
 	shadowmesh_t *mesh;
 
@@ -4314,7 +4292,7 @@ static void R_Shadow_DrawWorldLight(int numsurfaces, int *surfacelist, const uns
 
 static void R_Shadow_DrawEntityLight(entity_render_t *ent)
 {
-	dp_model_t *model = ent->model;
+	model_t *model = ent->model;
 	if (!model->DrawLight)
 		return;
 
@@ -4470,7 +4448,7 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 	// add dynamic entities that are lit by the light
 	for (i = 0;i < r_refdef.scene.numentities;i++)
 	{
-		dp_model_t *model;
+		model_t *model;
 		entity_render_t *ent = r_refdef.scene.entities[i];
 		vec3_t org;
 		if (!BoxesOverlap(ent->mins, ent->maxs, rtlight->cached_cullmins, rtlight->cached_cullmaxs))
@@ -4990,9 +4968,6 @@ void R_Shadow_PrepareLights(int fbo, rtexture_t *depthtexture, rtexture_t *color
 		}
 #endif
 		break;
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		r_shadow_usingdeferredprepass = false;
 		break;
@@ -5474,10 +5449,7 @@ static void R_BeginCoronaQuery(rtlight_t *rtlight, float scale, qbool usequery)
 
 		switch(vid.renderpath)
 		{
-		case RENDERPATH_GL11:
-		case RENDERPATH_GL13:
 		case RENDERPATH_GL20:
-		case RENDERPATH_GLES1:
 		case RENDERPATH_GLES2:
 #if defined(GL_SAMPLES_PASSED_ARB) && !defined(USE_GLES2)
 			CHECKGLERROR
@@ -5516,7 +5488,6 @@ static void R_DrawCorona(rtlight_t *rtlight, float cscale, float scale)
 		switch(vid.renderpath)
 		{
 		case RENDERPATH_GL20:
-		case RENDERPATH_GLES1:
 		case RENDERPATH_GLES2:
 #if defined(GL_SAMPLES_PASSED_ARB) && !defined(USE_GLES2)
 			// See if we can use the GPU-side method to prevent implicit sync
@@ -5541,8 +5512,7 @@ static void R_DrawCorona(rtlight_t *rtlight, float cscale, float scale)
 #else
 			return;
 #endif
-		case RENDERPATH_GL11:
-		case RENDERPATH_GL13:
+		case 99999: // fallthrough scares me SEPUS
 #if defined(GL_SAMPLES_PASSED_ARB) && !defined(USE_GLES2)
 			CHECKGLERROR
 			qglGetQueryObjectivARB(rtlight->corona_queryindex_visiblepixels, GL_QUERY_RESULT_ARB, &visiblepixels);
@@ -5607,10 +5577,7 @@ void R_Shadow_DrawCoronas(void)
 	r_numqueries = 0;
 	switch (vid.renderpath)
 	{
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
 	case RENDERPATH_GL20:
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		usequery = vid.support.arb_occlusion_query && r_coronas_occlusionquery.integer;
 #if defined(GL_SAMPLES_PASSED_ARB) && !defined(USE_GLES2)

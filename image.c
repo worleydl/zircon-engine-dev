@@ -1,5 +1,5 @@
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "image.h"
 #include "jpeg.h"
 #include "image_png.h"
@@ -536,11 +536,6 @@ unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel
 		return NULL;
 	}
 
-	//if (alphabits == 0 && targa_header.pixel_size == 32) {
-	//	alphabits = 8;
-	//	Con_DPrintLinef ("LoadTGA: Alphabits increased from 0 to 8"); // Baker 04232023
-	//}
-
 	image_buffer = (unsigned char *)Mem_Alloc(tempmempool, image_width * image_height * 4);
 	if (!image_buffer)
 	{
@@ -883,7 +878,7 @@ static unsigned char* LoadLMP_BGRA(const unsigned char *f, int filesize, int *mi
 }
 
 // gfx/conchars is a raw 128x128 image with 0 as transparent color rather than 255
-unsigned char *LoadConChars_BGRA(const unsigned char *f, int filesize, int *miplevel)
+static unsigned char *LoadConChars_BGRA(const unsigned char *f, int filesize, int *miplevel)
 {
 	unsigned char *image_buffer;
 	int i;

@@ -27,6 +27,20 @@ The cut-copy paste is not yet compatible with utf-8 enabled, which does not affe
 
 Baker
 
+// September 11 Release
+1. Flame model and nailgun no longer interpolated by default (r_nolerp_list from current DarkPlaces beta).
+   Supernailgun (progs/v_nail2.mdl) is *not* in the list.  I think it looks better interpolated in DarkPlaces, you can add to it to r_nolerp_list if you wish.  It saves.
+2. cvar_reset command to reset a particular cvar to default (if the cvar allows it).
+3. Removed Open GL 1.x pathways.   
+4. r_useportalculling defaults to 1, mirroring current DarkPlaces beta.
+5. Source code catches up some to changes in current DarkPlaces beta.
+6. Fix of potential .wav memory leak (from Wrath/current DarkPlaces beta).
+7. Elim of r_transparent_sortmindist 0 spamming (from current DarkPlaces beta).
+8. Allow QC to set CHANNELFLAG_FULLVOLUME for a sound (from current DarkPlaces beta).
+9. Loading plaque during vid restart (from Wrath/current DarkPlaces beta).
+10. Suppression of capturevideo in some builds (today's video capture applications are better/faster/easier).
+11. r_bloom_brighten, r_bloom_colorsubtract defaults to same as current DarkPlaces beta
+
 // September 6 Release
 1. Quake Remaster HUD / Q 64 (sbar_quake 2) fixed ammo icon with axe selected.
 2. SDL2 build: better mouse cursor behavior, shows clearly during demoplay.

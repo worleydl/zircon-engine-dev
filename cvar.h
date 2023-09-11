@@ -1,3 +1,6 @@
+#ifndef CVAR_H
+#define CVAR_H
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -53,14 +56,23 @@ Cvars are restricted from having the same names as commands to keep this
 interface from being ambiguous.
 */
 
-#ifndef CVAR_H
-#define CVAR_H
-
 // cvar flags
 
-#define CVAR_SAVE 1
-#define CVAR_NOTIFY 2
-#define CVAR_READONLY 4
+#define CF_CLIENT		0
+#define CF_MENU			0
+
+#define CF_SERVER		0
+#define CF_SHARED		0
+#define CF_READONLY		CVAR_READONLY
+#define CF_ARCHIVE		CVAR_SAVE
+#define CF_NOTIFY		CVAR_NOTIFY
+#define CF_PERSISTENT	CVAR_NORESETTODEFAULTS
+
+#define CVAR_SAVE		1
+#define CVAR_NOTIFY		2
+#define CVAR_READONLY	4
+
+
 #define CVAR_SERVERINFO 8
 #define CVAR_USERINFO 16
 // CVAR_PRIVATE means do not $ expand or sendcvar this cvar under any circumstances (rcon_password uses this)
@@ -237,8 +249,8 @@ extern cvar_t *cvar_vars; // used to list all cvars
 void Cvar_UpdateAllAutoCvars(void); // updates ALL autocvars of the active prog to the cvar values (savegame loading)
 
 #ifdef FILLALLCVARSWITHRUBBISH
-void Cvar_FillAll_f();
+	void Cvar_FillAll_f();
 #endif /* FILLALLCVARSWITHRUBBISH */
 
-#endif
+#endif // !CVAR_H
 

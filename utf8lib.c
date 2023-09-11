@@ -1,4 +1,4 @@
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "utf8lib.h"
 
 /*
@@ -7,7 +7,7 @@ Initialization of UTF-8 support and new cvars.
 ================================================================================
 */
 // for compatibility this defaults to 0
-cvar_t    utf8_enable = {CVAR_SAVE, "utf8_enable", "0", "Enable UTF-8 support. For compatibility, this is disabled by default in most games."};
+cvar_t    utf8_enable = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "utf8_enable", "0", "Enable UTF-8 support. For compatibility, this is disabled by default in most games."};
 
 void   u8_Init(void)
 {
@@ -231,20 +231,11 @@ static int colorcode_skipwidth(const unsigned char *s)
 	if(*s == STRING_COLOR_TAG)
 	{
 		if(s[1] <= '9' && s[1] >= '0') // ^[0-9] found
-		{
 			return 2;
-		}
-		else if(s[1] == STRING_COLOR_RGB_TAG_CHAR &&
-			((s[2] >= '0' && s[2] <= '9') || (s[2] >= 'a' && s[2] <= 'f') || (s[2] >= 'A' && s[2] <= 'F')) &&
-			((s[3] >= '0' && s[3] <= '9') || (s[3] >= 'a' && s[3] <= 'f') || (s[3] >= 'A' && s[3] <= 'F')) &&
-			((s[4] >= '0' && s[4] <= '9') || (s[4] >= 'a' && s[4] <= 'f') || (s[4] >= 'A' && s[4] <= 'F')))
-		{
+		else if(s[1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(s[2]) && isxdigit(s[3]) && isxdigit(s[4]))
 			return 5;
-		}
 		else if(s[1] == STRING_COLOR_TAG)
-		{
 			return 1; // special case, do NOT call colorcode_skipwidth for next char
-		}
 	}
 	return 0;
 }
@@ -769,8 +760,8 @@ UTF-8 aware COM_StringLengthNoColors
 
 calculates the visible width of a color coded string.
 
-*valid is filled with TRUE if the string is a valid colored string (that is, if
-it does not end with an unfinished color code). If it gets filled with FALSE, a
+*valid is filled with true if the string is a valid colored string (that is, if
+it does not end with an unfinished color code). If it gets filled with false, a
 fix would be adding a STRING_COLOR_TAG at the end of the string.
 
 valid can be set to NULL if the caller doesn't care.
@@ -800,7 +791,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		{
 			case 0:
 				if(valid)
-					*valid = TRUE;
+					*valid = true;
 				return len;
 			case STRING_COLOR_TAG:
 				++s;
@@ -820,7 +811,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 					case 0: // ends with unfinished color code!
 						++len;
 						if(valid)
-							*valid = FALSE;
+							*valid = false;
 						return len;
 					case STRING_COLOR_TAG: // escaped ^
 						++len;
@@ -858,7 +849,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		{
 			// we CAN end up here, if an invalid char is between this one and the end of the string
 			if(valid)
-				*valid = TRUE;
+				*valid = true;
 			return len;
 		}
 
@@ -866,7 +857,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		{
 			// string length exceeded by new character
 			if(valid)
-				*valid = TRUE;
+				*valid = true;
 			return len;
 		}
 

@@ -1,3 +1,4 @@
+#if 0 // GLX
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -1782,3 +1783,4 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 	}
 	return 0; // FIXME implement this
 }
+#endif

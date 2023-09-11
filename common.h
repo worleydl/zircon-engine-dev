@@ -210,7 +210,7 @@ extern int com_argc;
 extern const char **com_argv;
 extern int com_selffd;
 
-int COM_CheckParm (const char *parm);
+int Sys_CheckParm (const char *parm);
 void COM_Init (void);
 void COM_Shutdown (void);
 void COM_InitGameType (void);

@@ -16,7 +16,7 @@ Key_Message (int key, int ascii)
 		if(chat_mode < 0)
 			Cmd_ExecuteString(chat_buffer, src_command, true); // not Cbuf_AddText to allow semiclons in args; however, this allows no variables then. Use aliases!
 		else
-			Cmd_ForwardStringToServer(va(vabuf, sizeof(vabuf), "%s %s", chat_mode ? "say_team" : "say ", chat_buffer));
+			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "%s %s", chat_mode ? "say_team" : "say ", chat_buffer));
 
 		key_dest = key_game;
 		chat_bufferlen = 0;
@@ -793,7 +793,7 @@ toggleco:
 			return;
 		}
 
-		if (COM_CheckParm ("-noconsole"))
+		if (Sys_CheckParm ("-noconsole"))
 			return; // only allow the key bind to turn off console
 
 		Key_Console (key, ascii);

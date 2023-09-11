@@ -1,5 +1,5 @@
 
-#include "quakedef.h"
+#include "darkplaces.h"
 
 #define MAXRENDERMODULES 20
 
@@ -82,6 +82,7 @@ void R_Modules_Restart(void)
 {
 	Host_StartVideo();
 	Con_Print("restarting renderer\n");
+	SCR_BeginLoadingPlaque(false); // SEPUS
 	R_Modules_Shutdown();
 	R_Modules_Start();
 }

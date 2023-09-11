@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <unistd.h>
 #endif
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "common.h" // Courtesy
 #include "utf8lib.h"
 
@@ -1409,13 +1409,13 @@ skipwhite:
 
 /*
 ================
-COM_CheckParm
+Sys_CheckParm
 
 Returns the position (1 to argc-1) in the program's argument list
 where the given parameter apears, or 0 if not present
 ================
 */
-int COM_CheckParm (const char *parm)
+int Sys_CheckParm (const char *parm)
 {
 	int i;
 
@@ -1524,7 +1524,7 @@ void COM_InitGameType (void)
 
 	// check commandline options for keywords
 	for (i = 0;i < (int)(sizeof (gamemode_info) / sizeof (gamemode_info[0]));i++)
-		if (COM_CheckParm (gamemode_info[i].cmdline))
+		if (Sys_CheckParm (gamemode_info[i].cmdline))
 			index = i;
 
 	if (iszircicon == false && index == GAME_QUAKE3_QUAKE1) {
@@ -1593,17 +1593,17 @@ static void COM_SetGameType(int index)
 
 	if (gamemode == com_startupgamemode)
 	{
-		if((t = COM_CheckParm("-customgamename")) && t + 1 < com_argc)
+		if((t = Sys_CheckParm("-customgamename")) && t + 1 < com_argc)
 			gamename = gamenetworkfiltername = com_argv[t+1];
-		if((t = COM_CheckParm("-customgamenetworkfiltername")) && t + 1 < com_argc)
+		if((t = Sys_CheckParm("-customgamenetworkfiltername")) && t + 1 < com_argc)
 			gamenetworkfiltername = com_argv[t+1];
-		if((t = COM_CheckParm("-customgamedirname1")) && t + 1 < com_argc)
+		if((t = Sys_CheckParm("-customgamedirname1")) && t + 1 < com_argc)
 			gamedirname1 = com_argv[t+1];
-		if((t = COM_CheckParm("-customgamedirname2")) && t + 1 < com_argc)
+		if((t = Sys_CheckParm("-customgamedirname2")) && t + 1 < com_argc)
 			gamedirname2 = *com_argv[t+1] ? com_argv[t+1] : NULL;
-		if((t = COM_CheckParm("-customgamescreenshotname")) && t + 1 < com_argc)
+		if((t = Sys_CheckParm("-customgamescreenshotname")) && t + 1 < com_argc)
 			gamescreenshotname = com_argv[t+1];
-		if((t = COM_CheckParm("-customgameuserdirname")) && t + 1 < com_argc)
+		if((t = Sys_CheckParm("-customgameuserdirname")) && t + 1 < com_argc)
 			gameuserdirname = com_argv[t+1];
 	}
 
@@ -2074,8 +2074,8 @@ COM_StringLengthNoColors
 
 calculates the visible width of a color coded string.
 
-*valid is filled with TRUE if the string is a valid colored string (that is, if
-it does not end with an unfinished color code). If it gets filled with FALSE, a
+*valid is filled with true if the string is a valid colored string (that is, if
+it does not end with an unfinished color code). If it gets filled with false, a
 fix would be adding a STRING_COLOR_TAG at the end of the string.
 
 valid can be set to NULL if the caller doesn't care.
@@ -2095,7 +2095,7 @@ COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid)
 		{
 			case 0:
 				if(valid)
-					*valid = TRUE;
+					*valid = true;
 				return len;
 			case STRING_COLOR_TAG:
 				++s;
@@ -2115,7 +2115,7 @@ COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid)
 					case 0: // ends with unfinished color code!
 						++len;
 						if(valid)
-							*valid = FALSE;
+							*valid = false;
 						return len;
 					case STRING_COLOR_TAG: // escaped ^
 						++len;
@@ -2149,7 +2149,7 @@ escape_carets is false, the function will just strip color codes (for logging
 for example).
 
 If the output buffer size did not suffice for converting, the function returns
-FALSE. Generally, if escape_carets is false, the output buffer needs
+false. Generally, if escape_carets is false, the output buffer needs
 strlen(str)+1 bytes, and if escape_carets is true, it can need strlen(str)*1.5+2
 bytes. In any case, the function makes sure that the resulting string is
 zero terminated.
@@ -2161,17 +2161,17 @@ all characters until the zero terminator.
 qbool
 COM_StringDecolorize(const char *in, size_t size_in, char *out, size_t size_out, qbool escape_carets)
 {
-#define APPEND(ch) do { if(--size_out) { *out++ = (ch); } else { *out++ = 0; return FALSE; } } while(0)
+#define APPEND(ch) do { if(--size_out) { *out++ = (ch); } else { *out++ = 0; return false; } } while(0)
 	const char *end = size_in ? (in + size_in) : NULL;
 	if(size_out < 1)
-		return FALSE;
+		return false;
 	for(;;)
 	{
 		switch((in == end) ? 0 : *in)
 		{
 			case 0:
 				*out++ = 0;
-				return TRUE;
+				return true;
 			case STRING_COLOR_TAG:
 				++in;
 				switch((in == end) ? 0 : *in)
@@ -2195,7 +2195,7 @@ COM_StringDecolorize(const char *in, size_t size_in, char *out, size_t size_out,
 						if(escape_carets)
 							APPEND(STRING_COLOR_TAG);
 						*out++ = 0;
-						return TRUE;
+						return true;
 					case STRING_COLOR_TAG: // escaped ^
 						APPEND(STRING_COLOR_TAG);
 						// append a ^ twice when escaping

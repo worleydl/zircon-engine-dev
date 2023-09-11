@@ -1,4 +1,4 @@
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "fs.h"
 #include "libcurl.h"
 #include "thread.h"
@@ -228,7 +228,7 @@ downloadinfo;
 static downloadinfo *downloads = NULL;
 static int numdownloads = 0;
 
-static qbool noclear = FALSE;
+static qbool noclear = false;
 
 static int numdownloads_fail = 0;
 static int numdownloads_success = 0;
@@ -377,7 +377,7 @@ static qbool CURL_OpenLibrary (void)
 		return true;
 
 	// Load the DLL
-	return Sys_LoadLibrary (dllnames, &curl_dll, curlfuncs);
+	return Sys_LoadDependency (dllnames, &curl_dll, curlfuncs);
 }
 
 
@@ -390,7 +390,7 @@ Unload the cURL DLL
 */
 static void CURL_CloseLibrary (void)
 {
-	Sys_UnloadLibrary (&curl_dll);
+	Sys_FreeLibrary (&curl_dll);
 }
 
 
@@ -1130,7 +1130,7 @@ void Curl_Run(void)
 	double maxspeed;
 	downloadinfo *di;
 
-	noclear = FALSE;
+	noclear = false;
 
 	if(!cl_curl_enabled.integer)
 		return;
@@ -1493,9 +1493,9 @@ static void Curl_Curl_f(void)
 					{
 						dpsnprintf(donecommand, sizeof(donecommand), "connect %s", cls.netcon->address);
 						Curl_CommandWhenDone(donecommand);
-						noclear = TRUE;
+						noclear = true;
 						CL_Disconnect();
-						noclear = FALSE;
+						noclear = false;
 						Curl_CheckCommandWhenDone();
 					}
 					else

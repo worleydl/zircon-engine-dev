@@ -48,7 +48,7 @@ int CDAudio_Startup(void);
 void CDAudio_Shutdown(void);
 void CDAudio_Update(void);
 float CDAudio_GetPosition(void);
-void CDAudio_StartPlaylist(qbool resume);
+//void CDAudio_StartPlaylist(qbool resume);
 
 // Prototypes of the system dependent functions
 void CDAudio_SysEject (void);

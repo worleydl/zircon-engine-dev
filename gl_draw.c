@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "image.h"
 #include "wad.h"
 
@@ -2016,8 +2016,6 @@ void DrawQ_LineLoop (drawqueuemesh_t *mesh, int flags)
 	GL_Color(1,1,1,1);
 	switch(vid.renderpath)
 	{
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
 	case RENDERPATH_GL20:
 #ifndef USE_GLES2
 		{
@@ -2035,7 +2033,6 @@ void DrawQ_LineLoop (drawqueuemesh_t *mesh, int flags)
 		}
 #endif
 		break;
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		//Con_DPrintf("FIXME GLES2 %s:%i %s\n", __FILE__, __LINE__, __FUNCTION__);
 		return;
@@ -2053,8 +2050,6 @@ void DrawQ_Line (float width, float x1, float y1, float x2, float y2, float r, f
 
 	switch(vid.renderpath)
 	{
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
 	case RENDERPATH_GL20:
 #ifndef USE_GLES2
 		CHECKGLERROR
@@ -2070,7 +2065,6 @@ void DrawQ_Line (float width, float x1, float y1, float x2, float y2, float r, f
 		CHECKGLERROR
 #endif
 		break;
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		//Con_DPrintf("FIXME GLES2 %s:%i %s\n", __FILE__, __LINE__, __FUNCTION__);
 		return;
@@ -2086,8 +2080,6 @@ void DrawQ_Lines (float width, int numlines, int flags, qbool hasalpha)
 
 	switch(vid.renderpath)
 	{
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
 	case RENDERPATH_GL20:
 		CHECKGLERROR
 
@@ -2099,7 +2091,6 @@ void DrawQ_Lines (float width, int numlines, int flags, qbool hasalpha)
 		qglDrawArrays(GL_LINES, 0, numlines*2);
 		CHECKGLERROR
 		break;
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		//Con_DPrintf("FIXME GLES2 %s:%i %s\n", __FILE__, __LINE__, __FUNCTION__);
 		return;
@@ -2119,10 +2110,7 @@ void DrawQ_SetClipArea(float x, float y, float width, float height)
 	ih = (int)(0.5 + (y+height) * ((float) vid.height / vid_conheight.integer)) - iy;
 	switch(vid.renderpath)
 	{
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
 	case RENDERPATH_GL20:
-	case RENDERPATH_GLES1:
 	case RENDERPATH_GLES2:
 		GL_Scissor(ix, vid.height - iy - ih, iw, ih);
 		break;
@@ -2159,13 +2147,6 @@ void R_DrawGamma(void)
 		if (vid_usinghwgamma || v_glslgamma.integer)
 			return;
 		break;
-	case RENDERPATH_GL11:
-	case RENDERPATH_GL13:
-		if (vid_usinghwgamma)
-			return;
-		break;
-	case RENDERPATH_GLES1:
-		return;
 	}
 	// all the blends ignore depth
 //	R_Mesh_ResetTextureState();

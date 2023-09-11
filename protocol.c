@@ -1,4 +1,4 @@
-#include "quakedef.h"
+#include "darkplaces.h"
 
 #define ENTITYSIZEPROFILING_START(msg, num, flags) \
 	int entityprofiling_startsize = msg->cursize
@@ -2099,7 +2099,7 @@ static double anim_reducetime(double t, double frameduration, double maxtime)
 }
 
 // see VM_SV_frameduration
-static double anim_frameduration(dp_model_t *model, int framenum)
+static double anim_frameduration(model_t *model, int framenum)
 {
 	if (!model || !model->animscenes || framenum < 0 || framenum >= model->numframes)
 		return 0;
@@ -2112,7 +2112,7 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 {
 	prvm_prog_t *prog = SVVM_prog;
 	unsigned int bits = 0;
-	//dp_model_t *model;
+	//model_t *model;
 
 	if (s->active != ACTIVE_NETWORK)
 	{
@@ -2285,7 +2285,7 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 				}
 				else
 				{
-					dp_model_t *model = SV_GetModelByIndex(s->modelindex);
+					model_t *model = SV_GetModelByIndex(s->modelindex);
 					if (s->framegroupblend[3].lerp > 0)
 					{
 						MSG_WriteByte(msg, 3);
@@ -2458,7 +2458,7 @@ static void EntityState5_ReadUpdate(entity_state_t *s, int number)
 	if (bits & E5_COMPLEXANIMATION)
 	{
 		skeleton_t *skeleton;
-		const dp_model_t *model;
+		const model_t *model;
 		int modelindex;
 		int type;
 		int bonenum;

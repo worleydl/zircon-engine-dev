@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // Z_zone.c
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "thread.h"
 
 #ifdef WIN32
@@ -93,11 +93,11 @@ static memclump_t *clumpchain = NULL;
 #endif
 
 
-cvar_t developer_memory = {0, "developer_memory", "0", "prints debugging information about memory allocations"};
-cvar_t developer_memorydebug = {0, "developer_memorydebug", "0", "enables memory corruption checks (very slow)"};
-cvar_t developer_memoryreportlargerthanmb = {0, "developer_memorylargerthanmb", "16", "prints debugging information about memory allocations over this size"};
-cvar_t sys_memsize_physical = {CVAR_READONLY, "sys_memsize_physical", "", "physical memory size in MB (or empty if unknown)"};
-cvar_t sys_memsize_virtual = {CVAR_READONLY, "sys_memsize_virtual", "", "virtual memory size in MB (or empty if unknown)"};
+cvar_t developer_memory = {CF_CLIENT | CF_SERVER, "developer_memory", "0", "prints debugging information about memory allocations"};
+cvar_t developer_memorydebug = {CF_CLIENT | CF_SERVER, "developer_memorydebug", "0", "enables memory corruption checks (very slow)"};
+cvar_t developer_memoryreportlargerthanmb = {CF_CLIENT | CF_SERVER, "developer_memorylargerthanmb", "16", "prints debugging information about memory allocations over this size"};
+cvar_t sys_memsize_physical = {CF_CLIENT | CF_SERVER | CF_READONLY, "sys_memsize_physical", "", "physical memory size in MB (or empty if unknown)"};
+cvar_t sys_memsize_virtual = {CF_CLIENT | CF_SERVER | CF_READONLY, "sys_memsize_virtual", "", "virtual memory size in MB (or empty if unknown)"};
 
 static mempool_t *poolchain = NULL;
 
@@ -149,6 +149,9 @@ static void mmap_free(void *mem)
 // (Windows growing its swapfile for example)
 static void *attempt_malloc(size_t size)
 {
+#ifndef WIN32
+	return malloc(size);
+#else
 	void *base;
 	// try for half a second or so
 	unsigned int attempts = 500;
@@ -160,6 +163,7 @@ static void *attempt_malloc(size_t size)
 		Sys_Sleep(1000);
 	}
 	return NULL;
+#endif
 }
 #endif
 

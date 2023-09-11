@@ -1,4 +1,4 @@
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "crypto.h"
 #include "common.h"
 #include "thread.h"
@@ -279,12 +279,12 @@ static qbool Crypto_OpenLibrary (void)
 		return true;
 
 	// Load the DLL
-	return Sys_LoadLibrary (dllnames, &d0_blind_id_dll, d0_blind_id_funcs);
+	return Sys_LoadDependency (dllnames, &d0_blind_id_dll, d0_blind_id_funcs);
 }
 
 static void Crypto_CloseLibrary (void)
 {
-	Sys_UnloadLibrary (&d0_blind_id_dll);
+	Sys_FreeLibrary (&d0_blind_id_dll);
 }
 
 #endif
@@ -348,12 +348,12 @@ static qbool Crypto_Rijndael_OpenLibrary (void)
 		return true;
 
 	// Load the DLL
-	return Sys_LoadLibrary (dllnames, &d0_rijndael_dll, d0_rijndael_funcs);
+	return Sys_LoadDependency (dllnames, &d0_rijndael_dll, d0_rijndael_funcs);
 }
 
 static void Crypto_Rijndael_CloseLibrary (void)
 {
-	Sys_UnloadLibrary (&d0_rijndael_dll);
+	Sys_FreeLibrary (&d0_rijndael_dll);
 }
 
 #endif

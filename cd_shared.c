@@ -22,70 +22,70 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Quake is a trademark of Id Software, Inc., (c) 1996 Id Software, Inc. All
 // rights reserved.
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "cdaudio.h"
 #include "sound.h"
 
 // used by menu to ghost CD audio slider
-cvar_t cdaudioinitialized = {CVAR_READONLY,"cdaudioinitialized","0","indicates if CD Audio system is active"};
-cvar_t cdaudio = {CVAR_SAVE,"cdaudio","1","CD playing mode (0 = never access CD drive, 1 = play CD tracks if no replacement available, 2 = play fake tracks if no CD track available, 3 = play only real CD tracks, 4 = play real CD tracks even instead of named fake tracks)"};
+cvar_t cdaudioinitialized = {CF_CLIENT | CF_READONLY, "cdaudioinitialized","0","indicates if CD Audio system is active"};
+cvar_t cdaudio = {CF_CLIENT | CF_ARCHIVE,"cdaudio","1","CD playing mode (0 = never access CD drive, 1 = play CD tracks if no replacement available, 2 = play fake tracks if no CD track available, 3 = play only real CD tracks, 4 = play real CD tracks even instead of named fake tracks)"};
 
 #define MAX_PLAYLISTS 10
 int music_playlist_active = -1;
 int music_playlist_playing = 0; // 0 = not playing, 1 = playing, -1 = tried and failed
 
-cvar_t music_playlist_index = {0, "music_playlist_index", "-1", "selects which of the music_playlist_ variables is the active one, -1 disables playlists"};
+cvar_t music_playlist_index = {CF_CLIENT, "music_playlist_index", "-1", "selects which of the music_playlist_ variables is the active one, -1 disables playlists"};
 cvar_t music_playlist_list[MAX_PLAYLISTS] =
 {
-	{0, "music_playlist_list0", "", "list of tracks to play"},
-	{0, "music_playlist_list1", "", "list of tracks to play"},
-	{0, "music_playlist_list2", "", "list of tracks to play"},
-	{0, "music_playlist_list3", "", "list of tracks to play"},
-	{0, "music_playlist_list4", "", "list of tracks to play"},
-	{0, "music_playlist_list5", "", "list of tracks to play"},
-	{0, "music_playlist_list6", "", "list of tracks to play"},
-	{0, "music_playlist_list7", "", "list of tracks to play"},
-	{0, "music_playlist_list8", "", "list of tracks to play"},
-	{0, "music_playlist_list9", "", "list of tracks to play"}
+	{CF_CLIENT, "music_playlist_list0", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list1", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list2", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list3", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list4", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list5", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list6", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list7", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list8", "", "list of tracks to play"},
+	{CF_CLIENT, "music_playlist_list9", "", "list of tracks to play"}
 };
 cvar_t music_playlist_current[MAX_PLAYLISTS] =
 {
-	{0, "music_playlist_current0", "0", "current track index to play in list"},
-	{0, "music_playlist_current1", "0", "current track index to play in list"},
-	{0, "music_playlist_current2", "0", "current track index to play in list"},
-	{0, "music_playlist_current3", "0", "current track index to play in list"},
-	{0, "music_playlist_current4", "0", "current track index to play in list"},
-	{0, "music_playlist_current5", "0", "current track index to play in list"},
-	{0, "music_playlist_current6", "0", "current track index to play in list"},
-	{0, "music_playlist_current7", "0", "current track index to play in list"},
-	{0, "music_playlist_current8", "0", "current track index to play in list"},
-	{0, "music_playlist_current9", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current0", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current1", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current2", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current3", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current4", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current5", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current6", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current7", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current8", "0", "current track index to play in list"},
+	{CF_CLIENT, "music_playlist_current9", "0", "current track index to play in list"},
 };
 cvar_t music_playlist_random[MAX_PLAYLISTS] =
 {
-	{0, "music_playlist_random0", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random1", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random2", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random3", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random4", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random5", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random6", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random7", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random8", "0", "enables random play order if 1, 0 is sequential play"},
-	{0, "music_playlist_random9", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random0", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random1", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random2", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random3", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random4", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random5", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random6", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random7", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random8", "0", "enables random play order if 1, 0 is sequential play"},
+	{CF_CLIENT, "music_playlist_random9", "0", "enables random play order if 1, 0 is sequential play"},
 };
 cvar_t music_playlist_sampleposition[MAX_PLAYLISTS] =
 {
-	{0, "music_playlist_sampleposition0", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition1", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition2", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition3", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition4", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition5", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition6", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition7", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition8", "-1", "resume position for track, -1 restarts every time"},
-	{0, "music_playlist_sampleposition9", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition0", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition1", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition2", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition3", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition4", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition5", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition6", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition7", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition8", "-1", "resume position for track, -1 restarts every time"},
+	{CF_CLIENT, "music_playlist_sampleposition9", "-1", "resume position for track, -1 restarts every time"},
 };
 
 static qbool wasPlaying = false;
@@ -606,7 +606,7 @@ static void CDAudio_StopPlaylistTrack(void)
 	music_playlist_playing = 0; // not playing
 }
 
-void CDAudio_StartPlaylist(qbool resume)
+static void CDAudio_StartPlaylist(qbool resume)
 {
 	const char *list;
 	const char *t;
@@ -714,7 +714,7 @@ int CDAudio_Init (void)
 		return -1;
 
 // COMMANDLINEOPTION: Sound: -nocdaudio disables CD audio support
-	if (COM_CheckParm("-nocdaudio")) // Baker 7005
+	if (Sys_CheckParm("-nocdaudio")) // Baker 7005
 		return -1;
 
 	CDAudio_SysInit();
@@ -745,7 +745,7 @@ int CDAudio_Init (void)
 
 int CDAudio_Startup (void)
 {
-	//if (COM_CheckParm("-nocdaudio")) // Baker 7005
+	//if (Sys_CheckParm("-nocdaudio")) // Baker 7005
 		return -1;
 
 	CDAudio_SysStartup ();

@@ -28,26 +28,20 @@
 #ifndef _MDFOUR_H
 #define _MDFOUR_H
 
-#ifndef int32
-#define int32 int
-#endif
+#ifdef _MSC_VER
+#include "vc_stdint.h"
+#else
+#include <stdint.h>
+#endif // _MSC_VER
 
-#if SIZEOF_INT > 4
-#define LARGE_INT32
-#endif
-
-#ifndef uint32
-#define uint32 unsigned int32
-#endif
-
-struct mdfour {
-	uint32 A, B, C, D;
-	uint32 totalN;
+struct mdfour_s {
+	uint32_t A, B, C, D;
+	uint32_t totalN;
 };
 
-void mdfour_begin(struct mdfour *md); // old: MD4Init
-void mdfour_update(struct mdfour *md, const unsigned char *in, int n); //old: MD4Update
-void mdfour_result(struct mdfour *md, unsigned char *out); // old: MD4Final
+void mdfour_begin(struct mdfour_s *md); // old: MD4Init
+void mdfour_update(struct mdfour_s *md, const unsigned char *in, int n); //old: MD4Update
+void mdfour_result(struct mdfour_s *md, unsigned char *out); // old: MD4Final
 void mdfour(unsigned char *out, const unsigned char *in, int n);
 
 #endif	// _MDFOUR_H

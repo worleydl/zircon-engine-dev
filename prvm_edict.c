@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // AK new vm
 
-#include "quakedef.h"
+#include "darkplaces.h"
 #include "progsvm.h"
 #include "csprogs.h"
 
@@ -29,28 +29,28 @@ int		prvm_type_size[8] = {1,sizeof(string_t)/4,1,3,1,1,sizeof(func_t)/4,sizeof(v
 
 prvm_eval_t prvm_badvalue; // used only for error returns
 
-cvar_t prvm_language = {CVAR_SAVE, "prvm_language", "", "when set, loads PROGSFILE.LANGUAGENAME.po and common.LANGUAGENAME.po for string translations; when set to dump, PROGSFILE.pot is written from the strings in the progs"};
-cvar_t prvm_sv_gamecommands = {0, "prvm_sv_gamecommands", "", "Space delimited list of GameCommands for SV.  Set via progs to provide engine information for console autocomplete of sv_cmd [Zircon]"};
-cvar_t prvm_sv_progfields = {0, "prvm_sv_progfields", "", "Space delimited list of SV prog fieldnames.  Set via progs to provide engine information for console autocomplete of sv_cmd [Zircon]"};
+cvar_t prvm_language = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "prvm_language", "", "when set, loads PROGSFILE.LANGUAGENAME.po and common.LANGUAGENAME.po for string translations; when set to dump, PROGSFILE.pot is written from the strings in the progs"};
+cvar_t prvm_sv_gamecommands = {CF_SERVER, "prvm_sv_gamecommands", "", "Space delimited list of GameCommands for SV.  Set via progs to provide engine information for console autocomplete of sv_cmd [Zircon]"};
+cvar_t prvm_sv_progfields = {CF_SERVER, "prvm_sv_progfields", "", "Space delimited list of SV prog fieldnames.  Set via progs to provide engine information for console autocomplete of sv_cmd [Zircon]"};
 
-cvar_t prvm_cl_gamecommands = {0, "prvm_cl_gamecommands", "", "Space delimited list of GameCommands for CL.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};
-cvar_t prvm_cl_progfields = {0, "prvm_cl_progfields", "", "Space delimited list of CL prog fieldnames.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};
+cvar_t prvm_cl_gamecommands = {CF_CLIENT, "prvm_cl_gamecommands", "", "Space delimited list of GameCommands for CL.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};
+cvar_t prvm_cl_progfields = {CF_CLIENT, "prvm_cl_progfields", "", "Space delimited list of CL prog fieldnames.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};
 
-cvar_t prvm_menu_gamecommands = {0, "prvm_menu_gamecommands", "", "Space delimited list of GameCommands for MENU.  Set via progs to provide engine information for console autocomplete of menu_cmd [Zircon]"};
+cvar_t prvm_menu_gamecommands = {CF_MENU, "prvm_menu_gamecommands", "", "Space delimited list of GameCommands for MENU.  Set via progs to provide engine information for console autocomplete of menu_cmd [Zircon]"};
 // LadyHavoc: prints every opcode as it executes - warning: this is significant spew
-cvar_t prvm_traceqc = {0, "prvm_traceqc", "0", "prints every QuakeC statement as it is executed (only for really thorough debugging!)"};
+cvar_t prvm_traceqc = {CF_CLIENT | CF_SERVER, "prvm_traceqc", "0", "prints every QuakeC statement as it is executed (only for really thorough debugging!)"};
 // LadyHavoc: counts usage of each QuakeC statement
-cvar_t prvm_statementprofiling = {0, "prvm_statementprofiling", "0", "counts how many times each QuakeC statement has been executed, these counts are displayed in prvm_printfunction output (if enabled)"};
-cvar_t prvm_timeprofiling = {0, "prvm_timeprofiling", "0", "counts how long each function has been executed, these counts are displayed in prvm_profile output (if enabled)"};
-cvar_t prvm_coverage = {0, "prvm_coverage", "0", "report and count coverage events (1: per-function, 2: coverage() builtin, 4: per-statement)"};
-cvar_t prvm_backtraceforwarnings = {0, "prvm_backtraceforwarnings", "0", "print a backtrace for warnings too"};
-cvar_t prvm_leaktest = {0, "prvm_leaktest", "0", "try to detect memory leaks in strings or entities"};
-cvar_t prvm_leaktest_follow_targetname = {0, "prvm_leaktest_follow_targetname", "0", "if set, target/targetname links are considered when leak testing; this should normally not be required, as entities created during startup - e.g. info_notnull - are never considered leaky"};
-cvar_t prvm_leaktest_ignore_classnames = {0, "prvm_leaktest_ignore_classnames", "", "classnames of entities to NOT leak check because they are found by find(world, classname, ...) but are actually spawned by QC code (NOT map entities)"};
-cvar_t prvm_errordump = {0, "prvm_errordump", "0", "write a savegame on crash to crash-server.dmp"};
-cvar_t prvm_breakpointdump = {0, "prvm_breakpointdump", "0", "write a savegame on breakpoint to breakpoint-server.dmp"};
-cvar_t prvm_reuseedicts_startuptime = {0, "prvm_reuseedicts_startuptime", "2", "allows immediate re-use of freed entity slots during start of new level (value in seconds)"};
-cvar_t prvm_reuseedicts_neverinsameframe = {0, "prvm_reuseedicts_neverinsameframe", "1", "never allows re-use of freed entity slots during same frame"};
+cvar_t prvm_statementprofiling = {CF_CLIENT | CF_SERVER, "prvm_statementprofiling", "0", "counts how many times each QuakeC statement has been executed, these counts are displayed in prvm_printfunction output (if enabled)"};
+cvar_t prvm_timeprofiling = {CF_CLIENT | CF_SERVER, "prvm_timeprofiling", "0", "counts how long each function has been executed, these counts are displayed in prvm_profile output (if enabled)"};
+cvar_t prvm_coverage = {CF_CLIENT | CF_SERVER, "prvm_coverage", "0", "report and count coverage events (1: per-function, 2: coverage() builtin, 4: per-statement)"};
+cvar_t prvm_backtraceforwarnings = {CF_CLIENT | CF_SERVER, "prvm_backtraceforwarnings", "0", "print a backtrace for warnings too"};
+cvar_t prvm_leaktest = {CF_CLIENT | CF_SERVER, "prvm_leaktest", "0", "try to detect memory leaks in strings or entities"};
+cvar_t prvm_leaktest_follow_targetname = {CF_CLIENT | CF_SERVER, "prvm_leaktest_follow_targetname", "0", "if set, target/targetname links are considered when leak testing; this should normally not be required, as entities created during startup - e.g. info_notnull - are never considered leaky"};
+cvar_t prvm_leaktest_ignore_classnames = {CF_CLIENT | CF_SERVER, "prvm_leaktest_ignore_classnames", "", "classnames of entities to NOT leak check because they are found by find(world, classname, ...) but are actually spawned by QC code (NOT map entities)"};
+cvar_t prvm_errordump = {CF_CLIENT | CF_SERVER, "prvm_errordump", "0", "write a savegame on crash to crash-server.dmp"};
+cvar_t prvm_breakpointdump = {CF_CLIENT | CF_SERVER, "prvm_breakpointdump", "0", "write a savegame on breakpoint to breakpoint-server.dmp"};
+cvar_t prvm_reuseedicts_startuptime = {CF_CLIENT | CF_SERVER, "prvm_reuseedicts_startuptime", "2", "allows immediate re-use of freed entity slots during start of new level (value in seconds)"};
+cvar_t prvm_reuseedicts_neverinsameframe = {CF_CLIENT | CF_SERVER, "prvm_reuseedicts_neverinsameframe", "1", "never allows re-use of freed entity slots during same frame"};
 
 static double prvm_reuseedicts_always_allow = 0;
 qbool prvm_runawaycheck = true;
@@ -2652,7 +2652,7 @@ fail:
 		;
 	}
 
-	prog->loaded = TRUE;
+	prog->loaded = true;
 
 	PRVM_UpdateBreakpoints(prog);
 
@@ -3149,7 +3149,7 @@ void PRVM_Init (void)
 	Cvar_RegisterVariable (&prvm_reuseedicts_neverinsameframe);
 
 	// COMMANDLINEOPTION: PRVM: -norunaway disables the runaway loop check (it might be impossible to exit DarkPlaces if used!)
-	prvm_runawaycheck = !COM_CheckParm("-norunaway");
+	prvm_runawaycheck = !Sys_CheckParm("-norunaway");
 
 	//VM_Cmd_Init();
 }
