@@ -209,6 +209,7 @@ int COM_ParseToken_Console(const char **datapointer);
 extern int com_argc;
 extern const char **com_argv;
 extern int com_selffd;
+extern int com_qexfd;
 
 int Sys_CheckParm (const char *parm);
 void COM_Init (void);
@@ -451,6 +452,8 @@ char *String_Skip_WhiteSpace_Including_Space (const char *s);
 char *String_Replace_Len_Count_Alloc (const char *s, const char *s_find, const char *s_replace, /*reply*/ int *created_length, replyx size_t *created_bufsize, replyx int *replace_count);
 char *String_Range_Find_Char (const char *s_start, const char *s_end, int ch_findchar);
 char *String_Edit_Whitespace_To_Space (char *s_edit);
+char *String_Edit_Trim (char *s_edit);
+char *String_Edit_Replace (char *s_edit, size_t s_size, const char *s_find, const char *s_replace); // no alloc
 char *String_Replace_Alloc (const char *s, const char *s_find, const char *s_replace);
 char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit);
 
@@ -460,6 +463,8 @@ int String_Does_Contain_Caseless (const char *s, const char *s_find);
 int String_Does_End_With_Caseless (const char *s, const char *s_suffix);
 int String_Does_Have_Uppercase (const char *s);
 char *String_Find_Skip_Past (const char *s, const char *s_find);
+
+void String_Command_String_To_Argv (char *cmdline, int *numargc, char **argvz, int maxargs);
 
 char *va2 (const char *format, ...) __core_attribute__((__format__(__printf__,1,2))) ;
 
@@ -523,6 +528,8 @@ int Time_Seconds (int seconds);
 
 void Math_Project (vec_t *src3d, vec_t *dest2d);
 void Math_Unproject (vec_t *src2d, vec_t *dest3d);
+
+
 
 #endif // COMMON_H
 

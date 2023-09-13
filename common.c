@@ -38,6 +38,7 @@ char com_token[MAX_INPUTLINE];
 int com_argc;
 const char **com_argv;
 int com_selffd = -1;
+int com_qexfd = -1;
 
 int iszirc;
 int iszircicon;
@@ -1569,6 +1570,9 @@ void COM_ChangeGameTypeForGameDirs(void)
 }
 
 WARP_X_CALLERS_ (FS_ChangeGameDirs FS_Rescan COM_ChangeGameTypeForGameDirs  )
+
+
+
 static void COM_SetGameType(int index)
 {
 	static char gamenetworkfilternamebuffer[64];

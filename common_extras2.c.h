@@ -1649,3 +1649,66 @@ int Time_Seconds (int seconds)
 	return seconds %60;
 }
 
+//#ifdef WIN32
+// Short: Command line to argv
+// Notes: None.
+// Unit Test:
+#define MAX_ASCII_PRINTABLE_126		126 // TILDE
+void String_Command_String_To_Argv (char *cmdline, int *numargc, char **argvz, int maxargs)
+{
+	// Baker: This converts a commandline in arguments and an argument count.
+	// Requires cmd_line, pointer to argc, argv[], maxargs
+	while (*cmdline && (*numargc < maxargs))
+	{
+#if 0
+		const char *start = cmdline;
+		int len;
+#endif
+		// Advance beyond spaces, white space, delete and non-ascii characters
+		// ASCII = chars 0-127, where chars > 127 = ANSI codepage 1252
+		while (*cmdline && (*cmdline <= SPACE_CHAR_32 || MAX_ASCII_PRINTABLE_126 <= *cmdline ) ) // Was 127, but 127 is DELETE
+			cmdline++;
+
+		switch (*cmdline)
+		{
+		case 0:  // null terminator
+			break;
+
+		case '\"': // quote
+
+			// advance past the quote
+			cmdline++;
+
+			argvz[*numargc] = cmdline;
+			(*numargc)++;
+
+			// continue until hit another quote or null terminator
+			while (*cmdline && *cmdline != '\"')
+				cmdline++;
+#if 0
+			len = cmdline - start;
+#endif
+			break;
+
+		default:
+			argvz[*numargc] = cmdline;
+			(*numargc)++;
+
+			// Advance until reach space, white space, delete or non-ascii
+			while (*cmdline && (SPACE_CHAR_32 < *cmdline && *cmdline <= MAX_ASCII_PRINTABLE_126  ) ) // Was < 127
+				cmdline++;
+#if 0
+			len = cmdline - start;
+#endif
+		} // End of switch
+
+		// If more advance the cursor past what should be whitespace
+		if (*cmdline)
+		{
+			*cmdline = 0;
+			cmdline++;
+		}
+
+	} // end of while (*cmd_line && (*numargc < maxargs)
+}
+

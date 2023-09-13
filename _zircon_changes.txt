@@ -27,6 +27,10 @@ The cut-copy paste is not yet compatible with utf-8 enabled, which does not affe
 
 Baker
 
+// September 12 Release
+1. Quake rerelease support (English only at this time).  Tested mostly on the Episode 1 levels both on Windows and Linux.  Needs more testing.  This implementation differs from
+   the Quakespasm rerelease implementation, this implementation performs localization on the client side only and communicates qEX progs state over network (stored in demos as well).
+
 // September 11 Release
 1. Flame model and nailgun no longer interpolated by default (r_nolerp_list from current DarkPlaces beta).
    Supernailgun (progs/v_nail2.mdl) is *not* in the list.  I think it looks better interpolated in DarkPlaces, you can add to it to r_nolerp_list if you wish.  It saves.

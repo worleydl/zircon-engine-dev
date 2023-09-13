@@ -3416,18 +3416,90 @@ static void CL_NetworkTimeReceived(double newtime)
 #define SHOWNET(x) if(cl_shownet.integer==2)Con_Printf("%3i:%s(%i)\n", cl_message.readcount-1, x, cmd);
 
 /*
+==================
+CL_ParseLocalSound - for 2021 rerelease
+==================
+*/
+void CL_ParseLocalSound(void) // AURA
+{
+	int field_mask, sound_num;
+
+	field_mask = MSG_ReadByte(&cl_message);
+
+	sound_num = (field_mask & SND_LARGESOUND) ? 
+		(unsigned short) MSG_ReadShort(&cl_message) :
+		MSG_ReadByte(&cl_message);
+
+	if (sound_num >= MAX_SOUNDS) {
+		Con_PrintLinef ("CL_ParseLocalSound: sound_num (%d) >= MAX_SOUNDS (%d)", sound_num, MAX_SOUNDS);
+		return;
+	}
+
+	S_LocalSound (cl.sound_precache[sound_num]->name);
+}
+
+// hint skill 1
+// hint game quake3_quake1
+// hint qex 1
+// We know there is a hint.  str is the text after the hint
+void CL_ParseHint (const char *str)
+{
+	char		textbuf[64];
+	char		*scursor;
+	const char	*scmd_arg0 = textbuf;
+	
+	c_strlcpy (textbuf, str);
+
+	// Kill newlines ...
+	scursor = textbuf;
+	while (*scursor) {
+		if (*scursor == NEWLINE_CHAR_10)
+			*scursor = 0;
+		scursor ++;
+	}
+
+	// find arg
+	scursor = textbuf;
+	while (*scursor > SPACE_CHAR_32)
+		scursor++;
+
+	// hint skill 1
+	// hint game quake3_quake1
+	// hint qex 1
+	if (scursor[0] == SPACE_CHAR_32 && scursor[1] > SPACE_CHAR_32) {
+		// Found arg2
+		scursor[0] = 0; // null after cmd
+		const char	*scmd_arg1 = &scursor[1];
+
+		     if (String_Does_Match (scmd_arg0, "skill"))	{ Cvar_SetValueQuick (&skill, atoi(scmd_arg1) );	} 
+		else if (String_Does_Match (scmd_arg0, "qex"))		{ 
+			cl.is_qex = atoi(scmd_arg1);	
+		} 
+		else if (String_Does_Match (scmd_arg0, "game"))		{	} 		
+		else
+			return;
+		
+		Con_DPrintLinef ("Game hint: " QUOTED_S " to " QUOTED_S, scmd_arg0, scmd_arg1);
+	}
+}
+
+
+/*
 =====================
 CL_ParseServerMessage
 =====================
 */
 int parsingerror = false;
+
+const char *LOC_GetString (const char *s_dollar_key);
+
 void CL_ParseServerMessage(void)
 {
 	int			cmd;
-	int			i;
+	int			j;
 	protocolversion_t protocol;
 	unsigned char		cmdlog[32];
-	const char		*cmdlogname[32], *temp;
+	const char		*cmdlogname[32], *str;
 	int			cmdindex, cmdcount = 0;
 	qbool	qwplayerupdatereceived;
 	qbool	strip_pqc;
@@ -3447,7 +3519,7 @@ void CL_ParseServerMessage(void)
 // if recording demos, copy the message out
 //
 	if (cl_shownet.integer == 1)
-		Con_Printf("%f %i\n", realtime, cl_message.cursize);
+		Con_Printf("%f %j\n", realtime, cl_message.cursize);
 	else if (cl_shownet.integer == 2)
 		Con_Print("------------------\n");
 
@@ -3506,18 +3578,18 @@ void CL_ParseServerMessage(void)
 					char description[32*64], logtemp[64];
 					int count;
 					strlcpy(description, "packet dump: ", sizeof(description));
-					i = cmdcount - 32;
-					if (i < 0)
-						i = 0;
-					count = cmdcount - i;
-					i &= 31;
+					j = cmdcount - 32;
+					if (j < 0)
+						j = 0;
+					count = cmdcount - j;
+					j &= 31;
 					while(count > 0)
 					{
-						dpsnprintf(logtemp, sizeof(logtemp), "%3i:%s ", cmdlog[i], cmdlogname[i]);
+						dpsnprintf(logtemp, sizeof(logtemp), "%3i:%s ", cmdlog[j], cmdlogname[j]);
 						strlcat(description, logtemp, sizeof(description));
 						count--;
-						i++;
-						i &= 31;
+						j++;
+						j &= 31;
 					}
 					description[strlen(description)-1] = '\n'; // replace the last space with a newline
 					Con_Print(description);
@@ -3538,14 +3610,14 @@ void CL_ParseServerMessage(void)
 				return;
 
 			case qw_svc_print:
-				i = MSG_ReadByte(&cl_message);
-				temp = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(temp)) // look for anything interesting like player IP addresses or ping reports
+				j = MSG_ReadByte(&cl_message);
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (CL_ExaminePrintString(str)) // look for anything interesting like player IP addresses or ping reports
 				{
-					if (i == 3) // chat
-						CSQC_AddPrintText(va(vabuf, sizeof(vabuf), "\1%s", temp));	//[515]: csqc
+					if (j == 3) // chat
+						CSQC_AddPrintText(va(vabuf, sizeof(vabuf), "\1%s", str));	//[515]: csqc
 					else
-						CSQC_AddPrintText(temp);
+						CSQC_AddPrintText(str);
 				}
 				break;
 
@@ -3568,8 +3640,8 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_setangle:
-				for (i=0 ; i<3 ; i++)
-					cl.viewangles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+				for (j=0 ; j<3 ; j++)
+					cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 				if (!cls.demoplayback)
 				{
 					cl.fixangle[0] = true;
@@ -3581,15 +3653,15 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_lightstyle:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.max_lightstyle)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.max_lightstyle)
 				{
 					Con_Printf ("svc_lightstyle >= MAX_LIGHTSTYLES");
 					break;
 				}
-				strlcpy (cl.lightstyle[i].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[i].map));
-				cl.lightstyle[i].map[MAX_STYLESTRING - 1] = 0;
-				cl.lightstyle[i].length = (int)strlen(cl.lightstyle[i].map);
+				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
+				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
 				break;
 
 			case qw_svc_sound:
@@ -3597,50 +3669,52 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_stopsound:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				S_StopSound(i>>3, i&7);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				S_StopSound(j>>3, j&7);
 				break;
 
 			case qw_svc_updatefrags:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
-				cl.scores[i].frags = (signed short) MSG_ReadShort(&cl_message);
+				cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
 				break;
 
 			case qw_svc_updateping:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error("CL_ParseServerMessage: svc_updateping >= cl.maxclients");
-				cl.scores[i].qw_ping = MSG_ReadShort(&cl_message);
+				cl.scores[j].qw_ping = MSG_ReadShort(&cl_message);
 				break;
 
 			case qw_svc_updatepl:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error("CL_ParseServerMessage: svc_updatepl >= cl.maxclients");
-				cl.scores[i].qw_packetloss = MSG_ReadByte(&cl_message);
+				cl.scores[j].qw_packetloss = MSG_ReadByte(&cl_message);
 				break;
 
 			case qw_svc_updateentertime:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error("CL_ParseServerMessage: svc_updateentertime >= cl.maxclients");
 				// seconds ago
-				cl.scores[i].qw_entertime = cl.time - MSG_ReadFloat(&cl_message);
+				cl.scores[j].qw_entertime = cl.time - MSG_ReadFloat(&cl_message);
 				break;
 
 			case qw_svc_spawnbaseline:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				CL_ParseBaseline(cl.entities + i, false);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %j", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				CL_ParseBaseline(cl.entities + j, false);
 				break;
+
 			case qw_svc_spawnstatic:
 				CL_ParseStatic(false);
 				break;
+
 			case qw_svc_temp_entity:
 				if(!CL_VM_Parse_TempEntity())
 					CL_ParseTempEntity ();
@@ -3655,17 +3729,17 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_updatestat:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestat: %i is invalid", i);
-				cl.stats_sv[i] = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error ("svc_updatestat: %j is invalid", j);
+				cl.stats_sv[j] = MSG_ReadByte(&cl_message);
 				break;
 
 			case qw_svc_updatestatlong:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestatlong: %i is invalid", i);
-				cl.stats_sv[i] = MSG_ReadLong(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error ("svc_updatestatlong: %j is invalid", j);
+				cl.stats_sv[j] = MSG_ReadLong(&cl_message);
 				break;
 
 			case qw_svc_spawnstaticsound:
@@ -3674,12 +3748,12 @@ void CL_ParseServerMessage(void)
 
 			case qw_svc_cdtrack:
 				cl.cdtrack = cl.looptrack = MSG_ReadByte(&cl_message);
-#ifdef CONFIG_CD
+
 				if ( (cls.demoplayback || cls.demorecording) && (cls.forcetrack != -1) )
 					CDAudio_Play ((unsigned char)cls.forcetrack, true);
 				else
 					CDAudio_Play ((unsigned char)cl.cdtrack, true);
-#endif
+
 				break;
 
 			case qw_svc_intermission:
@@ -3687,8 +3761,8 @@ void CL_ParseServerMessage(void)
 					cl.completed_time = cl.time;
 				cl.intermission = 1;
 				MSG_ReadVector(&cl_message, cl.qw_intermission_origin, cls.protocol);
-				for (i = 0;i < 3;i++)
-					cl.qw_intermission_angles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+				for (j = 0;j < 3;j++)
+					cl.qw_intermission_angles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 				break;
 
 			case qw_svc_finale:
@@ -3710,13 +3784,13 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_muzzleflash:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
 				// NOTE: in QW this only worked on clients
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				cl.entities[i].persistent.muzzleflash = 1.0f;
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %j", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				cl.entities[j].persistent.muzzleflash = 1.0f;
 				break;
 
 			case qw_svc_updateuserinfo:
@@ -3741,8 +3815,8 @@ void CL_ParseServerMessage(void)
 				if (!qwplayerupdatereceived)
 				{
 					qwplayerupdatereceived = true;
-					for (i = 1;i < cl.maxclients;i++)
-						cl.entities_active[i] = false;
+					for (j = 1;j < cl.maxclients;j++)
+						cl.entities_active[j] = false;
 				}
 				EntityStateQW_ReadPlayerUpdate();
 				break;
@@ -3754,7 +3828,7 @@ void CL_ParseServerMessage(void)
 			case qw_svc_chokecount:
 				(void) MSG_ReadByte(&cl_message);
 				// FIXME: apply to netgraph
-				//for (j = 0;j < i;j++)
+				//for (j = 0;j < j;j++)
 				//	cl.frames[(cls.netcon->qw.incoming_acknowledged-1-j)&QW_UPDATE_MASK].receivedtime = -2;
 				break;
 
@@ -3812,9 +3886,9 @@ void CL_ParseServerMessage(void)
 		if (qwplayerupdatereceived)
 		{
 			// fully kill any player entities that were not updated this frame
-			for (i = 1;i <= cl.maxclients;i++)
-				if (!cl.entities_active[i])
-					cl.entities[i].state_current.active = false;
+			for (j = 1;j <= cl.maxclients;j++)
+				if (!cl.entities_active[j])
+					cl.entities[j].state_current.active = false;
 		}
 	}
 	else
@@ -3843,8 +3917,8 @@ void CL_ParseServerMessage(void)
 				// I only get this for the Quake demos, my own demo record does not hit here.
 				//
 				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
-				temp = "entity";
-				cmdlogname[cmdindex] = temp;
+				str = "entity";
+				cmdlogname[cmdindex] = str;
 				SHOWNET("fast update");
 				if (cls.signon == SIGNONS - 1) {
 					// first update is the final signon stage
@@ -3871,18 +3945,18 @@ void CL_ParseServerMessage(void)
 					char description[32*64], tempdesc[64];
 					int count;
 					c_strlcpy (description, "packet dump: ");
-					i = cmdcount - 32;
-					if (i < 0)
-						i = 0;
-					count = cmdcount - i;
-					i &= 31;
+					j = cmdcount - 32;
+					if (j < 0)
+						j = 0;
+					count = cmdcount - j;
+					j &= 31;
 					while(count > 0)
 					{
-						dpsnprintf (tempdesc, sizeof (tempdesc), "%3d:%s ", cmdlog[i], cmdlogname[i]);
+						dpsnprintf (tempdesc, sizeof (tempdesc), "%3d:%s ", cmdlog[j], cmdlogname[j]);
 						c_strlcat (description, tempdesc);
 						count--;
-						i++;
-						i &= 31;
+						j++;
+						j &= 31;
 					}
 					description[strlen(description)-1] = '\n'; // replace the last space with a newline
 					Con_Print(description);
@@ -3904,10 +3978,10 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_version:
-				i = MSG_ReadLong(&cl_message);
-				protocol = Protocol_EnumForNumber(i);
+				j = MSG_ReadLong(&cl_message);
+				protocol = Protocol_EnumForNumber(j);
 				if (protocol == PROTOCOL_UNKNOWN)
-					Host_Error("CL_ParseServerMessage: Server is unrecognized protocol number (%i)", i);
+					Host_Error("CL_ParseServerMessage: Server is unrecognized protocol number (%j)", j);
 				// hack for unmarked Nehahra movie demos which had a custom protocol
 				if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback && gamemode == GAME_NEHAHRA)
 					protocol = PROTOCOL_NEHAHRAMOVIE;
@@ -3923,17 +3997,28 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_print:
-				temp = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(temp)) // au21 - look for anything interesting like player IP addresses or ping reports
-					CSQC_AddPrintText (temp);	//[515]: csqc
+				str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));
+
+				if (cl.is_qex && str[0] == '$') {
+					str = LOC_GetString (str);
+					CSQC_AddPrintText (str);	//[515]: csqc
+				} else
+				if (CL_ExaminePrintString(str)) // au21 - look for anything interesting like player IP addresses or ping reports
+					CSQC_AddPrintText (str);	//[515]: csqc
 				break;
 
 			case svc_centerprint:
-				CL_VM_Parse_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));	//[515]: csqc
+				str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') {
+					str = LOC_GetString (str);
+				}
+				
+				CL_VM_Parse_CenterPrint(str);	//[515]: csqc
 				break;
 
 			case svc_stufftext:
-				temp = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+
 				/* if(utf8_enable.integer)
 				{
 					strip_pqc = true;
@@ -3961,14 +4046,23 @@ void CL_ParseServerMessage(void)
 					// TODO actually interpret them
 					// (they are sbar team score
 					// updates), see proquake cl_parse.c
-					if(*temp == 0x01)
+					if (*str == 0x01)
 					{
-						++temp;
-						while(*temp >= 0x01 && *temp <= 0x1F)
-							++temp;
+						++str;
+						while(*str >= 0x01 && *str <= 0x1F)
+							++str;
 					}
 				}
-				CL_VM_Parse_StuffCmd(temp);	//[515]: csqc
+
+				// AURAH svc_stufftext
+				if (String_Does_Start_With (str, HINT_MESSAGE_PREFIX)) {
+					Con_DPrintLinef ("Received server hint: %s", str);
+					str += strlen (HINT_MESSAGE_PREFIX);
+					CL_ParseHint (str);
+					break; // Do not continue.
+				}
+				
+				CL_VM_Parse_StuffCmd(str);	//[515]: csqc
 				break;
 
 			case svc_damage:
@@ -3980,8 +4074,8 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_setangle:
-				for (i=0 ; i<3 ; i++)
-					cl.viewangles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+				for (j=0 ; j<3 ; j++)
+					cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 				if (!cls.demoplayback)
 				{
 					cl.fixangle[0] = true;
@@ -4007,15 +4101,15 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_lightstyle:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.max_lightstyle)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.max_lightstyle)
 				{
 					Con_Printf ("svc_lightstyle >= MAX_LIGHTSTYLES");
 					break;
 				}
-				strlcpy (cl.lightstyle[i].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[i].map));
-				cl.lightstyle[i].map[MAX_STYLESTRING - 1] = 0;
-				cl.lightstyle[i].length = (int)strlen(cl.lightstyle[i].map);
+				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
+				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
 				break;
 
 			case svc_sound:
@@ -4031,60 +4125,60 @@ void CL_ParseServerMessage(void)
 				else
 				{
 					char *s;
-					i = (unsigned short)MSG_ReadShort(&cl_message);
+					j = (unsigned short)MSG_ReadShort(&cl_message);
 					s = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-					if (i < 32768)
+					if (j < 32768)
 					{
-						if (i >= 1 && i < MAX_MODELS)
+						if (j >= 1 && j < MAX_MODELS)
 						{
 							model_t *model = Mod_ForName(s, false, false, s[0] == '*' ? cl.model_name[1] : NULL);
 							if (!model)
 								Con_DPrintf("svc_precache: Mod_ForName(\"%s\") failed\n", s);
-							cl.model_precache[i] = model;
+							cl.model_precache[j] = model;
 						}
 						else
-							Con_Printf("svc_precache: index %i outside range %i...%i\n", i, 1, MAX_MODELS);
+							Con_Printf("svc_precache: index %j outside range %j...%j\n", j, 1, MAX_MODELS);
 					}
 					else
 					{
-						i -= 32768;
-						if (i >= 1 && i < MAX_SOUNDS)
+						j -= 32768;
+						if (j >= 1 && j < MAX_SOUNDS)
 						{
 							sfx_t *sfx = S_PrecacheSound (s, true, true);
 							if (!sfx && snd_initialized.integer)
 								Con_DPrintf("svc_precache: S_PrecacheSound(\"%s\") failed\n", s);
-							cl.sound_precache[i] = sfx;
+							cl.sound_precache[j] = sfx;
 						}
 						else
-							Con_Printf("svc_precache: index %i outside range %i...%i\n", i, 1, MAX_SOUNDS);
+							Con_Printf("svc_precache: index %j outside range %j...%j\n", j, 1, MAX_SOUNDS);
 					}
 				}
 				break;
 
 			case svc_stopsound:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				S_StopSound(i>>3, i&7);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				S_StopSound(j>>3, j&7);
 				break;
 
 			case svc_updatename:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error ("CL_ParseServerMessage: svc_updatename >= cl.maxclients");
-				strlcpy (cl.scores[i].name, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.scores[i].name));
+				strlcpy (cl.scores[j].name, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.scores[j].name));
 				break;
 
 			case svc_updatefrags:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
-				cl.scores[i].frags = (signed short) MSG_ReadShort(&cl_message);
+				cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
 				break;
 
 			case svc_updatecolors:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
 					Host_Error ("CL_ParseServerMessage: svc_updatecolors >= cl.maxclients");
-				cl.scores[i].colors = MSG_ReadByte(&cl_message);
+				cl.scores[j].colors = MSG_ReadByte(&cl_message);
 				break;
 
 			case svc_particle:
@@ -4095,31 +4189,42 @@ void CL_ParseServerMessage(void)
 				CL_ParseEffect ();
 				break;
 
-			case svc_effect2:
+			case svc_effect2: // AURA SVC
+				if (cl.is_qex) { // Yes, that's a cvar.  Hack until make info string for client so it knows is qex
+					// case svc_achievement_fights_effect2_46 AURA
+					str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+					Con_DPrintLinef ("Ignoring svc_achievement (%s)", str);
+					break;
+				}
 				CL_ParseEffect2 ();
 				break;
 
 			case svc_spawnbaseline:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				CL_ParseBaseline (cl.entities + i, false);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %j", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				CL_ParseBaseline (cl.entities + j, false);
 				break;
 			case svc_spawnbaseline2:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				CL_ParseBaseline (cl.entities + i, true);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %j", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				CL_ParseBaseline (cl.entities + j, true);
 				break;
 			case svc_spawnstatic:
 				CL_ParseStatic (false);
 				break;
 
 			case svc_spawnstatic2:
+				if (cl.is_qex) {
+					// svc_qex_localsound_fights_spawnstatic2_56
+					CL_ParseLocalSound();
+					break;
+				}
 				CL_ParseStatic (true);
 				break;
 
@@ -4140,12 +4245,12 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_signonnum:
-				i = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
 				// LadyHavoc: it's rude to kick off the client if they missed the
 				// reconnect somehow, so allow signon 1 even if at signon 1
-				if (i <= cls.signon && i != 1)
-					Host_Error ("Received signon %i when at %i", i, cls.signon);
-				cls.signon = i;
+				if (j <= cls.signon && j != 1)
+					Host_Error ("Received signon %j when at %j", j, cls.signon);
+				cls.signon = j;
 				CL_SignonReply ();
 				break;
 
@@ -4158,17 +4263,17 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_updatestat:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestat: %i is invalid", i);
-				cl.stats_sv[i] = MSG_ReadLong(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error ("svc_updatestat: %j is invalid", j);
+				cl.stats_sv[j] = MSG_ReadLong(&cl_message);
 				break;
 
 			case svc_updatestatubyte:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestat: %d is invalid", i);
-				cl.stats_sv[i] = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error ("svc_updatestat: %d is invalid", j);
+				cl.stats_sv[j] = MSG_ReadByte(&cl_message);
 				break;
 
 			case svc_spawnstaticsound:
@@ -4202,7 +4307,13 @@ void CL_ParseServerMessage(void)
 					cl.completed_time = cl.time;
 				cl.intermission = 2;
 				CL_VM_UpdateIntermissionState(cl.intermission);
-				SCR_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
+
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') {
+					str = LOC_GetString (str);
+				}
+
+				SCR_CenterPrint (str);
 				break;
 
 			case svc_cutscene:
@@ -4210,12 +4321,19 @@ void CL_ParseServerMessage(void)
 					cl.completed_time = cl.time;
 				cl.intermission = 3;
 				CL_VM_UpdateIntermissionState(cl.intermission);
-				SCR_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
+
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') {
+					str = LOC_GetString (str);
+				}
+
+				SCR_CenterPrint (str);
 				break;
 
 			case svc_sellscreen:
 				Cmd_ExecuteString ("help", src_command, true);
 				break;
+
 			case svc_hidelmp:
 				if (gamemode == GAME_TENEBRAE)
 				{
@@ -4247,9 +4365,11 @@ void CL_ParseServerMessage(void)
 				else
 					SHOWLMP_decodeshow();
 				break;
+
 			case svc_skybox:
 				R_SetSkyBox(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
 				break;
+
 			case svc_entities:
 				if (cls.signon == SIGNONS - 1)
 				{
@@ -4264,9 +4384,11 @@ void CL_ParseServerMessage(void)
 				else
 					EntityFrame5_CL_ReadFrame();
 				break;
+
 			case svc_csqcentities:
 				CSQC_ReadEntities();
 				break;
+
 			case svc_downloaddata:
 				CL_ParseDownload();
 				break;

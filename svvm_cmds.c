@@ -1509,9 +1509,17 @@ static void VM_SV_WriteCoord(prvm_prog_t *prog)
 	MSG_WriteCoord (WriteDest(prog), PRVM_G_FLOAT(OFS_PARM1), sv.protocol);
 }
 
-static void VM_SV_WriteString(prvm_prog_t *prog)
+static void VM_SV_WriteString(prvm_prog_t *prog) // AURA PF_WriteString
 {
 	VM_SAFEPARMCOUNT(2, VM_SV_WriteString);
+	//if (sv.is_qex) {	 // cprint and dprint stuff instead?
+	//	const char	*str = PRVM_G_STRING(OFS_PARM1);
+	//	char vabuf[1024];
+	//	va (vabuf, sizeof(vabuf), "%s", "msg" NEWLINE);
+	//	MSG_WriteString (WriteDest(prog), vabuf);
+	//	return;
+	//}
+	
 	MSG_WriteString (WriteDest(prog), PRVM_G_STRING(OFS_PARM1));
 }
 

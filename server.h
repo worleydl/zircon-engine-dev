@@ -105,6 +105,7 @@ typedef struct server_s
 
 	/// map name
 	char name[64]; // %s followed by entrance name
+	int is_qex;
 
 	loadinfo_s loadinfox;
 	// variants of map name
@@ -321,24 +322,25 @@ typedef struct client_s
 //=============================================================================
 
 // edict->movetype values
-#define	MOVETYPE_NONE			0		///< never moves
-#define	MOVETYPE_ANGLENOCLIP	1
-#define	MOVETYPE_ANGLECLIP		2
-#define	MOVETYPE_WALK			3		///< gravity
-#define	MOVETYPE_STEP			4		///< gravity, special edge handling
-#define	MOVETYPE_FLY			5
-#define	MOVETYPE_TOSS			6		///< gravity
-#define	MOVETYPE_PUSH			7		///< no clip to world, push and crush
-#define	MOVETYPE_NOCLIP			8
-#define	MOVETYPE_FLYMISSILE		9		///< extra size to monsters
-#define	MOVETYPE_BOUNCE			10
-#define MOVETYPE_BOUNCEMISSILE	11		///< bounce w/o gravity
-#define MOVETYPE_FOLLOW			12		///< track movement of aiment
-#define MOVETYPE_FAKEPUSH		13		///< tenebrae's push that doesn't push
-#define MOVETYPE_PHYSICS		32		///< indicates this object is physics controlled
-#define MOVETYPE_FLY_WORLDONLY	33		///< like MOVETYPE_FLY, but uses MOVE_WORLDONLY for all its traces; objects of this movetype better be SOLID_NOT or SOLID_TRIGGER please, or else...
-#define MOVETYPE_USER_FIRST		128		///< user defined movetypes
-#define MOVETYPE_USER_LAST		191
+#define	MOVETYPE_NONE							0		///< never moves
+#define	MOVETYPE_ANGLENOCLIP					1
+#define	MOVETYPE_ANGLECLIP						2
+#define	MOVETYPE_WALK							3		///< gravity
+#define	MOVETYPE_STEP							4		///< gravity, special edge handling
+#define	MOVETYPE_FLY							5
+#define	MOVETYPE_TOSS							6		///< gravity
+#define	MOVETYPE_PUSH							7		///< no clip to world, push and crush
+#define	MOVETYPE_NOCLIP							8
+#define	MOVETYPE_FLYMISSILE						9		///< extra size to monsters
+#define	MOVETYPE_BOUNCE							10
+#define	MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11	11		// 2021 rerelease gibs AURA 1.2
+#define MOVETYPE_BOUNCEMISSILE					11		///< bounce w/o gravity
+#define MOVETYPE_FOLLOW							12		///< track movement of aiment
+#define MOVETYPE_FAKEPUSH						13		///< tenebrae's push that doesn't push
+#define MOVETYPE_PHYSICS						32		///< indicates this object is physics controlled
+#define MOVETYPE_FLY_WORLDONLY					33		///< like MOVETYPE_FLY, but uses MOVE_WORLDONLY for all its traces; objects of this movetype better be SOLID_NOT or SOLID_TRIGGER please, or else...
+#define MOVETYPE_USER_FIRST						128		///< user defined movetypes
+#define MOVETYPE_USER_LAST						191
 
 // edict->solid values
 #define	SOLID_NOT				0		///< no interaction with other objects

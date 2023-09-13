@@ -29,6 +29,7 @@ int sfake_is_eof ()
 	return (*s_fake_cursor) == 0;
 }
 
+// is this allocated or not?  Yes, however caller need not deal with freeing it.  We do all that.
 char *sfake_getlin () {
 	if (!s_fake_cursor) return NULL;
 	if (! (*s_fake_cursor) ) return NULL;

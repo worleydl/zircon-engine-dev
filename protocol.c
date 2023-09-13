@@ -192,7 +192,7 @@ void EntityFrameQuake_ReadEntity(int bits)
 	if (bits & U_FRAME)		s.frame = (s.frame & 0xFF00) | MSG_ReadByte(&cl_message);
 	if (bits & U_COLORMAP)	s.colormap = MSG_ReadByte(&cl_message);
 	if (bits & U_SKIN)		s.skin = MSG_ReadByte(&cl_message);
-	if (bits & U_EFFECTS)	s.effects = (s.effects & 0xFF00) | MSG_ReadByte(&cl_message);
+	if (bits & U_EFFECTS)	s.effects = (s.effects & 0xFF00) | MSG_ReadByte(&cl_message);	// AURA CL
 	if (bits & U_ORIGIN1)	s.origin[0] = MSG_ReadCoord(&cl_message, cls.protocol);
 	if (bits & U_ANGLE1)	s.angles[0] = MSG_ReadAngle(&cl_message, cls.protocol);
 	if (bits & U_ORIGIN2)	s.origin[1] = MSG_ReadCoord(&cl_message, cls.protocol);
@@ -202,7 +202,7 @@ void EntityFrameQuake_ReadEntity(int bits)
 	if (bits & U_STEP)		s.flags |= RENDER_STEP;
 	if (bits & U_ALPHA)		s.alpha = MSG_ReadByte(&cl_message);
 	if (bits & U_SCALE)		s.scale = MSG_ReadByte(&cl_message);
-	if (bits & U_EFFECTS2)	s.effects = (s.effects & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
+	if (bits & U_EFFECTS2)	s.effects = (s.effects & 0x00FF) | (MSG_ReadByte(&cl_message) << 8); // AURA CL
 	if (bits & U_GLOWSIZE)	s.glowsize = MSG_ReadByte(&cl_message);
 	if (bits & U_GLOWCOLOR)	s.glowcolor = MSG_ReadByte(&cl_message);
 	if (bits & U_COLORMOD)	{int c = MSG_ReadByte(&cl_message);s.colormod[0] = (unsigned char)(((c >> 5) & 7) * (32.0f / 7.0f));s.colormod[1] = (unsigned char)(((c >> 2) & 7) * (32.0f / 7.0f));s.colormod[2] = (unsigned char)((c & 3) * (32.0f / 3.0f));}
@@ -816,7 +816,16 @@ qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, co
 			if (bits & U_FRAME)			MSG_WriteByte(&buf, s->frame);
 			if (bits & U_COLORMAP)		MSG_WriteByte(&buf, s->colormap);
 			if (bits & U_SKIN)			MSG_WriteByte(&buf, s->skin);
-			if (bits & U_EFFECTS)		MSG_WriteByte(&buf, s->effects);
+			if (bits & U_EFFECTS)		{
+				if (sv.is_qex) { // AURA
+					int efx = s->effects;
+					Flag_Remove_From (efx, 
+						EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64);
+					MSG_WriteByte(&buf, efx);
+				} else {
+					MSG_WriteByte(&buf, s->effects);
+				}
+			}
 			if (bits & U_ORIGIN1)		MSG_WriteCoord(&buf, s->origin[0], sv.protocol);
 			if (bits & U_ANGLE1)		MSG_WriteAngle(&buf, s->angles[0], sv.protocol);
 			if (bits & U_ORIGIN2)		MSG_WriteCoord(&buf, s->origin[1], sv.protocol);

@@ -375,6 +375,7 @@ char fs_userdir[MAX_OSPATH];
 char fs_gamedir[MAX_OSPATH];
 char fs_basedir[MAX_OSPATH];
 static pack_t *fs_selfpack = NULL;
+static pack_t *fs_qexpack = NULL;
 
 // list of active game directories (empty if not running a mod)
 int fs_numgamedirs = 0;
@@ -1392,6 +1393,18 @@ static void FS_AddSelfPack(void)
 	}
 }
 
+static void FS_AddQEXPack(void)
+{
+	if (fs_qexpack)
+	{
+		searchpath_t *search;
+		search = (searchpath_t *)Mem_Alloc(fs_mempool, sizeof(searchpath_t));
+		search->next = fs_searchpaths;
+		search->pack = fs_qexpack;
+		fs_searchpaths = search;
+	}
+}
+
 
 /*
 ================
@@ -1451,6 +1464,7 @@ void FS_Rescan (void)
 
 	// add back the selfpack as new first item
 	FS_AddSelfPack();
+	FS_AddQEXPack();
 
 	// set the default screenshot name to either the mod name or the
 	// gamemode screenshot name
@@ -1794,6 +1808,8 @@ static void COM_InsertFlags(const char *buf) {
 FS_Init_SelfPack
 ================
 */
+
+
 void FS_Init_SelfPack (void)
 {
 	PK3_OpenLibrary ();
@@ -1824,7 +1840,15 @@ void FS_Init_SelfPack (void)
 			}
 		}
 	}
+
+	if (!Sys_CheckParm("-noqexpack")) {
+		if (com_qexfd >= 0) {
+			fs_qexpack = FS_LoadPackPK3FromFD("QuakeEX.kpf", com_qexfd, true);
+		}
+	}
 #endif
+
+
 }
 
 static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t userdirsize)
@@ -2003,6 +2027,9 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 FS_Init
 ================
 */
+
+void LOC_LoadFile ();
+
 void FS_Init (void)
 {
 	const char *p;
@@ -2173,7 +2200,11 @@ void FS_Init (void)
 
 	// generate the searchpath
 	FS_Rescan();
-
+	if (com_selffd >= 0) {
+		//static pack_t *fs_qexpack = NULL;
+		fs_qexpack = FS_LoadPackPK3FromFD("QuakeEX.kpf", com_qexfd, /*quiet*/ false);
+	}
+	LOC_LoadFile();
 	if (Thread_HasThreads())
 		fs_mutex = Thread_CreateMutex();
 }

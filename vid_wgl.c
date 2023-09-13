@@ -738,7 +738,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 		uMsg = WM_MOUSEWHEEL;
 
 	
-	#ifdef _DEBUG
+	#if 0 //def _DEBUG
 		const char *sx = msg_to_str ((unsigned)uMsg);
 		Sys_PrintToTerminal2 (sx);
 		Sys_PrintToTerminal2 (va3 ( "wparam: %x lparam %x", wParam, lParam));

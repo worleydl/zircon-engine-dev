@@ -175,6 +175,9 @@ cvar_t scratch3 = {CF_SERVER, "scratch3", "0", "unused cvar in quake, can be use
 cvar_t scratch4 = {CF_SERVER, "scratch4", "0", "unused cvar in quake, can be used by mods"};
 cvar_t temp1 = {CF_SERVER, "temp1","0", "general cvar for mods to use, in stock id1 this selects which death animation to use on players (0 = random death, other values select specific death scenes)"};
 
+cvar_t campaign = {CF_SERVER, "campaign","0", "Rerelease [Zircon]" }; // AURA
+cvar_t horde = {CF_SERVER, "horde","0", "Rerelease [Zircon]" }; // AURA
+cvar_t scr_usekfont = {CF_SERVER, "scr_usekfont","0", "Rerelease [Zircon]" }; // AURA
 
 cvar_t nehx00 = {CF_SERVER, "nehx00", "0", "nehahra data storage cvar (used in singleplayer)"};
 cvar_t nehx01 = {CF_SERVER, "nehx01", "0", "nehahra data storage cvar (used in singleplayer)"};
@@ -435,7 +438,9 @@ void SV_Freezeall_f(void)
 void Host_Timescale_f(void)
 {
 	if (Cmd_Argc () > 1) {
-		Cvar_SetValueQuick (&slowmo, atof(Cmd_Argv(1) ) );
+		float f = atof(Cmd_Argv(1) );
+		if (f <= 0) f = 1;
+		Cvar_SetValueQuick (&slowmo,  f);
 	} else {
 		Con_PrintLinef ("host_timescale is %f", slowmo.value);
 	}
@@ -612,6 +617,10 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&scratch3);
 	Cvar_RegisterVariable (&scratch4);
 	Cvar_RegisterVariable (&temp1);
+
+	Cvar_RegisterVariable (&campaign);
+	Cvar_RegisterVariable (&scr_usekfont); // AURA
+	Cvar_RegisterVariable (&horde);
 
 	// LadyHavoc: Nehahra uses these to pass data around cutscene demos
 	Cvar_RegisterVariable (&nehx00);
@@ -892,6 +901,39 @@ void SV_StartPointSound (vec3_t origin, const char *sample, int nvolume, float a
 	SV_FlushBroadcastMessages();
 }
 
+// If early, send the game only.
+// If late, send everything.  Even the game again.  Client clears that on new map.
+// Issue a commented out svc_stufftext like "//hint game warp -quoth"
+static void SV_InsertHints (sizebuf_t *sb, qbool is_early_gamedir_only)
+{
+	char vabuf[1024];
+	const char *sv_hint_string;
+	
+	Con_DPrintLinef ("Send hints ... Early? = %d", is_early_gamedir_only);
+
+	// Must send gamedir change very early. Other hints must occur AFTER
+	if (1) {
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "game %s" NEWLINE, gamedirname1 );
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
+	
+	if (is_early_gamedir_only == false) {
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "skill %d" NEWLINE, skill.integer);		
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
+
+	if (is_early_gamedir_only == false) {
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "qex %d" NEWLINE, sv.is_qex );
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
+}
+
 /*
 ==============================================================================
 
@@ -968,6 +1010,7 @@ void SV_SendServerinfo (client_t *client)
 	MSG_WriteByte (&client->netconnection->message, svc_print);
 	dpsnprintf (message, sizeof (message), "\nServer: %s build %s (progs %i crc)\n", gamename, buildstring, prog->filecrc);
 	MSG_WriteString (&client->netconnection->message,message);
+	SV_InsertHints (&client->netconnection->message, true /* early hints */); // Baker -- throw some extra hints to client here
 
 	SV_StopDemoRecording(client); // to split up demos into different files
 	if(sv_autodemo_perclient.integer)
@@ -1068,6 +1111,7 @@ void SV_SendServerinfo (client_t *client)
 
 	MSG_WriteByte (&client->netconnection->message, svc_signonnum);
 	MSG_WriteByte (&client->netconnection->message, 1);
+	SV_InsertHints (&client->netconnection->message, false /* late hints */); // Baker -- throw some extra hints to client here.
 
 	client->prespawned = false;		// need prespawn, spawn, etc
 	client->spawned = false;		// need prespawn, spawn, etc
@@ -1266,7 +1310,16 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 			lightpflags |= PFLAGS_FULLDYNAMIC;
 		}
 	}
-
+	else if (sv.is_qex) { // AURA
+		if (Have_Flag (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64)) {
+			int efx = effects;
+			Flag_Remove_From (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64);
+			if (Have_Flag (efx, EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32))	Flag_Add_To (effects, EF_RED); // 128
+			if (Have_Flag (efx, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16))		Flag_Add_To (effects, EF_BLUE); // 64
+			if (Have_Flag (efx, EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64))		Flag_Add_To (effects, EF_DIMLIGHT); // 8 .. I guess?
+		} // if
+		
+	} // qex
 	specialvisibilityradius = 0;
 	if (lightpflags & PFLAGS_FULLDYNAMIC)
 		specialvisibilityradius = max(specialvisibilityradius, light[3]);
@@ -1306,6 +1359,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	VectorCopy(PRVM_serveredictvector(ent, origin), cs->origin);
 	VectorCopy(PRVM_serveredictvector(ent, angles), cs->angles);
 	cs->flags = erendflags;
+	
 	cs->effects = effects;
 	cs->colormap = (unsigned)PRVM_serveredictfloat(ent, colormap);
 	cs->modelindex = modelindex;
@@ -1677,8 +1731,10 @@ static void SV_MarkWriteEntityStateToClient(entity_state_t *s)
 			return;
 		if (s->drawonlytoclient && s->drawonlytoclient != sv.writeentitiestoclient_cliententitynumber)
 			return;
-		if (s->effects & EF_NODRAW_16)
-			return;
+		if (s->effects & EF_NODRAW_16) {
+			if (!sv.is_qex) // AURA CL will deal?
+				return;
+		}
 		// LadyHavoc: only send entities with a model or important effects
 		if (!s->modelindex && s->specialvisibilityradius == 0)
 			return;
@@ -3790,6 +3846,23 @@ static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 	return true;
 }
 
+/*
+===============
+PR_HasGlobal
+===============
+*/
+
+static qbool PR_HasGlobal_Float_With_Value (prvm_prog_t *prog, const char *name, float value) // AURA
+{
+	ddef_t *g = PRVM_ED_FindGlobal (prog, name);
+	if (g && (g->type & ~DEF_SAVEGLOBAL) == ev_float) {
+		//float fval = PRVM_gameglobalfloat( PRVM_serveredictfloat(host_client->edict, items)
+		return true;
+		
+	}
+	return false;
+}
+
 static void SV_VM_Setup(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -3830,7 +3903,21 @@ static void SV_VM_Setup(void)
 	prog->ExecuteProgram        = SVVM_ExecuteProgram;
 
 	// AURA PR
-	PRVM_Prog_Load(prog, sv_progs.string, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
+	PRVM_Prog_Load (prog, sv_progs.string, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
+
+	// AURAS
+	{
+
+		int is_rerelease = PR_HasGlobal_Float_With_Value (prog, "EF_QUADLIGHT", 0 /*EF_QEX_QUADLIGHT*/) && 
+			(PR_HasGlobal_Float_With_Value (prog, "EF_PENTLIGHT", 0 /*EF_QEX_PENTALIGHT*/) || PR_HasGlobal_Float_With_Value (prog, "EF_PENTALIGHT", 0 /*EF_QEX_PENTALIGHT*/));
+		
+		if (is_rerelease) {
+			// AURA -- demos can still do bad things
+			// AURA -- default.cfg (?)
+			Con_PrintLinef ("Re-release progs detected");
+		}
+		sv.is_qex = is_rerelease;
+	}
 
 	// some mods compiled with scrambling compilers lack certain critical
 	// global names and field names such as "self" and "time" and "nextthink"
