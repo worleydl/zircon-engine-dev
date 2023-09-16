@@ -76,6 +76,7 @@ typedef struct edict_engineprivate_s
 	int mark;
 	// place in the code where it was allocated (for the leak detector)
 	const char *allocation_origin;
+
 	// initially false to prevent projectiles from moving on their first frame
 	// (even if they were spawned by an synchronous client think)
 	qbool move;
@@ -148,4 +149,4 @@ typedef struct edict_engineprivate_s
 }
 edict_engineprivate_t;
 
-#endif
+#endif // PROGS_H

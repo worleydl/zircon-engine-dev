@@ -2,27 +2,24 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="#zircon_sdl" />
+		<Option title="#zircon32_sdl" />
 		<Option makefile="makefile" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="c:/zircon/zircon_sdl2_codeblocks_debug" prefix_auto="1" extension_auto="1" />
-				<Option object_output="build-obj/debug/darkplaces-sdl/" />
+				<Option output="c:/zircon/zircon32_sdl2_codeblocks_debug" prefix_auto="1" extension_auto="1" />
+				<Option object_output="build-obj/debug/darkplaces32-sdl/" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option parameters="-basedir c:\zerox1 -condebug" />
 				<Compiler>
 					<Add option="-ggdb" />
 				</Compiler>
-				<Linker>
-					<Add library="wsock32" />
-				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="c:/zircon/zircon_sdl2_codeblocks" prefix_auto="1" extension_auto="1" />
-				<Option object_output="build-obj/release/darkplaces-sdl/" />
+				<Option output="c:/zircon/zircon32_sdl2_codeblocks" prefix_auto="1" extension_auto="1" />
+				<Option object_output="build-obj/release/darkplaces32-sdl/" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option parameters="-basedir c:\zerox1 -condebug" />
@@ -48,13 +45,12 @@
 			<Add option="-Wold-style-definition" />
 			<Add option="-Wsign-compare" />
 			<Add option="-Wstrict-prototypes" />
+			<Add option="-msse3" />
 			<Add option="-DCORE_SDL" />
-			<Add option="-DCONFIG_CD" />
 			<Add option="-DCONFIG_MENU" />
 			<Add option="-DCONFIG_VIDEO_CAPTURE" />
 			<Add option="-D_FILE_OFFSET_BITS=64" />
 			<Add option="-D__KERNEL_STRICT_NAMES" />
-			<Add option="-DPREVENT_SSE_HACK" />
 			<Add option="-DUSEODE" />
 			<Add directory="./xtra/SDK/SDL2-devel-2.0.8-mingw/SDL2-2.0.8/i686-w64-mingw32/include/SDL2" />
 		</Compiler>

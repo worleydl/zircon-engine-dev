@@ -286,7 +286,6 @@ void CSQC_Think (prvm_edict_t *ed)
 }
 
 extern cvar_t cl_noplayershadow;
-extern cvar_t r_equalize_entities_fullbright;
 qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 {
 	prvm_prog_t *prog = CLVM_prog;
@@ -393,8 +392,6 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 	{
 		if (!(entrender->effects & EF_FULLBRIGHT) && !(renderflags & RF_FULLBRIGHT))
 			entrender->crflags |= RENDER_LIGHT;
-		else if(r_equalize_entities_fullbright.integer)
-			entrender->crflags |= RENDER_LIGHT | RENDER_EQUALIZE;
 	}
 	// hide player shadow during intermission or nehahra movie
 	if (!(entrender->effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST))
@@ -988,8 +985,8 @@ void CL_VM_Init (void)
 
 	// reset csqc_progcrc after reading it, so that changing servers doesn't
 	// expect csqc on the next server
-	requiredcrc = csqc_progcrc.integer;
-	requiredsize = csqc_progsize.integer;
+	requiredcrc = csqc_progcrc.integer; // Baker:  a cvar
+	requiredsize = csqc_progsize.integer; // Baker:  a cvar
 	Cvar_SetValueQuick(&csqc_progcrc, -1);
 	Cvar_SetValueQuick(&csqc_progsize, -1);
 
@@ -997,13 +994,13 @@ void CL_VM_Init (void)
 	if (requiredcrc < 0)
 		return;
 
-	// see if the requested csprogs.dat file matches the requested crc
-	if (!cls.demoplayback || csqc_usedemoprogs.integer)
-	{
+	// see if the requested csprogs.dat file matches the requested crc (Baker: why? csqc_progsize stuff)
+	if (!cls.demoplayback || csqc_usedemoprogs.integer) {
 		csprogsfn = va(vabuf, sizeof(vabuf), "dlcache/%s.%i.%i", csqc_progname.string, requiredsize, requiredcrc);
-		if(cls.caughtcsprogsdata && cls.caughtcsprogsdatasize == requiredsize && CRC_Block(cls.caughtcsprogsdata, (size_t)cls.caughtcsprogsdatasize) == requiredcrc)
+		if( cls.caughtcsprogsdata && cls.caughtcsprogsdatasize == requiredsize && 
+			CRC_Block(cls.caughtcsprogsdata, (size_t)cls.caughtcsprogsdatasize) == requiredcrc)
 		{
-			Con_DPrintf("Using buffered \"%s\"\n", csprogsfn);
+			Con_DPrintf ("Using buffered \"%s\"\n", csprogsfn); // Baker: and this is what?
 			csprogsdata = cls.caughtcsprogsdata;
 			csprogsdatasize = cls.caughtcsprogsdatasize;
 			cls.caughtcsprogsdata = NULL;
@@ -1015,13 +1012,14 @@ void CL_VM_Init (void)
 			csprogsdata = FS_LoadFile(csprogsfn, tempmempool, true, &csprogsdatasize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 		}
 	}
+
 	if (!csprogsdata)
 	{
-		csprogsfn = csqc_progname.string;
+		csprogsfn = csqc_progname.string; // Baker: a cvar
 		csprogsdata = FS_LoadFile(csprogsfn, tempmempool, true, &csprogsdatasize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 	}
-	if (csprogsdata)
-	{
+
+	if (csprogsdata) {
 		csprogsdatacrc = CRC_Block(csprogsdata, (size_t)csprogsdatasize);
 		if (csprogsdatacrc != requiredcrc || csprogsdatasize != requiredsize)
 		{
@@ -1083,7 +1081,17 @@ void CL_VM_Init (void)
 	prog->error_cmd             = Host_Error;
 	prog->ExecuteProgram        = CLVM_ExecuteProgram;
 
-	PRVM_Prog_Load(prog, csprogsfn, csprogsdata, csprogsdatasize, cl_numrequiredfunc, cl_required_func, CL_REQFIELDS, cl_reqfields, CL_REQGLOBALS, cl_reqglobals);
+	const char *s_missing_fn = PRVM_Prog_Load(prog, csprogsfn, csprogsdata, csprogsdatasize, cl_numrequiredfunc, cl_required_func, CL_REQFIELDS, cl_reqfields, CL_REQGLOBALS, cl_reqglobals);
+
+	// Baker: See if csprogs supports DarkPlaces (pass is no guarantee, but we elim some)
+	if (s_missing_fn) {
+		Con_PrintLinef ("csprogs.dat not supported (DarkPlaces was not a target engine, lacks %s).  Unloading.", s_missing_fn);
+		
+		// unload
+		PRVM_Prog_Reset(prog);
+		cl.csqc_loaded = false;
+		return;
+	}
 
 	if (!prog->loaded)
 	{
@@ -1096,8 +1104,7 @@ void CL_VM_Init (void)
 
 	Con_DPrintf("CSQC %s ^5loaded (crc=%i, size=%i)\n", csprogsfn, csprogsdatacrc, (int)csprogsdatasize);
 
-	if(cls.demorecording)
-	{
+	if (cls.demorecording) {
 		if(cls.demo_lastcsprogssize != csprogsdatasize || cls.demo_lastcsprogscrc != csprogsdatacrc)
 		{
 			int i;

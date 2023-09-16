@@ -25,9 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <time.h>
 #include "libcurl.h"
-#ifdef CONFIG_CD
 #include "cdaudio.h"
-#endif
 #include "cl_video.h"
 #include "progsvm.h"
 #include "csprogs.h"
@@ -655,10 +653,6 @@ const char *Host_TimingReport(char *buf, size_t buflen)
 	return va(buf, buflen, "%.1f%% CPU, %.2f%% lost, offset avg %.1fms, max %.1fms, sdev %.1fms", svs.perf_cpuload * 100, svs.perf_lost * 100, svs.perf_offset_avg * 1000, svs.perf_offset_max * 1000, svs.perf_offset_sdev * 1000);
 }
 
-
-
-
-
 /*
 ==================
 Host_Frame
@@ -1055,10 +1049,8 @@ void Host_Main(void)
 			else
 				S_Update(&r_refdef.view.matrix);
 
-#ifdef CONFIG_CD
 			CDAudio_Update();
 			R_TimeReport("audio");
-#endif
 
 			// reset gathering of mouse input
 			in_mouse_x = in_mouse_y = 0;
@@ -1106,9 +1098,7 @@ void Host_StartVideo(void)
 		// make sure we open sockets before opening video because the Windows Firewall "unblock?" dialog can screw up the graphics context on some graphics drivers
 		NetConn_UpdateSockets();
 		VID_Start();
-#ifdef CONFIG_CD
 		CDAudio_Startup();
-#endif
 	}
 }
 
@@ -1177,314 +1167,6 @@ void Host_UnlockSession(void)
 		locksession_fh = NULL;
 	}
 }
-
-/*
-================
-LOC_LoadFile
-================
-*/
-void sfake_start (char *s);
-int sfake_is_eof ();
-char *sfake_getlin ();
-void sfake_close ();
-
-//typedef struct stringlist_s
-//{
-//	/// maxstrings changes as needed, causing reallocation of strings[] array
-//	int maxstrings;
-//	int numstrings;
-//	char **strings;
-//} stringlist_t;
-
-stringlist_t	rerelease_loc;
-
-void LOC_LoadFile ()
-{
-
-
-	char *enlocal_pure_sa;	// _sa means string allocated
-	char *enlocal_sa;
-	char *sfile = "localization/loc_english.txt";
-
-	enlocal_pure_sa = (char *)FS_LoadFile (sfile, tempmempool, /*quiet*/ true, /*filesize ptr*/ NULL, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-
-	if (!enlocal_pure_sa) {
-		Con_PrintLinef  ("Language initialization not found");
-		return;
-	}
-	
-	Con_PrintLinef  ("Language initialization: %s", sfile);
-	
-	// Remove carriage returns if found
-	enlocal_sa = String_Replace_Alloc (enlocal_pure_sa, "\r", "");
-
-	Mem_Free (enlocal_pure_sa); // done with that
-
-	sfake_start (enlocal_sa);
-
-	stringlistfreecontents (&rerelease_loc);
-
-	#define MAX_NUM_Q_ARGVS_50	50
-	
-
-	while (sfake_is_eof() == false) {
-		char *sthis_line = sfake_getlin();
-		char scopy_line[16384];
-
-		if (!sthis_line)
-			break;	// Some sort of EOF condition
-
-		String_Edit_Trim (sthis_line);
-
-		if (!sthis_line[0])
-			continue; // it was all white space
-
-		if (String_Does_Start_With (sthis_line, "//"))
-			continue; // comment
-
-		c_strlcpy (scopy_line, sthis_line);
-
-		int rfake_argc = 0;
-		char *rfake_argv[MAX_NUM_Q_ARGVS_50] = {0};
-				
-		// tokenize console
-		String_Command_String_To_Argv (/*destructive edit*/ scopy_line, &rfake_argc, rfake_argv, MAX_NUM_Q_ARGVS_50);
-
-		Con_PrintLinef ("args %d", rfake_argc);
-
-		if (rfake_argc == 3 && String_Does_Match_Caseless (rfake_argv[1], "=" ) ) {
-			char sdecode_arg2[16384];
-			stringlistappend (&rerelease_loc, rfake_argv[0]);
-
-			// Decode newlines
-			c_strlcpy (sdecode_arg2, rfake_argv[2]);
-			String_Edit_Replace (sdecode_arg2, sizeof(sdecode_arg2), "\\n", NEWLINE);
-
-			stringlistappend (&rerelease_loc, sdecode_arg2);
-
-			Con_PrintLinef ("%s " NEWLINE QUOTED_S " " QUOTED_S, sthis_line, rfake_argv[0], sdecode_arg2);
-		} else {
-			//Con_PrintLinef ("%s " NEWLINE QUOTED_S " " QUOTED_S, sthis_line, rfake_argv[0], sdecode_arg2[2]);
-		}
-
-		
-	} // each line
-
-	// cleanup
-	sfake_close ();
-	freenull3_ (enlocal_sa)
-}
-
-/*
-================
-LOC_GetString
-
-Returns localized string if available, or input string otherwise
-================
-*/
-
-const char *LOC_GetDecodeOld (const char *s_token)
-{
-	int j;
-	for (j = 0; j < rerelease_loc.numstrings; j += 2) {
-		char *sthis = rerelease_loc.strings[j];
-		if (String_Does_Match (sthis, s_token)) {
-			return rerelease_loc.strings[j + 1]; //c_strlcpy (s_decode, rerelease_loc.strings[j + 1]);
-		}
-	} // for
-	return NULL;
-}
-
-int LOC_GetDecode (const char *s)
-{
-	int j;
-	int slen = strlen(s);
-	int best_idx = not_found_neg1;
-	int best_len = -1;
-
-
-	for (j = 0; j < rerelease_loc.numstrings; j += 2) {
-		char *sthis = rerelease_loc.strings[j];
-		if (String_Does_Start_With (s, sthis)) {
-			int slen2 = strlen(sthis);
-			if (slen == slen2)
-				return j; // rerelease_loc.strings[j + 1]; //c_strlcpy (s_decode, rerelease_loc.strings[j + 1]);
-			if (best_len == -1 || slen2 > best_len) {
-				best_idx = j;
-				best_len = slen2;
-
-			}
-		}
-	} // for
-	return best_idx; //not_found_neg1;
-}
-
-char s_decodebuf[16384];
-#define ASSIGN(x) x
-
-const char *LOC_GetString (const char *stxt)
-{
-	//int j;
-	int is_nested_next = false;
-	int cycles = 0;
-//	char s_token[16384];
-//	char s_decode[16384];
-
-//	Sys_PrintToTerminal2 (va3(QUOTED_S, stxt));
-
-	c_strlcpy (s_decodebuf, stxt);
-	char *s_this_token;
-
-  	while (ASSIGN (s_this_token = strchr (s_decodebuf, '$') ) /**/ ) {
-		//char *s_tokend = &s_this_token[1];
-		char *s_token = &s_this_token[1];
-		cycles ++;
-		int prefixsize =  s_this_token - s_decodebuf;
-		int  j = LOC_GetDecode (s_token);
-		int is_nested_now = is_nested_next;
-
-		if (j == not_found_neg1) {
-			return "(error)";//stxt;
-		}
-		
-		char *s_tokenx = rerelease_loc.strings[j + 0];
-		char *s_decodx = rerelease_loc.strings[j + 1];
-		
-		//Sys_PrintToTerminal2 (va3(QUOTED_S, s_tokenx));
-		//Sys_PrintToTerminal2 (va3(QUOTED_S, s_decodx));
-
-		int slen0 = strlen(rerelease_loc.strings[j + 0]);
-		int slen1 = strlen(rerelease_loc.strings[j + 1]);
-
-		char *s_afterx = &s_decodebuf[slen0 + 1 /*for the dollar*/ ];		
-
-		char s_decode2[16384];
-		int is_nest_replace  = (*s_afterx != 0);
-
-		is_nested_next = 0;
-
-		memcpy		(s_decode2, s_decodebuf, prefixsize);
-		s_decode2[prefixsize] = 0;
-
-		if (is_nested_now) {
-			// Remove the next token replace into this one.
-			//char *s_afterx2 = &s_decodebuf[slen0 + 1 /*for the dollar*/ ];
-
-			//String_Edit_Replace (s_decode2, sizeof(s_decode2), s_token, ""); // Remove
-			String_Edit_Replace (s_decode2, sizeof(s_decode2), "{0}", s_decodx); // Expand
-			cycles ++;
-			goto skip;
-		}
-
-		c_strlcat	(s_decode2, s_decodx);
-
-		if (is_nest_replace) {
-			char *s_num = s_afterx;
-			String_Edit_Replace (s_decode2, sizeof(s_decode2), "{0}", s_num); // Expand
-			cycles ++;
-			goto skip;
-		} 
-
-		if (strstr (s_decodx, "{0}")) {
-			cycles ++;
-			is_nested_next = true;
-		}
-
-		c_strlcat (s_decode2, s_afterx);
-
-skip:
-		c_strlcpy (s_decodebuf, s_decode2);
-		//Sys_PrintToTerminal2 (va3(QUOTED_S, s_decodebuf));
-	} // while
-
-	if (cycles > 1 && String_Does_End_With(s_decodebuf, NEWLINE) == false) {
-		c_strlcat	(s_decodebuf, NEWLINE);
-	}
-
-	//Sys_PrintToTerminal2 (va3( QUOTED_S " to " QUOTED_S,  stxt, s_decodebuf ) );
-
-	return s_decodebuf;
-}
-
-
-//
-//
-//const char *LOC_GetStringOld (const char *stxt)
-//{
-//	int j;
-//	int is_nested_next = false;
-//	char s_token[16384];
-//	char s_decode[16384];
-//
-//	c_strlcpy (s_decodebuf, stxt);
-//	char *s_this_token;
-//
-//	while (ASSIGN (s_this_token = strchr (s_decodebuf, '$') ) /**/ ) {
-//		char *s_cursor = &s_this_token[1];
-//		int is_nested_now = is_nested_next;
-//		
-//		// Find end of string or first non-alpha
-//		while (1) {
-//			if (!*s_cursor)	break;	// EOS
-//			if (isdigit(*s_cursor)==false && isalpha(*s_cursor)==false && *s_cursor != '_')	break;	// not part of variable
-//			s_cursor ++;
-//		}
-//		char ch_save = *s_cursor;
-//		*s_cursor = 0;
-//		c_strlcpy (s_token, s_this_token);
-//		*s_cursor = ch_save;
-//		s_decode[0]=0;
-//		is_nested_next = 0;
-//
-//		const char *s_decode1 = LOC_GetDecode (&s_token[1]) ;
-//		char *s_num = NULL;
-//
-//		if (!s_decode1) {
-//			// Try stripping off trailing digits of token
-//			s_cursor = &s_this_token[1];
-//			
-//			// Find end of string or first non-alpha
-//			while (1) {
-//				if (!*s_cursor)	break;	// EOS
-//				if (isalpha(*s_cursor)==false && *s_cursor != '_')	break;	// not part of variable
-//				s_cursor ++;
-//			}
-//			if (*s_cursor) {
-//				s_num = s_cursor;
-//			}
-//			char ch_save = *s_cursor;
-//			*s_cursor = 0;			
-//			c_strlcpy (s_token, s_this_token);
-//			*s_cursor = ch_save;
-//			s_decode[0]=0;
-//			s_decode1 = LOC_GetDecode (&s_token[1]) ;
-//			if (!s_decode1) {
-//				va (s_decode, sizeof(s_decode), "(not found %s)" NEWLINE, &s_token[1]);
-//				goto failed;
-//			}
-//		}
-//
-//		c_strlcpy (s_decode, s_decode1);
-//failed:
-//		if (s_num) {
-//			String_Edit_Replace (s_decode, sizeof(s_decode), "{0}", s_num); // Expand
-//			*s_num = NULL;
-//		} else
-//
-//			if (strstr (s_decode, "{0}"))
-//				is_nested_next = true;
-//
-//		if (is_nested_now) {
-//			String_Edit_Replace (s_decodebuf, sizeof(s_decodebuf), s_token, ""); // Remove
-//			String_Edit_Replace (s_decodebuf, sizeof(s_decodebuf), "{0}", s_decode); // Expand
-//		} else {
-//			String_Edit_Replace (s_decodebuf, sizeof(s_decodebuf), s_token, s_decode);
-//		}
-//	} // while
-//
-//	return s_decodebuf;
-//}
-
 
 /*
 ====================
@@ -1578,8 +1260,11 @@ static void Host_Init (void)
 	//dpsnprintf (engineversionshort, sizeof (engineversionshort), "Zircon - %s", buildstringshort);
 	
 	const char *sfmt = "%s " // ...
+		#if defined(_WIN32) && defined(WIN64)
+			"64 "
+		#endif // CORE_SDL
 		#if !defined(_MSC_VER) && defined(_WIN32)
-			"CB "
+			"G++ "
 		#endif // CORE_SDL
 		#ifdef CORE_SDL
 			"SDL2 "
@@ -1637,9 +1322,9 @@ static void Host_Init (void)
 		VID_Init();
 		Render_Init();
 		S_Init();
-#ifdef CONFIG_CD
+
 		CDAudio_Init();
-#endif
+
 		Key_Init();
 		CL_Init();
 	}
@@ -1782,9 +1467,8 @@ void Host_Shutdown(void)
 
 	Host_SaveConfig();
 
-#ifdef CONFIG_CD
 	CDAudio_Shutdown ();
-#endif
+
 	S_Terminate ();
 	Curl_Shutdown ();
 	NetConn_Shutdown ();
@@ -1811,5 +1495,4 @@ void Host_Shutdown(void)
 	Con_Shutdown();
 	Memory_Shutdown();
 }
-
 

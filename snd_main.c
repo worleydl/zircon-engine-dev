@@ -25,9 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "snd_ogg.h"
 #include "csprogs.h"
 #include "cl_collision.h"
-#ifdef CONFIG_CD
 #include "cdaudio.h"
-#endif
 
 
 #define SND_MIN_SPEED 8000
@@ -149,7 +147,9 @@ static qbool sound_spatialized = false;
 
 qbool simsound = false;
 
+#ifdef CONFIG_VIDEO_CAPTURE
 static qbool recording_sound = false;
+#endif
 
 int snd_blocked = 0;
 static int current_swapstereo = false;
@@ -239,10 +239,10 @@ static cvar_t ambient_fade = {CF_CLIENT, "ambient_fade", "100", "rate of volume 
 static cvar_t snd_noextraupdate = {CF_CLIENT, "snd_noextraupdate", "0", "disables extra sound mixer calls that are meant to reduce the chance of sound breakup at very low framerates"};
 static cvar_t snd_show = {CF_CLIENT, "snd_show", "0", "shows some statistics about sound mixing"};
 
-// Default sound format is 48KHz, 16-bit, stereo
+// Default sound format is 48KHz, 32bit float, stereo
 // (48KHz because a lot of onboard sound cards sucks at any other speed)
 static cvar_t snd_speed = {CF_CLIENT | CF_ARCHIVE, "snd_speed", "48000", "sound output frequency, in hertz"};
-static cvar_t snd_width = {CF_CLIENT | CF_ARCHIVE, "snd_width", "2", "sound output precision, in bytes (1 and 2 supported)"};
+static cvar_t snd_width = {CF_CLIENT | CF_ARCHIVE, "snd_width", "4", "sound output precision, in bytes - 1 = 8bit, 2 = 16bit, 4 = 32bit float"};
 static cvar_t snd_channels = {CF_CLIENT | CF_ARCHIVE, "snd_channels", "2", "number of channels for the sound output (2 for stereo; up to 8 supported for 3D sound)"};
 
 static cvar_t snd_startloopingsounds = {CF_CLIENT, "snd_startloopingsounds", "1", "whether to start sounds that would loop (you want this to be 1); existing sounds are not affected"};
@@ -361,6 +361,14 @@ static void S_SoundInfo_f(void)
 	Con_Printf("%5u total_channels\n", total_channels);
 }
 
+static void S_PauseSound_f (void)
+{
+	if( Cmd_Argc() != 2 ) {
+		Con_Print("pausesound <pause>\n");
+		return;
+	}
+	S_PauseGameSounds(atoi( Cmd_Argv(1 ) ) != 0);
+}
 
 int S_GetSoundRate(void)
 {
@@ -372,6 +380,10 @@ int S_GetSoundChannels(void)
 	return snd_renderbuffer ? snd_renderbuffer->format.channels : 0;
 }
 
+int S_GetSoundWidth(void)
+{
+	return snd_renderbuffer ? snd_renderbuffer->format.width : 0;
+}
 
 
 #define SWAP_LISTENERS(l1, l2, tmpl) { tmpl = (l1); (l1) = (l2); (l2) = tmpl; }
@@ -596,7 +608,7 @@ void S_Startup (void)
 					chosen_fmt.width,
 						chosen_fmt.channels);
 
-		if (!SndSys_Init(&chosen_fmt, NULL))
+		if (!SndSys_Init(&chosen_fmt))
 			{
 			Con_Print("S_Startup: SndSys_Init failed.\n");
 			sound_spatialized = false;
@@ -777,7 +789,8 @@ void S_Init(void)
 	Cmd_AddCommand("play", S_Play_f, "play a sound at your current location (not heard by anyone else)");
 	Cmd_AddCommand("play2", S_Play2_f, "play a sound globally throughout the level (not heard by anyone else)");
 	Cmd_AddCommand("playvol", S_PlayVol_f, "play a sound at the specified volume level at your current location (not heard by anyone else)");
-	Cmd_AddCommand("stopsound", S_StopAllSounds, "silence");
+	Cmd_AddCommand("stopsound", S_StopAllSounds_f, "silence");
+	Cmd_AddCommand("pausesound", S_PauseSound_f, "temporary silence");
 	Cmd_AddCommand("soundlist", S_SoundList_f, "list loaded sounds");
 	Cmd_AddCommand("soundinfo", S_SoundInfo_f, "print sound system information (such as channels and speed)");
 	Cmd_AddCommand("snd_restart", S_Restart_f, "restart sound system");
@@ -1733,6 +1746,12 @@ void S_StopAllSounds (void)
 			SndSys_UnlockRenderBuffer ();
 	}
 }
+
+void S_StopAllSounds_f(void)
+{
+	S_StopAllSounds();
+}
+
 
 void S_PauseGameSounds (qbool toggle)
 {

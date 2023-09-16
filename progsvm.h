@@ -64,7 +64,8 @@ typedef struct prvm_required_field_s
 	const char *name;
 } prvm_required_field_t;
 
-
+#define PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN -1
+#define PRVM_EDICT_MARK_SETORIGIN_CAUGHT -2
 // AK: I dont call it engine private cause it doesnt really belongs to the engine
 //     it belongs to prvm.
 typedef struct prvm_edict_private_s
@@ -72,15 +73,12 @@ typedef struct prvm_edict_private_s
 	qbool free;
 	float freetime; // realtime of last change to "free" (i.e. also set on allocation)
 	int mark; // used during leaktest (0 = unref, >0 = referenced); special values during server physics:
-#define PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN -1
-#define PRVM_EDICT_MARK_SETORIGIN_CAUGHT -2
 	const char *allocation_origin;
 } prvm_edict_private_t;
 
 typedef struct prvm_edict_s
 {
 	// engine-private fields (stored in dynamically resized array)
-	//edict_engineprivate_t *e;
 	union
 	{
 		prvm_edict_private_t *required;
@@ -885,7 +883,7 @@ Load a program with LoadProgs
 */
 // Load expects to be called right after Reset
 void PRVM_Prog_Init(prvm_prog_t *prog);
-void PRVM_Prog_Load(prvm_prog_t *prog, const char *filename, unsigned char *data, fs_offset_t size, int numrequiredfunc, const char **required_func, int numrequiredfields, prvm_required_field_t *required_field, int numrequiredglobals, prvm_required_field_t *required_global);
+const char *PRVM_Prog_Load(prvm_prog_t *prog, const char *filename, unsigned char *data, fs_offset_t size, int numrequiredfunc, const char **required_func, int numrequiredfields, prvm_required_field_t *required_field, int numrequiredglobals, prvm_required_field_t *required_global);
 void PRVM_Prog_Reset(prvm_prog_t *prog);
 
 void PRVM_StackTrace(prvm_prog_t *prog);

@@ -30,13 +30,13 @@ static void M_Maps_Key(int k, int ascii)
 	int lcase_ascii;
 	switch (k) {
 	case K_MOUSE2: // fall
-	case K_ESCAPE:	
+	case K_ESCAPE:
 		M_Menu_Main_f();
 		break;
 
-	case K_MOUSE1: 
-		if (hotspotx_hover == not_found_neg1) break; 
-		
+	case K_MOUSE1:
+		if (hotspotx_hover == not_found_neg1) break;
+
 		mapscursor = hotspotx_hover + startrow; // fall thru
 
 	case K_ENTER:
@@ -53,7 +53,7 @@ static void M_Maps_Key(int k, int ascii)
 			key_dest = key_game;
 			menu_state_set_nova (m_none);
 		}
-		
+
 		break;
 
 	case K_SPACE:
@@ -112,8 +112,8 @@ static void M_Maps_Key(int k, int ascii)
 		lcase_ascii = tolower(ascii);
 		if (in_range ('a', lcase_ascii, 'z')) {
 			int startx = mapscursor, count;
-			char sprefix[2] = { lcase_ascii, 0 };
-			
+			char sprefix[2] = { (char)lcase_ascii, 0 };
+
 			//int j;
 			for (count = 0; count < m_maplist_count; ) {
 				startx ++;
@@ -126,14 +126,14 @@ static void M_Maps_Key(int k, int ascii)
 					break;
 				}
 
-				
+
 				count ++;
 				if (count >= m_maplist_count)
 					break;
 
 			} // j
 
-				
+
 		}
 		break;
 	}

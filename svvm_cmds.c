@@ -1509,17 +1509,9 @@ static void VM_SV_WriteCoord(prvm_prog_t *prog)
 	MSG_WriteCoord (WriteDest(prog), PRVM_G_FLOAT(OFS_PARM1), sv.protocol);
 }
 
-static void VM_SV_WriteString(prvm_prog_t *prog) // AURA PF_WriteString
+static void VM_SV_WriteString(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNT(2, VM_SV_WriteString);
-	//if (sv.is_qex) {	 // cprint and dprint stuff instead?
-	//	const char	*str = PRVM_G_STRING(OFS_PARM1);
-	//	char vabuf[1024];
-	//	va (vabuf, sizeof(vabuf), "%s", "msg" NEWLINE);
-	//	MSG_WriteString (WriteDest(prog), vabuf);
-	//	return;
-	//}
-	
 	MSG_WriteString (WriteDest(prog), PRVM_G_STRING(OFS_PARM1));
 }
 
@@ -3288,7 +3280,7 @@ NULL,							// #42 (QUAKE)
 VM_fabs,						// #43 float(float f) fabs (QUAKE)
 VM_SV_aim,						// #44 vector(entity e, float speed) aim (QUAKE)
 VM_cvar,						// #45 float(string s) cvar (QUAKE)
-VM_localcmd,					// #46 void(string s) localcmd (QUAKE)
+VM_localcmd_local,				// #46 void(string s) localcmd (QUAKE)
 VM_nextent,						// #47 entity(entity e) nextent (QUAKE)
 VM_SV_particle,					// #48 void(vector o, vector d, float color, float count) particle (QUAKE)
 VM_changeyaw,					// #49 void() ChangeYaw (QUAKE)

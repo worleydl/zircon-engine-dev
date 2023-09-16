@@ -97,11 +97,13 @@ sfx_t *S_FindName(const char *name);
 // S_StartSound returns the channel index, or -1 if an error occurred
 int S_StartSound (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation);
 int S_StartSound_StartPosition_Flags (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation, float startposition, int flags, float fspeed);
+qbool S_LocalSoundEx (const char *s, int chan, float fvol);
 qbool S_LocalSound (const char *s);
 
 void S_StaticSound (sfx_t *sfx, vec3_t origin, float fvol, float attenuation);
 void S_StopSound (int entnum, int entchannel);
 void S_StopAllSounds (void);
+void S_StopAllSounds_f(void);
 void S_PauseGameSounds (qbool toggle);
 
 void S_StopChannel (unsigned int channel_ind, qbool lockmutex, qbool freesfx);
@@ -116,5 +118,6 @@ void S_UnblockSound (void);
 
 int S_GetSoundRate (void);
 int S_GetSoundChannels (void);
+int S_GetSoundWidth (void);
 
-#endif
+#endif // !SOUND_H

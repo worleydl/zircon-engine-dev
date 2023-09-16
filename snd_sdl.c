@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 static unsigned int sdlaudiotime = 0;
+static int audio_device = 0;
 
 
 // Note: SDL calls SDL_LockAudio() right before this function, so no need to lock the audio data here
@@ -73,9 +74,19 @@ static void Buffer_Callback (void *userdata, Uint8 *stream, int len)
 
 			PartialLength2 = FrameCount * factor - PartialLength1;
 			memcpy(&stream[PartialLength1], &snd_renderbuffer->ring[0], PartialLength2);
+
+			// As of SDL 2.0 buffer needs to be fully initialized, so fill leftover part with silence
+			// FIXME this is another place that assumes 8bit is always unsigned and others always signed
+			memset(&stream[PartialLength1 + PartialLength2], snd_renderbuffer->format.width == 1 ? 0x80 : 0, len - (PartialLength1 + PartialLength2));
 		}
 		else
+		{
 			memcpy(stream, &snd_renderbuffer->ring[StartOffset * factor], FrameCount * factor);
+
+			// As of SDL 2.0 buffer needs to be fully initialized, so fill leftover part with silence
+			// FIXME this is another place that assumes 8bit is always unsigned and others always signed
+			memset(&stream[FrameCount * factor], snd_renderbuffer->format.width == 1 ? 0x80 : 0, len - (FrameCount * factor));
+		}
 
 		snd_renderbuffer->startframe += FrameCount;
 
@@ -97,7 +108,7 @@ Create "snd_renderbuffer" with the proper sound format if the call is successful
 May return a suggested format if the requested format isn't available
 ====================
 */
-qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
+int SndSys_Init (snd_format_t *fmt)
 {
 	unsigned int buffersize;
 	SDL_AudioSpec wantspec;
@@ -113,63 +124,44 @@ qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 		return false;
 	}
 
-	buffersize = (unsigned int)ceil((double)requested->speed / 25.0); // 2048 bytes on 24kHz to 48kHz
+	buffersize = (unsigned int)ceil((double)fmt->speed / 25.0); // 2048 bytes on 24kHz to 48kHz
 
 	// Init the SDL Audio subsystem
+	memset(&wantspec, 0, sizeof(wantspec));
 	wantspec.callback = Buffer_Callback;
 	wantspec.userdata = NULL;
-	wantspec.freq = requested->speed;
-	wantspec.format = ((requested->width == 1) ? AUDIO_U8 : AUDIO_S16SYS);
-	wantspec.channels = requested->channels;
+	wantspec.freq = fmt->speed;
+	wantspec.format = fmt->width == 1 ? AUDIO_U8 : (fmt->width == 2 ? AUDIO_S16SYS : AUDIO_F32);
+	wantspec.channels = fmt->channels;
 	wantspec.samples = CeilPowerOf2(buffersize);  // needs to be a power of 2 on some platforms.
 
-	Con_Printf("Wanted audio Specification:\n"
+	Con_DPrintf("Wanted audio Specification:\n"
 				"    Channels  : %i\n"
 				"    Format    : 0x%X\n"
 				"    Frequency : %i\n"
 				"    Samples   : %i\n",
 				wantspec.channels, wantspec.format, wantspec.freq, wantspec.samples);
 
-	if( SDL_OpenAudio( &wantspec, &obtainspec ) )
+	if ((audio_device = SDL_OpenAudioDevice(NULL, 0, &wantspec, &obtainspec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE)) == 0)
 	{
 		Con_Printf( "Failed to open the audio device! (%s)\n", SDL_GetError() );
 		return false;
 	}
 
-	Con_Printf("Obtained audio specification:\n"
-				"    Channels  : %i\n"
-				"    Format    : 0x%X\n"
-				"    Frequency : %i\n"
-				"    Samples   : %i\n",
+	Con_DPrintLinef ("Sound: Channels %d, Format 0x%X, Frequency %d, Samples %d",
 				obtainspec.channels, obtainspec.format, obtainspec.freq, obtainspec.samples);
 
-	// If we haven't obtained what we wanted
-	if (wantspec.freq != obtainspec.freq ||
-		wantspec.format != obtainspec.format ||
-		wantspec.channels != obtainspec.channels)
-	{
-		SDL_CloseAudio();
-
-		// Pass the obtained format as a suggested format
-		if (suggested != NULL)
-		{
-			suggested->speed = obtainspec.freq;
-			// FIXME: check the format more carefully. There are plenty of unsupported cases
-			suggested->width = ((obtainspec.format == AUDIO_U8) ? 1 : 2);
-			suggested->channels = obtainspec.channels;
-		}
-
-		return false;
-	}
+	fmt->speed = obtainspec.freq;
+	fmt->channels = obtainspec.channels;
 
 	snd_threaded = true;
 
-	snd_renderbuffer = Snd_CreateRingBuffer(requested, 0, NULL);
+	snd_renderbuffer = Snd_CreateRingBuffer(fmt, 0, NULL);
 	if (snd_channellayout.integer == SND_CHANNELLAYOUT_AUTO)
 		Cvar_SetValueQuick (&snd_channellayout, SND_CHANNELLAYOUT_STANDARD);
 
 	sdlaudiotime = 0;
-	SDL_PauseAudio( false );
+	SDL_PauseAudioDevice(audio_device, 0);
 
 	return true;
 }
@@ -184,8 +176,10 @@ Stop the sound card, delete "snd_renderbuffer" and free its other resources
 */
 void SndSys_Shutdown(void)
 {
-	SDL_CloseAudio();
-
+	if (audio_device > 0) {
+		SDL_CloseAudioDevice(audio_device);
+		audio_device = 0;
+	}
 	if (snd_renderbuffer != NULL)
 	{
 		Mem_Free(snd_renderbuffer->ring);
@@ -230,7 +224,7 @@ Get the exclusive lock on "snd_renderbuffer"
 */
 qbool SndSys_LockRenderBuffer (void)
 {
-	SDL_LockAudio();
+	SDL_LockAudioDevice(audio_device);
 	return true;
 }
 
@@ -244,7 +238,7 @@ Release the exclusive lock on "snd_renderbuffer"
 */
 void SndSys_UnlockRenderBuffer (void)
 {
-	SDL_UnlockAudio();
+	SDL_UnlockAudioDevice(audio_device);
 }
 
 /*

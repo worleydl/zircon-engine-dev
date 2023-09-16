@@ -358,7 +358,7 @@ void AppActivate(BOOL fActive, BOOL minimize)
 ****************************************************************************/
 {
 	static qbool sound_active = false;  // initially blocked by Sys_InitConsole()
-	 
+
 	vid_activewindow = fActive != FALSE;
 	vid_reallyhidden = minimize != FALSE;
 
@@ -432,9 +432,8 @@ void Sys_SendKeyEvents (void)
 	}
 }
 
-#ifdef CONFIG_CD
 LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-#endif
+
 
 static keynum_t buttonremap[16] =
 {
@@ -714,7 +713,7 @@ const char *msg_to_str (int val)
 	int n;
 	for (n = 0; n < ARRAY_COUNT(wm_msgs_text); n++) {
 		keyvalue_s *r = &wm_msgs_text[n];
-		if (val == r->value) {
+		if (val == (int)r->value) {
 			return r->keystring;
 		} // if
 	} // for
@@ -737,7 +736,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 	if ( uMsg == uiWheelMessage )
 		uMsg = WM_MOUSEWHEEL;
 
-	
+
 	#if 0 //def _DEBUG
 		const char *sx = msg_to_str ((unsigned)uMsg);
 		Sys_PrintToTerminal2 (sx);
@@ -748,17 +747,17 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 		case WM_KILLFOCUS:
 			//if (vid_isfullscreen)
 				ShowWindow(mainwindow, SW_SHOWMINNOACTIVE);
-			
+
 			break;
 
-		case WM_ERASEBKGND: 
-			
+		case WM_ERASEBKGND:
+
 			return 1; // MH: treachery!!! see your MSDN!
 
 		case WM_GETMINMAXINFO:	// Sent before size change; can be used to override default mins/maxs
 			fMinimized = true;
 			AppActivate(/*active*/ false, fMinimized);
-			
+
 			// Baker: this stops a crash I don't feel like dealing with right now
 
 			if (fMinimized && vid.minimized == false) {
@@ -771,7 +770,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 				//Sys_PrintToTerminal ("Gamma save");
 			}
 			vid.minimized = fMinimized;
-			
+
 
 			return 0;
 
@@ -886,11 +885,11 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 			break;
 
 		case WM_SIZE:
-			
+
 			if (wParam== SIZE_MINIMIZED) {
 				fMinimized = true;
 				AppActivate(/*active*/ false, fMinimized);
-				
+
 				// Baker: this stops a crash I don't feel like dealing with right now
 
 				if (fMinimized && vid.minimized == false) {
@@ -924,9 +923,9 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 
 		case WM_CLOSE:
 			//if (MessageBox (mainwindow, "Are you sure you want to quit?", "Confirm Exit", MB_YESNO | MB_SETFOREGROUND | MB_ICONQUESTION) == IDYES) // Baker 1012.1
-			
+
 			Host_Quit_f (); //Sys_Quit (0);
-			
+
 
 			break;
 
@@ -934,7 +933,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 			fActive = LOWORD(wParam);
 			fMinimized = (BOOL) HIWORD(wParam);
 			AppActivate(!(fActive == WA_INACTIVE), fMinimized);
-			
+
 			// Baker: this stops a crash I don't feel like dealing with right now
 			if (fMinimized == false && vid.minimized) {
 				//Sys_PrintToTerminal2 ("vid.unminimized");
@@ -951,7 +950,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 				//Sys_PrintToTerminal ("Gamma save");
 			}
 			vid.minimized = fMinimized;
-			
+
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
 			ClearAllStates ();
@@ -963,9 +962,8 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 		//	break;
 
 		case MM_MCINOTIFY:
-#if 0 //def CONFIG_CD
-			lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
-#endif
+			// Baker: lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
+
 			break;
 
 		default:
@@ -1407,8 +1405,8 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 		gl_extensions = "";
 		gl_platformextensions = "";
 
-		mainwindow = CreateWindowEx (ExWindowStyle, WIN_CLASSNAME_CLASS1, 
-			gamename, WindowStyle, 
+		mainwindow = CreateWindowEx (ExWindowStyle, WIN_CLASSNAME_CLASS1,
+			gamename, WindowStyle,
 			rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, global_hInstance, NULL); // PLX
 		if (!mainwindow)
 		{
@@ -1515,7 +1513,7 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 	// to let messages finish bouncing around the system, then we put
 	// ourselves at the top of the z order, then grab the foreground again,
 	// Who knows if it helps, but it probably doesn't hurt
-	
+
 
 
 //	Sleep (100);
@@ -1523,7 +1521,7 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 	SetWindowPos (mainwindow, HWND_TOP, 0, 0, 0, 0, SWP_DRAWFRAME | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOCOPYBITS);  // 3
 
 	SetForegroundWindow (mainwindow); // 4
-	
+
 
 	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE)) { // 5
 		TranslateMessage (&msg);
@@ -1635,7 +1633,7 @@ void VID_Shutdown (void)
 	gl_extensions = "";
 	gl_platform = "";
 	gl_platformextensions = "";
-	
+
 	if (qwglMakeCurrent)
 		qwglMakeCurrent(NULL, NULL);
 	qwglMakeCurrent = NULL;
@@ -1709,7 +1707,7 @@ void VID_SetMouse(qbool fullscreengrab, qbool relative, qbool hidecursor)
 				SetCapture (mainwindow);
 				ClipCursor (&window_rect);
 				//ClipCursor (&windowinfo.rcClient);
-				
+
 			}
 		}
 	}
@@ -2094,16 +2092,16 @@ void VID_Init(void)
 	InitCommonControls();
 #if 1
 	//HINSTANCE		hInst = GetModuleHandle(NULL);
-	HICON			hIcon = iszircicon ? 
+	HICON			hIcon = iszircicon ?
 						LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON1)) :
 						LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON2));	// Baker 1000.1
 
 	HCURSOR			hCursor =LoadCursor (NULL,IDC_ARROW);
-	WNDCLASS		wc = {CS_HREDRAW | CS_VREDRAW, (WNDPROC)MainWndProc, 0, 0, global_hInstance, hIcon, hCursor, 
+	WNDCLASS		wc = {CS_HREDRAW | CS_VREDRAW, (WNDPROC)MainWndProc, 0, 0, global_hInstance, hIcon, hCursor,
 		/*background*/ NULL, /*menu name*/ NULL, WIN_CLASSNAME_CLASS1};
 #endif
 
-	
+
 
 	if (!RegisterClass (&wc))
 		Con_Printf ("Couldn't register window class\n");

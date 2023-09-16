@@ -46,14 +46,9 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	EF_MUZZLEFLASH 			2
 #define	EF_BRIGHTLIGHT 			4
 #define	EF_DIMLIGHT 			8
-#define	EF_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16
-
-#define	EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16
-#define	EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32		32
-#define	EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64			64
-
-#define EF_ADDITIVE				32			// EF_QEX_PENTALIGHT FIGHTS	EF_ADDITIVE 32
-#define EF_BLUE					64			// EF_QEX_CANDLELIGHT FIGHTS EF_BLUE
+#define	EF_NODRAW_16			16
+#define EF_ADDITIVE				32
+#define EF_BLUE					64
 #define EF_RED					128
 #define EF_NOGUNBOB				256			// LadyHavoc: when used with .viewmodelforclient this makes the entity attach to the view without gun bobbing and such effects, it also works on the player entity to disable gun bobbing of the engine-managed .viewmodel (without affecting any .viewmodelforclient entities attached to the player)
 #define EF_FULLBRIGHT			512			// LadyHavoc: fullbright
@@ -245,25 +240,6 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	svc_hidelmp			36		// [string] slotname
 #define	svc_skybox			37		// [string] skyname
 
-#define svc_qex_botchat								38		// AURA
-#define svc_achievement_fights_effect2_46			46		// AURA
-#define svc_qex_localsound_fights_spawnstatic2_56	56		// AURA
-
-// 2021 RE-RELEASE:
-	//"svc_setviews", // 45		AURA 1.1
-	//"svc_updateping", // 46
-	//"svc_updatesocial", // 47
-	//"svc_updateplinfo", // 48
-	//"svc_rawprint", // 49
-	//"svc_servervars", // 50
-	//"svc_seq", // 51
-	//"svc_achievement", // 52
-	//"svc_chat", // 53
-	//"svc_levelcompleted", // 54
-	//"svc_backtolobby", // 55
-	//"svc_localsound" // 56
-
-
 // LadyHavoc: my svc_ range, 50-69
 #define svc_downloaddata	50		// [int] start [short] size
 #define svc_updatestatubyte	51		// [byte] stat [byte] value
@@ -273,9 +249,6 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	svc_precache		54		// [short] precacheindex [string] filename, precacheindex is + 0 for modelindex and +32768 for soundindex
 #define	svc_spawnbaseline2	55		// short modelindex instead of byte
 #define svc_spawnstatic2	56		// short modelindex instead of byte
-
-
-
 #define svc_entities		57		// [int] deltaframe [int] thisframe [float vector] eye [variable length] entitydata
 #define svc_csqcentities	58		// [short] entnum [variable length] entitydata ... [short] 0x0000
 #define	svc_spawnstaticsound2	59	// [coord3] [short] samp [byte] vol [byte] aten

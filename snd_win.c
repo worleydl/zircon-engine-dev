@@ -547,7 +547,7 @@ Create "snd_renderbuffer" with the proper sound format if the call is successful
 May return a suggested format if the requested format isn't available
 ====================
 */
-qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
+int SndSys_Init (snd_format_t *fmt)
 {
 #ifdef SUPPORTDIRECTX
 	qbool wavonly;
@@ -575,7 +575,7 @@ qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 	// Init DirectSound
 	if (!wavonly)
 	{
-		stat = SndSys_InitDirectSound (requested);
+		stat = SndSys_InitDirectSound (fmt);
 
 		if (stat == SIS_SUCCESS)
 			Con_Print("DirectSound initialized\n");
@@ -592,7 +592,7 @@ qbool SndSys_Init (const snd_format_t* requested, snd_format_t* suggested)
 	if (!dsound_init && (stat != SIS_NOTAVAIL))
 #endif
 	{
-		if (SndSys_InitMmsystem (requested))
+		if (SndSys_InitMmsystem (fmt))
 			Con_Print("Wave sound (MMSYSTEM) initialized\n");
 		else
 			Con_Print("Wave sound failed to init\n");

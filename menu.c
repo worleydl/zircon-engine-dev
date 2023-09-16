@@ -18,9 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 #include "darkplaces.h"
-#ifdef CONFIG_CD
 #include "cdaudio.h"
-#endif
 #include "image.h"
 #include "progsvm.h"
 
@@ -34,7 +32,7 @@ static cvar_t forceqmenu = { 0, "forceqmenu", "0", "enables the quake menu inste
 static cvar_t menu_progs = { 0, "menu_progs", "menu.dat", "name of quakec menu.dat file" };
 static cvar_t menu_options_colorcontrol_correctionvalue = {0, "menu_options_colorcontrol_correctionvalue", "0.5", "intensity value that matches up to white/black dither pattern, should be 0.5 for linear color"};
 
-static int rotc(int count, int val, int dir) 
+static int rotc(int count, int val, int dir)
 {
 	int j = val + dir;
 	     if (j >= count)	j = 0;
@@ -261,7 +259,7 @@ static void M_PrintColored(float cx, float cy, const char *str)
 	DrawQ_String(menu_x + cx, menu_y + cy, str, 0, 8, 8, 1, 1, 1, 1, 0, NULL, false, FONT_MENU);
 }
 
-// 
+//
 static void M_Print(float cx, float cy, const char *str)
 {
 	DrawQ_String(menu_x + cx, menu_y + cy, str, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_MENU);
@@ -310,8 +308,8 @@ typedef enum {
 	hotspottype_text,			// Text						// ?
 	hotspottype_textbutton,		// Text button.  Enter fires.
 	hotspottype_screen,			// Help uses this for next.  Remember, it is not acceptable for a K_MOUSE1 with no hotspot to do something.
-	hotspottype_vscroll,		// 
-	hotspottype_hscroll,		// 
+	hotspottype_vscroll,		//
+	hotspottype_hscroll,		//
 } hotspottype_e;
 
 
@@ -324,7 +322,7 @@ typedef struct {
 	int				idx;				// Our number (cursor).
 	int				trueidx;
 	hotspottype_e	hotspottype;
-	
+
 } hotspotx_s;
 
 
@@ -346,7 +344,7 @@ int Hotspots_Hit (void)
 		hotspotx_s *h = &hotspotxs[n];
 		int is_hit = RECT_HIT (h->r, in_windowmouse_x, in_windowmouse_y);
 		if (is_hit) {
-			return n;			
+			return n;
 		} // hit
 	} // for
 	return not_found_neg1;
@@ -357,7 +355,7 @@ int Hotspots_DidHit_Slider (void)
 	hotspotx_hover = Hotspots_Hit();
 	if (hotspotx_hover != not_found_neg1) {
 		hotspotx_hover_hs = &hotspotxs[hotspotx_hover];
-		if (hotspotx_hover_hs->hotspottype == hotspottype_slider) 
+		if (hotspotx_hover_hs->hotspottype == hotspottype_slider)
 			return true;
 
 	}
@@ -382,7 +380,7 @@ int Hotspots_GetIdx (int hidx)
 
 		return hidx;
 	}
-	return NULL;
+	return not_found_neg1;
 }
 
 
@@ -392,11 +390,11 @@ hotspotx_s *Hotspots_Add (float left, float top, float width, float height, int 
 	float xmag = vid.width / vid_conwidth.value; // 1300 / 240
 	float ymag = vid.height / vid_conheight.value;
 	left = left * xmag;
-	top = top * ymag; 
+	top = top * ymag;
 	width = width * xmag;
-	height = height * ymag; 
+	height = height * ymag;
 
-	
+
 	hotspotx_s *h = NULL;
 	int count	= count_ ? count_ : 1;
 	int nheight = count_ ? height / count : height;
@@ -413,7 +411,7 @@ hotspotx_s *Hotspots_Add (float left, float top, float width, float height, int 
 		hotspotx_count ++;
 	} // for
 
-	
+
 	return h;
 }
 
@@ -428,16 +426,16 @@ void Hotspots_Add2 (float left, float top, float width, float height, int count_
 
 int drawsel_idx;
 int draw_idx;
-// Sets menu state 
+// Sets menu state
 void menu_state_set_nova (int ee)
 {
 	m_state = (enum m_state_e)ee;
 
 	hotspotx_hover = not_found_neg1;
 	hotspotx_count = 0;
-	
+
 	drawsel_idx = not_found_neg1;
-	
+
 }
 
 
@@ -451,9 +449,9 @@ static void PPX_DrawSel_End (void)
 		float ymag	= vid.height / vid_conheight.value;
 
 		float left		= r.left	/ xmag;
-		float top		= r.top		/ ymag; 
+		float top		= r.top		/ ymag;
 		float width		= r.width	/ xmag;
-		float height	= r.height	/ ymag; 
+		float height	= r.height	/ ymag;
 
 		float redx = 0.5 + 0.2 * sin(realtime * M_PI);
 		DrawQ_Fill(left, top, width, height, /*rgb*/ redx, 0, 0, /*a*/ 0.5, DRAWFLAG_ADDITIVE);
@@ -600,7 +598,7 @@ static void M_Demo_Key (int k, int ascii)
 		Cbuf_AddTextLine (va(vabuf, sizeof(vabuf), "playdemo %s", NehahraDemos[demo_cursor].name));
 		return;
 
-	case K_HOME: 
+	case K_HOME:
 		demo_cursor = 0;
 		break;
 
@@ -697,7 +695,7 @@ static void M_Reset_Key (int key, int ascii)
 	case 'n':
 	case 'N':
 
-		if (m_resetdef_prevstate == m_options) { 
+		if (m_resetdef_prevstate == m_options) {
 			menu_state_set_nova (m_options);
 		} else {
 			menu_state_set_nova (m_options_classic);
@@ -749,7 +747,7 @@ static void M_Credits_Key (int key, int ascii)
 
 
 
-	
+
 
 //=============================================================================
 /* Menu Subsystem */
@@ -782,7 +780,7 @@ static void M_Init (void)
 	Cmd_AddCommand ("menu_maps", M_Menu_Maps_f, "open the maps browser menu");
 	Cmd_AddCommand ("help", M_Menu_Help_f, "open the help menu");
 	Cmd_AddCommand ("menu_quit", M_Menu_Quit_f, "open the quit menu");
-	
+
 	Cmd_AddCommand ("menu_credits", M_Menu_Credits_f, "open the credits menu");
 }
 
@@ -862,10 +860,10 @@ void M_Draw (void)
 		float ymag		= vid.height / vid_conheight.value;
 
 		float left		= r.left / xmag;
-		float top		= r.top / ymag; 
+		float top		= r.top / ymag;
 		float width		= r.width / xmag;
-		float height	= r.height / ymag; 
-	
+		float height	= r.height / ymag;
+
 		if (isin4 (m_state, m_maps, m_modlist, m_keys, m_slist)) {
 			DrawQ_Fill(left, top, width, height, /*bronzey*/ 0.5, 0.25, 0.1, 0.75, DRAWFLAG_NORMAL);
 		} else {
@@ -875,7 +873,7 @@ void M_Draw (void)
 
 	hotspotx_count = 0;
 
-	switch (m_state)	{	
+	switch (m_state)	{
 	case m_none:													break;
 	case m_main:					M_Main_Draw ();					break;
 	case m_demo:					M_Demo_Draw ();					break;
@@ -914,12 +912,6 @@ void M_Draw (void)
 }
 
 #include "menu_qc.c.h"
-
-
-
-
-
-
 #include "menu_main.c.h"
 #include "menu_main_zirc.c.h"
 	#include "menu_si.c.h"
@@ -935,8 +927,8 @@ void M_Draw (void)
 			#include "menu_video_classic.c.h"
 		#include "menu_video_nova.c.h"
 		#include "menu_options_classic.c.h"
-		
-			
+
+
 			#include "menu_color.c.h"
 			#include "menu_effects.c.h"
 			#include "menu_graphics.c.h"
@@ -946,5 +938,23 @@ void M_Draw (void)
 		#include "menu_maps.c.h"
 	#include "menu_quit.c.h"
 
-	
-	
+void Menu_Resets (void)
+{
+	m_main_cursor					=
+		options_cursor				=
+		options_cursorx				=
+		m_singleplayer_cursor		=
+		load_cursor					=
+		m_multiplayer_cursor		=
+		mapscursor					=
+		options_colorcontrol_cursor =
+		options_effects_cursor		=
+		options_graphics_cursor		=
+		keys_cursor					=
+		setup_cursor				=
+		slist_cursor				=
+		video_cursor				=
+		video2_cursor				= 0;
+	lanConfig_cursor = -1;
+
+}

@@ -80,7 +80,7 @@ int modlist_cursor;
 int modlist_count;
 modlist_entry_t modlist[MODLIST_TOTALSIZE];
 
-		
+
 
 int GetXModelList_Count (const char *s_prefix)
 {
@@ -103,11 +103,11 @@ int GetXModelList_Count (const char *s_prefix)
 		count = t->numfilenames;
 		for (j = 0; j < t->numfilenames; j++) {
 			char *sxy = t->filenames[j];
-					
+
 			SPARTIAL_EVAL_
 		} // for
 	} // if
-	
+
 	if (t) FS_FreeSearch(t);
 	return count;
 }
@@ -133,11 +133,11 @@ int GetXTextureList_Count (const char *s_prefix)
 		count = t->numfilenames;
 		for (j = 0; j < t->numfilenames; j++) {
 			char *sxy = t->filenames[j];
-					
+
 			SPARTIAL_EVAL_
 		} // for
 	} // if
-	
+
 	if (t) FS_FreeSearch(t);
 	return count;
 }
@@ -165,11 +165,11 @@ int GetXSoundList_Count (const char *s_prefix)
 		count = t->numfilenames;
 		for (j = 0; j < t->numfilenames; j++) {
 			char *sxy = t->filenames[j];
-					
+
 			SPARTIAL_EVAL_
 		} // for
 	} // if
-	
+
 	if (t) FS_FreeSearch(t);
 	return count;
 }
@@ -239,24 +239,24 @@ int GetXSkyList_Count (const char *s_prefix)
 			File_URL_Edit_Remove_Extension (sxy);
 			if (!String_Does_End_With (sxy, "_rt"))
 				continue;
-			
+
 			// remove _rt term
 			int slen = strlen (sxy);
 			if (slen > 3) {
-				sxy[slen - 3] = 0; 
+				sxy[slen - 3] = 0;
 			}
 			else { // invalid somehow
 				continue;
 			}
-		
+
 			SPARTIAL_EVAL_
-			
+
 		} // for
 	} // if
-	
-	
+
+
 	if (t) FS_FreeSearch(t);
-	
+
 	return count;
 }
 
@@ -269,10 +269,10 @@ int GetXTexMode_Count (const char *s_prefix)
 	int			count = 0, i;
 	// Ok .. this has to be sorted due to first/last.
 	const char *slist[] =  {
-		"GL_LINEAR", 
+		"GL_LINEAR",
 		"GL_LINEAR_MIPMAP_LINEAR",
 		"GL_LINEAR_MIPMAP_NEAREST",
-		"GL_NEAREST", 
+		"GL_NEAREST",
 		"GL_NEAREST_MIPMAP_LINEAR",
 		"GL_NEAREST_MIPMAP_NEAREST",
 	};
@@ -353,22 +353,22 @@ void ModList_X(const char *s_prefix)
 				}
 			} // for
 		}
-		
+
 		int k = String_Does_Start_With_Caseless (sconsider, s_prefix);
-		if (!k) 
+		if (!k)
 			continue;
 
 		char *sxy = sconsider;
 		File_URL_Edit_Remove_Extension (sxy);
-		
+
 		SPARTIAL_EVAL_
 
 		modlist_count ++;
 	}
 	stringlistfreecontents(&list);
-	
 
-	
+
+
 
 
 }
@@ -400,7 +400,7 @@ int Folder_List_X (const char *s_prefix)
 		File_URL_Remove_TrailSlash (sgamedirlast); // sgamedirlast is like "id1" or "travail" or whatever
 
 	WARP_X_ (Con_Folder_f)
-		
+
 	// What is dir?
 	c_strlcpy  (pathos, s_prefix);
 	if (String_Does_End_With (pathos, "/") == false)
@@ -430,15 +430,15 @@ int Folder_List_X (const char *s_prefix)
 
 		const char *s1 = list.strings[j];
 		int k = String_Does_Start_With_Caseless (s1, filos);
-		if (!k) 
+		if (!k)
 			continue;
 
 		c_strlcpy (sthisy, pathos);
 		c_strlcat (sthisy, s1);
-		
+
 		char *sxy = sthisy;
 		File_URL_Edit_Remove_Extension (sxy);
-		
+
 		SPARTIAL_EVAL_
 
 		num_found ++;
@@ -463,7 +463,7 @@ int Folder_List_X (const char *s_prefix)
 	return num_found;
 }
 
-void Con_HidenotifyPrintLinef(const char *fmt, ...); // 
+void Con_HidenotifyPrintLinef(const char *fmt, ...); //
 void Con_LogCenterPrint (const char *str)
 {
 	if (String_Does_Match(str, cl.lastcenterstring))
@@ -1052,7 +1052,7 @@ void Log_ConPrint (const char *msg)
 			FS_Print (logfile, sanitizedmsg);
 			Mem_Free(sanitizedmsg);
 		}
-		else 
+		else
 		{
 			FS_Print (logfile, msg);
 		}
@@ -1113,7 +1113,7 @@ void Con_ToggleConsole_f (void)
 	key_linepos = 1;
 
 	Partial_Reset (); Con_Undo_Clear (); Selection_Line_Reset_Clear ();
-	
+
 	con_backscroll = 0; history_line = -1; // Au 15
 #endif
 
@@ -1255,7 +1255,7 @@ static void Con_ConDump_f (void)
 			FS_Write(file, sanitizedmsg, strlen(sanitizedmsg));
 			Mem_Free(sanitizedmsg);
 		}
-		else 
+		else
 		{
 			FS_Write(file, CON_LINES(i).start, CON_LINES(i).len);
 		}
@@ -1299,7 +1299,7 @@ void Con_Init (void)
 	// support for the classic Quake option
 // COMMANDLINEOPTION: Console: -condebug logs console messages to qconsole.log, see also log_file
 	if (Sys_CheckParm ("-condebug") != 0)
-		Cvar_SetQuick (&log_file, "zircon_log.log"); // 
+		Cvar_SetQuick (&log_file, "zircon_log.log"); //
 
 	// register our cvars
 	Cvar_RegisterVariable (&con_chat);
@@ -1610,12 +1610,12 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 						}
 					}
 				}
-				
+
 				// Send to chatbox for say/tell (1) and messages (3)
 				// 3 is just so that a message can be sent to the chatbox without a sound.
 				if (*msg == 1 || *msg == 3)
 					mask = CON_MASK_CHAT;
-				
+
 				line[index++] = STRING_COLOR_TAG;
 				line[index++] = '3';
 				msg++;
@@ -1692,13 +1692,13 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 									else g -= 87;
 									if(isdigit(b)) b -= '0';
 									else b -= 87;
-									
+
 									color = Sys_Con_NearestColor(r * 17, g * 17, b * 17);
 									in += 3; // 3 only, the switch down there does the fourth
 								}
 								else
 									color = in[1];
-								
+
 								switch(color)
 								{
 									case STRING_COLOR_TAG:
@@ -1988,7 +1988,7 @@ void Con_DPrintLinef(const char *fmt, ...)
 	{
 		int s_len = strlen(msg);
 		if (s_len >= MAX_INPUTLINE - 1) {
-			msg[s_len - 1] = 10; // Sucks to be you	
+			msg[s_len - 1] = 10; // Sucks to be you
 		} else {
 			msg[s_len] = 10; // was 0
 			msg[s_len+1] = 0; // extra
@@ -2106,9 +2106,9 @@ static void Con_DrawInput (void)
 		}
 		DrawQ_String(x + xo, con_vislines - con_textsize.value*2, text, 0, con_textsize.value, con_textsize.value, 1.0, 1.0, 1.0, 1.0, 0, &col_out, false, FONT_CONSOLE);
 #else
-//		DrawQ_String(x + xo, con_vislines - con_textsize.value*2, text, 0, 
+//		DrawQ_String(x + xo, con_vislines - con_textsize.value*2, text, 0,
 		//con_textsize.value, con_textsize.value, 1.0, 1.0, 1.0, 1.0, 0, &col_out, false, FONT_CONSOLE);
-	
+
 		DrawQ_Fill(x + xo + con_textsize.value * (1/8.0) /*hereo*/,									// x
 			con_vislines - con_textsize.value*2 /*+ con_textsize.value * (1/8.0)*/,						// y
 			con_textsize.value * (1/8.0),															// w
@@ -2541,8 +2541,8 @@ void Con_DrawConsole (int lines)
 					1 + sx, 1 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					0);
 	}
-	DrawQ_String(vid_conwidth.integer - 
-		DrawQ_TextWidth(engineversionshort , 0, con_textsize.value, con_textsize.value, false, 
+	DrawQ_String(vid_conwidth.integer -
+		DrawQ_TextWidth(engineversionshort , 0, con_textsize.value, con_textsize.value, false,
 			FONT_CONSOLE), lines - con_textsize.value, engineversionshort, 0, con_textsize.value, //bronzey
 			con_textsize.value, /*rgba*/ 0.90, 0.90, 0.90, 1.0, /*flags outcolor*/ 0, NULL, true, FONT_CONSOLE); // Baker 1007.2
 
@@ -2628,12 +2628,12 @@ int GetMapList (const char *s, char *completedname, int completednamebufferlengt
 	//if (is_menu_fill) {
 	//	int j = 4;
 	//}
-#ifdef _WIN32
+
 	t = FS_Search (message, 1, true, is_menu_fill ? gamedironly_true : gamedironly_false);
-#else
-	// I don't know what is up and I don't feel like Linux debugging right now ...
-	t = FS_Search (message, 1, true, gamedironly_false);
-#endif	
+
+	// I don't know what is up and I don't feel like Linux debugging right now ...  FIXED ^^^
+	//t = FS_Search (message, 1, true, gamedironly_false);
+
 	if (!t)
 		return false;
 	if (t->numfilenames > 1) {
@@ -2684,8 +2684,9 @@ int GetMapList (const char *s, char *completedname, int completednamebufferlengt
 					lumplen = LittleLong(header->lumps[Q2LUMP_ENTITIES].filelen);
 					dpsnprintf(desc, sizeof(desc), "Q2BSP%i", p); qfmt = 2;
 				}
-				else
+				else {
 					dpsnprintf(desc, sizeof(desc), "IBSP%i", p); qfmt = 4;
+				}
 			} else if (BuffLittleLong(buf) == BSPVERSION /*29*/) {
 				lumpofs = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES);
 				lumplen = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES + 4);
@@ -2758,7 +2759,7 @@ int GetMapList (const char *s, char *completedname, int completednamebufferlengt
 
 		if (is_autocomplete && is_playable) { // Autocomplete shall not print health boxes or map with no name) {
 			const char *sxy = t->filenames[i]+5;
-		
+
 			SPARTIAL_EVAL_
 		}
 
@@ -2767,10 +2768,10 @@ int GetMapList (const char *s, char *completedname, int completednamebufferlengt
 				Con_Printf("%16s (%-8s) %s\n", t->filenames[i]+5, desc, message);
 			}
 		} else {
-			if (m_maplist_count < ARRAY_COUNT(m_maplist) && message[0]) {
+			if (m_maplist_count < (int)ARRAY_COUNT(m_maplist) && message[0]) {
 				char stru[16];
 				char stru28[28];
-				
+
 				maplist_s *mx = &m_maplist[m_maplist_count];
 				if (mx->sm_a)			{ free (mx->sm_a);		mx->sm_a	= NULL;	}
 				if (mx->smtru_a)		{ free (mx->smtru_a);	mx->smtru_a	= NULL;	}
@@ -2780,7 +2781,7 @@ int GetMapList (const char *s, char *completedname, int completednamebufferlengt
 
 				strlcpy (stru, t->filenames[i]+5, sizeof(stru) );
 				strlcpy (stru28, message, sizeof(stru28) );
-				
+
 				mx->sm_a	= (unsigned char *)strdup	(t->filenames[i]+5);
 				mx->smtru_a	= (unsigned char *)strdup	(stru);
 				mx->smsg_a	= (unsigned char *)strdup	(stru28 /*message*/);
@@ -2870,14 +2871,14 @@ int GetXList_Count (const char *s_prefix, const char *s_dot_extension, int is_st
 			char *sxy = t->filenames[j];
 			if (is_stripext)
 				File_URL_Edit_Remove_Extension (sxy);
-			
-			SPARTIAL_EVAL_			
+
+			SPARTIAL_EVAL_
 		} // for
 	} // if
-	
-	
+
+
 	if (t) FS_FreeSearch(t);
-	
+
 	return count;
 }
 
@@ -3332,7 +3333,7 @@ int GetGameCommands_Count (const char *s_prefix, const char *s /*sv_gamecommands
 	stringlistinit(&matchedSet); // this does not allocate
 
 	if (s[0]) { //stringlistappend(&matchedSet, "");
-		char	*s_delim		= " ";
+		const char	*s_delim		= " ";
 		int		num_found		= 0;
 		int		s_len			= strlen(s);
 		int		s_delim_len		= strlen(s_delim);
@@ -3340,10 +3341,10 @@ int GetGameCommands_Count (const char *s_prefix, const char *s /*sv_gamecommands
 
 		while (1) {
 			char			sthis[16384];
-			const	char	*commapos	= strstr (&s[searchpos], s_delim); // string_find_pos_start_at(s, s_delim, searchpos);		
+			const	char	*commapos	= strstr (&s[searchpos], s_delim); // string_find_pos_start_at(s, s_delim, searchpos);
 			int				endpos		= (commapos == NULL) ? (s_len - 1) : ( (commapos - s) -1); // (commapos == not_found_neg1) ? (s_len -1) : (commapos -1);
 			int				this_w		= (endpos - searchpos + 1); // string_range_width (searchpos, endpos); (endpos - startpos + 1)
-			
+
 			memcpy (sthis, &s[searchpos], this_w);
 			sthis[this_w] = 0; // term
 
@@ -3396,7 +3397,7 @@ int GetRT_Count (const char *s_prefix)
 		"movey",
 		"movez",
 		"normalmode",
-		"origin", 
+		"origin",
 		"originscale",
 		"originx",
 		"originy",
@@ -3428,7 +3429,7 @@ int GetXCopy_Count (const char *s_prefix)
 	int			count = 0, i;
 	// Ok .. this has to be sorted due to first/last.
 	const char *slist[] =  {
-		"ents", 
+		"ents",
 	};
 
 	int			nummy = (int)ARRAY_COUNT(slist);
@@ -3449,7 +3450,7 @@ int GetXEdicts_Count (const char *s_prefix)
 	int			count = 0, i;
 	// Ok .. this has to be sorted due to first/last.
 	const char *slist[] =  {
-		"targetname", 
+		"targetname",
 	};
 
 	int			nummy = (int)ARRAY_COUNT(slist);
@@ -3482,7 +3483,7 @@ WARP_X_ (VM_tokenize_console)
 int tokenize_console_argc (const char *s_yourline)
 {
 	const char *p;
-	
+
 	int num_tokens = 0;
 	int tokens[MAX_INPUTLINE /*VM_STRINGTEMP_LENGTH*/ / 2];
 	int tokens_startpos[MAX_INPUTLINE /*VM_STRINGTEMP_LENGTH*/ / 2];
@@ -3526,18 +3527,18 @@ void Con_CompleteCommandLine_Zircon (int is_shifted, int is_from_nothing)
 	const char **list[4] = {0, 0, 0, 0};
 	char s2[512];
 	char spartial512[512];
-	
+
 	int c, v, a, i, cmd_len, pos, k, searchtype =0;
 	//int n; // nicks --blub
 	const char *space;//, *patterns;
-	
+
 
 
 	freenull3_ (spartial_alphatop_a)
 	freenull3_ (spartial_alphalast_a)
 	freenull3_ (spartial_best_before_a)
 	freenull3_ (spartial_best_after_a)
-	
+
 
 	//Con_PrintLinef ("oldspartial: " QUOTED_S, oldspartial);
 	//find what we want to complete
@@ -3590,7 +3591,7 @@ void Con_CompleteCommandLine_Zircon (int is_shifted, int is_from_nothing)
 
 	if (last_semicolon) {
 		startcommand /*seque*/ = String_Skip_WhiteSpace_Including_Space (last_semicolon + 1);
-	} 
+	}
 
 	int deep  = startcommand - &key_line[1];
 	int deep2 = &key_line[key_linepos] - startcommand;
@@ -3599,7 +3600,7 @@ void Con_CompleteCommandLine_Zircon (int is_shifted, int is_from_nothing)
 	space = strchr (startcommand + 1, ' '); // Find first space
 
 	WARP_X_ (VM_argv, VM_tokenize_console,)
-	
+
 	// AT 1 ... first arg
 	if (space && /*cursor is immediately after the space of the command*/ pos == (space - key_line) + 1) {
 		char command[512];
@@ -3638,8 +3639,8 @@ void Con_CompleteCommandLine_Zircon (int is_shifted, int is_from_nothing)
 		case 2:  GetXList_Count (/*s_prefix*/ s, /*s_dot_extension*/ ".sav", /*stripext*/ true);	break;
 		case 3:  GetXList_Count (/*s_prefix*/ s, /*s_dot_extension*/ ".dem", /*stripext*/ true);	break;
 
-		case 4:  ModList_X		(s); break; // game 
-			
+		case 4:  ModList_X		(s); break; // game
+
 		case 5:  GetXList_Count		(/*s_prefix*/ s, /*s_dot_extension*/ ".cfg", /*stripext*/ false); break;
 		case 6:  GetXSkyList_Count	(/*s_prefix*/ s);											break;
 		case 7:  GetXTexMode_Count  (s); break;
@@ -3648,14 +3649,14 @@ void Con_CompleteCommandLine_Zircon (int is_shifted, int is_from_nothing)
 		case 10: GetRT_Count  (s); break;
 		case 11: GetGameCommands_Count  (s, prvm_sv_gamecommands.string); break;
 		case 12: GetGameCommands_Count  (s, prvm_cl_gamecommands.string); break;
-		case 13: GetGameCommands_Count  (s, prvm_menu_gamecommands.string); break;	
+		case 13: GetGameCommands_Count  (s, prvm_menu_gamecommands.string); break;
 		case 14: GetXModelList_Count	(/*s_prefix*/ s);											break;
 		case 15: GetXSoundList_Count	(/*s_prefix*/ s);											break;
 		case 16: GetXTextureListWorld_Count	(/*s_prefix*/ s);										break;
 		case 17: GetXKeyList_Count		(/*s_prefix*/ s);											break;
-		case 18: Folder_List_X			(/*s_prefix*/ s);											
+		case 18: Folder_List_X			(/*s_prefix*/ s);
 			// If is Folder complete a /
-			
+
 			break;
 		} // switch
 
@@ -3771,13 +3772,13 @@ mapskip:
 
 	// So what is the completion?
 	// cmd plus len
-	// Describe how we do it diff if is in_partial 
+	// Describe how we do it diff if is in_partial
 
 one_match_skip:
 
 	// prevent a buffer overrun by limiting cmd_len according to remaining space
 	cmd_len = min(cmd_len, (int)sizeof(key_line) - 1 - pos);
-	if (cmd) { 
+	if (cmd) {
 		// start of complete .. copy the "cmd" (completion) over
 		key_linepos = pos;
 		memcpy(&key_line[key_linepos], cmd, cmd_len);
@@ -3833,7 +3834,7 @@ void Con_CompleteCommandLine (void)
 
 	// These go here until I integrate if that ever becomes top of list
 	Partial_Reset ();
-	
+
 	freenull3_ (spartial_best_before_a)
 	freenull3_ (spartial_best_after_a)
 	freenull3_ (spartial_alphalast_a)
@@ -4145,7 +4146,7 @@ void Con_Copy_f (void)
 {
 	int i;
 	//qfile_t *file;
-	
+
 	if (Cmd_Argc() == 2 && String_Does_Match_Caseless(Cmd_Argv(1), "ents")) {
 		Con_Copy_Ents_f ();
 		return;
@@ -4170,7 +4171,7 @@ void Con_Copy_f (void)
 		memcpy (sanitizedmsg, CON_LINES(i).start, len);
 		SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 		tle += (strlen(sanitizedmsg) + ONE_CHAR_1);
-		Mem_Free(sanitizedmsg);	
+		Mem_Free(sanitizedmsg);
 	}
 	char		*s_msg_alloc = (char *)calloc (tle, 1);
 	for(i = 0; i < CON_LINES_COUNT; ++i) {
@@ -4185,7 +4186,7 @@ void Con_Copy_f (void)
 		SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 		strlcat (s_msg_alloc, sanitizedmsg, tle);
 		strlcat (s_msg_alloc, "\n", tle);
-		Mem_Free(sanitizedmsg);	
+		Mem_Free(sanitizedmsg);
 	}
 	if (con_mutex) Thread_UnlockMutex(con_mutex);
 	Clipboard_Set_Text (s_msg_alloc);
@@ -4209,10 +4210,10 @@ static void Con_Folder_f (void)
 	//   linux with s_current_dir tends to be a clusterfuck
 	// fs_gamedir
 	// fs_gamedir
-	
+
 	// fs_basedir ""
 
-	// fs_userdir 
+	// fs_userdir
 	// "C:\Users\Main\Documents/My Games/zircon/"
 	// gamedirname1 "id1"
 
@@ -4226,7 +4227,7 @@ static void Con_Folder_f (void)
 	char sgamedirlast[1024];
 		c_strlcpy (sgamedirlast, slastcom);  // "id1"
 		File_URL_Remove_TrailSlash (sgamedirlast);  // "id1" // sgamedirlast is like "id1" or "travail" or whatever
-	
+
 	int is_underdir = Cmd_Argc() == 2 ? true : false;
 
 	int j;
@@ -4264,14 +4265,14 @@ static void Con_Folder_f (void)
 #define QUOTEDX(X) "\"" X "\""
 // Baker 1011.2
 static void Con_Pos_f (void)
-{	
+{
 	if (cl.entities) {
 		char vabuf[1024];
-		va(vabuf, sizeof(vabuf), 
+		va(vabuf, sizeof(vabuf),
 			QUOTEDX("origin") " " QUOTEDX("%3.0f %3.0f %3.0f") NEWLINE
 			QUOTEDX("angles") " " QUOTEDX("%3.0f %3.0f %3.0f") NEWLINE,
-			cl.entities[cl.playerentity].state_current.origin[0], 
-			cl.entities[cl.playerentity].state_current.origin[1], 
+			cl.entities[cl.playerentity].state_current.origin[0],
+			cl.entities[cl.playerentity].state_current.origin[1],
 			cl.entities[cl.playerentity].state_current.origin[2],
 			cl.entities[cl.playerentity].state_current.angles[0],
 			cl.entities[cl.playerentity].state_current.angles[1],
@@ -4279,13 +4280,13 @@ static void Con_Pos_f (void)
 			);
 			Clipboard_Set_Text (vabuf);
 			Con_PrintLinef ("pos to clipboard: " NEWLINE "%s", vabuf);
-			
+
 			//Con_PrintLinef ("Pos copied to clipboard");
 	} else {
 		Con_PrintLinef ("No entities");
 	}
-	
-	
+
+
 }
 
 WARP_X_ (Partial_Reset)

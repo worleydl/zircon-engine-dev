@@ -6,7 +6,7 @@ static char *s_line_sa;
 
 void sfake_start (char *s)
 {
-	setstr (s_fake_src_sa, s); 
+	setstr (s_fake_src_sa, s);
 	s_fake_cursor = s_fake_src_sa;
 //	_fake_pos = 0;
 //	_fake_len = strlen(s);
@@ -29,7 +29,7 @@ int sfake_is_eof ()
 	return (*s_fake_cursor) == 0;
 }
 
-// is this allocated or not?  Yes, however caller need not deal with freeing it.  We do all that.
+// is this allocated or not?  Yes allocated, however caller need not deal with freeing it.  We do all that.
 char *sfake_getlin () {
 	if (!s_fake_cursor) return NULL;
 	if (! (*s_fake_cursor) ) return NULL;
@@ -45,14 +45,14 @@ char *sfake_getlin () {
 		slinelen = sendline - s_fake_cursor;
 		s_fake_cursor += slinelen;
 		s_fake_cursor += ONE_CHAR_1;
-		
+
 	} else {
 		slinelen = strlen (s_fake_cursor);
 		s_fake_cursor += slinelen;
 	}
 
 	char *sline = dpstrndup (sstart, slinelen);
-	
+
 	setstr (s_line_sa, sline);
 
 	freenull3_ (sline)
@@ -89,16 +89,16 @@ void CleanShader (const char *srel) // scripts/mine.shader
 	dpsnprintf (swrite, sizeof(swrite), "_jack_scripts/%s", sfile);
 
 	Con_PrintLinef ("Writing %s", swrite);
-	
+
 	qfile_t *f = FS_OpenRealFile(swrite, "wb", false);
 
 	if (!f) {
 		Con_Print("ERROR: couldn't open.\n");
 		goto fail;
 	}
-		
+
 	s_sa = (char *)FS_LoadFile (srel, tempmempool, false, NULL, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL); // AXX1 START
-	
+
 	if (!s_sa) goto fail;
 
 	s_clean_sa = String_Replace_Alloc (s_sa, "\r", "");
@@ -106,7 +106,7 @@ void CleanShader (const char *srel) // scripts/mine.shader
 	Mem_Free(s_sa); // AXX1 END
 
 	sfake_start (s_clean_sa);
-	
+
 	while (sfake_is_eof() == false) {
 		const char *sx = sfake_getlin();
 		if (!sx) break;
@@ -128,7 +128,7 @@ void CleanShader (const char *srel) // scripts/mine.shader
 
 	sfake_close ();
 	freenull3_ (s_clean_sa);
-	
+
 fail:
 	if (f)
 		FS_Close (f);
@@ -143,10 +143,10 @@ void SCR_Jackit_f(void)
 
 	if (!asearch) {
 		Con_PrintLinef ("Nothing for %s", spattern);
-		goto fail;
+		return;
 	}
 
-	char *swrite = "scripts/shaderlist.txt";
+	const char *swrite = "scripts/shaderlist.txt";
 	qfile_t *fshadertxt = FS_OpenRealFile(swrite, "wb", false);
 	if (fshadertxt) {
 		FS_Printf (fshadertxt, "%s\n", "// Auto-generated from Zircon using \"jackit\" command");
@@ -174,8 +174,6 @@ void SCR_Jackit_f(void)
 		Con_PrintLinef ("Updated %s", swrite);
 		FS_Close (fshadertxt);
 	}
-
-fail:
 
 	//gamedir/_jack_shaders
 

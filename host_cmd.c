@@ -111,7 +111,7 @@ static void Host_Status_f (void)
 			players++;
 	print ("host:     %s" NEWLINE, Cvar_VariableString ("hostname") );
 	print ("version:  %s build %s (gamename %s)" NEWLINE, gamename, buildstring, gamenetworkfiltername);
-	print ("protocol: %d (%s) %s" NEWLINE, Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol), sv.is_qex ? "(remaster)" : "" );
+	print ("protocol: %d (%s)" NEWLINE, Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol));
 	print ("map:      %s" NEWLINE, sv.name);
 	print ("timing:   %s" NEWLINE, Host_TimingReport(vabuf, sizeof(vabuf)));
 	print ("players:  %d active (%d max)" NEWLINE NEWLINE, players, svs.maxclients);

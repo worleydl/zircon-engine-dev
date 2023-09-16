@@ -90,7 +90,7 @@ cvar_t cl_dlights_decaybrightness = {CF_CLIENT | CF_ARCHIVE, "cl_dlights_decaybr
 cvar_t qport = {CF_CLIENT, "qport", "0", "identification key for playing on qw servers (allows you to maintain a connection to a quakeworld server even if your port changes)"};
 
 cvar_t cl_prydoncursor = {CF_CLIENT, "cl_prydoncursor", "0", "enables a mouse pointer which is able to click on entities in the world, useful for point and click mods, see PRYDON_CLIENTCURSOR extension in dpextensions.qc"};
-cvar_t cl_prydoncursor_notrace = {CF_CLIENT, "cl_prydoncursor_notrace", "0", "disables traceline used in prydon cursor reporting to the game, saving some cpu time"};
+cvar_t cl_prydoncursor_notrace = {CF_CLIENT, "cl_prydoncursor_notrace", "1", "disables traceline used in prydon cursor reporting to the game, saving some cpu time"};
 
 cvar_t cl_deathnoviewmodel = {CF_CLIENT, "cl_deathnoviewmodel", "1", "hides gun model when dead"};
 
@@ -111,7 +111,6 @@ cvar_t cl_maxfps = {CF_CLIENT | CF_ARCHIVE, "cl_maxfps", "144", "maximum fps cap
 cvar_t cl_maxfps_alwayssleep = {CF_CLIENT, "cl_maxfps_alwayssleep","1", "gives up some processing time to other applications each frame, value in milliseconds, disabled if cl_maxfps is 0"}; // SEPUS no
 cvar_t cl_maxidlefps = {CF_CLIENT | CF_ARCHIVE, "cl_maxidlefps", "20", "maximum fps cap when the game is not the active window (makes cpu time available to other programs"};
 cvar_t cl_maxconsole_menu_fps = {CF_CLIENT, "cl_maxconsole_menu_fps", "72", "maximum fps cap when console is up or menu is up and not hosting a game [Zircon]"}; // Baker 1017.1
-extern cvar_t r_equalize_entities_fullbright;
 extern cvar_t r_viewmodel_ring_alpha;
 
 client_static_t	cls;
@@ -1187,8 +1186,6 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 	{
 		if (!(e->render.effects & EF_FULLBRIGHT))
 			e->render.crflags |= RENDER_LIGHT;
-		else if(r_equalize_entities_fullbright.integer)
-			e->render.crflags |= RENDER_LIGHT | RENDER_EQUALIZE;
 	}
 	// hide player shadow during intermission or nehahra movie
 	if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST))
@@ -1630,8 +1627,6 @@ static void CL_RelinkStaticEntities(void)
 		{
 			if (!(e->render.effects & EF_FULLBRIGHT))
 				e->render.crflags |= RENDER_LIGHT;
-			else if(r_equalize_entities_fullbright.integer)
-				e->render.crflags |= RENDER_LIGHT | RENDER_EQUALIZE;
 		}
 		// hide player shadow during intermission or nehahra movie
 		if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST)) && (e->render.alpha >= 1))

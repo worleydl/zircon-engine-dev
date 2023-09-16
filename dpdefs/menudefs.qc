@@ -159,7 +159,7 @@ float OS_MAC		= 2;
 //////////////////////////////////////////////////
 // AK FIXME: Create perhaps a special builtin file for the common cmds
 
-void 	checkextension(string ext) 	= #1;
+float 	checkextension(string ext) 	= #1;
 
 // error cmds
 void 	error(string err,...) 		= #2;
@@ -179,7 +179,7 @@ float 	vlen(vector v)			= #9;
 float  	vectoyaw(vector v)		= #10;
 vector 	vectoangles(vector v)		= #11;
 
-float	random(void)  = #12;
+float	random(void)  = #12; // Returns a random number > 0 and < 1
 
 void	cmd(string command, ...) = #13;
 
@@ -246,7 +246,7 @@ string	fgets(float fhandle)  = #50;
 void	fputs(float fhandle, string s)  = #51;
 
 float	strlen(string s)  = #52;
-string	strcat(string s1,string s2,...)  = #53;
+string	strcat(string s, string...)  = #53;
 string	substring(string s, float start, float length)  = #54;
 
 vector	stov(string s)  = #55;
@@ -434,7 +434,7 @@ float CVAR_TYPEFLAG_READONLY = 32;
 
 //DP_QC_STRINGBUFFERS
 //idea: ??
-//darkplaces implementation: LordHavoc
+//darkplaces implementation: LadyHavoc
 //functions to manage string buffer objects - that is, arbitrary length string arrays that are handled by the engine
 float() buf_create = #440;
 void(float bufhandle) buf_del = #441;
@@ -450,7 +450,7 @@ void(float bufhandle, string pattern, string antipattern) buf_cvarlist = #517;
 
 //DP_QC_STRING_CASE_FUNCTIONS
 //idea: Dresk
-//darkplaces implementation: LordHavoc / Dresk
+//darkplaces implementation: LadyHavoc / Dresk
 //builtin definitions:
 string(string s) strtolower = #480; // returns the passed in string in pure lowercase form
 string(string s) strtoupper = #481; // returns the passed in string in pure uppercase form
@@ -476,6 +476,16 @@ string(string digest, string data, ...) digest_hex = #639;
 //only the "MD4" digest is always supported!
 //if the given digest is not supported, string_null is returned
 //the digest string is matched case sensitively, use "MD4", not "md4"!
+
+//DP_QC_WHICHPACK
+//idea: divVerent
+//darkplaces implementation: divVerent
+//builtin definitions:
+string(string filename) whichpack = #503;
+//description:
+//for files in a pak/pk3/whatever, returns the pack's file name in FRIK_FILE name space.
+//for physical files, returns "".
+//in case of error, returns string_null.
 
 //DP_QC_URI_ESCAPE
 //idea: div0
@@ -538,9 +548,13 @@ float FIELD_FUNCTION = 6;
 //function definitions:
 void coverage() = #642;  // Reports a coverage event. The engine counts for each of the calls to this builtin whether it has been called.
 
+// future DP: search_packfile_begin = #74; ... missing
 // assorted undocumented extensions
 string(string, float) netaddress_resolve = #625;
 string(string search, string replace, string subject) strreplace = #484;
+
+// future DP: string(string search, string replace, string subject) strireplace = #485; ... missing
+
 string(float uselocaltime, string format, ...) strftime = #478;
 float(string s) tokenize_console = #514;
 float(float i) argv_start_index = #515;

@@ -27,9 +27,33 @@ The cut-copy paste is not yet compatible with utf-8 enabled, which does not affe
 
 Baker
 
-// September 12 Release
-1. Quake rerelease support (English only at this time).  Tested mostly on the Episode 1 levels both on Windows and Linux.  Needs more testing.  This implementation differs from
-   the Quakespasm rerelease implementation, this implementation performs localization on the client side only and communicates qEX progs state over network (stored in demos as well).
+// September 15 Release
+
+Quake Remaster Support Rolled back for now ...
+
+1. 64-bit SDL2 build available.  Should load huge maps that require more than 4 GB maps.  Experimental.
+2. Shotgun shells texture fix "shot1sid" that eliminates white edges (type "map dm3" go to bridge).  Virtually every non-DarkPlaces engine has had since day 1.
+2. Quake 1 Maps load faster .. mod_bsp_portalize 1 (the default) only generates portal data if a map has no vis data or r_novis 1 is set.
+3. Gamedir change resets all menu states.
+4. cl_prydoncursor_notrace defaults to 1 now.  This bastard was checking stale map data during map load, causing a crash.
+5. Added numerous small features from DP beta, no longer have issues with ad_chapters teleporter that uses csqc modulo #245. (localsound csqc #177, VM_modulo #245, pausesound, removal of r_equalize_entities_fullbright)
+6. Detects and unloads csprogs.dat using fte "csqc-light hud only" allowing effortless play of these mods without removing the csprogs.dat.
+
+7. If you encounter a mod with csqc hud that you do not want, type:
+	csqc_progname ""
+	
+	If Zircon sees csqc_progname "", it will not attempt to load the csprogs.dat at all.
+	
+	To reset it to normal:
+	
+	cvar_reset csqc_progname
+
+8. Code in VM_modulo now mirrors current dp, was never in Quake so no compatibility issues.
+9. Sound improvements, the SDL builds of Zircon always have sound and a Window title bar icon regardless of the (valid) sdl2.dll version in the Quake folder.
+10. Game and skill level communicated from server to client over network in a way that has no effect to the protocol and official DarkPlaces (or any other Quake engine if using protocol 15) will just ignore it.
+11. Since skill level is communicated server to client on map start, skill draws in coop status bar if present for non-local game (and does not draw skill if server does not send skill to client).
+12. "developer 1" will state the context of an unknown command like: Unknown command "scr_conspeed" (context: "scr_conspeed 2000")
+13. Linux "maps" menu now shows only the maps for the current mod, like Windows.
 
 // September 11 Release
 1. Flame model and nailgun no longer interpolated by default (r_nolerp_list from current DarkPlaces beta).

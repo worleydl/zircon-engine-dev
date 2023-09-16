@@ -209,7 +209,6 @@ int COM_ParseToken_Console(const char **datapointer);
 extern int com_argc;
 extern const char **com_argv;
 extern int com_selffd;
-extern int com_qexfd;
 
 int Sys_CheckParm (const char *parm);
 void COM_Init (void);
@@ -528,8 +527,6 @@ int Time_Seconds (int seconds);
 
 void Math_Project (vec_t *src3d, vec_t *dest2d);
 void Math_Unproject (vec_t *src2d, vec_t *dest3d);
-
-
 
 #endif // COMMON_H
 

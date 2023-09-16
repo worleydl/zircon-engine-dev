@@ -183,8 +183,8 @@ void Sys_InitConsole (void)
 {
 }
 
-#define MAX_NUM_Q_ARGVS_50	50
-static int fake_argc; char *fake_argv[MAX_NUM_Q_ARGVS_50];
+	#define MAX_NUM_Q_ARGVS_50	50
+	static int fake_argc; char *fake_argv[MAX_NUM_Q_ARGVS_50];
 
 
 int main (int argc, char *argv[])

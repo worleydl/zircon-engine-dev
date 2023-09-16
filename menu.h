@@ -55,6 +55,11 @@ enum m_state_e {
 extern enum m_state_e m_state;
 extern char m_return_reason[128];
 void M_Update_Return_Reason(const char *s);
+extern int is_game_switch;
+
+
+
+void Menu_Resets (void);
 
 /*
 // hard-coded menus

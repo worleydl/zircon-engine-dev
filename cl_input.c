@@ -1872,7 +1872,7 @@ void CL_SendMove(void)
 	// PROTOCOL_QUAKEWORLD   clc_move = 34 bytes total (typically, but can reach 43 bytes, or even 49 bytes with roll)
 
 	// set prydon cursor info
-	CL_UpdatePrydonCursor();
+	CL_UpdatePrydonCursor(); // SEPUS15
 
 	if (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS)
 	{

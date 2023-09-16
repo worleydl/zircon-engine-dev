@@ -336,8 +336,8 @@ void(entity e, string m) setmodel = #3;
 void(entity e, vector min, vector max) setsize = #4;
 
 void() break_to_debugger = #6;
-float() random = #7;
-void(entity e, float chan, string samp) sound = #8;
+float() random = #7; // Returns a random number > 0 and < 1
+void(entity e, float chan, string samp, float volume, float atten, ...) sound = #8;
 vector(vector v) normalize = #9;
 void(string e) error = #10;
 void(string e) objerror = #11;
@@ -421,6 +421,7 @@ float( float b, ... ) max = #95;
 float(float minimum, float val, float maximum) bound = #96;
 float(float f, float f) pow = #97;
 entity(entity start, .float fld, float match) findfloat = #98;
+entity(entity start, .entity fld, entity match) findentity = #98;
 float(string s) checkextension = #99;
 // FrikaC and Telejano range #100-#199
 
@@ -429,11 +430,12 @@ void(float fhandle) fclose = #111;
 string(float fhandle) fgets = #112;
 void(float fhandle, string s) fputs = #113;
 float(string s) strlen = #114;
-string(...) strcat = #115;
+string(string s, string...) strcat = #115;
 string(string s, float start, float length) substring = #116;
 vector(string) stov = #117;
 string(string s) strzone = #118;
 void(string s) strunzone = #119;
+void(string s, float chan, float vol) localsound = #177;
 
 // FTEQW range #200-#299
 
@@ -469,7 +471,7 @@ void() R_EndPolygon = #308;
 vector (vector v) cs_unproject = #310;
 vector (vector v) cs_project = #311;
 
-void(float width, vector pos1, vector pos2, float flag) drawline = #315;
+void(float width, vector pos1, vector pos2, vector rgb, float alpha, float flag) drawline = #315;
 float(string name) iscachedpic = #316;
 string(string name, ...) precache_pic = #317;
 string(string name) precache_cubemap = #317;
@@ -521,7 +523,7 @@ float() ReadAngle = #365;
 string() ReadString = #366;
 float() ReadFloat = #367;
 
-// LordHavoc's range #400-#499
+// LadyHavoc's range #400-#499
 void(entity from, entity to) copyentity = #400;
 
 entity(.string fld, string match) findchain = #402;
@@ -955,7 +957,7 @@ vector(entity e, float s, float n) getsurfacetriangle = #629;
 
 //DP_QC_ASINACOSATANATAN2TAN
 //idea: Urre
-//darkplaces implementation: LordHavoc
+//darkplaces implementation: LadyHavoc
 //constant definitions:
 float DEG2RAD = 0.0174532925199432957692369076848861271344287188854172545609719144;
 float RAD2DEG = 57.2957795130823208767981548141051703324054724665643215491602438612;
@@ -1019,8 +1021,8 @@ float GETTIME_CDTRACK = 4;
 //see DP_END_GETSOUNDTIME for similar functionality but for entity sound channels
 
 //DP_QC_TOKENIZEBYSEPARATOR
-//idea: Electro, SavageX, LordHavoc
-//darkplaces implementation: LordHavoc
+//idea: Electro, SavageX, LadyHavoc
+//darkplaces implementation: LadyHavoc
 //builtin definitions:
 float(string s, string separator1, ...) tokenizebyseparator = #479;
 //description:
@@ -1080,8 +1082,8 @@ float PRECACHE_PIC_MIPMAP = 8; // mipmap the texture for possibly better downsca
 //notes: these constants are given as optional second argument to precache_pic()
 
 //DP_QC_TRACE_MOVETYPE_WORLDONLY
-//idea: LordHavoc
-//darkplaces implementation: LordHavoc
+//idea: LadyHavoc
+//darkplaces implementation: LadyHavoc
 //constant definitions:
 float MOVE_WORLDONLY = 3;
 //description:
@@ -1109,8 +1111,8 @@ float(string sample) soundlength = #534; // returns length of sound sample in se
 float(entity num) num_for_edict = #512;
 
 //DP_TRACE_HITCONTENTSMASK_SURFACEINFO
-//idea: LordHavoc
-//darkplaces implementation: LordHavoc
+//idea: LadyHavoc
+//darkplaces implementation: LadyHavoc
 //globals:
 .float dphitcontentsmask; // if non-zero on the entity passed to traceline/tracebox/tracetoss this will override the normal collidable contents rules and instead hit these contents values (for example AI can use tracelines that hit DONOTENTER if it wants to, by simply changing this field on the entity passed to traceline), this affects normal movement as well as trace calls
 float trace_dpstartcontents; // DPCONTENTS_ value at start position of trace
@@ -1179,6 +1181,16 @@ float CVAR_TYPEFLAG_READONLY = 32;
 //When caseinsensitive is set, the CRC is calculated of the lower cased string.
 float(float caseinsensitive, string s, ...) crc16 = #494;
 
+//DP_QC_WHICHPACK
+//idea: divVerent
+//darkplaces implementation: divVerent
+//builtin definitions:
+string(string filename) whichpack = #503;
+//description:
+//for files in a pak/pk3/whatever, returns the pack's file name in FRIK_FILE name space.
+//for physical files, returns "".
+//in case of error, returns string_null.
+
 //DP_QC_URI_ESCAPE
 //idea: divVerent
 //darkplaces implementation: divVerent
@@ -1212,8 +1224,8 @@ float log(float f) = #532;
 //logarithm
 
 //FTE_CSQC_SKELETONOBJECTS
-//idea: Spike, LordHavoc
-//darkplaces implementation: LordHavoc
+//idea: Spike, LadyHavoc
+//darkplaces implementation: LadyHavoc
 //builtin definitions:
 // all skeleton numbers are 1-based (0 being no skeleton)
 // all bone numbers are 1-based (0 being invalid)
@@ -1435,6 +1447,12 @@ void(entity e, string s) parseentitydata = #608;
 //function definitions:
 void coverage() = #642;  // Reports a coverage event. The engine counts for each of the calls to this builtin whether it has been called.
 
+// future dp: search_packfile_begin #444 missing
+
+// future dp: entity(vector mins, vector maxs) findbox = #566  missing
+
+// future dp: float(entity ent) nudgeoutofsolid = #567  missing
+
 // assorted builtins
 const float		STAT_MOVEVARS_TICRATE           = 240;
 const float		STAT_MOVEVARS_TIMESCALE         = 241;
@@ -1462,3 +1480,4 @@ vector gettaginfo_forward;
 vector gettaginfo_right;
 vector gettaginfo_up;
 float checkpvs(vector viewpos, entity viewee) = #240;
+float mod(float dividend, float divisor) = #245;

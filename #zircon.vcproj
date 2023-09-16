@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="CONFIG_MENU;WIN32;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;SUPPORTDIRECTX;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
+				PreprocessorDefinitions="CONFIG_MENU;WIN32;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;SUPPORTDIRECTX;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

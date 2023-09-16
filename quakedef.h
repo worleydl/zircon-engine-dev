@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define STARTCONFIGFILENAME "quake.rc"
 #define CONFIGFILENAME "config.cfg"
 
-// qex AURA
 #define HINT_MESSAGE_PREFIX "//hint "
 
 // moveflags values

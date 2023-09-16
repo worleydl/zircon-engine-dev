@@ -375,7 +375,6 @@ char fs_userdir[MAX_OSPATH];
 char fs_gamedir[MAX_OSPATH];
 char fs_basedir[MAX_OSPATH];
 static pack_t *fs_selfpack = NULL;
-static pack_t *fs_qexpack = NULL;
 
 // list of active game directories (empty if not running a mod)
 int fs_numgamedirs = 0;
@@ -453,7 +452,7 @@ static const char* shfolderdllnames [] =
 };
 static dllhandle_t shfolder_dll = NULL;
 
-const GUID qFOLDERID_SavedGames = {0x4C5C32FF, 0xBB9D, 0x43b0, {0xB5, 0xB4, 0x2D, 0x72, 0xE5, 0x4E, 0xAA, 0xA4}}; 
+const GUID qFOLDERID_SavedGames = {0x4C5C32FF, 0xBB9D, 0x43b0, {0xB5, 0xB4, 0x2D, 0x72, 0xE5, 0x4E, 0xAA, 0xA4}};
 #define qREFKNOWNFOLDERID const GUID *
 #define qKF_FLAG_CREATE 0x8000
 #define qKF_FLAG_NO_ALIAS 0x1000
@@ -1393,18 +1392,6 @@ static void FS_AddSelfPack(void)
 	}
 }
 
-static void FS_AddQEXPack(void)
-{
-	if (fs_qexpack)
-	{
-		searchpath_t *search;
-		search = (searchpath_t *)Mem_Alloc(fs_mempool, sizeof(searchpath_t));
-		search->next = fs_searchpaths;
-		search->pack = fs_qexpack;
-		fs_searchpaths = search;
-	}
-}
-
 
 /*
 ================
@@ -1464,7 +1451,6 @@ void FS_Rescan (void)
 
 	// add back the selfpack as new first item
 	FS_AddSelfPack();
-	FS_AddQEXPack();
 
 	// set the default screenshot name to either the mod name or the
 	// gamemode screenshot name
@@ -1472,7 +1458,7 @@ void FS_Rescan (void)
 		Cvar_SetQuick (&scr_screenshot_name, com_modname);
 	else
 		Cvar_SetQuick (&scr_screenshot_name, gamescreenshotname);
-	
+
 	if((i = Sys_CheckParm("-modname")) && i < com_argc - 1)
 		strlcpy(com_modname, com_argv[i+1], sizeof(com_modname));
 
@@ -1562,7 +1548,7 @@ qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH], qbool compl
 
 	Key_History_Write ();
 	Host_SaveConfig();
-	
+
 	fs_numgamedirs = numgamedirs;
 	for (i = 0;i < fs_numgamedirs; i++)
 		c_strlcpy(fs_gamedirs[i], gamedirs[i]); //, sizeof(fs_gamedirs[i]));
@@ -1628,19 +1614,17 @@ static void FS_GameDir_f (void)
 	}
 
 	// halt demo playback to close the file
-	
+
 	CL_Disconnect();
 	if (sv.active)
 		Host_ShutdownServer ();
 
-	{
-	extern int is_game_switch;
 	
-	lanConfig_cursor = -1;
+	Menu_Resets (); // Cursor to 0 for all the menus
+
 	is_game_switch = true; // This does what?  Clear models thoroughly.  As opposed to video restart which shouldn't?
 	FS_ChangeGameDirs (numgamedirs, gamedirs, true, true);
 	is_game_switch = false;
-	}
 }
 
 static const char *FS_SysCheckGameDir(const char *gamedir, char *buf, size_t buflength)
@@ -1707,7 +1691,7 @@ const char *FS_CheckGameDir(const char *gamedir)
 	ret = FS_SysCheckGameDir(va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, gamedir), buf, sizeof(buf));
 	if(ret)
 		return ret;
-	
+
 	return fs_checkgamedir_missing;
 }
 
@@ -1740,7 +1724,7 @@ static void FS_ListGameDirs(void)
 			continue;
 		if(!*info)
 			continue;
-		stringlistappend(&list2, list.strings[i]); 
+		stringlistappend(&list2, list.strings[i]);
 	}
 	stringlistfreecontents(&list);
 
@@ -1808,8 +1792,6 @@ static void COM_InsertFlags(const char *buf) {
 FS_Init_SelfPack
 ================
 */
-
-
 void FS_Init_SelfPack (void)
 {
 	PK3_OpenLibrary ();
@@ -1840,15 +1822,7 @@ void FS_Init_SelfPack (void)
 			}
 		}
 	}
-
-	if (!Sys_CheckParm("-noqexpack")) {
-		if (com_qexfd >= 0) {
-			fs_qexpack = FS_LoadPackPK3FromFD("QuakeEX.kpf", com_qexfd, true);
-		}
-	}
 #endif
-
-
 }
 
 static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t userdirsize)
@@ -2027,9 +2001,6 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 FS_Init
 ================
 */
-
-void LOC_LoadFile ();
-
 void FS_Init (void)
 {
 	const char *p;
@@ -2200,11 +2171,7 @@ void FS_Init (void)
 
 	// generate the searchpath
 	FS_Rescan();
-	if (com_selffd >= 0) {
-		//static pack_t *fs_qexpack = NULL;
-		fs_qexpack = FS_LoadPackPK3FromFD("QuakeEX.kpf", com_qexfd, /*quiet*/ false);
-	}
-	LOC_LoadFile();
+
 	if (Thread_HasThreads())
 		fs_mutex = Thread_CreateMutex();
 }
@@ -2624,7 +2591,6 @@ static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int
 			char netpath[MAX_OSPATH];
 
 			if (ploadinfo_in) {
-				extern cvar_t host_path_protection;
 				if (hit_limiter && String_Does_Match_Caseless (search->filename, ploadinfo_in->searchpathx) == false) {
 					if (developer_loading.value) {
 						Con_DPrintLinef ("Surpassed limit at %s limit is %s", search->filename, ploadinfo_in->searchpathx);
@@ -2664,7 +2630,7 @@ static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int
 
 				if (ploadinfo_out) {
 					WARP_X_ (FS_Which_f)
-						
+
 					strlcpy (ploadinfo_out->searchpathx, search->filename, sizeof(ploadinfo_out->searchpathx)); // OWT DIR
 					//Con_PrintLinef ("FS_Fi %s in %s", name, ploadinfo_out->searchpathx);
 				} // ploadinfo_out
@@ -2736,7 +2702,7 @@ static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblo
 			if(count < 0)
 				return NULL;
 			linkbuf[count] = 0;
-			
+
 			// Now combine the paths...
 			mergeslash = strrchr(filename, '/');
 			mergestart = linkbuf;
@@ -3633,7 +3599,7 @@ qbool FS_FileExists2 (const char *filename, loadinfo_s *loadinfoy)
 
 	if (!search)
 		return false;
-	
+
 	if (search->pack) {
 		strlcpy (loadinfoy->searchpathx, search->pack->filename, sizeof(loadinfoy->searchpathx)); // OWT PAK
 		File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (loadinfoy->searchpathx);
@@ -3737,7 +3703,10 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 	// search through the path, one element at a time
 	for (searchpath = fs_searchpaths; searchpath; searchpath = searchpath->next) {
 		if (isgamedironly_in && sgamedironly[0] == 0 && !searchpath->pack) {
-			strlcpy (sgamedironly, searchpath->filename, sizeof(sgamedironly));
+			// ignore the home directory
+			if ( !fs_userdir[0] /*not homed*/ || String_Does_Start_With (searchpath->filename, fs_userdir) == false /*homed, but not a home dir*/ ) {
+				c_strlcpy (sgamedironly, searchpath->filename);
+			}
 		}
 
 		if (searchpath->pack) {
@@ -4061,7 +4030,7 @@ void FS_Which_f(void)
 	{
 		Con_PrintLinef ("usage:\n%s <file>", Cmd_Argv(0));
 		return;
-	}  
+	}
 	filename = Cmd_Argv(1);
 	sp = FS_FindFile (filename, &index, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 	if (!sp) {
@@ -4212,7 +4181,7 @@ unsigned char *FS_Deflate(const unsigned char *data, size_t size, size_t *deflat
 		Mem_Free(tmp);
 		return NULL;
 	}
-	
+
 	if(qz_deflateEnd(&strm) != Z_OK)
 	{
 		Con_Printf("FS_Deflate: deflateEnd failed\n");
@@ -4239,7 +4208,7 @@ unsigned char *FS_Deflate(const unsigned char *data, size_t size, size_t *deflat
 
 	memcpy(out, tmp, strm.total_out);
 	Mem_Free(tmp);
-	
+
 	return out;
 }
 
@@ -4306,7 +4275,7 @@ unsigned char *FS_Inflate(const unsigned char *data, size_t size, size_t *inflat
 			case Z_STREAM_END:
 			case Z_OK:
 				break;
-				
+
 			case Z_STREAM_ERROR:
 				Con_Print("FS_Inflate: stream error!\n");
 				break;
@@ -4322,7 +4291,7 @@ unsigned char *FS_Inflate(const unsigned char *data, size_t size, size_t *inflat
 			default:
 				Con_Print("FS_Inflate: unknown error!\n");
 				break;
-				
+
 		}
 		if(ret != Z_OK && ret != Z_STREAM_END)
 		{
@@ -4350,7 +4319,7 @@ unsigned char *FS_Inflate(const unsigned char *data, size_t size, size_t *inflat
 	Mem_Free(outbuf.data);
 
 	*inflated_size = (size_t)outbuf.cursize;
-	
+
 	return out;
 }
 
@@ -4363,11 +4332,11 @@ int File_Exists (const char *path_to_file_)
 	if (String_Does_End_With_Caseless (path_to_file_, "/")) { // TRAILING SLASH REMOVER
 		int slen = strlen (path_to_file_);
 		c_strlcpy (buf, path_to_file);
-		if (slen <= sizeof(buf /*1024*/)) { // Otherwise it is truncated ... which is bad.
+		if (slen <= (int)sizeof(buf /*1024*/)) { // Otherwise it is truncated ... which is bad.
 			buf[slen - 1] = 0; // CORRECT! max here is 1023, the last of a 1024 buffer index . String len is 10, we null at 9 to reduce length to 8.
 		}
 		path_to_file = buf;
-		
+
 	} // May 17 2020 - Remove trailing slash
 	{
 		int status = stat (path_to_file, &st_buf);

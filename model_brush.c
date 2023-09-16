@@ -26,43 +26,49 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "wad.h"
 
 
-//cvar_t r_subdivide_size = {CVAR_SAVE, "r_subdivide_size", "128", "how large water polygons should be (smaller values produce more polygons which give better warping effects)"};
-cvar_t mod_bsp_portalize = {0, "mod_bsp_portalize", "1", "enables portal generation from BSP tree (may take several seconds per map), used by r_drawportals, r_useportalculling, r_shadow_realtime_world_compileportalculling, sv_cullentities_portal"};
-cvar_t r_novis = {0, "r_novis", "0", "draws whole level, see also sv_cullentities_pvs 0"};
-cvar_t r_nosurftextures = {0, "r_nosurftextures", "0", "pretends there was no texture lump found in the q1bsp/hlbsp loading (useful for debugging this rare case)"};
-cvar_t r_subdivisions_tolerance = {0, "r_subdivisions_tolerance", "4", "maximum error tolerance on curve subdivision for rendering purposes (in other words, the curves will be given as many polygons as necessary to represent curves at this quality)"};
-cvar_t r_subdivisions_mintess = {0, "r_subdivisions_mintess", "0", "minimum number of subdivisions (values above 0 will smooth curves that don't need it)"};
-cvar_t r_subdivisions_maxtess = {0, "r_subdivisions_maxtess", "1024", "maximum number of subdivisions (prevents curves beyond a certain detail level, limits smoothing)"};
-cvar_t r_subdivisions_maxvertices = {0, "r_subdivisions_maxvertices", "65536", "maximum vertices allowed per subdivided curve"};
-cvar_t r_subdivisions_collision_tolerance = {0, "r_subdivisions_collision_tolerance", "15", "maximum error tolerance on curve subdivision for collision purposes (usually a larger error tolerance than for rendering)"};
-cvar_t r_subdivisions_collision_mintess = {0, "r_subdivisions_collision_mintess", "0", "minimum number of subdivisions (values above 0 will smooth curves that don't need it)"};
-cvar_t r_subdivisions_collision_maxtess = {0, "r_subdivisions_collision_maxtess", "1024", "maximum number of subdivisions (prevents curves beyond a certain detail level, limits smoothing)"};
-cvar_t r_subdivisions_collision_maxvertices = {0, "r_subdivisions_collision_maxvertices", "4225", "maximum vertices allowed per subdivided curve"};
-cvar_t r_trippy = {0, "r_trippy", "0", "easter egg"};
+cvar_t r_trippy = {CF_CLIENT, "r_trippy", "0", "easter egg"};
+//cvar_t r_subdivide_size = {CF_CLIENT | CVAR_SAVE, "r_subdivide_size", "128", "how large water polygons should be (smaller values produce more polygons which give better warping effects)"};
+
+WARP_X_ (r_useportalculling)
+cvar_t mod_bsp_portalize = {CF_CLIENT, "mod_bsp_portalize", "1", "enables portal generation from BSP tree (may take several seconds per map), used by r_drawportals, r_useportalculling, r_shadow_realtime_world_compileportalculling, sv_cullentities_portal"};
+cvar_t r_novis = {CF_CLIENT, "r_novis", "0", "draws whole level, see also sv_cullentities_pvs 0"};
+cvar_t r_nosurftextures = {CF_CLIENT, "r_nosurftextures", "0", "pretends there was no texture lump found in the q1bsp/hlbsp loading (useful for debugging this rare case)"};
+
+cvar_t r_subdivisions_tolerance = {CF_CLIENT, "r_subdivisions_tolerance", "4", "maximum error tolerance on curve subdivision for rendering purposes (in other words, the curves will be given as many polygons as necessary to represent curves at this quality)"};
+cvar_t r_subdivisions_mintess = {CF_CLIENT, "r_subdivisions_mintess", "0", "minimum number of subdivisions (values above 0 will smooth curves that don't need it)"};
+cvar_t r_subdivisions_maxtess = {CF_CLIENT, "r_subdivisions_maxtess", "1024", "maximum number of subdivisions (prevents curves beyond a certain detail level, limits smoothing)"};
+cvar_t r_subdivisions_maxvertices = {CF_CLIENT, "r_subdivisions_maxvertices", "65536", "maximum vertices allowed per subdivided curve"};
+cvar_t mod_q3bsp_curves_subdivisions_tolerance = {CF_CLIENT | CF_SERVER, "mod_q3bsp_curves_subdivisions_tolerance", "15", "maximum error tolerance on curve subdivision for collision purposes (usually a larger error tolerance than for rendering)"};
+cvar_t mod_q3bsp_curves_subdivisions_mintess = {CF_CLIENT | CF_SERVER, "mod_q3bsp_curves_subdivisions_mintess", "0", "minimum number of subdivisions for collision purposes (values above 0 will smooth curves that don't need it)"};
+cvar_t mod_q3bsp_curves_subdivisions_maxtess = {CF_CLIENT | CF_SERVER, "mod_q3bsp_curves_subdivisions_maxtess", "1024", "maximum number of subdivisions for collision purposes (prevents curves beyond a certain detail level, limits smoothing)"};
+cvar_t mod_q3bsp_curves_subdivisions_maxvertices = {CF_CLIENT | CF_SERVER, "mod_q3bsp_curves_subdivisions_maxvertices", "4225", "maximum vertices allowed per subdivided curve for collision purposes"};
+
 cvar_t r_fxaa = {CVAR_SAVE, "r_fxaa", "0", "fast approximate anti aliasing"};
 cvar_t mod_noshader_default_offsetmapping = {CVAR_SAVE, "mod_noshader_default_offsetmapping", "1", "use offsetmapping by default on all surfaces that are not using q3 shader files"};
-cvar_t mod_obj_orientation = {0, "mod_obj_orientation", "1", "fix orientation of OBJ models to the usual conventions (if zero, use coordinates as is)"};
-cvar_t mod_q2bsp_littransparentsurfaces = {0, "mod_q2bsp_littransparentsurfaces", "0", "allows lighting on rain in 3v3gloom3 and other cases of transparent surfaces that have lightmaps that were ignored by quake2"};
-cvar_t mod_q3bsp_curves_collisions = {0, "mod_q3bsp_curves_collisions", "1", "enables collisions with curves (SLOW)"};
-cvar_t mod_q3bsp_curves_collisions_stride = {0, "mod_q3bsp_curves_collisions_stride", "16", "collisions against curves: optimize performance by doing a combined collision check for this triangle amount first (-1 avoids any box tests)"};
-cvar_t mod_q3bsp_curves_stride = {0, "mod_q3bsp_curves_stride", "16", "particle effect collisions against curves: optimize performance by doing a combined collision check for this triangle amount first (-1 avoids any box tests)"};
-cvar_t mod_q3bsp_optimizedtraceline = {0, "mod_q3bsp_optimizedtraceline", "1", "whether to use optimized traceline code for line traces (as opposed to tracebox code)"};
-cvar_t mod_q3bsp_debugtracebrush = {0, "mod_q3bsp_debugtracebrush", "0", "selects different tracebrush bsp recursion algorithms (for debugging purposes only)"};
-cvar_t mod_q3bsp_lightmapmergepower = {CVAR_SAVE, "mod_q3bsp_lightmapmergepower", "4", "merges the quake3 128x128 lightmap textures into larger lightmap group textures to speed up rendering, 1 = 256x256, 2 = 512x512, 3 = 1024x1024, 4 = 2048x2048, 5 = 4096x4096, ..."};
-cvar_t mod_q3bsp_nolightmaps = {CVAR_SAVE, "mod_q3bsp_nolightmaps", "0", "do not load lightmaps in Q3BSP maps (to save video RAM, but be warned: it looks ugly)"};
-cvar_t mod_q3bsp_tracelineofsight_brushes = {0, "mod_q3bsp_tracelineofsight_brushes", "0", "enables culling of entities behind detail brushes, curves, etc"};
-cvar_t mod_q3bsp_sRGBlightmaps = {0, "mod_q3bsp_sRGBlightmaps", "0", "treat lightmaps from Q3 maps as sRGB when vid_sRGB is active"};
-cvar_t mod_q3shader_default_offsetmapping = {CVAR_SAVE, "mod_q3shader_default_offsetmapping", "1", "use offsetmapping by default on all surfaces that are using q3 shader files"};
-cvar_t mod_q3shader_default_offsetmapping_scale = {CVAR_SAVE, "mod_q3shader_default_offsetmapping_scale", "1", "default scale used for offsetmapping"};
-cvar_t mod_q3shader_default_offsetmapping_bias = {CVAR_SAVE, "mod_q3shader_default_offsetmapping_bias", "0", "default bias used for offsetmapping"};
-cvar_t mod_q3shader_default_polygonfactor = {0, "mod_q3shader_default_polygonfactor", "0", "biases depth values of 'polygonoffset' shaders to prevent z-fighting artifacts"};
-cvar_t mod_q3shader_default_polygonoffset = {0, "mod_q3shader_default_polygonoffset", "-2", "biases depth values of 'polygonoffset' shaders to prevent z-fighting artifacts"};
-cvar_t mod_q3shader_force_addalpha = {0, "mod_q3shader_force_addalpha", "0", "treat GL_ONE GL_ONE (or add) blendfunc as GL_SRC_ALPHA GL_ONE for compatibility with older DarkPlaces releases"};
-cvar_t mod_q3shader_force_terrain_alphaflag = {0, "mod_q3shader_force_terrain_alphaflag", "0", "for multilayered terrain shaders force TEXF_ALPHA flag on both layers"};
+cvar_t mod_obj_orientation = {CF_CLIENT, "mod_obj_orientation", "1", "fix orientation of OBJ models to the usual conventions (if zero, use coordinates as is)"};
 
-cvar_t mod_q1bsp_polygoncollisions = {0, "mod_q1bsp_polygoncollisions", "0", "disables use of precomputed cliphulls and instead collides with polygons (uses Bounding Interval Hierarchy optimizations)"};
-cvar_t mod_collision_bih = {0, "mod_collision_bih", "1", "enables use of generated Bounding Interval Hierarchy tree instead of compiled bsp tree in collision code"};
-cvar_t mod_recalculatenodeboxes = {0, "mod_recalculatenodeboxes", "1", "enables use of generated node bounding boxes based on BSP tree portal reconstruction, rather than the node boxes supplied by the map compiler"};
+cvar_t mod_q3bsp_curves_collisions = {CF_CLIENT | CF_SERVER, "mod_q3bsp_curves_collisions", "1", "enables collisions with curves (SLOW)"};
+cvar_t mod_q3bsp_curves_collisions_stride = {CF_CLIENT, "mod_q3bsp_curves_collisions_stride", "16", "collisions against curves: optimize performance by doing a combined collision check for this triangle amount first (-1 avoids any box tests)"};
+cvar_t mod_q3bsp_curves_stride = {CF_CLIENT, "mod_q3bsp_curves_stride", "16", "particle effect collisions against curves: optimize performance by doing a combined collision check for this triangle amount first (-1 avoids any box tests)"};
+cvar_t mod_q3bsp_optimizedtraceline = {CF_CLIENT | CF_SERVER, "mod_q3bsp_optimizedtraceline", "1", "whether to use optimized traceline code for line traces (as opposed to tracebox code)"};
+cvar_t mod_q3bsp_debugtracebrush = {CF_CLIENT, "mod_q3bsp_debugtracebrush", "0", "selects different tracebrush bsp recursion algorithms (for debugging purposes only)"};
+cvar_t mod_q3bsp_lightmapmergepower = {CF_CLIENT | CF_ARCHIVE, "mod_q3bsp_lightmapmergepower", "4", "merges the quake3 128x128 lightmap textures into larger lightmap group textures to speed up rendering, 1 = 256x256, 2 = 512x512, 3 = 1024x1024, 4 = 2048x2048, 5 = 4096x4096, ..."};
+cvar_t mod_q3bsp_nolightmaps = {CF_CLIENT | CF_ARCHIVE, "mod_q3bsp_nolightmaps", "0", "do not load lightmaps in Q3BSP maps (to save video RAM, but be warned: it looks ugly)"};
+cvar_t mod_q3bsp_tracelineofsight_brushes = {CF_CLIENT | CF_SERVER, "mod_q3bsp_tracelineofsight_brushes", "0", "enables culling of entities behind detail brushes, curves, etc"};
+cvar_t mod_q3bsp_sRGBlightmaps = {CF_CLIENT, "mod_q3bsp_sRGBlightmaps", "0", "treat lightmaps from Q3 maps as sRGB when vid_sRGB is active"};
+cvar_t mod_q3shader_default_offsetmapping = {CF_CLIENT | CF_ARCHIVE, "mod_q3shader_default_offsetmapping", "1", "use offsetmapping by default on all surfaces that are using q3 shader files"};
+cvar_t mod_q3shader_default_offsetmapping_scale = {CF_CLIENT | CF_ARCHIVE, "mod_q3shader_default_offsetmapping_scale", "1", "default scale used for offsetmapping"};
+cvar_t mod_q3shader_default_offsetmapping_bias = {CF_CLIENT | CF_ARCHIVE, "mod_q3shader_default_offsetmapping_bias", "0", "default bias used for offsetmapping"};
+cvar_t mod_q3shader_default_polygonfactor = {CF_CLIENT, "mod_q3shader_default_polygonfactor", "0", "biases depth values of 'polygonoffset' shaders to prevent z-fighting artifacts"};
+cvar_t mod_q3shader_default_polygonoffset = {CF_CLIENT, "mod_q3shader_default_polygonoffset", "-2", "biases depth values of 'polygonoffset' shaders to prevent z-fighting artifacts"};
+cvar_t mod_q3shader_force_addalpha = {CF_CLIENT, "mod_q3shader_force_addalpha", "0", "treat GL_ONE GL_ONE (or add) blendfunc as GL_SRC_ALPHA GL_ONE for compatibility with older DarkPlaces releases"};
+cvar_t mod_q3shader_force_terrain_alphaflag = {CF_CLIENT, "mod_q3shader_force_terrain_alphaflag", "0", "for multilayered terrain shaders force TEXF_ALPHA flag on both layers"};
+
+cvar_t mod_q2bsp_littransparentsurfaces = {CF_CLIENT, "mod_q2bsp_littransparentsurfaces", "0", "allows lighting on rain in 3v3gloom3 and other cases of transparent surfaces that have lightmaps that were ignored by quake2"};
+
+cvar_t mod_q1bsp_polygoncollisions = {CF_CLIENT | CF_SERVER, "mod_q1bsp_polygoncollisions", "0", "disables use of precomputed cliphulls and instead collides with polygons (uses Bounding Interval Hierarchy optimizations)"};
+cvar_t mod_collision_bih = {CF_CLIENT, "mod_collision_bih", "1", "enables use of generated Bounding Interval Hierarchy tree instead of compiled bsp tree in collision code"};
+cvar_t mod_recalculatenodeboxes = {CF_CLIENT, "mod_recalculatenodeboxes", "1", "enables use of generated node bounding boxes based on BSP tree portal reconstruction, rather than the node boxes supplied by the map compiler"};
 
 static texture_t mod_q1bsp_texture_solid;
 static texture_t mod_q1bsp_texture_sky;
@@ -82,10 +88,10 @@ void Mod_BrushInit(void)
 	Cvar_RegisterVariable(&r_subdivisions_mintess);
 	Cvar_RegisterVariable(&r_subdivisions_maxtess);
 	Cvar_RegisterVariable(&r_subdivisions_maxvertices);
-	Cvar_RegisterVariable(&r_subdivisions_collision_tolerance);
-	Cvar_RegisterVariable(&r_subdivisions_collision_mintess);
-	Cvar_RegisterVariable(&r_subdivisions_collision_maxtess);
-	Cvar_RegisterVariable(&r_subdivisions_collision_maxvertices);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_tolerance);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_mintess);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_maxtess);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_maxvertices);
 	Cvar_RegisterVariable(&r_trippy);
 	Cvar_RegisterVariable(&r_fxaa);
 	Cvar_RegisterVariable(&mod_noshader_default_offsetmapping);
@@ -1746,7 +1752,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 
 		if (!name[0])
 		{
-			dpsnprintf(name, sizeof(name), "unnamed%i", i);
+			dpsnprintf(name, sizeof(name), "unnamed%d", i);
 			Con_DPrintLinef ("%s: warning: renaming unnamed texture to %s", loadmodel->model_name, name);
 		}
 
@@ -1861,8 +1867,21 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 						if (freepixels)
 							Mem_Free(freepixels);
 					}
-					else if (mtdata) // texture included
-						skinframe = R_SkinFrame_LoadInternalQuake(tx->name, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, false, r_fullbrights.integer, mtdata, tx->width, tx->height, /*is_fence*/ false);
+					else if (mtdata) {
+						if (String_Does_Match(tx->name, "shot1sid") && tx->width == 32 && tx->height == 32) {
+							int	 pixelcount = tx->width * tx->height;
+							if (CRC_Block(mtdata, pixelcount) == 65393) {   
+								// This texture in b_shell1.bsp has some of the first 32 pixels painted white.
+								// They are invisible in software, but look really ugly in GL. So we just copy
+								// 32 pixels from the bottom to make it look nice.
+								memcpy (mtdata, mtdata + 32 * 31, 32);
+							} // CRC
+						} // shot1sid 32 32 w h
+
+						// texture included
+						skinframe = R_SkinFrame_LoadInternalQuake(tx->name, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, 
+							false, r_fullbrights.integer, mtdata, tx->width, tx->height, /*is_fence*/ false);
+					}
 				}
 				// if skinframe is still NULL the "missing" texture will be used
 				if (skinframe)
@@ -1978,7 +1997,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		// If we have exactly one frame, something's wrong.
 		if (max + altmax <= 1)
 		{
-			Con_DPrintf("Texture %s is animated (leading +) but has only one frame\n", tx->name);
+			Con_DPrintLinef ("Texture %s is animated (leading +) but has only one frame", tx->name);
 		}
 
 		if (altmax < 1)
@@ -3958,8 +3977,11 @@ void Mod_Q1BSP_Load (model_t *mod, void *buffer, void *bufferend)
 	mod->brushq1.num_compressedpvs = 0;
 
 	Mod_Q1BSP_MakeHull0();
-	if (mod_bsp_portalize.integer)
-		Mod_Q1BSP_MakePortals();
+	if (mod_bsp_portalize.integer) {
+		if (loadmodel->brushq1.num_compressedpvs == NULL /*no vis data*/ || r_novis.integer) {
+			Mod_Q1BSP_MakePortals();
+		} // Baker
+	} // if
 
 	mod->numframes = 2;		// regular and alternate animation
 	mod->numskins = 1;
@@ -5967,7 +5989,7 @@ static void Mod_Q3BSP_LoadFaces(lump_t *l)
 		case Q3FACETYPE_PATCH:
 			patchsize[0] = LittleLong(in->specific.patch.patchsize[0]);
 			patchsize[1] = LittleLong(in->specific.patch.patchsize[1]);
-			if (numvertices != (patchsize[0] * patchsize[1]) || patchsize[0] < 3 || patchsize[1] < 3 || !(patchsize[0] & 1) || !(patchsize[1] & 1) || patchsize[0] * patchsize[1] >= min(r_subdivisions_maxvertices.integer, r_subdivisions_collision_maxvertices.integer))
+			if (numvertices != (patchsize[0] * patchsize[1]) || patchsize[0] < 3 || patchsize[1] < 3 || !(patchsize[0] & 1) || !(patchsize[1] & 1) || patchsize[0] * patchsize[1] >= min(r_subdivisions_maxvertices.integer, mod_q3bsp_curves_subdivisions_maxvertices.integer))
 			{
 				Con_Printf("Mod_Q3BSP_LoadFaces: face #%i (texture \"%s\"): invalid patchsize %ix%i\n", i, out->texture->name, patchsize[0], patchsize[1]);
 				continue;
@@ -5986,11 +6008,11 @@ static void Mod_Q3BSP_LoadFaces(lump_t *l)
 
 			// lower quality collision patches! Same procedure as before, but different cvars
 			// convert patch to Q3FACETYPE_MESH
-			cxtess = Q3PatchTesselationOnX(patchsize[0], patchsize[1], 3, originalvertex3f, r_subdivisions_collision_tolerance.value);
-			cytess = Q3PatchTesselationOnY(patchsize[0], patchsize[1], 3, originalvertex3f, r_subdivisions_collision_tolerance.value);
+			cxtess = Q3PatchTesselationOnX(patchsize[0], patchsize[1], 3, originalvertex3f, mod_q3bsp_curves_subdivisions_tolerance.value);
+			cytess = Q3PatchTesselationOnY(patchsize[0], patchsize[1], 3, originalvertex3f, mod_q3bsp_curves_subdivisions_tolerance.value);
 			// bound to user settings
-			cxtess = bound(r_subdivisions_collision_mintess.integer, cxtess, r_subdivisions_collision_maxtess.integer);
-			cytess = bound(r_subdivisions_collision_mintess.integer, cytess, r_subdivisions_collision_maxtess.integer);
+			cxtess = bound(mod_q3bsp_curves_subdivisions_mintess.integer, cxtess, mod_q3bsp_curves_subdivisions_maxtess.integer);
+			cytess = bound(mod_q3bsp_curves_subdivisions_mintess.integer, cytess, mod_q3bsp_curves_subdivisions_maxtess.integer);
 			// bound to sanity settings
 			cxtess = bound(0, cxtess, 1024);
 			cytess = bound(0, cytess, 1024);

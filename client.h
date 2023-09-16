@@ -1181,7 +1181,6 @@ typedef struct client_state_s
 
 	// don't change view angle, full screen, etc
 	int intermission;
-	int is_qex;
 	// latched at intermission start
 	double completed_time;
 
@@ -1235,6 +1234,7 @@ typedef struct client_state_s
 	int maxclients;
 	// type of game (deathmatch, coop, singleplayer)
 	int gametype;
+	int skill_level_p1; // plus 1 so init to 0 is fine.  Any non-zero means received from server.
 
 	// models and sounds used by engine code (particularly cl_parse.c)
 	model_t *model_bolt;

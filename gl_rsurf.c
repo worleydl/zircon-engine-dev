@@ -28,6 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 cvar_t r_ambient = {CF_CLIENT, "r_ambient", "0", "brightens map, value is 0-128"};
 cvar_t r_lockpvs = {CF_CLIENT, "r_lockpvs", "0", "disables pvs switching, allows you to walk around and inspect what is visible from a given location in the map (anything not visible from your current location will not be drawn)"};
 cvar_t r_lockvisibility = {CF_CLIENT, "r_lockvisibility", "0", "disables visibility updates, allows you to walk around and inspect what is visible from a given viewpoint in the map (anything offscreen at the moment this is enabled will not be drawn)"};
+
+WARP_X_ ( mod_bsp_portalize )
 cvar_t r_useportalculling = {CF_CLIENT, "r_useportalculling", "1", "improve framerate with r_novis 1 by using portal culling - still not as good as compiled visibility data in the map, but it helps (a value of 2 forces use of this even with vis data, which improves framerates in maps without too much complexity, but hurts in extremely complex maps, which is why 2 is not the default mode)"}; // SEPUS
 cvar_t r_usesurfaceculling = {CF_CLIENT, "r_usesurfaceculling", "1", "skip off-screen surfaces (1 = cull surfaces if the map is likely to benefit, 2 = always cull surfaces)"};
 cvar_t r_q3bsp_renderskydepth = {CF_CLIENT, "r_q3bsp_renderskydepth", "0", "draws sky depth masking in q3 maps (as in q1 maps), this means for example that sky polygons can hide other things"};
@@ -494,7 +496,9 @@ void R_View_WorldVisibility(qbool forcenovis)
 		}
 		// just check if each leaf in the PVS is on screen
 		// (unless portal culling is enabled)
-		else if (!model->brush.data_portals || r_useportalculling.integer < 1 || (r_useportalculling.integer < 2 && !r_novis.integer))
+		else if (!model->brush.data_portals || 
+					r_useportalculling.integer < 1 || 
+					(r_useportalculling.integer < 2 && !r_novis.integer))
 		{
 			// pvs method:
 			// simply check if each leaf is in the Potentially Visible Set,

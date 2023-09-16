@@ -2040,10 +2040,10 @@ void Cmd_ExecuteString (const char *text, cmd_source_t src, qbool lockmutex)
 						Cmd_ForwardToServer_f();
 					}
 					else
-						Con_Printf("Can not send command \"%s\", not connected.\n", Cmd_Argv(0));
+						Con_PrintLinef ("Can not send command " QUOTED_S ", not connected.", Cmd_Argv(0));
 				}
 				else
-					Con_Printf("Command \"%s\" can not be executed\n", Cmd_Argv(0));
+					Con_PrintLinef ("Command " QUOTED_S " can not be executed", Cmd_Argv(0));
 				found = true;
 				goto command_found;
 			case src_client:
@@ -2062,7 +2062,7 @@ command_found:
 	// if it's a client command and no command was found, say so.
 	if (cmd_source == src_client)
 	{
-		Con_Printf("player \"%s\" tried to %s\n", host_client->name, text);
+		Con_PrintLinef ("player " QUOTED_S " tried to %s", host_client->name, text);
 		goto done;
 	}
 
@@ -2080,8 +2080,14 @@ command_found:
 		goto done;
 
 // check cvars
-	if (!Cvar_Command () && host_framecount > 0)
-		Con_Printf("Unknown command \"%s\"\n", Cmd_Argv(0));
+	if (!Cvar_Command () && host_framecount > 0) {
+		
+		if (developer.value) {
+			Con_PrintLinef ("Unknown command " QUOTED_S " (context: " QUOTED_S ")", Cmd_Argv(0), text);
+		} else {
+			Con_PrintLinef ("Unknown command " QUOTED_S, Cmd_Argv(0));
+		}
+	}
 
 done:
 	cmd_tokenizebufferpos = oldpos;

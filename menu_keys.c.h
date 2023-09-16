@@ -91,87 +91,6 @@ static const char *zirconbindnames[][2] =
 {"messagemode", 	"talk"},
 };
 
-static const char *transfusionbindnames[][2] =
-{
-{"",				"Movement"},		// Movement commands
-{"+forward", 		"walk forward"},
-{"+back", 			"backpedal"},
-{"+left", 			"turn left"},
-{"+right", 			"turn right"},
-{"+moveleft", 		"step left"},
-{"+moveright", 		"step right"},
-{"+jump", 			"jump / swim up"},
-{"+movedown",		"swim down"},
-{"",				"Combat"},			// Combat commands
-{"impulse 1",		"Pitch Fork"},
-{"impulse 2",		"Flare Gun"},
-{"impulse 3",		"Shotgun"},
-{"impulse 4",		"Machine Gun"},
-{"impulse 5",		"Incinerator"},
-{"impulse 6",		"Bombs (TNT)"},
-{"impulse 35",		"Proximity Bomb"},
-{"impulse 36",		"Remote Detonator"},
-{"impulse 7",		"Aerosol Can"},
-{"impulse 8",		"Tesla Cannon"},
-{"impulse 9",		"Life Leech"},
-{"impulse 10",		"Voodoo Doll"},
-{"impulse 21",		"next weapon"},
-{"impulse 22",		"previous weapon"},
-{"+attack", 		"attack"},
-{"+button3",		"altfire"},
-{"",				"Inventory"},		// Inventory commands
-{"impulse 40",		"Dr.'s Bag"},
-{"impulse 41",		"Crystal Ball"},
-{"impulse 42",		"Beast Vision"},
-{"impulse 43",		"Jump Boots"},
-{"impulse 23",		"next item"},
-{"impulse 24",		"previous item"},
-{"impulse 25",		"use item"},
-{"",				"Misc"},			// Misc commands
-{"+button4",		"use"},
-{"impulse 50",		"add bot (red)"},
-{"impulse 51",		"add bot (blue)"},
-{"impulse 52",		"kick a bot"},
-{"impulse 26",		"next armor type"},
-{"impulse 27",		"identify player"},
-{"impulse 55",		"voting menu"},
-{"impulse 56",		"observer mode"},
-{"",				"Taunts"},            // Taunts
-{"impulse 70",		"taunt 0"},
-{"impulse 71",		"taunt 1"},
-{"impulse 72",		"taunt 2"},
-{"impulse 73",		"taunt 3"},
-{"impulse 74",		"taunt 4"},
-{"impulse 75",		"taunt 5"},
-{"impulse 76",		"taunt 6"},
-{"impulse 77",		"taunt 7"},
-{"impulse 78",		"taunt 8"},
-{"impulse 79",		"taunt 9"}
-};
-
-static const char *goodvsbad2bindnames[][2] =
-{
-{"impulse 69",		"Power 1"},
-{"impulse 70",		"Power 2"},
-{"impulse 71",		"Power 3"},
-{"+jump", 			"jump / swim up"},
-{"+forward", 		"walk forward"},
-{"+back", 			"backpedal"},
-{"+left", 			"turn left"},
-{"+right", 			"turn right"},
-{"+speed", 			"run"},
-{"+moveleft", 		"step left"},
-{"+moveright", 		"step right"},
-{"+strafe", 		"sidestep"},
-{"+lookup", 		"look up"},
-{"+lookdown", 		"look down"},
-{"centerview", 		"center view"},
-{"+mlook", 			"mouse look"},
-{"kill", 			"kill yourself"},
-{"+moveup",			"swim up"},
-{"+movedown",		"swim down"}
-};
-
 static int numcommands;
 static const char *(*bindnames)[2];
 
@@ -303,7 +222,7 @@ static void M_Keys_Key (int k, int ascii)
 	int		keys[NUMKEYS];
 	char	tinystr[2];
 
-	if (bind_grab) {	
+	if (bind_grab) {
 		// defining a key
 		S_LocalSound ("sound/misc/menu1.wav");
 		if (k == K_ESCAPE) {
@@ -321,7 +240,7 @@ static void M_Keys_Key (int k, int ascii)
 
 	switch (k) {
 	case K_MOUSE2: if (Hotspots_DidHit_Slider()) { m_local_cursor = hotspotx_hover; goto leftus; } // PPX Key2 fall thru
-	case K_ESCAPE:	
+	case K_ESCAPE:
 		if (m_keys_prevstate == m_options_classic) {
 			M_Menu_Options_Classic_f ();
 		} else {
@@ -330,7 +249,7 @@ static void M_Keys_Key (int k, int ascii)
 		break;
 
 	case K_LEFTARROW:
-	case K_HOME: 
+	case K_HOME:
 		keys_cursor = 0;
 		break;
 

@@ -518,7 +518,6 @@ void Sys_ProvideSelfFD(void)
 	if(com_selffd != -1)
 		return;
 	com_selffd = FS_SysOpenFD(Sys_FindExecutableName(), "rb", false);
-	com_qexfd = FS_SysOpenFD("QuakeEX.kpf", "rb", false);
 }
 
 // for x86 cpus only...  (x64 has SSE2_PRESENT)

@@ -10,12 +10,12 @@ extern cvar_t cl_maxfps;
 static int video2_cursor = 0;
 
 static int video2_cursor_table[VIDEO2_ITEMS + 1] = {
-	68, 
-	80, 
-	96, 
-	112, 
-	144, 
-	160, 
+	68,
+	80,
+	96,
+	112,
+	144,
+	160,
 	172
 };
 
@@ -100,7 +100,7 @@ static void M_VideoNova_Draw (void)
 	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_slider);
 	M_ItemPrint(16, video2_cursor_table[t], "       Max Frames/Sec", true);
 	//M_DrawSlider(220, video2_cursor_table[t], cl_maxfps.integer, 0, 288 * 2);
-		
+
 
 	va(vabuf, sizeof(vabuf), "%d %s", cl_maxfps.integer, cl_maxfps.integer ? "" : " (no limit, choppy?)" );
 	DrawQ_String(menu_x + 220, menu_y + video2_cursor_table[t], vabuf, 0, /*w*/ 8, 8, /*rgba*/ 1, 1, 1, 1, 0, /*outcolor*/ NULL, true, FONT_MENU);
@@ -174,12 +174,12 @@ static void M_VideoNova_Key (int key, int ascii)
 	int j;
 	int fpsidxup = 0;
 	int fpsidxdw = fps_rates_count  - 1;
-	
+
 
 	switch (key) {
 	//case K_MOUSE2: // Fall
 	case K_MOUSE2: if (Hotspots_DidHit_Slider()) { m_local_cursor = hotspotx_hover; goto leftus; } // PPX Key2 fall thru
-	case K_ESCAPE:	
+	case K_ESCAPE:
 		// vid_shared.c has a copy of the current video config. We restore it
 		Cvar_SetValueQuick(&vid_fullscreen, vid.fullscreen);
 		Cvar_SetValueQuick(&vid_bitsperpixel, vid.bitsperpixel);
@@ -198,17 +198,17 @@ static void M_VideoNova_Key (int key, int ascii)
 		m_entersound = true;
 
 		switch (video2_cursor) {
-		
+
 		case (VIDEO2_ITEMS - 3): // fps
-			// increase get greater idx, if none use 0		
-			for (j = 0; j < fps_rates_count; j ++) {
+			// increase get greater idx, if none use 0
+			for (j = 0; j < (int)fps_rates_count; j ++) {
 				if (fps_rates[j].rate > cl_maxfps.integer) {
 					fpsidxup = j;
 					break;
 				} // if
 			} // for
 			Cvar_SetValueQuick (&cl_maxfps, fps_rates[fpsidxup].rate);
-			
+
 			break;
 
 		case (VIDEO2_ITEMS - 2): // APPLY
@@ -223,15 +223,15 @@ static void M_VideoNova_Key (int key, int ascii)
 		case (VIDEO2_ITEMS - 1): // ADVANCED
 			m_video_prevstate = m_videonova;
 			M_Menu_Video_f ();
-			break; 
+			break;
 
 		default:
 			M_Menu_VideoNova_AdjustSliders (1);
 		} // sw
 		break;
 
-	
-	case K_HOME: 
+
+	case K_HOME:
 		video2_cursor = 0;
 		break;
 
@@ -257,7 +257,7 @@ static void M_VideoNova_Key (int key, int ascii)
 leftus:
 		// decrease get lesser idx
 		if (video2_cursor == VIDEO2_ITEMS - 3) {
-			// if none, use hi	
+			// if none, use hi
 			for (j = fps_rates_count - 1; j >= 0; j --) {
 				if (fps_rates[j].rate < cl_maxfps.integer) {
 					fpsidxdw = j;
@@ -274,7 +274,7 @@ leftus:
 
 	case K_RIGHTARROW:
 		if (video2_cursor == VIDEO2_ITEMS - 3) {
-			for (j = 0; j < fps_rates_count; j ++) {
+			for (j = 0; j < (int)fps_rates_count; j ++) {
 				if (fps_rates[j].rate > cl_maxfps.integer) {
 					fpsidxup = j;
 					break;
@@ -293,7 +293,7 @@ leftus:
 void VID_ListModes_f(void)
 {
 	int j;
-	
+
 	if (vid.desktop_width) {
 		Con_PrintLinef ("Desktop: %d x %d ", vid.desktop_width, vid.desktop_height);
 	} else {

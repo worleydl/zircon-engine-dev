@@ -1916,44 +1916,15 @@ void VID_EnableJoystick(qbool enable)
 
 			HWND hWnd = wminfo.info.win.window;
 			
+#ifdef WIN64
+			SetClassLongPtr (hWnd /*hwnd*/, GCLP_HICON, (intptr_t)hIcon /*gAppIcon*/);
+#else
+			SetClassLong (hWnd /*hwnd*/, GCL_HICON, (LONG) hIcon/*gAppIcon*/);
+#endif // WIN64
 
-			SetClassLong (hWnd /*hwnd*/, GCL_HICON, (LONG) hIcon/*gAppIcon*/); // This is the class icon, not the window icon. No effect.
 			return true;
 		}
 	}
-//			//SendMessage(hWnd, WM_SETICON, ICON_BIG,  (LPARAM) gAppIcon);
-//			//SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) gAppIcon);
-//
-//#if 1 // Remove maximize button if found
-//			{	DWORD dwStyle = (DWORD)GetWindowLong(hWnd, GWL_STYLE);
-//				logd ("Checking for maximize button");
-//				if (dwStyle & WS_MAXIMIZEBOX) {
-//					logd ("Found maximize button");
-//					dwStyle &= (~WS_MAXIMIZEBOX);
-//					SetWindowLong (hWnd, GWL_STYLE, dwStyle);
-//					SetWindowPos (hWnd, 0, 0, 0, 0, 0, SWP_DRAWFRAME | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
-//					logd ("Removed maximize button");
-//				}
-//			}
-//#endif
-//		}
-//		return true;
-//	}
-//Shell_Platform_Icon_Window_Set (sysplat.mainwindow);
-//void SetWIke (SDL_Window *sdlxwindow)
-//{
-//	HINSTANCE		hInst = GetModuleHandle(NULL);
-//	#define IDI_ICON1                       1
-//
-//	HICON hIcon = LoadIcon (hInst, MAKEINTRESOURCE (IDI_ICON1)) ;
-//	if (hIcon) {
-//		SDL_SysWMinfo wminfo;
-//		//SDL_VERSION(&wminfo.version);
-//		//if (SDL_GetWindowWMInfo(sdlWindow,&wminfo) == 1){
-//		HWND hwnd = wminfo.info.win.window;
-//		SetClassLong(hwnd, GCL_HICON, hIcon);
-//	}
-//}
 
 #endif // _WIN32
 
@@ -2289,3 +2260,4 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 }
 
 #endif // CORE_SDL
+

@@ -2630,10 +2630,7 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 
 // add gravity
 	float fmovetype = PRVM_serveredictfloat(ent, movetype);
-	if (sv.is_qex && fmovetype == MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11) // AURA MOVETYPE_BOUNCEMISSILE
-		fmovetype = MOVETYPE_BOUNCE; // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11
-
-	if (isin2 (fmovetype, MOVETYPE_TOSS, MOVETYPE_BOUNCE) )
+	if (isin2 (fmovetype, MOVETYPE_TOSS, MOVETYPE_BOUNCE))
 		PRVM_serveredictvector(ent, velocity)[2] -= SV_Gravity(ent);
 
 // move angles
@@ -2663,9 +2660,6 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 		switch((int)PRVM_serveredictfloat(ent, movetype))
 		{
 		case MOVETYPE_BOUNCEMISSILE:
-			if (sv.is_qex) {
-				goto gib_movetype; // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 is BOUNCE
-			}
 			bouncefactor = PRVM_serveredictfloat(ent, bouncefactor);
 			if (!bouncefactor)
 				bouncefactor = 1.0f;
@@ -2677,7 +2671,6 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 			break;
 
 		case MOVETYPE_BOUNCE:
-gib_movetype: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 is BOUNCE
 			bouncefactor = PRVM_serveredictfloat(ent, bouncefactor);
 			if (!bouncefactor)
 				bouncefactor = 0.5f;
@@ -2711,7 +2704,6 @@ gib_movetype: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 is BOUNCE
 			}
 			break;
 		default:
-
 			ClipVelocity (PRVM_serveredictvector(ent, velocity), trace.plane.normal, PRVM_serveredictvector(ent, velocity), 1.0);
 			if (trace.plane.normal[2] > 0.7)
 			{
@@ -2842,7 +2834,7 @@ static void SV_Physics_Entity (prvm_edict_t *ent)
 		//int j = (int) PRVM_serveredictfloat(ent, movetype);
 		const char *s = PRVM_GetString(prog, PRVM_serveredictstring(ent, classname));
 #endif
-
+	
 	switch ((int) PRVM_serveredictfloat(ent, movetype))
 	{
 	case MOVETYPE_PUSH:
@@ -2882,15 +2874,9 @@ static void SV_Physics_Entity (prvm_edict_t *ent)
 		if (SV_RunThink (ent))
 			SV_WalkMove (ent);
 		break;
-
-	case MOVETYPE_BOUNCEMISSILE: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11
-//		int j;//= 1;
-	//	j = 1;
-		//j= j;
-		// Fall
 	case MOVETYPE_TOSS:
 	case MOVETYPE_BOUNCE:
-
+	case MOVETYPE_BOUNCEMISSILE:
 	case MOVETYPE_FLYMISSILE:
 	case MOVETYPE_FLY:
 	case MOVETYPE_FLY_WORLDONLY:
@@ -2945,7 +2931,7 @@ static void SV_Physics_ClientEntity_NoThink (prvm_edict_t *ent)
 		break;
 	case MOVETYPE_TOSS:
 	case MOVETYPE_BOUNCE:
-	case MOVETYPE_BOUNCEMISSILE: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 // AURA
+	case MOVETYPE_BOUNCEMISSILE:
 	case MOVETYPE_FLYMISSILE:
 		SV_Physics_Toss (ent);
 		break;
@@ -3127,9 +3113,9 @@ static void SV_Physics_ClientEntity(prvm_edict_t *ent)
 		if (host_client->clmovement_inputtimeout <= 0)
 			SV_WalkMove (ent);
 		break;
-	case MOVETYPE_BOUNCEMISSILE: //case MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11: // AURA
 	case MOVETYPE_TOSS:
 	case MOVETYPE_BOUNCE:
+	case MOVETYPE_BOUNCEMISSILE:
 	case MOVETYPE_FLYMISSILE:
 		// regular thinking
 		SV_RunThink (ent);

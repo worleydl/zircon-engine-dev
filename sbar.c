@@ -360,7 +360,7 @@ void Sbar_Init (void)
 	Cmd_AddCommand("+showscores", Sbar_ShowScores, "show scoreboard");
 	Cmd_AddCommand("-showscores", Sbar_DontShowScores, "hide scoreboard");
 	Cmd_AddCommand("tool_texturepointer", Tool_Texturepointer_f, "Toggle showing of texture namesr"); // showtex
-	
+
 	Cvar_RegisterVariable(&showfps);
 	Cvar_RegisterVariable(&showsound);
 	Cvar_RegisterVariable(&showblur);
@@ -378,11 +378,11 @@ void Sbar_Init (void)
 	Cvar_RegisterVariable(&sbar_gametime);
 	Cvar_RegisterVariable(&scr_clock);
 	Cvar_RegisterVariable(&sbar_showprotocol);
-	
+
 	Cvar_RegisterVariable(&sbar_miniscoreboard_size);
 	Cvar_RegisterVariable(&sbar_info_pos);
 	Cvar_RegisterVariable(&sbar_quake);
-	
+
 	Cvar_RegisterVariable(&cl_deathscoreboard);
 
 	Cvar_RegisterVariable(&crosshair_color_red);
@@ -442,7 +442,7 @@ static void Sbar_DrawCharacter (int x, int y, int num)
 Sbar_DrawString
 ================
 */
-static void Sbar_DrawString (int x, int y, char *str)
+static void Sbar_DrawString (int x, int y, const char *str)
 {
 	DrawQ_String (sbar_x + x, sbar_y + y, str, 0, 8, 8, 1, 1, 1, sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR);
 }
@@ -682,7 +682,7 @@ static void Sbar_SoloScoreboard (void)
 
 	char	str[80];//, timestr[40];
 	int		max_32 = 32;//, timelen;
-	
+
 	char vabuf[1024];
 
 mapname:
@@ -718,10 +718,11 @@ levtime:
 	}
 
 
-	if (cl.islocalgame && cl.gametype == GAME_COOP ) {
-		char *skillstrings[] = {"Easy", "Normal", "Hard", "Nightmare"};
-		if (in_range (/*easy*/ 0, skill.integer, /*nightmare*/ 3)) {
-			Sbar_DrawString (8 + 8 * (20 - strlen(skillstrings[skill.integer]) / 2.0), 12, skillstrings[skill.integer]);
+	if ((cl.islocalgame || cl.skill_level_p1) && cl.gametype == GAME_COOP ) {
+		const char *skillstrings[] = {"Easy", "Normal", "Hard", "Nightmare"};
+		int skillz = cl.skill_level_p1 ? (cl.skill_level_p1 - 1) : skill.integer;
+		if (in_range (/*easy*/ 0, skillz, /*nightmare*/ 3)) {
+			Sbar_DrawString (8 + 8 * (20 - strlen(skillstrings[skillz]) / 2.0), 12, skillstrings[skillz]);
 		}
 	}
 
@@ -731,7 +732,7 @@ levtime:
 
 	//// print the time
 	//Sbar_DrawString(8 + max*8, 12, timestr);
-	
+
 	if (!cl.islocalgame && sbar_showprotocol.integer) {
 		if (isin2 (cls.protocol, PROTOCOL_QUAKE, PROTOCOL_QUAKEDP)) {
 			Sbar_DrawString (8, 4, "Q15");
@@ -1092,7 +1093,7 @@ void Sbar_ShowFPS(void)
 	soundstring[0] = 0;
 	posstring[0] = 0;
 	angstring[0] = 0;
-	
+
 	fpsstring[0] = 0;
 	timedemostring1[0] = 0;
 	timedemostring2[0] = 0;
@@ -1142,8 +1143,8 @@ void Sbar_ShowFPS(void)
 			dpsnprintf(angstring, sizeof(angstring), "%d %d %d", (int)cl.entities[cl.playerentity].state_current.angles[0], (int)cl.entities[cl.playerentity].state_current.angles[1], (int)cl.entities[cl.playerentity].state_current.angles[2]);
 			fps_strings++;
 		}
-	}	
-	
+	}
+
 	if (showtime.integer) {
 		strlcpy(timestring, Sys_TimeString(showtime_format.string), sizeof(timestring));
 		fps_strings++;
@@ -1231,7 +1232,7 @@ void Sbar_ShowFPS(void)
 		}
 		if (fpsstring[0])
 		{
-			extern cvar_t con_notifysize;
+			//extern cvar_t con_notifysize;
 			r_draw2d_force = true;
 			if (showfps.integer < 0) {
 				float tw = DrawQ_TextWidth(fpsstring, 0, fps_scalex, fps_scaley, true, FONT_CENTERPRINT);
@@ -1247,13 +1248,13 @@ void Sbar_ShowFPS(void)
 			}
 			else {
 				fps_x = vid_conwidth.integer - DrawQ_TextWidth(fpsstring, 0, fps_scalex, fps_scaley, true, FONT_INFOBAR);
-			
+
 				DrawQ_Fill(fps_x, fps_y, vid_conwidth.integer - fps_x, fps_scaley, 0, 0, 0, 0.5, 0);
 				/*if (red)	DrawQ_String(fps_x, fps_y, fpsstring, 0, fps_scalex, fps_scaley, 1, 0, 0, 1, 0, NULL, true, FONT_INFOBAR);
 				else*/		DrawQ_String(fps_x, fps_y, fpsstring, 0, fps_scalex, fps_scaley, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
 				fps_y += fps_scaley;
 			}
-			
+
 			r_draw2d_force = false;
 		}
 		if (posstring[0]) {
@@ -1576,7 +1577,7 @@ static void SBar_Quake()
 
 		float col;
 		for (col = 0; col < cols; col ++) {
-			DrawQ_Pic (col * 64, vid_conheight.integer - sb_lines, 
+			DrawQ_Pic (col * 64, vid_conheight.integer - sb_lines,
 				sb_backtile, 64, 64 , /*rgba*/ 1, 1, 1, /*alpha*/ 1.0, /*flags*/ 0);
 		}
 	} else if (sbar_quake.integer == 2) {
@@ -1595,12 +1596,12 @@ static void SBar_Quake()
 
 		int fi;
 		cachepic_t *iface;
-		
-//		Sbar_DrawGauge(20  +  16, 20 , sb_face_invis_invuln, 
-//			64*scale,  80*scale, 78*scale,  -66*scale, cl.stats_sv[STAT_AMMO]  * (1.0 / 200.0), cl.stats_sv[STAT_SHELLS]  * 
+
+//		Sbar_DrawGauge(20  +  16, 20 , sb_face_invis_invuln,
+//			64*scale,  80*scale, 78*scale,  -66*scale, cl.stats_sv[STAT_AMMO]  * (1.0 / 200.0), cl.stats_sv[STAT_SHELLS]  *
 //			(1.0 / 200.0), 0.8f,0.8f,0.0f,1.0f, 0.8f,0.5f,0.0f,1.0f, 0.3f,0.3f,0.3f,1.0f, DRAWFLAG_NORMAL);
 		// Q64 face icon
-		
+
 		iface = NULL;
 		     if (Have_Flag_Strict_Bool (cl.stats_sv[STAT_ITEMS], IT_INVISIBILITY | IT_INVULNERABILITY ) )
 				 iface = sb_face_invis_invuln;
@@ -1679,7 +1680,7 @@ no_ammo:
 		if (Have_Flag (cl.stats_sv[STAT_ITEMS], IT_INVULNERABILITY)) {
 			iface = sb_disc;
 		} else {
-			if (gamemode == GAME_ROGUE) {															
+			if (gamemode == GAME_ROGUE) {
 				if (Have_Flag (cl.stats_sv[STAT_ITEMS], RIT_ARMOR3))			iface = sb_armor[2];
 				else if (Have_Flag (cl.stats_sv[STAT_ITEMS], RIT_ARMOR2))		iface = sb_armor[1];
 				else if (Have_Flag (cl.stats_sv[STAT_ITEMS], RIT_ARMOR1))		iface = sb_armor[0];
@@ -1753,7 +1754,7 @@ no_armor:
 	// UP
 	//
 	//
-	
+
 	if (sb_lines > 24) {
 		Sbar_DrawInventory (); // HEREO
 		if ((cls.demoplayback && cl.gametype == GAME_DEATHMATCH) || (!cl.islocalgame && !cls.demoplayback))
@@ -1786,7 +1787,7 @@ no_armor:
 			Sbar_DrawNum (24, 0, 666, 3, 1);
 			Sbar_DrawPic (0, 0, sb_disc);
 		} else {
-			if (gamemode == GAME_ROGUE) {																
+			if (gamemode == GAME_ROGUE) {
 				Sbar_DrawNum (24, 0, cl.stats_sv[STAT_ARMOR], 3, cl.stats_sv[STAT_ARMOR] <= 25);
 				if (cl.stats_sv[STAT_ITEMS] & RIT_ARMOR3)			Sbar_DrawPic (0, 0, sb_armor[2]);
 				else if (cl.stats_sv[STAT_ITEMS] & RIT_ARMOR2)		Sbar_DrawPic (0, 0, sb_armor[1]);
@@ -1798,7 +1799,7 @@ no_armor:
 				else if (cl.stats_sv[STAT_ITEMS] & IT_ARMOR1)		Sbar_DrawPic (0, 0, sb_armor[0]);
 			}
 		}
-	
+
 		// HEREO FACE
 
 		// face
@@ -1867,7 +1868,7 @@ void Sbar_Draw (void)
 		}
 		else if (cl.intermission == 1) {
 			if(IS_OLDNEXUIZ_DERIVED(gamemode)) { // display full scoreboard (that is, show scores + map name)
-			
+
 				Sbar_DrawScoreboard();
 				return;
 			}
@@ -2031,7 +2032,7 @@ void Sbar_DeathmatchOverlay (void)
 	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 		DrawQ_String(xmin, y, va(vabuf, sizeof(vabuf), "ping pl%% time frags team  name"), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
 	} else {
-		
+
 		DrawQ_String(xmin, y, va(vabuf, sizeof(vabuf), "ping pl%% frags  name"), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
 	}
 	y += 8;
