@@ -1181,6 +1181,7 @@ typedef struct client_state_s
 
 	// don't change view angle, full screen, etc
 	int intermission;
+	int is_qex; // AURA 2.0
 	// latched at intermission start
 	double completed_time;
 

@@ -5439,7 +5439,7 @@ VM_CL_setsensitivityscale,		// #346 void(float sens) setsensitivityscale (EXT_CS
 VM_CL_runplayerphysics,			// #347 void() runstandardplayerphysics (EXT_CSQC)
 VM_CL_getplayerkey,				// #348 string(float playernum, string keyname) getplayerkeyvalue (EXT_CSQC)
 VM_CL_isdemo,					// #349 float() isdemo (EXT_CSQC)
-VM_isserver,					// #350 float() isserver (EXT_CSQC)
+VM_isserver,					// #350 float() isserver (EXT_CSQC)  (returns sv.active)
 VM_CL_setlistener,				// #351 void(vector origin, vector forward, vector right, vector up) SetListener (EXT_CSQC)
 VM_CL_registercmd,				// #352 void(string cmdname) registercommand (EXT_CSQC)
 VM_wasfreed,					// #353 float(entity ent) wasfreed (EXT_CSQC) (should be availabe on server too)
@@ -5609,7 +5609,7 @@ VM_argv_start_index,					// #515 float(float idx) argv_start_index = #515; (DP_Q
 VM_argv_end_index,						// #516 float(float idx) argv_end_index = #516; (DP_QC_TOKENIZE_CONSOLE)
 VM_buf_cvarlist,						// #517 void(float buf, string prefix, string antiprefix) buf_cvarlist = #517; (DP_QC_STRINGBUFFERS_CVARLIST)
 VM_cvar_description,					// #518 float(string name) cvar_description = #518; (DP_QC_CVAR_DESCRIPTION)
-VM_gettime,						// #519 float(float timer) gettime = #519; (DP_QC_GETTIME)
+VM_gettime,						// #519 float(float timer) gettime = #519; (DP_QC_GETTIME)  // Baker: GETTIME_FRAMESTART or realtime or ...
 VM_keynumtostring,				// #520 string keynumtostring(float keynum)
 VM_findkeysforcommand,			// #521 string findkeysforcommand(string command[, float bindmap])
 VM_CL_InitParticleSpawner,		// #522 void(float max_themes) initparticlespawner (DP_CSQC_SPAWNPARTICLE)
@@ -5622,7 +5622,7 @@ VM_CL_SpawnParticleDelayed,		// #528 float(vector org, vector vel, float delay, 
 VM_loadfromdata,				// #529
 VM_loadfromfile,				// #530
 VM_CL_setpause,					// #531 float(float ispaused) setpause = #531 (DP_CSQC_SETPAUSE)
-VM_log,							// #532
+VM_log,							// #532 // Baker: logarithm
 VM_getsoundtime,				// #533 float(entity e, float channel) getsoundtime = #533; (DP_SND_GETSOUNDTIME)
 VM_soundlength,					// #534 float(string sample) soundlength = #534; (DP_SND_GETSOUNDTIME)
 VM_buf_loadfile,                // #535 float(string filename, float bufhandle) buf_loadfile (DP_QC_STRINGBUFFERS_EXT_WIP)
@@ -5714,7 +5714,7 @@ NULL,							// #620
 NULL,							// #621
 NULL,							// #622
 NULL,							// #623
-VM_CL_getextresponse,			// #624 string getextresponse(void)
+VM_CL_getextresponse,			// #624 string getextresponse(void)  // Baker: Part of FTE_CSQC_SERVERBROWSER
 NULL,							// #625
 NULL,							// #626
 VM_sprintf,                     // #627 string sprintf(string format, ...)

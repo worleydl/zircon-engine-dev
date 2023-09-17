@@ -454,8 +454,8 @@ void Host_UnlockSession(void);
 void Host_AbortCurrentFrame(void);
 
 
-
-
+void LOC_LoadFile (void); // AURA 8.0
+const char *LOC_GetString (const char *s_dollar_key); // AURA 1.2
 
 // In Quake, any char in 0..32 counts as whitespace
 //#define ISWHITESPACE(ch) ((unsigned char) ch <= (unsigned char) ' ')

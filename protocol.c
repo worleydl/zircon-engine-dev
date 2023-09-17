@@ -816,7 +816,16 @@ qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, co
 			if (bits & U_FRAME)			MSG_WriteByte(&buf, s->frame);
 			if (bits & U_COLORMAP)		MSG_WriteByte(&buf, s->colormap);
 			if (bits & U_SKIN)			MSG_WriteByte(&buf, s->skin);
-			if (bits & U_EFFECTS)		MSG_WriteByte(&buf, s->effects);
+			if (bits & U_EFFECTS)		{ // AURA 6.0
+				if (sv.is_qex) { // AURA
+					int efx = s->effects;
+					Flag_Remove_From (efx, 
+						EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64);
+					MSG_WriteByte(&buf, efx);
+				} else {
+					MSG_WriteByte(&buf, s->effects);
+				}
+			} // if
 			if (bits & U_ORIGIN1)		MSG_WriteCoord(&buf, s->origin[0], sv.protocol);
 			if (bits & U_ANGLE1)		MSG_WriteAngle(&buf, s->angles[0], sv.protocol);
 			if (bits & U_ORIGIN2)		MSG_WriteCoord(&buf, s->origin[1], sv.protocol);

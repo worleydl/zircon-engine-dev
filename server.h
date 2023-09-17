@@ -105,6 +105,7 @@ typedef struct server_s
 
 	/// map name
 	char name[64]; // %s followed by entrance name
+	int is_qex; // AURA 9.0
 
 	loadinfo_s loadinfox;
 	// variants of map name
@@ -332,6 +333,7 @@ typedef struct client_s
 #define	MOVETYPE_NOCLIP			8
 #define	MOVETYPE_FLYMISSILE		9		///< extra size to monsters
 #define	MOVETYPE_BOUNCE			10
+#define	MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11	11		// 2021 rerelease gibs // AURA 9.1
 #define MOVETYPE_BOUNCEMISSILE	11		///< bounce w/o gravity
 #define MOVETYPE_FOLLOW			12		///< track movement of aiment
 #define MOVETYPE_FAKEPUSH		13		///< tenebrae's push that doesn't push

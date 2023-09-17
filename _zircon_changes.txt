@@ -27,6 +27,10 @@ The cut-copy paste is not yet compatible with utf-8 enabled, which does not affe
 
 Baker
 
+// September 16 Release
+1. Quake Remaster Support.
+2. English only this time.
+
 // September 15 Release
 
 Quake Remaster Support Rolled back for now ...

@@ -3415,8 +3415,32 @@ static void CL_NetworkTimeReceived(double newtime)
 
 #define SHOWNET(x) if(cl_shownet.integer==2)Con_Printf("%3i:%s(%d)\n", cl_message.readcount-1, x, cmd);
 
+/*
+==================
+CL_ParseLocalSound - for 2021 rerelease
+==================
+*/
+void CL_ParseLocalSound(void) // AURA 1.0
+{
+	int field_mask, sound_num;
+
+	field_mask = MSG_ReadByte(&cl_message);
+
+	sound_num = (field_mask & SND_LARGESOUND) ? 
+		(unsigned short) MSG_ReadShort(&cl_message) :
+		MSG_ReadByte(&cl_message);
+
+	if (sound_num >= MAX_SOUNDS) {
+		Con_PrintLinef ("CL_ParseLocalSound: sound_num (%d) >= MAX_SOUNDS (%d)", sound_num, MAX_SOUNDS);
+		return;
+	}
+
+	S_LocalSound (cl.sound_precache[sound_num]->name);
+}
+
 // hint skill 1
 // hint game quake3_quake1
+// hint qex 1
 // We know there is a hint.  str is the text after the hint
 void CL_ParseHint (const char *str)
 {
@@ -3448,7 +3472,8 @@ void CL_ParseHint (const char *str)
 		const char	*scmd_arg1 = &scursor[1];
 
 		     if (String_Does_Match (scmd_arg0, "skill"))	{ cl.skill_level_p1 = atoi(scmd_arg1) + 1;	}
-		else if (String_Does_Match (scmd_arg0, "game"))		{	}
+		else if (String_Does_Match (scmd_arg0, "qex"))		{ cl.is_qex = atoi(scmd_arg1);				} // AURA 1.1
+		else if (String_Does_Match (scmd_arg0, "game"))		{ /* todo */ }
 		else
 			return;
 
@@ -3968,12 +3993,20 @@ void CL_ParseServerMessage(void)
 
 			case svc_print:
 				str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));
+
+				if (cl.is_qex && str[0] == '$') { // AURA 1.2
+					str = LOC_GetString (str);
+					CSQC_AddPrintText (str);	//[515]: csqc
+				} else
 				if (CL_ExaminePrintString(str)) // au21 - look for anything interesting like player IP addresses or ping reports
 					CSQC_AddPrintText (str);	//[515]: csqc
 				break;
 
 			case svc_centerprint:
 				str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));					
+				if (cl.is_qex && str[0] == '$') { // AURA 1.3
+					str = LOC_GetString (str);
+				}
 
 				CL_VM_Parse_CenterPrint(str);	//[515]: csqc
 				break;
@@ -4016,6 +4049,7 @@ void CL_ParseServerMessage(void)
 					}
 				}
 
+				// AURA 1.4
 				if (String_Does_Start_With (str, HINT_MESSAGE_PREFIX)) {
 					Con_DPrintLinef ("Received server hint: %s", str);
 					str += strlen (HINT_MESSAGE_PREFIX);
@@ -4147,6 +4181,12 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_effect:
+				if (cl.is_qex) { // AURA 1.5
+					// case  svc_achievement_fights_effect_52 AURA
+					str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+					Con_DPrintLinef ("Ignoring svc_achievement (%s)", str);
+					break;
+				}
 				CL_ParseEffect ();
 				break;
 
@@ -4175,6 +4215,11 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_spawnstatic2:
+				if (cl.is_qex) { // AURA 1.6
+					// svc_qex_localsound_fights_spawnstatic2_56
+					CL_ParseLocalSound();
+					break;
+				}
 				CL_ParseStatic (true);
 				break;
 
@@ -4259,6 +4304,9 @@ void CL_ParseServerMessage(void)
 				CL_VM_UpdateIntermissionState(cl.intermission);
 
 				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') { // AURA 1.7
+					str = LOC_GetString (str);
+				}
 
 				SCR_CenterPrint(str);
 				break;
@@ -4270,6 +4318,9 @@ void CL_ParseServerMessage(void)
 				CL_VM_UpdateIntermissionState(cl.intermission);
 
 				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') { // AURA 1.8
+					str = LOC_GetString (str);
+				}
 
 				SCR_CenterPrint (str);
 				break;

@@ -367,6 +367,7 @@ mempool_t *fs_mempool;
 void *fs_mutex = NULL;
 
 searchpath_t *fs_searchpaths = NULL;
+int fs_have_qex = 0; // AURA 3.0
 const char *const fs_checkgamedir_missing = "missing";
 
 #define MAX_FILES_IN_PACK_65536	65536
@@ -1115,6 +1116,9 @@ FS_AddPack_Fullpath
  * plain directories.
  *
  */
+
+// Baker: fs_searchpaths is the global that holds these 
+WARP_X_ (fs_searchpaths)
 static qbool FS_AddPack_Fullpath(const char *pakfile, const char *shortname, qbool *already_loaded, qbool keep_plain_dirs)
 {
 	searchpath_t *search;
@@ -1123,19 +1127,20 @@ static qbool FS_AddPack_Fullpath(const char *pakfile, const char *shortname, qbo
 	size_t slen;
 
 	for (search = fs_searchpaths; search; search = search->next) {
-		if(search->pack && String_Does_Match_Caseless(search->pack->filename, pakfile)) {
-			if(already_loaded)
+		if (search->pack && String_Does_Match_Caseless(search->pack->filename, pakfile)) {
+			if (already_loaded)
 				*already_loaded = true;
 			return true; // already loaded
 		} // if
 	} // for
 
-	if(already_loaded)
+	if (already_loaded)
 		*already_loaded = false;
 
 	     if (String_Does_Match_Caseless(ext, "pk3dir")) pak = FS_LoadPackVirtual (pakfile);
 	else if (String_Does_Match_Caseless(ext, "pak")) 	pak = FS_LoadPackPAK (pakfile);
 	else if (String_Does_Match_Caseless(ext, "pk3")) 	pak = FS_LoadPackPK3 (pakfile);
+	else if (String_Does_Match_Caseless(ext, "kpf")) 	pak = FS_LoadPackPK3 (pakfile); // AURA 3.1
 	else if (String_Does_Match_Caseless(ext, "obb"))	pak = FS_LoadPackPK3 (pakfile); // android apk expansion
 	else 												Con_PrintLinef ("\"%s\" does not have a pack extension", pakfile);
 
@@ -1265,7 +1270,8 @@ static void FS_AddGameDirectory (const char *dir)
 		char *sthis = list.strings[i];
 		const char *sthisext = FS_FileExtension(sthis);
 		if (String_Isin1_Caseless (sthisext, "pak")) {
-			FS_AddPack_Fullpath(sthis, sthis + strlen(dir), NULL, false);
+			const char *s_shortname = sthis + strlen(dir);
+			FS_AddPack_Fullpath (sthis, s_shortname, /*palready_loaded*/ NULL, /*keep_plain_dirs*/ false);
 		}
 	}
 
@@ -1274,7 +1280,8 @@ static void FS_AddGameDirectory (const char *dir)
 		char *sthis = list.strings[i];
 		const char *sthisext = FS_FileExtension(sthis);
 		if (String_Isin3_Caseless (sthisext, "pk3", "obb" /*android apk*/, "pk3dir")) {
-			FS_AddPack_Fullpath(sthis, sthis + strlen(dir), NULL, false);
+			const char *s_shortname = sthis + strlen(dir);
+			FS_AddPack_Fullpath (sthis, s_shortname, /*palready_loaded*/ NULL, /*keep_plain_dirs*/ false);
 		}
 	}
 
@@ -1398,6 +1405,7 @@ static void FS_AddSelfPack(void)
 FS_Rescan
 ================
 */
+
 void FS_Rescan (void)
 {
 	int i;
@@ -1428,6 +1436,7 @@ void FS_Rescan (void)
 	if (gamedirname2 && gamedirname2[0])
 	{
 		fs_modified = true;
+		WARP_X_ (FS_AddGameDirectory)
 		FS_AddGameHierarchy (gamedirname2);
 	}
 
@@ -1451,6 +1460,21 @@ void FS_Rescan (void)
 
 	// add back the selfpack as new first item
 	FS_AddSelfPack();
+	
+	fs_have_qex = 0; // AURA 3.2
+	const char *s_qex = "QuakeEX.kpf";
+	if (File_Exists (s_qex)) {
+		Con_PrintLinef ("Found QuakeEX.kpf");
+		if (FS_AddPack_Fullpath (s_qex, s_qex, /*palready_loaded*/ NULL, /*keep_plain_dirs*/ false)) {
+			Con_PrintLinef ("Loaded QuakeEX.kpf");
+			LOC_LoadFile ();
+			fs_have_qex = 1;
+		} else {
+			Con_PrintLinef ("Load QuakeEX.kpf failed");
+		}
+	} else {
+		Con_PrintLinef ("Did not find QuakeEX.kpf");
+	}
 
 	// set the default screenshot name to either the mod name or the
 	// gamemode screenshot name
@@ -1460,7 +1484,7 @@ void FS_Rescan (void)
 		Cvar_SetQuick (&scr_screenshot_name, gamescreenshotname);
 
 	if((i = Sys_CheckParm("-modname")) && i < com_argc - 1)
-		strlcpy(com_modname, com_argv[i+1], sizeof(com_modname));
+		c_strlcpy(com_modname, com_argv[i+1]);
 
 	// If "-condebug" is in the command line, remove the previous log file
 	if (Sys_CheckParm ("-condebug") != 0)
@@ -3703,7 +3727,7 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 	// search through the path, one element at a time
 	for (searchpath = fs_searchpaths; searchpath; searchpath = searchpath->next) {
 		if (isgamedironly_in && sgamedironly[0] == 0 && !searchpath->pack) {
-			// ignore the home directory
+			// ignore the home directory for map menu
 			if ( !fs_userdir[0] /*not homed*/ || String_Does_Start_With (searchpath->filename, fs_userdir) == false /*homed, but not a home dir*/ ) {
 				c_strlcpy (sgamedironly, searchpath->filename);
 			}

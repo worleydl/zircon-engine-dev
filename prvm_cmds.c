@@ -5377,7 +5377,8 @@ void VM_uri_get (prvm_prog_t *prog)
 	handle->prog = prog;
 	handle->starttime = prog->starttime;
 	handle->id = id;
-	if(postseparator && posttype && *posttype)
+// POST:
+	if (postseparator && posttype && *posttype)
 	{
 		size_t l = strlen(postseparator);
 		if(poststringbuffer >= 0)
@@ -5458,6 +5459,7 @@ out1:
 	}
 	else
 	{
+// GET:
 		if(postkeyid >= 0 && query_string)
 		{
 			// GET: we sign JUST the query string
@@ -5482,6 +5484,7 @@ out1:
 			handle->siglen = l + ll;
 			handle->sigdata[handle->siglen] = 0;
 		}
+// GET:
 out2:
 		handle->postdata = NULL;
 		handle->postlen = 0;

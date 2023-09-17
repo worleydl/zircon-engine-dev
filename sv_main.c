@@ -175,6 +175,9 @@ cvar_t scratch3 = {CF_SERVER, "scratch3", "0", "unused cvar in quake, can be use
 cvar_t scratch4 = {CF_SERVER, "scratch4", "0", "unused cvar in quake, can be used by mods"};
 cvar_t temp1 = {CF_SERVER, "temp1","0", "general cvar for mods to use, in stock id1 this selects which death animation to use on players (0 = random death, other values select specific death scenes)"};
 
+cvar_t campaign = {CF_SERVER, "campaign","0", "Rerelease [Zircon]" }; // AURA 10.0 
+cvar_t horde = {CF_SERVER, "horde","0", "Rerelease [Zircon]" }; // AURA
+cvar_t scr_usekfont = {CF_SERVER, "scr_usekfont","0", "Rerelease [Zircon]" }; // AURA
 
 cvar_t nehx00 = {CF_SERVER, "nehx00", "0", "nehahra data storage cvar (used in singleplayer)"};
 cvar_t nehx01 = {CF_SERVER, "nehx01", "0", "nehahra data storage cvar (used in singleplayer)"};
@@ -615,6 +618,10 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&scratch4);
 	Cvar_RegisterVariable (&temp1);
 
+	Cvar_RegisterVariable (&campaign); // AURA 10.1
+	Cvar_RegisterVariable (&scr_usekfont); // AURA
+	Cvar_RegisterVariable (&horde);
+
 	// LadyHavoc: Nehahra uses these to pass data around cutscene demos
 	Cvar_RegisterVariable (&nehx00);
 	Cvar_RegisterVariable (&nehx01);
@@ -919,7 +926,14 @@ static void SV_InsertHints (sizebuf_t *sb, qbool is_early_gamedir_only)
 		MSG_WriteString (sb, sv_hint_string);
 	}
 
+	if (is_early_gamedir_only == false) { // AURA 10.2
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "qex %d" NEWLINE, sv.is_qex );
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
 }
+
 /*
 ==============================================================================
 
@@ -1296,7 +1310,15 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 			lightpflags |= PFLAGS_FULLDYNAMIC;
 		}
 	}
-
+	else if (sv.is_qex) { // AURA 10.3
+		if (Have_Flag (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64)) {
+			int efx = effects;
+			Flag_Remove_From (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64);
+			if (Have_Flag (efx, EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32))	Flag_Add_To (effects, EF_RED); // 128
+			if (Have_Flag (efx, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16))		Flag_Add_To (effects, EF_BLUE); // 64
+			if (Have_Flag (efx, EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64))		Flag_Add_To (effects, EF_DIMLIGHT); // 8 .. I guess?
+		} // if
+	} // qex
 	specialvisibilityradius = 0;
 	if (lightpflags & PFLAGS_FULLDYNAMIC)
 		specialvisibilityradius = max(specialvisibilityradius, light[3]);
@@ -1707,8 +1729,10 @@ static void SV_MarkWriteEntityStateToClient(entity_state_t *s)
 			return;
 		if (s->drawonlytoclient && s->drawonlytoclient != sv.writeentitiestoclient_cliententitynumber)
 			return;
-		if (s->effects & EF_NODRAW_16)
+		if (s->effects & EF_NODRAW_16) { // AURA 10.4
+			if (!sv.is_qex) // AURA CL will deal?
 			return;
+		}
 		// LadyHavoc: only send entities with a model or important effects
 		if (!s->modelindex && s->specialvisibilityradius == 0)
 			return;
@@ -3284,8 +3308,8 @@ static void SV_Prepare_CSQC(void)
 	
 	sv.csqc_progname[0] = 0;
 	if (csqc_progname.string[0]) {
-	svs.csqc_progdata = FS_LoadFile(csqc_progname.string, sv_mempool, false, &progsize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-	}
+		svs.csqc_progdata = FS_LoadFile(csqc_progname.string, sv_mempool, false, &progsize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	} // if
 
 	if(progsize > 0)
 	{
@@ -3822,6 +3846,91 @@ static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 	return true;
 }
 
+/*
+===============
+PR_HasGlobal
+===============
+*/
+
+// AURA 10.5
+static qbool PR_HasGlobal_Float_With_Value (prvm_prog_t *prog, const char *name, float value) // AURA
+{
+	ddef_t *g = PRVM_ED_FindGlobal (prog, name);
+	if (g && (g->type & ~DEF_SAVEGLOBAL) == ev_float) {
+		//float fval = PRVM_gameglobalfloat( PRVM_serveredictfloat(host_client->edict, items)
+		return true;
+		
+	}
+	return false;
+}
+
+
+/*
+===============
+PR_PatchRereleaseBuiltins
+
+for 2021 re-release
+===============
+*/
+
+/* for 2021 re-release */
+typedef struct { // AURA
+	const char *name;
+	int first_statement;
+	int patch_statement;
+} exbuiltin_t;
+
+static const exbuiltin_t exbuiltins[] = {
+	/* Update-1 adds the following builtins with new ids. Patch them to use old indices.
+	 * (https://steamcommunity.com/games/2310/announcements/detail/2943653788150871156) */
+	{ "centerprint", -90, -73 },
+	{ "bprint", -91, -23 },
+	{ "sprint", -92, -24 },
+
+	/* Update-3 changes its unique builtins to be looked up by name instead of builtin
+	 * numbers, to avoid conflict with other engines. Patch them to use our indices.
+	 * (https://steamcommunity.com/games/2310/announcements/detail/3177861894960065435) */
+	{ "ex_centerprint", 0, -73 },
+	{ "ex_bprint", 0, -23 },
+	{ "ex_sprint", 0, -24 },
+	{ "ex_finaleFinished", 0, -79 },
+
+	{ "ex_localsound", 0, -80 },
+
+	{ "ex_draw_point", 0, -81 },
+	{ "ex_draw_line", 0, -82 },
+	{ "ex_draw_arrow", 0, -83 },
+	{ "ex_draw_ray", 0,  -84 },
+	{ "ex_draw_circle", 0, -85 },
+	{ "ex_draw_bounds", 0, -86 },
+	{ "ex_draw_worldtext", 0, -87 },
+	{ "ex_draw_sphere", 0, -88 },
+	{ "ex_draw_cylinder", 0, -89 },
+
+	{ "ex_CheckPlayerEXFlags", 0, -90 },
+	{ "ex_walkpathtogoal", 0,  -91 },
+	{ "ex_bot_movetopoint", 0, -92 },
+	{ "ex_bot_followentity", 0, -92 },
+	//const char *name;
+	//int first_statement;
+	//int patch_statement;
+
+	{ NULL, 0, 0 }			/* end-of-list. */
+};
+
+static void PR_PatchRereleaseBuiltins (prvm_prog_t *prog)
+{
+	const exbuiltin_t *ex = exbuiltins;
+	mfunction_t *f;
+
+	for ( ; ex->name != NULL; ++ex)
+	{
+		f = PRVM_ED_FindFunction (prog, ex->name);
+		if (f && f->first_statement == ex->first_statement)
+			f->first_statement = ex->patch_statement;
+	}
+}
+
 static void SV_VM_Setup(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -3863,6 +3972,20 @@ static void SV_VM_Setup(void)
 
 	// AURA PR
 	PRVM_Prog_Load(prog, sv_progs.string, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
+
+	// AURA 10.6
+	{
+		int is_rerelease = PR_HasGlobal_Float_With_Value (prog, "EF_QUADLIGHT", 0 /*EF_QEX_QUADLIGHT*/) && 
+			(PR_HasGlobal_Float_With_Value (prog, "EF_PENTLIGHT", 0 /*EF_QEX_PENTALIGHT*/) || PR_HasGlobal_Float_With_Value (prog, "EF_PENTALIGHT", 0 /*EF_QEX_PENTALIGHT*/));
+		
+		if (is_rerelease) {
+			// AURA -- demos can still do bad things
+			// AURA -- default.cfg (?)
+			Con_PrintLinef ("Re-release progs detected");
+			PR_PatchRereleaseBuiltins (prog); // AURA
+		}
+		sv.is_qex = is_rerelease;
+	}
 
 	// some mods compiled with scrambling compilers lack certain critical
 	// global names and field names such as "self" and "time" and "nextthink"

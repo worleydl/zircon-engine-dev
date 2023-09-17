@@ -1536,6 +1536,34 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="defs"
+				>
+				<File
+					RelativePath=".\dpdefs\csprogsdefs.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\dpextensions.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\keycodes.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\menudefs.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\progsdefs.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\zfte_extensions.qc"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>

@@ -506,12 +506,12 @@ float(float framenum) getinputstate = #345;
 void(float sens) setsensitivityscale = #346;
 void(...) runstandardplayerphysics = #347; // this may or may not take a player ent
 string(float playernum, string keyname) getplayerkeyvalue = #348;
-float() isdemo = #349;
-float() isserver = #350;
-void(vector origin, vector forward, vector right, vector up) SetListener = #351;
+float() isdemo = #349; // Baker (grrrrrr): returns cls.demoplayback ... 
+float() isserver = #350; // Baker (grrrrrr): returns sv.active ...
+void(vector origin, vector forward, vector right, vector up) SetListener = #351; // fte: Sets the position of the view, as far as the audio subsystem is concerned
 void(string cmdname) registercommand = #352;
 float(entity ent) wasfreed = #353;
-string(string key) serverkey = #354;
+string(string key) serverkey = #354; // Baker: InfoString_GetValue
 
 // Use proper case; refer to the id1 Write* functions!
 float() ReadByte = #360;

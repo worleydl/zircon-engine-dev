@@ -151,5 +151,7 @@ void Sys_Shared_Init(void);
 // debug protocol exploits.
 #define DEMOMSG_CLIENT_TO_SERVER 0x80000000
 
-#endif
+
+
+#endif // QUAKEDEF_H
 
