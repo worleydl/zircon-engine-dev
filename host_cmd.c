@@ -151,7 +151,7 @@ static void Host_Status_f (void)
 		if (sv_status_privacy.integer && cmd_source != src_command)
 			c_strlcpy(ip_48, client->netconnection ? "hidden" : "botclient");
 		else
-			c_strlcpy(ip_48, (client->netconnection && client->netconnection->address) ? client->netconnection->address : "botclient");
+			c_strlcpy(ip_48, client->netconnection ? client->netconnection->address : "botclient");
 
 		frags = client->frags;
 
@@ -2454,17 +2454,17 @@ static void Host_Startdemos_f (void)
 		menu_state_set_nova (m_none);
 
 		Con_ToggleConsole_f();
-		Flag_Add_To (key_consoleactive, KEY_CONSOLEACTIVE_FORCED);
+		//Flag_Add_To (key_consoleactive, KEY_CONSOLEACTIVE_FORCED);  // Menu?
 		return;
 	}
 
 	c = Cmd_Argc() - 1;
 	if (c > MAX_DEMOS)
 	{
-		Con_Printf("Max %i demos in demoloop\n", MAX_DEMOS);
+		Con_PrintLinef ("Max %d demos in demoloop", MAX_DEMOS);
 		c = MAX_DEMOS;
 	}
-	Con_DPrintf("%i demo(s) in loop\n", c);
+	Con_DPrintLinef ("%d demo(s) in loop", c);
 
 	for (i=1 ; i<c+1 ; i++)
 		strlcpy (cls.demos[i-1], Cmd_Argv(i), sizeof (cls.demos[i-1]));

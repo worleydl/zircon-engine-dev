@@ -1,6 +1,5 @@
 #include "darkplaces.h"
 #include <math.h>
-#include "matrixlib.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // LadyHavoc: MSVC++ 4 x86, double/float

@@ -1,3 +1,4 @@
+#if 0
 /*
 	Copyright (C) 2006  Mathieu Olivier
 
@@ -522,3 +523,4 @@ void SndSys_SendKeyEvents(void)
 		}
 	}
 }
+#endif // 0

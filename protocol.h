@@ -99,7 +99,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define U_STEP			(1<<5)
 #define U_FRAME			(1<<6)
 // just differentiates from other updates
-#define U_SIGNAL		(1<<7)
+#define U_SIGNAL_128	(1<<7)
 
 #define U_ANGLE1		(1<<8)
 #define U_ANGLE3		(1<<9)
@@ -170,7 +170,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	SND_ATTENUATION	(1<<1)		// a byte
 #define	SND_LOOPING		(1<<2)		// a long
 #define	SND_LARGEENTITY	(1<<3)		// a short and a byte (instead of a short)
-#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)
+#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)						// 16
 #define	SND_SPEEDUSHORT4000	(1<<5)		// ushort speed*4000 (speed is usually 1.0, a value of 0.0 is the same as 1.0)
 
 
@@ -244,6 +244,8 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	svc_showlmp			35		// [string] slotname [string] lmpfilename [short] x [short] y
 #define	svc_hidelmp			36		// [string] slotname
 #define	svc_skybox			37		// [string] skyname
+
+#define	svc_zirc_qex_svc_spawnstatic2_35				35		// [string] slotname [string] lmpfilename [short] x [short] y
 
 // AURA 7.1
 #define svc_qex_botchat								38		// AURA

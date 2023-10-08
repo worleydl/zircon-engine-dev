@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cl_video.h"
 
 
-#ifdef WIN32
+#ifdef _WIN32
 // Enable NVIDIA High Performance Graphics while using Integrated Graphics.
 #ifdef __cplusplus
 extern "C" {

@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="CONFIG_MENU;WIN32;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;SUPPORTDIRECTX;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD"
+				PreprocessorDefinitions="CONFIG_MENU;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;SUPPORTDIRECTX;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -122,7 +122,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="CONFIG_MENU;WIN32;NDEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;SUPPORTDIRECTX;SUPPORTD3D;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
+				PreprocessorDefinitions="CONFIG_MENU;NDEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;SUPPORTDIRECTX;SUPPORTD3D;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -199,7 +199,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="./xtra/SDK/SDL2-devel-2.0.8-mingw/SDL2-2.0.8/i686-w64-mingw32/include"
-				PreprocessorDefinitions="CORE_SDL;CONFIG_MENU;WIN32;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
+				PreprocessorDefinitions="CORE_SDL;CONFIG_MENU;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -278,7 +278,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="./xtra/SDK/SDL2-devel-2.0.8-mingw/SDL2-2.0.8/i686-w64-mingw32/include"
-				PreprocessorDefinitions="CORE_SDL;CONFIG_MENU;WIN32;NDEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
+				PreprocessorDefinitions="CORE_SDL;CONFIG_MENU;NDEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -356,7 +356,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;WIN64;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES"
+				PreprocessorDefinitions="_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -433,7 +433,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;WIN64;NDEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES"
+				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -510,6 +510,10 @@
 			</File>
 			<File
 				RelativePath=".\cd_null.c"
+				>
+			</File>
+			<File
+				RelativePath=".\cd_sdl.c"
 				>
 			</File>
 			<File
@@ -666,6 +670,10 @@
 			</File>
 			<File
 				RelativePath=".\libcurl.c"
+				>
+			</File>
+			<File
+				RelativePath=".\lodepng.c"
 				>
 			</File>
 			<File
@@ -979,10 +987,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\cl_gecko.h"
-				>
-			</File>
-			<File
 				RelativePath=".\cl_screen.h"
 				>
 			</File>
@@ -1040,10 +1044,6 @@
 			</File>
 			<File
 				RelativePath=".\cvar.h"
-				>
-			</File>
-			<File
-				RelativePath=".\darkplaces.h"
 				>
 			</File>
 			<File
@@ -1120,6 +1120,10 @@
 			</File>
 			<File
 				RelativePath=".\libcurl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lodepng.h"
 				>
 			</File>
 			<File
@@ -1315,10 +1319,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sys.h"
-				>
-			</File>
-			<File
 				RelativePath=".\thread.h"
 				>
 			</File>
@@ -1365,7 +1365,11 @@
 			Name="A_Nova"
 			>
 			<File
-				RelativePath=".\android\_txt.txt"
+				RelativePath=".\#zircon_sdl2_win64.cbp"
+				>
+			</File>
+			<File
+				RelativePath=".\xtra\_txt.txt"
 				>
 			</File>
 			<File
@@ -1373,35 +1377,63 @@
 				>
 			</File>
 			<File
-				RelativePath=".\android\adb_debug.bat"
+				RelativePath=".\xtra\adb_debug.bat"
 				>
 			</File>
 			<File
-				RelativePath=".\android\adb_install.bat"
+				RelativePath=".\xtra\adb_install.bat"
 				>
 			</File>
 			<File
-				RelativePath=".\android\app\jni\src\Android.mk"
+				RelativePath=".\xtra\app\jni\src\Android.mk"
 				>
 			</File>
 			<File
-				RelativePath=".\android\app\src\main\AndroidManifest.xml"
+				RelativePath=".\xtra\app\src\main\AndroidManifest.xml"
 				>
 			</File>
 			<File
-				RelativePath=".\android\app\jni\Application.mk"
+				RelativePath=".\xtra\app\jni\Application.mk"
 				>
 			</File>
 			<File
-				RelativePath=".\android\app\build.gradle"
+				RelativePath=".\xtra\build.gradle"
 				>
 			</File>
 			<File
-				RelativePath=".\android\app\src\main\res\ic_launcher-web.png"
+				RelativePath=".\xtra\app\build.gradle"
 				>
 			</File>
 			<File
-				RelativePath=".\android\app\src\main\res\values\strings.xml"
+				RelativePath=".\darkplaces.h"
+				>
+			</File>
+			<File
+				RelativePath=".\xtra\app\src\main\res\ic_launcher-web.png"
+				>
+			</File>
+			<File
+				RelativePath=".\xtra\app\jni\jni.txt"
+				>
+			</File>
+			<File
+				RelativePath=".\makefile"
+				>
+			</File>
+			<File
+				RelativePath=".\makefile.inc"
+				>
+			</File>
+			<File
+				RelativePath=".\xtra\app\src\main\res\values\strings.xml"
+				>
+			</File>
+			<File
+				RelativePath=".\sys.h"
+				>
+			</File>
+			<File
+				RelativePath=".\xtra\app\build\outputs\apk\Zircon X-debug.apk"
 				>
 			</File>
 			<Filter

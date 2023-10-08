@@ -11,9 +11,8 @@ void SHOWLMP_drawall(void);
 extern cvar_t vid_conwidth;
 extern cvar_t vid_conheight;
 
-extern cvar_t vid_conscale_auto;
-
 extern cvar_t vid_pixelheight;
+
 extern cvar_t scr_screenshot_jpeg;
 extern cvar_t scr_screenshot_jpeg_quality;
 extern cvar_t scr_screenshot_png;

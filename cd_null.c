@@ -1,3 +1,5 @@
+#ifndef CORE_SDL
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -89,3 +91,5 @@ int CDAudio_SysStartup (void)
 void CDAudio_SysShutdown (void)
 {
 }
+
+#endif // !CORE_SDL

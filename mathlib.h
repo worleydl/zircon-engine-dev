@@ -36,23 +36,23 @@ extern vec3_t vec3_origin;
 #define FLOAT_IS_NAN(x) (((*(int *)&x)&float_nanmask)==float_nanmask)
 #define DOUBLE_IS_NAN(x) (((*(long long *)&x)&double_nanmask)==double_nanmask)
 
-#ifdef VEC_64
-#define VEC_IS_NAN(x) DOUBLE_IS_NAN(x)
+#ifdef VEC_64 // Baker: VEC_64 is always off
+	#define VEC_IS_NAN(x) DOUBLE_IS_NAN(x)
 #else
-#define VEC_IS_NAN(x) FLOAT_IS_NAN(x)
+	#define VEC_IS_NAN(x) FLOAT_IS_NAN(x)
 #endif
 
-#ifdef PRVM_64
-#define PRVM_IS_NAN(x) DOUBLE_IS_NAN(x)
+#ifdef PRVM_64 // Baker: PRVM_64 is always off
+	#define PRVM_IS_NAN(x) DOUBLE_IS_NAN(x)
 #else
-#define PRVM_IS_NAN(x) FLOAT_IS_NAN(x)
+	#define PRVM_IS_NAN(x) FLOAT_IS_NAN(x)
 #endif
 
 #define bound(min,num,max) ((num) >= (min) ? ((num) < (max) ? (num) : (max)) : (min))
 
 #ifndef min
-#define min(A,B) ((A) < (B) ? (A) : (B))
-#define max(A,B) ((A) > (B) ? (A) : (B))
+	#define min(A,B) ((A) < (B) ? (A) : (B))
+	#define max(A,B) ((A) > (B) ? (A) : (B))
 #endif
 
 /// LadyHavoc: this function never returns exactly MIN or exactly MAX, because
@@ -82,6 +82,8 @@ unsigned int CeilPowerOf2(unsigned int value);
 #define DEG2RAD(a) ((a) * ((float) M_PI / 180.0f))
 #define RAD2DEG(a) ((a) * (180.0f / (float) M_PI))
 #define ANGLEMOD(a) ((a) - 360.0 * floor((a) / 360.0))
+
+#define Q_rint(x) ((x) > 0 ? (int)((x) + 0.5) : (int)((x) - 0.5)) //johnfitz -- from joequake Baker: rounds with floor towards 0 so negative values do not round "down" to larger negative value.
 
 #define DotProduct2(a,b) ((a)[0]*(b)[0]+(a)[1]*(b)[1])
 #define Vector2Clear(a) ((a)[0]=(a)[1]=0)
@@ -312,6 +314,7 @@ randomseed_t;
 
 void Math_RandomSeed_Reset(randomseed_t *r);
 void Math_RandomSeed_FromInt(randomseed_t *r, unsigned int n);
+
 unsigned long long Math_rand64(randomseed_t *r);
 float Math_randomf(randomseed_t *r);
 float Math_crandomf(randomseed_t *r);
@@ -320,5 +323,6 @@ int Math_randomrangei(randomseed_t *r, int mini, int maxi);
 
 void Mathlib_Init(void);
 
-#endif
+#endif // MATHLIB_H
+
 

@@ -42,8 +42,8 @@ cvar_t r_font_postprocess_shadow_y = {CVAR_SAVE, "r_font_postprocess_shadow_y", 
 cvar_t r_font_postprocess_shadow_z = {CVAR_SAVE, "r_font_postprocess_shadow_z", "0", "font shadow Z shift amount, applied during blurring"};
 cvar_t r_font_hinting = {CVAR_SAVE, "r_font_hinting", "3", "0 = no hinting, 1 = light autohinting, 2 = full autohinting, 3 = full hinting"};
 cvar_t r_font_antialias = {CVAR_SAVE, "r_font_antialias", "1", "0 = monochrome, 1 = grey" /* , 2 = rgb, 3 = bgr" */};
-cvar_t r_nearest_2d = {CVAR_SAVE, "r_nearest_2d", "0", "use nearest filtering on all 2d textures (including conchars)"};
-cvar_t r_nearest_conchars = {CVAR_SAVE | CVAR_NQUSERINFOHACK, "r_nearest_conchars", "0", "use nearest filtering on conchars texture [Zircon will apply immediately in full]]"};
+cvar_t r_nearest_2d = {CVAR_SAVE, "r_nearest_2d", "1", "use nearest filtering on all 2d textures (including conchars)"};
+cvar_t r_nearest_conchars = {CVAR_SAVE | CVAR_NQUSERINFOHACK, "r_nearest_conchars", "1", "use nearest filtering on conchars texture [Zircon will apply immediately in full]]"};
 
 extern cvar_t v_glslgamma;
 
@@ -1312,7 +1312,9 @@ static const vec4_t string_colors[] =
 	
 	/*2*/		{0.0, 1.0, 0.0, 1.0}, // green 2
 	
-	/*3*/		{0.8, 0.5, 0.2, 1.0}, // Baker 1007 bronzey Baker 1007 3				//{1.0, 1.0, 0.0, 1.0}, // yellow 3		//{103/256.0, 78/256.0, 31/256.0, 1.0}, // Baker 1007 bronzey Baker 1007 ... dark :(
+	/*3*/		{1.03, 0.5, 0.36, 1.0}, // Baker 1007 bronzey Baker 1007 3
+			// US: 143 69 50
+			// MV: 143 67 51
 	/*4*/		{0.0, 0.0, 1.0, 1.0}, // blue
 	/*5*/		{0.0, 1.0, 1.0, 1.0}, // cyan
 	/*6*/		{1.0, 0.0, 1.0, 1.0}, // magenta

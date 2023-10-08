@@ -19,7 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include <math.h>
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(CORE_XCODE)
 	#include <SDL2/SDL.h>
 #else
 	#include <SDL.h>

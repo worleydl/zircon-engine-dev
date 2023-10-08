@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#endif // WIN32 // _MSC_VER
+#endif // _WIN32 // _MSC_VER
 
 
 typedef bool qbool;
@@ -50,17 +50,17 @@ typedef uintptr_t uptr;
 // LadyHavoc: to be enabled when bugs are worked out...
 //#define PRVM_64
 #ifdef PRVM_64
-typedef double prvm_vec_t;
-typedef int64_t prvm_int_t;
-typedef uint64_t prvm_uint_t;
-#define PRVM_PRIi PRIi64
-#define PRVM_PRIu PRIu64
+	typedef double prvm_vec_t;
+	typedef int64_t prvm_int_t;
+	typedef uint64_t prvm_uint_t;
+	#define PRVM_PRIi PRIi64
+	#define PRVM_PRIu PRIu64
 #else
-typedef float prvm_vec_t;
-typedef int32_t prvm_int_t;
-typedef uint32_t prvm_uint_t;
-#define PRVM_PRIi PRIi32
-#define PRVM_PRIu PRIu32
+	typedef float prvm_vec_t;
+	typedef int32_t prvm_int_t;
+	typedef uint32_t prvm_uint_t;
+	#define PRVM_PRIi PRIi32
+	#define PRVM_PRIu PRIu32
 #endif
 typedef prvm_vec_t prvm_vec3_t[3];
 

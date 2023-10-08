@@ -28,7 +28,7 @@
 #include <limits.h>
 #include <fcntl.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <direct.h>
 # include <io.h>
 # include <shlobj.h>
@@ -63,7 +63,7 @@
 #endif
 
 // largefile support for Win32
-#ifdef WIN32
+#ifdef _WIN32
 #undef lseek
 # define lseek _lseeki64
 #endif
@@ -346,6 +346,7 @@ FUNCTION PROTOTYPES
 */
 
 void FS_Dir_f(void);
+void FS_Cwd_f(void);
 void FS_Ls_f(void);
 void FS_Which_f(void);
 
@@ -399,11 +400,11 @@ PRIVATE FUNCTIONS - PK3 HANDLING
 */
 
 #ifndef LINK_TO_ZLIB
-// Functions exported from zlib
-#if defined(WIN32) && defined(ZLIB_USES_WINAPI)
-# define ZEXPORT WINAPI
-#else
-# define ZEXPORT
+	// Functions exported from zlib
+	#if defined(_WIN32) && defined(ZLIB_USES_WINAPI)
+	# define ZEXPORT WINAPI
+	#else
+	# define ZEXPORT
 #endif
 
 static int (ZEXPORT *qz_inflate) (z_stream* strm, int flush);
@@ -439,7 +440,7 @@ static dllfunction_t zlibfuncs[] =
 static dllhandle_t zlib_dll = NULL;
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 static HRESULT (WINAPI *qSHGetFolderPath) (HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, LPTSTR pszPath);
 static dllfunction_t shfolderfuncs[] =
 {
@@ -517,7 +518,7 @@ static qbool PK3_OpenLibrary (void)
 #else
 	const char* dllnames [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 # ifdef ZLIB_USES_WINAPI
 		"zlibwapi.dll",
 		"zlib.dll",
@@ -930,7 +931,7 @@ static void FS_mkdir (const char *path)
 	if(Sys_CheckParm("-readonly"))
 		return;
 
-#if WIN32
+#ifdef _WIN32
 	if (_mkdir (path) == -1)
 #else
 	if (mkdir (path, 0777) == -1)
@@ -975,7 +976,7 @@ FS_Path_f
 
 ============
 */
-static void FS_Path_f (void)
+void FS_Path_f (void)
 {
 	searchpath_t *s;
 
@@ -1117,7 +1118,7 @@ FS_AddPack_Fullpath
  *
  */
 
-// Baker: fs_searchpaths is the global that holds these 
+// Baker: fs_searchpaths is the global that holds these
 WARP_X_ (fs_searchpaths)
 static qbool FS_AddPack_Fullpath(const char *pakfile, const char *shortname, qbool *already_loaded, qbool keep_plain_dirs)
 {
@@ -1264,6 +1265,8 @@ static void FS_AddGameDirectory (const char *dir)
 	stringlistinit(&list);
 	listdirectory(&list, "", dir);
 	stringlistsort(&list, false);
+
+//AD	Con_PrintLinef ("FS_AddGameDirectory %s files we got %d", fs_gamedir, list.numstrings);
 
 	// add any PAK package in the directory
 	for (i = 0; i < list.numstrings; i++) {
@@ -1460,7 +1463,7 @@ void FS_Rescan (void)
 
 	// add back the selfpack as new first item
 	FS_AddSelfPack();
-	
+
 	fs_have_qex = 0; // AURA 3.2
 	const char *s_qex = "QuakeEX.kpf";
 	if (File_Exists (s_qex)) {
@@ -1487,8 +1490,28 @@ void FS_Rescan (void)
 		c_strlcpy(com_modname, com_argv[i+1]);
 
 	// If "-condebug" is in the command line, remove the previous log file
-	if (Sys_CheckParm ("-condebug") != 0)
-		unlink (va(vabuf, sizeof(vabuf), "%s/qconsole.log", fs_gamedir));
+#ifdef __ANDROID__
+	if (1)
+#else
+	if (Sys_CheckParm ("-condebug") != 0) // deletes a name from the filesystem
+#endif // __ANDROID__
+	{
+		// On success, zero is returned.  On error, -1 is returned, and
+       // errno is set to indicate the error.
+		const char *s_log = va(vabuf, sizeof(vabuf), "%s/zircon_log.log", fs_gamedir);
+		//int ret = 
+#if USE_RWOPS
+		int isok = remove (s_log) == 0;
+#else
+			
+		int isok = unlink (s_log) == 0;
+#endif
+		
+//		if (!isok) { // Mac hates errno
+			// Con_PrintLinef ("Remove " QUOTED_S " failed. %s ", vabuf, strerror(errno) );
+//		}
+		//unlink (va(vabuf, sizeof(vabuf), "%s/qconsole.log", fs_gamedir));
+	}
 
 	// look for the pop.lmp file and set registered to true if it is found
 	if (FS_FileExists("gfx/pop.lmp"))
@@ -1506,7 +1529,7 @@ void FS_Rescan (void)
 				Con_Print("Playing shareware version.\n");
 		}
 		else
-			Con_Print("Playing registered version.\n");
+			Con_PrintLinef ("Playing registered version.");
 		break;
 
 	case GAME_STEELSTORM:
@@ -1643,7 +1666,7 @@ static void FS_GameDir_f (void)
 	if (sv.active)
 		Host_ShutdownServer ();
 
-	
+
 	Menu_Resets (); // Cursor to 0 for all the menus
 
 	is_game_switch = true; // This does what?  Clear models thoroughly.  As opposed to video restart which shouldn't?
@@ -1770,7 +1793,7 @@ static void FS_ListGameDirs(void)
 }
 
 /*
-#ifdef WIN32
+#ifdef _WIN32
 #pragma comment(lib, "shell32.lib")
 #include <ShlObj.h>
 #endif
@@ -1861,7 +1884,7 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 	}
 	return -1;
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 	char *homedir;
 #if _MSC_VER >= 1400
 	size_t homedirlen;
@@ -1987,14 +2010,14 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 
 #if !defined(__IPHONEOS__)
 
-#ifdef WIN32
+#ifdef _WIN32
 	// historical behavior...
 	if (userdirmode == USERDIRMODE_NOHOME && strcmp(gamedirname1, "id1"))
 		return 0; // don't bother checking if the basedir folder is writable, it's annoying...  unless it is Quake on Windows where NOHOME is the default preferred and we have to check for an error case
 #endif
 
 	// see if we can write to this path (note: won't create path)
-#ifdef WIN32
+#ifdef _WIN32
 	// no access() here, we must try to open the file for appending
 	fd = FS_SysOpenFiledesc(va(vabuf, sizeof(vabuf), "%s%s/config.cfg", userdir, gamedirname1), "a", false);
 	if(fd >= 0)
@@ -2051,11 +2074,11 @@ void FS_Init (void)
 #ifdef DP_FS_BASEDIR
 		strlcpy(fs_basedir, DP_FS_BASEDIR, sizeof(fs_basedir));
 #elif defined(__ANDROID__)
-		dpsnprintf(fs_basedir, sizeof(fs_basedir), "/sdcard/%s/", gameuserdirname);
+		dpsnprintf(fs_basedir, sizeof(fs_basedir), "/sdcard/zircon/"); // dpsnprintf(fs_basedir, sizeof(fs_basedir), "/sdcard/%s/", gameuserdirname);
 #elif defined(MACOSX)
 		// FIXME: is there a better way to find the directory outside the .app, without using Objective-C?
-		if (strstr(com_argv[0], ".app/"))
-		{
+        // To prevent XCode debugging from being screwed up, we search for /XCode/ in the path, if found we do not use the path
+		if (!fs_basedir[0] && strstr(com_argv[0], ".app/") && strstr(com_argv[0], "/Xcode/") == NULL) {
 			char *split;
 			strlcpy(fs_basedir, com_argv[0], sizeof(fs_basedir));
 			split = strstr(fs_basedir, ".app/");
@@ -2075,14 +2098,23 @@ void FS_Init (void)
 				{
 					// no gamedir found in Resources, gamedir is probably
 					// outside the .app, remove .app part of path
+					// Baker: find first '/' after .app, 0 it out
 					while (split > fs_basedir && *split != '/')
 						split--;
 					*split = 0;
 				}
 			}
 		}
-#endif
+#endif // MACOSX
 	}
+    
+#ifdef CORE_XCODE
+    // Baker: So we can load dylibs sitting around the folder.
+    if (strstr(com_argv[0], ".app/") && strstr(com_argv[0], "/Xcode/") == NULL) {
+        chdir (fs_basedir);
+    }
+#endif
+    
 
 	// make sure the appending of a path separator won't create an unterminated string
 	memset(fs_basedir + sizeof(fs_basedir) - 2, 0, 2);
@@ -2104,7 +2136,7 @@ void FS_Init (void)
 		int highestuserdirmode = USERDIRMODE_COUNT - 1;
 		int preferreduserdirmode = USERDIRMODE_COUNT - 1;
 		int userdirstatus[USERDIRMODE_COUNT];
-# ifdef WIN32
+# if defined(_WIN32) || defined(MACOSX)
 		// historical behavior...
 		if (String_Does_Match(gamedirname1, "id1"))
 			preferreduserdirmode = USERDIRMODE_NOHOME;
@@ -2143,9 +2175,10 @@ void FS_Init (void)
 #endif
 	}
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(MACOSX)
 	// Baker 7000 nohome is the behavior on Windows unless userdir specified regardless of game
 	// Or -home
+	// Quake on a Mac should be simple like Windows.
 	if ((i = Sys_CheckParm("-userdir")) && i < com_argc - 1) {
 
 	} else if ((i = Sys_CheckParm("-home"))/**/) {
@@ -2211,6 +2244,7 @@ void FS_Init_Commands(void)
 	Cmd_AddCommand ("fs_rescan", FS_Rescan_f, "rescans filesystem for new pack archives and any other changes");
 	Cmd_AddCommand ("path", FS_Path_f, "print searchpath (game directories and archives)");
 	Cmd_AddCommand ("dir", FS_Dir_f, "list files in searchpath matching an * filename pattern, one per line");
+	Cmd_AddCommand ("cwd", FS_Cwd_f, "what is current working directory [Zircon]");
 	Cmd_AddCommand ("ls", FS_Ls_f, "list files in searchpath matching an * filename pattern, multiple per line");
 	Cmd_AddCommand ("which", FS_Which_f, "accepts a file name as argument and reports where the file is taken from");
 }
@@ -2229,7 +2263,7 @@ void FS_Shutdown (void)
 	Mem_FreePool (&fs_mempool);
 	PK3_CloseLibrary ();
 
-#ifdef WIN32
+#ifdef _WIN32
 	Sys_FreeLibrary (&shfolder_dll);
 	Sys_FreeLibrary (&shell32_dll);
 	Sys_FreeLibrary (&ole32_dll);
@@ -2294,7 +2328,7 @@ static filedesc_t FS_SysOpenFiledesc(const char *filepath, const char *mode, qbo
 		return FILEDESC_INVALID;
 	handle = SDL_RWFromFile(filepath, mode);
 #else
-# ifdef WIN32
+# ifdef _WIN32
 #  if _MSC_VER >= 1400
 	_sopen_s(&handle, filepath, mod | opt, (dolock ? ((mod == O_RDONLY) ? _SH_DENYRD : _SH_DENYRW) : _SH_DENYNO), _S_IREAD | _S_IWRITE);
 #  else
@@ -3646,7 +3680,7 @@ Look for a file in the filesystem only
 */
 int FS_SysFileType (const char *path)
 {
-#if WIN32
+#ifdef _WIN32
 // Sajt - some older sdks are missing this define
 # ifndef INVALID_FILE_ATTRIBUTES
 #  define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
@@ -4038,6 +4072,12 @@ static void FS_ListDirectoryCmd (const char *cmdname, int oneperline)
 void FS_Dir_f(void)
 {
 	FS_ListDirectoryCmd ("dir", true);
+}
+
+void FS_Cwd_f(void)
+{
+	const char *s_cwd = Sys_Getcwd_SBuf();
+	Con_PrintLinef ("Current working directory: %s", s_cwd);
 }
 
 void FS_Ls_f(void)

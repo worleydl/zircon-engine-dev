@@ -1,3 +1,5 @@
+#if 0
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -29,6 +31,7 @@ void VID_Shutdown(void)
 {
 }
 
+#ifndef _WIN32
 static void signal_handler(int sig)
 {
 	Con_Printf("Received signal %d, exiting...\n", sig);
@@ -37,7 +40,6 @@ static void signal_handler(int sig)
 
 static void InitSig(void)
 {
-#ifndef WIN32
 	signal(SIGHUP, signal_handler);
 	signal(SIGINT, signal_handler);
 	signal(SIGQUIT, signal_handler);
@@ -48,8 +50,8 @@ static void InitSig(void)
 	signal(SIGFPE, signal_handler);
 	signal(SIGSEGV, signal_handler);
 	signal(SIGTERM, signal_handler);
-#endif
 }
+#endif
 
 void VID_SetMouse (qbool fullscreengrab, qbool relative, qbool hidecursor)
 {
@@ -71,7 +73,9 @@ int VID_GetGamma(unsigned short *ramps, int rampsize)
 
 void VID_Init(void)
 {
+#ifndef _WIN32
 	InitSig(); // trap evil signals
+#endif
 }
 
 qbool VID_InitMode(viddef_mode_t *mode)
@@ -105,3 +109,5 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 {
 	return 0;
 }
+
+#endif // 0 ! _MSC_VER

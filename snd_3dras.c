@@ -1,4 +1,4 @@
-// BSD
+#if 0 // BSD
 
 #include "quakedef.h"
 #include "snd_3dras_typedefs.h"
@@ -1040,3 +1040,5 @@ void SndSys_SendKeyEvents(void)
 {
 	// not supported
 }
+
+#endif // 0

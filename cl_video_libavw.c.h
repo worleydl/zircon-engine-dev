@@ -84,7 +84,7 @@ static dllfunction_t libavwfuncs[] =
 
 const char* dllnames_libavw[] =
 {
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libavw.dll",
 #elif defined(MACOSX)
 		"libavw.dylib",

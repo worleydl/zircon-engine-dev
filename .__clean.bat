@@ -5,6 +5,7 @@ rmdir Debug_SDL2-zircon_wgl_sdl2 /s /Q
 rmdir Debug-zircon_wgl_sdl2 /s /Q
 rmdir Release_SDL2-zircon_wgl_sdl2 /s /Q
 rmdir Release-zircon_wgl_sdl2 /s /Q
+rmdir id1 /s /Q
 
 del #*.suo /Q
 del #*.ncb /Q

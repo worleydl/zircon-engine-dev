@@ -1,4 +1,4 @@
-#ifndef _MSC_VER
+#if 0 //ndef _MSC_VER
 
 #ifdef WIN32
 #include <windows.h>
@@ -58,7 +58,7 @@ void Sys_PrintToTerminal(const char *text)
 		int origflags = fcntl (outfd, F_GETFL, 0);
 		fcntl (outfd, F_SETFL, origflags & ~FNDELAY);
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 #define write _write
 #endif
 		while(*text)
@@ -81,7 +81,7 @@ char *Sys_ConsoleInput(void)
 	{
 		static char text[MAX_INPUTLINE];
 		static unsigned int len = 0;
-#ifdef WIN32
+#ifdef _WIN32
 		int c;
 
 		// read a line out
@@ -279,4 +279,4 @@ const char *Sys_Binary_URL_SBuf (void)
 }
 
 
-#endif // ! _MSC_VER
+#endif // 0 ! _MSC_VER

@@ -1,4 +1,7 @@
-#ifdef _WIN32
+// Baker: we are doing cd_null, right?
+
+#if 0 // defined(_WIN32) && !defined(CORE_SDL)
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -267,4 +270,5 @@ void CDAudio_SysShutdown (void)
 	if (mciSendCommand(wDeviceID, MCI_CLOSE, MCI_WAIT, (DWORD_PTR)NULL))
 		Con_Print("CDAudio_SysShutdown: MCI_CLOSE failed\n");
 }
-#endif
+
+#endif // 0 defined(_WIN32) && !defined(CORE_SDL)

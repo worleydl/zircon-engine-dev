@@ -1,4 +1,4 @@
-// Baker: vid_conscale_auto, ctrl plus up/d
+// cl_screen.c
 
 
 #include "quakedef.h"
@@ -64,8 +64,6 @@ cvar_t scr_loadingscreen_maxfps = {CF_CLIENT, "scr_loadingscreen_maxfps", "10", 
 cvar_t scr_infobar_height = {CF_CLIENT, "scr_infobar_height", "8", "the height of the infobar items"};
 cvar_t vid_conwidth = {CF_CLIENT | CF_ARCHIVE, "vid_conwidth", "640", "virtual width of 2D graphics system"};
 cvar_t vid_conheight = {CF_CLIENT | CF_ARCHIVE, "vid_conheight", "480", "virtual height of 2D graphics system"};
-
-cvar_t vid_conscale_auto = {CF_CLIENT | CF_ARCHIVE, "vid_conscale_auto", "1", "Forces vid_conwidth and vid_conheight to vid.width and vid.height before drawing a frame so CSQC gets full ortho [Zircon]"}; // Baker 4003
 
 cvar_t vid_pixelheight = {CF_CLIENT | CF_ARCHIVE, "vid_pixelheight", "1", "adjusts vertical field of vision to account for non-square pixels (1280x1024 on a CRT monitor for example)"};
 cvar_t scr_screenshot_jpeg = {CF_CLIENT | CF_ARCHIVE, "scr_screenshot_jpeg","1", "save jpeg instead of targa"};
@@ -816,10 +814,29 @@ static void SCR_SetUpToDrawConsole (void)
 		framecounter = 0;
 #endif
 
-	if (scr_conforcewhiledisconnected.integer && key_dest == key_game && cls.signon != SIGNONS)
-		key_consoleactive |= KEY_CONSOLEACTIVE_FORCED;
-	else
-		key_consoleactive &= ~KEY_CONSOLEACTIVE_FORCED;
+	// Baker: let's show the console less during map load
+	// Let's give it a few frames before showing it
+	// In single player, it is very unlikely it will show if we have it wait
+	// for 20 frames.  That solves most of the issue.
+	// While still showing the console all the damn time if disconnected
+	// like how DarkPlaces is designed.
+	if (scr_conforcewhiledisconnected.integer && key_dest == key_game && cls.signon != SIGNONS) {
+		if (cls.connect_trying || cls.netcon) {
+			cls.connect_trying_frames ++;
+			if (cls.connect_trying_frames > 20 && cls.connect_trying_frames > (cl.loadmodel_total + 20) ) {
+				Flag_Add_To (key_consoleactive, KEY_CONSOLEACTIVE_FORCED); // SUAVE Frames
+			} else {
+				goto wait_for_it;
+			}
+		} else {
+			Flag_Add_To (key_consoleactive, KEY_CONSOLEACTIVE_FORCED); // SUAVE typical situatio
+		}
+	}
+	else {
+		
+wait_for_it:
+		Flag_Remove_From (key_consoleactive, KEY_CONSOLEACTIVE_FORCED); // SUAVE ISH
+	}
 
 // decide on the height of the console
 	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER)) {
@@ -845,13 +862,13 @@ SCR_DrawConsole
 void SCR_DrawConsole (void)
 {
 	scr_con_margin_bottom = SCR_InfobarHeight();
-	if (key_consoleactive & KEY_CONSOLEACTIVE_FORCED)
+	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED))
 	{
 		// full screen
-		Con_DrawConsole (vid_conheight.integer - scr_con_margin_bottom);
+		Con_DrawConsole (vid_conheight.integer - scr_con_margin_bottom); // SUAVE
 	}
 	else if (scr_con_current)
-		Con_DrawConsole (min((int)scr_con_current, vid_conheight.integer - scr_con_margin_bottom));
+		Con_DrawConsole (min((int)scr_con_current, vid_conheight.integer - scr_con_margin_bottom)); // SUAVE
 	else
 		con_vislines = 0;
 }
@@ -1480,8 +1497,6 @@ void CL_Screen_Init(void)
 	Cvar_RegisterVariable (&vid_conwidth);
 	Cvar_RegisterVariable (&vid_conheight);
 	
-	Cvar_RegisterVariable (&vid_conscale_auto); // Baker 2001
-
 	Cvar_RegisterVariable (&vid_pixelheight);
 	Cvar_RegisterVariable (&scr_screenshot_jpeg);
 	Cvar_RegisterVariable (&scr_screenshot_jpeg_quality);
@@ -2490,12 +2505,9 @@ wrap3d:
 			Cvar_SetValueQuick (&vid_conheight, oldh);
 		}
 
-		if (vid_conscale_auto.value && did_scaleauto_already == false) {
-			if (in_range_beyond (0.125, vid_conscale_auto.value, 16) == false) {
-				Cvar_SetValueQuick(&vid_conscale_auto, bound(0.125, vid_conscale_auto.value, 16));
-			}
-			Cvar_SetValueQuick (&vid_conwidth,  vid.width * vid_conscale_auto.value);
-			Cvar_SetValueQuick (&vid_conheight, vid.height * vid_conscale_auto.value);
+		if (did_scaleauto_already == false) {
+			Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
+			Cvar_SetValueQuick (&vid_conheight, scale_height_360);
 		}
 	}
 
@@ -2558,9 +2570,12 @@ d2go:
 
 
 	// draw 2D stuff
-	if(!scr_con_current && !(key_consoleactive & KEY_CONSOLEACTIVE_FORCED))
-		if ((key_dest == key_game || key_dest == key_message) && !r_letterbox.value)
-			Con_DrawNotify ();	// only draw notify in game
+	if(!scr_con_current && Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED)==false )
+		if ((key_dest == key_game || key_dest == key_message) && !r_letterbox.value) {
+			if (cls.signon == SIGNONS) {
+				Con_DrawNotify ();	// only draw notify in game // SUAVE
+			}
+		}
 
 	if (cls.signon == SIGNONS)
 	{
@@ -2664,10 +2679,12 @@ static void SCR_SetLoadingScreenTexture(void)
 	loadingscreentexture_texcoord2f[6] = 0;loadingscreentexture_texcoord2f[7] = 0;
 }
 
+// Baker: 3 callers
+WARP_X_CALLERS_ (CL_KeepaliveMessage countdownupdate SCR_PushLoadingScreen SCR_PopLoadingScreen)
 void SCR_UpdateLoadingScreenIfShown(void)
 {
-	if(loadingscreendone)
-		SCR_UpdateLoadingScreen(loadingscreencleared, false);
+	if (loadingscreendone)
+		SCR_UpdateLoadingScreen (/*clear?*/ loadingscreencleared, /*startup?*/ false);
 }
 
 void SCR_PushLoadingScreen (qbool redraw, const char *msg, float len_in_parent)
@@ -2676,14 +2693,14 @@ void SCR_PushLoadingScreen (qbool redraw, const char *msg, float len_in_parent)
 	s->prev = loadingscreenstack;
 	loadingscreenstack = s;
 
-	strlcpy(s->msg, msg, sizeof(s->msg));
+	c_strlcpy (s->msg, msg); //, sizeof(s->msg));
 	s->relative_completion = 0;
 
-	if(s->prev)
+	if (s->prev)
 	{
 		s->absolute_loading_amount_min = s->prev->absolute_loading_amount_min + s->prev->absolute_loading_amount_len * s->prev->relative_completion;
 		s->absolute_loading_amount_len = s->prev->absolute_loading_amount_len * len_in_parent;
-		if(s->absolute_loading_amount_len > s->prev->absolute_loading_amount_min + s->prev->absolute_loading_amount_len - s->absolute_loading_amount_min)
+		if (s->absolute_loading_amount_len > s->prev->absolute_loading_amount_min + s->prev->absolute_loading_amount_len - s->absolute_loading_amount_min)
 			s->absolute_loading_amount_len = s->prev->absolute_loading_amount_min + s->prev->absolute_loading_amount_len - s->absolute_loading_amount_min;
 	}
 	else
@@ -2692,32 +2709,37 @@ void SCR_PushLoadingScreen (qbool redraw, const char *msg, float len_in_parent)
 		s->absolute_loading_amount_len = 1;
 	}
 
-	if(redraw)
+	if (redraw)
 		SCR_UpdateLoadingScreenIfShown();
 }
 
+WARP_X_CALLERS_ (CL_BeginDownloads SCR_ClearLoadingScreen )
 void SCR_PopLoadingScreen (qbool redraw)
 {
 	loadingscreenstack_t *s = loadingscreenstack;
 
-	if(!s)
+	if (!s)
 	{
-		Con_DPrintf("Popping a loading screen item from an empty stack!\n");
+		Con_DPrintLinef ("Popping a loading screen item from an empty stack!");
 		return;
 	}
 
 	loadingscreenstack = s->prev;
-	if(s->prev)
+	if (s->prev)
 		s->prev->relative_completion = (s->absolute_loading_amount_min + s->absolute_loading_amount_len - s->prev->absolute_loading_amount_min) / s->prev->absolute_loading_amount_len;
+	else {
+		// Baker: zg something is ruining relay of completion %, null.spr ?  a sound?  who knows.  Engine's fault somehow.
+	}
 	Z_Free(s);
 
-	if(redraw)
+	if (redraw)
 		SCR_UpdateLoadingScreenIfShown();
 }
 
+WARP_X_CALLERS_ (SCR_UpdateLoadingScreen Host_Main if setjmp error)
 void SCR_ClearLoadingScreen (qbool redraw)
 {
-	while(loadingscreenstack)
+	while (loadingscreenstack)
 		SCR_PopLoadingScreen(redraw && !loadingscreenstack->prev);
 }
 
@@ -2757,13 +2779,14 @@ static float SCR_DrawLoadingStack_r(loadingscreenstack_t *s, float y, float size
 	return total;
 }
 
+WARP_X_CALLERS_ (SCR_DrawLoadingScreen)
 static void SCR_DrawLoadingStack(void)
 {
 	float verts[12];
 	float colors[16];
 
 	loadingscreenheight = SCR_DrawLoadingStack_r(loadingscreenstack, vid_conheight.integer, scr_loadingscreen_barheight.value);
-	if(loadingscreenstack)
+	if (loadingscreenstack)
 	{
 		// height = 32; // sorry, using the actual one is ugly
 		GL_BlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -2803,7 +2826,7 @@ static void SCR_DrawLoadingStack(void)
 		R_Mesh_Draw(0, 4, 0, 2, polygonelement3i, NULL, 0, polygonelement3s, NULL, 0);
 
 		// make sure everything is cleared, including the progress indicator
-		if(loadingscreenheight < 8)
+		if (loadingscreenheight < 8)
 			loadingscreenheight = 8;
 	}
 }
@@ -2896,7 +2919,7 @@ static void SCR_DrawLoadingScreen (qbool clear)
 	GL_DepthTest(false);
 //	R_Mesh_ResetTextureState();
 	GL_Color(1,1,1,1);
-	if(loadingscreentexture)
+	if (loadingscreentexture)
 	{
 		R_Mesh_PrepareVertices_Generic_Arrays(4, loadingscreentexture_vertex3f, NULL, loadingscreentexture_texcoord2f);
 		R_SetupShader_Generic(loadingscreentexture, NULL, GL_MODULATE, 1, true, true, true);
@@ -2917,6 +2940,7 @@ static void SCR_DrawLoadingScreen_SharedFinish (qbool clear)
 
 static double loadingscreen_lastupdate;
 
+WARP_X_CALLERS_ (SCR_BeginLoadingPlaque SCR_UpdateLoadingScreenIfShown gl_draw_start)
 void SCR_UpdateLoadingScreen (qbool clear, qbool startup)
 {
 	keydest_t	old_key_dest;
@@ -2933,14 +2957,13 @@ void SCR_UpdateLoadingScreen (qbool clear, qbool startup)
 			return;
 		loadingscreen_lastupdate = t;
 	}
-#if 1
-	if (vid_conscale_auto.value) {
-		if (in_range_beyond (0.125, vid_conscale_auto.value, 16) == false) {
-			Cvar_SetValueQuick(&vid_conscale_auto, bound(0.125, vid_conscale_auto.value, 16));
-		}
 
-		Cvar_SetValueQuick (&vid_conwidth,  vid.width * vid_conscale_auto.value);
-		Cvar_SetValueQuick (&vid_conheight, vid.height * vid_conscale_auto.value);
+#if 1
+	if (1) {
+		scale_360_calc ();
+
+		Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
+		Cvar_SetValueQuick (&vid_conheight, scale_height_360);
 	}
 #endif
 
@@ -2962,10 +2985,10 @@ void SCR_UpdateLoadingScreen (qbool clear, qbool startup)
 			loadingscreenpic_number = rand() % (scr_loadingscreen_count.integer > 1 ? scr_loadingscreen_count.integer : 1);
 	}
 
-	if(clear)
-	        SCR_ClearLoadingScreenTexture();
-	else if(!loadingscreendone)
-	        SCR_SetLoadingScreenTexture();
+	if (clear)
+		SCR_ClearLoadingScreenTexture();
+	else if (!loadingscreendone)
+	    SCR_SetLoadingScreenTexture();
 
 	if (!loadingscreendone) {
 		loadingscreendone = true;
@@ -3025,6 +3048,8 @@ extern cvar_t cl_minfps_qualityhysteresis;
 extern cvar_t cl_minfps_qualitystepmax;
 extern cvar_t cl_minfps_force;
 static double cl_updatescreen_quality = 1;
+
+
 void CL_UpdateScreen(void)
 {
 	vec3_t vieworigin;
@@ -3202,6 +3227,8 @@ cldraw2d2:
 	}
 #endif
 
+	scale_360_calc ();
+
 	shall_restore = false;
 	did_scaleauto_already = false;
 	//prvm_prog_t *clvm0 =CLVM_prog->loaded;
@@ -3230,15 +3257,10 @@ cldraw2d3:
 			Cvar_SetValueQuick (&vid_conwidth,  vid.width);
 			Cvar_SetValueQuick (&vid_conheight, vid.height);
 			shall_restore = true;
-		} else if (vid_conscale_auto.integer) {
+		} else if (1 /*vid_conscale_auto.integer*/) {
 			// So CSQC can receive scaleauto without skip a frame			
-
-			if (in_range_beyond (0.125, vid_conscale_auto.value, 16) == false) {
-				Cvar_SetValueQuick(&vid_conscale_auto, bound(0.125, vid_conscale_auto.value, 16));
-			}
-
-			Cvar_SetValueQuick (&vid_conwidth,  vid.width * vid_conscale_auto.value);
-			Cvar_SetValueQuick (&vid_conheight, vid.height * vid_conscale_auto.value);
+			Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
+			Cvar_SetValueQuick (&vid_conheight, scale_height_360);
 
 			did_scaleauto_already = true;
 		}

@@ -18,16 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-typedef struct cl_cdstate_s
-{
-	qbool Valid;
-	qbool Playing;
-	qbool PlayLooping;
-	unsigned char PlayTrack;
-}
-cl_cdstate_t;
-
-//extern cl_cdstate_t cd;
+#include "qtypes.h"
+#include "cvar.h"
 
 extern qbool cdValid;
 extern qbool cdPlaying;

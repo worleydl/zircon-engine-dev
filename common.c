@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
 #include <fcntl.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
@@ -1506,7 +1506,13 @@ void COM_InitGameType (void)
 		//const char *s_current_dir = File_Getcwd_SBuf ();
 		
 		//va(vabuf, sizeof(vabuf), "zircon/gfx/qplaque.png", s_current_dir);		
-		iszirc = File_Is_Existing_File ("zircon/gfx/qplaque.png");
+		iszirc = File_Is_Existing_File (
+#ifdef __ANDROID__
+		
+			"/sdcard/zircon/"
+#endif
+			"zircon/gfx/qplaque.png"
+		);
 		iszircicon = true;
 	}
 
@@ -1761,7 +1767,7 @@ char *va3 (const char *format, ...)
 #undef snprintf
 #undef vsnprintf
 
-#ifdef WIN32
+#ifdef _WIN32
 # define snprintf _snprintf
 # define vsnprintf _vsnprintf
 #endif

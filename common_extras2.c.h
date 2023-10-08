@@ -141,7 +141,7 @@ int String_Does_End_With (const char *s, const char *s_suffix)
 	size_t s_suffix_len = strlen (s_suffix);
 	size_t /*ssize_t*/ suffix_spot = s_len - s_suffix_len;
 
-	if (s_len && s_suffix_len && suffix_spot >= 0 )
+	if (s_len && s_suffix_len && s_suffix_len <= s_len)
 		return !strcmp (&s[suffix_spot], s_suffix);
 
 	return 0;
@@ -156,7 +156,7 @@ int String_Does_End_With_Caseless (const char *s, const char *s_suffix)
 	size_t s_suffix_len = strlen (s_suffix);
 	size_t /*ssize_t*/ suffix_spot = s_len - s_suffix_len;
 
-	if (s_len && s_suffix_len && suffix_spot >= 0 )
+	if (s_len && s_suffix_len && s_suffix_len <= s_len)
 		return !strcasecmp (&s[suffix_spot], s_suffix);
 
 	return 0;
@@ -394,7 +394,7 @@ char *String_Edit_Remove_End (char *s_edit)
 // Notes: None.
 char *String_Edit_RemoveTrailingSpaces (char *s_edit)
 {
-	size_t	/*ssize_t*/ offset;
+	int /*ssize_t*/ offset;
 	for (offset = strlen(s_edit) - 1; offset >= 0 && s_edit[offset] == SPACE_CHAR_32; offset--)
 		s_edit[offset] = 0; // remove trailing spaces
 
@@ -1486,7 +1486,7 @@ char *File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (char *path_to_file)
 
 WARP_X_ (FS_FileWithoutPath)
 
-char *File_URL_Remove_TrailSlash (char *path_to_file)
+char *File_URL_Remove_Trailing_Unix_Slash (char *path_to_file)
 {
 	if (String_Does_End_With (path_to_file, "/")) {
 		int slen = strlen (path_to_file);
@@ -1649,7 +1649,7 @@ int Time_Seconds (int seconds)
 	return seconds %60;
 }
 
-//#ifdef WIN32
+//#ifdef _WIN32
 // Short: Command line to argv
 // Notes: None.
 // Unit Test:

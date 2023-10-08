@@ -1,3 +1,5 @@
+#if !defined(_WIN32) && !defined(CORE_SDL) // SV only
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -172,3 +174,5 @@ float S_GetEntChannelPosition(int entnum, int entchannel)
 void SndSys_SendKeyEvents(void)
 {
 }
+
+#endif // !defined(_WIN32) && !defined(CORE_SDL) // SV only

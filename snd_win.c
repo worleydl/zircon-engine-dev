@@ -897,4 +897,4 @@ void SndSys_SendKeyEvents(void)
 	// not supported
 }
 
-#endif // defined(_WIN32) && defined(!CORE_SDL) 
+#endif // defined(_WIN32) && defined(!CORE_SDL)

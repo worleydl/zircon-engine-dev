@@ -157,4 +157,4 @@ size_t Crypto_SignDataDetached(const void *data, size_t datasize, int keyid, voi
 //   client/server has sent specific packets to prove cheating)
 // - perfect forward secrecy: yes (session key is derived via DH key exchange)
 
-#endif
+#endif // !CRYPTO_H

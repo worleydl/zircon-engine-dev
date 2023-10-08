@@ -1,3 +1,5 @@
+#if !defined(_WIN32) && !defined(CORE_SDL)
+
 #include "quakedef.h"
 #include "thread.h"
 #ifdef THREADRECURSIVE
@@ -224,3 +226,5 @@ void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 	Thread_UnlockMutex(b->mutex);
 }
 #endif
+
+#endif // !defined(_WIN32) && !defined(CORE_SDL)

@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef VID_H
 #define VID_H
 
-#define ENGINE_ICON ( (gamemode == GAME_NEXUIZ) ? nexuiz_xpm : darkplaces_xpm )
+// GLX: #define ENGINE_ICON ( (gamemode == GAME_NEXUIZ) ? nexuiz_xpm : darkplaces_xpm )
 
 extern int cl_available;
 
@@ -30,9 +30,9 @@ extern int cl_available;
 
 typedef enum renderpath_e
 {
-	RENDERPATH_UDEF,
-	RENDERPATH_GL20,
-	RENDERPATH_GLES2
+//	RENDERPATH_UDEF,
+	RENDERPATH_GL20 = 1,
+	RENDERPATH_GLES2 = 2,
 }
 renderpath_t;
 
@@ -127,13 +127,6 @@ typedef struct viddef_s
 
 	viddef_support_t support;
 
-	// in RENDERPATH_SOFT this is a 32bpp native-endian ARGB framebuffer
-	// (native-endian ARGB meaning that in little endian it is BGRA bytes,
-	//  in big endian it is ARGB byte order, the format is converted during
-	//  blit to the window)
-	//unsigned int *softpixels;
-	//unsigned int *softdepthpixels;
-
 	int forcetextype; // always use GL_BGRA for D3D, always use GL_RGBA for GLES, etc
 
 	int desktop_width;
@@ -192,7 +185,16 @@ extern cvar_t vid_window_width;			// Baker 2000 ALT-TAB part 1
 extern cvar_t vid_window_height;		// Baker 2000 ALT-TAB part 1
 extern cvar_t vid_fullscreen_width;		// Baker 2000 ALT-TAB part 1
 extern cvar_t vid_fullscreen_height;	// Baker 2000 ALT-TAB part 1
+extern cvar_t vid_fullscreen_conscale;
+extern cvar_t vid_window_conscale;
 
+extern float   yfactors;
+extern float   yfactor_mag_360;                    // output
+
+extern float	scale_width_360;
+extern float	scale_height_360;
+
+void scale_360_calc (void);
 
 extern cvar_t vid_bitsperpixel;
 extern cvar_t vid_samples;

@@ -461,7 +461,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	if (developer_loading.integer)
 		Con_PrintLinef ("loading model %s", mod->model_name);
 	
-	SCR_PushLoadingScreen (true, mod->model_name, 1);
+	SCR_PushLoadingScreen (/*redraw*/ true, mod->model_name, 1); // SUAVE
 
 	// LadyHavoc: unload the existing model in this slot (if there is one)
 	if (mod->loaded || mod->mempool)

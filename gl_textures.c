@@ -698,7 +698,9 @@ static void r_textures_start(void)
 	// Disable JPEG screenshots if the DLL isn't loaded
 	if (! JPEG_OpenLibrary ())
 		Cvar_SetValueQuick (&scr_screenshot_jpeg, 0);
+#if 0 // SU22	
 	if (! PNG_OpenLibrary ())
+#endif
 		Cvar_SetValueQuick (&scr_screenshot_png, 0);
 }
 
@@ -2467,7 +2469,7 @@ int R_PicmipForFlags(int flags)
 
 unsigned *CGL_Texture_Download_Alloc (GLuint ts, int *width, int *height, int miplevel)
 {
-#ifdef PLATFORM_OPENGLES
+#ifdef USE_GLES2
 	return NULL; // This isn't supported on OpenGL ES
 #else
 	

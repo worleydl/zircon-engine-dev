@@ -1,3 +1,5 @@
+#if 0
+
 /*
 	vid_agl.c
 
@@ -1191,3 +1193,4 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 	}
 	return k;
 }
+#endif // 0

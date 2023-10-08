@@ -1,4 +1,4 @@
-#ifdef WIN32
+#ifdef _WIN32
 # ifndef DONT_USE_SETDLLDIRECTORY
 #  define _WIN32_WINNT 0x0502
 # endif
@@ -10,7 +10,7 @@
 
 #define SUPPORTDLL
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <windows.h>
 # include <mmsystem.h> // timeGetTime
 # include <time.h> // localtime
@@ -123,7 +123,7 @@ qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllf
 	if (handle == NULL)
 		return false;
 
-#ifndef WIN32
+#ifndef _WIN32
 #ifdef PREFER_PRELOAD
 	dllhandle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
 	if(Sys_LoadLibraryFunctions(dllhandle, fcts, false, false))
@@ -147,7 +147,7 @@ notfound:
 	for (i = 0; dllnames[i] != NULL; i++)
 	{
 		Con_DPrintf (" \"%s\"", dllnames[i]);
-#ifdef WIN32
+#ifdef _WIN32
 # ifndef DONT_USE_SETDLLDIRECTORY
 #  ifdef _WIN64
 		SetDllDirectory("bin64");
@@ -179,7 +179,7 @@ notfound:
 			strlcpy(temp, path, sizeof(temp));
 			strlcat(temp, dllnames[i], sizeof(temp));
 			Con_DPrintf (" \"%s\"", temp);
-#ifdef WIN32
+#ifdef _WIN32
 			dllhandle = LoadLibrary (temp);
 #else
 			dllhandle = dlopen (temp, RTLD_LAZY | RTLD_GLOBAL);
@@ -213,7 +213,7 @@ void Sys_FreeLibrary (dllhandle_t* handle)
 	if (handle == NULL || *handle == NULL)
 		return;
 
-#ifdef WIN32
+#ifdef _WIN32
 	FreeLibrary (*handle);
 #else
 	dlclose (*handle);
@@ -226,7 +226,7 @@ void Sys_FreeLibrary (dllhandle_t* handle)
 void* Sys_GetProcAddress (dllhandle_t handle, const char* name)
 {
 #ifdef SUPPORTDLL
-#ifdef WIN32
+#ifdef _WIN32
 	return (void *)GetProcAddress (handle, name);
 #else
 	return (void *)dlsym (handle, name);
@@ -236,13 +236,13 @@ void* Sys_GetProcAddress (dllhandle_t handle, const char* name)
 #endif
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 # define HAVE_TIMEGETTIME 1
 # define HAVE_QUERYPERFORMANCECOUNTER 1
 # define HAVE_Sleep 1
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 #if defined(CLOCK_MONOTONIC) || defined(CLOCK_HIRES)
 # define HAVE_CLOCKGETTIME 1
 #endif
@@ -250,7 +250,7 @@ void* Sys_GetProcAddress (dllhandle_t handle, const char* name)
 # define HAVE_GETTIMEOFDAY 1
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 // on Win32, select() cannot be used with all three FD list args being NULL according to MSDN
 // (so much for POSIX...)
 # ifdef FD_SET
@@ -258,7 +258,7 @@ void* Sys_GetProcAddress (dllhandle_t handle, const char* name)
 # endif
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 // FIXME improve this check
 # define HAVE_USLEEP 1
 #endif
@@ -464,7 +464,7 @@ void Sys_PrintfToTerminal(const char *fmt, ...)
 	Sys_PrintToTerminal(msg);
 }
 
-#ifndef WIN32
+#ifndef _WIN32
 static const char *Sys_FindInPATH(const char *name, char namesep, const char *PATH, char pathsep, char *buf, size_t bufsize)
 {
 	const char *p = PATH;
@@ -491,7 +491,7 @@ static const char *Sys_FindInPATH(const char *name, char namesep, const char *PA
 
 static const char *Sys_FindExecutableName(void)
 {
-#if defined(WIN32)
+#if defined(_WIN32)
 	return com_argv[0];
 #else
 	static char exenamebuf[MAX_OSPATH+1];

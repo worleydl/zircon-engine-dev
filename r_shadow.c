@@ -5512,7 +5512,7 @@ static void R_DrawCorona(rtlight_t *rtlight, float cscale, float scale)
 #else
 			return;
 #endif
-		case 99999: // fallthrough scares me SEPUS
+//		case 99999: // fallthrough scares me SEPUS
 #if defined(GL_SAMPLES_PASSED_ARB) && !defined(USE_GLES2)
 			CHECKGLERROR
 			qglGetQueryObjectivARB(rtlight->corona_queryindex_visiblepixels, GL_QUERY_RESULT_ARB, &visiblepixels);
@@ -6448,7 +6448,7 @@ static void R_Shadow_EditLights_Edit_f(void)
 	VectorCopy(r_shadow_selectedlight->color, color);
 	radius = r_shadow_selectedlight->radius;
 	style = r_shadow_selectedlight->style;
-	if (r_shadow_selectedlight->cubemapname)
+	if (*r_shadow_selectedlight->cubemapname)
 		strlcpy(cubemapname, r_shadow_selectedlight->cubemapname, sizeof(cubemapname));
 	else
 		cubemapname[0] = 0;
@@ -6972,7 +6972,7 @@ static void R_Shadow_EditLights_CopyInfo_f(void)
 	VectorCopy(r_shadow_selectedlight->color, r_shadow_bufferlight.color);
 	r_shadow_bufferlight.radius = r_shadow_selectedlight->radius;
 	r_shadow_bufferlight.style = r_shadow_selectedlight->style;
-	if (r_shadow_selectedlight->cubemapname)
+	if (*r_shadow_selectedlight->cubemapname)
 		strlcpy(r_shadow_bufferlight.cubemapname, r_shadow_selectedlight->cubemapname, sizeof(r_shadow_bufferlight.cubemapname));
 	else
 		r_shadow_bufferlight.cubemapname[0] = 0;

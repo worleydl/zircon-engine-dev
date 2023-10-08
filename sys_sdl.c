@@ -1,6 +1,6 @@
 #ifdef CORE_SDL
 
-#ifdef WIN32
+#ifdef _WIN32
 	#include <io.h>
 	#include "conio.h"
 #else
@@ -19,21 +19,21 @@
 
 #include <signal.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(CORE_XCODE)
 	#include <SDL2/SDL.h>
 #else
 	#include <SDL.h>
 #endif // _MSC_VER
 
 
-#ifdef WIN32
+#ifdef _WIN32
 	#ifdef _MSC_VER
 			#pragma comment(lib, "sdl2.lib")
 			#pragma comment(lib, "sdl2main.lib")
 
 	#endif // _MSC_VER
 
-#endif //  WIN32
+#endif //  _WIN32
 
 #include "darkplaces.h"
 
@@ -46,7 +46,7 @@ void Sys_Shutdown (void)
 #ifdef __ANDROID__
 	Sys_AllowProfiling(false);
 #endif
-#ifndef WIN32
+#ifndef _WIN32
 	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
 #endif
 	fflush(stdout);
@@ -60,7 +60,7 @@ void Sys_Error (const char *error, ...)
 	char string[MAX_INPUTLINE];
 
 // change stdin to non blocking
-#ifndef WIN32
+#ifndef _WIN32
 	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
 #endif
 
@@ -70,7 +70,7 @@ void Sys_Error (const char *error, ...)
 
 	Con_Printf ("Quake Error: %s\n", string);
 
-#ifdef WIN32
+#ifdef _WIN32
 	MessageBox(NULL, string, "Quake Error", MB_OK | MB_SETFOREGROUND | MB_ICONSTOP);
 #endif
 
@@ -82,10 +82,11 @@ static int outfd = 1;
 void Sys_PrintToTerminal(const char *text)
 {
 #ifdef __ANDROID__
-	if (developer.integer > 0)
-	{
-		__android_log_write(ANDROID_LOG_DEBUG, com_argv[0], text);
-	}
+	//if (developer.integer > 0)
+	//{
+#define CORE_ANDROID_LOG_TAG "CoreMain"
+		//__android_log_write(ANDROID_LOG_INFO, CORE_ANDROID_LOG_TAG, text);
+	__android_log_print(ANDROID_LOG_INFO, CORE_ANDROID_LOG_TAG, "%s", text);
 #else // ! __ANDROID__
 		if(outfd < 0)
 			return;
@@ -96,9 +97,9 @@ void Sys_PrintToTerminal(const char *text)
 			int origflags = fcntl (outfd, F_GETFL, 0);
 			fcntl (outfd, F_SETFL, origflags & ~FNDELAY);
 	#endif // FNDELAY
-	#ifdef WIN32
+	#ifdef _WIN32
 		#define write _write
-	#endif // WIN32
+	#endif // _WIN32
 			while(*text)
 			{
 				fs_offset_t written = (fs_offset_t)write(outfd, text, (int)strlen(text));
@@ -120,7 +121,7 @@ char *Sys_ConsoleInput(void)
 	{
 		static char text[MAX_INPUTLINE];
 		int len = 0;
-#ifdef WIN32
+#ifdef _WIN32
 		int c;
 
 		// read a line out
@@ -152,7 +153,7 @@ char *Sys_ConsoleInput(void)
 			if (len == sizeof (text))
 				len = 0;
 		}
-#else // !WIN32
+#else // !_WIN32
 		fd_set fdset;
 		struct timeval timeout;
 		FD_ZERO(&fdset);
@@ -169,11 +170,12 @@ char *Sys_ConsoleInput(void)
 				return text;
 			}
 		}
-#endif // WIN32
+#endif // _WIN32
 	}
 	return NULL;
 }
 
+WARP_X_ (Sys_GetClipboardData)
 int Sys_SetClipboardData(const char *text_to_clipboard)
 {
 	return !SDL_SetClipboardText(text_to_clipboard);
@@ -190,7 +192,7 @@ void Sys_InitConsole (void)
 int main (int argc, char *argv[])
 {
 	signal(SIGFPE, SIG_IGN);
-
+Con_PrintLinef (" main (int argc, char *argv[])");
 #ifdef __ANDROID__
 	Sys_AllowProfiling(true);
 #endif
@@ -198,10 +200,37 @@ int main (int argc, char *argv[])
 	com_argc = argc;
 	com_argv = (const char **)argv;
 
-// #ifdef WIN32
+    
+    // Baker: This is to make zircon_command_line.txt work for a Mac
+    
+#ifdef CORE_XCODE // MACOSX
+    if (strstr(com_argv[0], ".app/") && strstr(com_argv[0], "/Xcode/") == NULL) {
+        char *split;
+        strlcpy(fs_basedir, com_argv[0], sizeof(fs_basedir));
+        split = strstr(fs_basedir, ".app/");
+
+        // Baker: find first '/' after .app, 0 it out
+        while (split > fs_basedir && *split != '/')
+            split--;
+        *split = 0;
+        
+        // Change to dir of .app, should make zircon_command_line.txt work
+        chdir (fs_basedir);
+    } // if .app in name, should be 100%
+#endif // XCODE
+    
+    
 	if (com_argc == 1 /*only the exe*/) {
 		char	cmdline_fake[MAX_INPUTLINE];
-		const char *s_fp = "zircon_command_line.txt"; // File_Getcwd_SBuf not needed
+		
+		
+		const char *s_fp = 
+#ifdef __ANDROID__
+		
+			"/sdcard/zircon/"
+#endif
+			"zircon_command_line.txt";
+
 		if (File_Exists (s_fp)) {
 			size_t s_temp_size = 0; const char *s_temp = (const char *)File_To_String_Alloc (s_fp, &s_temp_size);
 			c_strlcpy (cmdline_fake, "quake_engine "); // arg0 is engine and ignored by Sys_CheckParm
@@ -214,11 +243,9 @@ int main (int argc, char *argv[])
 				com_argv = (const char **)fake_argv;
 
 				free ((void *)s_temp);
-
 			} // if
 		} // if exists
 	} // if 1 cmd arg the exe
-// #endif // WIN32
 
 	Sys_ProvideSelfFD();
 
@@ -231,7 +258,7 @@ int main (int argc, char *argv[])
 	else
 		outfd = 1;
 
-#ifndef WIN32
+#ifndef _WIN32
 	fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
 #endif
 
@@ -253,7 +280,7 @@ void Sys_SDL_Delay (unsigned int milliseconds)
 	SDL_Delay(milliseconds);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 	#include "Shellapi.h" // Never needed this before?
 	// Folder must exist.  It must be a folder.
 	static char *windows_style_url_alloc (const char *path_to_file)
@@ -270,20 +297,24 @@ void Sys_SDL_Delay (unsigned int milliseconds)
 		AUTO_FREE___ free (windows_style_url_a);
 		return ret;
 	}
-#else // !WIN32
+#else // !_WIN32
 	// Folder must exist.  It must be a folder.
 	int Sys_Folder_Open_Folder_Must_Exist (const char *path_to_file)
 	{
+#ifdef CORE_XCODE // MACOSX
+        int _Shell_Folder_Open_Folder_Must_Exist (const char *path_to_file);
+        return _Shell_Folder_Open_Folder_Must_Exist(path_to_file);
+#else
 	//  xdg-open is a desktop-independent tool for configuring the default applications of a user
 		if ( fork() == 0) {
 			execl ("/usr/bin/xdg-open", "xdg-open", path_to_file, (char *)0);
 			//cleanup_on_exit();  /* clean up before exiting */
 			exit(3);
 		}
-
+#endif // LINUX etc
 		return true;
 	}
-#endif // WIN32
+#endif // _WIN32
 
 // copies given image to clipbard
 int Sys_Clipboard_Set_Image (unsigned *rgba, int width, int height)

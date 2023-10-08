@@ -25,7 +25,54 @@ Zircon test mods are: Quake, Nehahra, Hipnotic, the game Xonotic and the Quake 1
 
 The cut-copy paste is not yet compatible with utf-8 enabled, which does not affect Quake but does affect Xonotic.  This is on the todo list.
 
-Baker
+
+// October 2 Release
+1. Zircon bronze text color is now identical to Quake.  I was not sure if this was possible, AFAIK DarkPlaces does not use the bronze text
+	at all, so I had to match the color modulation with no direct way to achieve it except repeated attempts until an exact match was obtained (it is off only by a fraction of a percent).
+2. Android build.  Experimental.  It works on my Android 11 phone from 2021 very nicely.
+	Your Quake folder is:  zircon (all lower case)  zircon/id1/pak0.pak, put vid_touchscreen_overlay.pk3 in id1 folder where pak0.pak lives, these are the touchscreen images.
+	Create/edit zircon_command_line.txt and make it "-game travail +map start" to specify a command line.
+3. Mac build.  Not signed by the Apple Store, so Right-Click or Command-Click Open to run the App (Preferences->Privacy And Security->Allow Unknown App).
+	Zircon_Mac goes in your Quake folder just like quake.exe.  Create/edit zircon_command_line.txt and make it "-game travail +map start" to specify a command line.
+4. Automatic 2D scaling solution.  2D elements magnify based on nearest integer window height 360 pixels (720 height is 2x magnify), with user adjustment slider.  It actually
+   saves a different preference for fullscreen vs. windowed mode.
+5. Quake Remaster: mge2m2 loads (a DarkPlaces svc and a QEX svc both are used, rewired the DarkPlaces svc on cl and sv to use another svc if qex active -- which is a Nehahra svc.)
+6. LodePNG now used to load PNG files.  One less dependendency to worry about.  Question: Does it work as well?
+7. Windows 64 bit SDL2 exe no longer requires sdl2.dll (we are static linking with mingw64).  Eliminates possibility of a wrong/bad sdl2.dll affecting engine.
+8. Resolved zircon.exe sound issue with Rivarez Edition (DarkPlaces mod for Quake similar to SMC/Quake 1.5).  This mod has "snd_channels 8" in a config and the Windows sound function may not support that many channels, if so will reduce to a lesser number and try again.
+9. The console liked to pop-up at inappropriate times during map loading.  It does this far less now.
+   (Discovered a progress bar loading issue where progress is always 0%, TODO: find out what is up with that.  null sprites or .wav seem to trigger?)
+10. Compiler warning cleanup (mingw, android)
+11. Random number upgrade from DarkPlaces beta (particles in DP use much rand(), in theory should be faster but I don't know how test the performance, 'timedemo demo1" showed no significant change ).
+12. _WIN32 _WIN64 replace WIN32 WIN64 in source.  I don't know what C compiler defines "WIN32"/"WIN64" but MSVC and gcc do _WIN32 _WIN64 and I have never seen C source code or headers that use "WIN32"/"WIN64".
+13. Corrected logical errors related to unsigned types in 4 string functions I wrote hastily months ago.
+14. Some various fixes from DarkPlaces beta.
+15. Correctly deletes zircon_log.log if -condebug
+   
+	Android Fix/To Do List:
+	1. CSQC ignores presses/drags/etc.
+	2. no "Minecraft drag look".
+	4. With $5 bluetooth keyboard, the Android screen keyboard comes up too often.
+	5. Make buttons to do up/down in console history and figure out some way to support autocomplete for screen keyboard.
+	6. Maybe have swipe scroll console history.
+	7. Was able to walk around with a game controller, could not make any of the buttons work.
+	8. Eliminate ugly console showing during map load
+	9. Some sort of scheme to save config without requiring "quit".
+	10.  Ignore acceleratometer. (done)
+	11.  Android touch collision 1 frame behind.
+
+TODO: Quake Remaster: mge5m1 floating island issue.  I also saw a teleporter bouncing around somewhere in a different map.
+TODO: qbj_annihilator scruffed shadow rendering issue that evidence suggests is related to 64-bit since does not occur in 32-bit.
+TODO: sme2 demo that causes issue.
+TODO: Try Linux server only / dedicated server build.
+
+Lib srcs (There are tons of similar repositories.  These are the ones I used as a starting point.  I think I only had to put
+serious time into one of them which I couldn't integrate into my "system" of building.  I am listing these largely because I had to
+retrace my steps to determine the exact repository I got the library source from.
+
+https://github.com/castle-engine/android-freetype 
+https://github.com/KP142EH12/QI4A/tree/master/QI4A/jni/vorbis/vorbisfile 
+https://github.com/Suvitruf/libjpeg-version-9-android
 
 // September 16 Release
 1. Quake Remaster Support.
@@ -365,6 +412,5 @@ cut copy paste in console using shift to select text (todo: For non-Quake games 
 17. zircon_command_line.txt
 18. Video mode default 1024 x 768
 19. Writing config.cfg refreshes video cvars with actual values to prevent writing stale values to config
-
 
 

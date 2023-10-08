@@ -1,5 +1,5 @@
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "r_shadow.h"
 
 extern cvar_t r_labelsprites_scale;

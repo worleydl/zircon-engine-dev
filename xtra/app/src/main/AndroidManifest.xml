@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Replace com.test.game with the identifier of your game below, e.g.
-     com.gamemaker.game
+     com.gamemaker.game   AndroidManifest.xml
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.libsdl.app"
@@ -40,12 +40,19 @@
         <!-- Example of setting SDL hints from AndroidManifest.xml:
         <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0"/>
          -->
-     
-        <activity android:name="SDLActivity"
-            android:label="@string/app_name"
-                  android:configChanges="keyboard|keyboardHidden|orientation"
-                  android:screenOrientation="nosensor"
+      <!-- 
+      <activity android:name="SDLActivity"
+          android:label="@string/app_name"
+                android:configChanges="keyboard|keyboardHidden|orientation"
+                android:screenOrientation="nosensor"
+          >
+-->
+      <activity android:name="SDLActivity" 
+          android:label="@string/app_name"
+                android:configChanges="keyboard|keyboardHidden|orientation"
+                android:screenOrientation="landscape"
             >
+                    
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

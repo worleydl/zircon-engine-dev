@@ -1,3 +1,5 @@
+#if 0 // GLX !defined(CORE_SDL)
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -254,3 +256,5 @@ void CDAudio_SysShutdown (void)
 	close(cdfile);
 	cdfile = -1;
 }
+
+#endif // 0 //!defined(CORE_SDL)

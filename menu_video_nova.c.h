@@ -154,10 +154,10 @@ static void M_Menu_VideoNova_AdjustSliders (int dir)
 				menu_video_resolution = menu_video_resolutions_count - 1;
 			if (menu_video_resolutions[menu_video_resolution].width < 600)
 				continue;
-#if defined(WIN32) && !defined(CORE_SDL)
+#if (defined(_WIN32) && !defined(CORE_SDL)) || defined(MACOSX)
 			if (menu_video_resolutions[menu_video_resolution].width > vid.desktop_width)
 				continue;
-#endif // defined(WIN32) && !defined(CORE_SDL)
+#endif // defined(_WIN32) && !defined(CORE_SDL)
 			if (menu_video_resolutions[menu_video_resolution].width >= vid_minwidth.integer && menu_video_resolutions[menu_video_resolution].height >= vid_minheight.integer)
 				break;
 		}
@@ -212,6 +212,12 @@ static void M_VideoNova_Key (int key, int ascii)
 			break;
 
 		case (VIDEO2_ITEMS - 2): // APPLY
+
+#ifdef __ANDROID__
+	Con_PrintLinef ("vid_restart not supported for this build");
+	return;
+#endif // __ANDROID__
+
 			Cvar_SetValueQuick (&vid_width, menu_video_resolutions[menu_video_resolution].width);
 			Cvar_SetValueQuick (&vid_height, menu_video_resolutions[menu_video_resolution].height);
 			Cvar_SetValueQuick (&vid_conwidth, menu_video_resolutions[menu_video_resolution].conwidth);
@@ -312,6 +318,13 @@ void VID_ListModes_f(void)
 		Con_PrintLinef ("%03d: %d x %d ", j, mm->width, mm->height);
 
 	}
+        
+    Con_PrintLinef ("Current mode:    vid.width vid.height vid.fullscreen " NEWLINE " ... %d x %d fs %d ", vid.width, vid.height, vid.fullscreen);
+    Con_PrintLinef ("Current mode dot!:vid.width vid.height vid.fullscreen " NEWLINE " ... %d x %d fs %d ", vid.mode.width, vid.mode.height, vid.mode.fullscreen);
+    Con_PrintLinef ("Current cvars:   vid_width vid_height vid_fullscreen " NEWLINE " ... %d x %d fs %d ", vid_width.integer, vid_height.integer, vid_fullscreen.integer);
+    Con_PrintLinef ("Current scale:   fullscreen %f windowed %f", vid_fullscreen_conscale.value, vid_window_conscale.value);
+    Con_PrintLinef ("Current mag 360: %f", yfactors);
+    Con_PrintLinef ("Current mag      %f", yfactor_mag_360);
 }
 
 #undef m_local_cursor

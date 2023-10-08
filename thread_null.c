@@ -1,3 +1,5 @@
+#if 0
+
 #include "quakedef.h"
 #include "thread.h"
 
@@ -80,3 +82,5 @@ void _Thread_DestroyBarrier(void *barrier, const char *filename, int fileline)
 void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 {
 }
+
+#endif // 0

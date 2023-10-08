@@ -511,7 +511,7 @@ static qbool SCR_CaptureVideo_Ogg_OpenLibrary(void)
 {
 	const char* dllnames_og [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libogg-0.dll",
 		"libogg.dll",
 		"ogg.dll",
@@ -525,7 +525,7 @@ static qbool SCR_CaptureVideo_Ogg_OpenLibrary(void)
 	};
 	const char* dllnames_vo [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libvorbis-0.dll",
 		"libvorbis.dll",
 		"vorbis.dll",
@@ -539,7 +539,7 @@ static qbool SCR_CaptureVideo_Ogg_OpenLibrary(void)
 	};
 	const char* dllnames_ve [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libvorbisenc-2.dll",
 		"libvorbisenc.dll",
 		"vorbisenc.dll",
@@ -553,7 +553,7 @@ static qbool SCR_CaptureVideo_Ogg_OpenLibrary(void)
 	};
 	const char* dllnames_th [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libtheora-0.dll",
 		"libtheora.dll",
 		"theora.dll",

@@ -1,7 +1,7 @@
 
 // Written by Forest Hale 2003-06-15 and placed into public domain.
 
-#ifdef WIN32
+#ifdef _WIN32
 #ifdef _MSC_VER
 #pragma comment(lib, "ws2_32.lib")
 #endif
@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -56,7 +56,7 @@
 
 #include "lhnet.h"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 // as of Visual Studio 2015, EWOULDBLOCK and ECONNREFUSED are real things, with different values than we want when talking to WinSock, so we have to undef them here or change the rest of the code.
 #undef EWOULDBLOCK
 #undef ECONNREFUSED
@@ -727,7 +727,7 @@ static int lhnet_active;
 static lhnetsocket_t lhnet_socketlist;
 static lhnetpacket_t lhnet_packetlist;
 static int lhnet_default_dscp = 0;
-#ifdef WIN32
+#ifdef _WIN32
 static int lhnet_didWSAStartup = 0;
 static WSADATA lhnet_winsockdata;
 #endif
@@ -739,7 +739,7 @@ void LHNET_Init(void)
 	lhnet_socketlist.next = lhnet_socketlist.prev = &lhnet_socketlist;
 	lhnet_packetlist.next = lhnet_packetlist.prev = &lhnet_packetlist;
 	lhnet_active = 1;
-#ifdef WIN32
+#ifdef _WIN32
 	lhnet_didWSAStartup = !WSAStartup(MAKEWORD(1, 1), &lhnet_winsockdata);
 	if (!lhnet_didWSAStartup)
 		Con_Print("LHNET_Init: WSAStartup failed, networking disabled\n");
@@ -772,7 +772,7 @@ void LHNET_Shutdown(void)
 		p->next->prev = p->prev;
 		Z_Free(p);
 	}
-#ifdef WIN32
+#ifdef _WIN32
 	if (lhnet_didWSAStartup)
 	{
 		lhnet_didWSAStartup = 0;
@@ -784,7 +784,7 @@ void LHNET_Shutdown(void)
 
 static const char *LHNETPRIVATE_StrError(void)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	int i = WSAGetLastError();
 	switch (i)
 	{
@@ -855,7 +855,7 @@ void LHNET_SleepUntilPacket_Microseconds(int microseconds)
 		{
 			if (lastfd < s->inetsocket)
 				lastfd = s->inetsocket;
-#if defined(WIN32) && !defined(_MSC_VER)
+#if defined(_WIN32) && !defined(_MSC_VER)
 			FD_SET((int)s->inetsocket, &fdreadset);
 #else
 			FD_SET((unsigned int)s->inetsocket, &fdreadset);
@@ -918,7 +918,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 #ifndef NOSUPPORTIPV6
 		case LHNETADDRESSTYPE_INET6:
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 			if (lhnet_didWSAStartup)
 			{
 #endif
@@ -928,13 +928,13 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 				if ((lhnetsocket->inetsocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) != -1)
 #endif
 				{
-#ifdef WIN32
+#ifdef _WIN32
 					u_long _false = 0;
 #endif
 #ifdef MSG_DONTWAIT
 					if (1)
 #else
-#ifdef WIN32
+#ifdef _WIN32
 					u_long _true = 1;
 #else
 					char _true = 1;
@@ -950,7 +950,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 						if (address->addresstype != LHNETADDRESSTYPE_INET6
 							|| setsockopt (lhnetsocket->inetsocket, IPPROTO_IPV6, IPV6_V6ONLY,
 										   (const char *)&ipv6_only, sizeof(ipv6_only)) == 0
-#ifdef WIN32
+#ifdef _WIN32
 							// The Win32 API only supports IPV6_V6ONLY since Windows Vista, but fortunately
 							// the default value is what we want on Win32 anyway (IPV6_V6ONLY = true)
 							|| SOCKETERRNO == WSAENOPROTOOPT
@@ -1022,7 +1022,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 								lhnetsocket->prev = lhnetsocket->next->prev;
 								lhnetsocket->next->prev = lhnetsocket;
 								lhnetsocket->prev->next = lhnetsocket;
-#ifdef WIN32
+#ifdef _WIN32
 								if (ioctlsocket(lhnetsocket->inetsocket, SIO_UDP_CONNRESET, &_false) == -1)
 									Con_DPrintf("LHNET_OpenSocket_Connectionless: ioctlsocket SIO_UDP_CONNRESET returned error: %s\n", LHNETPRIVATE_StrError());
 #endif
@@ -1042,7 +1042,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 				}
 				else
 					Con_Printf("LHNET_OpenSocket_Connectionless: socket returned error: %s\n", LHNETPRIVATE_StrError());
-#ifdef WIN32
+#ifdef _WIN32
 			}
 			else
 				Con_Print("LHNET_OpenSocket_Connectionless: can't open a socket (WSAStartup failed during LHNET_Init)\n");
@@ -1274,7 +1274,7 @@ int main(int argc, char **argv)
 	printf("calling LHNET_Write to send a packet from the first socket to the second socket\n");
 	test1 = LHNET_Write(sock1, buffer, blen, &localhostaddy2);
 	printf("sleeping briefly\n");
-#ifdef WIN32
+#ifdef _WIN32
 	Sleep (100);
 #else
 	usleep (100000);
@@ -1286,7 +1286,7 @@ int main(int argc, char **argv)
 	else
 		Con_Printf("socket to socket test failed\n");
 
-#ifdef WIN32
+#ifdef _WIN32
 	printf("press any key to exit\n");
 	getchar();
 #endif
@@ -1371,7 +1371,7 @@ int main(int argc, char **argv)
 		oldtime = time(NULL);
 		for(;;)
 		{
-#ifdef WIN32
+#ifdef _WIN32
 			Sleep(1);
 #else
 			usleep(1);

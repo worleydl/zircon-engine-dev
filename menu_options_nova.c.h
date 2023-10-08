@@ -14,27 +14,26 @@ typedef enum {
 	moa_console_1				= 1,
 	moa_Scale_2					= 2,
 	moa_Console_Scale_3			= 3,
-	moa_Print_Scale_4			= 4,
 	
-	moa_Gamma_5					= 5,
-	moa_Contrast_6				= 6,
-	moa_Mouse_Speed_7			= 7,
-	moa_Sound_Volume_8			= 8,
-	moa_Music_Volume_9			= 9,
-	moa_Always_Run_10			= 10,
-	moa_Invert_Mouse_11			= 11,
-	moa_Show_framerate_12		= 12,
-	moa_Status_Bar_13			= 13,
-	moa_Gun_Position_14			= 14,
-	moa_Bobbing_15				= 15,
-	moa_SharpText_16			= 16,
+	moa_Gamma_4					= 4,
+	moa_Contrast_5				= 5,
+	moa_Mouse_Speed_6			= 6,
+	moa_Sound_Volume_7			= 7,
+	moa_Music_Volume_8			= 8,
+	moa_Always_Run_9			= 9,
+	moa_Invert_Mouse_10			= 10,
+	moa_Show_framerate_11		= 11,
+	moa_Status_Bar_12			= 12,
+	moa_Gun_Position_13			= 13,
+	moa_Bobbing_14				= 14,
+	moa_SharpText_15			= 15,
 
-	moa_Effects_17				= 17,
+	moa_Effects_16				= 16,
 	
-	moa_Video_Mode_18			= 18,
-	moa_Reset_to_defaults_19	= 19,
-	moa_Classic_Menu_20			= 20,
-	moa_count_21				= 21,
+	moa_Video_Mode_17			= 17,
+	moa_Reset_to_defaults_18	= 18,
+	moa_Classic_Menu_19			= 19,
+	moa_count_20				= 20,
 } moa_e;
 
 
@@ -54,7 +53,8 @@ void M_Menu_OptionsNova_f (void)
 static void M_Menu_OptionsNova_AdjustSliders (int dir)
 {
 	
-//	double f;
+	cvar_t *pcvar;
+
 	S_LocalSound ("sound/misc/menu3.wav");
 
 	
@@ -62,33 +62,33 @@ static void M_Menu_OptionsNova_AdjustSliders (int dir)
 	default:
 	case_break moa_Key_Setup_0:				
 	case_break moa_console_1:				
-	case_break moa_Scale_2:				Cvar_SetValueQuick (&vid_conscale_auto, bound(0.125, vid_conscale_auto.value + dir * 0.125, 16));
+	case_break moa_Scale_2:				/*cvar_t */ pcvar  = vid.fullscreen ? &vid_fullscreen_conscale : &vid_window_conscale;
+										Cvar_SetValueQuick (pcvar, bound( 0.5, pcvar->value + dir * (1 / 16.0) , 2) );
 	case_break moa_Console_Scale_3:		Cvar_SetValueQuick (&con_textsize, bound(2, con_textsize.value + dir * 2, 64));
-	case_break moa_Print_Scale_4:		Cvar_SetValueQuick (&con_notifysize, bound(2, con_notifysize.value + dir * 2, 64));
 	
-	case_break moa_Gamma_5:				Cvar_SetValueQuick (&v_gamma, bound(0.5, v_gamma.value + dir * 0.0625, 3));
-	case_break moa_Contrast_6:			Cvar_SetValueQuick (&v_contrast, bound(0.5, v_contrast.value + dir * 0.0625, 4));
-	case_break moa_Mouse_Speed_7:		Cvar_SetValueQuick (&sensitivity, bound(1, sensitivity.value + dir * 0.5, 50));
-	case_break moa_Sound_Volume_8:		Cvar_SetValueQuick (&volume, bound(0, volume.value + dir * 0.0625, 1));
-	case_break moa_Music_Volume_9:		Cvar_SetValueQuick (&bgmvolume, bound(0, bgmvolume.value + dir * 0.0625, 1));
+	case_break moa_Gamma_4:				Cvar_SetValueQuick (&v_gamma, bound(0.5, v_gamma.value + dir * 0.0625, 3));
+	case_break moa_Contrast_5:			Cvar_SetValueQuick (&v_contrast, bound(0.5, v_contrast.value + dir * 0.0625, 4));
+	case_break moa_Mouse_Speed_6:		Cvar_SetValueQuick (&sensitivity, bound(1, sensitivity.value + dir * 0.5, 50));
+	case_break moa_Sound_Volume_7:		Cvar_SetValueQuick (&volume, bound(0, volume.value + dir * 0.0625, 1));
+	case_break moa_Music_Volume_8:		Cvar_SetValueQuick (&bgmvolume, bound(0, bgmvolume.value + dir * 0.0625, 1));
 	
-	case_break moa_Always_Run_10:		{int spd = (cl_forwardspeed.value > 200) ? 200 : 400;
+	case_break moa_Always_Run_9:		{int spd = (cl_forwardspeed.value > 200) ? 200 : 400;
 										Cvar_SetValueQuick (&cl_forwardspeed, spd);
 										Cvar_SetValueQuick (&cl_backspeed, spd);}
 										
 
-	case_break moa_Invert_Mouse_11:		Cvar_SetValueQuick (&m_pitch, -m_pitch.value);
-	case_break moa_Show_framerate_12:	{	int c = 3; int x = getef5(); int j = rotc(c, x ,dir); setlevel5 (j);}
-	case_break moa_Status_Bar_13:		{	int c = 3; int x = getef4(); int j = rotc(c, x ,dir); setlevel4 (j);}
-	case_break moa_Gun_Position_14:		{	int c = 2; int x = getef3(); int j = rotc(c, x ,dir); setlevel3 (j);}
-	case_break moa_Bobbing_15:			{   int c = 3; int x = getef2(); int j = rotc(c, x ,dir); setlevel2 (j);}
-	case_break moa_SharpText_16:		Cvar_SetValueQuick (&r_nearest_conchars, !r_nearest_conchars.value);
+	case_break moa_Invert_Mouse_10:		Cvar_SetValueQuick (&m_pitch, -m_pitch.value);
+	case_break moa_Show_framerate_11:	{	int c = 3; int x = getef5(); int j = rotc(c, x ,dir); setlevel5 (j);}
+	case_break moa_Status_Bar_12:		{	int c = 3; int x = getef4(); int j = rotc(c, x ,dir); setlevel4 (j);}
+	case_break moa_Gun_Position_13:		{	int c = 2; int x = getef3(); int j = rotc(c, x ,dir); setlevel3 (j);}
+	case_break moa_Bobbing_14:			{   int c = 3; int x = getef2(); int j = rotc(c, x ,dir); setlevel2 (j);}
+	case_break moa_SharpText_15:		Cvar_SetValueQuick (&r_nearest_conchars, !r_nearest_conchars.value);
 	
-	case_break moa_Effects_17:			{	int c = 6; int x = getef();  int j = rotc(c, x ,dir); setlevel (j);}
+	case_break moa_Effects_16:			{	int c = 6; int x = getef();  int j = rotc(c, x ,dir); setlevel (j);}
 	
-	case_break moa_Video_Mode_18:
-	case_break moa_Reset_to_defaults_19:
-	case_break moa_Classic_Menu_20:		break;
+	case_break moa_Video_Mode_17:
+	case_break moa_Reset_to_defaults_18:
+	case_break moa_Classic_Menu_19:		break;
 	} // sw
 
 }	
@@ -160,7 +160,7 @@ static void M_OptionsNova_Draw (void) //
 	char vabuf[1024];
 	cachepic_t	*p0;
 
-	M_Background(320, bound(200, 32 + moa_count_21 * 8, vid_conheight.integer));
+	M_Background(320, bound(200, 32 + moa_count_20 * 8, vid_conheight.integer));
 
 	M_DrawPic(16, 4, CPC("gfx/qplaque"), NO_HOTSPOTS_0, NA0, NA0);
 	p0 = Draw_CachePic ("gfx/p_option");
@@ -169,13 +169,15 @@ static void M_OptionsNova_Draw (void) //
 	PPX_Start(/*realcursor*/ m_local_cursor, /*frame select draw cursor might be changed*/ msel_cursoric); // PPX FRAME
 
 	visiblerows = (int)((menu_height - 32) / 8);
-	drawcur_y = 32 - bound(0, msel_cursoric - (visiblerows >> 1), max(0, moa_count_21 - visiblerows)) * 8;
+	drawcur_y = 32 - bound(0, msel_cursoric - (visiblerows >> 1), max(0, moa_count_20 - visiblerows)) * 8;
+
+	cvar_t *pcvar;
+	pcvar = vid.fullscreen ? &vid_fullscreen_conscale : &vid_window_conscale;
 
 	M_OptionsNova_PrintCommand	("   Keyboard Setup ", true);											// 0
 	M_OptionsNova_PrintCommand	("    Go to console ", true);											// 1
-	M_OptionsNova_PrintSlider	("         2D Scale ", true, vid_conscale_auto.value, 0.25, 8);			// 2
+	M_OptionsNova_PrintSlider	("         2D Scale ", true, pcvar->value, 0.5, 2.0);					// 2
 	M_OptionsNova_PrintSlider	("    Console Scale ", true, con_textsize.value, 2, 64);				// 3
-	M_OptionsNova_PrintSlider	("      Print Scale ", true, con_notifysize.value, 2, 64);				// 4
 	drawcur_y += 8;
 	M_OptionsNova_PrintSlider	("            Gamma ", true, v_gamma.value, 0.5, 3);					// 5
 	M_OptionsNova_PrintSlider	("         Contrast ", true, v_contrast.value, 0.5, 2);					// 6
@@ -228,10 +230,10 @@ static void M_OptionsNova_Key (int k, int ascii)
 										Con_ToggleConsole_f ();
 										break;
 
-		case moa_Video_Mode_18:			M_Menu_VideoNova_f ();	break;
+		case moa_Video_Mode_17:			M_Menu_VideoNova_f ();	break;
 		
-		case moa_Reset_to_defaults_19:	M_Menu_Reset_f ();	break;
-		case moa_Classic_Menu_20:		M_Menu_Options_Classic_f ();	break;
+		case moa_Reset_to_defaults_18:	M_Menu_Reset_f ();	break;
+		case moa_Classic_Menu_19:		M_Menu_Options_Classic_f ();	break;
 						
 		default:
 			M_Menu_OptionsNova_AdjustSliders (1);
@@ -244,7 +246,7 @@ static void M_OptionsNova_Key (int k, int ascii)
 		break;
 
 	case K_END:
-		m_local_cursor = moa_count_21 - 1;
+		m_local_cursor = moa_count_20 - 1;
 		break;
 
 	case K_PGUP:
@@ -259,25 +261,25 @@ static void M_OptionsNova_Key (int k, int ascii)
 
 	case K_PGDN:
 		m_local_cursor += visiblerows / 2;
-		if (m_local_cursor > moa_count_21 - 1) m_local_cursor = moa_count_21 - 1;
+		if (m_local_cursor > moa_count_20 - 1) m_local_cursor = moa_count_20 - 1;
 		break;
 
 	case K_MWHEELDOWN:
 		m_local_cursor += visiblerows / 4;
-		if (m_local_cursor > moa_count_21 - 1) m_local_cursor = moa_count_21 - 1;
+		if (m_local_cursor > moa_count_20 - 1) m_local_cursor = moa_count_20 - 1;
 		break;
 
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		m_local_cursor--;
 		if (m_local_cursor < 0)
-			m_local_cursor = moa_count_21 - 1;
+			m_local_cursor = moa_count_20 - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		m_local_cursor++;
-		if (m_local_cursor >= moa_count_21)
+		if (m_local_cursor >= moa_count_20)
 			m_local_cursor = 0;
 		break;
 

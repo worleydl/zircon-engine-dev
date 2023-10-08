@@ -302,7 +302,7 @@ void Host_SaveConfig_f(void)
 		} else {
 			strlcpy (vabuf, file, sizeof(vabuf));
 		}
-		
+
 		Con_PrintLinef ("Saving to %s", vabuf);
 	}
 	else {
@@ -959,7 +959,7 @@ void Host_Main(void)
 				qbool is_active_hosting_server = sv.active && cls.state != ca_disconnected && svs.maxclients > 1;
 				if ( (
 //#ifdef _WIN32
-//					!vid.factive || 
+//					!vid.factive ||
 					!vid_activewindow ||
 //#endif
 						key_consoleactive || key_dest == key_menu) && is_active_hosting_server == false)
@@ -1194,7 +1194,7 @@ void LOC_LoadFile (void)
 {
 	char *enlocal_pure_sa;	// _sa means string allocated
 	char *enlocal_sa;
-	char *sfile = "localization/loc_english.txt";
+	const char *sfile = "localization/loc_english.txt";
 
 	enlocal_pure_sa = (char *)FS_LoadFile (sfile, tempmempool, /*quiet*/ true, /*filesize ptr*/ NULL, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
 
@@ -1202,9 +1202,9 @@ void LOC_LoadFile (void)
 		Con_PrintLinef  ("Language initialization not found");
 		return;
 	}
-	
+
 	Con_PrintLinef  ("Language initialization: %s", sfile);
-	
+
 	// Remove carriage returns if found
 	enlocal_sa = String_Replace_Alloc (enlocal_pure_sa, "\r", "");
 
@@ -1215,7 +1215,7 @@ void LOC_LoadFile (void)
 	stringlistfreecontents (&rerelease_loc);
 
 	#define MAX_NUM_Q_ARGVS_50	50
-	
+
 
 	while (sfake_is_eof() == false) {
 		char *sthis_line = sfake_getlin();
@@ -1236,7 +1236,7 @@ void LOC_LoadFile (void)
 
 		int rfake_argc = 0;
 		char *rfake_argv[MAX_NUM_Q_ARGVS_50] = {0};
-				
+
 		// tokenize console
 		String_Command_String_To_Argv (/*destructive edit*/ scopy_line, &rfake_argc, rfake_argv, MAX_NUM_Q_ARGVS_50);
 
@@ -1257,7 +1257,7 @@ void LOC_LoadFile (void)
 			//Con_PrintLinef ("%s " NEWLINE QUOTED_S " " QUOTED_S, sthis_line, rfake_argv[0], sdecode_arg2[2]);
 		}
 
-		
+
 	} // each line
 
 	// cleanup
@@ -1310,7 +1310,7 @@ int LOC_GetDecode (const char *s)
 }
 
 char s_decodebuf[16384];
-#define ASSIGN(x) x
+#define ASSIGN(x) (x)
 
 const char *LOC_GetString (const char *stxt)
 {
@@ -1331,17 +1331,17 @@ const char *LOC_GetString (const char *stxt)
 		if (j == not_found_neg1) {
 			return "(error)";//stxt;
 		}
-		
+
 		char *s_tokenx = rerelease_loc.strings[j + 0];
 		char *s_decodx = rerelease_loc.strings[j + 1];
-		
+
 		//Sys_PrintToTerminal2 (va3(QUOTED_S, s_tokenx));
 		//Sys_PrintToTerminal2 (va3(QUOTED_S, s_decodx));
 
 		int slen0 = strlen(rerelease_loc.strings[j + 0]);
 		int slen1 = strlen(rerelease_loc.strings[j + 1]);
 
-		char *s_afterx = &s_decodebuf[slen0 + 1 /*for the dollar*/ ];		
+		char *s_afterx = &s_decodebuf[slen0 + 1 /*for the dollar*/ ];
 
 		char s_decode2[16384];
 		int is_nest_replace  = (*s_afterx != 0);
@@ -1368,7 +1368,7 @@ const char *LOC_GetString (const char *stxt)
 			String_Edit_Replace (s_decode2, sizeof(s_decode2), "{0}", s_num); // Expand
 			cycles ++;
 			goto skip;
-		} 
+		}
 
 		if (strstr (s_decodx, "{0}")) {
 			cycles ++;
@@ -1483,18 +1483,18 @@ static void Host_Init (void)
 	//dpsnprintf (engineversion, sizeof (engineversion), "%s %s %s", gamename, os, buildstring);
 	dpsnprintf (engineversion, sizeof (engineversion), "%s %s %s", gamename, os, buildstring);
 	//dpsnprintf (engineversionshort, sizeof (engineversionshort), "Zircon - %s", buildstringshort);
-	
+
 	const char *sfmt = "%s " // ...
-		#if defined(_WIN32) && defined(WIN64)
+		#if defined(_WIN32) && defined(_WIN64)
 			"64 "
 		#endif // CORE_SDL
 		#if !defined(_MSC_VER) && defined(_WIN32)
-			"G++ "
+			"GCC "
 		#endif // CORE_SDL
 		#ifdef CORE_SDL
 			"SDL2 "
 		#endif // CORE_SDL
-#ifdef _DEBUG
+		#if defined (_DEBUG) || defined (DEBUG) // MAC 2nd one
 			"(D) "
 		#endif // _DEBUG
 		"%s";
@@ -1511,6 +1511,11 @@ static void Host_Init (void)
 
 	// initialize filesystem (including fs_basedir, fs_gamedir, -game, scr_screenshot_name)
 	FS_Init();
+
+#ifdef __ANDROID__
+	void FS_Path_f (void);
+	FS_Path_f ();
+#endif // __ANDROID__
 
 	// register the cvars for session locking
 	Host_InitSession();
@@ -1577,7 +1582,7 @@ static void Host_Init (void)
 	}
 
 	// put up the loading image so the user doesn't stare at a black screen...
-	SCR_BeginLoadingPlaque(true);
+	SCR_BeginLoadingPlaque(true); // Vid here (Sep262023)
 #ifdef CONFIG_MENU
 	if (cls.state != ca_dedicated)
 	{
@@ -1626,7 +1631,7 @@ static void Host_Init (void)
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying) {
 #ifdef CONFIG_MENU
 		extern cvar_t nostartdemos;
-		if (!nostartdemos.value) 
+		if (!nostartdemos.value)
 			Cbuf_AddTextLine ("togglemenu 1");
 #endif
 		Cbuf_Execute();

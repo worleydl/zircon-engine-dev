@@ -364,4 +364,4 @@ BOOL SetConsoleCXCY(HANDLE hStdout, int cx, int cy)
 	return true;
 }
 
-#endif #if 0 //#endif
+#endif // #if 0 //#endif

@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 /// MSVC has a different name for several standard functions
-#ifdef WIN32
+#ifdef _WIN32
 # define strcasecmp _stricmp
 # define strncasecmp _strnicmp
 #endif
@@ -425,8 +425,8 @@ size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen);
 
 // Optimize these 2 for speed rather than debugging convenience ...
 
-#define String_Does_Match_Caseless(s1,s2)				!strcasecmp(s1, s2)
-#define String_Does_Match(s1,s2)						!strcmp(s1, s2)
+#define String_Does_Match_Caseless(s1,s2)				(!strcasecmp(s1, s2))
+#define String_Does_Match(s1,s2)						(!strcmp(s1, s2))
 #define String_Does_Not_Match(s1,s2)					(!!strcmp(s1, s2))
 
 
@@ -438,8 +438,8 @@ size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen);
 #define String_Isin2_Caseless(sthis,s0,s1)				( String_Does_Match_Caseless(sthis, s0) || String_Does_Match_Caseless(sthis, s1) )
 #define String_Isin3_Caseless(sthis,s0,s1,s2)			( String_Does_Match_Caseless(sthis, s0) || String_Does_Match_Caseless(sthis, s1) || String_Does_Match_Caseless(sthis, s2) )
 
-#define String_Does_Start_With(s,s_prefix)				!strncmp(s, s_prefix, strlen(s_prefix))
-#define String_Does_Start_With_Caseless(s,s_prefix)		!strncasecmp(s, s_prefix, strlen(s_prefix))
+#define String_Does_Start_With(s,s_prefix)				(!strncmp(s, s_prefix, strlen(s_prefix)))
+#define String_Does_Start_With_Caseless(s,s_prefix)		(!strncasecmp(s, s_prefix, strlen(s_prefix)))
 
 // FN ...
 
@@ -483,7 +483,7 @@ SBUF___ const char *File_Getcwd_SBuf (void); // No trailing slash
 char *File_URL_Edit_SlashesBack_Like_Windows (char *unix_path_to_file);
 char *File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (char *path_to_file);
 const char *File_URL_SkipPath (const char *path_to_file); // last path component
-char *File_URL_Remove_TrailSlash (char *path_to_file);
+char *File_URL_Remove_Trailing_Unix_Slash (char *path_to_file);
 
 int File_Exists (const char *path_to_file_);
 int File_Is_Existing_File (const char *path_to_file);

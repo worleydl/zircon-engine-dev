@@ -15,11 +15,11 @@ WARP_X_ (String_Does_Have_Uppercase)
 //  PLATFORM: Baker
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
  	# define PLATFORM_WINDOWS
 #else
 	
-#endif // !_WIN32 WIN64
+#endif // !_WIN32 _WIN64
 
 #ifdef __GNUC__ // Clang has GNUC defined, yes or no?  Sounds like it does.  Confirm yes or no.  October 2 2020
 	#define	__core_attribute__	__attribute__

@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "darkplaces.h"
 #include "thread.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <winbase.h>
 #else
@@ -149,7 +149,7 @@ static void mmap_free(void *mem)
 // (Windows growing its swapfile for example)
 static void *attempt_malloc(size_t size)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	return malloc(size);
 #else
 	void *base;
@@ -928,7 +928,7 @@ void Memory_Init_Commands (void)
 	Cvar_RegisterVariable (&sys_memsize_physical);
 	Cvar_RegisterVariable (&sys_memsize_virtual);
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #ifdef _WIN64
 	{
 		MEMORYSTATUSEX status;

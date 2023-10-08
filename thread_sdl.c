@@ -1,11 +1,11 @@
 #ifdef CORE_SDL
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(CORE_XCODE)
 	#include <SDL2/SDL.h>
 	#include <SDL2/SDL_thread.h>
 #else
-#include <SDL.h>
-#include <SDL_thread.h>
+	#include <SDL.h>
+	#include <SDL_thread.h>
 #endif // _MSC_VER
 
 #include "darkplaces.h"

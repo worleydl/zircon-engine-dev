@@ -18,6 +18,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
+#ifdef CORE_SDL
 
 #include "quakedef.h"
 #include "cdaudio.h"
@@ -279,5 +280,8 @@ int CDAudio_SysStartup (void)
 void CDAudio_SysShutdown (void)
 {
 }
+
 #endif
+
+#endif // CORE_SDL
 

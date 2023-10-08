@@ -30,17 +30,17 @@ extern char engineversion[128];
 extern char engineversionshort[128];
 
 #ifdef __APPLE__
-# include <TargetConditionals.h>
+	# include <TargetConditionals.h>
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 2)
-#define DP_FUNC_PRINTF(n) __attribute__ ((format (printf, n, n+1)))
-#define DP_FUNC_PURE      __attribute__ ((pure))
-#define DP_FUNC_NORETURN  __attribute__ ((noreturn))
+	#define DP_FUNC_PRINTF(n) __attribute__ ((format (printf, n, n+1)))
+	#define DP_FUNC_PURE      __attribute__ ((pure))
+	#define DP_FUNC_NORETURN  __attribute__ ((noreturn))
 #else
-#define DP_FUNC_PRINTF(n)
-#define DP_FUNC_PURE
-#define DP_FUNC_NORETURN
+	#define DP_FUNC_PRINTF(n)
+	#define DP_FUNC_PURE
+	#define DP_FUNC_NORETURN
 #endif
 
 #include <sys/types.h>
@@ -55,81 +55,9 @@ extern char engineversionshort[128];
 
 #include "qtypes.h"
 
+#define MAX_NUM_ARGVS	50				// Baker: Windows and reconstitute the command line for the cmdline externally visible cvar
 
 
-
-#define MAX_NUM_ARGVS	50
-
-#ifdef DP_SMALLMEMORY
-#define	MAX_INPUTLINE			1024
-#define	CON_TEXTSIZE			16384
-#define	CON_MAXLINES			256
-#define	HIST_TEXTSIZE			2048
-#define	HIST_MAXLINES			16
-#define	MAX_ALIAS_NAME			32
-#define	CMDBUFSIZE				131072
-#define	MAX_ARGS				80
-
-#define	NET_MAXMESSAGE			65536
-#define	MAX_PACKETFRAGMENT		1024
-#define	MAX_EDICTS				4096
-#define	MAX_MODELS				1024
-#define	MAX_SOUNDS				1024
-#define	MAX_LIGHTSTYLES			64
-#define	MAX_STYLESTRING			16
-#define	MAX_SCOREBOARD			32
-#define	MAX_SCOREBOARDNAME		128
-#define	MAX_USERINFO_STRING		196
-#define	MAX_SERVERINFO_STRING	512
-#define	MAX_LOCALINFO_STRING	1 // not actually used by DP servers
-#define	CL_MAX_USERCMDS			32
-#define	CVAR_HASHSIZE			1024
-#define	M_MAX_EDICTS			4096
-#define	MAX_DEMOS				8
-#define	MAX_DEMONAME			16
-#define	MAX_SAVEGAMES			20
-#define	SAVEGAME_COMMENT_LENGTH	39
-#define	MAX_CLIENTNETWORKEYES	2
-#define	MAX_LEVELNETWORKEYES	0 // no portal support
-#define	MAX_OCCLUSION_QUERIES	256
-
-#define CRYPTO_HOSTKEY_HASHSIZE 256
-#define MAX_NETWM_ICON 1026 // one 32x32
-
-#define	MAX_WATERPLANES			2
-#define	MAX_CUBEMAPS			1024
-#define	MAX_EXPLOSIONS			8
-#define	MAX_DLIGHTS				16
-#define	MAX_CACHED_PICS			1024 // this is 144 bytes each (or 152 on 64bit)
-#define	CACHEPICHASHSIZE		256
-#define	MAX_PARTICLEEFFECTNAME	256
-#define	MAX_PARTICLEEFFECTINFO	1024
-#define	MAX_PARTICLETEXTURES	256
-#define	MAXCLVIDEOS				1
-#define	MAX_DYNAMIC_TEXTURE_COUNT	2
-#define	MAX_MAP_LEAFS			8192
-
-#define	MAXTRACKS				256
-#define	MAX_DYNAMIC_CHANNELS	64
-#define	MAX_CHANNELS			260
-#define	MODLIST_TOTALSIZE		32
-#define	MAX_FAVORITESERVERS		32
-#define	MAX_DECALSYSTEM_QUEUE	64
-#define	PAINTBUFFER_SIZE		512
-#define	MAX_BINDMAPS			8
-#define	MAX_PARTICLES_INITIAL	8192
-#define	MAX_PARTICLES			8192
-#define	MAX_DECALS_INITIAL		1024
-#define	MAX_DECALS				1024
-#define	MAX_ENITIES_INITIAL		256
-#define	MAX_STATICENTITIES		256
-#define	MAX_EFFECTS				16
-#define	MAX_BEAMS				16
-#define	MAX_TEMPENTITIES		256
-#define SERVERLIST_TOTALSIZE		1024
-#define SERVERLIST_ANDMASKCOUNT		5
-#define SERVERLIST_ORMASKCOUNT		5
-#else
 #define	MAX_INPUTLINE			16384 ///< maximum length of console commandline, QuakeC strings, and many other text processing buffers
 #define	CON_TEXTSIZE			1048576 ///< max scrollback buffer characters in console
 #define	CON_MAXLINES			16384 ///< max scrollback buffer lines in console
@@ -201,7 +129,7 @@ extern char engineversionshort[128];
 #define SERVERLIST_TOTALSIZE		2048 ///< max servers in the server list
 #define SERVERLIST_ANDMASKCOUNT		16 ///< max items in server list AND mask
 #define SERVERLIST_ORMASKCOUNT		16 ///< max items in server list OR mask
-#endif
+
 
 
 #define CMD_TOKENIZELENGTH (MAX_INPUTLINE + MAX_ARGS) ///< maximum tokenizable commandline length (counting trailing 0)
@@ -209,11 +137,11 @@ extern char engineversionshort[128];
 
 #define	MAX_QPATH		128			///< max length of a quake game pathname
 #ifdef PATH_MAX
-#define	MAX_OSPATH		PATH_MAX
+	#define	MAX_OSPATH	PATH_MAX
 #elif MAX_PATH
-#define	MAX_OSPATH		MAX_PATH
+	#define	MAX_OSPATH	MAX_PATH
 #else
-#define	MAX_OSPATH		1024		///< max length of a filesystem pathname
+	#define	MAX_OSPATH	1024		///< max length of a filesystem pathname
 #endif
 
 #define	ON_EPSILON		0.1			///< point on plane side epsilon
@@ -225,7 +153,7 @@ extern char engineversionshort[128];
 //
 #define	MAX_CL_STATS		256
 #define	STAT_HEALTH			0
-//#define	STAT_FRAGS			1
+//#define	STAT_FRAGS		1
 #define	STAT_WEAPON			2
 #define	STAT_AMMO			3
 #define	STAT_ARMOR			4
@@ -244,11 +172,12 @@ extern char engineversionshort[128];
 //#define STAT_TIME			17 ///< FTE
 //#define STAT_VIEW2		20 ///< FTE
 #define STAT_VIEWZOOM		21 ///< DP
-#define STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR 220 ///< DP
-#define STAT_MOVEVARS_AIRCONTROL_PENALTY					221 ///< DP
-#define STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW 222 ///< DP
-#define STAT_MOVEVARS_AIRSTRAFEACCEL_QW 223 ///< DP
-#define STAT_MOVEVARS_AIRCONTROL_POWER					224 ///< DP
+
+#define STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR		220 ///< DP
+#define STAT_MOVEVARS_AIRCONTROL_PENALTY			221 ///< DP
+#define STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW			222 ///< DP
+#define STAT_MOVEVARS_AIRSTRAFEACCEL_QW				223 ///< DP
+#define STAT_MOVEVARS_AIRCONTROL_POWER				224 ///< DP
 #define STAT_MOVEFLAGS                              225 ///< DP
 #define STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL	226 ///< DP
 #define STAT_MOVEVARS_WARSOWBUNNY_ACCEL				227 ///< DP
@@ -314,9 +243,11 @@ extern char engineversionshort[128];
 #include "input.h"
 #include "keys.h"
 #include "console.h"
+
 #ifdef CONFIG_MENU
-#include "menu.h"
+	#include "menu.h"
 #endif
+
 #include "csprogs.h"
 
 
@@ -329,103 +260,8 @@ extern cvar_t developer_loading;
 extern cvar_t sessionid;
 
 
-/* Preprocessor macros to identify platform
-    DP_OS_NAME 	- "friendly" name of the OS, for humans to read
-    DP_OS_STR	- "identifier" of the OS, more suited for code to use
-    DP_ARCH_STR	- "identifier" of the processor architecture
- */
-#if defined(__ANDROID__) /* must come first because it also defines linux */
-# define DP_OS_NAME		"Android"
-# define DP_OS_STR		"android"
-# define USE_GLES2		1
-# define USE_RWOPS		1
-# define LINK_TO_ZLIB	1
-# define LINK_TO_LIBVORBIS 1
-# define DP_MOBILETOUCH	1
-# define DP_FREETYPE_STATIC 1
-#elif TARGET_OS_IPHONE /* must come first because it also defines MACOSX */
-# define DP_OS_NAME		"iPhoneOS"
-# define DP_OS_STR		"iphoneos"
-# define USE_GLES2		1
-# define LINK_TO_ZLIB	1
-# define LINK_TO_LIBVORBIS 1
-# define DP_MOBILETOUCH	1
-# define DP_FREETYPE_STATIC 1
-#elif defined(__linux__)
-# define DP_OS_NAME		"Linux"
-# define DP_OS_STR		"linux"
-#elif defined(_WIN64)
-# define DP_OS_NAME		"Windows64"
-# define DP_OS_STR		"win64"
-#elif defined(WIN32)
-# define DP_OS_NAME		"Windows"
-# define DP_OS_STR		"win32"
-#elif defined(__FreeBSD__)
-# define DP_OS_NAME		"FreeBSD"
-# define DP_OS_STR		"freebsd"
-#elif defined(__NetBSD__)
-# define DP_OS_NAME		"NetBSD"
-# define DP_OS_STR		"netbsd"
-#elif defined(__OpenBSD__)
-# define DP_OS_NAME		"OpenBSD"
-# define DP_OS_STR		"openbsd"
-#elif defined(MACOSX)
-# define DP_OS_NAME		"Mac OS X"
-# define DP_OS_STR		"osx"
-#elif defined(__MORPHOS__)
-# define DP_OS_NAME		"MorphOS"
-# define DP_OS_STR		"morphos"
-#else
-# define DP_OS_NAME		"Unknown"
-# define DP_OS_STR		"unknown"
-#endif
+#include "sys.h"
 
-#if defined(__GNUC__)
-# if defined(__i386__)
-	#  define DP_ARCH_STR		"686"
-	#ifndef PREVENT_SSE_HACK // Baker; trouble with codeblocks, kick down road ...
-		#  define SSE_POSSIBLE
-		#  ifdef __SSE__
-			#define SSE_PRESENT
-		#  endif
-		#  ifdef __SSE2__
-		#   define SSE2_PRESENT
-		#  endif
-	#  endif
-# elif defined(__x86_64__)
-#  define DP_ARCH_STR		"x86_64"
-#  define SSE_PRESENT
-#  define SSE2_PRESENT
-# elif defined(__powerpc__)
-#  define DP_ARCH_STR		"ppc"
-# endif
-#elif defined(_WIN64)
-# define DP_ARCH_STR		"x86_64"
-# define SSE_PRESENT
-# define SSE2_PRESENT
-#elif defined(WIN32)
-# define DP_ARCH_STR		"x86"
-# define SSE_POSSIBLE
-#endif
-
-#ifdef SSE_PRESENT
-# define SSE_POSSIBLE
-#endif
-
-#ifdef NO_SSE
-# undef SSE_PRESENT
-# undef SSE_POSSIBLE
-# undef SSE2_PRESENT
-#endif
-
-#ifdef SSE_POSSIBLE
-// runtime detection of SSE/SSE2 capabilities for x86
-qbool Sys_HaveSSE(void);
-qbool Sys_HaveSSE2(void);
-#else
-#define Sys_HaveSSE() false
-#define Sys_HaveSSE2() false
-#endif
 
 #include "glquake.h"
 
@@ -466,29 +302,26 @@ const char *LOC_GetString (const char *s_dollar_key); // AURA 1.2
 
 
 #ifdef PRVM_64
-#define FLOAT_IS_TRUE_FOR_INT(x) ((x) & 0x7FFFFFFFFFFFFFFF) // also match "negative zero" doubles of value 0x8000000000000000
-#define FLOAT_LOSSLESS_FORMAT "%.17g"
-#define VECTOR_LOSSLESS_FORMAT "%.17g %.17g %.17g"
+	#define FLOAT_IS_TRUE_FOR_INT(x) ((x) & 0x7FFFFFFFFFFFFFFF) // also match "negative zero" doubles of value 0x8000000000000000
+	#define FLOAT_LOSSLESS_FORMAT "%.17g"
+	#define VECTOR_LOSSLESS_FORMAT "%.17g %.17g %.17g"
 #else
-#define FLOAT_IS_TRUE_FOR_INT(x) ((x) & 0x7FFFFFFF) // also match "negative zero" floats of value 0x80000000
-#define FLOAT_LOSSLESS_FORMAT "%.9g"
-#define VECTOR_LOSSLESS_FORMAT "%.9g %.9g %.9g"
+	#define FLOAT_IS_TRUE_FOR_INT(x) ((x) & 0x7FFFFFFF) // also match "negative zero" floats of value 0x80000000
+	#define FLOAT_LOSSLESS_FORMAT "%.9g"
+	#define VECTOR_LOSSLESS_FORMAT "%.9g %.9g %.9g"
 #endif
 
 // originally this was _MSC_VER
 // but here we want to test the system libc, which on win32 is borked, and NOT the compiler
-#ifdef WIN32
-#define INT_LOSSLESS_FORMAT_SIZE "I64"
-#define INT_LOSSLESS_FORMAT_CONVERT_S(x) ((__int64)(x))
-#define INT_LOSSLESS_FORMAT_CONVERT_U(x) ((unsigned __int64)(x))
+#ifdef _WIN32
+	#define INT_LOSSLESS_FORMAT_SIZE			"I64"
+	#define INT_LOSSLESS_FORMAT_CONVERT_S(x)	((__int64)(x))
+	#define INT_LOSSLESS_FORMAT_CONVERT_U(x)	((unsigned __int64)(x))
 #else
-#define INT_LOSSLESS_FORMAT_SIZE "j"
-#define INT_LOSSLESS_FORMAT_CONVERT_S(x) ((intmax_t)(x))
-#define INT_LOSSLESS_FORMAT_CONVERT_U(x) ((uintmax_t)(x))
-#endif
-
-
-
+	#define INT_LOSSLESS_FORMAT_SIZE			"j"
+	#define INT_LOSSLESS_FORMAT_CONVERT_S(x)	((intmax_t)(x))
+	#define INT_LOSSLESS_FORMAT_CONVERT_U(x)	((uintmax_t)(x))
+#endif // _WIN32
 
 
 #endif // ! DARKPLACES_H

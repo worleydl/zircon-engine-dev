@@ -262,10 +262,20 @@ Key_Console (int key, int unicode)
 		Partial_Reset ();
 		if (key_linepos > 1) {
 			Con_Undo_Point (/*delete*/ -1, /*was space?*/ key_line[key_linepos - 1] == ' ');
+            // Delete 1 char from end before cursor
+            // Cursor is at  key_line[key_linepos]
+            char *s_text_at_cursor = &key_line[key_linepos];
+            // The current byte offset.
+            // The current byte offset from the start is at key_linepos - 1 since that is after the ]
+            // This does not explain the +1, the +1 is needed for the ]
+            int key_linepos_start_of_char_before_cursor = (int)u8_prevbyte(/*start*/ key_line, key_linepos);
+            char *s_before_backspace = &key_line[key_linepos_start_of_char_before_cursor];
+            int keyline_newpos = key_linepos - (s_text_at_cursor - s_before_backspace);
+            size_t size_of_move = strlen(s_text_at_cursor) + ONE_CHAR_1; // + 1 null term
 
-			int newpos = (int)u8_prevbyte(key_line+1, key_linepos-1) + 1; // do NOT give the ']' to u8_prevbyte
-			strlcpy(key_line + newpos, key_line + key_linepos, sizeof(key_line) + 1 - key_linepos);
-			key_linepos = newpos; // Roguez
+        
+ 			memmove (s_before_backspace, s_text_at_cursor, size_of_move);
+			key_linepos = keyline_newpos; // Roguez
 			//Key_Console_Cursor_Move (delta, keydown[K_SHIFT] ? cursor_select : select_clear); // Reset selection
 		}
 		return;

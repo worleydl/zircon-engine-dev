@@ -1472,7 +1472,7 @@ static void World_Physics_Init(void)
 #ifndef LINK_TO_LIBODE
 	const char* dllnames [] =
 	{
-# if defined(WIN32)
+# if defined(_WIN32)
 		"libode-3.dll",
 		"libode3.dll",
 		"libode2.dll",

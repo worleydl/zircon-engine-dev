@@ -33,6 +33,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 		#define GL_DECAL                          0x2101
 		#define GL_ADD                            0x0104
 	#endif
+	#define GL_RGBA32F			GL_RGBA32F_EXT
+	#define GL_RGBA16F			GL_RGBA16F_EXT
+	#define GL_HALF_FLOAT_ARB	GL_HALF_FLOAT_OES
 #endif
 
 // disable data conversion warnings
@@ -57,12 +60,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef USE_GLES2
 // wgl uses APIENTRY
 #ifndef APIENTRY
-#define APIENTRY
+	#define APIENTRY
 #endif
 
 // for platforms (wgl) that do not use GLAPIENTRY
 #ifndef GLAPIENTRY
-#define GLAPIENTRY APIENTRY
+	#define GLAPIENTRY APIENTRY
 #endif
 
 #ifndef GL_PROJECTION
@@ -103,10 +106,10 @@ typedef ptrdiff_t GLsizeiptrARB;
 
 #define GL_MODELVIEW				0x1700
 #define GL_PROJECTION				0x1701
-#define GL_TEXTURE				0x1702
+#define GL_TEXTURE					0x1702
 #define GL_MATRIX_MODE				0x0BA0
 #define GL_MODELVIEW_MATRIX			0x0BA6
-#define GL_PROJECTION_MATRIX			0x0BA7
+#define GL_PROJECTION_MATRIX		0x0BA7
 #define GL_TEXTURE_MATRIX			0x0BA8
 
 #define GL_DONT_CARE				0x1100
@@ -117,24 +120,24 @@ typedef ptrdiff_t GLsizeiptrARB;
 
 #define GL_CULL_FACE				0x0B44
 
-#define GL_BLEND				0x0BE2
-#define GL_ALPHA_TEST			0x0BC0
-
-#define GL_ZERO					0x0
-#define GL_ONE					0x1
+#define GL_BLEND					0x0BE2
+#define GL_ALPHA_TEST				0x0BC0
+	
+#define GL_ZERO						0x0
+#define GL_ONE						0x1
 #define GL_SRC_COLOR				0x0300
-#define GL_ONE_MINUS_SRC_COLOR			0x0301
+#define GL_ONE_MINUS_SRC_COLOR		0x0301
 #define GL_DST_COLOR				0x0306
-#define GL_ONE_MINUS_DST_COLOR			0x0307
+#define GL_ONE_MINUS_DST_COLOR		0x0307
 #define GL_SRC_ALPHA				0x0302
-#define GL_ONE_MINUS_SRC_ALPHA			0x0303
+#define GL_ONE_MINUS_SRC_ALPHA		0x0303
 #define GL_DST_ALPHA				0x0304
-#define GL_ONE_MINUS_DST_ALPHA			0x0305
-#define GL_SRC_ALPHA_SATURATE			0x0308
+#define GL_ONE_MINUS_DST_ALPHA		0x0305
+#define GL_SRC_ALPHA_SATURATE		0x0308
 #define GL_CONSTANT_COLOR			0x8001
-#define GL_ONE_MINUS_CONSTANT_COLOR		0x8002
+#define GL_ONE_MINUS_CONSTANT_COLOR	0x8002
 #define GL_CONSTANT_ALPHA			0x8003
-#define GL_ONE_MINUS_CONSTANT_ALPHA		0x8004
+#define GL_ONE_MINUS_CONSTANT_ALPHA	0x8004
 
 #define GL_TEXTURE_ENV				0x2300
 #define GL_TEXTURE_ENV_MODE			0x2200
@@ -143,25 +146,25 @@ typedef ptrdiff_t GLsizeiptrARB;
 #define GL_TEXTURE_WRAP_S			0x2802
 #define GL_TEXTURE_WRAP_T			0x2803
 #define GL_TEXTURE_WRAP_R			0x8072
-#define GL_TEXTURE_BORDER_COLOR			0x1004
-#define GL_TEXTURE_MAG_FILTER			0x2800
-#define GL_TEXTURE_MIN_FILTER			0x2801
+#define GL_TEXTURE_BORDER_COLOR		0x1004
+#define GL_TEXTURE_MAG_FILTER		0x2800
+#define GL_TEXTURE_MIN_FILTER		0x2801
 #define GL_PACK_ALIGNMENT			0x0D05
 #define GL_UNPACK_ALIGNMENT			0x0CF5
-#define GL_TEXTURE_BINDING_1D                   0x8068
-#define GL_TEXTURE_BINDING_2D                   0x8069
-#define GL_TEXTURE_INTERNAL_FORMAT		0x1003
+#define GL_TEXTURE_BINDING_1D       0x8068
+#define GL_TEXTURE_BINDING_2D       0x8069
+#define GL_TEXTURE_INTERNAL_FORMAT	0x1003
 #define GL_TEXTURE_MIN_LOD			0x813A
 #define GL_TEXTURE_MAX_LOD			0x813B
-#define GL_TEXTURE_BASE_LEVEL			0x813C
-#define GL_TEXTURE_MAX_LEVEL			0x813D
+#define GL_TEXTURE_BASE_LEVEL		0x813C
+#define GL_TEXTURE_MAX_LEVEL		0x813D
 
-#define GL_NEAREST				0x2600
-#define GL_LINEAR				0x2601
-#define GL_NEAREST_MIPMAP_NEAREST		0x2700
-#define GL_NEAREST_MIPMAP_LINEAR		0x2702
-#define GL_LINEAR_MIPMAP_NEAREST		0x2701
-#define GL_LINEAR_MIPMAP_LINEAR			0x2703
+#define GL_NEAREST					0x2600
+#define GL_LINEAR					0x2601
+#define GL_NEAREST_MIPMAP_NEAREST	0x2700
+#define GL_NEAREST_MIPMAP_LINEAR	0x2702
+#define GL_LINEAR_MIPMAP_NEAREST	0x2701
+#define GL_LINEAR_MIPMAP_LINEAR		0x2703
 
 #define GL_LINE					0x1B01
 #define GL_FILL					0x1B02
@@ -188,23 +191,23 @@ typedef ptrdiff_t GLsizeiptrARB;
 #define GL_TRUE					0x1
 
 #define GL_BYTE					0x1400
-#define GL_UNSIGNED_BYTE			0x1401
+#define GL_UNSIGNED_BYTE		0x1401
 #define GL_SHORT				0x1402
-#define GL_UNSIGNED_SHORT			0x1403
+#define GL_UNSIGNED_SHORT		0x1403
 #define GL_INT					0x1404
-#define GL_UNSIGNED_INT				0x1405
+#define GL_UNSIGNED_INT			0x1405
 #define GL_FLOAT				0x1406
 #define GL_DOUBLE				0x140A
 #define GL_2_BYTES				0x1407
 #define GL_3_BYTES				0x1408
 #define GL_4_BYTES				0x1409
 
-#define GL_VERTEX_ARRAY				0x8074
-#define GL_NORMAL_ARRAY				0x8075
-#define GL_COLOR_ARRAY				0x8076
-//#define GL_INDEX_ARRAY				0x8077
-#define GL_TEXTURE_COORD_ARRAY			0x8078
-//#define GL_EDGE_FLAG_ARRAY			0x8079
+#define GL_VERTEX_ARRAY			0x8074
+#define GL_NORMAL_ARRAY			0x8075
+#define GL_COLOR_ARRAY			0x8076
+//#define GL_INDEX_ARRAY		0x8077
+#define GL_TEXTURE_COORD_ARRAY	0x8078
+//#define GL_EDGE_FLAG_ARRAY	0x8079
 
 #define GL_NONE					0
 #define GL_FRONT_LEFT			0x0400
@@ -224,22 +227,22 @@ typedef ptrdiff_t GLsizeiptrARB;
 #define GL_VENDOR				0x1F00
 #define GL_RENDERER				0x1F01
 #define GL_VERSION				0x1F02
-#define GL_EXTENSIONS				0x1F03
+#define GL_EXTENSIONS			0x1F03
 
-#define GL_NO_ERROR 				0x0
-#define GL_INVALID_VALUE			0x0501
-#define GL_INVALID_ENUM				0x0500
-#define GL_INVALID_OPERATION			0x0502
-#define GL_STACK_OVERFLOW			0x0503
-#define GL_STACK_UNDERFLOW			0x0504
-#define GL_OUT_OF_MEMORY			0x0505
+#define GL_NO_ERROR 			0x0
+#define GL_INVALID_VALUE		0x0501
+#define GL_INVALID_ENUM			0x0500
+#define GL_INVALID_OPERATION	0x0502
+#define GL_STACK_OVERFLOW		0x0503
+#define GL_STACK_UNDERFLOW		0x0504
+#define GL_OUT_OF_MEMORY		0x0505
 
 #define GL_DITHER				0x0BD0
 #define GL_ALPHA				0x1906
 #define GL_RGB					0x1907
 #define GL_RGBA					0x1908
 
-#define GL_MAX_TEXTURE_SIZE			0x0D33
+#define GL_MAX_TEXTURE_SIZE		0x0D33
 
 #define GL_NEVER				0x0200
 #define GL_LESS					0x0201
@@ -249,19 +252,19 @@ typedef ptrdiff_t GLsizeiptrARB;
 #define GL_NOTEQUAL				0x0205
 #define GL_GEQUAL				0x0206
 #define GL_ALWAYS				0x0207
-#define GL_DEPTH_TEST				0x0B71
+#define GL_DEPTH_TEST			0x0B71
 
-#define GL_RED_SCALE				0x0D14
-#define GL_GREEN_SCALE				0x0D18
-#define GL_BLUE_SCALE				0x0D1A
-#define GL_ALPHA_SCALE				0x0D1C
+#define GL_RED_SCALE			0x0D14
+#define GL_GREEN_SCALE			0x0D18
+#define GL_BLUE_SCALE			0x0D1A
+#define GL_ALPHA_SCALE			0x0D1C
 
-#define GL_DEPTH_BUFFER_BIT			0x00000100
-#define GL_ACCUM_BUFFER_BIT			0x00000200
-#define GL_STENCIL_BUFFER_BIT			0x00000400
-#define GL_COLOR_BUFFER_BIT			0x00004000
+#define GL_DEPTH_BUFFER_BIT		0x00000100
+#define GL_ACCUM_BUFFER_BIT		0x00000200
+#define GL_STENCIL_BUFFER_BIT	0x00000400
+#define GL_COLOR_BUFFER_BIT		0x00004000
 
-#define GL_STENCIL_TEST				0x0B90
+#define GL_STENCIL_TEST			0x0B90
 #define GL_KEEP					0x1E00
 #define GL_REPLACE				0x1E01
 #define GL_INCR					0x1E02
@@ -273,9 +276,9 @@ typedef ptrdiff_t GLsizeiptrARB;
 #define GL_POLYGON_OFFSET_LINE            0x2A02
 #define GL_POLYGON_OFFSET_FILL            0x8037
 
-#define GL_POINT_SMOOTH                         0x0B10
-#define GL_LINE_SMOOTH                          0x0B20
-#define GL_POLYGON_SMOOTH                       0x0B41
+#define GL_POINT_SMOOTH                   0x0B10
+#define GL_LINE_SMOOTH                    0x0B20
+#define GL_POLYGON_SMOOTH                 0x0B41
 
 #define GL_POLYGON_STIPPLE                0x0B42
 
@@ -389,42 +392,42 @@ extern void (GLAPIENTRY *qglClientActiveTexture) (GLenum);
 #endif
 
 #ifndef GL_MAX_ELEMENTS_VERTICES
-#define GL_MAX_ELEMENTS_VERTICES		0x80E8
+#define GL_MAX_ELEMENTS_VERTICES	0x80E8
 #endif
 #ifndef GL_MAX_ELEMENTS_INDICES
-#define GL_MAX_ELEMENTS_INDICES			0x80E9
+#define GL_MAX_ELEMENTS_INDICES		0x80E9
 #endif
 
 
 #ifndef GL_TEXTURE_3D
-#define GL_PACK_SKIP_IMAGES			0x806B
-#define GL_PACK_IMAGE_HEIGHT			0x806C
-#define GL_UNPACK_SKIP_IMAGES			0x806D
-#define GL_UNPACK_IMAGE_HEIGHT			0x806E
-#define GL_TEXTURE_3D				0x806F
-#define GL_PROXY_TEXTURE_3D			0x8070
-#define GL_TEXTURE_DEPTH			0x8071
-#define GL_TEXTURE_WRAP_R			0x8072
-#define GL_MAX_3D_TEXTURE_SIZE			0x8073
-#define GL_TEXTURE_BINDING_3D			0x806A
-extern void (GLAPIENTRY *qglTexImage3D)(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
-extern void (GLAPIENTRY *qglTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels);
-extern void (GLAPIENTRY *qglCopyTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+	#define GL_PACK_SKIP_IMAGES			0x806B
+	#define GL_PACK_IMAGE_HEIGHT		0x806C
+	#define GL_UNPACK_SKIP_IMAGES		0x806D
+	#define GL_UNPACK_IMAGE_HEIGHT		0x806E
+	#define GL_TEXTURE_3D				0x806F
+	#define GL_PROXY_TEXTURE_3D			0x8070
+	#define GL_TEXTURE_DEPTH			0x8071
+	#define GL_TEXTURE_WRAP_R			0x8072
+	#define GL_MAX_3D_TEXTURE_SIZE			0x8073
+	#define GL_TEXTURE_BINDING_3D			0x806A
+	extern void (GLAPIENTRY *qglTexImage3D)(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+	extern void (GLAPIENTRY *qglTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels);
+	extern void (GLAPIENTRY *qglCopyTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 #endif
 
 #ifndef GL_TEXTURE_CUBE_MAP_POSITIVE_X
-#define GL_NORMAL_MAP			    0x8511
-#define GL_REFLECTION_MAP		    0x8512
-#define GL_TEXTURE_CUBE_MAP		    0x8513
-#define GL_TEXTURE_BINDING_CUBE_MAP	    0x8514
-#define GL_TEXTURE_CUBE_MAP_POSITIVE_X     0x8515
-#define GL_TEXTURE_CUBE_MAP_NEGATIVE_X     0x8516
-#define GL_TEXTURE_CUBE_MAP_POSITIVE_Y     0x8517
-#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y     0x8518
-#define GL_TEXTURE_CUBE_MAP_POSITIVE_Z     0x8519
-#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z     0x851A
-#define GL_PROXY_TEXTURE_CUBE_MAP	    0x851B
-#define GL_MAX_CUBE_MAP_TEXTURE_SIZE		0x851C
+	#define GL_NORMAL_MAP					0x8511
+	#define GL_REFLECTION_MAP				0x8512
+	#define GL_TEXTURE_CUBE_MAP				0x8513
+	#define GL_TEXTURE_BINDING_CUBE_MAP	    0x8514
+	#define GL_TEXTURE_CUBE_MAP_POSITIVE_X  0x8515
+	#define GL_TEXTURE_CUBE_MAP_NEGATIVE_X  0x8516
+	#define GL_TEXTURE_CUBE_MAP_POSITIVE_Y  0x8517
+	#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y  0x8518
+	#define GL_TEXTURE_CUBE_MAP_POSITIVE_Z  0x8519
+	#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  0x851A
+	#define GL_PROXY_TEXTURE_CUBE_MAP		0x851B
+	#define GL_MAX_CUBE_MAP_TEXTURE_SIZE	0x851C
 #endif
 
 #ifndef GL_DEPTH_COMPONENT16_ARB
@@ -1139,7 +1142,7 @@ void GL_PrintError(int errornumber, const char *filename, int linenumber);
 #define CHECKGLERROR
 #endif
 
-#if 0 //def USE_GLES2
+#ifdef USE_GLES2
 #define qglIsBufferARB glIsBuffer
 #define qglIsEnabled glIsEnabled
 #define qglIsFramebufferEXT glIsFramebuffer

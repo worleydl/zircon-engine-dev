@@ -199,10 +199,10 @@ static void M_Menu_Video_AdjustSliders (int dir)
 			if (menu_video_resolutions[menu_video_resolution].width < 600)
 				continue;
 
-#if defined(WIN32) && !defined(CORE_SDL)
+#if defined(_WIN32) && !defined(CORE_SDL)
 			if (menu_video_resolutions[menu_video_resolution].width > vid.desktop_width)
 				continue;
-#endif // defined(WIN32) && !defined(CORE_SDL)
+#endif // defined(_WIN32) && !defined(CORE_SDL)
 
 			if (menu_video_resolutions[menu_video_resolution].width >= vid_minwidth.integer && menu_video_resolutions[menu_video_resolution].height >= vid_minheight.integer)
 				break;
@@ -250,15 +250,21 @@ static void M_Video_Key (int key, int ascii)
 			M_Menu_VideoNova_f ();
 		}
 
-		
+
 		break;
 
-	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else video_cursor = hotspotx_hover; // fall thru	
+	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else video_cursor = hotspotx_hover; // fall thru
 
 	case K_ENTER:
 		m_entersound = true;
 		switch (video_cursor) {
 			case (VIDEO_ITEMS - 1):
+
+#ifdef __ANDROID__
+	Con_PrintLinef ("vid_restart not supported for this build");
+	return;
+#endif // __ANDROID__
+
 				Cvar_SetValueQuick (&vid_width, menu_video_resolutions[menu_video_resolution].width);
 				Cvar_SetValueQuick (&vid_height, menu_video_resolutions[menu_video_resolution].height);
 				Cvar_SetValueQuick (&vid_conwidth, menu_video_resolutions[menu_video_resolution].conwidth);
@@ -272,7 +278,7 @@ static void M_Video_Key (int key, int ascii)
 		}
 		break;
 
-	case K_HOME: 
+	case K_HOME:
 		video_cursor = 0;
 		break;
 

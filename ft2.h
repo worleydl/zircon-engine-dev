@@ -22,7 +22,7 @@
 
 typedef struct ft2_font_map_s ft2_font_map_t;
 typedef struct ft2_attachment_s ft2_attachment_t;
-#ifdef WIN64
+#ifdef _WIN64
 #define ft2_oldstyle_map ((ft2_font_map_t*)-1LL)
 #else
 #define ft2_oldstyle_map ((ft2_font_map_t*)-1)

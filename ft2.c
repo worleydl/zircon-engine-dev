@@ -344,7 +344,7 @@ qbool Font_OpenLibrary (void)
 #ifndef DP_FREETYPE_STATIC
 	const char* dllnames [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libfreetype-6.dll",
 		"freetype6.dll",
 #elif defined(MACOSX)

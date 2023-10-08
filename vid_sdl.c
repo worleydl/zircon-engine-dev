@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #undef WIN32_LEAN_AND_MEAN  //hush a warning, SDL.h redefines this
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(CORE_XCODE)
 	#include <SDL2/SDL.h>
 #else
 	#include <SDL.h>
@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "utf8lib.h"
 
 
-#ifdef WIN32
+#ifdef _WIN32
 	#define SDL_R_RESTART
 #endif
 
@@ -378,22 +378,30 @@ float multitouch[MAXFINGERS][3];
 int multitouchs[MAXFINGERS];
 
 // modified heavily by ELUAN
-static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, float pheight, const char *icon, float textheight, const char *text, float *resultmove, qbool *resultbutton, keynum_t key, const char *typedtext, float deadzone, float oversizepixels_x, float oversizepixels_y, qbool iamexclusive)
+static qbool VID_TouchscreenArea (int corner, float px, float py, float pwidth, float pheight, 
+								 const char *icon, float textheight, const char *text, 
+								 float *resultmove, qbool *resultbutton, keynum_t key, 
+								 const char *typedtext, float deadzone, 
+								 float oversizepixels_x, float oversizepixels_y, qbool iamexclusive)
 {
 	int finger;
 	float fx, fy, fwidth, fheight;
 	float overfx, overfy, overfwidth, overfheight;
-	float rel[3];
+	float rel[3] = {0}; //VectorClear(rel);
 	float sqsum;
 	qbool button = false;
-	VectorClear(rel);
-	if (pwidth > 0 && pheight > 0)
-	{
+	
+	if (pwidth > 0 && pheight > 0) {
 		if (corner & 1) px += vid_conwidth.value;
 		if (corner & 2) py += vid_conheight.value;
 		if (corner & 4) px += vid_conwidth.value * 0.5f;
 		if (corner & 8) py += vid_conheight.value * 0.5f;
-		if (corner & 16) {px *= vid_conwidth.value * (1.0f / 640.0f);py *= vid_conheight.value * (1.0f / 480.0f);pwidth *= vid_conwidth.value * (1.0f / 640.0f);pheight *= vid_conheight.value * (1.0f / 480.0f);}
+		if (corner & 16) {
+			px *= vid_conwidth.value * (1.0f / 640.0f);
+			py *= vid_conheight.value * (1.0f / 480.0f);
+			pwidth *= vid_conwidth.value * (1.0f / 640.0f);
+			pheight *= vid_conheight.value * (1.0f / 480.0f);
+		}
 		fx = px / vid_conwidth.value;
 		fy = py / vid_conheight.value;
 		fwidth = pwidth / vid_conwidth.value;
@@ -415,12 +423,15 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 		overfwidth = fwidth + 2*oversizepixels_x;
 		overfheight = fheight + 2*oversizepixels_y;
 
-		for (finger = 0;finger < MAXFINGERS;finger++)
-		{
+		for (finger = 0; finger < MAXFINGERS; finger++) {
 			if (multitouchs[finger] && iamexclusive) // for this to work correctly, you must call touch areas in order of highest to lowest priority
 				continue;
 
-			if (multitouch[finger][0] && multitouch[finger][1] >= overfx && multitouch[finger][2] >= overfy && multitouch[finger][1] < overfx + overfwidth && multitouch[finger][2] < overfy + overfheight)
+			// Baker: look like hit rect ...
+			if (multitouch[finger][0] && 
+				multitouch[finger][1] >= overfx && 
+				multitouch[finger][2] >= overfy && 
+				multitouch[finger][1] <  overfx + overfwidth && multitouch[finger][2] < overfy + overfheight)
 			{
 				multitouchs[finger]++;
 
@@ -430,7 +441,7 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 
 				sqsum = rel[0]*rel[0] + rel[1]*rel[1];
 				// 2d deadzone
-				if (sqsum < deadzone*deadzone)
+				if (sqsum < deadzone * deadzone)
 				{
 					rel[0] = 0;
 					rel[1] = 0;
@@ -443,9 +454,9 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 				button = true;
 				break;
 			}
-		}
-		if (scr_numtouchscreenareas < 128)
-		{
+		} // for finger
+
+		if (scr_numtouchscreenareas < 128) {
 			scr_touchscreenareas[scr_numtouchscreenareas].pic = icon;
 			scr_touchscreenareas[scr_numtouchscreenareas].text = text;
 			scr_touchscreenareas[scr_numtouchscreenareas].textheight = textheight;
@@ -472,13 +483,13 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 		if (*resultbutton != button)
 		{
 			if ((int)key > 0)
-				Key_Event(key, 0, button);
+				Key_Event (key, 0, button);
+
 			if (typedtext && typedtext[0] && !*resultbutton)
 			{
 				// FIXME: implement UTF8 support - nothing actually specifies a UTF8 string here yet, but should support it...
 				int i;
-				for (i = 0;typedtext[i];i++)
-				{
+				for (i = 0; typedtext[i]; i++) {
 					Key_Event(K_TEXT, typedtext[i], true);
 					Key_Event(K_TEXT, typedtext[i], false);
 				}
@@ -491,7 +502,7 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 
 // ELUAN:
 // not reentrant, but we only need one mouse cursor anyway...
-static void VID_TouchscreenCursor(float px, float py, float pwidth, float pheight, qbool *resultbutton, keynum_t key)
+static void VID_TouchscreenCursor (float px, float py, float pwidth, float pheight, qbool *resultbutton, keynum_t key)
 {
 	int finger;
 	float fx, fy, fwidth, fheight;
@@ -504,6 +515,7 @@ static void VID_TouchscreenCursor(float px, float py, float pwidth, float pheigh
 	static double clickrealtime = 0;
 
 	if (steelstorm_showing_mousecursor && steelstorm_showing_mousecursor->integer)
+	
 	if (pwidth > 0 && pheight > 0)
 	{
 		fx = px / vid_conwidth.value;
@@ -776,15 +788,18 @@ static void IN_Move_TouchScreen_SteelStorm(void)
 	cl.viewangles[1] -= aim[0] * cl_yawspeed.value * cl.realframetime;
 }
 
+WARP_X_ (Host_Main /*Host_CLFrame*/ -> CL_Input -> IN_Move)
 static void IN_Move_TouchScreen_Quake(void)
 {
 	int x, y;
 	float move[3], aim[3], click[3];
 	static qbool oldbuttons[128];
 	static qbool buttons[128];
-	keydest_t keydest = (key_consoleactive & KEY_CONSOLEACTIVE_USER) ? key_console : key_dest;
-	memcpy(oldbuttons, buttons, sizeof(oldbuttons));
-	memset(multitouchs, 0, sizeof(multitouchs));
+
+	keydest_t keydest = (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER) ) ? key_console : key_dest;
+
+	memcpy (oldbuttons, buttons, sizeof(oldbuttons));
+	memset (multitouchs, 0, sizeof(multitouchs));
 
 	// simple quake controls
 	multitouch[MAXFINGERS-1][0] = SDL_GetMouseState(&x, &y);
@@ -795,10 +810,11 @@ static void IN_Move_TouchScreen_Quake(void)
 	switch(keydest)
 	{
 	case key_console:
+		// Baker: arg1 is corner 0 1     16 is whole canvas?
+		//                       2 3
 		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
-		if (!VID_ShowingKeyboard())
-		{
+		if (!VID_ShowingKeyboard()) {
 			// user entered a command, close the console now
 			Con_ToggleConsole_f();
 		}
@@ -808,31 +824,46 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, click,&buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
+
+		VID_TouchscreenArea (1 + 8,-150,  -64,   50,   50, "gfx/touch_up.tga"    , 0.0f, NULL, NULL, &buttons[5], K_UPARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea (1 + 8,-100,  -64,   50,   50, "gfx/touch_down.tga"    , 0.0f, NULL, NULL, &buttons[6], K_DOWNARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea (1 + 8, -50,  -64,   50,   50, "gfx/touch_tab.tga"    , 0.0f, NULL, NULL, &buttons[7], K_TAB, NULL, 0, 0, 0, true);
+
 		break;
+
 	case key_game:
-		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
+		VID_TouchscreenArea( 0,   0,   0,  64,  64, "gfx/touch_console.tga"      , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 2,   0,-128, 128, 128, "gfx/touch_movebutton.tga"   , 0.0f, NULL, move, &buttons[0], K_MOUSE4, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 3,-128,-128, 128, 128, "gfx/touch_aimbutton.tga"    , 0.0f, NULL, aim,  &buttons[1], K_MOUSE5, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 2,   0,-160,  64,  32, "gfx/touch_jumpbutton.tga"   , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 3,-128,-160,  64,  32, "gfx/touch_attackbutton.tga" , 0.0f, NULL, NULL, &buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 3, -64,-160,  64,  32, "gfx/touch_attack2button.tga", 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
-		buttons[15] = false;
+		buttons[15] = false; // Baker: And this is?  touch_keyboard
 		break;
+
+	// key_menu key_message
 	default:
-		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
+		VID_TouchscreenArea( 0,   0,   0,  64,  64, "gfx/touch_console.tga"      , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
 		// in menus, an icon in the corner activates keyboard
 		VID_TouchscreenArea( 2,   0, -32,  32,  32, "gfx/touch_keyboard.tga"     , 0.0f, NULL, NULL, &buttons[15], (keynum_t)0, NULL, 0, 0, 0, true);
+		
 		if (buttons[15])
 			VID_ShowKeyboard(true);
+
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, move, &buttons[0], K_MOUSE4, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, aim,  &buttons[1], K_MOUSE5, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea(16, -320,-480,640, 960, NULL                         , 0.0f, NULL, click,&buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
-		if (buttons[2])
-		{
+
+		VID_TouchscreenArea ( 3,  -100,  -125,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[5], K_UPARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea ( 3,  -150,  -100,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[6], K_LEFTARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea ( 3,   -50,  -100,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[8], K_ENTER, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea ( 3,  -100,   -75,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[7], K_DOWNARROW, NULL, 0, 0, 0, true);
+
+		if (buttons[2]) { // attack?
 			in_windowmouse_x = x;
 			in_windowmouse_y = y;
 		}
@@ -845,7 +876,7 @@ static void IN_Move_TouchScreen_Quake(void)
 	cl.viewangles[1] -= aim[0] * cl_yawspeed.value * cl.realframetime;
 }
 
-void IN_Move( void )
+void IN_Move (void)
 {
 	static int old_x = 0, old_y = 0;
 	static int stuck = 0;
@@ -890,7 +921,7 @@ void IN_Move( void )
 			{
 				// have the mouse stuck in the middle, example use: prevent expose effect of beryl during the game when not using
 				// window grabbing. --blub
-	
+
 				// we need 2 frames to initialize the center position
 				if(!stuck)
 				{
@@ -978,7 +1009,7 @@ void Sys_SendKeyEvents( void )
 	VID_EnableJoystick(true);
 
 	while( SDL_PollEvent( &event ) ) {
-#ifdef DEBUGSDLEVENTS		
+#ifdef DEBUGSDLEVENTS
 		Con_DPrintLinef ("event.type: %d", event.type);
 #endif
 		loop_start:
@@ -1032,9 +1063,11 @@ void Sys_SendKeyEvents( void )
 				else
 					Con_DPrintLinef ("SDL_Event: SDL_MOUSEBUTTONUP");
 #endif
-				if (!vid_touchscreen.integer)
-				if (event.button.button > 0 && event.button.button <= ARRAY_COUNT(buttonremap))
-					Key_Event( buttonremap[event.button.button - 1], 0, event.button.state == SDL_PRESSED );
+				if (!vid_touchscreen.integer) {
+					if (event.button.button > 0 && event.button.button <= ARRAY_COUNT(buttonremap)) {
+						Key_Event( buttonremap[event.button.button - 1], 0, event.button.state == SDL_PRESSED );
+					}
+				}
 				break;
 			case SDL_MOUSEWHEEL:
 				// TODO support wheel x direction.
@@ -1081,14 +1114,14 @@ void Sys_SendKeyEvents( void )
 					case SDL_WINDOWEVENT_MOVED:
 						break;
 					case SDL_WINDOWEVENT_RESIZED:
-						if (vid_resizable.integer < 2)
+						if (0 && vid_resizable.integer < 2)// Baker: This causes real issues.  sdl_needs_restart is not referenced in the source except to set it, never read.
 						{
 							vid.width = event.window.data1;
 							vid.height = event.window.data2;
 #ifdef SDL_R_RESTART
 							// better not call R_Modules_Restart from here directly, as this may wreak havoc...
 							// so, let's better queue it for next frame
-							if(!sdl_needs_restart)
+							if (!sdl_needs_restart)
 							{
 								Cbuf_AddTextLine ( NEWLINE "r_restart");
 								sdl_needs_restart = true;
@@ -1184,7 +1217,7 @@ void Sys_SendKeyEvents( void )
 						break;
 					}
 				} // for
-				
+
 				if (i == MAXFINGERS - 1)
 					Con_DPrintLinef ("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event");
 				break;
@@ -1680,24 +1713,24 @@ void GLES_Init(void)
 	gl_vendor = (const char *)qglGetString(GL_VENDOR);
 	gl_version = (const char *)qglGetString(GL_VERSION);
 	gl_extensions = (const char *)qglGetString(GL_EXTENSIONS);
-	
+
 	if (!gl_extensions)
 		gl_extensions = "";
 	if (!gl_platformextensions)
 		gl_platformextensions = "";
-	
+
 	Con_Printf("GL_VENDOR: %s\n", gl_vendor);
 	Con_Printf("GL_RENDERER: %s\n", gl_renderer);
 	Con_Printf("GL_VERSION: %s\n", gl_version);
 	Con_DPrintf("GL_EXTENSIONS: %s\n", gl_extensions);
 	Con_DPrintf("%s_EXTENSIONS: %s\n", gl_platform, gl_platformextensions);
-	
+
 	// LadyHavoc: report supported extensions
 	Con_DPrintf("\nQuakeC extensions for server and client: %s\nQuakeC extensions for menu: %s\n", vm_sv_extensions, vm_m_extensions );
 
 	// GLES devices in general do not like GL_BGRA, so use GL_RGBA
 	vid.forcetextype = TEXTYPE_RGBA;
-	
+
 	vid.support.gl20shaders = true;
 	vid.support.amd_texture_texture4 = false;
 	vid.support.arb_depth_texture = SDL_GL_ExtensionSupported("GL_OES_depth_texture") != 0; // renderbuffer used anyway on gles2?
@@ -1708,6 +1741,11 @@ void GLES_Init(void)
 	vid.support.arb_shadow = false;
 	vid.support.arb_texture_compression = false; // different (vendor-specific) formats than on desktop OpenGL...
 	vid.support.arb_texture_cube_map = SDL_GL_ExtensionSupported("GL_OES_texture_cube_map") != 0;
+	if (!vid.support.arb_texture_cube_map) { 
+		Con_Printf("vid.support.arb_texture_cube_map fail try other ..");
+		vid.support.arb_texture_cube_map = SDL_GL_ExtensionSupported("GL_OES_depth_texture_cube_map") != 0;
+		
+	}
 	vid.support.arb_texture_env_combine = false;
 	vid.support.arb_texture_gather = false;
 	vid.support.arb_texture_non_power_of_two = strstr(gl_extensions, "GL_OES_texture_npot") != NULL;
@@ -1743,12 +1781,21 @@ void GLES_Init(void)
 	if (vid.support.ext_texture_filter_anisotropic)
 		qglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, (GLint*)&vid.max_anisotropy);
 #endif
+
+//slef fix?
 	if (vid.support.arb_texture_cube_map)
 		qglGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, (GLint*)&vid.maxtexturesize_cubemap);
+
 #ifdef GL_MAX_3D_TEXTURE_SIZE
 	if (vid.support.ext_texture_3d)
 		qglGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, (GLint*)&vid.maxtexturesize_3d);
 #endif
+#ifdef GL_MAX_3D_TEXTURE_SIZE_OES
+	if (vid.support.ext_texture_3d)
+		qglGetIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, (GLint*)&vid.maxtexturesize_3d);
+#endif
+
+
 	Con_Printf("GL_MAX_CUBE_MAP_TEXTURE_SIZE = %i\n", vid.maxtexturesize_cubemap);
 	Con_Printf("GL_MAX_3D_TEXTURE_SIZE = %i\n", vid.maxtexturesize_3d);
 	{
@@ -1771,7 +1818,7 @@ void GLES_Init(void)
 	// verify that cubemap textures are really supported
 	if (vid.support.arb_texture_cube_map && vid.maxtexturesize_cubemap < 256)
 		vid.support.arb_texture_cube_map = false;
-	
+
 	// verify that 3d textures are really supported
 	if (vid.support.ext_texture_3d && vid.maxtexturesize_3d < 32)
 	{
@@ -1829,9 +1876,25 @@ void VID_Init (void)
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
+	// Baker: Returns -1 on an error or 0 on success.
 	vid_sdl_initjoysticksystem = SDL_InitSubSystem(SDL_INIT_JOYSTICK) >= 0;
-	if (vid_sdl_initjoysticksystem)
+	if (!vid_sdl_initjoysticksystem)
 		Con_Printf("Failed to init SDL joystick subsystem: %s\n", SDL_GetError());
+    
+#ifdef MACOSX    
+    // Baker: Mac retina displays .. SDL offers the full blown resolution
+    // I'm not sure it should.
+    SDL_DisplayMode dm;
+
+    if (SDL_GetDesktopDisplayMode(0, &dm) != 0)
+    {
+         //SDL_Log("SDL_GetDesktopDisplayMode failed: %s", SDL_GetError());
+    }
+
+    vid.desktop_width = dm.w;
+    vid.desktop_height = dm.h;
+#endif // MACOSX
+    
 	vid_isfullscreen = false;
 }
 
@@ -1870,11 +1933,20 @@ void VID_EnableJoystick(qbool enable)
 			if (vid_sdljoystick)
 			{
 				const char *joystickname = SDL_JoystickName(vid_sdljoystick);
-				Con_Printf("Joystick %i opened (SDL_Joystick %i is \"%s\" with %i axes, %i buttons, %i balls)\n", index, sdlindex, joystickname, (int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
+				if (String_Does_Contain_Caseless(joystickname, "accelerometer")) {
+					Cvar_SetValueQuick (&joy_enable, 0);
+					Con_PrintLinef ("Joystick " QUOTED_S " ignored, joy_enable set to 0)", joystickname); 
+					
+					sdlindex = -1;
+				} else {
+					Con_PrintLinef ("Joystick %d opened (SDL_Joystick %d is \"%s\" with %d axes, %d buttons, %d balls)", 
+					index, sdlindex, joystickname, 
+					(int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
+				}
 			}
 			else
 			{
-				Con_Printf("Joystick %i failed (SDL_JoystickOpen(%i) returned: %s)\n", index, sdlindex, SDL_GetError());
+				Con_PrintLinef ("Joystick %d failed (SDL_JoystickOpen(%d) returned: %s)", index, sdlindex, SDL_GetError());
 				sdlindex = -1;
 			}
 		}
@@ -1899,12 +1971,12 @@ void VID_EnableJoystick(qbool enable)
 	//cbool Shell_Platform_Icon_Window_Set (sys_handle_t cw)
 	int SetWIke (SDL_Window *cw)
 	{
-		
+
 		HINSTANCE		hInst = GetModuleHandle(NULL);
 		#define IDI_ICON1         1
 		HICON hIcon = LoadIcon (hInst, MAKEINTRESOURCE (IDI_ICON1)) ;
 		SDL_SysWMinfo wminfo = {0};
-		
+
 	//	if (!gAppIcon)
 	//		return false;
 
@@ -1915,12 +1987,12 @@ void VID_EnableJoystick(qbool enable)
 		else {
 
 			HWND hWnd = wminfo.info.win.window;
-			
-#ifdef WIN64
+
+#ifdef _WIN64
 			SetClassLongPtr (hWnd /*hwnd*/, GCLP_HICON, (intptr_t)hIcon /*gAppIcon*/);
 #else
 			SetClassLong (hWnd /*hwnd*/, GCL_HICON, (LONG) hIcon/*gAppIcon*/);
-#endif // WIN64
+#endif // _WIN64
 
 			return true;
 		}
@@ -1938,7 +2010,7 @@ static void VID_OutputVersion(void)
 					version.major, version.minor, version.patch );
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 {
 	int workWidth;
@@ -1960,7 +2032,7 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 	workWidth = workArea.right - workArea.left;
 	workHeight = workArea.bottom - workArea.top;
 
-	// SDL forces the window height to be <= screen height - 27px (on Win8.1 - probably intended for the title bar) 
+	// SDL forces the window height to be <= screen height - 27px (on Win8.1 - probably intended for the title bar)
 	// If the task bar is docked to the the left screen border and we move the window to negative y,
 	// there would be some part of the regular desktop visible on the bottom of the screen.
 	screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -1977,7 +2049,7 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 		rect->top = workArea.top + titleBarPixels;
 		mode->height = workHeight - titleBarPixels;
 	}
-	else 
+	else
 	{
 		rect->left = workArea.left + max(0, (workWidth - width) / 2);
 		rect->top = workArea.top + max(0, (workHeight - height) / 2);
@@ -2032,12 +2104,13 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 
 	// Knghtbrd: should do platform-specific extension string function here
 
+	vid_mode_t *m = VID_GetDesktopMode();
+
 	vid_isfullscreen = false;
 	{
 		if (mode->fullscreen) {
 			if (vid_desktopfullscreen.integer)
 			{
-				vid_mode_t *m = VID_GetDesktopMode();
 				mode->width = m->width;
 				mode->height = m->height;
 				windowflags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -2047,7 +2120,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 			vid_isfullscreen = true;
 		}
 		else {
-#ifdef WIN32
+#ifdef _WIN32
 			RECT rect;
 			AdjustWindowBounds(mode, &rect);
 			xPos = rect.left;
@@ -2058,6 +2131,9 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	//flags |= SDL_HWSURFACE;
 
 	SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
+
+	//SDL_SetHint(SDL_HINT_ORIENTATIONS, "Portrait");
+
 	if (mode->bitsperpixel >= 32)
 	{
 		SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 8);
@@ -2111,7 +2187,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 		return false;
 	}
 
-
+	
 
 
 
@@ -2133,7 +2209,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	vid_hasfocus = true;
 	vid_usingmouse = false;
 	vid_usinghidecursor = false;
-		
+
 	return true;
 }
 
@@ -2154,7 +2230,7 @@ qbool VID_InitMode(viddef_mode_t *mode)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
 
 	Cvar_SetValueQuick(&vid_touchscreen_supportshowkeyboard, SDL_HasScreenKeyboardSupport() ? 1 : 0);
-	
+
 	return VID_InitModeGL(mode);
 }
 

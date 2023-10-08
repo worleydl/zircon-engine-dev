@@ -1,5 +1,5 @@
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <dirent.h>
@@ -161,7 +161,7 @@ static void adddirentry(stringlist_t *list, const char *path, const char *name)
 		stringlistappend(list, temp);
 	}
 }
-#ifdef WIN32
+#ifdef _WIN32
 void listdirectory(stringlist_t *list, const char *basepath, const char *path)
 {
 	int i;
@@ -195,31 +195,6 @@ void listdirectory(stringlist_t *list, const char *basepath, const char *path)
 
 	dpsnprintf(fullpath, sizeof(fullpath), "%s%s", basepath, path);
 
-#ifdef __ANDROID__
-	// SDL currently does not support listing assets, so we have to emulate
-	// it. We're using relative paths for assets, so that will do.
-	if (basepath[0] != '/')
-	{
-		char listpath[MAX_OSPATH];
-		qfile_t *listfile;
-		dpsnprintf(listpath, sizeof(listpath), "%sls.txt", fullpath);
-		char *buf = (char *) FS_SysLoadFile(listpath, tempmempool, true, NULL);
-		if (!buf)
-			return;
-		char *p = buf;
-		for (;;)
-		{
-			char *q = strchr(p, '\n');
-			if (q == NULL)
-				break;
-			*q = 0;
-			adddirentry(list, path, p);
-			p = q + 1;
-		}
-		Mem_Free(buf);
-		return;
-	}
-#endif
 	dir = opendir(fullpath);
 	if (!dir)
 		return;

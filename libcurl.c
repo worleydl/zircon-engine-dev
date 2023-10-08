@@ -357,7 +357,7 @@ static qbool CURL_OpenLibrary (void)
 {
 	const char* dllnames [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libcurl-4.dll",
 		"libcurl-3.dll",
 #elif defined(MACOSX)

@@ -263,7 +263,7 @@ static qbool Crypto_OpenLibrary (void)
 {
 	const char* dllnames [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libd0_blind_id-0.dll",
 #elif defined(MACOSX)
 		"libd0_blind_id.0.dylib",
@@ -332,7 +332,7 @@ static qbool Crypto_Rijndael_OpenLibrary (void)
 {
 	const char* dllnames [] =
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		"libd0_rijndael-0.dll",
 #elif defined(MACOSX)
 		"libd0_rijndael.0.dylib",

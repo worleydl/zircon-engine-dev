@@ -487,10 +487,11 @@ void CL_EstablishConnection(const char *host, int firstarg)
 #ifdef CONFIG_MENU
 		M_Update_Return_Reason("Trying to connect...");
 #endif
+		SCR_BeginLoadingPlaque (false);
 	}
 	else
 	{
-		Con_Print("Unable to find a suitable network socket to connect to server.\n");
+		Con_PrintLinef ("Unable to find a suitable network socket to connect to server.");
 #ifdef CONFIG_MENU
 		M_Update_Return_Reason("No network");
 #endif

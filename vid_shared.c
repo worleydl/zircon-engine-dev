@@ -4,7 +4,7 @@
 #include "cdaudio.h"
 #include "image.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 	//#include <XInput.h>
 	#define XINPUT_GAMEPAD_DPAD_UP          0x0001
 	#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
@@ -59,7 +59,7 @@
 
 	qbool vid_xinputinitialized = false;
 	int vid_xinputindex = -1;
-#endif // WIN32 xinput
+#endif // _WIN32 xinput
 
 // global video state
 viddef_t vid;
@@ -79,7 +79,7 @@ qbool vid_activewindow = true;
 
 vid_joystate_t vid_joystate;
 
-#ifdef WIN32
+#ifdef _WIN32
 cvar_t joy_xinputavailable = {CF_CLIENT | CF_READONLY, "joy_xinputavailable", "0", "indicates which devices are being reported by the Windows XInput API (first controller = 1, second = 2, third = 4, fourth = 8, added together)"};
 #endif
 cvar_t joy_active = {CF_CLIENT | CF_READONLY, "joy_active", "0", "indicates that a joystick is active (detected and enabled)"};
@@ -153,6 +153,10 @@ cvar_t vid_fullscreen_height = {CF_CLIENT | CF_ARCHIVE, "_vid_fullscreen_height"
 cvar_t vid_window_width = {CF_CLIENT | CF_ARCHIVE, "_vid_window_width", "1200", "most recent user set windowed width for ALT-ENTER [Zircon]"}; // Baker 2000
 cvar_t vid_window_height = {CF_CLIENT | CF_ARCHIVE, "_vid_window_height", "640", "most recent user set windowed height for ALT-ENTER [Zircon]"}; // Baker 2000
 
+cvar_t vid_fullscreen_conscale = {CF_CLIENT | CF_ARCHIVE, "_vid_fullscreen_conscale", "1", "user set fullscreen 2d magnification factor [Zircon]"};
+cvar_t vid_window_conscale = {CF_CLIENT | CF_ARCHIVE, "_vid_window_conscale", "1", "user set windowed 2d magnification factor [Zircon]"};
+
+
 cvar_t vid_bitsperpixel = {CF_CLIENT | CF_ARCHIVE, "vid_bitsperpixel", "32", "how many bits per pixel to render at (32 or 16, 32 is recommended)"};
 cvar_t vid_samples = {CF_CLIENT | CF_ARCHIVE, "vid_samples", "1", "how many anti-aliasing samples per pixel to request from the graphics driver (4 is recommended, 1 is faster)"};
 cvar_t vid_refreshrate = {CF_CLIENT | CF_ARCHIVE, "vid_refreshrate", "60", "refresh rate to use, in hz (higher values flicker less, if supported by your monitor)"};
@@ -218,7 +222,7 @@ const char *gl_platformextensions;
 // name of driver library (opengl32.dll, libGL.so.1, or whatever)
 char gl_driver[256];
 
-#if 1 //ndef USE_GLES2
+#ifndef USE_GLES2
 // GL_ARB_multitexture
 void (GLAPIENTRY *qglMultiTexCoord1f) (GLenum, GLfloat);
 void (GLAPIENTRY *qglMultiTexCoord2f) (GLenum, GLfloat, GLfloat);
@@ -994,7 +998,7 @@ void VID_ClearExtensions(void)
 
 	// clear the extension flags
 	memset(&vid.support, 0, sizeof(vid.support));
-	vid.renderpath = RENDERPATH_UDEF;
+	vid.renderpath = RENDERPATH_GL20;
 	vid.sRGBcapable2D = false;
 	vid.sRGBcapable3D = false;
 	vid.useinterleavedarrays = false;
@@ -1148,7 +1152,7 @@ void VID_CheckExtensions(void)
 	if (vid.support.ext_texture_3d && vid.maxtexturesize_3d < 32)
 	{
 		vid.support.ext_texture_3d = false;
-		Con_Printf("GL_EXT_texture3D reported bogus GL_MAX_3D_TEXTURE_SIZE, disabled\n");
+		Con_PrintLinef ("GL_EXT_texture3D reported bogus GL_MAX_3D_TEXTURE_SIZE, disabled");
 	}
 
 	vid.texunits = vid.teximageunits = vid.texarrayunits = 1;
@@ -1190,7 +1194,7 @@ void VID_CheckExtensions(void)
 		vid.teximageunits = vid.texunits;
 		vid.texarrayunits = vid.texunits;
 		Con_DPrintf("Using GL1.1 rendering path - %i texture units, two pass rendering\n", vid.texunits);
-		vid.renderpath = RENDERPATH_UDEF;
+		vid.renderpath = RENDERPATH_GL20;
 		vid.sRGBcapable2D = false;
 		vid.sRGBcapable3D = false;
 		vid.useinterleavedarrays = false;
@@ -1255,11 +1259,11 @@ qbool VID_JoyBlockEmulatedKeys(int keycode)
 
 void VID_Shared_BuildJoyState_Begin(vid_joystate_t *joystate)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	xinput_state_t xinputstate;
 #endif
 	memset(joystate, 0, sizeof(*joystate));
-#ifdef WIN32
+#ifdef _WIN32
 	if (vid_xinputindex >= 0 && qXInputGetState && qXInputGetState(vid_xinputindex, &xinputstate) == S_OK)
 	{
 		joystate->is360 = true;
@@ -1427,7 +1431,7 @@ void VID_ApplyJoyState(vid_joystate_t *joystate)
 
 int VID_Shared_SetJoystick(int index)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	int i;
 	int xinputcount = 0;
 	int xinputindex = -1;
@@ -1679,7 +1683,7 @@ void VID_RestoreSystemGamma(void)
 	}
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static dllfunction_t xinputdllfuncs[] =
 {
 	{"XInputGetState", (void **) &qXInputGetState},
@@ -1736,6 +1740,9 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&vid_window_width); // Baker 2000
 	Cvar_RegisterVariable(&vid_window_height); // Baker 2000
 
+	Cvar_RegisterVariable(&vid_fullscreen_conscale);
+	Cvar_RegisterVariable(&vid_window_conscale);
+
 	Cvar_RegisterVariable(&vid_bitsperpixel);
 	Cvar_RegisterVariable(&vid_samples);
 	Cvar_RegisterVariable(&vid_refreshrate);
@@ -1751,7 +1758,7 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&vid_touchscreen_showkeyboard);
 	Cvar_RegisterVariable(&vid_touchscreen_supportshowkeyboard);
 	Cvar_RegisterVariable(&vid_stick_mouse);
-#ifndef WIN32
+#ifndef _WIN32
 	Cvar_RegisterVariable(&vid_resizable);
 #endif
 	Cvar_RegisterVariable(&vid_desktopfullscreen);
@@ -1764,7 +1771,7 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&vid_sRGB_fallback);
 
 	Cvar_RegisterVariable(&joy_active);
-#ifdef WIN32
+#ifdef _WIN32
 	Cvar_RegisterVariable(&joy_xinputavailable);
 #endif
 	Cvar_RegisterVariable(&joy_detected);
@@ -1809,7 +1816,7 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&joy_x360_sensitivityyaw);
 	//Cvar_RegisterVariable(&joy_x360_sensitivityroll);
 
-#ifdef WIN32
+#ifdef _WIN32
 	Sys_LoadDependency(xinputdllnames, &xinputdll_dll, xinputdllfuncs);
 #endif
 
@@ -1821,7 +1828,62 @@ void VID_Shared_Init(void)
 	}
 }
 
+float   yfactors;
+float    yfactor_mag_360;                    // output
+float    scale_width_360;
+float    scale_height_360;
 
+int        old_vid_height;
+int        old_vid_width;
+qbool    old_vid_fullscreen;
+
+// Allow adjustment over automatic math
+float    old_vid_fullscreen_conscale;
+float    old_vid_window_conscale;
+
+void scale_360_calc (void)
+{
+    if (old_vid_height == vid.height &&
+		old_vid_width == vid.width &&
+        old_vid_fullscreen == vid.fullscreen &&
+        old_vid_fullscreen_conscale == vid_fullscreen_conscale.value &&
+        old_vid_window_conscale == vid_window_conscale.value)
+        return;
+    
+    old_vid_width				  = vid.width;
+	old_vid_height                = vid.height;
+    old_vid_fullscreen            = vid.fullscreen;
+    old_vid_fullscreen_conscale    = vid_fullscreen_conscale.value;
+    old_vid_window_conscale        = vid_window_conscale.value;
+
+    cvar_t *pcvar;
+    pcvar  = vid.fullscreen ? &vid_fullscreen_conscale : &vid_window_conscale;
+
+    yfactors = vid.height / 360.0f;
+    yfactors = Q_rint (yfactors); // 720 + is magnification of 2 or more
+    if (yfactors < 0)
+        yfactors = 1;
+
+    /*Con_PrintLinef ("conscale %d %d fs? %d conscale %f",
+                    vid.width,
+                    vid.height,
+                    vid.fullscreen,
+                    pcvar->value);
+    Con_PrintLinef ("yfactors %f",
+                    yfactors);
+    */
+    float multo = bound (0.5, pcvar->value, 2);
+
+    if (yfactors)
+        yfactor_mag_360 = (1 / yfactors) * multo;
+    else yfactor_mag_360 = 1;
+
+    //Con_PrintLinef ("yfactor_mag_360 %f",
+      //              yfactor_mag_360);
+    
+    scale_width_360 =  vid.width * yfactor_mag_360;
+    scale_height_360 = vid.height * yfactor_mag_360;
+}
 
 static int VID_Mode(int fullscreen, int width, int height, int bpp, float refreshrate, int stereobuffer, int samples)
 {
@@ -1957,12 +2019,9 @@ void VID_Restart_f(void)
 			Sys_Error("Unable to restore to last working video mode");
 	}
 
-	if (vid_conscale_auto.value) { // RESTORE
-		if (in_range_beyond (0.125, vid_conscale_auto.value, 16) == false) {
-			Cvar_SetValueQuick(&vid_conscale_auto, bound(0.125, vid_conscale_auto.value, 16));
-		}
-		Cvar_SetValueQuick (&vid_conwidth,  vid.width * vid_conscale_auto.value);
-		Cvar_SetValueQuick (&vid_conheight, vid.height * vid_conscale_auto.value);
+	if (1) { // RESTORE
+		Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
+		Cvar_SetValueQuick (&vid_conheight, scale_height_360);
 		Flag_Remove_From (vid_conwidth.flags,  CF_CLIENT | CF_READONLY);
 		Flag_Remove_From (vid_conheight.flags,  CF_CLIENT | CF_READONLY);
 	}
@@ -1981,7 +2040,7 @@ const char *vidfallbacks[][2] =
 	{NULL, NULL}
 };
 
-// this is only called once by Host_StartVideo and again on each FS_GameDir_f
+// this is only called once by CL_StartVideo and again on each FS_GameDir_f
 void VID_Start(void)
 {
 	int i, width, height, success;

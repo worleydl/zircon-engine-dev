@@ -1,3 +1,5 @@
+#if 0
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -342,3 +344,5 @@ void SndSys_SendKeyEvents(void)
 {
 	// not supported
 }
+
+#endif // 0

@@ -366,8 +366,8 @@ extern	qbool	key_insert;	// insert key toggle (for editing)
 extern	keydest_t	key_dest;
 // key_consoleactive bits
 // user wants console (halfscreen)
-#define KEY_CONSOLEACTIVE_USER 1
-// console forced because there's nothing else active (fullscreen)
+#define KEY_CONSOLEACTIVE_USER 1											// HALF SCREEN
+// console forced because there's nothing else active (fullscreen)			// FULL SCREEN
 #define KEY_CONSOLEACTIVE_FORCED 4
 extern	int			key_consoleactive;
 extern	char		*keybindings[MAX_BINDMAPS][MAX_KEYS];

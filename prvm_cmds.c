@@ -2859,7 +2859,7 @@ void VM_getostype(prvm_prog_t *prog)
 	OS_MAC - not supported
 	*/
 
-#ifdef WIN32
+#ifdef _WIN32
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 #elif defined(MACOSX)
 	PRVM_G_FLOAT(OFS_RETURN) = 2;

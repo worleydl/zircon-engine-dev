@@ -948,10 +948,11 @@ cleanup:
 SVVM_ExecuteProgram
 ====================
 */
+
 #ifdef PROFILING
-void SVVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
+	void SVVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
 #else
-void PRVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
+	void PRVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
 #endif
 {
 	mstatement_t	*st, *startst;

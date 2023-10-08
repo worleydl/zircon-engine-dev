@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // console.c
 
-#if !defined(WIN32) || defined(__MINGW32__)
+#if !defined(_WIN32) || defined(__MINGW32__)
 # include <unistd.h>
 #endif
 #include <time.h>
@@ -392,12 +392,12 @@ int Folder_List_X (const char *s_prefix)
 
 		char sgdwork[1024];
 		c_strlcpy (sgdwork, fs_gamedir);
-		File_URL_Remove_TrailSlash (sgdwork);
+		File_URL_Remove_Trailing_Unix_Slash (sgdwork);
 
 		const char *slastcom = File_URL_SkipPath(sgdwork);
 		char sgamedirlast[1024];
 		c_strlcpy (sgamedirlast, slastcom);
-		File_URL_Remove_TrailSlash (sgamedirlast); // sgamedirlast is like "id1" or "travail" or whatever
+		File_URL_Remove_Trailing_Unix_Slash (sgamedirlast); // sgamedirlast is like "id1" or "travail" or whatever
 
 	WARP_X_ (Con_Folder_f)
 
@@ -484,7 +484,7 @@ void Con_LogCenterPrint (const char *str)
 
 
 cvar_t sys_specialcharactertranslation = {0, "sys_specialcharactertranslation", "1", "terminal console conchars to ASCII translation (set to 0 if your conchars.tga is for an 8bit character set or if you want raw output)"};
-#ifdef WIN32
+#ifdef _WIN32
 cvar_t sys_colortranslation = {0, "sys_colortranslation", "0", "terminal console color translation (supported values: 0 = strip color codes, 1 = translate to ANSI codes, 2 = no translation)"};
 #else
 cvar_t sys_colortranslation = {0, "sys_colortranslation", "1", "terminal console color translation (supported values: 0 = strip color codes, 1 = translate to ANSI codes, 2 = no translation)"};
@@ -1106,6 +1106,7 @@ void Con_ToggleConsole_f (void)
 
 	// toggle the 'user wants console' bit
 	key_consoleactive ^= KEY_CONSOLEACTIVE_USER;
+	// test ... Con_PrintLinef ("Toggled KEY_CONSOLEACTIVE_USER is it here? %d", Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER));
 
 #if 1 // Baker 1013.1
 	key_line[0] = ']';
@@ -1297,8 +1298,12 @@ void Con_Init (void)
 	Cvar_RegisterVariable (&log_dest_udp);
 
 	// support for the classic Quake option
-// COMMANDLINEOPTION: Console: -condebug logs console messages to qconsole.log, see also log_file
+// COMMANDLINEOPTION: Console: -condebug logs console messages to zircon_log.log /*qconsole.log*/, see also log_file
+#ifdef __ANDROID__
+	if (1)
+#else
 	if (Sys_CheckParm ("-condebug") != 0)
+#endif // __ANDROID__
 		Cvar_SetQuick (&log_file, "zircon_log.log"); //
 
 	// register our cvars
@@ -1637,6 +1642,14 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 			line[index] = 0;
 			// send to log file
 			Log_ConPrint(line);
+
+#ifdef __ANDROID__
+#ifdef _DEBUG
+		Sys_PrintToTerminal(line);
+#endif // _DEBUG
+#endif // ! __ANDROID__
+
+
 			// send to scrollable buffer
 			if (con_initialized && cls.state != ca_dedicated)
 			{
@@ -4198,6 +4211,19 @@ void Con_Copy_f (void)
 // Baker 1023.2
 static void Con_Folder_f (void)
 {
+#ifdef __ANDROID__
+	Con_PrintLinef ("folder opening not supported for this build");
+	return;
+#endif // __ANDROID__
+#if defined(MACOSX)
+    #if !defined(CORE_XCODE) // XCODE we use .m file, if "brew" using gcc assume objective is not avail
+	Con_PrintLinef ("folder opening not supported for this build");
+	return;
+    #endif
+#endif // __ANDROID__
+
+
+
 	const char *s_current_dir_notrail = File_Getcwd_SBuf ();
 	//const char *s_exe = Sys_Binary_URL_SBuf ();
 
@@ -4221,12 +4247,12 @@ static void Con_Folder_f (void)
 
 	char sgdwork[1024];
 		c_strlcpy (sgdwork, fs_gamedir); // "id1/"
-		File_URL_Remove_TrailSlash (sgdwork); // "id1"
+		File_URL_Remove_Trailing_Unix_Slash (sgdwork); // "id1"
 
 	const char *slastcom = File_URL_SkipPath(sgdwork); // "id1"
 	char sgamedirlast[1024];
 		c_strlcpy (sgamedirlast, slastcom);  // "id1"
-		File_URL_Remove_TrailSlash (sgamedirlast);  // "id1" // sgamedirlast is like "id1" or "travail" or whatever
+		File_URL_Remove_Trailing_Unix_Slash (sgamedirlast);  // "id1" // sgamedirlast is like "id1" or "travail" or whatever
 
 	int is_underdir = Cmd_Argc() == 2 ? true : false;
 
@@ -4235,18 +4261,31 @@ static void Con_Folder_f (void)
 	for (j = 0; j < 2; j ++) {
 		char spath[1024];
 
-
+        // 0 is userdir if it exists
+        // 1 is last gamedir
 		if (j == 0) {
+#ifdef CORE_XCODE
+            continue; // don't
+#endif
 			if (fs_userdir[0] == 0)
 				continue;
 			va (spath, sizeof(spath), "%s%s/", fs_userdir, sgamedirlast);
 		} else {
+#ifdef CORE_XCODE
+            // This only applies to XCODE .app, if you build Mac terminal app using brew from command line this does not apply
+            // We are dealing with a .app, not a command line
+            // Our current working directory is somewhere stupid
+            // However we have the fs_gamedir and fs_basedir ok
+            //Con_PrintLinef ("Last gamedir is %s", sgamedirlast);
+            c_strlcpy (spath, fs_gamedir);
+#else
 			va (spath, sizeof(spath), "%s/%s/", s_current_dir_notrail, sgamedirlast);
+#endif
 		}
 
 		if (is_underdir) c_strlcat (spath, Cmd_Argv(1));
 
-		File_URL_Remove_TrailSlash (spath);
+		File_URL_Remove_Trailing_Unix_Slash (spath);
 
 		Con_PrintLinef ("Opening folder %s", spath);
 		if (!Folder_Open (spath)) {

@@ -15,7 +15,8 @@ static unsigned dyntexturecount;
 
 #define DEFAULT_DYNTEXTURE r_texture_grey128
 
-static dyntexture_t * cl_finddyntexture( const char *name, qbool warnonfailure ) {
+static dyntexture_t *cl_finddyntexture (const char *name, qbool warnonfailure) 
+{
 	unsigned i;
 	dyntexture_t *dyntexture = NULL;
 
@@ -23,18 +24,18 @@ static dyntexture_t * cl_finddyntexture( const char *name, qbool warnonfailure )
 	if( !name || !*name || strncmp( name, CLDYNTEXTUREPREFIX, sizeof( CLDYNTEXTUREPREFIX ) - 1 ) != 0 ) {
 		// TODO: print a warning or something
 		if (warnonfailure)
-			Con_Printf( "cl_finddyntexture: Bad dynamic texture name '%s'\n", name );
+			Con_PrintLinef ("cl_finddyntexture: Bad dynamic texture name " QUOTED_S, name);
 		return NULL;
 	}
 
 	for( i = 0 ; i < dyntexturecount ; i++ ) {
 		dyntexture = &dyntextures[ i ];
-		if( dyntexture->name && strcmp( dyntexture->name, name ) == 0 ) {
+		if (dyntexture->name[0] && String_Does_Match (dyntexture->name, name) ) {
 			return dyntexture;
 		}
 	}
 
-	if( dyntexturecount == MAX_DYNAMIC_TEXTURE_COUNT ) {
+	if (dyntexturecount == MAX_DYNAMIC_TEXTURE_COUNT) {
 		// TODO: warn or expand the array, etc.
 		return NULL;
 	}
@@ -44,7 +45,8 @@ static dyntexture_t * cl_finddyntexture( const char *name, qbool warnonfailure )
 	return dyntexture;
 }
 
-rtexture_t * CL_GetDynTexture( const char *name ) {
+rtexture_t *CL_GetDynTexture (const char *name) 
+{
 	dyntexture_t *dyntexture = cl_finddyntexture( name, false );
 	if( dyntexture ) {
 		return dyntexture->texture;
@@ -53,7 +55,8 @@ rtexture_t * CL_GetDynTexture( const char *name ) {
 	}
 }
 
-void CL_LinkDynTexture( const char *name, rtexture_t *texture ) {
+void CL_LinkDynTexture( const char *name, rtexture_t *texture ) 
+{
 	dyntexture_t *dyntexture;
 	cachepic_t *cachepic;
 	skinframe_t *skinframe;

@@ -1150,10 +1150,10 @@ static void CL_BeginDownloads(qbool aborteddownload)
 	if (cl.loadmodel_current < cl.loadmodel_total)
 	{
 		// loading models
-		if(cl.loadmodel_current == 1)
+		if (cl.loadmodel_current == 1)
 		{
 			// worldmodel counts as 16 models (15 + world model setup), for better progress bar
-			SCR_PushLoadingScreen(false, "Loading precached models",
+			SCR_PushLoadingScreen (false, "Loading precached models",
 				(
 					(cl.loadmodel_total - 1) * LOADPROGRESSWEIGHT_MODEL
 				+	LOADPROGRESSWEIGHT_WORLDMODEL
@@ -1179,7 +1179,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 			}
 #endif
 
-			SCR_PushLoadingScreen(false, cl.model_name[cl.loadmodel_current],
+			SCR_PushLoadingScreen (false, cl.model_name[cl.loadmodel_current],
 				(
 					(cl.loadmodel_current == 1) ? LOADPROGRESSWEIGHT_WORLDMODEL : LOADPROGRESSWEIGHT_MODEL
 				) / (
@@ -3907,7 +3907,7 @@ void CL_ParseServerMessage(void)
 			cmdlog[cmdindex] = cmd;
 
 			// if the high bit of the command byte is set, it is a fast update (Baker: and that is what?)
-			if (cmd & 128) {
+			if (cmd & U_SIGNAL_128) { // just differentiates from other updates
 				// Baker: hit test here (demo play hits here immed Q start)  Does not happen on start map.
 				// I only get this for the Quake demos, my own demo record does not hit here.
 				//
@@ -4220,6 +4220,7 @@ void CL_ParseServerMessage(void)
 					CL_ParseLocalSound();
 					break;
 				}
+svc_spawnstatic2_ugly: // AURA 13.2
 				CL_ParseStatic (true);
 				break;
 
@@ -4347,7 +4348,13 @@ void CL_ParseServerMessage(void)
 				else
 					SHOWLMP_decodehide();
 				break;
-			case svc_showlmp:
+			case svc_showlmp: // 35
+				if (cl.is_qex) { // AURA 13.1
+					// svc_zirc_qex_svc_spawnstatic2_35
+					// Baker: we are using this as svc_spawnstatic2 if sv.is_qex
+					// AFAIK GAME_NEHAHRA is sole user of this goofy svc that LadyHavoc describes as junk
+					goto svc_spawnstatic2_ugly;
+				}
 				if (gamemode == GAME_TENEBRAE)
 				{
 					// particle effect

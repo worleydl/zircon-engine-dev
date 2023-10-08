@@ -15,5 +15,11 @@ pause
 mklink /D SDL2 ..\..\..\xtra\SDK\SDL2-2.0.8
 
 dir SDL2
+
+cd ..
+cd ..
+
 pause
+
+rem exit
 

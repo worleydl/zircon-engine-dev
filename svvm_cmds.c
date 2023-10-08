@@ -1593,7 +1593,10 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 
 	if (large)
 	{
-		MSG_WriteByte (&sv.signon,svc_spawnstatic2);
+		if (sv.is_qex)
+			MSG_WriteByte (&sv.signon, svc_zirc_qex_svc_spawnstatic2_35);
+		else 
+			MSG_WriteByte (&sv.signon, svc_spawnstatic2);
 		MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, modelindex));
 		MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, frame));
 	}

@@ -834,6 +834,7 @@ typedef struct client_static_s
 	cl_soundstats_t soundstats;
 
 	qbool connect_trying;
+	int		connect_trying_frames;
 	int connect_remainingtries;
 	double connect_nextsendtime;
 	lhnetsocket_t *connect_mysocket;

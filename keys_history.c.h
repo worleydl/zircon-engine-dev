@@ -7,7 +7,7 @@ static void Key_History_Init(void)
 	ConBuffer_Init(&history, HIST_TEXTSIZE, HIST_MAXLINES, zonemempool);
 
 // not necessary for mobile
-#ifndef DP_MOBILETOUCH
+//#ifndef DP_MOBILETOUCH  Baker: say yes we want! 
 	// Baker 1004.3
 	historyfile = FS_OpenRealFile("zircon_history.txt", "rb", false); // rb to handle unix line endings on windows too Baker 1004.2
 	if(historyfile)
@@ -40,7 +40,7 @@ static void Key_History_Init(void)
 
 		FS_Close(historyfile);
 	}
-#endif
+//#endif
 
 	history_line = -1;
 }
@@ -50,7 +50,7 @@ void Key_History_Write (void)
 	// TODO write history to a file
 
 // not necessary for mobile
-#ifndef DP_MOBILETOUCH
+//#ifndef DP_MOBILETOUCH
 	// Baker 1004.4
 	qfile_t *historyfile = FS_OpenRealFile("zircon_history.txt", "w", false); // Baker 1004.1
 	if(historyfile) {
@@ -59,7 +59,7 @@ void Key_History_Write (void)
 			FS_Printf(historyfile, "%s\n", ConBuffer_GetLine(&history, i));
 		FS_Close(historyfile);
 	}
-#endif
+//#endif
 }
 
 static void Key_History_Shutdown(void)

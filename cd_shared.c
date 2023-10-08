@@ -107,6 +107,15 @@ qbool cdPlaying = false;
 qbool cdPlayLooping = false;
 unsigned char cdPlayTrack;
 
+typedef struct cl_cdstate_s
+{
+	qbool Valid;
+	qbool Playing;
+	qbool PlayLooping;
+	unsigned char PlayTrack;
+}
+cl_cdstate_t;
+
 cl_cdstate_t cd;
 
 static void CDAudio_Eject (void)

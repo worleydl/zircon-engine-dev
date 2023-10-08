@@ -25,6 +25,7 @@
 				<Option parameters="-basedir c:\zerox1 -condebug" />
 				<Compiler>
 					<Add option="-O3" />
+					<Add option="-std=c99" />
 					<Add option="-fno-strict-aliasing" />
 				</Compiler>
 			</Target>
@@ -52,6 +53,7 @@
 		</Compiler>
 		<Linker>
 			<Add option="-s" />
+			<Add option="-static" />
 			<Add library="mingw32" />
 			<Add library="SDL2main" />
 			<Add library="SDL2" />
@@ -262,6 +264,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="libcurl.h" />
+		<Unit filename="lodepng.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lodepng.h" />
 		<Unit filename="mathlib.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -55,7 +55,7 @@ Key_Message (int key, int ascii)
 #if 1
 			p = cbd;
 			while (*p) {
-				if (*p == '\r' && *(p+1) == '\n') { *p++ = ';'; *p++ = ' '; } 
+				if (*p == '\r' && *(p+1) == '\n') { *p++ = ';'; *p++ = ' '; }
 				else if (*p == '\n' || *p == '\r' || *p == '\b') { *p++ = ';'; }
 				p++;
 			}
@@ -543,7 +543,13 @@ void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bi
 
 void VID_Alt_Enter_f (void) // Baker 2000
 {
-	// 
+#ifdef __ANDROID__
+	Con_PrintLinef ("vid_restart not supported for this build");
+
+	return;
+#endif // __ANDROID__
+
+	//
 	if (vid.fullscreen) {
 		// Full-screen to window
 		Cvar_SetValueQuick (&vid_width, vid_window_width.integer);
@@ -714,8 +720,8 @@ Key_Event (int key, int ascii, qbool down)
 			case key_console:
 				if (down)
 				{
-					if (key_consoleactive & KEY_CONSOLEACTIVE_FORCED) {
-						key_consoleactive &= ~KEY_CONSOLEACTIVE_USER;
+					if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED)) {
+						Flag_Remove_From (key_consoleactive, KEY_CONSOLEACTIVE_USER);
 #ifdef CONFIG_MENU
 						MR_ToggleMenu(1); // conexit
 #endif
@@ -771,7 +777,7 @@ toggleco:
 				else
 				{
 					Cbuf_AddTextLine (bind);
-					
+
 				}
 			} else if(bind[0] == '+' && !down && keydown[key] == 0)
 				Cbuf_AddTextLine (va(vabuf, sizeof(vabuf), "-%s %d", bind + 1, key));

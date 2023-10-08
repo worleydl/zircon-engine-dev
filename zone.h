@@ -82,6 +82,7 @@ mempool_t;
 #define Mem_Memalign(pool,alignment,size) _Mem_Alloc(pool, NULL, size, alignment, __FILE__, __LINE__)
 #define Mem_Realloc(pool,data,size) _Mem_Alloc(pool, data, size, 16, __FILE__, __LINE__)
 #define Mem_Free(mem) _Mem_Free(mem, __FILE__, __LINE__)
+char* Mem_strdup (mempool_t *pool, const char* s);
 #define Mem_CheckSentinels(data) _Mem_CheckSentinels(data, __FILE__, __LINE__)
 #define Mem_CheckSentinelsGlobal() _Mem_CheckSentinelsGlobal(__FILE__, __LINE__)
 #define Mem_AllocPool(name, flags, parent) _Mem_AllocPool(name, flags, parent, __FILE__, __LINE__)
@@ -97,8 +98,6 @@ void _Mem_CheckSentinels(void *data, const char *filename, int fileline);
 void _Mem_CheckSentinelsGlobal(const char *filename, int fileline);
 // if pool is NULL this searches ALL pools for the allocation
 qbool Mem_IsAllocated(mempool_t *pool, void *data);
-
-char* Mem_strdup (mempool_t *pool, const char* s);
 
 typedef struct memexpandablearray_array_s
 {
