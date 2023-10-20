@@ -1532,7 +1532,7 @@ static void Mod_BSP_DecompressVis(const unsigned char *in, const unsigned char *
 	{
 		if (in == inend)
 		{
-			Con_Printf("Mod_BSP_DecompressVis: input underrun on model \"%s\" (decompressed %i of %i output bytes)\n", loadmodel->name, (int)(out - outstart), (int)(outend - outstart));
+			Con_Printf("Mod_BSP_DecompressVis: input underrun on model \"%s\" (decompressed %i of %i output bytes)\n", loadmodel->model_name, (int)(out - outstart), (int)(outend - outstart));
 			return;
 		}
 		c = *in++;
@@ -1542,14 +1542,14 @@ static void Mod_BSP_DecompressVis(const unsigned char *in, const unsigned char *
 		{
 			if (in == inend)
 			{
-				Con_Printf("Mod_BSP_DecompressVis: input underrun (during zero-run) on model \"%s\" (decompressed %i of %i output bytes)\n", loadmodel->name, (int)(out - outstart), (int)(outend - outstart));
+				Con_Printf("Mod_BSP_DecompressVis: input underrun (during zero-run) on model \"%s\" (decompressed %i of %i output bytes)\n", loadmodel->model_name, (int)(out - outstart), (int)(outend - outstart));
 				return;
 			}
 			for (c = *in++;c > 0;c--)
 			{
 				if (out == outend)
 				{
-					Con_Printf("Mod_BSP_DecompressVis: output overrun on model \"%s\" (decompressed %i of %i output bytes)\n", loadmodel->name, (int)(out - outstart), (int)(outend - outstart));
+					Con_Printf("Mod_BSP_DecompressVis: output overrun on model \"%s\" (decompressed %i of %i output bytes)\n", loadmodel->model_name, (int)(out - outstart), (int)(outend - outstart));
 					return;
 				}
 				*out++ = 0;
@@ -1668,7 +1668,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				continue;
 			if (doffset == -1)
 			{
-				Con_DPrintf("%s: miptex #%i missing\n", loadmodel->name, i);
+				Con_DPrintf("%s: miptex #%i missing\n", loadmodel->model_name, i);
 				continue;
 			}
 
@@ -1752,11 +1752,11 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 
 	if (!sb->cursize)
 	{
-		Con_Printf("%s: no miptex lump to load textures from\n", loadmodel->name);
+		Con_Printf("%s: no miptex lump to load textures from\n", loadmodel->model_name);
 		return;
 	}
 
-	s = loadmodel->name;
+	s = loadmodel->model_name;
 	if (!strncasecmp(s, "maps/", 5))
 		s += 5;
 	FS_StripExtension(s, mapname, sizeof(mapname));
@@ -1768,7 +1768,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			continue;
 		if (doffset == -1)
 		{
-			Con_DPrintf("%s: miptex #%i missing\n", loadmodel->name, i);
+			Con_DPrintf("%s: miptex #%i missing\n", loadmodel->model_name, i);
 			continue;
 		}
 
@@ -1787,7 +1787,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		if (!name[0])
 		{
 			dpsnprintf(name, sizeof(name), "unnamed%i", i);
-			Con_DPrintf("%s: warning: renaming unnamed texture to %s\n", loadmodel->name, name);
+			Con_DPrintf("%s: warning: renaming unnamed texture to %s\n", loadmodel->model_name, name);
 		}
 
 		mtwidth = MSG_ReadLittleLong(&miptexsb);
@@ -1799,14 +1799,14 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			// texture included
 			if (j < 40 || j + mtwidth * mtheight > miptexsb.cursize)
 			{
-				Con_Printf("%s: Texture \"%s\" is corrupt or incomplete\n", loadmodel->name, name);
+				Con_Printf("%s: Texture \"%s\" is corrupt or incomplete\n", loadmodel->model_name, name);
 				continue;
 			}
 			mtdata = miptexsb.data + j;
 		}
 
 		if ((mtwidth & 15) || (mtheight & 15))
-			Con_DPrintf("%s: warning: texture \"%s\" is not 16 aligned\n", loadmodel->name, name);
+			Con_DPrintf("%s: warning: texture \"%s\" is not 16 aligned\n", loadmodel->model_name, name);
 
 		// LadyHavoc: force all names to lowercase
 		for (j = 0;name[j];j++)
@@ -1819,8 +1819,8 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		// Q1SKY - this is not Q1SKY
 		if (name[0] && /* HACK */ String_Does_Start_With(name, "sky") == false /*strncmp(name, "sky", 3)*/
 			/* END HACK */ && 
-			(Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s/%s", mapname, name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL) ||
-		    Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s"   , name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)))
+			(Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s/%s", mapname, name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL) ||
+		    Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s"   , name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)))
 		{
 			// set the width/height fields which are used for parsing texcoords in this bsp format
 			tx->width = mtwidth;
@@ -2118,7 +2118,7 @@ static void Mod_Q1BSP_LoadLighting(sizebuf_t *sb)
 	else // LadyHavoc: bsp version 29 (normal white lighting)
 	{
 		// LadyHavoc: hope is not lost yet, check for a .lit file to load
-		strlcpy (litfilename, loadmodel->name, sizeof (litfilename));
+		strlcpy (litfilename, loadmodel->model_name, sizeof (litfilename));
 		FS_StripExtension (litfilename, litfilename, sizeof (litfilename));
 		strlcpy (dlitfilename, litfilename, sizeof (dlitfilename));
 		strlcat (litfilename, ".lit", sizeof (litfilename));
@@ -2274,7 +2274,7 @@ static void Mod_Q1BSP_LoadVertexes(sizebuf_t *sb)
 	int			structsize = 12;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadVertexes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadVertexes: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mvertex_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
@@ -2296,7 +2296,7 @@ static void Mod_BSP_LoadSubmodels(sizebuf_t *sb, hullinfo_t *hullinfo)
 	int			structsize = hullinfo ? (48+4*hullinfo->filehulls) : 48;
 
 	if (sb->cursize % structsize)
-		Host_Error ("Mod_BSP_LoadSubmodels: funny lump size in %s", loadmodel->name);
+		Host_Error ("Mod_BSP_LoadSubmodels: funny lump size in %s", loadmodel->model_name);
 
 	count = sb->cursize / structsize;
 	out = (mmodel_t *)Mem_Alloc (loadmodel->mempool, count*sizeof(*out));
@@ -2337,7 +2337,7 @@ static void Mod_Q1BSP_LoadEdges(sizebuf_t *sb)
 	int		structsize = loadmodel->brush.isbsp2 ? 8 : 4;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadEdges: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadEdges: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (medge_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -2358,9 +2358,9 @@ static void Mod_Q1BSP_LoadEdges(sizebuf_t *sb)
 		}
 		if ((int)out->v[0] >= loadmodel->brushq1.numvertexes || (int)out->v[1] >= loadmodel->brushq1.numvertexes)
 		{
-			Con_Printf("Mod_Q1BSP_LoadEdges: %s has invalid vertex indices in edge %i (vertices %i %i >= numvertices %i)\n", loadmodel->name, i, out->v[0], out->v[1], loadmodel->brushq1.numvertexes);
+			Con_Printf("Mod_Q1BSP_LoadEdges: %s has invalid vertex indices in edge %i (vertices %i %i >= numvertices %i)\n", loadmodel->model_name, i, out->v[0], out->v[1], loadmodel->brushq1.numvertexes);
 			if(!loadmodel->brushq1.numvertexes)
-				Host_Error("Mod_Q1BSP_LoadEdges: %s has edges but no vertexes, cannot fix\n", loadmodel->name);
+				Host_Error("Mod_Q1BSP_LoadEdges: %s has edges but no vertexes, cannot fix\n", loadmodel->model_name);
 				
 			out->v[0] = 0;
 			out->v[1] = 0;
@@ -2375,7 +2375,7 @@ static void Mod_Q1BSP_LoadTexinfo(sizebuf_t *sb)
 	int structsize = 40;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadTexinfo: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadTexinfo: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mtexinfo_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -2406,7 +2406,7 @@ static void Mod_Q1BSP_LoadTexinfo(sizebuf_t *sb)
 		if (loadmodel->data_textures)
 		{
 			if ((unsigned int) miptex >= (unsigned int) loadmodel->num_textures)
-				Con_Printf("error in model \"%s\": invalid miptex index %i(of %i)\n", loadmodel->name, miptex, loadmodel->num_textures);
+				Con_Printf("error in model \"%s\": invalid miptex index %i(of %i)\n", loadmodel->model_name, miptex, loadmodel->num_textures);
 			else
 				out->textureindex = miptex;
 		}
@@ -2576,7 +2576,7 @@ static void Mod_Q1BSP_LoadFaces(sizebuf_t *sb)
 	int structsize = loadmodel->brush.isbsp2 ? 28 : 20;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadFaces: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadFaces: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	loadmodel->data_surfaces = (msurface_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(msurface_t));
 	loadmodel->data_surfaces_lightmapinfo = (msurface_lightmapinfo_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(msurface_lightmapinfo_t));
@@ -2891,10 +2891,10 @@ static void Mod_Q1BSP_LoadNodes(sizebuf_t *sb)
 	int structsize = loadmodel->brush.isbsp2rmqe ? 32 : (loadmodel->brush.isbsp2 ? 44 : 24);
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadNodes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadNodes: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	if (count == 0)
-		Host_Error("Mod_Q1BSP_LoadNodes: missing BSP tree in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadNodes: missing BSP tree in %s",loadmodel->model_name);
 	out = (mnode_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
 	loadmodel->brush.data_nodes = out;
@@ -2995,7 +2995,7 @@ static void Mod_Q1BSP_LoadLeafs(sizebuf_t *sb)
 	int structsize = loadmodel->brush.isbsp2rmqe ? 32 : (loadmodel->brush.isbsp2 ? 44 : 28);
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadLeafs: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadLeafs: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mleaf_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
@@ -3111,7 +3111,7 @@ static void Mod_Q1BSP_LoadClipnodes(sizebuf_t *sb, hullinfo_t *hullinfo)
 	int structsize = loadmodel->brush.isbsp2 ? 12 : 8;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadClipnodes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadClipnodes: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mclipnode_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
@@ -3138,15 +3138,15 @@ static void Mod_Q1BSP_LoadClipnodes(sizebuf_t *sb, hullinfo_t *hullinfo)
 	{
 		out->planenum = MSG_ReadLittleLong(sb);
 		if (out->planenum < 0 || out->planenum >= loadmodel->brush.num_planes)
-			Host_Error("%s: Corrupt clipping hull(out of range planenum)", loadmodel->name);
+			Host_Error("%s: Corrupt clipping hull(out of range planenum)", loadmodel->model_name);
 		if (loadmodel->brush.isbsp2)
 		{
 			out->children[0] = MSG_ReadLittleLong(sb);
 			out->children[1] = MSG_ReadLittleLong(sb);
 			if (out->children[0] >= count)
-				Host_Error("%s: Corrupt clipping hull (invalid child index)", loadmodel->name);
+				Host_Error("%s: Corrupt clipping hull (invalid child index)", loadmodel->model_name);
 			if (out->children[1] >= count)
-				Host_Error("%s: Corrupt clipping hull (invalid child index)", loadmodel->name);
+				Host_Error("%s: Corrupt clipping hull (invalid child index)", loadmodel->model_name);
 		}
 		else
 		{
@@ -3193,7 +3193,7 @@ static void Mod_Q1BSP_LoadLeaffaces(sizebuf_t *sb)
 	int structsize = loadmodel->brush.isbsp2 ? 4 : 2;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadLeaffaces: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadLeaffaces: funny lump size in %s",loadmodel->model_name);
 	loadmodel->brush.num_leafsurfaces = sb->cursize / structsize;
 	loadmodel->brush.data_leafsurfaces = (int *)Mem_Alloc(loadmodel->mempool, loadmodel->brush.num_leafsurfaces * sizeof(int));
 
@@ -3225,7 +3225,7 @@ static void Mod_Q1BSP_LoadSurfedges(sizebuf_t *sb)
 	int structsize = 4;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadSurfedges: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadSurfedges: funny lump size in %s",loadmodel->model_name);
 	loadmodel->brushq1.numsurfedges = sb->cursize / structsize;
 	loadmodel->brushq1.surfedges = (int *)Mem_Alloc(loadmodel->mempool, loadmodel->brushq1.numsurfedges * sizeof(int));
 
@@ -3241,7 +3241,7 @@ static void Mod_Q1BSP_LoadPlanes(sizebuf_t *sb)
 	int structsize = 20;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q1BSP_LoadPlanes: funny lump size in %s", loadmodel->name);
+		Host_Error("Mod_Q1BSP_LoadPlanes: funny lump size in %s", loadmodel->model_name);
 	loadmodel->brush.num_planes = sb->cursize / structsize;
 	loadmodel->brush.data_planes = out = (mplane_t *)Mem_Alloc(loadmodel->mempool, loadmodel->brush.num_planes * sizeof(*out));
 
@@ -3939,7 +3939,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		int offset = MSG_ReadLittleLong(&sb);
 		int size = MSG_ReadLittleLong(&sb);
 		if (offset < 0 || offset + size > sb.cursize)
-			Host_Error("Mod_Q1BSP_Load: %s has invalid lump %i (offset %i, size %i, file size %i)\n", mod->name, i, offset, size, (int)sb.cursize);
+			Host_Error("Mod_Q1BSP_Load: %s has invalid lump %i (offset %i, size %i, file size %i)\n", mod->model_name, i, offset, size, (int)sb.cursize);
 		MSG_InitReadBuffer(&lumpsb[i], sb.data + offset, size);
 	}
 
@@ -4072,11 +4072,11 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 			char name[10];
 			// duplicate the basic information
 			dpsnprintf(name, sizeof(name), "*%i", i);
-			mod = Mod_FindName(name, loadmodel->name);
+			mod = Mod_FindName(name, loadmodel->model_name);
 			// copy the base model to this one
 			*mod = *loadmodel;
 			// rename the clone back to its proper name
-			strlcpy(mod->name, name, sizeof(mod->name));
+			strlcpy(mod->model_name, name, sizeof(mod->model_name));
 			mod->brush.parentmodel = loadmodel;
 			// textures and memory belong to the main model
 			mod->texturepool = NULL;
@@ -4176,7 +4176,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		else
 		{
 			// LadyHavoc: empty submodel(lacrima.bsp has such a glitch)
-			Con_Printf(CON_WARN "warning: empty submodel *%i in %s\n", i+1, loadmodel->name);
+			Con_Printf(CON_WARN "warning: empty submodel *%i in %s\n", i+1, loadmodel->model_name);
 		}
 		//mod->brushq1.num_visleafs = bm->visleafs;
 
@@ -4206,7 +4206,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	// make the model surface list (used by shadowing/lighting)
 	Mod_MakeSortedSurfaces(loadmodel);
 
-	Con_DPrintf("Stats for q1bsp model \"%s\": %i faces, %i nodes, %i leafs, %i visleafs, %i visleafportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintf("Stats for q1bsp model \"%s\": %i faces, %i nodes, %i leafs, %i visleafs, %i visleafportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }
 
 int Mod_Q2BSP_SuperContentsFromNativeContents(int nativecontents)
@@ -4292,10 +4292,10 @@ static void Mod_Q2BSP_LoadNodes(sizebuf_t *sb)
 	int structsize = 28;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q2BSP_LoadNodes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadNodes: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	if (count == 0)
-		Host_Error("Mod_Q2BSP_LoadNodes: missing BSP tree in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadNodes: missing BSP tree in %s",loadmodel->model_name);
 	out = (mnode_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
 	loadmodel->brush.data_nodes = out;
@@ -4363,7 +4363,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 	char filename[MAX_QPATH];
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q2BSP_LoadTexinfo: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadTexinfo: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mtexinfo_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 	loadmodel->brushq1.texinfo = out;
@@ -4400,7 +4400,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 				int q2flags = out->q2flags;
 				unsigned char *walfile = NULL;
 				fs_offset_t walfilesize = 0;
-				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, tx, filename, true, true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, tx, filename, true, true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 				// now read the .wal file to get metadata (even if a .tga was overriding it, we still need the wal data)
 				walfile = FS_LoadFile(filename, tempmempool, true, &walfilesize);
 				if (walfile)
@@ -4573,7 +4573,7 @@ static void Mod_Q2BSP_LoadLeafs(sizebuf_t *sb)
 	int structsize = 28;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q2BSP_LoadLeafs: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadLeafs: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mleaf_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
@@ -4639,7 +4639,7 @@ static void Mod_Q2BSP_LoadLeafBrushes(sizebuf_t *sb)
 	int structsize = 2;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q2BSP_LoadLeafBrushes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadLeafBrushes: funny lump size in %s",loadmodel->model_name);
 	loadmodel->brush.num_leafbrushes = sb->cursize / structsize;
 	loadmodel->brush.data_leafbrushes = (int *)Mem_Alloc(loadmodel->mempool, loadmodel->brush.num_leafbrushes * sizeof(int));
 
@@ -4659,7 +4659,7 @@ static void Mod_Q2BSP_LoadBrushSides(sizebuf_t *sb)
 	int structsize = 4;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q2BSP_LoadBrushSides: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadBrushSides: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (q3mbrushside_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -4698,7 +4698,7 @@ static void Mod_Q2BSP_LoadBrushes(sizebuf_t *sb)
 	int numcreatedtextures = 0;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_Q2BSP_LoadBrushes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q2BSP_LoadBrushes: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (q3mbrush_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -4852,11 +4852,11 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 
 	i = MSG_ReadLittleLong(&sb);
 	if (i != Q2BSPMAGIC)
-		Host_Error("Mod_Q2BSP_Load: %s has wrong version number (%i, should be %i)", mod->name, i, Q2BSPVERSION);
+		Host_Error("Mod_Q2BSP_Load: %s has wrong version number (%i, should be %i)", mod->model_name, i, Q2BSPVERSION);
 
 	i = MSG_ReadLittleLong(&sb);
 	if (i != Q2BSPVERSION)
-		Host_Error("Mod_Q2BSP_Load: %s has wrong version number (%i, should be %i)", mod->name, i, Q2BSPVERSION);
+		Host_Error("Mod_Q2BSP_Load: %s has wrong version number (%i, should be %i)", mod->model_name, i, Q2BSPVERSION);
 
 // read lumps
 	for (i = 0; i < Q2HEADER_LUMPS; i++)
@@ -4864,7 +4864,7 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		int offset = MSG_ReadLittleLong(&sb);
 		int size = MSG_ReadLittleLong(&sb);
 		if (offset < 0 || offset + size > sb.cursize)
-			Host_Error("Mod_Q2BSP_Load: %s has invalid lump %i (offset %i, size %i, file size %i)\n", mod->name, i, offset, size, (int)sb.cursize);
+			Host_Error("Mod_Q2BSP_Load: %s has invalid lump %i (offset %i, size %i, file size %i)\n", mod->model_name, i, offset, size, (int)sb.cursize);
 		MSG_InitReadBuffer(&lumpsb[i], sb.data + offset, size);
 	}
 
@@ -4991,11 +4991,11 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 			char name[10];
 			// duplicate the basic information
 			dpsnprintf(name, sizeof(name), "*%i", i);
-			mod = Mod_FindName(name, loadmodel->name);
+			mod = Mod_FindName(name, loadmodel->model_name);
 			// copy the base model to this one
 			*mod = *loadmodel;
 			// rename the clone back to its proper name
-			strlcpy(mod->name, name, sizeof(mod->name));
+			strlcpy(mod->model_name, name, sizeof(mod->model_name));
 			mod->brush.parentmodel = loadmodel;
 			// textures and memory belong to the main model
 			mod->texturepool = NULL;
@@ -5103,7 +5103,7 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		}
 		else
 		{
-			Con_Printf(CON_WARN "warning: empty submodel *%i in %s\n", i+1, loadmodel->name);
+			Con_Printf(CON_WARN "warning: empty submodel *%i in %s\n", i+1, loadmodel->model_name);
 		}
 		//mod->brushq1.num_visleafs = bm->visleafs;
 
@@ -5122,7 +5122,7 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	// make the model surface list (used by shadowing/lighting)
 	Mod_MakeSortedSurfaces(loadmodel);
 
-	Con_DPrintf("Stats for q2bsp model \"%s\": %i faces, %i nodes, %i leafs, %i clusters, %i clusterportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintf("Stats for q2bsp model \"%s\": %i faces, %i nodes, %i leafs, %i clusters, %i clusterportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }
 
 static int Mod_Q3BSP_SuperContentsFromNativeContents(int nativecontents);
@@ -5173,7 +5173,7 @@ static void Mod_Q3BSP_LoadEntities(lump_t *l)
 #else
 				VectorSet(v, 64, 64, 128);
 				if(sscanf(value, "%f %f %f", &v[0], &v[1], &v[2]) != 3)
-					Con_Printf("Mod_Q3BSP_LoadEntities: funny gridsize \"%s\" in %s, interpreting as \"%f %f %f\" to match q3map2's parsing\n", value, loadmodel->name, v[0], v[1], v[2]);
+					Con_Printf("Mod_Q3BSP_LoadEntities: funny gridsize \"%s\" in %s, interpreting as \"%f %f %f\" to match q3map2's parsing\n", value, loadmodel->model_name, v[0], v[1], v[2]);
 				if (v[0] != 0 && v[1] != 0 && v[2] != 0)
 					VectorCopy(v, loadmodel->brushq3.num_lightgrid_cellsize);
 #endif
@@ -5203,7 +5203,7 @@ static void Mod_Q3BSP_LoadTextures(lump_t *l)
 
 	in = (q3dtexture_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadTextures: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadTextures: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (texture_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -5215,7 +5215,7 @@ static void Mod_Q3BSP_LoadTextures(lump_t *l)
 	{
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
-		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, out + i, in[i].name, true, true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, out + i, in[i].name, true, true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 		// restore the surfaceflags and supercontents
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
@@ -5230,7 +5230,7 @@ static void Mod_Q3BSP_LoadPlanes(lump_t *l)
 
 	in = (q3dplane_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadPlanes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadPlanes: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (mplane_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -5255,7 +5255,7 @@ static void Mod_Q3BSP_LoadBrushSides(lump_t *l)
 
 	in = (q3dbrushside_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadBrushSides: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadBrushSides: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (q3mbrushside_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -5283,7 +5283,7 @@ static void Mod_Q3BSP_LoadBrushSides_IG(lump_t *l)
 
 	in = (q3dbrushside_ig_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadBrushSides: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadBrushSides: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (q3mbrushside_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -5312,7 +5312,7 @@ static void Mod_Q3BSP_LoadBrushes(lump_t *l)
 
 	in = (q3dbrush_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadBrushes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadBrushes: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (q3mbrush_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -5370,7 +5370,7 @@ static void Mod_Q3BSP_LoadEffects(lump_t *l)
 
 	in = (q3deffect_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadEffects: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadEffects: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (q3deffect_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -5398,7 +5398,7 @@ static void Mod_Q3BSP_LoadVertices(lump_t *l)
 
 	in = (q3dvertex_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadVertices: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadVertices: funny lump size in %s",loadmodel->model_name);
 	loadmodel->brushq3.num_vertices = count = l->filelen / sizeof(*in);
 	loadmodel->brushq3.data_vertex3f = (float *)Mem_Alloc(loadmodel->mempool, count * (sizeof(float) * (3 + 3 + 2 + 2 + 4)));
 	loadmodel->brushq3.data_normal3f = loadmodel->brushq3.data_vertex3f + count * 3;
@@ -5467,13 +5467,13 @@ static void Mod_Q3BSP_LoadTriangles(lump_t *l)
 
 	in = (int *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(int[3]))
-		Host_Error("Mod_Q3BSP_LoadTriangles: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadTriangles: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 
 	if(!loadmodel->brushq3.num_vertices)
 	{
 		if (count)
-			Con_Printf("Mod_Q3BSP_LoadTriangles: %s has triangles but no vertexes, broken compiler, ignoring problem\n", loadmodel->name);
+			Con_Printf("Mod_Q3BSP_LoadTriangles: %s has triangles but no vertexes, broken compiler, ignoring problem\n", loadmodel->model_name);
 		loadmodel->brushq3.num_triangles = 0;
 		return;
 	}
@@ -5549,7 +5549,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 			Con_Printf("Using internal lightmaps\n");
 		input_pointer = (q3dlightmap_t *)(mod_base + l->fileofs);
 		if (l->filelen % sizeof(*input_pointer))
-			Host_Error("Mod_Q3BSP_LoadLightmaps: funny lump size in %s",loadmodel->name);
+			Host_Error("Mod_Q3BSP_LoadLightmaps: funny lump size in %s",loadmodel->model_name);
 		count = l->filelen / sizeof(*input_pointer);
 		for(i = 0; i < count; ++i)
 			inpixels[i] = input_pointer[i].rgb;
@@ -5558,7 +5558,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 	{
 		// no internal lightmaps
 		// try external lightmaps
-		FS_StripExtension(loadmodel->name, mapname, sizeof(mapname));
+		FS_StripExtension(loadmodel->model_name, mapname, sizeof(mapname));
 		inpixels[0] = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s/lm_%04d", mapname, 0), false, false, false, NULL);
 		if(!inpixels[0])
 			return;
@@ -5567,7 +5567,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 
 		// using EXTERNAL lightmaps instead
 		if(image_width != (int) CeilPowerOf2(image_width) || image_width != image_height)
-			Con_Printf("Mod_Q3BSP_LoadLightmaps: irregularly sized external lightmap in %s",loadmodel->name);
+			Con_Printf("Mod_Q3BSP_LoadLightmaps: irregularly sized external lightmap in %s",loadmodel->model_name);
 
 		size = image_width;
 		bytesperpixel = 4;
@@ -5585,7 +5585,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 			{
 				Mem_Free(inpixels[count]);
 				inpixels[count] = NULL;
-				Con_Printf("Mod_Q3BSP_LoadLightmaps: mismatched lightmap size in %s - external lightmap %s/lm_%04d does not match earlier ones\n", loadmodel->name, mapname, count);
+				Con_Printf("Mod_Q3BSP_LoadLightmaps: mismatched lightmap size in %s - external lightmap %s/lm_%04d does not match earlier ones\n", loadmodel->model_name, mapname, count);
 				break;
 			}
 		}
@@ -5656,7 +5656,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 		}
 	}
 
-	Con_Printf("%s is %sdeluxemapped\n", loadmodel->name, loadmodel->brushq3.deluxemapping ? "" : "not ");
+	Con_Printf("%s is %sdeluxemapped\n", loadmodel->model_name, loadmodel->brushq3.deluxemapping ? "" : "not ");
 
 	// figure out what the most reasonable merge power is within limits
 
@@ -5806,7 +5806,7 @@ static void Mod_Q3BSP_LoadFaces(lump_t *l)
 
 	in = (q3dface_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadFaces: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadFaces: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (msurface_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -6247,7 +6247,7 @@ static void Mod_Q3BSP_LoadModels(lump_t *l)
 
 	in = (q3dmodel_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadModels: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadModels: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (q3dmodel_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -6284,7 +6284,7 @@ static void Mod_Q3BSP_LoadLeafBrushes(lump_t *l)
 
 	in = (int *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadLeafBrushes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadLeafBrushes: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (int *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -6308,7 +6308,7 @@ static void Mod_Q3BSP_LoadLeafFaces(lump_t *l)
 
 	in = (int *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadLeafFaces: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadLeafFaces: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (int *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -6332,7 +6332,7 @@ static void Mod_Q3BSP_LoadLeafs(lump_t *l)
 
 	in = (q3dleaf_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadLeafs: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadLeafs: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	out = (mleaf_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -6374,10 +6374,10 @@ static void Mod_Q3BSP_LoadNodes(lump_t *l)
 
 	in = (q3dnode_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadNodes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadNodes: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 	if (count == 0)
-		Host_Error("Mod_Q3BSP_LoadNodes: missing BSP tree in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadNodes: missing BSP tree in %s",loadmodel->model_name);
 	out = (mnode_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
 	loadmodel->brush.data_nodes = out;
@@ -6431,7 +6431,7 @@ static void Mod_Q3BSP_LoadLightGrid(lump_t *l)
 
 	in = (q3dlightgrid_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Host_Error("Mod_Q3BSP_LoadLightGrid: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadLightGrid: funny lump size in %s",loadmodel->model_name);
 	loadmodel->brushq3.num_lightgrid_scale[0] = 1.0f / loadmodel->brushq3.num_lightgrid_cellsize[0];
 	loadmodel->brushq3.num_lightgrid_scale[1] = 1.0f / loadmodel->brushq3.num_lightgrid_cellsize[1];
 	loadmodel->brushq3.num_lightgrid_scale[2] = 1.0f / loadmodel->brushq3.num_lightgrid_cellsize[2];
@@ -6605,7 +6605,7 @@ static void Mod_Q3BSP_LoadPVS(lump_t *l)
 
 	in = (q3dpvs_t *)(mod_base + l->fileofs);
 	if (l->filelen < 9)
-		Host_Error("Mod_Q3BSP_LoadPVS: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_Q3BSP_LoadPVS: funny lump size in %s",loadmodel->model_name);
 
 	loadmodel->brush.num_pvsclusters = LittleLong(in->numclusters);
 	loadmodel->brush.num_pvsclusterbytes = LittleLong(in->chainlength);
@@ -7425,11 +7425,11 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 
 	header = (q3dheader_t *)buffer;
 	if((char *) bufferend < (char *) buffer + sizeof(q3dheader_t))
-		Host_Error("Mod_Q3BSP_Load: %s is smaller than its header", mod->name);
+		Host_Error("Mod_Q3BSP_Load: %s is smaller than its header", mod->model_name);
 
 	i = LittleLong(header->version);
 	if (i != Q3BSPVERSION && i != Q3BSPVERSION_IG && i != Q3BSPVERSION_LIVE)
-		Host_Error("Mod_Q3BSP_Load: %s has wrong version number (%i, should be %i)", mod->name, i, Q3BSPVERSION);
+		Host_Error("Mod_Q3BSP_Load: %s has wrong version number (%i, should be %i)", mod->model_name, i, Q3BSPVERSION);
 
 	mod->soundfromcenter = true;
 	mod->TraceBox = Mod_CollisionBIH_TraceBox;
@@ -7471,10 +7471,10 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	{
 		j = (header->lumps[i].fileofs = LittleLong(header->lumps[i].fileofs));
 		if((char *) bufferend < (char *) buffer + j)
-			Host_Error("Mod_Q3BSP_Load: %s has a lump that starts outside the file!", mod->name);
+			Host_Error("Mod_Q3BSP_Load: %s has a lump that starts outside the file!", mod->model_name);
 		j += (header->lumps[i].filelen = LittleLong(header->lumps[i].filelen));
 		if((char *) bufferend < (char *) buffer + j)
-			Host_Error("Mod_Q3BSP_Load: %s has a lump that ends outside the file!", mod->name);
+			Host_Error("Mod_Q3BSP_Load: %s has a lump that ends outside the file!", mod->model_name);
 	}
 	/*
 	 * NO, do NOT clear them!
@@ -7552,11 +7552,11 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 			char name[10];
 			// duplicate the basic information
 			dpsnprintf(name, sizeof(name), "*%i", i);
-			mod = Mod_FindName(name, loadmodel->name);
+			mod = Mod_FindName(name, loadmodel->model_name);
 			// copy the base model to this one
 			*mod = *loadmodel;
 			// rename the clone back to its proper name
-			strlcpy(mod->name, name, sizeof(mod->name));
+			strlcpy(mod->model_name, name, sizeof(mod->model_name));
 			mod->brush.parentmodel = loadmodel;
 			// textures and memory belong to the main model
 			mod->texturepool = NULL;
@@ -7657,7 +7657,7 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		}
 	}
 
-	Con_DPrintf("Stats for q3bsp model \"%s\": %i faces, %i nodes, %i leafs, %i clusters, %i clusterportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintf("Stats for q3bsp model \"%s\": %i faces, %i nodes, %i leafs, %i clusters, %i clusterportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }
 
 void Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend)
@@ -7688,7 +7688,7 @@ static void Mod_VBSP_LoadVertexes(sizebuf_t *sb)
 	int			structsize = 12;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_VBSP_LoadVertexes: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_VBSP_LoadVertexes: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mvertex_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
 
@@ -7710,7 +7710,7 @@ static void Mod_VBSP_LoadEdges(sizebuf_t *sb)
 	int		structsize = 4;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_VBSP_LoadEdges: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_VBSP_LoadEdges: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (medge_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -7724,9 +7724,9 @@ static void Mod_VBSP_LoadEdges(sizebuf_t *sb)
 		
 		if ((int)out->v[0] >= loadmodel->brushq1.numvertexes || (int)out->v[1] >= loadmodel->brushq1.numvertexes)
 		{
-			Con_Printf("Mod_VBSP_LoadEdges: %s has invalid vertex indices in edge %i (vertices %i %i >= numvertices %i)\n", loadmodel->name, i, out->v[0], out->v[1], loadmodel->brushq1.numvertexes);
+			Con_Printf("Mod_VBSP_LoadEdges: %s has invalid vertex indices in edge %i (vertices %i %i >= numvertices %i)\n", loadmodel->model_name, i, out->v[0], out->v[1], loadmodel->brushq1.numvertexes);
 			if(!loadmodel->brushq1.numvertexes)
-				Host_Error("Mod_VBSP_LoadEdges: %s has edges but no vertexes, cannot fix\n", loadmodel->name);
+				Host_Error("Mod_VBSP_LoadEdges: %s has edges but no vertexes, cannot fix\n", loadmodel->model_name);
 				
 			out->v[0] = 0;
 			out->v[1] = 0;
@@ -7740,7 +7740,7 @@ static void Mod_VBSP_LoadSurfedges(sizebuf_t *sb)
 	int structsize = 4;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_VBSP_LoadSurfedges: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_VBSP_LoadSurfedges: funny lump size in %s",loadmodel->model_name);
 	loadmodel->brushq1.numsurfedges = sb->cursize / structsize;
 	loadmodel->brushq1.surfedges = (int *)Mem_Alloc(loadmodel->mempool, loadmodel->brushq1.numsurfedges * sizeof(int));
 
@@ -7760,7 +7760,7 @@ static void Mod_VBSP_LoadPlanes(sizebuf_t *sb)
 	int structsize = 20;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_VBSP_LoadPlanes: funny lump size in %s", loadmodel->name);
+		Host_Error("Mod_VBSP_LoadPlanes: funny lump size in %s", loadmodel->model_name);
 	loadmodel->brush.num_planes = sb->cursize / structsize;
 	loadmodel->brush.data_planes = out = (mplane_t *)Mem_Alloc(loadmodel->mempool, loadmodel->brush.num_planes * sizeof(*out));
 
@@ -7782,7 +7782,7 @@ static void Mod_VBSP_LoadTexinfo(sizebuf_t *sb)
 	int structsize = 72;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_VBSP_LoadTexinfo: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_VBSP_LoadTexinfo: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	out = (mtexinfo_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
 
@@ -7817,7 +7817,7 @@ static void Mod_VBSP_LoadTexinfo(sizebuf_t *sb)
 		if (loadmodel->data_textures)
 		{
 			if ((unsigned int) miptex >= (unsigned int) loadmodel->num_textures)
-				Con_Printf("error in model \"%s\": invalid miptex index %i(of %i)\n", loadmodel->name, miptex, loadmodel->num_textures);
+				Con_Printf("error in model \"%s\": invalid miptex index %i(of %i)\n", loadmodel->model_name, miptex, loadmodel->num_textures);
 			else
 				out->textureindex = miptex;
 		}
@@ -7834,7 +7834,7 @@ static void Mod_VBSP_LoadFaces(sizebuf_t *sb)
 	int structsize =  56;
 
 	if (sb->cursize % structsize)
-		Host_Error("Mod_VBSP_LoadFaces: funny lump size in %s",loadmodel->name);
+		Host_Error("Mod_VBSP_LoadFaces: funny lump size in %s",loadmodel->model_name);
 	count = sb->cursize / structsize;
 	loadmodel->data_surfaces = (msurface_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(msurface_t));
 	loadmodel->data_surfaces_lightmapinfo = (msurface_lightmapinfo_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(msurface_lightmapinfo_t));
@@ -8129,7 +8129,7 @@ void Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend)
 			MSG_ReadLittleLong(&sb); // TODO support version
 			MSG_ReadLittleLong(&sb); // TODO support ident
 			if (offset < 0 || offset + size > sb.cursize)
-				Host_Error("Mod_VBSP_Load: %s has invalid lump %i (offset %i, size %i, file size %i)\n", mod->name, i, offset, size, (int)sb.cursize);
+				Host_Error("Mod_VBSP_Load: %s has invalid lump %i (offset %i, size %i, file size %i)\n", mod->model_name, i, offset, size, (int)sb.cursize);
 			MSG_InitReadBuffer(&lumpsb[i], sb.data + offset, size);
 		}
 
@@ -8246,7 +8246,7 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 	memset(&vprev, 0, sizeof(vprev));
 	memset(&vcurrent, 0, sizeof(vcurrent));
 
-	dpsnprintf(materialname, sizeof(materialname), "%s", loadmodel->name);
+	dpsnprintf(materialname, sizeof(materialname), "%s", loadmodel->model_name);
 
 	loadmodel->modeldatatypestring = "OBJ";
 
@@ -8401,7 +8401,7 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 					texturenames = (char *)Mem_Realloc(loadmodel->mempool, texturenames, maxtextures * MAX_QPATH);
 				}
 				textureindex = numtextures++;
-				strlcpy(texturenames + textureindex*MAX_QPATH, loadmodel->name, MAX_QPATH);
+				strlcpy(texturenames + textureindex*MAX_QPATH, loadmodel->model_name, MAX_QPATH);
 			}
 			for (j = 1;j < argc;j++)
 			{
@@ -8700,11 +8700,11 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 			char name[10];
 			// duplicate the basic information
 			dpsnprintf(name, sizeof(name), "*%i", i);
-			mod = Mod_FindName(name, loadmodel->name);
+			mod = Mod_FindName(name, loadmodel->model_name);
 			// copy the base model to this one
 			*mod = *loadmodel;
 			// rename the clone back to its proper name
-			strlcpy(mod->name, name, sizeof(mod->name));
+			strlcpy(mod->model_name, name, sizeof(mod->model_name));
 			mod->brush.parentmodel = loadmodel;
 			// textures and memory belong to the main model
 			mod->texturepool = NULL;
@@ -8787,5 +8787,5 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 	// make the model surface list (used by shadowing/lighting)
 	Mod_MakeSortedSurfaces(loadmodel);
 
-	Con_DPrintf("Stats for obj model \"%s\": %i faces, %i nodes, %i leafs, %i clusters, %i clusterportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintf("Stats for obj model \"%s\": %i faces, %i nodes, %i leafs, %i clusters, %i clusterportals, mesh: %i vertices, %i triangles, %i surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }

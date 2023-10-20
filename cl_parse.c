@@ -497,7 +497,7 @@ static void CL_SetupWorldModel(void)
 	// set up csqc world for collision culling
 	if (cl.worldmodel)
 	{
-		strlcpy(cl.worldname, cl.worldmodel->name, sizeof(cl.worldname));
+		strlcpy(cl.worldname, cl.worldmodel->model_name, sizeof(cl.worldname));
 		FS_StripExtension(cl.worldname, cl.worldnamenoextension, sizeof(cl.worldnamenoextension));
 		strlcpy(cl.worldbasename, !strncmp(cl.worldnamenoextension, "maps/", 5) ? cl.worldnamenoextension + 5 : cl.worldnamenoextension, sizeof(cl.worldbasename));
 		Cvar_SetQuick(&cl_worldmessage, cl.worldmessage);
@@ -1994,9 +1994,9 @@ void CL_ValidateState(entity_state_t *s)
 	{
 		model = CL_GetModelByIndex(s->modelindex);
 		if (model && model->type && s->frame >= model->numframes)
-			Con_DPrintf("CL_ValidateState: no such frame %i in \"%s\" (which has %i frames)\n", s->frame, model->name, model->numframes);
+			Con_DPrintf("CL_ValidateState: no such frame %i in \"%s\" (which has %i frames)\n", s->frame, model->model_name, model->numframes);
 		if (model && model->type && s->skin > 0 && s->skin >= model->numskins && !(s->lightpflags & PFLAGS_FULLDYNAMIC))
-			Con_DPrintf("CL_ValidateState: no such skin %i in \"%s\" (which has %i skins)\n", s->skin, model->name, model->numskins);
+			Con_DPrintf("CL_ValidateState: no such skin %i in \"%s\" (which has %i skins)\n", s->skin, model->model_name, model->numskins);
 	}
 }
 

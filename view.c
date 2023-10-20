@@ -344,8 +344,7 @@ When you run over an item, the server sends this command
 */
 static void V_BonusFlash_f(cmd_state_t *cmd)
 {
-	if(Cmd_Argc(cmd) == 1)
-	{
+	if (Cmd_Argc(cmd) == 1) {
 		cl.cshifts[CSHIFT_BONUS].destcolor[0] = 215;
 		cl.cshifts[CSHIFT_BONUS].destcolor[1] = 186;
 		cl.cshifts[CSHIFT_BONUS].destcolor[2] = 69;
@@ -643,6 +642,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 
 			// origin
 			VectorAdd(vieworg, cl.punchvector, vieworg);
+
 			if (!cldead)
 			{
 				double xyspeed = 0, bob = 0, bobfall = 0;
@@ -651,8 +651,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 
 				frametime = (cl.time - cl.calcrefdef_prevtime) * cl.movevars_timescale;
 
-				if(cl_followmodel.integer || cl_leanmodel.integer)
-				{
+				if(cl_followmodel.integer || cl_leanmodel.integer) {
 					// 1. if we teleported, clear the frametime... the lowpass will recover the previous value then
 					if(teleported)
 					{
@@ -1050,6 +1049,7 @@ void V_CalcViewBlend(void)
 	r_refdef.viewblend[3] = 0;
 	r_refdef.frustumscale_x = 1;
 	r_refdef.frustumscale_y = 1;
+
 	if (cls.state == ca_connected && cls.signon == SIGNONS)
 	{
 		// set contents color
@@ -1129,8 +1129,7 @@ void V_CalcViewBlend(void)
 		cl.cshifts[CSHIFT_VCSHIFT].percent = v_cshift.percent;
 
 		// LadyHavoc: fixed V_CalcBlend
-		for (j = 0;j < NUM_CSHIFTS;j++)
-		{
+		for (j = 0;j < NUM_CSHIFTS;j++) {
 			a2 = bound(0.0f, cl.cshifts[j].percent * (1.0f / 255.0f), 1.0f);
 			if (a2 > 0)
 			{
@@ -1301,6 +1300,7 @@ void V_Init (void)
 	Cvar_RegisterVariable (&v_deathtiltangle);
 
 	Cvar_RegisterVariable (&v_yshearing);
+
 	Cvar_RegisterVariable (&r_viewmodel_quake);
 }
 

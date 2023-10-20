@@ -99,7 +99,7 @@ qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, co
 			bits |= U_EXTEND1;
 		if (bits >= 256)
 			bits |= U_MOREBITS;
-		bits |= U_SIGNAL;
+		bits |= U_SIGNAL_128;
 
 		{
 			ENTITYSIZEPROFILING_START(msg, states[i]->number, bits);

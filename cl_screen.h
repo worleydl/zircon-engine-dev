@@ -10,7 +10,9 @@ void SHOWLMP_drawall(void);
 
 extern struct cvar_s vid_conwidth;
 extern struct cvar_s vid_conheight;
+
 extern struct cvar_s vid_pixelheight;
+
 extern struct cvar_s scr_screenshot_jpeg;
 extern struct cvar_s scr_screenshot_jpeg_quality;
 extern struct cvar_s scr_screenshot_png;
@@ -25,5 +27,5 @@ void CL_UpdateScreen(void);
 qbool R_Stereo_Active(void);
 qbool R_Stereo_ColorMasking(void);
 
-#endif
+#endif // ! CL_SCREEN_H
 

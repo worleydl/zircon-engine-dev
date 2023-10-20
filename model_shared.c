@@ -91,14 +91,14 @@ static void mod_start(void)
 	SCR_PushLoadingScreen("Loading models", 1.0);
 	count = 0;
 	for (i = 0;i < nummodels;i++)
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && mod->name[0] != '*')
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*')
 			if (mod->used)
 				++count;
 	for (i = 0;i < nummodels;i++)
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && mod->name[0] != '*')
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*')
 			if (mod->used)
 			{
-				SCR_PushLoadingScreen(mod->name, 1.0 / count);
+				SCR_PushLoadingScreen(mod->model_name, 1.0 / count);
 				Mod_LoadModel(mod, true, false);
 				SCR_PopLoadingScreen(false);
 			}
@@ -231,9 +231,9 @@ void Mod_UnloadModel (model_t *mod)
 	model_t *parentmodel;
 
 	if (developer_loading.integer)
-		Con_Printf("unloading model %s\n", mod->name);
+		Con_Printf("unloading model %s\n", mod->model_name);
 
-	strlcpy(name, mod->name, sizeof(name));
+	strlcpy(name, mod->model_name, sizeof(name));
 	parentmodel = mod->brush.parentmodel;
 	used = mod->used;
 	if (mod->mempool)
@@ -262,7 +262,7 @@ void Mod_UnloadModel (model_t *mod)
 	// clear the struct to make it available
 	memset(mod, 0, sizeof(model_t));
 	// restore the fields we want to preserve
-	strlcpy(mod->name, name, sizeof(mod->name));
+	strlcpy(mod->model_name, name, sizeof(mod->model_name));
 	mod->brush.parentmodel = parentmodel;
 	mod->used = used;
 	mod->loaded = false;
@@ -428,10 +428,10 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 
 	mod->used = true;
 
-	if (mod->name[0] == '*') // submodel
+	if (mod->model_name[0] == '*') // submodel
 		return mod;
 	
-	if (!strcmp(mod->name, "null"))
+	if (!strcmp(mod->model_name, "null"))
 	{
 		if(mod->loaded)
 			return mod;
@@ -440,7 +440,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 			Mod_UnloadModel(mod);
 
 		if (developer_loading.integer)
-			Con_Printf("loading model %s\n", mod->name);
+			Con_Printf("loading model %s\n", mod->model_name);
 
 		mod->used = true;
 		mod->crc = (unsigned int)-1;
@@ -474,8 +474,8 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	if (!mod->loaded || checkdisk)
 	{
 		if (checkdisk && mod->loaded)
-			Con_DPrintf("checking model %s\n", mod->name);
-		buf = FS_LoadFile (mod->name, tempmempool, false, &filesize);
+			Con_DPrintf("checking model %s\n", mod->model_name);
+		buf = FS_LoadFile (mod->model_name, tempmempool, false, &filesize);
 		if (buf)
 		{
 			crc = CRC_Block((unsigned char *)buf, filesize);
@@ -494,9 +494,9 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	}
 
 	if (developer_loading.integer)
-		Con_Printf("loading model %s\n", mod->name);
+		Con_Printf("loading model %s\n", mod->model_name);
 	
-	SCR_PushLoadingScreen(mod->name, 1);
+	SCR_PushLoadingScreen(mod->model_name, 1);
 
 	// LadyHavoc: unload the existing model in this slot (if there is one)
 	if (mod->loaded || mod->mempool)
@@ -529,10 +529,10 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	if (buf)
 	{
 		int i;
-		const char *ext = FS_FileExtension(mod->name);	
+		const char *ext = FS_FileExtension(mod->model_name);
 		char *bufend = (char *)buf + filesize;
 		// all models use memory, so allocate a memory pool
-		mod->mempool = Mem_AllocPool(mod->name, 0, NULL);
+		mod->mempool = Mem_AllocPool(mod->model_name, 0, NULL);
 
 		// We need to have a reference to the base model in case we're parsing submodels
 		loadmodel = mod;
@@ -550,7 +550,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 
 				Mod_FindPotentialDeforms(mod);
 
-				buf = FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.framegroups", mod->name), tempmempool, false, &filesize);
+				buf = FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.framegroups", mod->model_name), tempmempool, false, &filesize);
 				if(buf)
 				{
 					Mod_FrameGroupify(mod, (const char *)buf);
@@ -563,11 +563,11 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 			}
 		}
 		if(!loader[i].Load)
-			Con_Printf(CON_ERROR "Mod_LoadModel: model \"%s\" is of unknown/unsupported type\n", mod->name);
+			Con_Printf(CON_ERROR "Mod_LoadModel: model \"%s\" is of unknown/unsupported type\n", mod->model_name);
 	}
 	else if (crash)
 		// LadyHavoc: Sys_Error was *ANNOYING*
-		Con_Printf (CON_ERROR "Mod_LoadModel: %s not found\n", mod->name);
+		Con_Printf (CON_ERROR "Mod_LoadModel: %s not found\n", mod->model_name);
 
 	// no fatal errors occurred, so this model is ready to use.
 	mod->loaded = true;
@@ -583,7 +583,7 @@ void Mod_ClearUsed(void)
 	int nummodels = (int)Mem_ExpandableArray_IndexRange(&models);
 	model_t *mod;
 	for (i = 0;i < nummodels;i++)
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0])
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0])
 			mod->used = false;
 }
 
@@ -594,7 +594,7 @@ void Mod_PurgeUnused(void)
 	model_t *mod;
 	for (i = 0;i < nummodels;i++)
 	{
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && !mod->used)
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && !mod->used)
 		{
 			Mod_UnloadModel(mod);
 			Mem_ExpandableArray_FreeRecord(&models, mod);
@@ -625,7 +625,7 @@ model_t *Mod_FindName(const char *name, const char *parentname)
 	// search the currently loaded models
 	for (i = 0;i < nummodels;i++)
 	{
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && !strcmp(mod->name, name) && ((!mod->brush.parentmodel && !parentname[0]) || (mod->brush.parentmodel && parentname[0] && !strcmp(mod->brush.parentmodel->name, parentname))))
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && !strcmp(mod->model_name, name) && ((!mod->brush.parentmodel && !parentname[0]) || (mod->brush.parentmodel && parentname[0] && !strcmp(mod->brush.parentmodel->model_name, parentname))))
 		{
 			mod->used = true;
 			return mod;
@@ -634,7 +634,7 @@ model_t *Mod_FindName(const char *name, const char *parentname)
 
 	// no match found, create a new one
 	mod = (model_t *) Mem_ExpandableArray_AllocRecord(&models);
-	strlcpy(mod->name, name, sizeof(mod->name));
+	strlcpy(mod->model_name, name, sizeof(mod->model_name));
 	if (parentname[0])
 		mod->brush.parentmodel = Mod_FindName(parentname, NULL);
 	else
@@ -683,12 +683,12 @@ void Mod_Reload(void)
 	SCR_PushLoadingScreen("Reloading models", 1.0);
 	count = 0;
 	for (i = 0;i < nummodels;i++)
-		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && mod->name[0] != '*' && mod->used)
+		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*' && mod->used)
 			++count;
 	for (i = 0;i < nummodels;i++)
-		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && mod->name[0] != '*' && mod->used)
+		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*' && mod->used)
 		{
-			SCR_PushLoadingScreen(mod->name, 1.0 / count);
+			SCR_PushLoadingScreen(mod->model_name, 1.0 / count);
 			Mod_LoadModel(mod, true, true);
 			SCR_PopLoadingScreen(false);
 		}
@@ -714,12 +714,12 @@ static void Mod_Print_f(cmd_state_t *cmd)
 	Con_Print("Loaded models:\n");
 	for (i = 0;i < nummodels;i++)
 	{
-		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->name[0] && mod->name[0] != '*')
+		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*')
 		{
 			if (mod->brush.numsubmodels)
-				Con_Printf("%4iK %s (%i submodels)\n", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->name, mod->brush.numsubmodels);
+				Con_Printf("%4iK %s (%i submodels)\n", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->model_name, mod->brush.numsubmodels);
 			else
-				Con_Printf("%4iK %s\n", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->name);
+				Con_Printf("%4iK %s\n", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->model_name);
 		}
 	}
 }
@@ -2738,7 +2738,7 @@ tag_weapon,
 tag_torso,
 */
 	memset(word, 0, sizeof(word));
-	for (i = 0;i < 256 && (data = text = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s_%i.skin", loadmodel->name, i), tempmempool, true, NULL));i++)
+	for (i = 0;i < 256 && (data = text = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s_%i.skin", loadmodel->model_name, i), tempmempool, true, NULL));i++)
 	{
 		// If it's the first file we parse
 		if (skinfile == NULL)
@@ -2772,7 +2772,7 @@ tag_torso,
 			while (COM_ParseToken_QuakeC(&data, true) && strcmp(com_token, "\n"));
 			if (wordsoverflow)
 			{
-				Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: line with too many statements, skipping\n", loadmodel->name, i, line);
+				Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: line with too many statements, skipping\n", loadmodel->model_name, i, line);
 				continue;
 			}
 			// words is always >= 1
@@ -2789,7 +2789,7 @@ tag_torso,
 					strlcpy (skinfileitem->replacement, word[2], sizeof (skinfileitem->replacement));
 				}
 				else
-					Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: wrong number of parameters to command \"%s\", see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->name, i, line, word[0]);
+					Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: wrong number of parameters to command \"%s\", see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->model_name, i, line, word[0]);
 			}
 			else if (words >= 2 && !strncmp(word[0], "tag_", 4))
 			{
@@ -2808,7 +2808,7 @@ tag_torso,
 				strlcpy (skinfileitem->replacement, word[2], sizeof (skinfileitem->replacement));
 			}
 			else
-				Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: does not look like tag or mesh specification, or replace command, see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->name, i, line);
+				Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: does not look like tag or mesh specification, or replace command, see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->model_name, i, line);
 		}
 		Mem_Free(text);
 	}
@@ -2994,11 +2994,11 @@ void Mod_BuildVBOs(void)
 
 	// upload short indices as a buffer
 	if (loadmodel->surfmesh.data_element3s && !loadmodel->surfmesh.data_element3s_indexbuffer)
-		loadmodel->surfmesh.data_element3s_indexbuffer = R_Mesh_CreateMeshBuffer(loadmodel->surfmesh.data_element3s, loadmodel->surfmesh.num_triangles * sizeof(short[3]), loadmodel->name, true, false, false, true);
+		loadmodel->surfmesh.data_element3s_indexbuffer = R_Mesh_CreateMeshBuffer(loadmodel->surfmesh.data_element3s, loadmodel->surfmesh.num_triangles * sizeof(short[3]), loadmodel->model_name, true, false, false, true);
 
 	// upload int indices as a buffer
 	if (loadmodel->surfmesh.data_element3i && !loadmodel->surfmesh.data_element3i_indexbuffer && !loadmodel->surfmesh.data_element3s)
-		loadmodel->surfmesh.data_element3i_indexbuffer = R_Mesh_CreateMeshBuffer(loadmodel->surfmesh.data_element3i, loadmodel->surfmesh.num_triangles * sizeof(int[3]), loadmodel->name, true, false, false, false);
+		loadmodel->surfmesh.data_element3i_indexbuffer = R_Mesh_CreateMeshBuffer(loadmodel->surfmesh.data_element3i, loadmodel->surfmesh.num_triangles * sizeof(int[3]), loadmodel->model_name, true, false, false, false);
 
 	// only build a vbo if one has not already been created (this is important for brush models which load specially)
 	// we put several vertex data streams in the same buffer
@@ -3026,7 +3026,7 @@ void Mod_BuildVBOs(void)
 		if (loadmodel->surfmesh.data_lightmapcolor4f   ) memcpy(mem + loadmodel->surfmesh.data_lightmapcolor4f_bufferoffset   , loadmodel->surfmesh.data_lightmapcolor4f   , loadmodel->surfmesh.num_vertices * sizeof(float[4]));
 		if (loadmodel->surfmesh.data_skeletalindex4ub  ) memcpy(mem + loadmodel->surfmesh.data_skeletalindex4ub_bufferoffset  , loadmodel->surfmesh.data_skeletalindex4ub  , loadmodel->surfmesh.num_vertices * sizeof(unsigned char[4]));
 		if (loadmodel->surfmesh.data_skeletalweight4ub ) memcpy(mem + loadmodel->surfmesh.data_skeletalweight4ub_bufferoffset , loadmodel->surfmesh.data_skeletalweight4ub , loadmodel->surfmesh.num_vertices * sizeof(unsigned char[4]));
-		loadmodel->surfmesh.data_vertex3f_vertexbuffer = R_Mesh_CreateMeshBuffer(mem, size, loadmodel->name, false, false, false, false);
+		loadmodel->surfmesh.data_vertex3f_vertexbuffer = R_Mesh_CreateMeshBuffer(mem, size, loadmodel->model_name, false, false, false, false);
 		loadmodel->surfmesh.data_svector3f_vertexbuffer = loadmodel->surfmesh.data_svector3f ? loadmodel->surfmesh.data_vertex3f_vertexbuffer : NULL;
 		loadmodel->surfmesh.data_tvector3f_vertexbuffer = loadmodel->surfmesh.data_tvector3f ? loadmodel->surfmesh.data_vertex3f_vertexbuffer : NULL;
 		loadmodel->surfmesh.data_normal3f_vertexbuffer = loadmodel->surfmesh.data_normal3f ? loadmodel->surfmesh.data_vertex3f_vertexbuffer : NULL;
@@ -3362,7 +3362,7 @@ static void Mod_Decompile_f(cmd_state_t *cmd)
 	{
 		// if we're decompiling a submodel, be sure to give it a proper name based on its parent
 		FS_StripExtension(cl.model_name[1], outname, sizeof(outname));
-		dpsnprintf(basename, sizeof(basename), "%s/%s", outname, mod->name);
+		dpsnprintf(basename, sizeof(basename), "%s/%s", outname, mod->model_name);
 		outname[0] = 0;
 	}
 	if (!mod->surfmesh.num_triangles)
@@ -4453,7 +4453,7 @@ static void Mod_GenerateLightmaps_f(cmd_state_t *cmd)
 void Mod_Mesh_Create(model_t *mod, const char *name)
 {
 	memset(mod, 0, sizeof(*mod));
-	strlcpy(mod->name, name, sizeof(mod->name));
+	strlcpy(mod->model_name, name, sizeof(mod->model_name));
 	mod->mempool = Mem_AllocPool(name, 0, NULL);
 	mod->texturepool = R_AllocTexturePool();
 	mod->Draw = R_Mod_Draw;
@@ -4500,7 +4500,7 @@ texture_t *Mod_Mesh_GetTexture(model_t *mod, const char *name, int defaultdrawfl
 			mod->data_surfaces[i].texture = mod->data_textures + (mod->data_surfaces[i].texture - oldtextures);
 	}
 	t = &mod->data_textures[mod->num_textures++];
-	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->name, t, name, true, true, defaulttexflags, defaultmaterialflags);
+	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, true, true, defaulttexflags, defaultmaterialflags);
 	t->mesh_drawflag = drawflag;
 	t->mesh_defaulttexflags = defaulttexflags;
 	t->mesh_defaultmaterialflags = defaultmaterialflags;

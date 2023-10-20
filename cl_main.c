@@ -650,7 +650,7 @@ static void CL_PrintEntities_f(cmd_state_t *cmd)
 			continue;
 
 		if (ent->render.model)
-			modelname = ent->render.model->name;
+			modelname = ent->render.model->model_name;
 		else
 			modelname = "--no model--";
 		Con_Printf("%3i: %-25s:%4i (%5i %5i %5i) [%3i %3i %3i] %4.2f %5.3f\n", i, modelname, ent->render.framegroupblend[0].frame, (int) ent->state_current.origin[0], (int) ent->state_current.origin[1], (int) ent->state_current.origin[2], (int) ent->state_current.angles[0] % 360, (int) ent->state_current.angles[1] % 360, (int) ent->state_current.angles[2] % 360, ent->render.scale, ent->render.alpha);
@@ -678,9 +678,9 @@ static void CL_ModelIndexList_f(cmd_state_t *cmd)
 		if (!model)
 			continue;
 		if(model->loaded || i == 1)
-			Con_Printf("%3i: %-30s %-8s %-10i\n", i, model->name, model->modeldatatypestring, model->surfmesh.num_triangles);
+			Con_Printf("%3i: %-30s %-8s %-10i\n", i, model->model_name, model->modeldatatypestring, model->surfmesh.num_triangles);
 		else
-			Con_Printf("%3i: %-30s %-30s\n", i, model->name, "--no local model found--");
+			Con_Printf("%3i: %-30s %-30s\n", i, model->model_name, "--no local model found--");
 		i++;
 	}
 }
@@ -1473,7 +1473,7 @@ static void CL_UpdateNetworkCollisionEntities(void)
 		if (cl.entities_active[i])
 		{
 			ent = cl.entities + i;
-			if (ent->state_current.active && ent->render.model && ent->render.model->name[0] == '*' && ent->render.model->TraceBox)
+			if (ent->state_current.active && ent->render.model && ent->render.model->model_name[0] == '*' && ent->render.model->TraceBox)
 			{
 				// do not interpolate the bmodels for this
 				CL_UpdateNetworkEntity(ent, 32, false);
@@ -1718,7 +1718,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 
 	// don't show entities with no modelindex (note: this still shows
 	// entities which have a modelindex that resolved to a NULL model)
-	if (e->render.model && !(e->render.effects & EF_NODRAW) && r_refdef.scene.numentities < r_refdef.scene.maxentities)
+	if (e->render.model && !(e->render.effects & EF_NODRAW_16) && r_refdef.scene.numentities < r_refdef.scene.maxentities)
 		r_refdef.scene.entities[r_refdef.scene.numentities++] = &e->render;
 	//if (cl.viewentity && e->state_current.number == cl.viewentity)
 	//	Matrix4x4_Print(&e->render.matrix);

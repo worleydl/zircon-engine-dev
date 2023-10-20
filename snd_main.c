@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "snd_main.h"
 #include "snd_ogg.h"
 #ifdef USEXMP
-#include "snd_xmp.h"
+	#include "snd_xmp.h"
 #endif
 #include "csprogs.h"
 #include "cl_collision.h"
@@ -650,7 +650,7 @@ void S_Startup (void)
 		// some modules write directly to a shared (DMA) buffer
 		extrasoundtime = oldpaintedtime + snd_renderbuffer->maxframes - 1;
 		extrasoundtime -= extrasoundtime % snd_renderbuffer->maxframes;
-		Con_Printf("S_Startup: extra sound time = %u\n", extrasoundtime);
+		Con_DPrintf("S_Startup: extra sound time = %u\n", extrasoundtime); // Baker
 
 		soundtime = extrasoundtime;
 	}
@@ -894,7 +894,7 @@ sfx_t *S_FindName (const char *name)
 	if (!snd_initialized.integer)
 		return NULL;
 
-	if(!strcmp(name, changevolume_sfx.name))
+	if(String_Does_Match(name, changevolume_sfx.name))
 		return &changevolume_sfx;
 
 	if (strlen (name) >= sizeof (sfx->name))
@@ -906,7 +906,7 @@ sfx_t *S_FindName (const char *name)
 	// Look for this sound in the list of known sfx
 	// TODO: hash table search?
 	for (sfx = known_sfx; sfx != NULL; sfx = sfx->next)
-		if(!strcmp (sfx->name, name))
+		if(String_Does_Match (sfx->name, name))
 			return sfx;
 
 	// check for # in the beginning, try lookup by soundindex
@@ -1865,8 +1865,7 @@ static void S_UpdateAmbientSounds (void)
 		cl.worldmodel->brush.AmbientSoundLevelsForPoint(cl.worldmodel, listener_origin, ambientlevels, sizeof(ambientlevels));
 
 	// Calc ambient sound levels
-	for (ambient_channel = 0 ; ambient_channel< NUM_AMBIENTS ; ambient_channel++)
-	{
+	for (ambient_channel = 0 ; ambient_channel< NUM_AMBIENTS ; ambient_channel++) {
 		chan = &channels[ambient_channel];
 		sfx = chan->sfx; // fetch the volatile variable
 		if (sfx == NULL || sfx->fetcher == NULL)

@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 extern int con_totallines;
 extern int con_backscroll;
+
 extern qbool con_initialized;
 
 void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qbool proquakeprotocol);
@@ -58,7 +59,10 @@ void Con_Print(const char *txt);
 
 /// Prints to all appropriate console targets.
 void Con_Printf(const char *fmt, ...) DP_FUNC_PRINTF(1);
-void Con_PrintLinef(const char* fmt, ...) DP_FUNC_PRINTF(1);
+
+void Con_PrintLinef(const char* fmt, ...) DP_FUNC_PRINTF(1);  // Baker 1009: Jan 19 2022
+
+void Con_LogCenterPrint(const char *str); // Baker 8501
 
 /// A Con_Print that only shows up if the "developer" cvar is set.
 void Con_DPrint(const char *msg);
@@ -67,6 +71,9 @@ void Con_DPrint(const char *msg);
 void Con_DPrintf(const char *fmt, ...) DP_FUNC_PRINTF(1);
 void Con_DPrintLinef(const char* fmt, ...) DP_FUNC_PRINTF(1);
 void Con_Clear_f(cmd_state_t *cmd);
+
+void Con_HidenotifyPrintLinef(const char *fmt, ...) DP_FUNC_PRINTF(1); //
+
 void Con_DrawNotify (void);
 
 /// Clear all notify lines.
@@ -103,11 +110,12 @@ void Log_Printf(const char *logfilename, const char *fmt, ...) DP_FUNC_PRINTF(2)
 
 // CON_MASK_PRINT is the default (Con_Print/Con_Printf)
 // CON_MASK_DEVELOPER is used by Con_DPrint/Con_DPrintf
-#define CON_MASK_HIDENOTIFY 128
+#define CON_MASK_NONE_0			0
 #define CON_MASK_CHAT 1
 #define CON_MASK_INPUT 2
 #define CON_MASK_DEVELOPER 4
 #define CON_MASK_PRINT 8
+#define CON_MASK_HIDENOTIFY 128
 
 typedef struct con_lineinfo_s
 {
@@ -126,7 +134,7 @@ typedef struct conbuffer_s
 	qbool active;
 	int textsize;
 	char *text;
-	int maxlines;
+	int maxlines; // Baker: 4096
 	con_lineinfo_t *lines;
 	int lines_first;
 	int lines_count; ///< cyclic buffer

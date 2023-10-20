@@ -11,9 +11,9 @@ static void QW_TranslateEffects(entity_state_t *s, int qweffects)
 		s->effects |= EF_MUZZLEFLASH;
 	if (qweffects & QW_EF_FLAG1)
 	{
-		// mimic FTEQW's interpretation of EF_FLAG1 as EF_NODRAW on non-player entities
+		// mimic FTEQW's interpretation of EF_FLAG1 as EF_NODRAW_16 on non-player entities
 		if (s->number > cl.maxclients)
-			s->effects |= EF_NODRAW;
+			s->effects |= EF_NODRAW_16;
 		else
 			s->internaleffects |= INTEF_FLAG1QW;
 	}

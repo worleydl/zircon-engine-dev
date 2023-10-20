@@ -4074,7 +4074,7 @@ static void R_View_UpdateEntityVisible (void)
 			if (!r_refdef.viewcache.entityvisible[i])
 				continue;
 			ent = r_refdef.scene.entities[i];
-			if (!(ent->crflags & (RENDER_VIEWMODEL | RENDER_WORLDOBJECT | RENDER_NODEPTHTEST)) && !(ent->model && (ent->model->name[0] == '*')))
+			if (!(ent->crflags & (RENDER_VIEWMODEL | RENDER_WORLDOBJECT | RENDER_NODEPTHTEST)) && !(ent->model && (ent->model->model_name[0] == '*')))
 			{
 				samples = ent->last_trace_visibility == 0 ? r_cullentities_trace_tempentitysamples.integer : r_cullentities_trace_samples.integer;
 				if (R_CanSeeBox(samples, r_cullentities_trace_eyejitter.value, r_cullentities_trace_enlarge.value, r_cullentities_trace_expand.value, r_cullentities_trace_pad.value, r_refdef.view.origin, ent->mins, ent->maxs))
@@ -6944,7 +6944,7 @@ void RSurf_ActiveModelEntity(const entity_render_t *ent, qbool wantnormals, qboo
 	rsurface.skeleton = ent->skeleton;
 	memcpy(rsurface.userwavefunc_param, ent->userwavefunc_param, sizeof(rsurface.userwavefunc_param));
 	rsurface.ent_skinnum = ent->skinnum;
-	rsurface.ent_qwskin = (ent->entitynumber <= cl.maxclients && ent->entitynumber >= 1 && cls.protocol == PROTOCOL_QUAKEWORLD && cl.scores[ent->entitynumber - 1].qw_skin[0] && !strcmp(ent->model->name, "progs/player.mdl")) ? (ent->entitynumber - 1) : -1;
+	rsurface.ent_qwskin = (ent->entitynumber <= cl.maxclients && ent->entitynumber >= 1 && cls.protocol == PROTOCOL_QUAKEWORLD && cl.scores[ent->entitynumber - 1].qw_skin[0] && !strcmp(ent->model->model_name, "progs/player.mdl")) ? (ent->entitynumber - 1) : -1;
 	rsurface.ent_flags = ent->crflags;
 	if (r_fullbright_directed.integer && (r_fullbright.integer || !model->lit))
 		rsurface.ent_flags |= RENDER_LIGHT | RENDER_DYNAMICMODELLIGHT;

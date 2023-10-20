@@ -76,5 +76,5 @@ void W_LoadTextureWadFile(char *filename, int complain);
 unsigned char *W_GetTextureBGRA(char *name); // returns tempmempool allocated image data, width and height are in image_width and image_height
 unsigned char *W_ConvertWAD3TextureBGRA(struct sizebuf_s *sb); // returns tempmempool allocated image data, width and height are in image_width and image_height
 
-#endif
+#endif // !WAD_H
 

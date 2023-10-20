@@ -41,7 +41,7 @@ float CL_SelectTraceLine(const vec3_t start, const vec3_t end, vec3_t impact, ve
 			continue;
 		if (!ent->model || !ent->model->TraceLine)
 			continue;
-		if ((ent->crflags & RENDER_EXTERIORMODEL) && !chase_active.integer)
+		if (Have_Flag(ent->crflags, RENDER_EXTERIORMODEL) && !chase_active.integer)
 			continue;
 		// if transparent and not selectable, skip entity
 		if (!(cl.entities[n].state_current.effects & EF_SELECTABLE) && (ent->alpha < 1 || (ent->effects & (EF_ADDITIVE | EF_NODEPTHTEST))))
@@ -127,15 +127,14 @@ void CL_LinkEdict(prvm_edict_t *ent)
 		model_t *model = CL_GetModelByIndex( (int)PRVM_clientedictfloat(ent, modelindex) );
 		if (model == NULL)
 		{
-			Con_Printf("edict %i: SOLID_BSP with invalid modelindex!\n", PRVM_NUM_FOR_EDICT(ent));
+			Con_PrintLinef ("edict %d: SOLID_BSP with invalid modelindex!", PRVM_NUM_FOR_EDICT(ent));
 
 			model = CL_GetModelByIndex( 0 );
 		}
 
-		if( model != NULL )
-		{
+		if( model != NULL ) {
 			if (!model->TraceBox)
-				Con_DPrintf("edict %i: SOLID_BSP with non-collidable model\n", PRVM_NUM_FOR_EDICT(ent));
+				Con_DPrintLinef ("edict %d: SOLID_BSP with non-collidable model", PRVM_NUM_FOR_EDICT(ent));
 
 			if (PRVM_clientedictvector(ent, angles)[0] || PRVM_clientedictvector(ent, angles)[2] || PRVM_clientedictvector(ent, avelocity)[0] || PRVM_clientedictvector(ent, avelocity)[2])
 			{

@@ -1133,6 +1133,8 @@ typedef struct client_state_s
 
 	// used by EntityState5_ReadUpdate
 	skeleton_t *engineskeletonobjects;
+
+	char			lastcenterstring[1024];
 }
 client_state_t;
 

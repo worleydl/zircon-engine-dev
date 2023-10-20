@@ -33,7 +33,7 @@ cvar_t scr_conalphafactor = {CF_CLIENT | CF_ARCHIVE, "scr_conalphafactor", "1", 
 cvar_t scr_conalpha2factor = {CF_CLIENT | CF_ARCHIVE, "scr_conalpha2factor", "0", "opacity of console background gfx/conback2 relative to scr_conalpha; when 0, gfx/conback2 is not drawn"};
 cvar_t scr_conalpha3factor = {CF_CLIENT | CF_ARCHIVE, "scr_conalpha3factor", "0", "opacity of console background gfx/conback3 relative to scr_conalpha; when 0, gfx/conback3 is not drawn"};
 cvar_t scr_conbrightness = {CF_CLIENT | CF_ARCHIVE, "scr_conbrightness", "1", "brightness of console background (0 = black, 1 = image)"};
-cvar_t scr_conforcewhiledisconnected = {CF_CLIENT, "scr_conforcewhiledisconnected", "1", "1 forces fullscreen console while disconnected, 2 also forces it when the listen server has started but the client is still loading"};
+cvar_t scr_conforcewhiledisconnected = {CF_CLIENT, "scr_conforcewhiledisconnected", "1", "1 forces fullscreen console while disconnected, 2 also forces it when the listen server has started but the client is still loading"}; // SEPUS
 cvar_t scr_conheight = {CF_CLIENT | CF_ARCHIVE, "scr_conheight", "0.5", "fraction of screen height occupied by console (reduced as necessary for visibility of loading progress and infobar)"};
 cvar_t scr_conscroll_x = {CF_CLIENT | CF_ARCHIVE, "scr_conscroll_x", "0", "scroll speed of gfx/conback in x direction"};
 cvar_t scr_conscroll_y = {CF_CLIENT | CF_ARCHIVE, "scr_conscroll_y", "0", "scroll speed of gfx/conback in y direction"};
@@ -157,6 +157,7 @@ for a few moments
 */
 void SCR_CenterPrint(const char *str)
 {
+	Con_LogCenterPrint (str); // Baker r1421: centerprint logging to console
 	strlcpy (scr_centerstring, str, sizeof (scr_centerstring));
 	scr_centertime_off = scr_centertime.value;
 	scr_centertime_start = cl.time;
@@ -650,16 +651,13 @@ static int SCR_InfobarHeight(void)
 SCR_InfoBar_f
 ==============
 */
-static void SCR_InfoBar_f(cmd_state_t *cmd)
+static void SCR_InfoBar_f (cmd_state_t *cmd)
 {
-	if(Cmd_Argc(cmd) == 3)
-	{
+	if(Cmd_Argc(cmd) == 3) {
 		scr_infobartime_off = atof(Cmd_Argv(cmd, 1));
 		strlcpy(scr_infobarstring, Cmd_Argv(cmd, 2), sizeof(scr_infobarstring));
-	}
-	else
-	{
-		Con_Printf("usage:\ninfobar expiretime \"string\"\n");
+	} else {
+		Con_PrintLinef("usage:\ninfobar expiretime \"string\"");
 	}
 }
 //=============================================================================
@@ -681,7 +679,7 @@ static void SCR_SetUpToDrawConsole (void)
 	if (scr_menuforcewhiledisconnected.integer && key_dest == key_game && cls.state == ca_disconnected)
 	{
 		if (framecounter >= 2)
-			MR_ToggleMenu(1);
+			MR_ToggleMenu(1); // conexit
 		else
 			framecounter++;
 	}
@@ -733,9 +731,9 @@ SCR_SizeUp_f
 Keybinding command
 =================
 */
-static void SCR_SizeUp_f(cmd_state_t *cmd)
+static void SCR_SizeUp_f (cmd_state_t *cmd)
 {
-	Cvar_SetValueQuick(&scr_viewsize, scr_viewsize.value + 10);
+	Cvar_SetValueQuick (&scr_viewsize, scr_viewsize.value + 10);
 }
 
 
@@ -746,7 +744,7 @@ SCR_SizeDown_f
 Keybinding command
 =================
 */
-static void SCR_SizeDown_f(cmd_state_t *cmd)
+static void SCR_SizeDown_f (cmd_state_t *cmd)
 {
 	Cvar_SetValueQuick(&scr_viewsize, scr_viewsize.value - 10);
 }
@@ -880,7 +878,7 @@ void CL_Screen_Init(void)
 SCR_ScreenShot_f
 ==================
 */
-void SCR_ScreenShot_f(cmd_state_t *cmd)
+void SCR_ScreenShot_f (cmd_state_t *cmd)
 {
 	static int shotnumber;
 	static char old_prefix_name[MAX_QPATH];
@@ -892,22 +890,21 @@ void SCR_ScreenShot_f(cmd_state_t *cmd)
 	qbool png = (scr_screenshot_png.integer != 0) && !jpeg;
 	char vabuf[1024];
 
-	if (Cmd_Argc(cmd) == 2)
-	{
+	if (Cmd_Argc(cmd) == 2) {
 		const char *ext;
-		strlcpy(filename, Cmd_Argv(cmd, 1), sizeof(filename));
+		c_strlcpy(filename, Cmd_Argv(cmd, 1));
 		ext = FS_FileExtension(filename);
-		if (!strcasecmp(ext, "jpg"))
+		if (String_Does_Match_Caseless(ext, "jpg"))
 		{
 			jpeg = true;
 			png = false;
 		}
-		else if (!strcasecmp(ext, "tga"))
+		else if (String_Does_Match_Caseless(ext, "tga"))
 		{
 			jpeg = false;
 			png = false;
 		}
-		else if (!strcasecmp(ext, "png"))
+		else if (String_Does_Match_Caseless(ext, "png"))
 		{
 			jpeg = false;
 			png = true;
@@ -980,16 +977,16 @@ void SCR_ScreenShot_f(cmd_state_t *cmd)
 	buffer2 = (unsigned char *)Mem_Alloc(tempmempool, vid.width * vid.height * (scr_screenshot_alpha.integer ? 4 : 3));
 
 	if (SCR_ScreenShot (filename, buffer1, buffer2, 0, 0, vid.width, vid.height, false, false, false, jpeg, png, true, scr_screenshot_alpha.integer != 0))
-		Con_Printf("Wrote %s\n", filename);
+		Con_PrintLinef ("Wrote %s", filename);
 	else
 	{
-		Con_Printf(CON_ERROR "Unable to write %s\n", filename);
+		Con_PrintLinef (CON_ERROR "Unable to write %s", filename);
 		if(jpeg || png)
 		{
 			if(SCR_ScreenShot (filename, buffer1, buffer2, 0, 0, vid.width, vid.height, false, false, false, false, false, true, scr_screenshot_alpha.integer != 0))
 			{
 				strlcpy(filename + strlen(filename) - 3, "tga", 4);
-				Con_Printf("Wrote %s\n", filename);
+				Con_PrintLinef ("Wrote %s", filename);
 			}
 		}
 	}
@@ -1300,7 +1297,7 @@ envmapinfo[12] =
 	{{ 90, 180, 0}, "nz", false, false,  true}
 };
 
-static void R_Envmap_f(cmd_state_t *cmd)
+static void R_Envmap_f (cmd_state_t *cmd)
 {
 	int j, size;
 	char filename[MAX_QPATH], basename[MAX_QPATH];
@@ -1314,12 +1311,12 @@ static void R_Envmap_f(cmd_state_t *cmd)
 		return;
 	}
 
-	if(cls.state != ca_connected) {
-		Con_Printf("envmap: No map loaded\n");
+	if (cls.state != ca_connected) {
+		Con_PrintLinef ("envmap: No map loaded");
 		return;
 	}
 
-	strlcpy (basename, Cmd_Argv(cmd, 1), sizeof (basename));
+	c_strlcpy (basename, Cmd_Argv(cmd, 1));
 	size = atoi(Cmd_Argv(cmd, 2));
 	if (size != 128 && size != 256 && size != 512 && size != 1024)
 	{
@@ -1420,7 +1417,7 @@ void SHOWLMP_decodeshow(void)
 		}
 	}
 	for (k = 0;k < cl.max_showlmps;k++)
-		if (cl.showlmps[k].isactive && !strcmp(cl.showlmps[k].label, lmplabel))
+		if (cl.showlmps[k].isactive && String_Does_Match(cl.showlmps[k].label, lmplabel))
 			break;
 	if (k == cl.max_showlmps)
 		for (k = 0;k < cl.max_showlmps;k++)
@@ -1804,6 +1801,7 @@ menu:
 		SCR_DrawBrand();
 		SCR_DrawTouchscreenOverlay();
 	}
+
 	if (r_timereport_active)
 		R_TimeReport("2d");
 

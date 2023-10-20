@@ -188,22 +188,20 @@ notfound:
 		char path[MAX_OSPATH];
 		strlcpy(path, sys.argv[0], sizeof(path));
 		strrchr(path, '/')[1] = 0;
-		for (i = 0; dllnames[i] != NULL; i++)
-		{
+		for (i = 0; dllnames[i] != NULL; i++) {
 			char temp[MAX_OSPATH];
 			strlcpy(temp, path, sizeof(temp));
 			strlcat(temp, dllnames[i], sizeof(temp));
 			Con_DPrintf (" \"%s\"", temp);
 
-			if(Sys_LoadLibrary(temp, &dllhandle))
-			{
+			if (Sys_LoadLibrary(temp, &dllhandle)) {
 				if (Sys_LoadDependencyFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(sys.argv[0], '/'))))
 					break;
 				else
 					Sys_FreeLibrary (&dllhandle);
-			}
-		}
-	}
+			} // if
+		} // for
+	} // if
 
 	// No DLL found
 	if (! dllhandle)
@@ -504,11 +502,11 @@ void Sys_Sleep(int microseconds)
 	if(sys_debugsleep.integer)
 	{
 		t = Sys_DirtyTime() - t;
-		Sys_Printf("%d %d # debugsleep\n", microseconds, (unsigned int)(t * 1000000));
+		Sys_PrintfToTerminal("%d %d # debugsleep\n", microseconds, (unsigned int)(t * 1000000));
 	}
 }
 
-void Sys_Printf(const char *fmt, ...)
+void Sys_PrintfToTerminal(const char *fmt, ...)
 {
 	va_list argptr;
 	char msg[MAX_INPUTLINE];

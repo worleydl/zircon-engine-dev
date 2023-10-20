@@ -58,9 +58,29 @@ cvar_t con_textsize = {CF_CLIENT | CF_ARCHIVE, "con_textsize","8", "console text
 cvar_t con_notifysize = {CF_CLIENT | CF_ARCHIVE, "con_notifysize","8", "notify text size in virtual 2D pixels"};
 cvar_t con_chatsize = {CF_CLIENT | CF_ARCHIVE, "con_chatsize","8", "chat text size in virtual 2D pixels (if con_chat is enabled)"};
 cvar_t con_chatsound = {CF_CLIENT | CF_ARCHIVE, "con_chatsound","1", "enables chat sound to play on message"};
+cvar_t con_logcenterprint = {CF_CLIENT | CF_ARCHIVE, "con_logcenterprint","1", "centerprint messages will be logged to the console in singleplayer.  If 2, they will also be logged in deathmatch"};
+
 cvar_t con_chatsound_file = {CF_CLIENT, "con_chatsound_file","sound/misc/talk.wav", "The sound to play for chat messages"};
 cvar_t con_chatsound_team_file = {CF_CLIENT, "con_chatsound_team_file","sound/misc/talk2.wav", "The sound to play for team chat messages"};
 cvar_t con_chatsound_team_mask = {CF_CLIENT, "con_chatsound_team_mask","40","Magic ASCII code that denotes a team chat message"};
+
+void Con_LogCenterPrint (const char *str)
+{
+	if (String_Does_Match(str, cl.lastcenterstring))
+		return; //ignore duplicates
+
+	if (cl.gametype == GAME_DEATHMATCH && con_logcenterprint.value < 2) // default 1
+		return; //don't log in deathmatch
+
+	strlcpy (cl.lastcenterstring, str, sizeof(cl.lastcenterstring));
+
+	if (con_logcenterprint.value) {
+		Con_HidenotifyPrintLinef ("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37");
+		Con_HidenotifyPrintLinef ("%s", str);
+		Con_HidenotifyPrintLinef ("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37");
+	}
+
+}
 
 cvar_t sys_specialcharactertranslation = {CF_CLIENT | CF_SERVER, "sys_specialcharactertranslation", "1", "terminal console conchars to ASCII translation (set to 0 if your conchars.tga is for an 8bit character set or if you want raw output)"};
 #ifdef _WIN32
@@ -88,7 +108,7 @@ cvar_t con_completion_playdemo = {CF_CLIENT | CF_ARCHIVE, "con_completion_playde
 cvar_t con_completion_timedemo = {CF_CLIENT | CF_ARCHIVE, "con_completion_timedemo", "*.dem", "completion pattern for the timedemo command"};
 cvar_t con_completion_exec = {CF_CLIENT | CF_ARCHIVE, "con_completion_exec", "*.cfg", "completion pattern for the exec command"};
 
-cvar_t condump_stripcolors = {CF_CLIENT | CF_SERVER| CF_ARCHIVE, "condump_stripcolors", "0", "strip color codes from console dumps"};
+cvar_t condump_stripcolors = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "condump_stripcolors", "0", "strip color codes from console dumps"};
 
 cvar_t rcon_password = {CF_CLIENT | CF_SERVER | CF_PRIVATE, "rcon_password", "", "password to authenticate rcon commands; NOTE: changing rcon_secure clears rcon_password, so set rcon_secure always before rcon_password; may be set to a string of the form user1:pass1 user2:pass2 user3:pass3 to allow multiple user accounts - the client then has to specify ONE of these combinations"};
 cvar_t rcon_secure = {CF_CLIENT | CF_SERVER, "rcon_secure", "0", "force secure rcon authentication (1 = time based, 2 = challenge based); NOTE: changing rcon_secure clears rcon_password, so set rcon_secure always before rcon_password"};
@@ -259,15 +279,13 @@ went backwards)
 void ConBuffer_FixTimes(conbuffer_t *buf)
 {
 	int i;
-	if(buf->lines_count >= 1)
-	{
+	if(buf->lines_count >= 1) {
 		double diff = cl.time - CONBUFFER_LINES_LAST(buf).addtime;
-		if(diff < 0)
-		{
-			for(i = 0; i < buf->lines_count; ++i)
+		if (diff < 0) {
+			for(i = 0; i < buf->lines_count; i++)
 				CONBUFFER_LINES(buf, i).addtime += diff;
-		}
-	}
+		} // if
+	} // if
 }
 
 /*
@@ -357,8 +375,7 @@ void ConBuffer_AddLine(conbuffer_t *buf, const char *line, int len, int mask)
 
 	ConBuffer_FixTimes(buf);
 
-	if(len >= buf->textsize)
-	{
+	if(len >= buf->textsize) {
 		// line too large?
 		// only display end of line.
 		line += len - buf->textsize + 1;
@@ -537,15 +554,15 @@ Log_Close
 */
 void Log_Close (void)
 {
-	qfile_t* l = logfile;
+	qfile_t *logfilecopy = logfile;
 
-	if (l == NULL)
+	if (logfile == NULL)
 		return;
 
-	FS_Print (l, Log_Timestamp ("Log stopped"));
-	FS_Print (l, "\n");
+	FS_Print (logfilecopy, Log_Timestamp ("Log stopped"));
+	FS_Print (logfilecopy, "\n");
 	logfile = NULL;
-	FS_Close (l);
+	FS_Close (logfilecopy);
 
 	crt_log_file[0] = '\0';
 }
@@ -715,7 +732,18 @@ void Con_ToggleConsole_f(cmd_state_t *cmd)
 
 	// toggle the 'user wants console' bit
 	Flag_Toggle (key_consoleactive, KEY_CONSOLEACTIVE_USER_1);
-	Con_ClearNotify(); // Baker: Really?  Do other engines do that?
+
+#if 1 // Baker 1013.1
+	key_line[0] = ']';
+	key_line[1] = 0; 	// EvilTypeGuy: null terminate
+	key_linepos = 1;
+
+	//Partial_Reset (); Con_Undo_Clear (); Selection_Line_Reset_Clear ();
+
+	con_backscroll = 0; history_line = -1; // Au 15
+#endif
+
+	Con_ClearNotify(); // Baker: Really?  Do other engines do that?  No.  But's not a big deal.
 }
 
 // Baker r1003: close console for map/load/etc.
@@ -834,15 +862,13 @@ static void Con_ConDump_f(cmd_state_t *cmd)
 {
 	int i;
 	qfile_t *file;
-	if (Cmd_Argc(cmd) != 2)
-	{
+	if (Cmd_Argc(cmd) != 2) {
 		Con_Printf("usage: condump <filename>\n");
 		return;
 	}
 	file = FS_OpenRealFile(Cmd_Argv(cmd, 1), "w", false);
-	if (!file)
-	{
-		Con_Printf(CON_ERROR "condump: unable to write file \"%s\"\n", Cmd_Argv(cmd, 1));
+	if (!file) {
+		Con_PrintLinef (CON_ERROR "condump: unable to write file " QUOTED_S, Cmd_Argv(cmd, 1));
 		return;
 	}
 	if (con_mutex) Thread_LockMutex(con_mutex);
@@ -882,7 +908,7 @@ static void Con_Copy_Ents_f(void)
 }
 
 WARP_X_(Con_ConDump_f)
-void Con_Copy_f(cmd_state_t* cmd)
+void Con_Copy_f (cmd_state_t* cmd)
 {
 	int j;
 
@@ -891,8 +917,7 @@ void Con_Copy_f(cmd_state_t* cmd)
 		return;
 	}
 
-	if (Cmd_Argc(cmd) != 1)
-	{
+	if (Cmd_Argc(cmd) != 1) {
 		Con_PrintLinef("usage: copy [ents]");
 		return;
 	}
@@ -935,7 +960,7 @@ void Con_Copy_f(cmd_state_t* cmd)
 }
 
 // Baker r3102: "folder" command
-static void Con_Folder_f(cmd_state_t* cmd)
+static void Con_Folder_f (cmd_state_t* cmd)
 {
 #ifdef __ANDROID__
 	Con_PrintLinef("folder opening not supported for this build");
@@ -949,7 +974,6 @@ static void Con_Folder_f(cmd_state_t* cmd)
 #endif // __ANDROID__
 
 	const char* s_current_dir_notrail = File_Getcwd_SBuf();
-	//const char *s_exe = Sys_Binary_URL_SBuf ();
 
 	Con_DPrintLinef ("s_current_dir: %s", s_current_dir_notrail);
 	Con_DPrintLinef ("fs_gamedir: %s", fs_gamedir);			// "C:\Users\Main\Documents/My Games/zircon/id1/"
@@ -994,8 +1018,7 @@ static void Con_Folder_f(cmd_state_t* cmd)
 			if (fs_userdir[0] == 0)
 				continue;
 			va(spath, sizeof(spath), "%s%s/", fs_userdir, sgamedirlast);
-		}
-		else {
+		} else {
 #ifdef CORE_XCODE
 			// This only applies to XCODE .app, if you build Mac terminal app using brew from command line this does not apply
 			// We are dealing with a .app, not a command line
@@ -1063,9 +1086,13 @@ void Con_Init (void)
 	Cvar_RegisterVariable (&log_dest_udp);
 
 	// support for the classic Quake option
-// COMMANDLINEOPTION: Console: -condebug logs console messages to qconsole.log, see also log_file
+// COMMANDLINEOPTION: Console: -condebug logs console messages to zircon_log.log /*qconsole.log*/, see also log_file
+#ifdef __ANDROID__
+	if (1)
+#else
 	if (Sys_CheckParm ("-condebug") != 0)
-		Cvar_SetQuick (&log_file, "qconsole.log");
+#endif // __ANDROID__
+		Cvar_SetQuick (&log_file, "zircon_log.log");
 
 	// register our cvars
 	Cvar_RegisterVariable (&con_chat);
@@ -1082,6 +1109,10 @@ void Con_Init (void)
 	Cvar_RegisterVariable (&con_notifytime);
 	Cvar_RegisterVariable (&con_textsize);
 	Cvar_RegisterVariable (&con_chatsound);
+
+	Cvar_RegisterVariable (&con_logcenterprint);
+	//Cvar_RegisterVariable (&con_zircon_autocomplete);
+
 	Cvar_RegisterVariable (&con_chatsound_file);
 	Cvar_RegisterVariable (&con_chatsound_team_file);
 	Cvar_RegisterVariable (&con_chatsound_team_mask);
@@ -1112,7 +1143,7 @@ void Con_Init (void)
 	Cmd_AddCommand(CF_SHARED, "condump", Con_ConDump_f, "output console history to a file (see also log_file)");
 
 	Cmd_AddCommand (CF_CLIENT, "copy", Con_Copy_f, "copy console history to clipboard scrubbing color colors based on condump_stripcolors.integer [Zircon]"); // Baker r3101: "copy" and "copy ents"
-	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command	
+	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command
 
 	con_initialized = true;
 	Con_DPrintLinef ("Console initialized."); // Baker: less console spam
@@ -1124,6 +1155,7 @@ void Con_Shutdown (void)
 	ConBuffer_Shutdown(&con);
 	if (con_mutex) Thread_UnlockMutex(con_mutex);
 	if (con_mutex) Thread_DestroyMutex(con_mutex);
+
 	con_mutex = NULL;
 }
 
@@ -1399,6 +1431,11 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 			line[index] = 0;
 			// send to log file
 			Log_ConPrint(line);
+
+#if defined(__ANDROID__) && defined(_DEBUG)
+		Sys_PrintToTerminal(line);
+#endif // ! __ANDROID__
+
 			// send to scrollable buffer
 			if (con_initialized && cls.state != ca_dedicated)
 			{
@@ -1677,6 +1714,29 @@ void Con_PrintLinef(const char *fmt, ...)
 	Con_MaskPrint(CON_MASK_PRINT, msg);
 }
 
+// Baker
+void Con_HidenotifyPrintLinef(const char *fmt, ...)
+{
+	va_list argptr;
+	char msg[MAX_INPUTLINE];
+
+	va_start(argptr,fmt);
+	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
+	va_end(argptr);
+
+	
+	int s_len = (int)strlen(msg);
+	if (s_len >= MAX_INPUTLINE - 1) {
+		msg[s_len - 1] = 10; // trunc
+	} else {
+		msg[s_len] = 10; // was 0
+		msg[s_len+1] = 0; // extra
+	}
+
+	Con_MaskPrint (CON_MASK_HIDENOTIFY, msg);
+}
+
+
 /*
 ================
 Con_DPrint
@@ -1733,8 +1793,6 @@ void Con_DPrintLinef(const char* fmt, ...)
 	Con_MaskPrint(CON_MASK_DEVELOPER, msg);
 }
 
-
-
 /*
 ==============================================================================
 
@@ -1765,8 +1823,7 @@ static void Con_DrawInput(qbool is_console, float x, float v, float inputsize)
 	if (is_console && !key_consoleactive)
 		return;		// don't draw anything
 
-	if (is_console)
-	{
+	if (is_console) {
 		// empty prefix because ] is part of the console edit line
 		prefix = "";
 		strlcpy(text, key_line, sizeof(text));
@@ -1789,10 +1846,9 @@ static void Con_DrawInput(qbool is_console, float x, float v, float inputsize)
 	y = (int)strlen(text);
 
 	// make the color code visible when the cursor is inside it
-	if(text[linepos] != 0)
-	{
-		for(i=1; i < 5 && linepos - i > 0; ++i)
-			if(text[linepos-i] == STRING_COLOR_TAG)
+	if(text[linepos] != 0) {
+		for (i=1; i < 5 && linepos - i > 0; ++i)
+			if (text[linepos-i] == STRING_COLOR_TAG)
 			{
 				int caret_pos, ofs = 0;
 				caret_pos = linepos - i;
@@ -1821,8 +1877,7 @@ static void Con_DrawInput(qbool is_console, float x, float v, float inputsize)
 			}
 	}
 
-	if (!is_console)
-	{
+	if (!is_console) {
 		prefix_start = x;
 		x += DrawQ_TextWidth(prefix, 0, inputsize, inputsize, false, fnt);
 	}
@@ -1871,7 +1926,7 @@ static void Con_DrawInput(qbool is_console, float x, float v, float inputsize)
 
 #endif
 
-	}
+	} // cursor visible
 }
 
 typedef struct
@@ -1904,7 +1959,7 @@ static float Con_WordWidthFunc(void *passthrough, const char *w, size_t *length,
 		return DrawQ_TextWidth(w, *length, ti->fontsize, ti->fontsize, false, ti->font);
 	else
 	{
-		Sys_Printf("Con_WordWidthFunc: can't get here (maxWidth should never be %f)\n", maxWidth);
+		Sys_PrintfToTerminal ("Con_WordWidthFunc: can't get here (maxWidth should never be %f)\n", maxWidth);
 		// Note: this is NOT a Con_Printf, as it could print recursively
 		return 0;
 	}
@@ -2187,14 +2242,12 @@ static void Con_LastVisibleLine(int mask_must, int mask_mustnot, int *last, int 
 	// now count until we saw con_backscroll actual lines
 	for(i = CON_LINES_COUNT - 1; i >= 0; --i)
 	if((CON_LINES(i).mask & mask_must) == mask_must)
-	if((CON_LINES(i).mask & mask_mustnot) == 0)
-	{
+	if((CON_LINES(i).mask & mask_mustnot) == 0) {
 		int h = Con_LineHeight(i);
 
 		// line is the last visible line?
 		*last = i;
-		if(lines_seen + h > con_backscroll && lines_seen <= con_backscroll)
-		{
+		if(lines_seen + h > con_backscroll && lines_seen <= con_backscroll) {
 			*limitlast = lines_seen + h - con_backscroll;
 			return;
 		}
@@ -2266,7 +2319,7 @@ void Con_DrawConsole (int lines)
 		conbackpic = Draw_CachePic_Flags("gfx/conback2", (sx != 0 || sy != 0) ? CACHEPICFLAG_NOCLAMP : 0);
 		sx *= host.realtime; sy *= host.realtime;
 		sx -= floor(sx); sy -= floor(sy);
-		if(Draw_IsPicLoaded(conbackpic))
+		if (Draw_IsPicLoaded(conbackpic))
 			DrawQ_SuperPic(0, lines - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
 					0 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					1 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
@@ -2341,7 +2394,7 @@ void Con_DrawConsole (int lines)
 #endif
 
 // draw the input prompt, user text, and cursor if desired
-	Con_DrawInput(true, 0, con_vislines - con_textsize.value * 2, con_textsize.value);
+	Con_DrawInput (true, 0, con_vislines - con_textsize.value * 2, con_textsize.value);
 
 	r_draw2d_force = false;
 	if (con_mutex) Thread_UnlockMutex(con_mutex);
@@ -2358,6 +2411,8 @@ its format (q1/q2/q3/hl) and even its message
 //LadyHavoc: rewrote bsp type detection, rewrote message extraction to do proper worldspawn parsing
 //LadyHavoc: added .ent file loading, and redesigned error handling to still try the .ent file even if the map format is not recognized, this also eliminated one goto
 //LadyHavoc: FIXME: man this GetMapList is STILL ugly code even after my cleanups...
+
+
 qbool GetMapList (const char *s, char *completedname, int completednamebufferlength)
 {
 	fssearch_t	*t;
@@ -2387,8 +2442,7 @@ qbool GetMapList (const char *s, char *completedname, int completednamebufferlen
 		len[i] = k;
 	}
 	o = (int)strlen(s);
-	for(i=0;i<t->numfilenames;i++)
-	{
+	for (i = 0; i<t->numfilenames; i++) {
 		int lumpofs = 0, lumplen = 0;
 		char *entities = NULL;
 		const char *data = NULL;
@@ -2399,23 +2453,19 @@ qbool GetMapList (const char *s, char *completedname, int completednamebufferlen
 		strlcpy(message, "^1ERROR: open failed^7", sizeof(message));
 		p = 0;
 		f = FS_OpenVirtualFile(t->filenames[i], true);
-		if(f)
-		{
+		if(f) {
 			strlcpy(message, "^1ERROR: not a known map format^7", sizeof(message));
 			memset(buf, 0, 1024);
 			FS_Read(f, buf, 1024);
-			if (!memcmp(buf, "IBSP", 4))
-			{
+			if (!memcmp(buf, "IBSP", 4)) {
 				p = LittleLong(((int *)buf)[1]);
-				if (p == Q3BSPVERSION)
-				{
+				if (p == Q3BSPVERSION) {
 					q3dheader_t *header = (q3dheader_t *)buf;
 					lumpofs = LittleLong(header->lumps[Q3LUMP_ENTITIES].fileofs);
 					lumplen = LittleLong(header->lumps[Q3LUMP_ENTITIES].filelen);
 					dpsnprintf(desc, sizeof(desc), "Q3BSP%i", p);
 				}
-				else if (p == Q2BSPVERSION)
-				{
+				else if (p == Q2BSPVERSION) {
 					q2dheader_t *header = (q2dheader_t *)buf;
 					lumpofs = LittleLong(header->lumps[Q2LUMP_ENTITIES].fileofs);
 					lumplen = LittleLong(header->lumps[Q2LUMP_ENTITIES].filelen);
@@ -2424,26 +2474,19 @@ qbool GetMapList (const char *s, char *completedname, int completednamebufferlen
 				else
 					dpsnprintf(desc, sizeof(desc), "IBSP%i", p);
 			}
-			else if (BuffLittleLong(buf) == BSPVERSION)
-			{
+			else if (BuffLittleLong(buf) == BSPVERSION /*29*/) {
 				lumpofs = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES);
 				lumplen = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES + 4);
 				dpsnprintf(desc, sizeof(desc), "BSP29");
-			}
-			else if (BuffLittleLong(buf) == 30)
-			{
+			} else if (BuffLittleLong(buf) == 30 /*Half-Life*/) {
 				lumpofs = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES);
 				lumplen = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES + 4);
 				dpsnprintf(desc, sizeof(desc), "BSPHL");
-			}
-			else if (!memcmp(buf, "BSP2", 4))
-			{
+			} else if (!memcmp(buf, "BSP2", 4)) {
 				lumpofs = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES);
 				lumplen = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES + 4);
 				dpsnprintf(desc, sizeof(desc), "BSP2");
-			}
-			else if (!memcmp(buf, "2PSB", 4))
-			{
+			} else if (!memcmp(buf, "2PSB", 4)) {
 				lumpofs = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES);
 				lumplen = BuffLittleLong(buf + 4 + 8 * LUMP_ENTITIES + 4);
 				dpsnprintf(desc, sizeof(desc), "BSP2RMQe");
@@ -2460,20 +2503,17 @@ qbool GetMapList (const char *s, char *completedname, int completednamebufferlen
 			strlcpy(entfilename, t->filenames[i], sizeof(entfilename));
 			memcpy(entfilename + strlen(entfilename) - 4, ".ent", 5);
 			entities = (char *)FS_LoadFile(entfilename, tempmempool, true, NULL);
-			if (!entities && lumplen >= 10)
-			{
+			if (!entities && lumplen >= 10) {
 				FS_Seek(f, lumpofs, SEEK_SET);
 				entities = (char *)Z_Malloc(lumplen + 1);
 				FS_Read(f, entities, lumplen);
 			}
-			if (entities)
-			{
+			if (entities) {
 				// if there are entities to parse, a missing message key just
 				// means there is no title, so clear the message string now
 				message[0] = 0;
 				data = entities;
-				for (;;)
-				{
+				for (;;) {
 					int l;
 					if (!COM_ParseToken_Simple(&data, false, false, true))
 						break;
@@ -2481,28 +2521,30 @@ qbool GetMapList (const char *s, char *completedname, int completednamebufferlen
 						continue;
 					if (com_token[0] == '}')
 						break;
+
 					// skip leading whitespace
 					for (k = 0;com_token[k] && ISWHITESPACE(com_token[k]);k++);
-					for (l = 0;l < (int)sizeof(keyname) - 1 && com_token[k+l] && !ISWHITESPACE(com_token[k+l]);l++)
+					for (l = 0; l < (int)sizeof(keyname) - 1 && com_token[k+l] && !ISWHITESPACE(com_token[k+l]);l++) {
 						keyname[l] = com_token[k+l];
+					} // for
 					keyname[l] = 0;
 					if (!COM_ParseToken_Simple(&data, false, false, true))
 						break;
 					if (developer_extra.integer)
 						Con_DPrintf("key: %s %s\n", keyname, com_token);
-					if (!strcmp(keyname, "message"))
-					{
+					if (!strcmp(keyname, "message")) {
 						// get the message contents
 						strlcpy(message, com_token, sizeof(message));
 						break;
-					}
-				}
-			}
+					} // if "message"
+				} // for
+			} // if entities
 		}
 		if (entities)
 			Z_Free(entities);
 		if(f)
 			FS_Close(f);
+
 		*(t->filenames[i]+len[i]+5) = 0;
 		Con_Printf("%16s (%-8s) %s\n", t->filenames[i]+5, desc, message);
 	}
@@ -2517,8 +2559,7 @@ qbool GetMapList (const char *s, char *completedname, int completednamebufferlen
 				goto endcomplete;
 	}
 endcomplete:
-	if(p > o && completedname && completednamebufferlength > 0)
-	{
+	if(p > o && completedname && completednamebufferlength > 0) {
 		memset(completedname, 0, completednamebufferlength);
 		memcpy(completedname, (t->filenames[0]+5), min(p, completednamebufferlength - 1));
 	}
@@ -3060,8 +3101,7 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 		}
 		else
 		{
-			if(patterns)
-			{
+			if(patterns) {
 				char t[MAX_QPATH];
 				stringlist_t resultbuf, dirbuf;
 
@@ -3193,7 +3233,7 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 					strlcat(line, s2, MAX_INPUTLINE); //add back chars after cursor
 
 					// and fix the cursor
-					if(linepos > (int) strlen(line))
+					if (linepos > (int) strlen(line))
 						linepos = (int) strlen(line);
 				}
 				stringlistfreecontents(&resultbuf);

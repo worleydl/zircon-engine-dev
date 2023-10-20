@@ -83,6 +83,13 @@ static cvar_t joy_sdl2_trigger_deadzone = {CF_ARCHIVE | CF_CLIENT, "joy_sdl2_tri
 static cvar_t *steelstorm_showing_map = NULL; // detect but do not create the cvar
 static cvar_t *steelstorm_showing_mousecursor = NULL; // detect but do not create the cvar
 
+extern cvar_t gl_info_vendor;
+extern cvar_t gl_info_renderer;
+extern cvar_t gl_info_version;
+extern cvar_t gl_info_platform;
+extern cvar_t gl_info_driver;
+
+
 static int win_half_width = 50;
 static int win_half_height = 50;
 static int video_bpp;
@@ -927,7 +934,7 @@ static void IN_Move_TouchScreen_Quake(void)
 		break;
 
 	case key_game:
-		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
+		VID_TouchscreenArea( 0,   0,   0,  64,  64, "gfx/touch_console.tga"                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 2,   0,-128, 128, 128, "gfx/touch_movebutton.tga"   , 0.0f, NULL, move, &buttons[0], K_MOUSE4, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 3,-128,-128, 128, 128, "gfx/touch_aimbutton.tga"    , 0.0f, NULL, aim,  &buttons[1], K_MOUSE5, NULL, 0, 0, 0, true);
@@ -936,8 +943,10 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea( 3, -64,-160,  64,  32, "gfx/touch_attack2button.tga", 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
 		buttons[15] = false; // Baker: And this is?  touch_keyboard
 		break;
+
+	// key_menu key_message
 	default:
-		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
+		VID_TouchscreenArea( 0,   0,   0,  64,  64, "gfx/touch_console.tga"                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
 		// in menus, an icon in the corner activates keyboard
 		VID_TouchscreenArea( 2,   0, -32,  32,  32, "gfx/touch_keyboard.tga"     , 0.0f, NULL, NULL, &buttons[15], (keynum_t)0, NULL, 0, 0, 0, true);
@@ -1505,6 +1514,7 @@ void VID_Init (void)
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
+	// Baker: Returns -1 on an error or 0 on success.
 	vid_sdl_initjoysticksystem = SDL_InitSubSystem(SDL_INIT_JOYSTICK) >= 0;
 	if (!vid_sdl_initjoysticksystem)
 		Con_Printf(CON_ERROR "Failed to init SDL joystick subsystem: %s\n", SDL_GetError());
@@ -1670,11 +1680,6 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 }
 #endif
 
-extern cvar_t gl_info_vendor;
-extern cvar_t gl_info_renderer;
-extern cvar_t gl_info_version;
-extern cvar_t gl_info_platform;
-extern cvar_t gl_info_driver;
 
 static qbool VID_InitModeGL(viddef_mode_t *mode)
 {
@@ -1786,7 +1791,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	window = SDL_CreateWindow(gamename, xPos, yPos, mode->width, mode->height, windowflags);
 	if (window == NULL)
 	{
-		Con_Printf(CON_ERROR "Failed to set video mode to %ix%i: %s\n", mode->width, mode->height, SDL_GetError());
+		Con_Printf (CON_ERROR "Failed to set video mode to %ix%i: %s\n", mode->width, mode->height, SDL_GetError());
 		VID_Shutdown();
 		return false;
 	}

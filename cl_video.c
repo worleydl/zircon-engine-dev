@@ -20,11 +20,11 @@ cvar_t v_glslgamma_video = {CF_CLIENT | CF_ARCHIVE, "v_glslgamma_video", "1", "a
 #include "dpvsimpledecode.h"
 
 // VorteX: libavcodec implementation
-#include "cl_video_libavw.h"
+#include "cl_video_libavw.c.h"
 
 // JAM video decoder used by Blood Omnicide
 #ifdef JAMVIDEO
-#include "cl_video_jamdecode.c"
+#include "cl_video_jamdecode.c.h"
 #endif
 
 // constants (and semi-constants)
@@ -287,7 +287,7 @@ clvideo_t *CL_GetVideoByName( const char *name )
 
 	for( i = 0 ; i < cl_num_videos ; i++ )
 		if( cl_videos[ i ].state != CLVIDEO_UNUSED
-			&&	!strcmp( cl_videos[ i ].name , name ) )
+			&&	String_Does_Match( cl_videos[ i ].name , name ) )
 			break;
 	if( i != cl_num_videos )
 		return CL_GetVideoBySlot( i );

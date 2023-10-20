@@ -1,4 +1,4 @@
-#ifndef CORE_SDL
+#if !defined(_WIN32) && !defined(CORE_SDL) // SV only
 
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
@@ -175,4 +175,4 @@ void SndSys_SendKeyEvents(void)
 {
 }
 
-#endif // ! CORE_SDL
+#endif // !defined(_WIN32) && !defined(CORE_SDL) // SV only

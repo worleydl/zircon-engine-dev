@@ -1,3 +1,6 @@
+#ifndef CVAR_H
+#define CVAR_H
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 Copyright (C) 2006-2021 DarkPlaces contributors
@@ -54,8 +57,7 @@ Cvars are restricted from having the same names as commands to keep this
 interface from being ambiguous.
 */
 
-#ifndef CVAR_H
-#define CVAR_H
+
 
 #include "qtypes.h"
 #include "qdefs.h"
@@ -203,5 +205,5 @@ void Cvar_UpdateAllAutoCvars(cvar_state_t *cvars); // updates ALL autocvars of t
 void Cvar_FillAll_f(cmd_state_t *cmd);
 #endif /* FILLALLCVARSWITHRUBBISH */
 
-#endif
+#endif // !CVAR_H
 

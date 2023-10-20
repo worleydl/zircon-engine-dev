@@ -1,3 +1,5 @@
+// protocol.c
+
 #include "quakedef.h"
 
 // this is 88 bytes (must match entity_state_t in protocol.h)
@@ -69,7 +71,7 @@ protocolversion_t Protocol_EnumForName(const char *s)
 {
 	int i;
 	for (i = 0;protocolversioninfo[i].name;i++)
-		if (!strcasecmp(s, protocolversioninfo[i].name))
+		if (String_Does_Match_Caseless(s, protocolversioninfo[i].name))
 			return protocolversioninfo[i].version;
 	return PROTOCOL_UNKNOWN;
 }
@@ -119,10 +121,8 @@ void Protocol_UpdateClientStats(const int *stats)
 {
 	int i;
 	// update the stats array and set deltabits for any changed stats
-	for (i = 0;i < MAX_CL_STATS;i++)
-	{
-		if (host_client->stats[i] != stats[i])
-		{
+	for (i = 0;i < MAX_CL_STATS;i++) {
+		if (host_client->stats[i] != stats[i]) {
 			host_client->statsdeltabits[i >> 3] |= 1 << (i & 7);
 			host_client->stats[i] = stats[i];
 		}
@@ -162,14 +162,11 @@ void Protocol_WriteStatsReliable(void)
 	{
 		i = sendquakestats[j];
 		// check if this bit is set
-		if (host_client->statsdeltabits[i >> 3] & (1 << (i & 7)))
-		{
+		if (host_client->statsdeltabits[i >> 3] & (1 << (i & 7))) {
 			host_client->statsdeltabits[i >> 3] -= (1 << (i & 7));
 			// send the stat as a byte if possible
-			if (sv.protocol == PROTOCOL_QUAKEWORLD)
-			{
-				if (host_client->stats[i] >= 0 && host_client->stats[i] < 256)
-				{
+			if (sv.protocol == PROTOCOL_QUAKEWORLD) {
+				if (host_client->stats[i] >= 0 && host_client->stats[i] < 256) {
 					MSG_WriteByte(&host_client->netconnection->message, qw_svc_updatestat);
 					MSG_WriteByte(&host_client->netconnection->message, i);
 					MSG_WriteByte(&host_client->netconnection->message, host_client->stats[i]);

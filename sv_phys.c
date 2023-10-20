@@ -875,10 +875,8 @@ void SV_LinkEdict (prvm_edict_t *ent)
 		VectorAdd(PRVM_serveredictvector(ent, origin), PRVM_serveredictvector(ent, maxs), maxs);
 	}
 
-	if (sv_legacy_bbox_expand.integer)
-	{
-		if ((int)PRVM_serveredictfloat(ent, flags) & FL_ITEM)
-		{
+	if (sv_legacy_bbox_expand.integer) {
+		if (Have_Flag ((int)PRVM_serveredictfloat(ent, flags), FL_ITEM)) {
 			// to make items easier to pick up and allow them to be grabbed off
 			// of shelves, the abs sizes are expanded
 			mins[0] -= 15;
@@ -930,6 +928,7 @@ static int SV_TestEntityPosition (prvm_edict_t *ent, vec3_t offset)
 	int skipmaterialflagsmask = 0;
 	vec3_t org, entorigin, entmins, entmaxs;
 	trace_t trace;
+
 	VectorAdd(PRVM_serveredictvector(ent, origin), offset, org);
 	VectorCopy(PRVM_serveredictvector(ent, origin), entorigin);
 	VectorCopy(PRVM_serveredictvector(ent, mins), entmins);
@@ -1090,7 +1089,7 @@ static qbool SV_RunThink (prvm_edict_t *ent)
 	if (PRVM_serveredictfloat(ent, nextthink) <= 0 || PRVM_serveredictfloat(ent, nextthink) > sv.time + sv.frametime)
 		return true;
 
-	for (iterations = 0;iterations < 128  && !ent->free;iterations++)
+	for (iterations = 0; iterations < 128  && !ent->free; iterations++)
 	{
 		PRVM_serverglobalfloat(time) = max(sv.time, PRVM_serveredictfloat(ent, nextthink));
 		PRVM_serveredictfloat(ent, nextthink) = 0;
@@ -2836,6 +2835,7 @@ static void SV_Physics_Entity (prvm_edict_t *ent)
 	ent->priv.server->move = true;
 	if (!runmove && sv_gameplayfix_delayprojectiles.integer > 0)
 		return;
+
 	switch ((int) PRVM_serveredictfloat(ent, movetype))
 	{
 	case MOVETYPE_PUSH:
@@ -3136,7 +3136,7 @@ static void SV_Physics_ClientEntity(prvm_edict_t *ent)
 	default:
 		if((int) PRVM_serveredictfloat(ent, movetype) >= MOVETYPE_USER_FIRST && (int) PRVM_serveredictfloat(ent, movetype) <= MOVETYPE_USER_LAST)
 			break;
-		Con_Printf ("SV_Physics_ClientEntity: bad movetype %i\n", (int)PRVM_serveredictfloat(ent, movetype));
+		Con_PrintLinef ("SV_Physics_ClientEntity: bad movetype %d", (int)PRVM_serveredictfloat(ent, movetype));
 		break;
 	}
 

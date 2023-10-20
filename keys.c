@@ -375,7 +375,7 @@ static const keyname_t   keynames[] = {
 	{"CAPSLOCK", K_CAPSLOCK},
 	{"SCROLLOCK", K_SCROLLOCK},
 
-	{"KP_INS",			K_KP_INS },
+	{"KP_INS",			K_KP_INSERT },
 	{"KP_0", K_KP_0},
 	{"KP_END",			K_KP_END },
 	{"KP_1", K_KP_1},
@@ -394,7 +394,7 @@ static const keyname_t   keynames[] = {
 	{"KP_8", K_KP_8},
 	{"KP_PGUP",			K_KP_PGUP },
 	{"KP_9", K_KP_9},
-	{"KP_DEL",			K_KP_DEL },
+	{"KP_DEL",			K_KP_DELETE },
 	{"KP_PERIOD", K_KP_PERIOD},
 	{"KP_SLASH",		K_KP_SLASH },
 	{"KP_DIVIDE", K_KP_DIVIDE},
@@ -765,7 +765,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 		linestart = 0;
 	}
 
-	if ((key == 'v' && KM_CTRL) || ((key == K_INSERT || key == K_KP_INS) && KM_SHIFT))
+	if ((key == 'v' && KM_CTRL) || ((key == K_INSERT || key == K_KP_INSERT) && KM_SHIFT))
 	{
 		char *cbd, *p;
 		if ((cbd = Sys_GetClipboardData()) != 0)
@@ -956,7 +956,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 	}
 
 	// delete char on cursor
-	if ((key == K_DELETE || key == K_KP_DEL) && KM_NONE)
+	if ((key == K_DELETE || key == K_KP_DELETE) && KM_NONE)
 	{
 		size_t linelen;
 		linelen = strlen(line);
@@ -1046,7 +1046,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 
 	// Baker r0003: Thin cursor / no text overwrite mode	
 
-	//if ((key == K_INSERT || key == K_KP_INS) && KM_NONE) // toggle insert mode
+	//if ((key == K_INSERT || key == K_KP_INSERT) && KM_NONE) // toggle insert mode
 	//{
 	//	key_insert ^= 1;
 	//	return linepos;
@@ -1094,8 +1094,8 @@ static int Key_Convert_NumPadKey(int key)
 		case K_KP_END:        return '1';
 		case K_KP_DOWNARROW:  return '2';
 		case K_KP_PGDN:       return '3';
-		case K_KP_INS:        return '0';
-		case K_KP_DEL:        return '.';
+		case K_KP_INSERT:        return '0';
+		case K_KP_DELETE:        return '.';
 	}
 	return key;
 }
@@ -1293,7 +1293,7 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 			return;
 		}
 		// text zoom reset
-		if ((key == '0' || key == K_KP_INS) && KM_CTRL)
+		if ((key == '0' || key == K_KP_INSERT) && KM_CTRL)
 		{
 			Cvar_SetValueQuick(&con_textsize, atoi(Cvar_VariableDefString(&cvars_all, "con_textsize", CF_CLIENT | CF_SERVER)));
 			return;

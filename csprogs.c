@@ -1042,7 +1042,7 @@ void CL_VM_Init (void)
 			else
 			{
 				Mem_Free(csprogsdata);
-				CL_DisconnectEx(false, "Your %s is not the same version as the server (CRC is %i/%i but should be %i/%i)\n", csqc_progname.string, csprogsdatacrc, (int)csprogsdatasize, requiredcrc, requiredsize);
+				CL_DisconnectEx(false, "Your %s is not the same version as the server (CRC is %d/%d but should be %d/%d)" NEWLINE, csqc_progname.string, csprogsdatacrc, (int)csprogsdatasize, requiredcrc, requiredsize);
 				return;
 			}
 		}
@@ -1194,7 +1194,7 @@ qbool CL_VM_GetEntitySoundOrigin(int entnum, vec3_t out)
 
 	ed = PRVM_EDICT_NUM(entnum - MAX_EDICTS);
 
-	if(!ed->free)
+	if (!ed->free)
 	{
 		mod = CL_GetModelFromEdict(ed);
 		VectorCopy(PRVM_clientedictvector(ed, origin), out);

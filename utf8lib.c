@@ -761,8 +761,8 @@ UTF-8 aware COM_StringLengthNoColors
 
 calculates the visible width of a color coded string.
 
-*valid is filled with TRUE if the string is a valid colored string (that is, if
-it does not end with an unfinished color code). If it gets filled with FALSE, a
+*valid is filled with true if the string is a valid colored string (that is, if
+it does not end with an unfinished color code). If it gets filled with false, a
 fix would be adding a STRING_COLOR_TAG at the end of the string.
 
 valid can be set to NULL if the caller doesn't care.

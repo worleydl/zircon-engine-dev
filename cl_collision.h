@@ -16,4 +16,4 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int type, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask);
 #define CL_PointSuperContents(point) (CL_TracePoint((point), sv_gameplayfix_swiminbmodels.integer ? MOVE_NOMONSTERS : MOVE_WORLDONLY, NULL, 0, 0, 0, true, false, NULL, false).startsupercontents)
 
-#endif
+#endif // ! CL_COLLISION_H

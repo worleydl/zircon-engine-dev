@@ -430,7 +430,7 @@ struct skeleton_s;
 typedef struct model_s
 {
 	// name and path of model, for example "progs/player.mdl"
-	char			name[MAX_QPATH];
+	char			model_name[MAX_QPATH];
 	// model needs to be loaded if this is false
 	qbool		loaded;
 	// set if the model is used in current map, models which are not, are purged
@@ -550,7 +550,7 @@ typedef struct model_s
 	qbool lit;
 	float lightmapscale;
 
-	qbool nolerp;
+	qbool nolerp; // SEPUS
 }
 model_t;
 

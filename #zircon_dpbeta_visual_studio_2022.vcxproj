@@ -213,7 +213,6 @@
     <ClCompile Include="cl_particles.c" />
     <ClCompile Include="cl_screen.c" />
     <ClCompile Include="cl_video.c" />
-    <ClCompile Include="cl_video_libavw.c" />
     <ClCompile Include="clvm_cmds.c" />
     <ClCompile Include="cmd.c" />
     <ClCompile Include="collision.c" />

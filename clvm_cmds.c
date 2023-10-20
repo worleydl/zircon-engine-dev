@@ -104,10 +104,10 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 	mod = NULL;
 	for (i = 0;i < MAX_MODELS && cl.csqc_model_precache[i];i++)
 	{
-		if (!strcmp(cl.csqc_model_precache[i]->name, m))
+		if (!strcmp(cl.csqc_model_precache[i]->model_name, m))
 		{
 			mod = cl.csqc_model_precache[i];
-			PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->name);
+			PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->model_name);
 			PRVM_clientedictfloat(e, modelindex) = -(i+1);
 			break;
 		}
@@ -117,9 +117,9 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 		for (i = 0;i < MAX_MODELS;i++)
 		{
 			mod = cl.model_precache[i];
-			if (mod && !strcmp(mod->name, m))
+			if (mod && !strcmp(mod->model_name, m))
 			{
-				PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->name);
+				PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->model_name);
 				PRVM_clientedictfloat(e, modelindex) = i;
 				break;
 			}
@@ -427,7 +427,7 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 	name = PRVM_G_STRING(OFS_PARM0);
 	for (i = 0;i < MAX_MODELS && cl.csqc_model_precache[i];i++)
 	{
-		if(!strcmp(cl.csqc_model_precache[i]->name, name))
+		if(!strcmp(cl.csqc_model_precache[i]->model_name, name))
 		{
 			PRVM_G_FLOAT(OFS_RETURN) = -(i+1);
 			return;
@@ -2100,7 +2100,7 @@ static void VM_CL_setmodelindex (prvm_prog_t *prog)
 		VM_Warning(prog, "VM_CL_setmodelindex: null model\n");
 		return;
 	}
-	PRVM_clientedictstring(t, model) = PRVM_SetEngineString(prog, model->name);
+	PRVM_clientedictstring(t, model) = PRVM_SetEngineString(prog, model->model_name);
 	PRVM_clientedictfloat(t, modelindex) = i;
 
 	// TODO: check if this breaks needed consistency and maybe add a cvar for it too?? [1/10/2008 Black]
@@ -2121,7 +2121,7 @@ static void VM_CL_modelnameforindex (prvm_prog_t *prog)
 
 	PRVM_G_INT(OFS_RETURN) = OFS_NULL;
 	model = CL_GetModelByIndex((int)PRVM_G_FLOAT(OFS_PARM0));
-	PRVM_G_INT(OFS_RETURN) = model ? PRVM_SetEngineString(prog, model->name) : 0;
+	PRVM_G_INT(OFS_RETURN) = model ? PRVM_SetEngineString(prog, model->model_name) : 0;
 }
 
 //#335 float(string effectname) particleeffectnum (EXT_CSQC)
@@ -3145,7 +3145,7 @@ static void VM_CL_setattachment (prvm_prog_t *prog)
 		{
 			tagindex = Mod_Alias_GetTagIndexForName(model, (int)PRVM_clientedictfloat(tagentity, skin), tagname);
 			if (tagindex == 0)
-				Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i (model \"%s\") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->name);
+				Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i (model \"%s\") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
 		}
 		else
 			Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i but it has no model\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));

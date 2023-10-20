@@ -896,7 +896,7 @@ static void Mod_MDL_LoadFrames (unsigned char* datapointer, int inverts, int *ve
 			interval = LittleFloat (intervals->interval); // FIXME: support variable framerate groups
 			if (interval < 0.01f)
 			{
-				Con_Printf("%s has an invalid interval %f, changing to 0.1\n", loadmodel->name, interval);
+				Con_Printf("%s has an invalid interval %f, changing to 0.1\n", loadmodel->model_name, interval);
 				interval = 0.1f;
 			}
 		}
@@ -944,7 +944,7 @@ void Mod_BuildAliasSkinsFromSkinFiles(texture_t *skin, skinfile_t *skinfile, con
 					Image_StripImageExtension(skinfileitem->replacement, stripbuf, sizeof(stripbuf));
 					if(developer_extra.integer)
 						Con_DPrintf("--> got %s from skin file\n", stripbuf);
-					Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, skin, stripbuf, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+					Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, skin, stripbuf, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 					break;
 				}
 			}
@@ -963,12 +963,12 @@ void Mod_BuildAliasSkinsFromSkinFiles(texture_t *skin, skinfile_t *skinfile, con
 		if(developer_extra.integer)
 			Con_DPrintf("--> using default\n");
 		Image_StripImageExtension(shadername, stripbuf, sizeof(stripbuf));
-		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, skin, stripbuf, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, skin, stripbuf, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 	}
 }
 extern cvar_t r_nolerp_list;
-#define BOUNDI(VALUE,MIN,MAX) if (VALUE < MIN || VALUE >= MAX) Host_Error("model %s has an invalid ##VALUE (%d exceeds %d - %d)", loadmodel->name, VALUE, MIN, MAX);
-#define BOUNDF(VALUE,MIN,MAX) if (VALUE < MIN || VALUE >= MAX) Host_Error("model %s has an invalid ##VALUE (%f exceeds %f - %f)", loadmodel->name, VALUE, MIN, MAX);
+#define BOUNDI(VALUE,MIN,MAX) if (VALUE < MIN || VALUE >= MAX) Host_Error("model %s has an invalid ##VALUE (%d exceeds %d - %d)", loadmodel->model_name, VALUE, MIN, MAX);
+#define BOUNDF(VALUE,MIN,MAX) if (VALUE < MIN || VALUE >= MAX) Host_Error("model %s has an invalid ##VALUE (%f exceeds %f - %f)", loadmodel->model_name, VALUE, MIN, MAX);
 void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i, j, version, totalskins, skinwidth, skinheight, groupframes, groupskins, numverts;
@@ -999,7 +999,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 	version = LittleLong (pinmodel->version);
 	if (version != ALIAS_VERSION)
 		Host_Error ("%s has wrong version number (%i should be %i)",
-				 loadmodel->name, version, ALIAS_VERSION);
+				 loadmodel->model_name, version, ALIAS_VERSION);
 
 	loadmodel->modeldatatypestring = "MDL";
 
@@ -1043,7 +1043,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 	i = LittleLong (pinmodel->flags);
 	loadmodel->effects = ((i & 255) << 24) | (i & 0x00FFFF00);
 
-	if (strstr(r_nolerp_list.string, loadmodel->name))
+	if (strstr(r_nolerp_list.string, loadmodel->model_name))
 		loadmodel->nolerp = true;
 
 	for (i = 0;i < 3;i++)
@@ -1236,7 +1236,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 				interval = LittleFloat(pinskinintervals[0].interval);
 				if (interval < 0.01f)
 				{
-					Con_Printf("%s has an invalid interval %f, changing to 0.1\n", loadmodel->name, interval);
+					Con_Printf("%s has an invalid interval %f, changing to 0.1\n", loadmodel->model_name, interval);
 					interval = 0.1f;
 				}
 			}
@@ -1250,10 +1250,10 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 			for (j = 0;j < groupskins;j++)
 			{
 				if (groupskins > 1)
-					dpsnprintf (name, sizeof(name), "%s_%i_%i", loadmodel->name, i, j);
+					dpsnprintf (name, sizeof(name), "%s_%i_%i", loadmodel->model_name, i, j);
 				else
-					dpsnprintf (name, sizeof(name), "%s_%i", loadmodel->name, i);
-				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, false, false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL))
+					dpsnprintf (name, sizeof(name), "%s_%i", loadmodel->model_name, i);
+				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, false, false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL))
 					Mod_LoadCustomMaterial(loadmodel->mempool, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, SUPERCONTENTS_SOLID, MATERIALFLAG_WALL, R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_PICMIP, true, r_fullbrights.integer, (unsigned char *)datapointer, skinwidth, skinheight));
 				datapointer += skinwidth * skinheight;
 				totalskins++;
@@ -1264,7 +1264,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 		// TODO: support shaders here?
 		for (;;)
 		{
-			dpsnprintf(name, sizeof(name), "%s_%i", loadmodel->name, loadmodel->numskins);
+			dpsnprintf(name, sizeof(name), "%s_%i", loadmodel->model_name, loadmodel->numskins);
 			tempskinframe = R_SkinFrame_LoadExternal(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, false, false);
 			if (!tempskinframe)
 				break;
@@ -1348,7 +1348,7 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 	version = LittleLong (pinmodel->version);
 	if (version != MD2ALIAS_VERSION)
 		Host_Error ("%s has wrong version number (%i should be %i)",
-			loadmodel->name, version, MD2ALIAS_VERSION);
+			loadmodel->model_name, version, MD2ALIAS_VERSION);
 
 	loadmodel->modeldatatypestring = "MD2";
 
@@ -1366,25 +1366,25 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 	loadmodel->AnimateVertices = Mod_MDL_AnimateVertices;
 
 	if (LittleLong(pinmodel->num_tris) < 1 || LittleLong(pinmodel->num_tris) > 65536)
-		Host_Error ("%s has invalid number of triangles: %i", loadmodel->name, LittleLong(pinmodel->num_tris));
+		Host_Error ("%s has invalid number of triangles: %i", loadmodel->model_name, LittleLong(pinmodel->num_tris));
 	if (LittleLong(pinmodel->num_xyz) < 1 || LittleLong(pinmodel->num_xyz) > 65536)
-		Host_Error ("%s has invalid number of vertices: %i", loadmodel->name, LittleLong(pinmodel->num_xyz));
+		Host_Error ("%s has invalid number of vertices: %i", loadmodel->model_name, LittleLong(pinmodel->num_xyz));
 	if (LittleLong(pinmodel->num_frames) < 1 || LittleLong(pinmodel->num_frames) > 65536)
-		Host_Error ("%s has invalid number of frames: %i", loadmodel->name, LittleLong(pinmodel->num_frames));
+		Host_Error ("%s has invalid number of frames: %i", loadmodel->model_name, LittleLong(pinmodel->num_frames));
 	if (LittleLong(pinmodel->num_skins) < 0 || LittleLong(pinmodel->num_skins) > 256)
-		Host_Error ("%s has invalid number of skins: %i", loadmodel->name, LittleLong(pinmodel->num_skins));
+		Host_Error ("%s has invalid number of skins: %i", loadmodel->model_name, LittleLong(pinmodel->num_skins));
 
 	end = LittleLong(pinmodel->ofs_end);
 	if (LittleLong(pinmodel->num_skins) >= 1 && (LittleLong(pinmodel->ofs_skins) <= 0 || LittleLong(pinmodel->ofs_skins) >= end))
-		Host_Error ("%s is not a valid model", loadmodel->name);
+		Host_Error ("%s is not a valid model", loadmodel->model_name);
 	if (LittleLong(pinmodel->ofs_st) <= 0 || LittleLong(pinmodel->ofs_st) >= end)
-		Host_Error ("%s is not a valid model", loadmodel->name);
+		Host_Error ("%s is not a valid model", loadmodel->model_name);
 	if (LittleLong(pinmodel->ofs_tris) <= 0 || LittleLong(pinmodel->ofs_tris) >= end)
-		Host_Error ("%s is not a valid model", loadmodel->name);
+		Host_Error ("%s is not a valid model", loadmodel->model_name);
 	if (LittleLong(pinmodel->ofs_frames) <= 0 || LittleLong(pinmodel->ofs_frames) >= end)
-		Host_Error ("%s is not a valid model", loadmodel->name);
+		Host_Error ("%s is not a valid model", loadmodel->model_name);
 	if (LittleLong(pinmodel->ofs_glcmds) <= 0 || LittleLong(pinmodel->ofs_glcmds) >= end)
-		Host_Error ("%s is not a valid model", loadmodel->name);
+		Host_Error ("%s is not a valid model", loadmodel->model_name);
 
 	loadmodel->numskins = LittleLong(pinmodel->num_skins);
 	numxyz = LittleLong(pinmodel->num_xyz);
@@ -1429,7 +1429,7 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->num_texturesperskin = loadmodel->num_surfaces;
 		loadmodel->data_textures = (texture_t *)Mem_Alloc(loadmodel->mempool, loadmodel->num_surfaces * loadmodel->numskins * sizeof(texture_t));
 		for (i = 0;i < loadmodel->numskins;i++, inskin += MD2_SKINNAME)
-			Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i * loadmodel->num_surfaces, inskin, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+			Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i * loadmodel->num_surfaces, inskin, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 	}
 	else
 	{
@@ -1438,7 +1438,7 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->num_textures = loadmodel->num_surfaces * loadmodel->numskins;
 		loadmodel->num_texturesperskin = loadmodel->num_surfaces;
 		loadmodel->data_textures = (texture_t *)Mem_Alloc(loadmodel->mempool, loadmodel->num_surfaces * loadmodel->numskins * sizeof(texture_t));
-		Mod_LoadCustomMaterial(loadmodel->mempool, loadmodel->data_textures, loadmodel->name, SUPERCONTENTS_SOLID, MATERIALFLAG_WALL, R_SkinFrame_LoadMissing());
+		Mod_LoadCustomMaterial(loadmodel->mempool, loadmodel->data_textures, loadmodel->model_name, SUPERCONTENTS_SOLID, MATERIALFLAG_WALL, R_SkinFrame_LoadMissing());
 	}
 
 	loadmodel->skinscenes = (animscene_t *)Mem_Alloc(loadmodel->mempool, sizeof(animscene_t) * loadmodel->numskins);
@@ -1465,12 +1465,12 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 			st = (unsigned short) LittleShort (intri[i].index_st[j]);
 			if (xyz >= numxyz)
 			{
-				Con_Printf("%s has an invalid xyz index (%i) on triangle %i, resetting to 0\n", loadmodel->name, xyz, i);
+				Con_Printf("%s has an invalid xyz index (%i) on triangle %i, resetting to 0\n", loadmodel->model_name, xyz, i);
 				xyz = 0;
 			}
 			if (st >= numst)
 			{
-				Con_Printf("%s has an invalid st index (%i) on triangle %i, resetting to 0\n", loadmodel->name, st, i);
+				Con_Printf("%s has an invalid st index (%i) on triangle %i, resetting to 0\n", loadmodel->model_name, st, i);
 				st = 0;
 			}
 			hashindex = (xyz * 256 + st) & 65535;
@@ -1502,7 +1502,7 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 		stt = LittleShort(inst[hash->st*2+1]);
 		if (sts < 0 || sts >= skinwidth || stt < 0 || stt >= skinheight)
 		{
-			Con_Printf("%s has an invalid skin coordinate (%i %i) on vert %i, changing to 0 0\n", loadmodel->name, sts, stt, i);
+			Con_Printf("%s has an invalid skin coordinate (%i %i) on vert %i, changing to 0 0\n", loadmodel->model_name, sts, stt, i);
 			sts = 0;
 			stt = 0;
 		}
@@ -1589,11 +1589,11 @@ void Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend)
 	pinmodel = (md3modelheader_t *)buffer;
 
 	if (memcmp(pinmodel->identifier, "IDP3", 4))
-		Host_Error ("%s is not a MD3 (IDP3) file", loadmodel->name);
+		Host_Error ("%s is not a MD3 (IDP3) file", loadmodel->model_name);
 	version = LittleLong (pinmodel->version);
 	if (version != MD3VERSION)
 		Host_Error ("%s has wrong version number (%i should be %i)",
-			loadmodel->name, version, MD3VERSION);
+			loadmodel->model_name, version, MD3VERSION);
 
 	skinfiles = Mod_LoadSkinFiles();
 	if (loadmodel->numskins < 1)
@@ -1772,9 +1772,9 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	pinmodel = (zymtype1header_t *)buffer;
 	pbase = (unsigned char *)buffer;
 	if (memcmp(pinmodel->id, "ZYMOTICMODEL", 12))
-		Host_Error ("Mod_ZYMOTICMODEL_Load: %s is not a zymotic model", loadmodel->name);
+		Host_Error ("Mod_ZYMOTICMODEL_Load: %s is not a zymotic model", loadmodel->model_name);
 	if (BigLong(pinmodel->type) != 1)
-		Host_Error ("Mod_ZYMOTICMODEL_Load: only type 1 (skeletal pose) models are currently supported (name = %s)", loadmodel->name);
+		Host_Error ("Mod_ZYMOTICMODEL_Load: only type 1 (skeletal pose) models are currently supported (name = %s)", loadmodel->model_name);
 
 	loadmodel->modeldatatypestring = "ZYM";
 
@@ -1818,12 +1818,12 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 
 	if (pheader->numtris < 1 || pheader->numverts < 3 || pheader->numshaders < 1)
 	{
-		Con_Printf("%s has no geometry\n", loadmodel->name);
+		Con_Printf("%s has no geometry\n", loadmodel->model_name);
 		return;
 	}
 	if (pheader->numscenes < 1 || pheader->lump_poses.length < (int)sizeof(float[3][4]))
 	{
-		Con_Printf("%s has no animations\n", loadmodel->name);
+		Con_Printf("%s has no animations\n", loadmodel->model_name);
 		return;
 	}
 
@@ -1891,11 +1891,11 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->animscenes[i].framerate = BigFloat(scene->framerate);
 		loadmodel->animscenes[i].loop = (BigLong(scene->flags) & ZYMSCENEFLAG_NOLOOP) == 0;
 		if ((unsigned int) loadmodel->animscenes[i].firstframe >= (unsigned int) numposes)
-			Host_Error("%s scene->firstframe (%i) >= numposes (%i)", loadmodel->name, loadmodel->animscenes[i].firstframe, numposes);
+			Host_Error("%s scene->firstframe (%i) >= numposes (%i)", loadmodel->model_name, loadmodel->animscenes[i].firstframe, numposes);
 		if ((unsigned int) loadmodel->animscenes[i].firstframe + (unsigned int) loadmodel->animscenes[i].framecount > (unsigned int) numposes)
-			Host_Error("%s scene->firstframe (%i) + framecount (%i) >= numposes (%i)", loadmodel->name, loadmodel->animscenes[i].firstframe, loadmodel->animscenes[i].framecount, numposes);
+			Host_Error("%s scene->firstframe (%i) + framecount (%i) >= numposes (%i)", loadmodel->model_name, loadmodel->animscenes[i].firstframe, loadmodel->animscenes[i].framecount, numposes);
 		if (loadmodel->animscenes[i].framerate < 0)
-			Host_Error("%s scene->framerate (%f) < 0", loadmodel->name, loadmodel->animscenes[i].framerate);
+			Host_Error("%s scene->framerate (%f) < 0", loadmodel->model_name, loadmodel->animscenes[i].framerate);
 		scene++;
 	}
 
@@ -1909,7 +1909,7 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->data_bones[i].flags = BigLong(bone[i].flags);
 		loadmodel->data_bones[i].parent = BigLong(bone[i].parent);
 		if (loadmodel->data_bones[i].parent >= i)
-			Host_Error("%s bone[%i].parent >= %i", loadmodel->name, i, i);
+			Host_Error("%s bone[%i].parent >= %i", loadmodel->model_name, i, i);
 	}
 
 	//zymlump_t lump_vertbonecounts; // int vertbonecounts[numvertices]; // how many bones influence each vertex (separate mainly to make this compress better)
@@ -1919,7 +1919,7 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	{
 		vertbonecounts[i] = BigLong(bonecount[i]);
 		if (vertbonecounts[i] != 1)
-			Host_Error("%s bonecount[%i] != 1 (vertex weight support is impossible in this format)", loadmodel->name, i);
+			Host_Error("%s bonecount[%i] != 1 (vertex weight support is impossible in this format)", loadmodel->model_name, i);
 	}
 
 	loadmodel->num_poses = pheader->lump_poses.length / sizeof(float[3][4]) / loadmodel->num_bones;
@@ -2063,7 +2063,7 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	// byteswap, validate, and swap winding order of tris
 	count = pheader->numshaders * sizeof(int) + pheader->numtris * sizeof(int[3]);
 	if (pheader->lump_render.length != count)
-		Host_Error("%s renderlist is wrong size (%i bytes, should be %i bytes)", loadmodel->name, pheader->lump_render.length, count);
+		Host_Error("%s renderlist is wrong size (%i bytes, should be %i bytes)", loadmodel->model_name, pheader->lump_render.length, count);
 	renderlist = (int *) (pheader->lump_render.start + pbase);
 	renderlistend = (int *) ((unsigned char *) renderlist + pheader->lump_render.length);
 	meshtriangles = 0;
@@ -2071,10 +2071,10 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	{
 		int firstvertex, lastvertex;
 		if (renderlist >= renderlistend)
-			Host_Error("%s corrupt renderlist (wrong size)", loadmodel->name);
+			Host_Error("%s corrupt renderlist (wrong size)", loadmodel->model_name);
 		count = BigLong(*renderlist);renderlist++;
 		if (renderlist + count * 3 > renderlistend || (i == pheader->numshaders - 1 && renderlist + count * 3 != renderlistend))
-			Host_Error("%s corrupt renderlist (wrong size)", loadmodel->name);
+			Host_Error("%s corrupt renderlist (wrong size)", loadmodel->model_name);
 
 		loadmodel->modelsurfaces_sorted[i] = i;
 		surface = loadmodel->data_surfaces + i;
@@ -2097,7 +2097,7 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		for (j = 0;j < surface->num_triangles * 3;j++)
 		{
 			if ((unsigned int)outelements[j] >= (unsigned int)meshvertices)
-				Host_Error("%s corrupt renderlist (out of bounds index)", loadmodel->name);
+				Host_Error("%s corrupt renderlist (out of bounds index)", loadmodel->model_name);
 			firstvertex = min(firstvertex, outelements[j]);
 			lastvertex = max(lastvertex, outelements[j]);
 		}
@@ -2156,9 +2156,9 @@ void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	pheader = (dpmheader_t *)buffer;
 	pbase = (unsigned char *)buffer;
 	if (memcmp(pheader->id, "DARKPLACESMODEL\0", 16))
-		Host_Error ("Mod_DARKPLACESMODEL_Load: %s is not a darkplaces model", loadmodel->name);
+		Host_Error ("Mod_DARKPLACESMODEL_Load: %s is not a darkplaces model", loadmodel->model_name);
 	if (BigLong(pheader->type) != 2)
-		Host_Error ("Mod_DARKPLACESMODEL_Load: only type 2 (hierarchical skeletal pose) models are currently supported (name = %s)", loadmodel->name);
+		Host_Error ("Mod_DARKPLACESMODEL_Load: only type 2 (hierarchical skeletal pose) models are currently supported (name = %s)", loadmodel->model_name);
 
 	loadmodel->modeldatatypestring = "DPM";
 
@@ -2185,12 +2185,12 @@ void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 
 	if (pheader->num_bones < 1 || pheader->num_meshs < 1)
 	{
-		Con_Printf("%s has no geometry\n", loadmodel->name);
+		Con_Printf("%s has no geometry\n", loadmodel->model_name);
 		return;
 	}
 	if (pheader->num_frames < 1)
 	{
-		Con_Printf("%s has no frames\n", loadmodel->name);
+		Con_Printf("%s has no frames\n", loadmodel->model_name);
 		return;
 	}
 
@@ -2289,7 +2289,7 @@ void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->data_bones[i].flags = BigLong(bone[i].flags);
 		loadmodel->data_bones[i].parent = BigLong(bone[i].parent);
 		if (loadmodel->data_bones[i].parent >= i)
-			Host_Error("%s bone[%i].parent >= %i", loadmodel->name, i, i);
+			Host_Error("%s bone[%i].parent >= %i", loadmodel->model_name, i, i);
 	}
 
 	// load the frames
@@ -2528,7 +2528,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 
 	pchunk = (pskchunk_t *)buffer;
 	if (strcmp(pchunk->id, "ACTRHEAD"))
-		Host_Error ("Mod_PSKMODEL_Load: %s is not an Unreal Engine ActorX (.psk + .psa) model", loadmodel->name);
+		Host_Error ("Mod_PSKMODEL_Load: %s is not an Unreal Engine ActorX (.psk + .psa) model", loadmodel->model_name);
 
 	loadmodel->modeldatatypestring = "PSK";
 
@@ -2546,7 +2546,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	loadmodel->AnimateVertices = Mod_Skeletal_AnimateVertices;
 	loadmodel->synctype = ST_RAND;
 
-	FS_StripExtension(loadmodel->name, animname, sizeof(animname));
+	FS_StripExtension(loadmodel->model_name, animname, sizeof(animname));
 	strlcat(animname, ".psa", sizeof(animname));
 	animbuffer = animfilebuffer = FS_LoadFile(animname, loadmodel->mempool, false, &filesize);
 	animbufferend = (void *)((unsigned char*)animbuffer + (int)filesize);
@@ -2578,9 +2578,9 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		recordsize = LittleLong(pchunk->recordsize);
 		numrecords = LittleLong(pchunk->numrecords);
 		if (developer_extra.integer)
-			Con_DPrintf("%s: %s %x: %i * %i = %i\n", loadmodel->name, pchunk->id, version, recordsize, numrecords, recordsize * numrecords);
+			Con_DPrintf("%s: %s %x: %i * %i = %i\n", loadmodel->model_name, pchunk->id, version, recordsize, numrecords, recordsize * numrecords);
 		if (version != 0x1e83b9 && version != 0x1e9179 && version != 0x2e && version != 0x12f2bc && version != 0x12f2f0)
-			Con_Printf ("%s: chunk %s has unknown version %x (0x1e83b9, 0x1e9179, 0x2e, 0x12f2bc, 0x12f2f0 are currently supported), trying to load anyway!\n", loadmodel->name, pchunk->id, version);
+			Con_Printf ("%s: chunk %s has unknown version %x (0x1e83b9, 0x1e9179, 0x2e, 0x12f2bc, 0x12f2f0 are currently supported), trying to load anyway!\n", loadmodel->model_name, pchunk->id, version);
 		if (!strcmp(pchunk->id, "ACTRHEAD"))
 		{
 			// nothing to do
@@ -2589,7 +2589,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			pskpnts_t *p;
 			if (recordsize != sizeof(*p))
-				Host_Error("%s: %s has unsupported recordsize", loadmodel->name, pchunk->id);
+				Host_Error("%s: %s has unsupported recordsize", loadmodel->model_name, pchunk->id);
 			// byteswap in place and keep the pointer
 			numpnts = numrecords;
 			pnts = (pskpnts_t *)buffer;
@@ -2605,7 +2605,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			pskvtxw_t *p;
 			if (recordsize != sizeof(*p))
-				Host_Error("%s: %s has unsupported recordsize", loadmodel->name, pchunk->id);
+				Host_Error("%s: %s has unsupported recordsize", loadmodel->model_name, pchunk->id);
 			// byteswap in place and keep the pointer
 			numvtxw = numrecords;
 			vtxw = (pskvtxw_t *)buffer;
@@ -2616,7 +2616,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 				p->texcoord[1] = LittleFloat(p->texcoord[1]);
 				if (p->pntsindex >= numpnts)
 				{
-					Con_Printf("%s: vtxw->pntsindex %i >= numpnts %i\n", loadmodel->name, p->pntsindex, numpnts);
+					Con_Printf("%s: vtxw->pntsindex %i >= numpnts %i\n", loadmodel->model_name, p->pntsindex, numpnts);
 					p->pntsindex = 0;
 				}
 			}
@@ -2626,7 +2626,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			pskface_t *p;
 			if (recordsize != sizeof(*p))
-				Host_Error("%s: %s has unsupported recordsize", loadmodel->name, pchunk->id);
+				Host_Error("%s: %s has unsupported recordsize", loadmodel->model_name, pchunk->id);
 			// byteswap in place and keep the pointer
 			numfaces = numrecords;
 			faces = (pskface_t *)buffer;
@@ -2638,17 +2638,17 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 				p->group = LittleLong(p->group);
 				if (p->vtxwindex[0] >= numvtxw)
 				{
-					Con_Printf("%s: face->vtxwindex[0] %i >= numvtxw %i\n", loadmodel->name, p->vtxwindex[0], numvtxw);
+					Con_Printf("%s: face->vtxwindex[0] %i >= numvtxw %i\n", loadmodel->model_name, p->vtxwindex[0], numvtxw);
 					p->vtxwindex[0] = 0;
 				}
 				if (p->vtxwindex[1] >= numvtxw)
 				{
-					Con_Printf("%s: face->vtxwindex[1] %i >= numvtxw %i\n", loadmodel->name, p->vtxwindex[1], numvtxw);
+					Con_Printf("%s: face->vtxwindex[1] %i >= numvtxw %i\n", loadmodel->model_name, p->vtxwindex[1], numvtxw);
 					p->vtxwindex[1] = 0;
 				}
 				if (p->vtxwindex[2] >= numvtxw)
 				{
-					Con_Printf("%s: face->vtxwindex[2] %i >= numvtxw %i\n", loadmodel->name, p->vtxwindex[2], numvtxw);
+					Con_Printf("%s: face->vtxwindex[2] %i >= numvtxw %i\n", loadmodel->model_name, p->vtxwindex[2], numvtxw);
 					p->vtxwindex[2] = 0;
 				}
 			}
@@ -2658,7 +2658,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			pskmatt_t *p;
 			if (recordsize != sizeof(*p))
-				Host_Error("%s: %s has unsupported recordsize", loadmodel->name, pchunk->id);
+				Host_Error("%s: %s has unsupported recordsize", loadmodel->model_name, pchunk->id);
 			// byteswap in place and keep the pointer
 			nummatts = numrecords;
 			matts = (pskmatt_t *)buffer;
@@ -2672,7 +2672,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			pskboneinfo_t *p;
 			if (recordsize != sizeof(*p))
-				Host_Error("%s: %s has unsupported recordsize", loadmodel->name, pchunk->id);
+				Host_Error("%s: %s has unsupported recordsize", loadmodel->model_name, pchunk->id);
 			// byteswap in place and keep the pointer
 			numbones = numrecords;
 			bones = (pskboneinfo_t *)buffer;
@@ -2707,7 +2707,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 #endif
 				if (p->parent < 0 || p->parent >= numbones)
 				{
-					Con_Printf("%s: bone->parent %i >= numbones %i\n", loadmodel->name, p->parent, numbones);
+					Con_Printf("%s: bone->parent %i >= numbones %i\n", loadmodel->model_name, p->parent, numbones);
 					p->parent = 0;
 				}
 			}
@@ -2717,7 +2717,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			pskrawweights_t *p;
 			if (recordsize != sizeof(*p))
-				Host_Error("%s: %s has unsupported recordsize", loadmodel->name, pchunk->id);
+				Host_Error("%s: %s has unsupported recordsize", loadmodel->model_name, pchunk->id);
 			// byteswap in place and keep the pointer
 			numrawweights = numrecords;
 			rawweights = (pskrawweights_t *)buffer;
@@ -2728,12 +2728,12 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 				p->boneindex = LittleLong(p->boneindex);
 				if (p->pntsindex < 0 || p->pntsindex >= numpnts)
 				{
-					Con_Printf("%s: weight->pntsindex %i >= numpnts %i\n", loadmodel->name, p->pntsindex, numpnts);
+					Con_Printf("%s: weight->pntsindex %i >= numpnts %i\n", loadmodel->model_name, p->pntsindex, numpnts);
 					p->pntsindex = 0;
 				}
 				if (p->boneindex < 0 || p->boneindex >= numbones)
 				{
-					Con_Printf("%s: weight->boneindex %i >= numbones %i\n", loadmodel->name, p->boneindex, numbones);
+					Con_Printf("%s: weight->boneindex %i >= numbones %i\n", loadmodel->model_name, p->boneindex, numbones);
 					p->boneindex = 0;
 				}
 			}
@@ -2769,7 +2769,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			// positions from the psk, but this is hard for me to implement
 			// and people can easily make animations that match.
 			if (numanimbones != numbones)
-				Host_Error("%s: this loader only supports animations with the same bones as the mesh", loadmodel->name);
+				Host_Error("%s: this loader only supports animations with the same bones as the mesh", loadmodel->model_name);
 			for (index = 0, p = (pskboneinfo_t *)animbuffer;index < numrecords;index++, p++)
 			{
 				p->numchildren = LittleLong(p->numchildren);
@@ -2870,7 +2870,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	}
 
 	if (!numpnts || !pnts || !numvtxw || !vtxw || !numfaces || !faces || !nummatts || !matts || !numbones || !bones || !numrawweights || !rawweights)
-		Host_Error("%s: missing required chunks", loadmodel->name);
+		Host_Error("%s: missing required chunks", loadmodel->model_name);
 
 	if (numanims)
 	{
@@ -2977,7 +2977,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		strlcpy(loadmodel->data_bones[index].name, bones[index].name, sizeof(loadmodel->data_bones[index].name));
 		loadmodel->data_bones[index].parent = (index || bones[index].parent > 0) ? bones[index].parent : -1;
 		if (loadmodel->data_bones[index].parent >= index)
-			Host_Error("%s bone[%i].parent >= %i", loadmodel->name, index, index);
+			Host_Error("%s bone[%i].parent >= %i", loadmodel->model_name, index, index);
 	}
 
 	// convert the basepose data
@@ -3203,16 +3203,16 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	pend = (unsigned char *)bufferend;
 
 	if (pbase + sizeof(iqmheader_t) > pend)
-		Host_Error ("Mod_INTERQUAKEMODEL_Load: %s is not an Inter-Quake Model %d", loadmodel->name, (int)(pend - pbase));
+		Host_Error ("Mod_INTERQUAKEMODEL_Load: %s is not an Inter-Quake Model %d", loadmodel->model_name, (int)(pend - pbase));
 
 	// copy struct (otherwise it may be misaligned)
 	// LadyHavoc: okay it's definitely not misaligned here, but for consistency...
 	memcpy(&header, pbase, sizeof(iqmheader_t));
 
 	if (memcmp(header.id, "INTERQUAKEMODEL", 16))
-		Host_Error ("Mod_INTERQUAKEMODEL_Load: %s is not an Inter-Quake Model", loadmodel->name);
+		Host_Error ("Mod_INTERQUAKEMODEL_Load: %s is not an Inter-Quake Model", loadmodel->model_name);
 	if (LittleLong(header.version) != 1 && LittleLong(header.version) != 2)
-		Host_Error ("Mod_INTERQUAKEMODEL_Load: only version 1 and 2 models are currently supported (name = %s)", loadmodel->name);
+		Host_Error ("Mod_INTERQUAKEMODEL_Load: only version 1 and 2 models are currently supported (name = %s)", loadmodel->model_name);
 
 	loadmodel->modeldatatypestring = "IQM";
 
@@ -3253,7 +3253,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		if (pbase + header.ofs_joints + header.num_joints*sizeof(iqmjoint1_t) > pend ||
 			pbase + header.ofs_poses + header.num_poses*sizeof(iqmpose1_t) > pend)
 		{
-			Con_Printf("%s has invalid size or offset information\n", loadmodel->name);
+			Con_Printf("%s has invalid size or offset information\n", loadmodel->model_name);
 			return;
 		}
 	}
@@ -3262,7 +3262,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		if (pbase + header.ofs_joints + header.num_joints*sizeof(iqmjoint_t) > pend ||
 			pbase + header.ofs_poses + header.num_poses*sizeof(iqmpose_t) > pend)
 		{
-			Con_Printf("%s has invalid size or offset information\n", loadmodel->name);
+			Con_Printf("%s has invalid size or offset information\n", loadmodel->model_name);
 			return;
 		}
 	}
@@ -3276,7 +3276,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		(header.ofs_bounds && pbase + header.ofs_bounds + header.num_frames*sizeof(iqmbounds_t) > pend) ||
 		pbase + header.ofs_comment + header.num_comment > pend)
 	{
-		Con_Printf("%s has invalid size or offset information\n", loadmodel->name);
+		Con_Printf("%s has invalid size or offset information\n", loadmodel->model_name);
 		return;
 	}
 
@@ -3345,7 +3345,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	}
 	if (header.num_vertexes > 0 && (!vposition || !vtexcoord || ((header.num_frames > 0 || header.num_anims > 0) && (!vblendindexes || !vblendweights))))
 	{
-		Con_Printf("%s is missing vertex array data\n", loadmodel->name);
+		Con_Printf("%s is missing vertex array data\n", loadmodel->model_name);
 		return;
 	}
 
@@ -3446,7 +3446,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			strlcpy(loadmodel->data_bones[i].name, &text[joint1[i].name], sizeof(loadmodel->data_bones[i].name));
 			loadmodel->data_bones[i].parent = joint1[i].parent;
 			if (loadmodel->data_bones[i].parent >= i)
-				Host_Error("%s bone[%i].parent >= %i", loadmodel->name, i, i);
+				Host_Error("%s bone[%i].parent >= %i", loadmodel->model_name, i, i);
 			Matrix4x4_FromDoom3Joint(&relbase, joint1[i].origin[0], joint1[i].origin[1], joint1[i].origin[2], joint1[i].rotation[0], joint1[i].rotation[1], joint1[i].rotation[2]);
 			Matrix4x4_Invert_Simple(&relinvbase, &relbase);
 			if (loadmodel->data_bones[i].parent >= 0)
@@ -3478,7 +3478,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			strlcpy(loadmodel->data_bones[i].name, &text[joint[i].name], sizeof(loadmodel->data_bones[i].name));
 			loadmodel->data_bones[i].parent = joint[i].parent;
 			if (loadmodel->data_bones[i].parent >= i)
-				Host_Error("%s bone[%i].parent >= %i", loadmodel->name, i, i);
+				Host_Error("%s bone[%i].parent >= %i", loadmodel->model_name, i, i);
 			if (joint[i].rotation[3] > 0)
 				Vector4Negate(joint[i].rotation, joint[i].rotation);
 			Vector4Normalize2(joint[i].rotation, joint[i].rotation);

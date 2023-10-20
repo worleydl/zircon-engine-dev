@@ -38,5 +38,5 @@ void Sbar_ShowFPS_Update(void);
 int Sbar_GetSortedPlayerIndex (int index);
 void Sbar_SortFrags (void);
 
-#endif
+#endif  // !SBAR_H
 

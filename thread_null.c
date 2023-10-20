@@ -1,4 +1,4 @@
-#ifndef CORE_SDL
+#if 0
 
 #include "quakedef.h"
 #include "thread.h"
@@ -125,4 +125,4 @@ void _Thread_AtomicUnlock(Thread_SpinLock *lock, const char *filename, int filel
 {
 }
 
-#endif // ! CORE_SDL
+#endif // 0

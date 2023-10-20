@@ -397,7 +397,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	int i;
 	unsigned int sendflags;
 	unsigned int version;
-	unsigned int modelindex, effects, flags, glowsize, lightstyle, lightpflags, light[4], specialvisibilityradius;
+	unsigned int modelindex, effects, erendflags, glowsize, lightstyle, lightpflags, light[4], specialvisibilityradius;
 	unsigned int customizeentityforclient;
 	unsigned int sendentity;
 	float f;
@@ -416,7 +416,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	if (!(VectorLength2(PRVM_serveredictvector(ent, origin)) < 2000000000.0*2000000000.0))
 		return false;
 
-	// EF_NODRAW prevents sending for any reason except for your own
+	// EF_NODRAW_16 prevents sending for any reason except for your own
 	// client, so we must keep all clients in this superset
 	effects = (unsigned)PRVM_serveredictfloat(ent, effects);
 
@@ -426,13 +426,13 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	i = (int)PRVM_serveredictfloat(ent, modelindex);
 	modelindex = (i >= 1 && i < MAX_MODELS && PRVM_serveredictstring(ent, model) && *PRVM_GetString(prog, PRVM_serveredictstring(ent, model)) && sv.models[i]) ? i : 0;
 
-	flags = 0;
+	erendflags = 0;
 	i = (int)(PRVM_serveredictfloat(ent, glow_size) * 0.25f);
 	glowsize = (unsigned char)bound(0, i, 255);
 	if (PRVM_serveredictfloat(ent, glow_trail))
-		flags |= RENDER_GLOWTRAIL;
+		erendflags |= RENDER_GLOWTRAIL;
 	if (PRVM_serveredictedict(ent, viewmodelforclient))
-		flags |= RENDER_VIEWMODEL;
+		erendflags |= RENDER_VIEWMODEL;
 
 	v = PRVM_serveredictvector(ent, color);
 	f = v[0]*256;
@@ -448,7 +448,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 
 	if (gamemode == GAME_TENEBRAE)
 	{
-		// tenebrae's EF_FULLDYNAMIC conflicts with Q2's EF_NODRAW
+		// tenebrae's EF_FULLDYNAMIC conflicts with Q2's EF_NODRAW_16
 		if (effects & 16)
 		{
 			effects &= ~16;
@@ -471,7 +471,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 		specialvisibilityradius = max(specialvisibilityradius, light[3]);
 	if (glowsize)
 		specialvisibilityradius = max(specialvisibilityradius, glowsize * 4);
-	if (flags & RENDER_GLOWTRAIL)
+	if (erendflags & RENDER_GLOWTRAIL)
 		specialvisibilityradius = max(specialvisibilityradius, 100);
 	if (effects & (EF_BRIGHTFIELD | EF_MUZZLEFLASH | EF_BRIGHTLIGHT | EF_DIMLIGHT | EF_RED | EF_BLUE | EF_FLAME | EF_STARDUST))
 	{
@@ -504,7 +504,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	cs->number = enumber;
 	VectorCopy(PRVM_serveredictvector(ent, origin), cs->origin);
 	VectorCopy(PRVM_serveredictvector(ent, angles), cs->angles);
-	cs->flags = flags;
+	cs->flags = erendflags;
 	cs->effects = effects;
 	cs->colormap = (unsigned)PRVM_serveredictfloat(ent, colormap);
 	cs->modelindex = modelindex;
@@ -889,13 +889,13 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 			return;
 		if (s->drawonlytoclient && s->drawonlytoclient != sv.writeentitiestoclient_cliententitynumber)
 			return;
-		if (s->effects & EF_NODRAW)
+		if (s->effects & EF_NODRAW_16)
 			return;
 		// LadyHavoc: only send entities with a model or important effects
 		if (!s->modelindex && s->specialvisibilityradius == 0)
 			return;
 
-		isbmodel = (model = SV_GetModelByIndex(s->modelindex)) != NULL && model->name[0] == '*';
+		isbmodel = (model = SV_GetModelByIndex(s->modelindex)) != NULL && model->model_name[0] == '*';
 		// viewmodels don't have visibility checking
 		if (s->viewmodelforclient)
 		{
@@ -1205,8 +1205,9 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	//stats[STAT_SECRETS] = PRVM_serverglobalfloat(found_secrets);
 	//stats[STAT_MONSTERS] = PRVM_serverglobalfloat(killed_monsters);
 
-	if(!sv_gameplayfix_customstats.integer)
-	{
+// Baker: This defaults 0.  Xonotic uses it.
+// Baker: Custom stats disables stats above 220
+	if(sv_gameplayfix_customstats.integer == 0) {
 		statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value;
 		statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
 		statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;		
@@ -1685,7 +1686,6 @@ static void SV_UpdateToReliableMessages (void)
 
 	SZ_Clear (&sv.reliable_datagram);
 }
-
 
 /*
 =======================

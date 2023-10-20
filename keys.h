@@ -1,3 +1,5 @@
+// keys.h
+
 /*
 	$RCSfile$
 
@@ -95,7 +97,7 @@ typedef enum keynum_e
 	K_SCROLLOCK,
 
 	K_KP_0,
-	K_KP_INS = K_KP_0,
+	K_KP_INSERT = K_KP_0,
 	K_KP_1,
 	K_KP_END = K_KP_1,
 	K_KP_2,
@@ -114,7 +116,7 @@ typedef enum keynum_e
 	K_KP_9,
 	K_KP_PGUP = K_KP_9,
 	K_KP_PERIOD,
-	K_KP_DEL = K_KP_PERIOD,
+	K_KP_DELETE = K_KP_PERIOD,
 	K_KP_DIVIDE,
 	K_KP_SLASH = K_KP_DIVIDE,
 	K_KP_MULTIPLY,
@@ -407,6 +409,8 @@ qbool Key_SetBindMap(int fg, int bg);
 void Key_GetBindMap(int *fg, int *bg);
 const char *Key_KeynumToString (int keynum, char *buf, size_t buflength);
 int Key_StringToKeynum (const char *str);
+
+extern int history_line; // Au 15
 
 #endif // __KEYS_H
 

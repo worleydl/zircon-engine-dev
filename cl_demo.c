@@ -256,7 +256,7 @@ void CL_ReadDemoMessage(void)
 		}
 		if (cl_message.cursize > cl_message.maxsize)
 		{
-			CL_DisconnectEx(false, "Demo message (%i) > cl_message.maxsize (%i)", cl_message.cursize, cl_message.maxsize);
+			CL_DisconnectEx(false, "Demo message (%i) > cl_message.maxsize (%d)", cl_message.cursize, cl_message.maxsize);
 			cl_message.cursize = 0;
 			return;
 		}
@@ -303,8 +303,7 @@ void CL_Stop_f(cmd_state_t *cmd)
 	sizebuf_t buf;
 	unsigned char bufdata[64];
 
-	if (!cls.demorecording)
-	{
+	if (!cls.demorecording) {
 		Con_Print("Not recording a demo.\n");
 		return;
 	}
@@ -344,21 +343,18 @@ void CL_Record_f(cmd_state_t *cmd)
 	char vabuf[1024];
 
 	c = Cmd_Argc(cmd);
-	if (c != 2 && c != 3 && c != 4)
-	{
-		Con_Print("record <demoname> [<map> [cd track]]\n");
+	if (c != 2 && c != 3 && c != 4) {
+		Con_PrintLinef ("record <demoname> [<map> [cd track]]");
 		return;
 	}
 
-	if (strstr(Cmd_Argv(cmd, 1), ".."))
-	{
-		Con_Print("Relative pathnames are not allowed.\n");
+	if (strstr(Cmd_Argv(cmd, 1), "..")) {
+		Con_PrintLinef ("Relative pathnames are not allowed.");
 		return;
 	}
 
-	if (c == 2 && cls.state == ca_connected)
-	{
-		Con_Print("Can not record - already connected to server\nClient demo recording must be started before connecting\n");
+	if (c == 2 && cls.state == ca_connected) {
+		Con_PrintLinef ("Can not record - already connected to server" NEWLINE "Client demo recording must be started before connecting");
 		return;
 	}
 
@@ -366,10 +362,9 @@ void CL_Record_f(cmd_state_t *cmd)
 		CL_Disconnect();
 
 	// write the forced cd track number, or -1
-	if (c == 4)
-	{
+	if (c == 4) {
 		track = atoi(Cmd_Argv(cmd, 3));
-		Con_Printf("Forcing CD track to %i\n", cls.forcetrack);
+		Con_PrintLinef ("Forcing CD track to %d", cls.forcetrack);
 	}
 	else
 		track = -1;
@@ -383,17 +378,16 @@ void CL_Record_f(cmd_state_t *cmd)
 		Cmd_ExecuteString ( cmd, va(vabuf, sizeof(vabuf), "map %s", Cmd_Argv(cmd, 2)), src_local, false);
 
 	// open the demo file
-	Con_Printf("recording to %s.\n", name);
+	Con_PrintLinef ("recording to %s.", name);
 	cls.demofile = FS_OpenRealFile(name, "wb", false);
-	if (!cls.demofile)
-	{
-		Con_Print(CON_ERROR "ERROR: couldn't open.\n");
+	if (!cls.demofile) {
+		Con_PrintLinef (CON_ERROR "ERROR: couldn't open.");
 		return;
 	}
 	strlcpy(cls.demoname, name, sizeof(cls.demoname));
 
 	cls.forcetrack = track;
-	FS_Printf(cls.demofile, "%i\n", cls.forcetrack);
+	FS_Printf(cls.demofile, "%d" NEWLINE, cls.forcetrack);
 
 	cls.demorecording = true;
 	cls.demo_lastcsprogssize = -1;
@@ -413,7 +407,7 @@ void CL_PlayDemo(const char *demo)
 	f = FS_OpenVirtualFile(name, false);
 	if (!f)
 	{
-		Con_Printf(CON_ERROR "ERROR: couldn't open %s.\n", name);
+		Con_PrintLinef (CON_ERROR "ERROR: couldn't open %s.", name);
 		cls.demonum = -1;		// stop demo loop
 		return;
 	}
@@ -457,9 +451,8 @@ playdemo [demoname]
 */
 void CL_PlayDemo_f(cmd_state_t *cmd)
 {
-	if (Cmd_Argc(cmd) != 2)
-	{
-		Con_Print("playdemo <demoname> : plays a demo\n");
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("playdemo <demoname> : plays a demo");
 		return;
 	}
 
@@ -597,9 +590,8 @@ timedemo [demoname]
 */
 void CL_TimeDemo_f(cmd_state_t *cmd)
 {
-	if (Cmd_Argc(cmd) != 2)
-	{
-		Con_Print("timedemo <demoname> : gets demo speeds\n");
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("timedemo <demoname> : gets demo speeds");
 		return;
 	}
 

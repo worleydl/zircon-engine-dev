@@ -70,6 +70,8 @@ typedef enum shadermode_e
 }
 shadermode_t;
 
+
+
 #define SHADERPERMUTATION_DIFFUSE (1<<0) ///< (lightsource) whether to use directional shading
 #define SHADERPERMUTATION_VERTEXTEXTUREBLEND (1<<1) ///< indicates this is a two-layer material blend based on vertex alpha (q3bsp)
 #define	SHADERPERMUTATION_VIEWTINT (1<<2) ///< view tint (postprocessing only), use vertex colors (generic only)
@@ -789,6 +791,11 @@ void R_DrawModelSurfaces(entity_render_t *ent, qbool skysurfaces, qbool writedep
 void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool writedepth, qbool prepass, qbool ui);
 void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool writedepth, qbool prepass, qbool ui);
 
+
+// BATCHNEED
+// BATCHNEED
+// BATCHNEED
+
 #define BATCHNEED_ARRAY_VERTEX                (1<< 0) // set up rsurface.batchvertex3f
 #define BATCHNEED_ARRAY_NORMAL                (1<< 1) // set up rsurface.batchnormal3f
 #define BATCHNEED_ARRAY_VECTOR                (1<< 2) // set up rsurface.batchsvector3f and rsurface.batchtvector3f
@@ -800,6 +807,7 @@ void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatri
 #define BATCHNEED_NOGAPS                      (1<< 8) // force vertex copying if firstvertex is not zero or there are gaps
 #define BATCHNEED_ALWAYSCOPY                  (1<< 9) // force vertex copying unconditionally - useful if you want to modify colors
 #define BATCHNEED_ALLOWMULTIDRAW              (1<<10) // allow multiple draws
+
 void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const msurface_t **texturesurfacelist);
 void RSurf_UploadBuffersForBatch(void);
 void RSurf_DrawBatch(void);
@@ -1008,4 +1016,5 @@ void Font_Init(void);
 qbool R_CompileShader_CheckStaticParms(void);
 void R_GLSL_Restart_f(cmd_state_t *cmd);
 
-#endif
+
+#endif // RENDER_H

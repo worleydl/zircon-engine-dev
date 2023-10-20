@@ -70,7 +70,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	EF_MUZZLEFLASH 			2
 #define	EF_BRIGHTLIGHT 			4
 #define	EF_DIMLIGHT 			8
-#define	EF_NODRAW				16
+#define	EF_NODRAW_16				16
 #define EF_ADDITIVE				32
 #define EF_BLUE					64
 #define EF_RED					128
@@ -118,7 +118,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define U_STEP			(1<<5)
 #define U_FRAME			(1<<6)
 // just differentiates from other updates
-#define U_SIGNAL		(1<<7)
+#define U_SIGNAL_128	(1<<7)
 
 #define U_ANGLE1		(1<<8)
 #define U_ANGLE3		(1<<9)
@@ -189,7 +189,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	SND_ATTENUATION	(1<<1)		// a byte
 #define	SND_LOOPING		(1<<2)		// a long
 #define	SND_LARGEENTITY	(1<<3)		// a short and a byte (instead of a short)
-#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)
+#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)						// 16
 #define	SND_SPEEDUSHORT4000	(1<<5)		// ushort speed*4000 (speed is usually 1.0, a value of 0.0 is the same as 1.0)
 
 

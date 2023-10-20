@@ -320,7 +320,7 @@ void R_Stain (const vec3_t origin, float radius, int cr1, int cg1, int cb1, int 
 	{
 		ent = &cl.entities[cl.brushmodel_entities[n]].render;
 		model = ent->model;
-		if (model && model->name[0] == '*')
+		if (model && model->model_name[0] == '*')
 		{
 			if (model->brush.data_nodes)
 			{

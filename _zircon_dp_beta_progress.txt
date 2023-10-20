@@ -1,5 +1,12 @@
 // zircon_dpbeta_changes.txt - October 14 2023
 
+
+// BETA 3 Additions - October 18 2023
+
+Internal source code realignment - part 1.
+
+1421. FitzQuake centerprint logging ("This hallway selects EASY skill" prints to console, some maps have important centerprint messages)
+
 // BETA 2 Additions - October 17 2023
 
 Added Linux build.
@@ -15,6 +22,7 @@ Added Linux build.
 8012. Removed deathmatch mini-overlay
 8013. r_nearest_2d and r_nearest_conchars default 1.
 9011. DarkPlaces Beta was only loading the first q1bsp sky.  Successive map changes, a q1bsp sky was always ignored so as a result E1M1 would have a purple start map sky instead of a blue sky.
+9012. More ALT-TAB key release hardening and made in_releaseall clear kbutton structs.
 9511. Fixed vid_sdl.h so Windows get a titlebar icon consistently.  Sometimes it was there, sometimes not.
 
 // CUMULATIVE ALL:
@@ -43,9 +51,7 @@ Added Linux build.
 1210. shot1sid shotgun shells texture fix, in most Quake engines since 2000 (look at shotgun shells on DM3 bridge)
 1211. 64-bit lightmap fix from Quakespasm
 
-
 1301. Disconnect automatically when "game" / "gamedir" used if not disconnected.
-
 
 // Single player convenience
 
@@ -58,6 +64,7 @@ Added Linux build.
 1413. Disabled Windows keys.
 1414. Automatic unload of "fte csqc-lite" csprogs.dat allowing convenient play of these mods (see alk1.2.zip @ Quaddicted)
       This is an alternate CSQC that FTE/Quakespasm Spiked supports.
+1421. FitzQuake centerprint logging ("This hallway selects EASY skill" prints to console, some maps have important centerprint messages)
 
 // New commands
 
@@ -100,7 +107,7 @@ Added Linux build.
 9007. Maps of type .obj did not have loadmodel->lit set.  It is true that .obj does not have lighting, but should act as if it does
       so that DarkPlaces dynamic lighting or other methods can light the map.
 9011. DarkPlaces Beta was only loading the first q1bsp sky.  Successive map changes, a q1bsp sky was always ignored so as a result E1M1 would have a purple start map sky instead of a blue sky.
-
+9012. More ALT-TAB key release hardening and made in_releaseall clear kbutton structs.
 
 
 // Other
