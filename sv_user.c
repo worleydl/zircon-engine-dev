@@ -1,5 +1,3 @@
-// Baker: FitzQuake noclip
-
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -21,12 +19,216 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sv_user.c -- server code for moving users
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "sv_demo.h"
 #define DEBUGMOVES 0
 
 static usercmd_t usercmd;
 extern cvar_t sv_autodemo_perclient;
+extern cvar_t sv_rollangle;
+extern cvar_t sv_rollspeed;
+
+/*
+==================
+SV_PreSpawn_f
+==================
+*/
+void SV_PreSpawn_f(cmd_state_t *cmd)
+{
+	if (host_client->prespawned)
+	{
+		Con_Print("prespawn not valid -- already prespawned\n");
+		return;
+	}
+	host_client->prespawned = true;
+
+	if (host_client->netconnection)
+	{
+		SZ_Write (&host_client->netconnection->message, sv.signon.data, sv.signon.cursize);
+		MSG_WriteByte (&host_client->netconnection->message, svc_signonnum);
+		MSG_WriteByte (&host_client->netconnection->message, 2);
+		host_client->sendsignon = 0;		// enable unlimited sends again
+	}
+
+	// reset the name change timer because the client will send name soon
+	host_client->nametime = 0;
+}
+
+/*
+==================
+SV_Spawn_f
+==================
+*/
+void SV_Spawn_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog = SVVM_prog;
+	int i;
+	client_t *client;
+	int stats[MAX_CL_STATS];
+
+	if (!host_client->prespawned)
+	{
+		Con_Print("Spawn not valid -- not yet prespawned\n");
+		return;
+	}
+	if (host_client->spawned)
+	{
+		Con_Print("Spawn not valid -- already spawned\n");
+		return;
+	}
+	host_client->spawned = true;
+
+	// reset name change timer again because they might want to change name
+	// again in the first 5 seconds after connecting
+	host_client->nametime = 0;
+
+	// LadyHavoc: moved this above the QC calls at FrikaC's request
+	// LadyHavoc: commented this out
+	//if (host_client->netconnection)
+	//	SZ_Clear (&host_client->netconnection->message);
+
+	// run the entrance script
+	if (sv.loadgame)
+	{
+		// loaded games are fully initialized already
+		if (PRVM_serverfunction(RestoreGame))
+		{
+			Con_DPrint("Calling RestoreGame\n");
+			PRVM_serverglobalfloat(time) = sv.time;
+			PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
+			prog->ExecuteProgram(prog, PRVM_serverfunction(RestoreGame), "QC function RestoreGame is missing");
+		}
+	}
+	else
+	{
+		//Con_Printf("SV_Spawn_f: host_client->edict->netname = %s, host_client->edict->netname = %s, host_client->name = %s\n", PRVM_GetString(PRVM_serveredictstring(host_client->edict, netname)), PRVM_GetString(PRVM_serveredictstring(host_client->edict, netname)), host_client->name);
+
+		// copy spawn parms out of the client_t
+		for (i=0 ; i< NUM_SPAWN_PARMS ; i++)
+			(&PRVM_serverglobalfloat(parm1))[i] = host_client->spawn_parms[i];
+
+		// call the spawn function
+		host_client->clientconnectcalled = true;
+		PRVM_serverglobalfloat(time) = sv.time;
+		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
+		prog->ExecuteProgram(prog, PRVM_serverfunction(ClientConnect), "QC function ClientConnect is missing");
+
+		Con_Printf("%s connected\n", host_client->name);
+
+		PRVM_serverglobalfloat(time) = sv.time;
+		prog->ExecuteProgram(prog, PRVM_serverfunction(PutClientInServer), "QC function PutClientInServer is missing");
+	}
+
+	if (!host_client->netconnection)
+		return;
+
+	// send time of update
+	MSG_WriteByte (&host_client->netconnection->message, svc_time);
+	MSG_WriteFloat (&host_client->netconnection->message, sv.time);
+
+	// send all current names, colors, and frag counts
+	for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++)
+	{
+		if (!client->active)
+			continue;
+		MSG_WriteByte (&host_client->netconnection->message, svc_updatename);
+		MSG_WriteByte (&host_client->netconnection->message, i);
+		MSG_WriteString (&host_client->netconnection->message, client->name);
+		MSG_WriteByte (&host_client->netconnection->message, svc_updatefrags);
+		MSG_WriteByte (&host_client->netconnection->message, i);
+		MSG_WriteShort (&host_client->netconnection->message, client->frags);
+		MSG_WriteByte (&host_client->netconnection->message, svc_updatecolors);
+		MSG_WriteByte (&host_client->netconnection->message, i);
+		MSG_WriteByte (&host_client->netconnection->message, client->colors);
+	}
+
+	// send all current light styles
+	for (i=0 ; i<MAX_LIGHTSTYLES ; i++)
+	{
+		if (sv.lightstyles[i][0])
+		{
+			MSG_WriteByte (&host_client->netconnection->message, svc_lightstyle);
+			MSG_WriteByte (&host_client->netconnection->message, (char)i);
+			MSG_WriteString (&host_client->netconnection->message, sv.lightstyles[i]);
+		}
+	}
+
+	// send some stats
+	MSG_WriteByte (&host_client->netconnection->message, svc_updatestat);
+	MSG_WriteByte (&host_client->netconnection->message, STAT_TOTALSECRETS);
+	MSG_WriteLong (&host_client->netconnection->message, (int)PRVM_serverglobalfloat(total_secrets));
+
+	MSG_WriteByte (&host_client->netconnection->message, svc_updatestat);
+	MSG_WriteByte (&host_client->netconnection->message, STAT_TOTALMONSTERS);
+	MSG_WriteLong (&host_client->netconnection->message, (int)PRVM_serverglobalfloat(total_monsters));
+
+	MSG_WriteByte (&host_client->netconnection->message, svc_updatestat);
+	MSG_WriteByte (&host_client->netconnection->message, STAT_SECRETS);
+	MSG_WriteLong (&host_client->netconnection->message, (int)PRVM_serverglobalfloat(found_secrets));
+
+	MSG_WriteByte (&host_client->netconnection->message, svc_updatestat);
+	MSG_WriteByte (&host_client->netconnection->message, STAT_MONSTERS);
+	MSG_WriteLong (&host_client->netconnection->message, (int)PRVM_serverglobalfloat(killed_monsters));
+
+	// send a fixangle
+	// Never send a roll angle, because savegames can catch the server
+	// in a state where it is expecting the client to correct the angle
+	// and it won't happen if the game was just loaded, so you wind up
+	// with a permanent head tilt
+	if (sv.loadgame)
+	{
+		MSG_WriteByte (&host_client->netconnection->message, svc_setangle);
+		MSG_WriteAngle (&host_client->netconnection->message, PRVM_serveredictvector(host_client->edict, v_angle)[0], sv.protocol);
+		MSG_WriteAngle (&host_client->netconnection->message, PRVM_serveredictvector(host_client->edict, v_angle)[1], sv.protocol);
+		MSG_WriteAngle (&host_client->netconnection->message, 0, sv.protocol);
+	}
+	else
+	{
+		MSG_WriteByte (&host_client->netconnection->message, svc_setangle);
+		MSG_WriteAngle (&host_client->netconnection->message, PRVM_serveredictvector(host_client->edict, angles)[0], sv.protocol);
+		MSG_WriteAngle (&host_client->netconnection->message, PRVM_serveredictvector(host_client->edict, angles)[1], sv.protocol);
+		MSG_WriteAngle (&host_client->netconnection->message, 0, sv.protocol);
+	}
+
+	SV_WriteClientdataToMessage (host_client, host_client->edict, &host_client->netconnection->message, stats);
+
+	MSG_WriteByte (&host_client->netconnection->message, svc_signonnum);
+	MSG_WriteByte (&host_client->netconnection->message, 3);
+}
+
+/*
+==================
+SV_Begin_f
+==================
+*/
+void SV_Begin_f(cmd_state_t *cmd)
+{
+	if (!host_client->spawned)
+	{
+		Con_Print("Begin not valid -- not yet spawned\n");
+		return;
+	}
+	if (host_client->begun)
+	{
+		Con_Print("Begin not valid -- already begun\n");
+		return;
+	}
+	host_client->begun = true;
+
+	// LadyHavoc: note: this code also exists in SV_DropClient
+	if (sv.loadgame)
+	{
+		int i;
+		for (i = 0;i < svs.maxclients;i++)
+			if (svs.clients[i].active && !svs.clients[i].spawned)
+				break;
+		if (i == svs.maxclients)
+		{
+			Con_Printf("Loaded game, everyone rejoined - unpausing\n");
+			sv.paused = sv.loadgame = false; // we're basically done with loading now
+		}
+	}
+}
 
 /*
 ===============
@@ -61,7 +263,7 @@ void SV_SetIdealPitch (void)
 		bottom[1] = top[1];
 		bottom[2] = top[2] - 160;
 
-		tr = SV_TraceLine(top, bottom, MOVE_NOMONSTERS, host_client->edict, SUPERCONTENTS_SOLID, 0, collision_extendmovelength.value);
+		tr = SV_TraceLine(top, bottom, MOVE_NOMONSTERS, host_client->edict, SUPERCONTENTS_SOLID, 0, 0, collision_extendmovelength.value);
 		// if looking at a wall, leave ideal the way is was
 		if (tr.startsolid)
 			return;
@@ -128,7 +330,7 @@ static void SV_UserFriction (void)
 	start[2] = PRVM_serveredictvector(host_client->edict, origin)[2] + PRVM_serveredictvector(host_client->edict, mins)[2];
 	stop[2] = start[2] - 34;
 
-	trace = SV_TraceLine(start, stop, MOVE_NOMONSTERS, host_client->edict, SV_GenericHitSuperContentsMask(host_client->edict), 0, collision_extendmovelength.value);
+	trace = SV_TraceLine(start, stop, MOVE_NOMONSTERS, host_client->edict, SV_GenericHitSuperContentsMask(host_client->edict), 0, 0, collision_extendmovelength.value);
 
 	if (trace.fraction == 1.0)
 		friction = sv_friction.value*sv_edgefriction.value;
@@ -230,35 +432,6 @@ SV_WaterMove
 
 ===================
 */
-// Baker 1019.2
-void SV_NoClip_Move (void)
-{
-	prvm_prog_t *prog = SVVM_prog;
-	int i;
-	vec3_t wishvel, v_angle;
-	vec_t fwishspeed, temp;
-
-	// user intentions
-	VectorCopy(PRVM_serveredictvector(host_client->edict, v_angle), v_angle);
-	AngleVectors(v_angle, forward, right, up);
-
-	for (i=0 ; i<3 ; i++)
-		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
-
-	wishvel[2] += usercmd.upmove;
-
-	fwishspeed = VectorLength(wishvel);
-	if (fwishspeed > sv_maxspeed.value)
-	{
-		temp = sv_maxspeed.value/fwishspeed;
-		VectorScale (wishvel, temp, wishvel);
-		fwishspeed = sv_maxspeed.value;
-	}
-
-	for (i=0 ; i<3 ; i++)
-		PRVM_serveredictvector(host_client->edict, velocity)[i] = wishvel[i];
-}
-
 static void SV_WaterMove (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -389,13 +562,13 @@ static void SV_AirMove (void)
 
 /*
 ===================
-SV_ClientThink
+SV_PlayerPhysics
 
 the move fields specify an intended velocity in pix/sec
 the angle fields specify an exact angular motion in degrees
 ===================
 */
-void SV_ClientThink (void)
+void SV_PlayerPhysics (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	vec3_t v_angle, angles, velocity;
@@ -406,7 +579,7 @@ void SV_ClientThink (void)
 	// make sure the velocity is sane (not a NaN)
 	SV_CheckVelocity(host_client->edict);
 
-	// LadyHavoc: QuakeC replacement for SV_ClientThink (player movement)
+	// LadyHavoc: QuakeC replacement for SV_PlayerPhysics (player movement)
 	if (PRVM_serverfunction(SV_PlayerPhysics) && sv_playerphysicsqc.integer)
 	{
 		PRVM_serverglobalfloat(time) = sv.time;
@@ -434,7 +607,7 @@ void SV_ClientThink (void)
 	VectorAdd (PRVM_serveredictvector(host_client->edict, v_angle), PRVM_serveredictvector(host_client->edict, punchangle), v_angle);
 	VectorCopy(PRVM_serveredictvector(host_client->edict, angles), angles);
 	VectorCopy(PRVM_serveredictvector(host_client->edict, velocity), velocity);
-	PRVM_serveredictvector(host_client->edict, angles)[ROLL] = V_CalcRoll (angles, velocity)*4;
+	PRVM_serveredictvector(host_client->edict, angles)[ROLL] = Com_CalcRoll (angles, velocity, sv_rollangle.value, sv_rollspeed.value)*4;
 	if (!PRVM_serveredictfloat(host_client->edict, fixangle))
 	{
 		PRVM_serveredictvector(host_client->edict, angles)[PITCH] = -v_angle[PITCH]/3;
@@ -452,13 +625,6 @@ void SV_ClientThink (void)
 	if ((PRVM_serveredictfloat(host_client->edict, waterlevel) >= 2) && (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_NOCLIP))
 	{
 		SV_WaterMove ();
-		SV_CheckVelocity(host_client->edict);
-		return;
-	}
-
-	// Baker 1019.3
-	if ((PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_NOCLIP) && sv_altnoclipmove.integer) {
-		SV_NoClip_Move (); 
 		SV_CheckVelocity(host_client->edict);
 		return;
 	}
@@ -488,7 +654,7 @@ static void SV_ReadClientMove (void)
 	// read ping time
 	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3 && sv.protocol != PROTOCOL_DARKPLACES1 && sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5 && sv.protocol != PROTOCOL_DARKPLACES6)
 		move->sequence = MSG_ReadLong(&sv_message);
-	move->time = move->clienttime = MSG_ReadFloat(&sv_message);
+	move->time = MSG_ReadFloat(&sv_message);
 	if (sv_message.badread) Con_Printf("SV_ReadClientMessage: badread at %s:%i\n", __FILE__, __LINE__);
 	move->receivetime = (float)sv.time;
 
@@ -497,7 +663,7 @@ static void SV_ReadClientMove (void)
 #endif
 	// limit reported time to current time
 	// (incase the client is trying to cheat)
-	move->time = min(move->time, move->receivetime + sv.frametime);
+	move->time = min(move->time, sv.time + sv.frametime);
 
 	// read current angles
 	for (i = 0;i < 3;i++)
@@ -552,7 +718,7 @@ static void SV_ReadClientMove (void)
 		}
 		// as requested by FrikaC, cursor_trace_ent is reset to world if the
 		// entity is free at time of receipt
-		if (PRVM_EDICT_NUM(move->cursor_entitynumber)->priv.server->free)
+		if (PRVM_EDICT_NUM(move->cursor_entitynumber)->free)
 			move->cursor_entitynumber = 0;
 		if (sv_message.badread) Con_Printf("SV_ReadClientMessage: badread at %s:%i\n", __FILE__, __LINE__);
 	}
@@ -572,7 +738,8 @@ static void SV_ReadClientMove (void)
 		sv_readmoves[sv_numreadmoves++] = *move;
 
 	// movement packet loss tracking
-	if(move->sequence) // SEPUS
+	// bones_was_here: checking begun prevents heavy loss detection right after a map change
+	if(move->sequence && host_client->begun)
 	{
 		if(move->sequence > host_client->movement_highestsequence_seen)
 		{
@@ -609,12 +776,10 @@ static void SV_ExecuteClientMoves(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int moveindex;
-	float moveframetime;
+	double moveframetime;
 	double oldframetime;
 	double oldframetime2;
-#ifdef NUM_PING_TIMES
-	double total;
-#endif
+
 	if (sv_numreadmoves < 1)
 		return;
 	// only start accepting input once the player is spawned
@@ -625,9 +790,9 @@ static void SV_ExecuteClientMoves(void)
 #endif
 	// disable clientside movement prediction in some cases
 	if (ceil(max(sv_readmoves[sv_numreadmoves-1].receivetime - sv_readmoves[sv_numreadmoves-1].time, 0) * 1000.0) < sv_clmovement_minping.integer)
-		host_client->clmovement_disabletimeout = realtime + sv_clmovement_minping_disabletime.value / 1000.0;
+		host_client->clmovement_disabletimeout = host.realtime + sv_clmovement_minping_disabletime.value / 1000.0;
 	// several conditions govern whether clientside movement prediction is allowed
-	if (sv_readmoves[sv_numreadmoves-1].sequence && sv_clmovement_enable.integer && sv_clmovement_inputtimeout.value > 0 && host_client->clmovement_disabletimeout <= realtime && (PRVM_serveredictfloat(host_client->edict, disableclientprediction) == -1 || (PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_WALK && (!PRVM_serveredictfloat(host_client->edict, disableclientprediction)))))
+	if (sv_readmoves[sv_numreadmoves-1].sequence && sv_clmovement_enable.integer && sv_clmovement_inputtimeout.value > 0 && host_client->clmovement_disabletimeout <= host.realtime && (PRVM_serveredictfloat(host_client->edict, disableclientprediction) == -1 || (PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_WALK && (!PRVM_serveredictfloat(host_client->edict, disableclientprediction)))))
 	{
 		// process the moves in order and ignore old ones
 		// but always trust the latest move
@@ -645,7 +810,9 @@ static void SV_ExecuteClientMoves(void)
 				// this is a new move
 				move->time = bound(sv.time - 1, move->time, sv.time); // prevent slowhack/speedhack combos
 				move->time = max(move->time, host_client->cmd.time); // prevent backstepping of time
-				moveframetime = bound(0, move->time - host_client->cmd.time, min(0.1, sv_clmovement_inputtimeout.value));
+				// bones_was_here: limit moveframetime to a multiple of sv.frametime to match inputtimeout behaviour
+				moveframetime = min(move->time - host_client->cmd.time, min(0.1, sys_ticrate.value > 0.0 && sv.frametime > 0.0 ? sv.frametime * ceil(sv_clmovement_inputtimeout.value / sv.frametime) : sv_clmovement_inputtimeout.value));
+
 
 				// discard (treat like lost) moves with too low distance from
 				// the previous one to prevent hacks using float inaccuracy
@@ -674,8 +841,6 @@ static void SV_ExecuteClientMoves(void)
 				//  with this approach, and if they don't send input for a while they
 				//  start moving anyway, so the longest 'lagaport' possible is
 				//  determined by the sv_clmovement_inputtimeout cvar)
-				if (moveframetime <= 0)
-					continue;
 				oldframetime = PRVM_serverglobalfloat(frametime);
 				oldframetime2 = sv.frametime;
 				// update ping time for qc to see while executing this move
@@ -691,7 +856,7 @@ static void SV_ExecuteClientMoves(void)
 				SV_Physics_ClientMove();
 				sv.frametime = oldframetime2;
 				PRVM_serverglobalfloat(frametime) = oldframetime;
-				host_client->clmovement_inputtimeout = sv_clmovement_inputtimeout.value;
+				host_client->clmovement_inputtimeout = min(0.1, sv_clmovement_inputtimeout.value);
 			}
 		}
 	}
@@ -720,17 +885,9 @@ static void SV_ExecuteClientMoves(void)
 		host_client->movesequence = 0;
 		// make sure that normal physics takes over immediately
 		host_client->clmovement_inputtimeout = 0;
+		// update ping time
+		host_client->ping = host_client->cmd.receivetime - sv_readmoves[sv_numreadmoves-1].time;
 	}
-
-	// calculate average ping time
-	host_client->ping = host_client->cmd.receivetime - host_client->cmd.clienttime;
-#ifdef NUM_PING_TIMES
-	host_client->ping_times[host_client->num_pings % NUM_PING_TIMES] = host_client->cmd.receivetime - host_client->cmd.clienttime;
-	host_client->num_pings++;
-	for (i=0, total = 0;i < NUM_PING_TIMES;i++)
-		total += host_client->ping_times[i];
-	host_client->ping = total / NUM_PING_TIMES;
-#endif
 }
 
 void SV_ApplyClientMove (void)
@@ -842,14 +999,14 @@ void SV_ReadClientMessage(void)
 		if (!host_client->active)
 		{
 			// a command caused an error
-			SV_DropClient (false);
+			SV_DropClient (false, "Connection closing");
 			return;
 		}
 
 		if (sv_message.badread)
 		{
 			Con_Print("SV_ReadClientMessage: badread\n");
-			SV_DropClient (false);
+			SV_DropClient (false, "An internal server error occurred");
 			return;
 		}
 
@@ -868,7 +1025,7 @@ void SV_ReadClientMessage(void)
 			Con_Printf("SV_ReadClientMessage: unknown command char %i (at offset 0x%x)\n", netcmd, sv_message.readcount);
 			if (developer_networking.integer)
 				Com_HexDumpToConsole(sv_message.data, sv_message.cursize);
-			SV_DropClient (false);
+			SV_DropClient (false, "Unknown message sent to the server");
 			return;
 
 		case clc_nop:
@@ -897,7 +1054,7 @@ void SV_ReadClientMessage(void)
 			if (strncasecmp(s, "spawn", 5) == 0
 			 || strncasecmp(s, "begin", 5) == 0
 			 || strncasecmp(s, "prespawn", 8) == 0)
-				Cmd_ExecuteString (s, src_client, true);
+				Cmd_ExecuteString (cmd_serverfromclient, s, src_client, true);
 			else if (PRVM_serverfunction(SV_ParseClientCommand))
 			{
 				int restorevm_tempstringsbuf_cursize;
@@ -909,7 +1066,7 @@ void SV_ReadClientMessage(void)
 				prog->tempstringsbuf.cursize = restorevm_tempstringsbuf_cursize;
 			}
 			else
-				Cmd_ExecuteString (s, src_client, true);
+				Cmd_ExecuteString (cmd_serverfromclient, s, src_client, true);
 			break;
 
 clc_stringcmd_invalid:
@@ -919,7 +1076,9 @@ clc_stringcmd_invalid:
 			break;
 
 		case clc_disconnect:
-			SV_DropClient (false); // client wants to disconnect
+			SV_DropClient (true, sv.protocol == PROTOCOL_DARKPLACES8
+			               ? MSG_ReadString(&sv_message, sv_readstring, sizeof(sv_readstring))
+			               : "Disconnect by user"); // client wants to disconnect
 			return;
 
 		case clc_move:
@@ -960,7 +1119,7 @@ clc_stringcmd_invalid:
 						Mem_Free(temp);
 						// calculated crc, send the file info to the client
 						// (so that it can verify the data)
-						Host_ClientCommands("\ncl_downloadfinished %i %i %s\n", size, crc, host_client->download_name);
+						SV_ClientCommands("\ncl_downloadfinished %i %i %s\n", size, crc, host_client->download_name);
 						Con_DPrintf("Download of %s by %s has finished\n", host_client->download_name, host_client->name);
 						FS_Close(host_client->download_file);
 						host_client->download_file = NULL;

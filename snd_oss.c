@@ -344,5 +344,4 @@ void SndSys_SendKeyEvents(void)
 {
 	// not supported
 }
-
-#endif // 0
+#endif

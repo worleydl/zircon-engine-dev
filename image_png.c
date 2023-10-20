@@ -25,6 +25,8 @@
 
 #include "darkplaces.h"
 #include "image.h"
+# undef snprintf
+# undef vsnprintf
 #include "image_png.h"
 
 

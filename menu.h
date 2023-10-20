@@ -21,19 +21,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef MENU_H
 #define MENU_H
 
+#include "qtypes.h"
+struct serverlist_entry_s;
+
 enum m_state_e {
 	m_none,
 	m_main,
 	m_demo,
 	m_singleplayer,
-//	m_transfusion_episode,
-//	m_transfusion_skill,
+	m_transfusion_episode,
+	m_transfusion_skill,
 	m_load,
 	m_save,
 	m_multiplayer,
 	m_setup,
 	m_options,
-	m_options_classic,
 	m_video,
 	m_keys,
 	m_help,
@@ -46,20 +48,14 @@ enum m_state_e {
 	m_options_graphics,
 	m_options_colorcontrol,
 	m_reset,
-	m_modlist,
-	m_videonova,
-	m_maps,
-	m_nosave,
+	m_modlist
 };
 
 extern enum m_state_e m_state;
 extern char m_return_reason[128];
 void M_Update_Return_Reason(const char *s);
-extern int is_game_switch;
 
-
-
-void Menu_Resets (void);
+void Menu_Resets(void); // Baker r1402: Reset menu cursor on gamedir change
 
 /*
 // hard-coded menus
@@ -78,6 +74,8 @@ void MP_Draw (void);
 void MP_ToggleMenu (int mode);
 void MP_Shutdown (void);*/
 
+qbool MP_ConsoleCommand(const char *text);
+
 //
 // menu router
 //
@@ -90,7 +88,7 @@ extern void (*MR_Draw) (void);
 extern void (*MR_ToggleMenu) (int mode);
 extern void (*MR_Shutdown) (void);
 extern void (*MR_NewMap) (void);
-extern int (*MR_GetServerListEntryCategory) (const serverlist_entry_t *entry);
+extern int (*MR_GetServerListEntryCategory) (const struct serverlist_entry_s *entry);
 
 typedef struct video_resolution_s
 {
@@ -104,5 +102,6 @@ extern video_resolution_t *video_resolutions;
 extern int video_resolutions_count;
 extern video_resolution_t video_resolutions_hardcoded[];
 extern int video_resolutions_hardcoded_count;
-#endif
+
+#endif // MENU_H
 

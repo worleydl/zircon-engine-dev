@@ -22,13 +22,38 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include <stddef.h>
+#include "qtypes.h"
+#include "qdefs.h"
+#include "qstats.h"
+struct mempool_s;
+struct sizebuf_s;
 // protocolversion_t is defined in common.h
+enum protocolversion_e;
 
-protocolversion_t Protocol_EnumForName(const char *s);
-const char *Protocol_NameForEnum(protocolversion_t p);
-protocolversion_t Protocol_EnumForNumber(int n);
-int Protocol_NumberForEnum(protocolversion_t p);
+enum protocolversion_e Protocol_EnumForName(const char *s);
+const char *Protocol_NameForEnum(enum protocolversion_e p);
+enum protocolversion_e Protocol_EnumForNumber(int n);
+int Protocol_NumberForEnum(enum protocolversion_e p);
 void Protocol_Names(char *buffer, size_t buffersize);
+
+#define ENTITYSIZEPROFILING_START(msg, num, flags) \
+	int entityprofiling_startsize = msg->cursize
+
+#define ENTITYSIZEPROFILING_END(msg, num, flags) \
+	if(developer_networkentities.integer >= 2) \
+	{ \
+		prvm_edict_t *edict = prog->edicts + num; \
+		Con_Printf("sent entity update of size %u for %d classname %s flags %d\n", (msg->cursize - entityprofiling_startsize), num, PRVM_serveredictstring(edict, classname) ? PRVM_GetString(prog, PRVM_serveredictstring(edict, classname)) : "(no classname)", flags); \
+	}
+
+// CSQC entity scope values. Bitflags!
+#define SCOPE_WANTREMOVE 1        // Set if a remove has been scheduled. Never set together with WANTUPDATE.
+#define SCOPE_WANTUPDATE 2        // Set if an update has been scheduled.
+#define SCOPE_WANTSEND (SCOPE_WANTREMOVE | SCOPE_WANTUPDATE)
+#define SCOPE_EXISTED_ONCE 4      // Set if the entity once existed. All these get resent on a full loss.
+#define SCOPE_ASSUMED_EXISTING 8  // Set if the entity is currently assumed existing and therefore needs removes.
+
 
 // model effects
 #define	MF_ROCKET	1			// leave a trail
@@ -39,21 +64,15 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	MF_ZOMGIB	32			// small blood trail
 #define	MF_TRACER2	64			// orange split trail + rotate
 #define	MF_TRACER3	128			// purple trail
-#define MF_FENCE	16384		// 0x40000	FFX
 
 // entity effects
 #define	EF_BRIGHTFIELD			1
 #define	EF_MUZZLEFLASH 			2
 #define	EF_BRIGHTLIGHT 			4
 #define	EF_DIMLIGHT 			8
-#define	EF_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16	// AURA 7.0
-
-#define	EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16
-#define	EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32		32
-#define	EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64			64
-
-#define EF_ADDITIVE				32			// EF_QEX_PENTALIGHT FIGHTS	EF_ADDITIVE 32
-#define EF_BLUE					64			// EF_QEX_CANDLELIGHT FIGHTS EF_BLUE
+#define	EF_NODRAW				16
+#define EF_ADDITIVE				32
+#define EF_BLUE					64
 #define EF_RED					128
 #define EF_NOGUNBOB				256			// LadyHavoc: when used with .viewmodelforclient this makes the entity attach to the view without gun bobbing and such effects, it also works on the player entity to disable gun bobbing of the engine-managed .viewmodel (without affecting any .viewmodelforclient entities attached to the player)
 #define EF_FULLBRIGHT			512			// LadyHavoc: fullbright
@@ -64,7 +83,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define EF_SELECTABLE			16384		// LadyHavoc: highlights when PRYDON_CLIENTCURSOR mouse is over it
 #define EF_DOUBLESIDED			32768		//[515]: disable cull face for this entity
 #define EF_NOSELFSHADOW			65536		// LadyHavoc: does not cast a shadow on itself (or any other EF_NOSELFSHADOW entities)
-#define EF_DYNAMICMODELLIGHT	131072
+#define EF_DYNAMICMODELLIGHT			131072
 #define EF_UNUSED18				262144
 #define EF_UNUSED19				524288
 #define EF_RESTARTANIM_BIT		1048576     // div0: restart animation bit (like teleport bit, but lerps between end and start of the anim, and doesn't stop player lerping)
@@ -99,7 +118,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define U_STEP			(1<<5)
 #define U_FRAME			(1<<6)
 // just differentiates from other updates
-#define U_SIGNAL_128	(1<<7)
+#define U_SIGNAL		(1<<7)
 
 #define U_ANGLE1		(1<<8)
 #define U_ANGLE3		(1<<9)
@@ -170,7 +189,7 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	SND_ATTENUATION	(1<<1)		// a byte
 #define	SND_LOOPING		(1<<2)		// a long
 #define	SND_LARGEENTITY	(1<<3)		// a short and a byte (instead of a short)
-#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)						// 16
+#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)
 #define	SND_SPEEDUSHORT4000	(1<<5)		// ushort speed*4000 (speed is usually 1.0, a value of 0.0 is the same as 1.0)
 
 
@@ -244,28 +263,6 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	svc_showlmp			35		// [string] slotname [string] lmpfilename [short] x [short] y
 #define	svc_hidelmp			36		// [string] slotname
 #define	svc_skybox			37		// [string] skyname
-
-#define	svc_zirc_qex_svc_spawnstatic2_35				35		// [string] slotname [string] lmpfilename [short] x [short] y
-
-// AURA 7.1
-#define svc_qex_botchat								38		// AURA
-#define svc_achievement_fights_effect_52			52		// AURA
-#define svc_qex_localsound_fights_spawnstatic2_56	56		// AURA
-
-// 2021 RE-RELEASE:
-	//"svc_setviews", // 45		AURA 1.1
-	//"svc_updateping", // 46
-	//"svc_updatesocial", // 47
-	//"svc_updateplinfo", // 48
-	//"svc_rawprint", // 49
-	//"svc_servervars", // 50
-	//"svc_seq", // 51
-	//"svc_achievement", // 52
-	//"svc_chat", // 53
-	//"svc_levelcompleted", // 54
-	//"svc_backtolobby", // 55
-	//"svc_localsound" // 56
-
 
 // LadyHavoc: my svc_ range, 50-69
 #define svc_downloaddata	50		// [int] start [short] size
@@ -368,12 +365,44 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define RENDER_LIGHT 131072 // receive light
 #define RENDER_NOSELFSHADOW 262144 // render lighting on this entity before its own shadow is added to the scene
 // (note: all RENDER_NOSELFSHADOW entities are grouped together and rendered in a batch before their shadows are rendered, so they can not shadow eachother either)
-#define RENDER_EQUALIZE 524288 // (subflag of RENDER_LIGHT) equalize the light from the light grid hitting this ent (less invasive EF_FULLBRIGHT implementation)
 #define RENDER_NODEPTHTEST 1048576
 #define RENDER_ADDITIVE 2097152
 #define RENDER_DOUBLESIDED 4194304
 #define RENDER_CUSTOMIZEDMODELLIGHT 4096
 #define RENDER_DYNAMICMODELLIGHT 8388608 // origin dependent model light
+
+typedef struct usercmd_s
+{
+	vec3_t	viewangles;
+
+// intended velocities
+	float	forwardmove;
+	float	sidemove;
+	float	upmove;
+
+	vec3_t	cursor_screen;
+	vec3_t	cursor_start;
+	vec3_t	cursor_end;
+	vec3_t	cursor_impact;
+	vec3_t	cursor_normal;
+	vec_t	cursor_fraction;
+	int		cursor_entitynumber;
+
+	double time; // time the move is executed for (non-cl_movement is executed at receivetime)
+	float receivetime; // time the move was received at (used for ping)
+	unsigned char msec; // for predicted moves
+	int buttons;
+	int impulse;
+	unsigned int sequence;
+	qbool applied; // if false we're still accumulating a move
+	qbool predicted; // if true the sequence should be sent as 0
+
+	// derived properties
+	double frametime;
+	qbool canjump;
+	qbool jump;
+	qbool crouch;
+} usercmd_t;
 
 #define MAX_FRAMEGROUPBLENDS 4
 typedef struct framegroupblend_s
@@ -459,7 +488,7 @@ void Protocol_UpdateClientStats(const int *stats);
 void Protocol_WriteStatsReliable(void);
 // writes a list of quake entities to the network stream
 // (or as many will fit)
-qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, const entity_state_t **states);
+qbool EntityFrameQuake_WriteFrame(struct sizebuf_s *msg, int maxsize, int numstates, const entity_state_t **states);
 // cleans up dead entities each frame after ReadEntity (which doesn't clear unused entities)
 void EntityFrameQuake_ISeeDeadEntities(void);
 
@@ -621,18 +650,18 @@ entityframe_database_t;
 // returns difference between two states as E_ flags
 int EntityState_DeltaBits(const entity_state_t *o, const entity_state_t *n);
 // write E_ flags to a msg
-void EntityState_WriteExtendBits(sizebuf_t *msg, unsigned int bits);
+void EntityState_WriteExtendBits(struct sizebuf_s *msg, unsigned int bits);
 // write values for the E_ flagged fields to a msg
-void EntityState_WriteFields(const entity_state_t *ent, sizebuf_t *msg, unsigned int bits);
+void EntityState_WriteFields(const entity_state_t *ent, struct sizebuf_s *msg, unsigned int bits);
 // write entity number and E_ flags and their values, or a remove number, describing the change from delta to ent
-void EntityState_WriteUpdate(const entity_state_t *ent, sizebuf_t *msg, const entity_state_t *delta);
+void EntityState_WriteUpdate(const entity_state_t *ent, struct sizebuf_s *msg, const entity_state_t *delta);
 // read E_ flags
 int EntityState_ReadExtendBits(void);
 // read values for E_ flagged fields and apply them to a state
 void EntityState_ReadFields(entity_state_t *e, unsigned int bits);
 
 // (client and server) allocates a new empty database
-entityframe_database_t *EntityFrame_AllocDatabase(mempool_t *mempool);
+entityframe_database_t *EntityFrame_AllocDatabase(struct mempool_s *mempool);
 // (client and server) frees the database
 void EntityFrame_FreeDatabase(entityframe_database_t *d);
 // (server) clears the database to contain no frames (thus delta compression
@@ -649,7 +678,7 @@ void EntityFrame_AddFrame_Client(entityframe_database_t *d, vec3_t eye, int fram
 // (server) adds a entity_frame to the database, for future reference
 void EntityFrame_AddFrame_Server(entityframe_database_t *d, vec3_t eye, int framenum, int numentities, const entity_state_t **entitydata);
 // (server) writes a frame to network stream
-qbool EntityFrame_WriteFrame(sizebuf_t *msg, int maxsize, entityframe_database_t *d, int numstates, const entity_state_t **states, int viewentnum);
+qbool EntityFrame_WriteFrame(struct sizebuf_s *msg, int maxsize, entityframe_database_t *d, int numstates, const entity_state_t **states, int viewentnum);
 // (client) reads a frame from network stream
 void EntityFrame_CL_ReadFrame(void);
 // (client) returns the frame number of the most recent frame recieved
@@ -670,7 +699,7 @@ entity_database4_commit_t;
 typedef struct entity_database4_s
 {
 	// what mempool to use for allocations
-	mempool_t *mempool;
+	struct mempool_s *mempool;
 	// reference frame
 	int referenceframenum;
 	// reference entities array is resized according to demand
@@ -695,7 +724,7 @@ entity_state_t *EntityFrame4_GetReferenceEntity(entityframe4_database_t *d, int 
 void EntityFrame4_AddCommitEntity(entityframe4_database_t *d, const entity_state_t *s);
 
 // allocate a database
-entityframe4_database_t *EntityFrame4_AllocDatabase(mempool_t *pool);
+entityframe4_database_t *EntityFrame4_AllocDatabase(struct mempool_s *pool);
 // free a database
 void EntityFrame4_FreeDatabase(entityframe4_database_t *d);
 // reset a database (resets compression but does not reallocate anything)
@@ -703,7 +732,7 @@ void EntityFrame4_ResetDatabase(entityframe4_database_t *d);
 // updates database to account for a frame-received acknowledgment
 int EntityFrame4_AckFrame(entityframe4_database_t *d, int framenum, int servermode);
 // writes a frame to the network stream
-qbool EntityFrame4_WriteFrame(sizebuf_t *msg, int maxsize, entityframe4_database_t *d, int numstates, const entity_state_t **states);
+qbool EntityFrame4_WriteFrame(struct sizebuf_s *msg, int maxsize, entityframe4_database_t *d, int numstates, const entity_state_t **states);
 // reads a frame from the network stream
 void EntityFrame4_CL_ReadFrame(void);
 
@@ -858,16 +887,16 @@ typedef struct entityframe5_database_s
 }
 entityframe5_database_t;
 
-entityframe5_database_t *EntityFrame5_AllocDatabase(mempool_t *pool);
+entityframe5_database_t *EntityFrame5_AllocDatabase(struct mempool_s *pool);
 void EntityFrame5_FreeDatabase(entityframe5_database_t *d);
-void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbits, sizebuf_t *msg);
+void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbits, struct sizebuf_s *msg);
 int EntityState5_DeltaBitsForState(entity_state_t *o, entity_state_t *n);
 void EntityFrame5_CL_ReadFrame(void);
 void EntityFrame5_LostFrame(entityframe5_database_t *d, int framenum);
 void EntityFrame5_AckFrame(entityframe5_database_t *d, int framenum);
-qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database_t *d, int numstates, const entity_state_t **states, int viewentnum, unsigned int movesequence, qbool need_empty);
+qbool EntityFrame5_WriteFrame(struct sizebuf_s *msg, int maxsize, entityframe5_database_t *d, int numstates, const entity_state_t **states, int viewentnum, unsigned int movesequence, qbool need_empty);
 
-extern cvar_t developer_networkentities;
+extern struct cvar_s developer_networkentities;
 
 // QUAKEWORLD
 // server to client
@@ -1039,14 +1068,14 @@ typedef struct entityframeqw_database_s
 }
 entityframeqw_database_t;
 
-entityframeqw_database_t *EntityFrameQW_AllocDatabase(mempool_t *pool);
+entityframeqw_database_t *EntityFrameQW_AllocDatabase(struct mempool_s *pool);
 void EntityFrameQW_FreeDatabase(entityframeqw_database_t *d);
 void EntityStateQW_ReadPlayerUpdate(void);
 void EntityFrameQW_CL_ReadFrame(qbool delta);
 
 struct client_s;
 void EntityFrameCSQC_LostFrame(struct client_s *client, int framenum);
-qbool EntityFrameCSQC_WriteFrame (sizebuf_t *msg, int maxsize, int numnumbers, const unsigned short *numbers, int framenum);
+qbool EntityFrameCSQC_WriteFrame (struct sizebuf_s *msg, int maxsize, int numnumbers, const unsigned short *numbers, int framenum);
 
 #endif
 

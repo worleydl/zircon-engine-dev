@@ -28,11 +28,7 @@
 #ifndef _MDFOUR_H
 #define _MDFOUR_H
 
-#ifdef _MSC_VER
-#include "vc_stdint.h"
-#else
 #include <stdint.h>
-#endif // _MSC_VER
 
 struct mdfour_s {
 	uint32_t A, B, C, D;

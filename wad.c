@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "image.h"
 #include "wad.h"
 
@@ -124,7 +124,7 @@ unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
 
 	if (!wad.gfx_base)
 	{
-		if ((wad.gfx_base = FS_LoadFile ("gfx.wad", cls.permanentmempool, false, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL)))
+		if ((wad.gfx_base = FS_LoadFile ("gfx.wad", cls.permanentmempool, false, &filesize)))
 		{
 			if (memcmp(wad.gfx_base, "WAD2", 4))
 			{
@@ -145,8 +145,10 @@ unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
 		}
 	}
 
-	for (lump = wad.gfx.lumps, i = 0;i < wad.gfx.numlumps;i++, lump++) {
-		if (String_Does_Match(clean, lump->name)) {
+	for (lump = wad.gfx.lumps, i = 0;i < wad.gfx.numlumps;i++, lump++)
+	{
+		if (!strcmp(clean, lump->name))
+		{
 			if (returnfilesize)
 				*returnfilesize = lump->size;
 			return (wad.gfx_base + lump->filepos);
@@ -168,26 +170,26 @@ void W_LoadTextureWadFile (char *filename, int complain)
 	int				numlumps;
 	mwad_t			*w;
 
-	file = FS_OpenVirtualFile(filename, false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	file = FS_OpenVirtualFile(filename, false);
 	if (!file)
 	{
 		if (complain)
-			Con_Printf("W_LoadTextureWadFile: couldn't find %s\n", filename);
+			Con_Printf(CON_ERROR "W_LoadTextureWadFile: couldn't find %s\n", filename);
 		return;
 	}
 
 	if (FS_Read(file, &header, sizeof(wadinfo_t)) != sizeof(wadinfo_t))
-	{Con_Print("W_LoadTextureWadFile: unable to read wad header\n");FS_Close(file);file = NULL;return;}
+	{Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to read wad header\n");FS_Close(file);file = NULL;return;}
 
 	if(memcmp(header.identification, "WAD3", 4))
-	{Con_Printf("W_LoadTextureWadFile: Wad file %s doesn't have WAD3 id\n",filename);FS_Close(file);file = NULL;return;}
+	{Con_Printf(CON_ERROR "W_LoadTextureWadFile: Wad file %s doesn't have WAD3 id\n",filename);FS_Close(file);file = NULL;return;}
 
 	numlumps = LittleLong(header.numlumps);
 	if (numlumps < 1 || numlumps > 65536)
-	{Con_Printf("W_LoadTextureWadFile: invalid number of lumps (%i)\n", numlumps);FS_Close(file);file = NULL;return;}
+	{Con_Printf(CON_ERROR "W_LoadTextureWadFile: invalid number of lumps (%i)\n", numlumps);FS_Close(file);file = NULL;return;}
 	infotableofs = LittleLong(header.infotableofs);
 	if (FS_Seek (file, infotableofs, SEEK_SET))
-	{Con_Print("W_LoadTextureWadFile: unable to seek to lump table\n");FS_Close(file);file = NULL;return;}
+	{Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to seek to lump table\n");FS_Close(file);file = NULL;return;}
 
 	if (!wad.hlwads.mempool)
 		Mem_ExpandableArray_NewArray(&wad.hlwads, cls.permanentmempool, sizeof(mwad_t), 16);
@@ -198,7 +200,7 @@ void W_LoadTextureWadFile (char *filename, int complain)
 
 	if (!w->lumps)
 	{
-		Con_Print("W_LoadTextureWadFile: unable to allocate temporary memory for lump table\n");
+		Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to allocate temporary memory for lump table\n");
 		FS_Close(w->file);
 		w->file = NULL;
 		w->numlumps = 0;
@@ -207,7 +209,7 @@ void W_LoadTextureWadFile (char *filename, int complain)
 
 	if (FS_Read(file, w->lumps, sizeof(lumpinfo_t) * w->numlumps) != (fs_offset_t)sizeof(lumpinfo_t) * numlumps)
 	{
-		Con_Print("W_LoadTextureWadFile: unable to read lump table\n");
+		Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to read lump table\n");
 		FS_Close(w->file);
 		w->file = NULL;
 		w->numlumps = 0;
@@ -293,7 +295,7 @@ unsigned char *W_GetTextureBGRA(char *name)
 			continue;
 		for (i = 0;i < (unsigned int)w->numlumps;i++)
 		{
-			if (String_Does_Match(texname, w->lumps[i].name)) // found it
+			if (!strcmp(texname, w->lumps[i].name)) // found it
 			{
 				if (FS_Seek(w->file, w->lumps[i].filepos, SEEK_SET))
 				{Con_Print("W_GetTexture: corrupt WAD3 file\n");return NULL;}

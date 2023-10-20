@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "snd_main.h"
 
 extern cvar_t snd_softclip;
@@ -189,7 +189,7 @@ static void S_ConvertPaintBuffer(portable_sampleframe_t *painted_ptr, void *rb_p
 		if (cls.timedemo)
 			memset(rb_ptr, 0, nbframes * nchannels * width);
 	}
-	else if (width == 2)   // 16bit	
+	else if (width == 2)  // 16bit
 	{
 		short *snd_out = (short*)rb_ptr;
 		if (nchannels == 8)  // 7.1 surround

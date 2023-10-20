@@ -1,5 +1,5 @@
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "image.h"
 #include "jpeg.h"
 #include "image_png.h"
@@ -918,7 +918,7 @@ void Image_StripImageExtension (const char *in, char *out, size_t size_out)
 		return;
 
 	ext = FS_FileExtension(in);
-	if (ext && (String_Does_Match(ext, "tga") || String_Does_Match(ext, "pcx") || String_Does_Match(ext, "lmp") || String_Does_Match(ext, "png") || String_Does_Match(ext, "jpg") || String_Does_Match(ext, "wal")))
+	if (ext && (!strcmp(ext, "tga") || !strcmp(ext, "pcx") || !strcmp(ext, "lmp") || !strcmp(ext, "png") || !strcmp(ext, "jpg") || !strcmp(ext, "wal")))
 		FS_StripExtension(in, out, size_out);
 	else
 		strlcpy(out, in, size_out);
@@ -1000,14 +1000,14 @@ imageformat_t imageformats_nopath[] =
 // that GtkRadiant can't detect normal/gloss textures
 // and exclude them from texture browser
 // so i just use additional folder to store this textures
-//imageformat_t imageformats_dq[] =
-//{
-//	{"%s.tga", LoadTGA_BGRA},
-//	{"%s.jpg", JPEG_LoadImage_BGRA},
-//	{"texturemaps/%s.tga", LoadTGA_BGRA},
-//	{"texturemaps/%s.jpg", JPEG_LoadImage_BGRA},
-//	{NULL, NULL}
-//};
+imageformat_t imageformats_dq[] =
+{
+	{"%s.tga", LoadTGA_BGRA},
+	{"%s.jpg", JPEG_LoadImage_BGRA},
+	{"texturemaps/%s.tga", LoadTGA_BGRA},
+	{"texturemaps/%s.jpg", JPEG_LoadImage_BGRA},
+	{NULL, NULL}
+};
 
 imageformat_t imageformats_textures[] =
 {
@@ -1044,6 +1044,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 {
 	fs_offset_t filesize;
 	imageformat_t *firstformat, *format;
+	int mymiplevel;
 	unsigned char *f, *data = NULL, *data2 = NULL;
 	char basename[MAX_QPATH], name[MAX_QPATH], name2[MAX_QPATH], path[MAX_QPATH], afterpath[MAX_QPATH], *c;
 	char vabuf[1024];
@@ -1069,9 +1070,11 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 	}
 	if (gamemode == GAME_TENEBRAE)
 		firstformat = imageformats_tenebrae;
-	else if (String_Does_Match_Caseless(path, "textures"))
+	else if (gamemode == GAME_DELUXEQUAKE)
+		firstformat = imageformats_dq;
+	else if (!strcasecmp(path, "textures"))
 		firstformat = imageformats_textures;
-	else if (String_Does_Match_Caseless(path, "gfx") || String_Does_Match_Caseless(path, "locale")) // locale/ is used in GAME_BLOODOMNICIDE
+	else if (!strcasecmp(path, "gfx") || !strcasecmp(path, "locale")) // locale/ is used in GAME_BLOODOMNICIDE
 		firstformat = imageformats_gfx;
 	else if (!path[0])
 		firstformat = imageformats_nopath;
@@ -1081,14 +1084,14 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 	for (format = firstformat;format->formatstring;format++)
 	{
 		dpsnprintf (name, sizeof(name), format->formatstring, basename);
-		f = FS_LoadFile(name, tempmempool, true, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-		if (f)
+
+		FS_SanitizePath(name);
+
+		if(FS_FileExists(name) && (f = FS_LoadFile(name, tempmempool, true, &filesize)) != NULL)
 		{
-			int mymiplevel = miplevel ? *miplevel : 0;
+			mymiplevel = miplevel ? *miplevel : 0;
 			image_width = 0;
 			image_height = 0;
-
-			WARP_X_ (LoadTGA_BGRA)
 			data = format->loadfunc(f, (int)filesize, &mymiplevel);
 			Mem_Free(f);
 			if (data)
@@ -1096,7 +1099,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 				if(format->loadfunc == JPEG_LoadImage_BGRA) // jpeg can't do alpha, so let's simulate it by loading another jpeg
 				{
 					dpsnprintf (name2, sizeof(name2), format->formatstring, va(vabuf, sizeof(vabuf), "%s_alpha", basename));
-					f = FS_LoadFile(name2, tempmempool, true, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+					f = FS_LoadFile(name2, tempmempool, true, &filesize);
 					if(f)
 					{
 						int mymiplevel2 = miplevel ? *miplevel : 0;
@@ -1144,7 +1147,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 				Con_DPrintf("Error loading image %s (file loaded but decode failed)\n", name);
 		}
 	}
-	if (String_Does_Match_Caseless(path, "gfx"))
+	if (!strcasecmp(path, "gfx"))
 	{
 		unsigned char *lmpdata;
 		if ((lmpdata = W_GetLumpName(afterpath, &filesize)))
@@ -1152,8 +1155,8 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 			if (developer_loading.integer)
 				Con_Printf("loading gfx.wad lump \"%s\"\n", afterpath);
 
-			int mymiplevel = miplevel ? *miplevel : 0;
-			if (String_Does_Match(afterpath, "conchars"))
+			mymiplevel = miplevel ? *miplevel : 0;
+			if (!strcmp(afterpath, "conchars"))
 			{
 				// conchars is a raw image and with color 0 as transparent instead of 255
 				data = LoadConChars_BGRA(lmpdata, filesize, &mymiplevel);
@@ -1195,7 +1198,7 @@ qbool Image_GetStockPicSize(const char *filename, int *returnwidth, int *returnh
 	unsigned char *data;
 	fs_offset_t filesize;
 	char lmppath[MAX_QPATH];
-	if (String_Does_Match_Caseless(filename, "gfx/conchars"))
+	if (!strcasecmp(filename, "gfx/conchars"))
 	{
 		*returnwidth = 128;
 		*returnheight = 128;
@@ -1203,7 +1206,7 @@ qbool Image_GetStockPicSize(const char *filename, int *returnwidth, int *returnh
 	}
 
 	dpsnprintf(lmppath, sizeof(lmppath), "%s.lmp", filename);
-	data = FS_LoadFile(lmppath, tempmempool, true, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	data = FS_LoadFile(lmppath, tempmempool, true, &filesize);
 	if (data)
 	{
 		if (filesize > 8)
@@ -1370,20 +1373,20 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 	return changedPixels;
 }
 
-void Image_FixTransparentPixels_f(void)
+void Image_FixTransparentPixels_f(cmd_state_t *cmd)
 {
 	const char *filename, *filename_pattern;
 	fssearch_t *search;
 	int i, n;
 	char outfilename[MAX_QPATH], buf[MAX_QPATH];
 	unsigned char *data;
-	if(Cmd_Argc() != 2)
+	if(Cmd_Argc(cmd) != 2)
 	{
-		Con_Printf("Usage: %s imagefile\n", Cmd_Argv(0));
+		Con_Printf("Usage: %s imagefile\n", Cmd_Argv(cmd, 0));
 		return;
 	}
-	filename_pattern = Cmd_Argv(1);
-	search = FS_Search(filename_pattern, true, true, gamedironly_false);
+	filename_pattern = Cmd_Argv(cmd, 1);
+	search = FS_Search(filename_pattern, true, true, NULL);
 	if(!search)
 		return;
 	for(i = 0; i < search->numfilenames; ++i)
@@ -1804,10 +1807,8 @@ void Image_HeightmapToNormalmap_BGRA(const unsigned char *inpixels, unsigned cha
 	}
 }
 
-static const unsigned char concharimage[] =
-{
+
 #include "lhfont.h"
-};
 
 static unsigned char *Image_GenerateConChars(void)
 {
@@ -1894,10 +1895,10 @@ unsigned char *Image_GenerateNoTexture(void)
 	{
 		for (x = 0; x < 16; x++)
 		{
-			data[(y * 8 + x) * 4 + 0] =
-				data[(y * 8 + x) * 4 + 1] =
-				data[(y * 8 + x) * 4 + 2] = (y < 8) ^ (x < 8) ? 128 : 64;
-			data[(y * 8 + x) * 4 + 3] = 255;
+			data[(y * 16 + x) * 4 + 0] =
+			data[(y * 16 + x) * 4 + 1] =
+			data[(y * 16 + x) * 4 + 2] = (y < 8) ^ (x < 8) ? 128 : 64;
+			data[(y * 16 + x) * 4 + 3] = 255;
 		}
 	}
 	return data;
@@ -2080,7 +2081,7 @@ unsigned char *Image_GetEmbeddedPicBGRA(const char *name)
 	const embeddedpic_t *p;
 	for (p = embeddedpics; p->name; p++)
 	{
-		if (String_Does_Match(name, p->name))
+		if (!strcmp(name, p->name))
 		{
 			int i;
 			unsigned char *data = (unsigned char *)Mem_Alloc(tempmempool, p->width * p->height * 4);
@@ -2094,12 +2095,11 @@ unsigned char *Image_GetEmbeddedPicBGRA(const char *name)
 			return data;
 		}
 	}
-	if (String_Does_Match(name, "white"))
+	if (!strcmp(name, "white") || !strcmp(name, "#white") || !strcmp(name, "*white") || !strcmp(name, "$whiteimage"))
 		return Image_GenerateWhite();
-	if (String_Does_Match(name, "gfx/conchars"))
+	if (!strcmp(name, "gfx/conchars"))
 		return Image_GenerateConChars();
-	if (String_Does_Match(name, "gfx/colorcontrol/ditherpattern"))
+	if (!strcmp(name, "gfx/colorcontrol/ditherpattern"))
 		return Image_GenerateDitherPattern();
 	return NULL;
 }
-

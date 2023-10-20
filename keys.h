@@ -1,5 +1,3 @@
-// keys.h
-
 /*
 	$RCSfile$
 
@@ -29,7 +27,23 @@
 #ifndef __KEYS_H
 #define __KEYS_H
 
+#include <stddef.h>
 #include "qtypes.h"
+#include "qdefs.h"
+#include "fs.h"
+#include "cmd.h"
+
+// the highest Unicode character to allow key binding.
+// note that an excessively high value may degrade fps
+// when code is looping through the bindings
+// U+ABFF is probably the highest bindable codepoint,
+// see: https://github.com/DarkPlacesEngine/darkplaces/pull/68#issuecomment-1416802873
+#define MAX_KEY_BINDS 0xAC00
+
+// how long is a "tinystr" to hold a keyboard key's
+// Unicode utf-8 presentation, plus final \x00
+// to allow all characters <= 0xffff, use 4
+#define TINYSTR_LEN_4 4
 
 //
 // these are the key numbers that should be passed to Key_Event
@@ -67,8 +81,8 @@ typedef enum keynum_e
 	K_F11,
 	K_F12,
 
-	K_INSERT,
-	K_DELETE,
+	K_INS,
+	K_DEL,
 	K_PGDN,
 	K_PGUP,
 	K_HOME,
@@ -81,7 +95,7 @@ typedef enum keynum_e
 	K_SCROLLOCK,
 
 	K_KP_0,
-	K_KP_INSERT = K_KP_0,
+	K_KP_INS = K_KP_0,
 	K_KP_1,
 	K_KP_END = K_KP_1,
 	K_KP_2,
@@ -351,56 +365,48 @@ typedef enum keynum_e
 	K_MIDINOTE126,
 	K_MIDINOTE127,
 
-	MAX_KEYS
+	MAX_KEYS = MAX_KEY_BINDS
 }
 keynum_t;
-
-int GetXKeyList_Count (const char *s_prefix);
 
 typedef enum keydest_e { key_game, key_message, key_menu, key_menu_grabbed, key_console, key_void } keydest_t;
 
 extern	char		key_line[MAX_INPUTLINE];
 extern	int			key_linepos;
-extern	int			key_sellength;
 extern	qbool	key_insert;	// insert key toggle (for editing)
 extern	keydest_t	key_dest;
 // key_consoleactive bits
 // user wants console (halfscreen)
-#define KEY_CONSOLEACTIVE_USER 1											// HALF SCREEN
-// console forced because there's nothing else active (fullscreen)			// FULL SCREEN
-#define KEY_CONSOLEACTIVE_FORCED 4
+#define KEY_CONSOLEACTIVE_USER_1 1	// Baker: Half screen
+// console forced because there's nothing else active (fullscreen)
+#define KEY_CONSOLEACTIVE_FORCED_4 4	// Baker: Full screen
 extern	int			key_consoleactive;
 extern	char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
 
-extern float		console_user_pct; // Baker 1032.1
-
-extern int chat_mode; // 0 for say, 1 for say_team, -1 for command
+extern signed char chat_mode; // 0 for say, 1 for say_team, -1 for command
 extern char chat_buffer[MAX_INPUTLINE];
-extern unsigned int chat_bufferlen;
+extern int	chat_bufferpos;
 
-void Key_ClearEditLine(int edit_line);
+int Key_ClearEditLine(qbool is_console);
 void Key_WriteBindings(qfile_t *f);
 void Key_Init(void);
 void Key_Shutdown(void);
 void Key_Init_Cvars(void);
 void Key_Event(int key, int ascii, qbool down);
 void Key_ReleaseAll (void);
-void Key_ClearStates (void); // FIXME: should this function still exist? Or should Key_ReleaseAll be used instead when shutting down a vid driver?
+void Key_ReleaseAll_f(cmd_state_t *cmd);
 void Key_EventQueue_Block(void);
 void Key_EventQueue_Unblock(void);
-
-void Key_Release_Keys (void); // Baker 1002.1
-
-void Key_History_Write (void);
-
+int Key_AddChar(int unicode, qbool is_console);
+int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicode);
 
 qbool Key_SetBinding (int keynum, int bindmap, const char *binding);
 const char *Key_GetBind (int key, int bindmap);
 void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bindmap);
 qbool Key_SetBindMap(int fg, int bg);
 void Key_GetBindMap(int *fg, int *bg);
-
-extern int history_line; // Au 15
+const char *Key_KeynumToString (int keynum, char *buf, size_t buflength);
+int Key_StringToKeynum (const char *str);
 
 #endif // __KEYS_H
 

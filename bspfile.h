@@ -324,4 +324,4 @@ typedef struct dleaf_s
 } dleaf_t;
 */
 
-#endif // BSPFILE_H
+#endif

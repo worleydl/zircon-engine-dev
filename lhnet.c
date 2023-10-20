@@ -1,5 +1,5 @@
 
-// Written by Forest Hale 2003-06-15 and placed into public domain.
+// Written by Ashley Rose Hale (LadyHavoc) 2003-06-15 and placed into public domain.
 
 #ifdef _WIN32
 #ifdef _MSC_VER
@@ -277,7 +277,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		port = defaultport;
 
 	// handle loopback
-	if (String_Does_Match(name, "local"))
+	if (!strcmp(name, "local"))
 	{
 		address->addresstype = LHNETADDRESSTYPE_LOOP;
 		address->port = port;
@@ -309,12 +309,12 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		return 1;
 	}
 	for (i = 0;i < MAX_NAMECACHE;i++)
-		if (String_Does_Match(namecache[i].name, name))
+		if (!strcmp(namecache[i].name, name))
 			break;
 #ifdef STANDALONETEST
 	if (i < MAX_NAMECACHE)
 #else
-	if (i < MAX_NAMECACHE && realtime < namecache[i].expirationtime)
+	if (i < MAX_NAMECACHE && host.realtime < namecache[i].expirationtime)
 #endif
 	{
 		*address = namecache[i].address;
@@ -336,7 +336,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		namecache[namecacheposition].name[i] = name[i];
 	namecache[namecacheposition].name[i] = 0;
 #ifndef STANDALONETEST
-	namecache[namecacheposition].expirationtime = realtime + 12 * 3600; // 12 hours
+	namecache[namecacheposition].expirationtime = host.realtime + 12 * 3600; // 12 hours
 #endif
 
 	// try resolving the address (handles dns and other ip formats)
@@ -413,7 +413,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 	memcpy(name, string, namelen);
 	name[namelen] = 0;
 	// handle loopback
-	if (String_Does_Match(name, "local"))
+	if (!strcmp(name, "local"))
 	{
 		address->addresstype = LHNETADDRESSTYPE_LOOP;
 		address->port = port;
@@ -444,12 +444,12 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		return 1;
 	}
 	for (i = 0;i < MAX_NAMECACHE;i++)
-		if (String_Does_Match(namecache[i].name, name))
+		if (!strcmp(namecache[i].name, name))
 			break;
 #ifdef STANDALONETEST
 	if (i < MAX_NAMECACHE)
 #else
-	if (i < MAX_NAMECACHE && realtime < namecache[i].expirationtime)
+	if (i < MAX_NAMECACHE && host.realtime < namecache[i].expirationtime)
 #endif
 	{
 		*address = namecache[i].address;
@@ -485,7 +485,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 				namecache[namecacheposition].name[i] = name[i];
 			namecache[namecacheposition].name[i] = 0;
 #ifndef STANDALONETEST
-			namecache[namecacheposition].expirationtime = realtime + 12 * 3600; // 12 hours
+			namecache[namecacheposition].expirationtime = host.realtime + 12 * 3600; // 12 hours
 #endif
 			namecache[namecacheposition].address = *address;
 			namecacheposition = (namecacheposition + 1) % MAX_NAMECACHE;
@@ -508,7 +508,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 				namecache[namecacheposition].name[i] = name[i];
 			namecache[namecacheposition].name[i] = 0;
 #ifndef STANDALONETEST
-			namecache[namecacheposition].expirationtime = realtime + 12 * 3600; // 12 hours
+			namecache[namecacheposition].expirationtime = host.realtime + 12 * 3600; // 12 hours
 #endif
 			namecache[namecacheposition].address = *address;
 			namecacheposition = (namecacheposition + 1) % MAX_NAMECACHE;
@@ -526,7 +526,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		namecache[namecacheposition].name[i] = name[i];
 	namecache[namecacheposition].name[i] = 0;
 #ifndef STANDALONETEST
-	namecache[namecacheposition].expirationtime = realtime + 12 * 3600; // 12 hours
+	namecache[namecacheposition].expirationtime = host.realtime + 12 * 3600; // 12 hours
 #endif
 	namecache[namecacheposition].address.addresstype = LHNETADDRESSTYPE_NONE;
 	namecacheposition = (namecacheposition + 1) % MAX_NAMECACHE;
@@ -719,7 +719,7 @@ typedef struct lhnetpacket_s
 #ifndef STANDALONETEST
 	double sentdoubletime;
 #endif
-	struct lhnetpacket_s *next, *prev;
+	llist_t list;
 }
 lhnetpacket_t;
 
@@ -736,8 +736,8 @@ void LHNET_Init(void)
 {
 	if (lhnet_active)
 		return;
-	lhnet_socketlist.next = lhnet_socketlist.prev = &lhnet_socketlist;
-	lhnet_packetlist.next = lhnet_packetlist.prev = &lhnet_packetlist;
+	List_Create(&lhnet_socketlist.list);
+	List_Create(&lhnet_packetlist.list);
 	lhnet_active = 1;
 #ifdef _WIN32
 	lhnet_didWSAStartup = !WSAStartup(MAKEWORD(1, 1), &lhnet_winsockdata);
@@ -760,16 +760,15 @@ int LHNET_DefaultDSCP(int dscp)
 
 void LHNET_Shutdown(void)
 {
-	lhnetpacket_t *p;
+	lhnetsocket_t *s, *snext;
+	lhnetpacket_t *p, *pnext;
 	if (!lhnet_active)
 		return;
-	while (lhnet_socketlist.next != &lhnet_socketlist)
-		LHNET_CloseSocket(lhnet_socketlist.next);
-	while (lhnet_packetlist.next != &lhnet_packetlist)
+	List_For_Each_Entry_Safe(s, snext, &lhnet_socketlist.list, lhnetsocket_t, list)
+		LHNET_CloseSocket(s);
+	List_For_Each_Entry_Safe(p, pnext, &lhnet_packetlist.list, lhnetpacket_t, list)
 	{
-		p = lhnet_packetlist.next;
-		p->prev->next = p->next;
-		p->next->prev = p->prev;
+		List_Delete(&p->list);
 		Z_Free(p);
 	}
 #ifdef _WIN32
@@ -849,7 +848,7 @@ void LHNET_SleepUntilPacket_Microseconds(int microseconds)
 	lhnetsocket_t *s;
 	FD_ZERO(&fdreadset);
 	lastfd = 0;
-	for (s = lhnet_socketlist.next;s != &lhnet_socketlist;s = s->next)
+	List_For_Each_Entry(s, &lhnet_socketlist.list, lhnetsocket_t, list)
 	{
 		if (s->address.addresstype == LHNETADDRESSTYPE_INET4 || s->address.addresstype == LHNETADDRESSTYPE_INET6)
 		{
@@ -893,7 +892,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 				lhnetsocket->address.port = 1024;
 				for (;;)
 				{
-					for (s = lhnet_socketlist.next;s != &lhnet_socketlist;s = s->next)
+					List_For_Each_Entry(s, &lhnet_socketlist.list, lhnetsocket_t, list)
 						if (s->address.addresstype == lhnetsocket->address.addresstype && s->address.port == lhnetsocket->address.port)
 							break;
 					if (s == &lhnet_socketlist)
@@ -902,15 +901,12 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 				}
 			}
 			// check if the port is available
-			for (s = lhnet_socketlist.next;s != &lhnet_socketlist;s = s->next)
+			List_For_Each_Entry(s, &lhnet_socketlist.list, lhnetsocket_t, list)
 				if (s->address.addresstype == lhnetsocket->address.addresstype && s->address.port == lhnetsocket->address.port)
 					break;
 			if (s == &lhnet_socketlist && lhnetsocket->address.port != 0)
 			{
-				lhnetsocket->next = &lhnet_socketlist;
-				lhnetsocket->prev = lhnetsocket->next->prev;
-				lhnetsocket->next->prev = lhnetsocket;
-				lhnetsocket->prev->next = lhnetsocket;
+				List_Add_Tail(&lhnetsocket->list, &lhnet_socketlist.list);
 				return lhnetsocket;
 			}
 			break;
@@ -969,9 +965,9 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 								int rfc1149only = 0;
 								int rfc1149enabled = 0;
 								if(setsockopt(lhnetsocket->inetsocket, SOL_RFC1149, RFC1149_1149ONLY, &rfc1149only))
-									Con_Printf("LHNET_OpenSocket_Connectionless: warning: setsockopt(RFC1149_1149ONLY) returned error: %s\n", LHNETPRIVATE_StrError());
+									Con_Printf(CON_ERROR "LHNET_OpenSocket_Connectionless: warning: setsockopt(RFC1149_1149ONLY) returned error: %s\n", LHNETPRIVATE_StrError());
 								if(setsockopt(lhnetsocket->inetsocket, SOL_RFC1149, RFC1149_ENABLED, &rfc1149enabled))
-									Con_Printf("LHNET_OpenSocket_Connectionless: warning: setsockopt(RFC1149_ENABLED) returned error: %s\n", LHNETPRIVATE_StrError());
+									Con_Printf(CON_ERROR "LHNET_OpenSocket_Connectionless: warning: setsockopt(RFC1149_ENABLED) returned error: %s\n", LHNETPRIVATE_StrError());
 							}
 #endif
 
@@ -1018,10 +1014,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 									}
 								}
 #endif
-								lhnetsocket->next = &lhnet_socketlist;
-								lhnetsocket->prev = lhnetsocket->next->prev;
-								lhnetsocket->next->prev = lhnetsocket;
-								lhnetsocket->prev->next = lhnetsocket;
+								List_Add_Tail(&lhnetsocket->list, &lhnet_socketlist.list);
 #ifdef _WIN32
 								if (ioctlsocket(lhnetsocket->inetsocket, SIO_UDP_CONNRESET, &_false) == -1)
 									Con_DPrintf("LHNET_OpenSocket_Connectionless: ioctlsocket SIO_UDP_CONNRESET returned error: %s\n", LHNETPRIVATE_StrError());
@@ -1060,14 +1053,7 @@ void LHNET_CloseSocket(lhnetsocket_t *lhnetsocket)
 {
 	if (lhnetsocket)
 	{
-		// unlink from socket list
-		if (lhnetsocket->next == NULL)
-			return; // invalid!
-		lhnetsocket->next->prev = lhnetsocket->prev;
-		lhnetsocket->prev->next = lhnetsocket->next;
-		lhnetsocket->next = NULL;
-		lhnetsocket->prev = NULL;
-
+		List_Delete(&lhnetsocket->list);
 		// no special close code for loopback, just inet
 		if (lhnetsocket->address.addresstype == LHNETADDRESSTYPE_INET4 || lhnetsocket->address.addresstype == LHNETADDRESSTYPE_INET6)
 		{
@@ -1098,19 +1084,17 @@ int LHNET_Read(lhnetsocket_t *lhnetsocket, void *content, int maxcontentlength, 
 		// scan for any old packets to timeout while searching for a packet
 		// that is waiting to be delivered to this socket
 		currenttime = time(NULL);
-		for (p = lhnet_packetlist.next;p != &lhnet_packetlist;p = pnext)
+		List_For_Each_Entry_Safe(p, pnext, &lhnet_packetlist.list, lhnetpacket_t, list)
 		{
-			pnext = p->next;
 			if (p->timeout < currenttime)
 			{
 				// unlink and free
-				p->next->prev = p->prev;
-				p->prev->next = p->next;
+				List_Delete(&p->list);
 				Z_Free(p);
 				continue;
 			}
 #ifndef STANDALONETEST
-			if (cl_netlocalping.value && (realtime - cl_netlocalping.value * (1.0 / 2000.0)) < p->sentdoubletime)
+			if (net_fakelag.value && (host.realtime - net_fakelag.value * (1.0 / 2000.0)) < p->sentdoubletime)
 				continue;
 #endif
 			if (value == 0 && p->destinationport == lhnetsocket->address.port)
@@ -1126,8 +1110,7 @@ int LHNET_Read(lhnetsocket_t *lhnetsocket, void *content, int maxcontentlength, 
 				else
 					value = -1;
 				// unlink and free
-				p->next->prev = p->prev;
-				p->prev->next = p->next;
+				List_Delete(&p->list);
 				Z_Free(p);
 			}
 		}
@@ -1207,12 +1190,10 @@ int LHNET_Write(lhnetsocket_t *lhnetsocket, const void *content, int contentleng
 		p->sourceport = lhnetsocket->address.port;
 		p->destinationport = address->port;
 		p->timeout = time(NULL) + 10;
-		p->next = &lhnet_packetlist;
-		p->prev = p->next->prev;
-		p->next->prev = p;
-		p->prev->next = p;
+		List_Add_Tail(&p->list, &lhnet_packetlist.list);
+
 #ifndef STANDALONETEST
-		p->sentdoubletime = realtime;
+		p->sentdoubletime = host.realtime;
 #endif
 		value = contentlength;
 	}
@@ -1389,7 +1370,7 @@ int main(int argc, char **argv)
 						LHNETADDRESS_ToString(&receiveaddress, addressstring, sizeof(addressstring), 1);
 						LHNETADDRESS_ToString(LHNET_AddressFromSocket(sock[i]), addressstring2, sizeof(addressstring2), 1);
 						printf("received message \"%s\" from \"%s\" on socket \"%s\"\n", buffer, addressstring, addressstring2);
-						if (String_Does_Match(buffer, "exit"))
+						if (!strcmp(buffer, "exit"))
 							break;
 					}
 				}

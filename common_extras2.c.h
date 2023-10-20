@@ -67,7 +67,7 @@ int String_Count_Words (const char *s)
 int String_Count_First_Word_Length (const char *s)
 {
     const char *first_space = strchr (s, ' ');
-    if (!first_space) return strlen(s); // First word is everything.
+    if (!first_space) return (int)strlen(s); // First word is everything.
     if (first_space == s) return -1; // First "word" is a space.
     return first_space - s;
 }
@@ -348,7 +348,7 @@ char *String_Edit_LTrim_Whitespace_Including_Spaces (char *s_edit)
 // Notes: None.
 char *String_Edit_RTrim_Whitespace_Excluding_Spaces (char *s_edit)
 {
-	int len = strlen(s_edit), j;
+	int len = (int)strlen(s_edit), j;
 
 	for (j = len - 1; j >= 0; j --)
 	{
@@ -365,7 +365,7 @@ char *String_Edit_RTrim_Whitespace_Excluding_Spaces (char *s_edit)
 // Notes: None.
 char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit)
 {
-	int len = strlen(s_edit), j;
+	int len = (int)strlen(s_edit), j;
 
 	for (j = len - 1; j >= 0; j --)
 	{
@@ -381,7 +381,7 @@ char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit)
 // Notes: None.
 char *String_Edit_Remove_End (char *s_edit)
 {
-	int len = strlen(s_edit);
+	int len = (int)strlen(s_edit);
 
 	if (len >= 1)
 		s_edit[len-1] = 0;
@@ -395,7 +395,7 @@ char *String_Edit_Remove_End (char *s_edit)
 char *String_Edit_RemoveTrailingSpaces (char *s_edit)
 {
 	int /*ssize_t*/ offset;
-	for (offset = strlen(s_edit) - 1; offset >= 0 && s_edit[offset] == SPACE_CHAR_32; offset--)
+	for (offset = (int)strlen(s_edit) - 1; offset >= 0 && s_edit[offset] == SPACE_CHAR_32; offset--)
 		s_edit[offset] = 0; // remove trailing spaces
 
 	return s_edit;
@@ -467,7 +467,7 @@ void c_swapb (char *a, char *b)
 //http://stackoverflow.com/questions/8534274/is-the-strrev-function-not-available-in-linux
 char *String_Edit_Reverse (char *s_edit)
 {
-    int i = strlen (s_edit) - 1, j = 0;
+    int i = (int)strlen (s_edit) - 1, j = 0;
 
     while (i > j)
 		c_swapb (&s_edit[i--], &s_edit[j++]);
@@ -510,8 +510,8 @@ char *String_Edit_Replace (char *s_edit, size_t s_size, const char *s_find, cons
 	// Make sure the find string actually exists in the string before going to any effort ...
 	if (first_match)
 	{
-		int s_find_len = strlen (s_find);
-		int s_replace_len = strlen(s_replace);
+		int s_find_len = (int)strlen (s_find);
+		int s_replace_len = (int)strlen(s_replace);
 		int delta_len = s_replace_len - s_find_len;
 
     	// If replacement string length greater than find, duplicate source buffer.
@@ -604,8 +604,8 @@ char *String_Edit_Replace_Memory_Constant (char *s_edit, size_t s_size, const ch
 	// Make sure the find string actually exists in the string before going to any effort ...
 	if (first_match)
 	{
-		int s_find_len = strlen (s_find);
-		int s_replace_len = strlen(s_replace);
+		int s_find_len = (int)strlen (s_find);
+		int s_replace_len = (int)strlen(s_replace);
 		int delta_len = s_replace_len - s_find_len;
 
 		const char *src = s_edit;
@@ -941,7 +941,7 @@ char *String_Instance (const char *s, int ch_delim, int nth_instance, replyx int
 	// If it wasn't found, there wasn't a delimiter at all.
 	if (!found) {
 		if (nth_instance == 1) {
-			NOT_MISSING_ASSIGN (len, strlen(s));
+			NOT_MISSING_ASSIGN (len, (int)strlen(s));
 			return (char *)s;
 		}
 		return NULL; // Invalid.
@@ -952,7 +952,7 @@ char *String_Instance (const char *s, int ch_delim, int nth_instance, replyx int
 	found = strchr (s_start, ch_delim);
 	if (!found) {
 		// Last instance?  Must be
-		NOT_MISSING_ASSIGN (len, strlen(s_start));
+		NOT_MISSING_ASSIGN (len, (int)strlen(s_start));
 		return s_start;
 	}
 
@@ -1222,7 +1222,7 @@ char *String_Replace_Len_Count_Alloc (const char *s, const char *s_find, const c
 
 	// CASE MATTERS!
 	// Determine the number of instances of s_find
-	int s_len = strlen(s), find_len = strlen(s_find), replace_len = strlen(s_replace);
+	int s_len = (int)strlen(s), find_len = (int)strlen(s_find), replace_len = (int)strlen(s_replace);
 	int delta_instance_len = replace_len - find_len; // How much we increase per instance
 	// Number of instances?
 	// strcasestr
@@ -1234,8 +1234,8 @@ char *String_Replace_Len_Count_Alloc (const char *s, const char *s_find, const c
 //		logd ("Passed empty replacement string");
 
 		NOT_MISSING_ASSIGN(replace_count, count);
-		NOT_MISSING_ASSIGN(created_length, strlen (s));
-		NOT_MISSING_ASSIGN(created_bufsize, strlen (s) + 1);
+		NOT_MISSING_ASSIGN(created_length, (int)strlen (s));
+		NOT_MISSING_ASSIGN(created_bufsize, (int)strlen (s) + 1);
 
 		return strdup(s);
 	}
@@ -1260,7 +1260,7 @@ char *String_Replace_Len_Count_Alloc (const char *s, const char *s_find, const c
 		newstring_o = (char *)realloc (newstring_o, bufsiz); // Shorten.  Or should we really bother?  Yes, let's bother.  What if source was a monster.
 
 	NOT_MISSING_ASSIGN(replace_count, count);
-	NOT_MISSING_ASSIGN(created_length, bufsiz - 1);
+	NOT_MISSING_ASSIGN(created_length, (int)(bufsiz - 1) );
 	NOT_MISSING_ASSIGN(created_bufsize, bufsiz);
 
 	}
@@ -1368,7 +1368,7 @@ void *File_To_Memory_Offset_Alloc (const char *path_to_file, replyx size_t *numb
 
 	// Open file
 //open_file:
-	f = fopen (path_to_file, FS_MODE_READ_BINARY_RB);
+	f = fopen (path_to_file, FS_MODE_READ_BINARY_RB); // FS_SysOpen .. no we take full url
 	if (f == NULL) {
 		return AUTO_FFREE___ NULL; // Failed to open
 	}
@@ -1390,7 +1390,7 @@ void *File_To_Memory_Offset_Alloc (const char *path_to_file, replyx size_t *numb
 
 	else
 	{
-		int ret = fseek (f, offset_into_file, SEEK_SET);
+		int ret = /*oof!*/ fseek (f, /*oof 32 bit on windows*/ (long)offset_into_file, SEEK_SET);
 		byte *membuf = (byte *)malloc (read_len_to_try + 1);
 		size_t bytes_read = fread (membuf, 1, read_len_to_try, f);
 		int is_ok = ret != 0;
@@ -1489,7 +1489,7 @@ WARP_X_ (FS_FileWithoutPath)
 char *File_URL_Remove_Trailing_Unix_Slash (char *path_to_file)
 {
 	if (String_Does_End_With (path_to_file, "/")) {
-		int slen = strlen (path_to_file);
+		int slen = (int)strlen (path_to_file);
 		path_to_file[slen - 1] = 0;
 	}
 	return path_to_file;;
@@ -1654,22 +1654,22 @@ int Time_Seconds (int seconds)
 // Notes: None.
 // Unit Test:
 #define MAX_ASCII_PRINTABLE_126		126 // TILDE
-void String_Command_String_To_Argv (char *cmdline, int *numargc, char **argvz, int maxargs)
+void String_Command_String_To_Argv (char *s_cmdline, int *numargc, char **argvz, int maxargs)
 {
 	// Baker: This converts a commandline in arguments and an argument count.
 	// Requires cmd_line, pointer to argc, argv[], maxargs
-	while (*cmdline && (*numargc < maxargs))
+	while (*s_cmdline && (*numargc < maxargs))
 	{
 #if 0
-		const char *start = cmdline;
+		const char *start = s_cmdline;
 		int len;
 #endif
 		// Advance beyond spaces, white space, delete and non-ascii characters
 		// ASCII = chars 0-127, where chars > 127 = ANSI codepage 1252
-		while (*cmdline && (*cmdline <= SPACE_CHAR_32 || MAX_ASCII_PRINTABLE_126 <= *cmdline ) ) // Was 127, but 127 is DELETE
-			cmdline++;
+		while (*s_cmdline && (*s_cmdline <= SPACE_CHAR_32 || MAX_ASCII_PRINTABLE_126 <= *s_cmdline ) ) // Was 127, but 127 is DELETE
+			s_cmdline++;
 
-		switch (*cmdline)
+		switch (*s_cmdline)
 		{
 		case 0:  // null terminator
 			break;
@@ -1677,36 +1677,36 @@ void String_Command_String_To_Argv (char *cmdline, int *numargc, char **argvz, i
 		case '\"': // quote
 
 			// advance past the quote
-			cmdline++;
+			s_cmdline++;
 
-			argvz[*numargc] = cmdline;
+			argvz[*numargc] = s_cmdline;
 			(*numargc)++;
 
 			// continue until hit another quote or null terminator
-			while (*cmdline && *cmdline != '\"')
-				cmdline++;
+			while (*s_cmdline && *s_cmdline != '\"')
+				s_cmdline++;
 #if 0
-			len = cmdline - start;
+			len = s_cmdline - start;
 #endif
 			break;
 
 		default:
-			argvz[*numargc] = cmdline;
+			argvz[*numargc] = s_cmdline;
 			(*numargc)++;
 
 			// Advance until reach space, white space, delete or non-ascii
-			while (*cmdline && (SPACE_CHAR_32 < *cmdline && *cmdline <= MAX_ASCII_PRINTABLE_126  ) ) // Was < 127
-				cmdline++;
+			while (*s_cmdline && (SPACE_CHAR_32 < *s_cmdline && *s_cmdline <= MAX_ASCII_PRINTABLE_126  ) ) // Was < 127
+				s_cmdline++;
 #if 0
-			len = cmdline - start;
+			len = s_cmdline - start;
 #endif
 		} // End of switch
 
 		// If more advance the cursor past what should be whitespace
-		if (*cmdline)
+		if (*s_cmdline)
 		{
-			*cmdline = 0;
-			cmdline++;
+			*s_cmdline = 0;
+			s_cmdline++;
 		}
 
 	} // end of while (*cmd_line && (*numargc < maxargs)

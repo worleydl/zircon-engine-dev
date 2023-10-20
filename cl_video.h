@@ -2,10 +2,10 @@
 #ifndef CL_VIDEO_H
 #define CL_VIDEO_H
 
-#include "cl_dyntexture.h"
+#include "qtypes.h"
+#include "qdefs.h"
 
-// yields DYNAMIC_TEXTURE_PATH_PREFIX CLVIDEOPREFIX video name for a path
-#define CLVIDEOPREFIX	CLDYNTEXTUREPREFIX "video/"
+#define CLVIDEOPREFIX	"video/"
 #define CLTHRESHOLD		2.0
 
 #define MENUOWNER		1
@@ -23,14 +23,14 @@ typedef enum clvideostate_e
 
 #define CLVIDEO_MAX_SUBTITLES 512
 
-extern cvar_t cl_video_subtitles;
-extern cvar_t cl_video_subtitles_lines;
-extern cvar_t cl_video_subtitles_textsize;
-extern cvar_t cl_video_scale;
-extern cvar_t cl_video_scale_vpos;
-extern cvar_t cl_video_stipple;
-extern cvar_t cl_video_brightness;
-extern cvar_t cl_video_keepaspectratio;
+extern struct cvar_s cl_video_subtitles;
+extern struct cvar_s cl_video_subtitles_lines;
+extern struct cvar_s cl_video_subtitles_textsize;
+extern struct cvar_s cl_video_scale;
+extern struct cvar_s cl_video_scale_vpos;
+extern struct cvar_s cl_video_stipple;
+extern struct cvar_s cl_video_brightness;
+extern struct cvar_s cl_video_keepaspectratio;
 
 typedef struct clvideo_s
 {
@@ -46,7 +46,11 @@ typedef struct clvideo_s
 
 	void	*imagedata;
 
-	cachepic_t cpif;
+	// cachepic holds the relevant texture_t and we simply update the texture as needed
+	struct cachepic_s *cachepic;
+	char	name[MAX_QPATH]; // name of this video UI element (not the filename)
+	int		width;
+	int		height;
 
 	// VorteX: subtitles array
 	int		subtitles;

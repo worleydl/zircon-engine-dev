@@ -5,7 +5,7 @@
 #endif
 
 #include "quakedef.h"
-//#include "taskqueue.h"
+#include "taskqueue.h"
 #include "thread.h"
 
 #define SUPPORTDLL
@@ -45,16 +45,17 @@ char *Sys_TimeString(const char *timeformat)
 }
 
 
-extern qbool host_shuttingdown;
 void Sys_Quit (int returnvalue)
 {
 	// Unlock mutexes because the quit command may jump directly here, causing a deadlock
-	Cbuf_UnlockThreadMutex();
+	if ((cmd_local)->cbuf->lock)
+		Cbuf_Unlock((cmd_local)->cbuf);
 	SV_UnlockThreadMutex();
+	TaskQueue_Frame(true);
 
 	if (Sys_CheckParm("-profilegameonly"))
 		Sys_AllowProfiling(false);
-	host_shuttingdown = true;
+	host.state = host_shutdown;
 	Host_Shutdown();
 	exit(returnvalue);
 }
@@ -73,7 +74,7 @@ void Sys_AllowProfiling(qbool enable)
 	else
 		moncleanup();
 #endif
-#elif defined(__linux__) || defined(__FreeBSD__)
+#elif (defined(__linux__) && (defined(__GLIBC__) || defined(__GNU_LIBRARY__))) || defined(__FreeBSD__)
 	extern int moncontrol(int);
 	moncontrol(enable);
 #endif
@@ -88,7 +89,7 @@ DLL MANAGEMENT
 ===============================================================================
 */
 
-static qbool Sys_LoadLibraryFunctions(dllhandle_t dllhandle, const dllfunction_t *fcts, qbool complain, qbool has_next)
+static qbool Sys_LoadDependencyFunctions(dllhandle_t dllhandle, const dllfunction_t *fcts, qbool complain, qbool has_next)
 {
 	const dllfunction_t *func;
 	if(dllhandle)
@@ -113,6 +114,21 @@ static qbool Sys_LoadLibraryFunctions(dllhandle_t dllhandle, const dllfunction_t
 	return false;
 }
 
+qbool Sys_LoadSelf(dllhandle_t *handle)
+{
+	dllhandle_t dllhandle = 0;
+
+	if (handle == NULL)
+		return false;
+#ifdef _WIN32
+	dllhandle = LoadLibrary (NULL);
+#else
+	dllhandle = dlopen (NULL, RTLD_NOW | RTLD_GLOBAL);
+#endif
+	*handle = dllhandle;
+	return true;
+}
+
 qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllfunction_t *fcts)
 {
 #ifdef SUPPORTDLL
@@ -126,7 +142,7 @@ qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllf
 #ifndef _WIN32
 #ifdef PREFER_PRELOAD
 	dllhandle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
-	if(Sys_LoadLibraryFunctions(dllhandle, fcts, false, false))
+	if(Sys_LoadDependencyFunctions(dllhandle, fcts, false, false))
 	{
 		Con_DPrintf ("All of %s's functions were already linked in! Not loading dynamically...\n", dllnames[0]);
 		*handle = dllhandle;
@@ -155,23 +171,22 @@ notfound:
 		SetDllDirectory("bin32");
 #  endif
 # endif
-		dllhandle = LoadLibrary (dllnames[i]);
-		// no need to unset this - we want ALL dlls to be loaded from there, anyway
-#else
-		dllhandle = dlopen (dllnames[i], RTLD_LAZY | RTLD_GLOBAL);
 #endif
-		if (Sys_LoadLibraryFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(com_argv[0], '/'))))
-			break;
-		else
-			Sys_FreeLibrary (&dllhandle);
+		if(Sys_LoadLibrary(dllnames[i], &dllhandle))
+		{
+			if (Sys_LoadDependencyFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(sys.argv[0], '/'))))
+				break;
+			else
+				Sys_FreeLibrary (&dllhandle);
+		}
 	}
 
 	// see if the names can be loaded relative to the executable path
 	// (this is for Mac OSX which does not check next to the executable)
-	if (!dllhandle && strrchr(com_argv[0], '/'))
+	if (!dllhandle && strrchr(sys.argv[0], '/'))
 	{
 		char path[MAX_OSPATH];
-		strlcpy(path, com_argv[0], sizeof(path));
+		strlcpy(path, sys.argv[0], sizeof(path));
 		strrchr(path, '/')[1] = 0;
 		for (i = 0; dllnames[i] != NULL; i++)
 		{
@@ -179,15 +194,14 @@ notfound:
 			strlcpy(temp, path, sizeof(temp));
 			strlcat(temp, dllnames[i], sizeof(temp));
 			Con_DPrintf (" \"%s\"", temp);
-#ifdef _WIN32
-			dllhandle = LoadLibrary (temp);
-#else
-			dllhandle = dlopen (temp, RTLD_LAZY | RTLD_GLOBAL);
-#endif
-			if (Sys_LoadLibraryFunctions(dllhandle, fcts, true, dllnames[i+1] != NULL))
-				break;
-			else
-				Sys_FreeLibrary (&dllhandle);
+
+			if(Sys_LoadLibrary(temp, &dllhandle))
+			{
+				if (Sys_LoadDependencyFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(sys.argv[0], '/'))))
+					break;
+				else
+					Sys_FreeLibrary (&dllhandle);
+			}
 		}
 	}
 
@@ -199,12 +213,34 @@ notfound:
 	}
 
 	Con_DPrintf(" - loaded.\n");
+	Con_Printf("Loaded library \"%s\"\n", dllnames[i]);
 
 	*handle = dllhandle;
 	return true;
 #else
 	return false;
 #endif
+}
+
+qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle)
+{
+	dllhandle_t dllhandle = 0;
+
+	if(handle == NULL)
+		return false;
+
+#ifdef SUPPORTDLL
+# ifdef _WIN32
+	dllhandle = LoadLibrary (name);
+# else
+	dllhandle = dlopen (name, RTLD_LAZY | RTLD_GLOBAL);
+# endif
+#endif
+	if(!dllhandle)
+		return false;
+
+	*handle = dllhandle;
+	return true;
 }
 
 void Sys_FreeLibrary (dllhandle_t* handle)
@@ -263,26 +299,51 @@ void* Sys_GetProcAddress (dllhandle_t handle, const char* name)
 # define HAVE_USLEEP 1
 #endif
 
-// this one is referenced elsewhere
-cvar_t sys_usenoclockbutbenchmark = {CVAR_SAVE, "sys_usenoclockbutbenchmark", "0", "don't use ANY real timing, and simulate a clock (for benchmarking); the game then runs as fast as possible. Run a QC mod with bots that does some stuff, then does a quit at the end, to benchmark a server. NEVER do this on a public server."};
+// these are referenced elsewhere
+cvar_t sys_usenoclockbutbenchmark = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "sys_usenoclockbutbenchmark", "0", "don't use ANY real timing, and simulate a clock (for benchmarking); the game then runs as fast as possible. Run a QC mod with bots that does some stuff, then does a quit at the end, to benchmark a server. NEVER do this on a public server."};
+cvar_t sys_libdir = {CF_READONLY | CF_CLIENT | CF_SERVER, "sys_libdir", "", "Default engine library directory"};
 
 // these are not
-static cvar_t sys_debugsleep = {0, "sys_debugsleep", "0", "write requested and attained sleep times to standard output, to be used with gnuplot"};
-static cvar_t sys_usesdlgetticks = {CVAR_SAVE, "sys_usesdlgetticks", "0", "use SDL_GetTicks() timer (less accurate, for debugging)"};
-static cvar_t sys_usesdldelay = {CVAR_SAVE, "sys_usesdldelay", "0", "use SDL_Delay() (less accurate, for debugging)"};
+static cvar_t sys_debugsleep = {CF_CLIENT | CF_SERVER, "sys_debugsleep", "0", "write requested and attained sleep times to standard output, to be used with gnuplot"};
+static cvar_t sys_usesdlgetticks = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "sys_usesdlgetticks", "0", "use SDL_GetTicks() timer (less accurate, for debugging)"};
+static cvar_t sys_usesdldelay = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "sys_usesdldelay", "0", "use SDL_Delay() (less accurate, for debugging)"};
 #if HAVE_QUERYPERFORMANCECOUNTER
-static cvar_t sys_usequeryperformancecounter = {CVAR_SAVE, "sys_usequeryperformancecounter", "0", "use windows QueryPerformanceCounter timer (which has issues on multicore/multiprocessor machines and processors which are designed to conserve power) for timing rather than timeGetTime function (which has issues on some motherboards)"};
+static cvar_t sys_usequeryperformancecounter = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "sys_usequeryperformancecounter", "0", "use windows QueryPerformanceCounter timer (which has issues on multicore/multiprocessor machines and processors which are designed to conserve power) for timing rather than timeGetTime function (which has issues on some motherboards)"};
 #endif
 #if HAVE_CLOCKGETTIME
-static cvar_t sys_useclockgettime = {CVAR_SAVE, "sys_useclockgettime", "1", "use POSIX clock_gettime function (not adjusted by NTP on some older Linux kernels) for timing rather than gettimeofday (which has issues if the system time is stepped by ntpdate, or apparently on some Xen installations)"};
+static cvar_t sys_useclockgettime = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "sys_useclockgettime", "1", "use POSIX clock_gettime function (not adjusted by NTP on some older Linux kernels) for timing rather than gettimeofday (which has issues if the system time is stepped by ntpdate, or apparently on some Xen installations)"};
 #endif
 
 static double benchmark_time; // actually always contains an integer amount of milliseconds, will eventually "overflow"
+
+/*
+================
+Sys_CheckParm
+
+Returns the position (1 to argc-1) in the program's argument list
+where the given parameter apears, or 0 if not present
+================
+*/
+int Sys_CheckParm (const char *parm)
+{
+	int i;
+
+	for (i=1 ; i<sys.argc ; i++)
+	{
+		if (!sys.argv[i])
+			continue;               // NEXTSTEP sometimes clears appkit vars.
+		if (!strcmp (parm,sys.argv[i]))
+			return i;
+	}
+
+	return 0;
+}
 
 void Sys_Init_Commands (void)
 {
 	Cvar_RegisterVariable(&sys_debugsleep);
 	Cvar_RegisterVariable(&sys_usenoclockbutbenchmark);
+	Cvar_RegisterVariable(&sys_libdir);
 #if HAVE_TIMEGETTIME || HAVE_QUERYPERFORMANCECOUNTER || HAVE_CLOCKGETTIME || HAVE_GETTIMEOFDAY
 	if(sys_supportsdlgetticks)
 	{
@@ -331,13 +392,8 @@ double Sys_DirtyTime(void)
 		{
 			QueryPerformanceCounter (&PerformanceCount);
 	
-			#ifdef __BORLANDC__
-			timescale = 1.0 / ((double) PerformanceFreq.u.LowPart + (double) PerformanceFreq.u.HighPart * 65536.0 * 65536.0);
-			return ((double) PerformanceCount.u.LowPart + (double) PerformanceCount.u.HighPart * 65536.0 * 65536.0) * timescale;
-			#else
 			timescale = 1.0 / ((double) PerformanceFreq.LowPart + (double) PerformanceFreq.HighPart * 65536.0 * 65536.0);
 			return ((double) PerformanceCount.LowPart + (double) PerformanceCount.HighPart * 65536.0 * 65536.0) * timescale;
-			#endif
 		}
 		else
 		{
@@ -448,11 +504,11 @@ void Sys_Sleep(int microseconds)
 	if(sys_debugsleep.integer)
 	{
 		t = Sys_DirtyTime() - t;
-		Sys_PrintfToTerminal("%d %d # debugsleep\n", microseconds, (unsigned int)(t * 1000000));
+		Sys_Printf("%d %d # debugsleep\n", microseconds, (unsigned int)(t * 1000000));
 	}
 }
 
-void Sys_PrintfToTerminal(const char *fmt, ...)
+void Sys_Printf(const char *fmt, ...)
 {
 	va_list argptr;
 	char msg[MAX_INPUTLINE];
@@ -492,12 +548,17 @@ static const char *Sys_FindInPATH(const char *name, char namesep, const char *PA
 static const char *Sys_FindExecutableName(void)
 {
 #if defined(_WIN32)
-	return com_argv[0];
+	return sys.argv[0];
 #else
 	static char exenamebuf[MAX_OSPATH+1];
 	ssize_t n = -1;
 #if defined(__FreeBSD__)
-	n = readlink("/proc/curproc/file", exenamebuf, sizeof(exenamebuf)-1);
+	int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+	size_t exenamebuflen = sizeof(exenamebuf)-1;
+	if (sysctl(mib, 4, exenamebuf, &exenamebuflen, NULL, 0) == 0)
+	{
+		n = exenamebuflen;
+	}
 #elif defined(__linux__)
 	n = readlink("/proc/self/exe", exenamebuf, sizeof(exenamebuf)-1);
 #endif
@@ -506,18 +567,18 @@ static const char *Sys_FindExecutableName(void)
 		exenamebuf[n] = 0;
 		return exenamebuf;
 	}
-	if(strchr(com_argv[0], '/'))
-		return com_argv[0]; // possibly a relative path
+	if(strchr(sys.argv[0], '/'))
+		return sys.argv[0]; // possibly a relative path
 	else
-		return Sys_FindInPATH(com_argv[0], '/', getenv("PATH"), ':', exenamebuf, sizeof(exenamebuf));
+		return Sys_FindInPATH(sys.argv[0], '/', getenv("PATH"), ':', exenamebuf, sizeof(exenamebuf));
 #endif
 }
 
 void Sys_ProvideSelfFD(void)
 {
-	if(com_selffd != -1)
+	if(sys.selffd != -1)
 		return;
-	com_selffd = FS_SysOpenFD(Sys_FindExecutableName(), "rb", false);
+	sys.selffd = FS_SysOpenFD(Sys_FindExecutableName(), "rb", false);
 }
 
 // for x86 cpus only...  (x64 has SSE2_PRESENT)
@@ -526,7 +587,7 @@ void Sys_ProvideSelfFD(void)
 static int CPUID_Features(void)
 {
 	int features = 0;
-# if defined(__GNUC__) && defined(__i386__)
+# if (defined(__GNUC__) || defined(__clang__) || defined(__TINYC__)) && defined(__i386__)
         __asm__ (
 "        movl    %%ebx,%%edi\n"
 "        xorl    %%eax,%%eax                                           \n"
@@ -592,17 +653,15 @@ qbool Sys_HaveSSE2(void)
 #if defined(__linux__)
 #include <sys/resource.h>
 #include <errno.h>
-static int nicelevel;
-static qbool nicepossible;
-static qbool isnice;
+
 void Sys_InitProcessNice (void)
 {
 	struct rlimit lim;
-	nicepossible = false;
+	sys.nicepossible = false;
 	if(Sys_CheckParm("-nonice"))
 		return;
 	errno = 0;
-	nicelevel = getpriority(PRIO_PROCESS, 0);
+	sys.nicelevel = getpriority(PRIO_PROCESS, 0);
 	if(errno)
 	{
 		Con_Printf("Kernel does not support reading process priority - cannot use niceness\n");
@@ -613,35 +672,35 @@ void Sys_InitProcessNice (void)
 		Con_Printf("Kernel does not support lowering nice level again - cannot use niceness\n");
 		return;
 	}
-	if(lim.rlim_cur != RLIM_INFINITY && nicelevel < (int) (20 - lim.rlim_cur))
+	if(lim.rlim_cur != RLIM_INFINITY && sys.nicelevel < (int) (20 - lim.rlim_cur))
 	{
 		Con_Printf("Current nice level is below the soft limit - cannot use niceness\n");
 		return;
 	}
-	nicepossible = true;
-	isnice = false;
+	sys.nicepossible = true;
+	sys.isnice = false;
 }
 void Sys_MakeProcessNice (void)
 {
-	if(!nicepossible)
+	if(!sys.nicepossible)
 		return;
-	if(isnice)
+	if(sys.isnice)
 		return;
 	Con_DPrintf("Process is becoming 'nice'...\n");
 	if(setpriority(PRIO_PROCESS, 0, 19))
-		Con_Printf("Failed to raise nice level to %d\n", 19);
-	isnice = true;
+		Con_Printf(CON_ERROR "Failed to raise nice level to %d\n", 19);
+	sys.isnice = true;
 }
 void Sys_MakeProcessMean (void)
 {
-	if(!nicepossible)
+	if(!sys.nicepossible)
 		return;
-	if(!isnice)
+	if(!sys.isnice)
 		return;
 	Con_DPrintf("Process is becoming 'mean'...\n");
-	if(setpriority(PRIO_PROCESS, 0, nicelevel))
-		Con_Printf("Failed to lower nice level to %d\n", nicelevel);
-	isnice = false;
+	if(setpriority(PRIO_PROCESS, 0, sys.nicelevel))
+		Con_Printf(CON_ERROR "Failed to lower nice level to %d\n", sys.nicelevel);
+	sys.isnice = false;
 }
 #else
 void Sys_InitProcessNice (void)

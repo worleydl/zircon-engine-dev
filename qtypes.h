@@ -2,15 +2,9 @@
 #ifndef QTYPES_H
 #define QTYPES_H
 
-//#pragma message ("qtypes")
-#ifdef _MSC_VER
-#include "vc_stdint.h"
-#else
 #include <stdint.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#endif // _WIN32 // _MSC_VER
-
 
 typedef bool qbool;
 
@@ -27,7 +21,7 @@ typedef bool qbool;
 // fall over
 #define	ROLL	2
 
-#if defined(__GNUC__) || (__clang__) || (__TINYC__) || (defined(_MSC_VER) && _MSC_VER >= 1400)
+#if defined(__GNUC__) || (__clang__) || (__TINYC__) || (_MSC_VER >= 1400)
 #define RESTRICT __restrict
 #else
 #define RESTRICT
@@ -50,17 +44,17 @@ typedef uintptr_t uptr;
 // LadyHavoc: to be enabled when bugs are worked out...
 //#define PRVM_64
 #ifdef PRVM_64
-	typedef double prvm_vec_t;
-	typedef int64_t prvm_int_t;
-	typedef uint64_t prvm_uint_t;
-	#define PRVM_PRIi PRIi64
-	#define PRVM_PRIu PRIu64
+typedef double prvm_vec_t;
+typedef int64_t prvm_int_t;
+typedef uint64_t prvm_uint_t;
+#define PRVM_PRIi PRIi64
+#define PRVM_PRIu PRIu64
 #else
-	typedef float prvm_vec_t;
-	typedef int32_t prvm_int_t;
-	typedef uint32_t prvm_uint_t;
-	#define PRVM_PRIi PRIi32
-	#define PRVM_PRIu PRIu32
+typedef float prvm_vec_t;
+typedef int32_t prvm_int_t;
+typedef uint32_t prvm_uint_t;
+#define PRVM_PRIi PRIi32
+#define PRVM_PRIu PRIu32
 #endif
 typedef prvm_vec_t prvm_vec3_t[3];
 

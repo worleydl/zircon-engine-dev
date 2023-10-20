@@ -2,54 +2,31 @@
 #define CL_PARTICLES_H
 
 #include "qtypes.h"
+struct entity_s;
 
-typedef struct decal_s
-{
-	// fields used by rendering:  (44 bytes)
-	unsigned short	typeindex;
-	unsigned short	texnum;
-	unsigned int	decalsequence;
-	vec3_t			org;
-	vec3_t			normal;
-	float			size;
-	float			alpha; // 0-255
-	unsigned char	color[3];
-	unsigned char	unused1;
-	int				clusterindex; // cheap culling by pvs
-
-	// fields not used by rendering: (36 bytes in 32bit, 40 bytes in 64bit)
-	float			time2; // used for decal fade
-	unsigned int	owner; // decal stuck to this entity
-	model_t			*ownermodel; // model the decal is stuck to (used to make sure the entity is still alive)
-	vec3_t			relativeorigin; // decal at this location in entity's coordinate space
-	vec3_t			relativenormal; // decal oriented this way relative to entity's coordinate space
-}
-decal_t;
-
-
-extern cvar_t cl_particles;
-extern cvar_t cl_particles_quality;
-extern cvar_t cl_particles_size;
-extern cvar_t cl_particles_quake;
-extern cvar_t cl_particles_blood;
-extern cvar_t cl_particles_blood_alpha;
-extern cvar_t cl_particles_blood_decal_alpha;
-extern cvar_t cl_particles_blood_decal_scalemin;
-extern cvar_t cl_particles_blood_decal_scalemax;
-extern cvar_t cl_particles_blood_bloodhack;
-extern cvar_t cl_particles_bulletimpacts;
-extern cvar_t cl_particles_explosions_sparks;
-extern cvar_t cl_particles_explosions_shell;
-extern cvar_t cl_particles_rain;
-extern cvar_t cl_particles_snow;
-extern cvar_t cl_particles_smoke;
-extern cvar_t cl_particles_smoke_alpha;
-extern cvar_t cl_particles_smoke_alphafade;
-extern cvar_t cl_particles_sparks;
-extern cvar_t cl_particles_bubbles;
-extern cvar_t cl_decals;
-extern cvar_t cl_decals_time;
-extern cvar_t cl_decals_fadetime;
+extern struct cvar_s cl_particles;
+extern struct cvar_s cl_particles_quality;
+extern struct cvar_s cl_particles_size;
+extern struct cvar_s cl_particles_quake;
+extern struct cvar_s cl_particles_blood;
+extern struct cvar_s cl_particles_blood_alpha;
+extern struct cvar_s cl_particles_blood_decal_alpha;
+extern struct cvar_s cl_particles_blood_decal_scalemin;
+extern struct cvar_s cl_particles_blood_decal_scalemax;
+extern struct cvar_s cl_particles_blood_bloodhack;
+extern struct cvar_s cl_particles_bulletimpacts;
+extern struct cvar_s cl_particles_explosions_sparks;
+extern struct cvar_s cl_particles_explosions_shell;
+extern struct cvar_s cl_particles_rain;
+extern struct cvar_s cl_particles_snow;
+extern struct cvar_s cl_particles_smoke;
+extern struct cvar_s cl_particles_smoke_alpha;
+extern struct cvar_s cl_particles_smoke_alphafade;
+extern struct cvar_s cl_particles_sparks;
+extern struct cvar_s cl_particles_bubbles;
+extern struct cvar_s cl_decals;
+extern struct cvar_s cl_decals_time;
+extern struct cvar_s cl_decals_fadetime;
 
 typedef enum
 {
@@ -127,24 +104,11 @@ typedef struct particle_s
 }
 particle_t;
 
-
 void CL_Particles_Clear(void);
 void CL_Particles_Init(void);
 void CL_Particles_Shutdown(void);
 particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, int pcolor1, int pcolor2, int ptex, float psize, float psizeincrease, float palpha, float palphafade, float pgravity, float pbounce, float px, float py, float pz, float pvx, float pvy, float pvz, float pairfriction, float pliquidfriction, float originjitter, float velocityjitter, qbool pqualityreduction, float lifetime, float stretch, pblend_t blendmode, porientation_t orientation, int staincolor1, int staincolor2, int staintex, float stainalpha, float stainsize, float angle, float spin, float tint[4]);
 
-
-int CL_ParticleEffectIndexForName(const char *name);
-const char *CL_ParticleEffectNameForIndex(int i);
-void CL_ParticleEffect(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor);
-void CL_ParticleTrail(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
-void CL_ParticleBox(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
-void CL_ParseParticleEffect (void);
-void CL_ParticleCube (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, vec_t gravity, vec_t randomvel);
-void CL_ParticleRain (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, int type);
-void CL_EntityParticles (const entity_t *ent);
-void CL_ParticleExplosion (const vec3_t org);
-void CL_ParticleExplosion2 (const vec3_t org, int colorStart, int colorLength);
 typedef enum effectnameindex_s
 {
 	EFFECT_NONE,
@@ -186,5 +150,17 @@ typedef enum effectnameindex_s
 	EFFECT_TOTAL
 }
 effectnameindex_t;
+
+int CL_ParticleEffectIndexForName(const char *name);
+const char *CL_ParticleEffectNameForIndex(int i);
+void CL_ParticleEffect(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, struct entity_s *ent, int palettecolor);
+void CL_ParticleTrail(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, struct entity_s *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
+void CL_ParticleBox(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, struct entity_s *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
+void CL_ParseParticleEffect (void);
+void CL_ParticleCube (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, vec_t gravity, vec_t randomvel);
+void CL_ParticleRain (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, int type);
+void CL_EntityParticles (const struct entity_s *ent);
+void CL_ParticleExplosion (const vec3_t org);
+void CL_ParticleExplosion2 (const vec3_t org, int colorStart, int colorLength);
 
 #endif

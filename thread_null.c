@@ -1,4 +1,4 @@
-#if 0
+#ifndef CORE_SDL
 
 #include "quakedef.h"
 #include "thread.h"
@@ -83,4 +83,46 @@ void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 {
 }
 
-#endif // 0
+int _Thread_AtomicGet(Thread_Atomic *a, const char *filename, int fileline)
+{
+	return a->value;
+}
+
+int _Thread_AtomicSet(Thread_Atomic *a, int v, const char *filename, int fileline)
+{
+	int value = a->value;
+	a->value = v;
+	return value;
+}
+
+int _Thread_AtomicAdd(Thread_Atomic *a, int v, const char *filename, int fileline)
+{
+	int value = a->value;
+	a->value += v;
+	return value;
+}
+
+void _Thread_AtomicIncRef(Thread_Atomic *a, const char *filename, int fileline)
+{
+	a->value++;
+}
+
+qbool _Thread_AtomicDecRef(Thread_Atomic *a, const char *filename, int fileline)
+{
+	return a->value++ == 1;
+}
+
+qbool _Thread_AtomicTryLock(Thread_SpinLock *lock, const char *filename, int fileline)
+{
+	return true;
+}
+
+void _Thread_AtomicLock(Thread_SpinLock *lock, const char *filename, int fileline)
+{
+}
+
+void _Thread_AtomicUnlock(Thread_SpinLock *lock, const char *filename, int fileline)
+{
+}
+
+#endif // ! CORE_SDL

@@ -18,10 +18,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "progsvm.h"
 
-const char *prvm_opnames[] =
+static const char *prvm_opnames[] =
 {
 "^5DONE",
 
@@ -107,7 +107,186 @@ const char *prvm_opnames[] =
 "^2OR",
 
 "BITAND",
-"BITOR"
+"BITOR",
+
+
+
+
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+
+"STORE_I",
+
+NULL,
+NULL,
+
+"ADD_I",
+"ADD_FI",
+"ADD_IF",
+
+"SUB_I",
+"SUB_FI",
+"SUB_IF",
+"CONV_IF",
+"CONV_FI",
+
+NULL,
+NULL,
+
+"LOAD_I",
+"STOREP_I",
+
+NULL,
+NULL,
+
+"BITAND_I",
+"BITOR_I",
+
+"MUL_I",
+"DIV_I",
+"EQ_I",
+"NE_I",
+
+NULL,
+NULL,
+
+"NOT_I",
+
+"DIV_VF",
+
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+
+"STORE_P",
+
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+NULL,
+
+"LE_I",
+"GE_I",
+"LT_I",
+"GT_I",
+
+"LE_IF",
+"GE_IF",
+"LT_IF",
+"GT_IF",
+
+"LE_FI",
+"GE_FI",
+"LT_FI",
+"GT_FI",
+
+"EQ_IF",
+"EQ_FI",
+
+NULL,
+NULL,
+NULL,
+NULL,
+
+"MUL_IF",
+"MUL_FI",
+"MUL_VI",
+
+NULL,
+
+"DIV_IF",
+"DIV_FI",
+"BITAND_IF",
+"BITOR_IF",
+"BITAND_FI",
+"BITOR_FI",
+"AND_I",
+"OR_I",
+"AND_IF",
+"OR_IF",
+"AND_FI",
+"OR_FI",
+"NE_IF",
+"NE_FI",
+
+"GSTOREP_I",
+"GSTOREP_F",
+"GSTOREP_ENT",
+"GSTOREP_FLD",
+"GSTOREP_S",
+"GSTOREP_FNC",
+"GSTOREP_V",
+"GADDRESS",
+"GLOAD_I",
+"GLOAD_F",
+"GLOAD_FLD",
+"GLOAD_ENT",
+"GLOAD_S",
+"GLOAD_FNC",
+"BOUNDCHECK",
+NULL,
+NULL,
+NULL,
+NULL,
+"GLOAD_V",
 };
 
 
@@ -127,6 +306,7 @@ static void PRVM_PrintStatement(prvm_prog_t *prog, mstatement_t *s)
 	size_t i;
 	int opnum = (int)(s - prog->statements);
 	char valuebuf[MAX_INPUTLINE];
+	const char *opname;
 
 	Con_Printf("s%i: ", opnum);
 	if( prog->statement_linenums )
@@ -140,16 +320,18 @@ static void PRVM_PrintStatement(prvm_prog_t *prog, mstatement_t *s)
 	if (prvm_statementprofiling.integer)
 		Con_Printf("%7.0f ", prog->statement_profile[s - prog->statements]);
 
-	if ( (unsigned)s->op < sizeof(prvm_opnames)/sizeof(prvm_opnames[0]))
-	{
-		Con_Printf("%s ",  prvm_opnames[s->op]);
-		i = strlen(prvm_opnames[s->op]);
-		// don't count a preceding color tag when padding the name
-		if (prvm_opnames[s->op][0] == STRING_COLOR_TAG)
-			i -= 2;
-		for ( ; i<10 ; i++)
-			Con_Print(" ");
-	}
+	if ( (unsigned)s->op < sizeof(prvm_opnames)/sizeof(prvm_opnames[0]) && prvm_opnames[s->op])
+		opname = prvm_opnames[s->op];
+	else
+		opname = valuebuf, dpsnprintf(valuebuf, sizeof(valuebuf), "OPCODE_%u", (unsigned)s->op);
+	Con_Printf("%s ",  opname);
+	i = strlen(opname);
+	// don't count a preceding color tag when padding the name
+	if (opname[0] == STRING_COLOR_TAG)
+		i -= 2;
+	for ( ; i<10 ; i++)
+		Con_Print(" ");
+
 	if (s->operand[0] >= 0) Con_Printf(  "%s", PRVM_GlobalString(prog, s->operand[0], valuebuf, sizeof(valuebuf)));
 	if (s->operand[1] >= 0) Con_Printf(", %s", PRVM_GlobalString(prog, s->operand[1], valuebuf, sizeof(valuebuf)));
 	if (s->operand[2] >= 0) Con_Printf(", %s", PRVM_GlobalString(prog, s->operand[2], valuebuf, sizeof(valuebuf)));
@@ -199,19 +381,19 @@ PRVM_PrintFunction_f
 
 ============
 */
-void PRVM_PrintFunction_f (void)
+void PRVM_PrintFunction_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
-	if (Cmd_Argc() != 3)
+	if (Cmd_Argc(cmd) != 3)
 	{
 		Con_Printf("usage: prvm_printfunction <program name> <function name>\n");
 		return;
 	}
 
-	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(1))))
+	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
-	PRVM_PrintFunctionStatements(prog, Cmd_Argv(2));
+	PRVM_PrintFunctionStatements(prog, Cmd_Argv(cmd, 2));
 }
 
 /*
@@ -433,16 +615,16 @@ PRVM_CallProfile_f
 
 ============
 */
-void PRVM_CallProfile_f (void)
+void PRVM_CallProfile_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
-	if (Cmd_Argc() != 2)
+	if (Cmd_Argc(cmd) != 2)
 	{
 		Con_Print("prvm_callprofile <program name>\n");
 		return;
 	}
 
-	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(1))))
+	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
 	PRVM_CallProfile(prog);
@@ -454,7 +636,7 @@ PRVM_Profile_f
 
 ============
 */
-void PRVM_Profile_f (void)
+void PRVM_Profile_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 	int howmany;
@@ -466,21 +648,21 @@ void PRVM_Profile_f (void)
 	}
 
 	howmany = 1<<30;
-	if (Cmd_Argc() == 3)
-		howmany = atoi(Cmd_Argv(2));
-	else if (Cmd_Argc() != 2)
+	if (Cmd_Argc(cmd) == 3)
+		howmany = atoi(Cmd_Argv(cmd, 2));
+	else if (Cmd_Argc(cmd) != 2)
 	{
 		Con_Print("prvm_profile <program name>\n");
 		return;
 	}
 
-	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(1))))
+	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
 	PRVM_Profile(prog, howmany, 0, 0);
 }
 
-void PRVM_ChildProfile_f (void)
+void PRVM_ChildProfile_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 	int howmany;
@@ -492,15 +674,15 @@ void PRVM_ChildProfile_f (void)
 	}
 
 	howmany = 1<<30;
-	if (Cmd_Argc() == 3)
-		howmany = atoi(Cmd_Argv(2));
-	else if (Cmd_Argc() != 2)
+	if (Cmd_Argc(cmd) == 3)
+		howmany = atoi(Cmd_Argv(cmd, 2));
+	else if (Cmd_Argc(cmd) != 2)
 	{
 		Con_Print("prvm_childprofile <program name>\n");
 		return;
 	}
 
-	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(1))))
+	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
 	PRVM_Profile(prog, howmany, 0, 1);
@@ -533,6 +715,9 @@ extern cvar_t prvm_errordump;
 void PRVM_Crash(prvm_prog_t *prog)
 {
 	char vabuf[1024];
+
+	cl.csqc_loaded = false;
+
 	if (prog == NULL)
 		return;
 	if (!prog->loaded)
@@ -549,7 +734,7 @@ void PRVM_Crash(prvm_prog_t *prog)
 	if(prvm_errordump.integer)
 	{
 		// make a savegame
-		Host_Savegame_to(prog, va(vabuf, sizeof(vabuf), "crash-%s.dmp", prog->name));
+		SV_Savegame_to(prog, va(vabuf, sizeof(vabuf), "crash-%s.dmp", prog->name));
 	}
 
 	// dump the stack so host_error can shutdown functions
@@ -716,13 +901,15 @@ static void PRVM_StatementCoverageEvent(prvm_prog_t *prog, mfunction_t *func, in
 	Con_Printf("prvm_coverage: %s just executed a statement at %s for the first time. Coverage: %.2f%%.\n", prog->name, PRVM_WhereAmI(vabuf, sizeof(vabuf), prog, func, statement), prog->statements_covered * 100.0 / prog->numstatements);
 }
 
-#ifdef __GNUC__
-#define HAVE_COMPUTED_GOTOS 1
+#if defined (__GNUC__) || (__clang__) || (__TINYC__)
+#  ifndef CONFIG_PEDANTIC
+#  define HAVE_COMPUTED_GOTOS 1
+#  endif
 #endif
 
-#define OPA ((prvm_eval_t *)&prog->globals.fp[st->operand[0]])
-#define OPB ((prvm_eval_t *)&prog->globals.fp[st->operand[1]])
-#define OPC ((prvm_eval_t *)&prog->globals.fp[st->operand[2]])
+#define OPA ((prvm_eval_t *)&globals[st->operand[0]])
+#define OPB ((prvm_eval_t *)&globals[st->operand[1]])
+#define OPC ((prvm_eval_t *)&globals[st->operand[2]])
 extern cvar_t prvm_traceqc;
 extern cvar_t prvm_statementprofiling;
 extern qbool prvm_runawaycheck;
@@ -746,7 +933,7 @@ void MVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessag
 	double tm, starttm;
 	prvm_vec_t tempfloat;
 	// these may become out of date when a builtin is called, and are updated accordingly
-	prvm_vec_t *cached_edictsfields = prog->edictsfields;
+	prvm_vec_t *cached_edictsfields = prog->edictsfields.fp;
 	unsigned int cached_entityfields = prog->entityfields;
 	unsigned int cached_entityfields_3 = prog->entityfields - 3;
 	unsigned int cached_entityfieldsarea = prog->entityfieldsarea;
@@ -759,12 +946,14 @@ void MVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessag
 	qbool cached_allowworldwrites = prog->allowworldwrites;
 	unsigned int cached_flag = prog->flag;
 
+	prvm_vec_t *globals = prog->globals.fp;
+
 	calltime = Sys_DirtyTime();
 
 	if (!fnum || fnum >= (unsigned int)prog->numfunctions)
 	{
 		if (PRVM_allglobaledict(self))
-			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL, NULL, NULL);
+			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL);
 		prog->error_cmd("MVM_ExecuteProgram: %s", errormessage);
 	}
 
@@ -853,7 +1042,7 @@ void CLVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessa
 	double tm, starttm;
 	prvm_vec_t tempfloat;
 	// these may become out of date when a builtin is called, and are updated accordingly
-	prvm_vec_t *cached_edictsfields = prog->edictsfields;
+	prvm_vec_t *cached_edictsfields = prog->edictsfields.fp;
 	unsigned int cached_entityfields = prog->entityfields;
 	unsigned int cached_entityfields_3 = prog->entityfields - 3;
 	unsigned int cached_entityfieldsarea = prog->entityfieldsarea;
@@ -866,12 +1055,14 @@ void CLVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessa
 	qbool cached_allowworldwrites = prog->allowworldwrites;
 	unsigned int cached_flag = prog->flag;
 
+	prvm_vec_t *globals = prog->globals.fp;
+
 	calltime = Sys_DirtyTime();
 
 	if (!fnum || fnum >= (unsigned int)prog->numfunctions)
 	{
 		if (PRVM_allglobaledict(self))
-			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL, NULL, NULL);
+			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL);
 		prog->error_cmd("CLVM_ExecuteProgram: %s", errormessage);
 	}
 
@@ -948,11 +1139,10 @@ cleanup:
 SVVM_ExecuteProgram
 ====================
 */
-
 #ifdef PROFILING
-	void SVVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
+void SVVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
 #else
-	void PRVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
+void PRVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessage)
 #endif
 {
 	mstatement_t	*st, *startst;
@@ -965,7 +1155,7 @@ SVVM_ExecuteProgram
 	double tm, starttm;
 	prvm_vec_t tempfloat;
 	// these may become out of date when a builtin is called, and are updated accordingly
-	prvm_vec_t *cached_edictsfields = prog->edictsfields;
+	prvm_vec_t *cached_edictsfields = prog->edictsfields.fp;
 	unsigned int cached_entityfields = prog->entityfields;
 	unsigned int cached_entityfields_3 = prog->entityfields - 3;
 	unsigned int cached_entityfieldsarea = prog->entityfieldsarea;
@@ -978,12 +1168,14 @@ SVVM_ExecuteProgram
 	qbool cached_allowworldwrites = prog->allowworldwrites;
 	unsigned int cached_flag = prog->flag;
 
+	prvm_vec_t *globals = prog->globals.fp;
+
 	calltime = Sys_DirtyTime();
 
 	if (!fnum || fnum >= (unsigned int)prog->numfunctions)
 	{
 		if (PRVM_allglobaledict(self))
-			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL, NULL, NULL);
+			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL);
 		prog->error_cmd("SVVM_ExecuteProgram: %s", errormessage);
 	}
 

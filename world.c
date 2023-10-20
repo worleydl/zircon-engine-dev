@@ -19,9 +19,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // world.c -- world query functions
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "clvm_cmds.h"
 #include "cl_collision.h"
+#include "com_list.h"
 
 /*
 
@@ -31,29 +32,45 @@ line of sight checks trace->inopen and trace->inwater, but bullets don't
 
 */
 
+#ifdef USEODE
 static void World_Physics_Init(void);
+#endif
 void World_Init(void)
 {
 	Collision_Init();
+#ifdef USEODE
 	World_Physics_Init();
+#endif
 }
 
+#ifdef USEODE
 static void World_Physics_Shutdown(void);
+#endif
 void World_Shutdown(void)
 {
+#ifdef USEODE
 	World_Physics_Shutdown();
+#endif
 }
 
+#ifdef USEODE
 static void World_Physics_Start(world_t *world);
+#endif
 void World_Start(world_t *world)
 {
+#ifdef USEODE
 	World_Physics_Start(world);
+#endif
 }
 
+#ifdef USEODE
 static void World_Physics_End(world_t *world);
+#endif
 void World_End(world_t *world)
 {
+#ifdef USEODE
 	World_Physics_End(world);
+#endif
 }
 
 //============================================================================
@@ -62,22 +79,18 @@ void World_End(world_t *world)
 void World_ClearLink (link_t *l)
 {
 	l->entitynumber = 0;
-	l->prev = l->next = l;
+	l->list.prev = l->list.next = &l->list;
 }
 
 void World_RemoveLink (link_t *l)
 {
-	l->next->prev = l->prev;
-	l->prev->next = l->next;
+	List_Delete(&l->list);
 }
 
 void World_InsertLinkBefore (link_t *l, link_t *before, int entitynumber)
 {
 	l->entitynumber = entitynumber;
-	l->next = before;
-	l->prev = before->prev;
-	l->prev->next = l;
-	l->next->prev = l;
+	List_Add_Tail(&l->list, &before->list);
 }
 
 /*
@@ -150,11 +163,11 @@ void World_UnlinkAll(world_t *world)
 	link_t *grid;
 	// unlink all entities one by one
 	grid = &world->areagrid_outside;
-	while (grid->next != grid)
-		World_UnlinkEdict(PRVM_EDICT_NUM(grid->next->entitynumber));
+	while (grid->list.next != &grid->list)
+		World_UnlinkEdict(PRVM_EDICT_NUM(List_Entry(grid->list.next, link_t, list)->entitynumber));
 	for (i = 0, grid = world->areagrid;i < AREA_GRIDNODES;i++, grid++)
-		while (grid->next != grid)
-			World_UnlinkEdict(PRVM_EDICT_NUM(grid->next->entitynumber));
+		while (grid->list.next != &grid->list)
+			World_UnlinkEdict(PRVM_EDICT_NUM(List_Entry(grid->list.next, link_t, list)->entitynumber));
 }
 
 /*
@@ -167,11 +180,8 @@ void World_UnlinkEdict(prvm_edict_t *ent)
 	int i;
 	for (i = 0;i < ENTITYGRIDAREAS;i++)
 	{
-		if (ent->priv.server->areagrid[i].prev)
-		{
+		if (ent->priv.server->areagrid[i].list.prev)
 			World_RemoveLink (&ent->priv.server->areagrid[i]);
-			ent->priv.server->areagrid[i].prev = ent->priv.server->areagrid[i].next = NULL;
-		}
 	}
 }
 
@@ -184,6 +194,10 @@ int World_EntitiesInBox(world_t *world, const vec3_t requestmins, const vec3_t r
 	prvm_edict_t *ent;
 	vec3_t paddedmins, paddedmaxs;
 	int igrid[3], igridmins[3], igridmaxs[3];
+
+	// avoid crash in showtex code on level change
+	if (prog == NULL || prog->num_edicts < 1)
+		return 0;
 
 	// LadyHavoc: discovered this actually causes its own bugs (dm6 teleporters being too close to info_teleport_destination)
 	//VectorSet(paddedmins, requestmins[0] - 1.0f, requestmins[1] - 1.0f, requestmins[2] - 1.0f);
@@ -214,16 +228,16 @@ int World_EntitiesInBox(world_t *world, const vec3_t requestmins, const vec3_t r
 	numlist = 0;
 	// add entities not linked into areagrid because they are too big or
 	// outside the grid bounds
-	if (world->areagrid_outside.next)
+	if (world->areagrid_outside.list.next)
 	{
 		grid = &world->areagrid_outside;
-		for (l = grid->next;l != grid;l = l->next)
+		List_For_Each_Entry(l, &grid->list, link_t, list)
 		{
 			ent = PRVM_EDICT_NUM(l->entitynumber);
 			if (ent->priv.server->areagridmarknumber != world->areagrid_marknumber)
 			{
 				ent->priv.server->areagridmarknumber = world->areagrid_marknumber;
-				if (!ent->priv.server->free && BoxesOverlap(paddedmins, paddedmaxs, ent->priv.server->areamins, ent->priv.server->areamaxs))
+				if (!ent->free && BoxesOverlap(paddedmins, paddedmaxs, ent->priv.server->areamins, ent->priv.server->areamaxs))
 				{
 					if (numlist < maxlist)
 						list[numlist] = ent;
@@ -239,15 +253,15 @@ int World_EntitiesInBox(world_t *world, const vec3_t requestmins, const vec3_t r
 		grid = world->areagrid + igrid[1] * AREA_GRID + igridmins[0];
 		for (igrid[0] = igridmins[0];igrid[0] < igridmaxs[0];igrid[0]++, grid++)
 		{
-			if (grid->next)
+			if (grid->list.next)
 			{
-				for (l = grid->next;l != grid;l = l->next)
+				List_For_Each_Entry(l, &grid->list, link_t, list)
 				{
 					ent = PRVM_EDICT_NUM(l->entitynumber);
 					if (ent->priv.server->areagridmarknumber != world->areagrid_marknumber)
 					{
 						ent->priv.server->areagridmarknumber = world->areagrid_marknumber;
-						if (!ent->priv.server->free && BoxesOverlap(paddedmins, paddedmaxs, ent->priv.server->areamins, ent->priv.server->areamaxs))
+						if (!ent->free && BoxesOverlap(paddedmins, paddedmaxs, ent->priv.server->areamins, ent->priv.server->areamaxs))
 						{
 							if (numlist < maxlist)
 								list[numlist] = ent;
@@ -303,19 +317,23 @@ World_LinkEdict
 
 ===============
 */
-void World_LinkEdict(world_t *world, prvm_edict_t *ent, const vec3_t mins, const vec3_t maxs)
+void World_LinkEdict(world_t *world, prvm_edict_t *ent, const vec3_t mins, const vec3_t maxs, qbool link_solid_not)
 {
 	prvm_prog_t *prog = world->prog;
 	// unlink from old position first
-	if (ent->priv.server->areagrid[0].prev)
+	if (ent->priv.server->areagrid[0].list.prev)
 		World_UnlinkEdict(ent);
+
+	// some games don't want SOLID_NOT entities linked
+	if (!link_solid_not && PRVM_serveredictfloat(ent, solid) == SOLID_NOT)
+		return;
 
 	// don't add the world
 	if (ent == prog->edicts)
 		return;
 
 	// don't add free entities
-	if (ent->priv.server->free)
+	if (ent->free)
 		return;
 
 	VectorCopy(mins, ent->priv.server->areamins);
@@ -1464,16 +1482,13 @@ static dllfunction_t odefuncs[] =
 // Handle for ODE DLL
 dllhandle_t ode_dll = NULL;
 #endif
-#endif
 
 static void World_Physics_Init(void)
 {
-#ifdef USEODE
 #ifndef LINK_TO_LIBODE
 	const char* dllnames [] =
 	{
 # if defined(_WIN32)
-		"libode-3.dll",
 		"libode3.dll",
 		"libode2.dll",
 		"libode1.dll",
@@ -1553,12 +1568,9 @@ static void World_Physics_Init(void)
 		}
 #endif
 	}
-#endif
 }
-
 static void World_Physics_Shutdown(void)
 {
-#ifdef USEODE
 #ifndef LINK_TO_LIBODE
 	if (ode_dll)
 #endif
@@ -1569,10 +1581,8 @@ static void World_Physics_Shutdown(void)
 		ode_dll = NULL;
 #endif
 	}
-#endif
 }
 
-#ifdef USEODE
 static void World_Physics_UpdateODE(world_t *world)
 {
 	dWorldID odeworld;
@@ -1629,20 +1639,16 @@ static void World_Physics_EnableODE(world_t *world)
 
 	World_Physics_UpdateODE(world);
 }
-#endif
 
 static void World_Physics_Start(world_t *world)
 {
-#ifdef USEODE
 	if (world->physics.ode)
 		return;
 	World_Physics_EnableODE(world);
-#endif
 }
 
 static void World_Physics_End(world_t *world)
 {
-#ifdef USEODE
 	if (world->physics.ode)
 	{
 		dWorldDestroy((dWorldID)world->physics.ode_world);
@@ -1650,17 +1656,14 @@ static void World_Physics_End(world_t *world)
 		dJointGroupDestroy((dJointGroupID)world->physics.ode_contactgroup);
 		world->physics.ode = false;
 	}
-#endif
 }
 
 void World_Physics_RemoveJointFromEntity(world_t *world, prvm_edict_t *ed)
 {
 	ed->priv.server->ode_joint_type = 0;
-#ifdef USEODE
 	if(ed->priv.server->ode_joint)
 		dJointDestroy((dJointID)ed->priv.server->ode_joint);
 	ed->priv.server->ode_joint = NULL;
-#endif
 }
 
 void World_Physics_RemoveFromEntity(world_t *world, prvm_edict_t *ed)
@@ -1669,7 +1672,6 @@ void World_Physics_RemoveFromEntity(world_t *world, prvm_edict_t *ed)
 
 	// entity is not physics controlled, free any physics data
 	ed->priv.server->ode_physics = false;
-#ifdef USEODE
 	if (ed->priv.server->ode_geom)
 		dGeomDestroy((dGeomID)ed->priv.server->ode_geom);
 	ed->priv.server->ode_geom = NULL;
@@ -1699,7 +1701,6 @@ void World_Physics_RemoveFromEntity(world_t *world, prvm_edict_t *ed)
 		dBodyDestroy((dBodyID)ed->priv.server->ode_body);
 	}
 	ed->priv.server->ode_body = NULL;
-#endif
 	if (ed->priv.server->ode_vertex3f)
 		Mem_Free(ed->priv.server->ode_vertex3f);
 	ed->priv.server->ode_vertex3f = NULL;
@@ -1722,7 +1723,6 @@ void World_Physics_RemoveFromEntity(world_t *world, prvm_edict_t *ed)
 
 void World_Physics_ApplyCmd(prvm_edict_t *ed, edict_odefunc_t *f)
 {
-#ifdef USEODE
 	dBodyID body = (dBodyID)ed->priv.server->ode_body;
 
 	switch(f->type)
@@ -1744,10 +1744,8 @@ void World_Physics_ApplyCmd(prvm_edict_t *ed, edict_odefunc_t *f)
 	default:
 		break;
 	}
-#endif
 }
 
-#ifdef USEODE
 static void World_Physics_Frame_BodyToEntity(world_t *world, prvm_edict_t *ed)
 {
 	prvm_prog_t *prog = world->prog;
@@ -1864,7 +1862,7 @@ static void World_Physics_Frame_ForceFromEntity(world_t *world, prvm_edict_t *ed
 	if (!forcetype)
 		return;
 	enemy = PRVM_gameedictedict(ed, enemy);
-	if (enemy <= 0 || enemy >= prog->num_edicts || prog->edicts[enemy].priv.required->free || prog->edicts[enemy].priv.server->ode_body == 0)
+	if (enemy <= 0 || enemy >= prog->num_edicts || prog->edicts[enemy].free || prog->edicts[enemy].priv.server->ode_body == 0)
 		return;
 	VectorCopy(PRVM_gameedictvector(ed, movedir), movedir);
 	VectorCopy(PRVM_gameedictvector(ed, origin), origin);
@@ -1916,9 +1914,9 @@ static void World_Physics_Frame_JointFromEntity(world_t *world, prvm_edict_t *ed
 	VectorCopy(PRVM_gameedictvector(ed, movedir), movedir);
 	if(movetype == MOVETYPE_PHYSICS)
 		jointtype = JOINTTYPE_NONE; // can't have both
-	if(enemy <= 0 || enemy >= prog->num_edicts || prog->edicts[enemy].priv.required->free || prog->edicts[enemy].priv.server->ode_body == 0)
+	if(enemy <= 0 || enemy >= prog->num_edicts || prog->edicts[enemy].free || prog->edicts[enemy].priv.server->ode_body == 0)
 		enemy = 0;
-	if(aiment <= 0 || aiment >= prog->num_edicts || prog->edicts[aiment].priv.required->free || prog->edicts[aiment].priv.server->ode_body == 0)
+	if(aiment <= 0 || aiment >= prog->num_edicts || prog->edicts[aiment].free || prog->edicts[aiment].priv.server->ode_body == 0)
 		aiment = 0;
 	// see http://www.ode.org/old_list_archives/2006-January/017614.html
 	// we want to set ERP? make it fps independent and work like a spring constant
@@ -2290,9 +2288,9 @@ static void World_Physics_Frame_BodyFromEntity(world_t *world, prvm_edict_t *ed)
 
 			// check if trimesh can be defined with convex
 			convex_compatible = false;
-			for (i = 0;i < model->nummodelsurfaces;i++)
+			for (i = model->submodelsurfaces_start;i < model->submodelsurfaces_end;i++)
 			{
-				if (String_Does_Match(((msurface_t *)(model->data_surfaces + model->firstmodelsurface + i))->texture->name, "collisionconvex"))
+				if (!strcmp(model->data_surfaces[i].texture->name, "collisionconvex"))
 				{
 					convex_compatible = true;
 					break;
@@ -2363,7 +2361,7 @@ static void World_Physics_Frame_BodyFromEntity(world_t *world, prvm_edict_t *ed)
 				// - triangles that shares same edge and havee sam plane are not merget into poly
 				// so, currently it only works for geosphere meshes with no UV
 
-				Con_Printf ("Build convex hull for model %s...\n", model->model_name);
+				Con_Printf("Build convex hull for model %s...\n", model->name);
 				// build convex geometry from trimesh data
 				// this ensures that trimesh's triangles can form correct convex geometry
 				// not many of error checking is performed
@@ -2475,9 +2473,9 @@ static void World_Physics_Frame_BodyFromEntity(world_t *world, prvm_edict_t *ed)
 						pointsData[(polygons[1]*3)+2]*pointsData[(polygons[2]*3)+1]*pointsData[(polygons[3]*3)+0] -
 						pointsData[(polygons[1]*3)+1]*pointsData[(polygons[2]*3)+0]*pointsData[(polygons[3]*3)+2] -
 						pointsData[(polygons[1]*3)+0]*pointsData[(polygons[2]*3)+2]*pointsData[(polygons[3]*3)+1]) < 0)
-						Con_Printf("WARNING: Polygon %d is not defined counterclockwise\n", i);
+						Con_Printf(CON_WARN "WARNING: Polygon %d is not defined counterclockwise\n", i);
 					if (planesData[(i*4)+3] < 0)
-						Con_Printf("WARNING: Plane %d does not contain the origin\n", i);
+						Con_Printf(CON_WARN "WARNING: Plane %d does not contain the origin\n", i);
 					polygons += (*polygons + 1);
 				}
 				// create geom
@@ -2927,7 +2925,7 @@ static void nearCallback (void *data, dGeomID o1, dGeomID o2)
 		return;
 
 	ed1 = (prvm_edict_t *) dGeomGetData(o1);
-	if(ed1 && ed1->priv.server->free)
+	if(ed1 && ed1->free)
 		ed1 = NULL;
 	if(ed1)
 	{
@@ -2938,7 +2936,7 @@ static void nearCallback (void *data, dGeomID o1, dGeomID o2)
 	}
 
 	ed2 = (prvm_edict_t *) dGeomGetData(o2);
-	if(ed2 && ed2->priv.server->free)
+	if(ed2 && ed2->free)
 		ed2 = NULL;
 	if(ed2)
 	{
@@ -3008,11 +3006,9 @@ static void nearCallback (void *data, dGeomID o1, dGeomID o2)
 		dJointAttach(c, b1, b2);
 	}
 }
-#endif
 
 void World_Physics_Frame(world_t *world, double frametime, double gravity)
 {
-#ifdef USEODE
 	prvm_prog_t *prog = world->prog;
 	double tdelta, tdelta2, tdelta3, simulationtime, collisiontime;
 
@@ -3052,11 +3048,11 @@ void World_Physics_Frame(world_t *world, double frametime, double gravity)
 		if (prog)
 		{
 			for (i = 0, ed = prog->edicts + i;i < prog->num_edicts;i++, ed++)
-				if (!prog->edicts[i].priv.required->free)
+				if (!prog->edicts[i].free)
 					World_Physics_Frame_BodyFromEntity(world, ed);
 			// oh, and it must be called after all bodies were created
 			for (i = 0, ed = prog->edicts + i;i < prog->num_edicts;i++, ed++)
-				if (!prog->edicts[i].priv.required->free)
+				if (!prog->edicts[i].free)
 					World_Physics_Frame_JointFromEntity(world, ed);
 		}
 
@@ -3077,7 +3073,7 @@ void World_Physics_Frame(world_t *world, double frametime, double gravity)
 			{
 				int j;
 				for (j = 0, ed = prog->edicts + j;j < prog->num_edicts;j++, ed++)
-					if (!prog->edicts[j].priv.required->free)
+					if (!prog->edicts[j].free)
 						World_Physics_Frame_ForceFromEntity(world, ed);
 			}
 			// run physics (move objects, calculate new velocities)
@@ -3094,7 +3090,7 @@ void World_Physics_Frame(world_t *world, double frametime, double gravity)
 		if (prog)
 		{
 			for (i = 1, ed = prog->edicts + i;i < prog->num_edicts;i++, ed++)
-				if (!prog->edicts[i].priv.required->free)
+				if (!prog->edicts[i].free)
 					World_Physics_Frame_BodyToEntity(world, ed);
 
 			// print stats
@@ -3106,7 +3102,7 @@ void World_Physics_Frame(world_t *world, double frametime, double gravity)
 				world->physics.ode_activeovjects = 0;
 				for (i = 1, ed = prog->edicts + i;i < prog->num_edicts;i++, ed++)
 				{
-					if (prog->edicts[i].priv.required->free)
+					if (prog->edicts[i].free)
 						continue;
 					body = (dBodyID)prog->edicts[i].priv.server->ode_body;
 					if (!body)
@@ -3119,5 +3115,5 @@ void World_Physics_Frame(world_t *world, double frametime, double gravity)
 			}
 		}
 	}
-#endif
 }
+#endif

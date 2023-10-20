@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // models are the only shared resource between a client and server running
 // on the same machine.
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include "image.h"
 
 cvar_t r_mipsprites = {CF_CLIENT | CF_ARCHIVE, "r_mipsprites", "1", "mipmaps sprites so they render faster in the distance and do not display noise artifacts"};
@@ -75,8 +75,8 @@ static void Mod_SpriteSetupTexture(texture_t *texture, skinframe_t *skinframe, q
 	else if (skinframe->hasalpha)
 		texture->basematerialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
 	texture->currentmaterialflags = texture->basematerialflags;
-	texture->numskinframes = 1;
-	texture->currentskinframe = texture->skinframes[0] = skinframe;
+	texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(loadmodel->mempool, skinframe);
+	texture->currentskinframe = skinframe;
 	texture->surfaceflags = 0;
 	texture->supercontents = SUPERCONTENTS_SOLID;
 	if (!(texture->basematerialflags & MATERIALFLAG_BLENDED))
@@ -108,8 +108,8 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 
 	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
-	for (i = 0; i < MAX_QPATH && loadmodel->model_name[i]; i++)
-		if (loadmodel->model_name[i] == '!')
+	for (i = 0;i < MAX_QPATH && loadmodel->name[i];i++)
+		if (loadmodel->name[i] == '!')
 			fullbright = false;
 
 //
@@ -212,15 +212,15 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 				{
 					if (groupframes > 1)
 					{
-						dpsnprintf (name, sizeof(name), "%s_%i_%i", loadmodel->model_name, i, j);
-						dpsnprintf (fogname, sizeof(fogname), "%s_%i_%ifog", loadmodel->model_name, i, j);
+						dpsnprintf (name, sizeof(name), "%s_%i_%i", loadmodel->name, i, j);
+						dpsnprintf (fogname, sizeof(fogname), "%s_%i_%ifog", loadmodel->name, i, j);
 					}
 					else
 					{
-						dpsnprintf (name, sizeof(name), "%s_%i", loadmodel->model_name, i);
-						dpsnprintf (fogname, sizeof(fogname), "%s_%ifog", loadmodel->model_name, i);
+						dpsnprintf (name, sizeof(name), "%s_%i", loadmodel->name, i);
+						dpsnprintf (fogname, sizeof(fogname), "%s_%ifog", loadmodel->name, i);
 					}
-					if (!(skinframe = R_SkinFrame_LoadExternal(name, texflags | TEXF_COMPRESS, false)))
+					if (!(skinframe = R_SkinFrame_LoadExternal(name, texflags | TEXF_COMPRESS, false, false)))
 					{
 						unsigned char *pixels = (unsigned char *) Mem_Alloc(loadmodel->mempool, width*height*4);
 						if (version == SPRITE32_VERSION)
@@ -235,7 +235,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 						}
 						else //if (version == SPRITEHL_VERSION || version == SPRITE_VERSION)
 							Image_Copy8bitBGRA(datapointer, pixels, width*height, palette ? palette : palette_bgra_transparent);
-						skinframe = R_SkinFrame_LoadInternalBGRA(name, texflags, pixels, width, height, false);
+						skinframe = R_SkinFrame_LoadInternalBGRA(name, texflags, pixels, width, height, 0, 0, 0, false);
 						// texflags |= TEXF_COMPRESS;
 						Mem_Free(pixels);
 					}
@@ -274,13 +274,9 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 
 	loadmodel->type = mod_sprite;
 
-	loadmodel->DrawSky = NULL;
 	loadmodel->Draw = R_Model_Sprite_Draw;
 	loadmodel->DrawDepth = NULL;
-	loadmodel->CompileShadowVolume = NULL;
-	loadmodel->DrawShadowVolume = NULL;
 	loadmodel->DrawLight = NULL;
-	loadmodel->DrawAddWaterPlanes = NULL;
 
 	version = LittleLong(((dsprite_t *)buffer)->version);
 	if (version == SPRITE_VERSION || version == SPRITE32_VERSION)
@@ -332,7 +328,7 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 		case SPRHL_ADDITIVE:
 			for (i = 0;i < 256;i++)
 			{
-				palette[i][2] = in[i*3+0]; // PALX
+				palette[i][2] = in[i*3+0];
 				palette[i][1] = in[i*3+1];
 				palette[i][0] = in[i*3+2];
 				palette[i][3] = 255;
@@ -369,7 +365,7 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 	}
 	else
 		Host_Error("Mod_IDSP_Load: %s has wrong version number (%i). Only %i (quake), %i (HalfLife), and %i (sprite32) supported",
-					loadmodel->model_name, version, SPRITE_VERSION, SPRITEHL_VERSION, SPRITE32_VERSION);
+					loadmodel->name, version, SPRITE_VERSION, SPRITEHL_VERSION, SPRITE32_VERSION);
 
 	// TODO: Note that isanimated only means whether vertices change due to
 	// the animation. This may happen due to sprframe parameters changing.
@@ -391,19 +387,15 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 
 	loadmodel->type = mod_sprite;
 
-	loadmodel->DrawSky = NULL;
 	loadmodel->Draw = R_Model_Sprite_Draw;
 	loadmodel->DrawDepth = NULL;
-	loadmodel->CompileShadowVolume = NULL;
-	loadmodel->DrawShadowVolume = NULL;
 	loadmodel->DrawLight = NULL;
-	loadmodel->DrawAddWaterPlanes = NULL;
 
 	pinqsprite = (dsprite2_t *)buffer;
 
 	version = LittleLong(pinqsprite->version);
 	if (version != SPRITE2_VERSION)
-		Host_Error("Mod_IDS2_Load: %s has wrong version number (%i should be 2 (quake 2)", loadmodel->model_name, version);
+		Host_Error("Mod_IDS2_Load: %s has wrong version number (%i should be 2 (quake 2)", loadmodel->name, version);
 
 	loadmodel->numframes = LittleLong (pinqsprite->numframes);
 	if (loadmodel->numframes < 1)
@@ -413,8 +405,8 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 
 	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
-	for (i = 0;i < MAX_QPATH && loadmodel->model_name[i];i++)
-		if (loadmodel->model_name[i] == '!')
+	for (i = 0;i < MAX_QPATH && loadmodel->name[i];i++)
+		if (loadmodel->name[i] == '!')
 			fullbright = false;
 
 	loadmodel->animscenes = (animscene_t *)Mem_Alloc(loadmodel->mempool, sizeof(animscene_t) * loadmodel->numframes);
@@ -464,9 +456,9 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			const dsprite2frame_t *pinframe;
 			pinframe = &pinqsprite->frames[i];
-			if (!(skinframe = R_SkinFrame_LoadExternal(pinframe->name, texflags, false)))
+			if (!(skinframe = R_SkinFrame_LoadExternal(pinframe->name, texflags, false, false)))
 			{
-				Con_Printf("Mod_IDS2_Load: failed to load %s", pinframe->name);
+				Con_Printf(CON_ERROR "Mod_IDS2_Load: failed to load %s", pinframe->name);
 				skinframe = R_SkinFrame_LoadMissing();
 			}
 			Mod_SpriteSetupTexture(&loadmodel->data_textures[i], skinframe, fullbright, false);

@@ -1,4 +1,4 @@
-#if !defined(_WIN32) && !defined(CORE_SDL) // SV only
+#ifndef CORE_SDL
 
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
@@ -112,7 +112,7 @@ qbool S_IsSoundPrecached (const sfx_t *sfx)
 	return false;
 }
 
-void S_UnloadAllSounds_f (void)
+void S_UnloadAllSounds_f (cmd_state_t *cmd)
 {
 }
 
@@ -175,4 +175,4 @@ void SndSys_SendKeyEvents(void)
 {
 }
 
-#endif // !defined(_WIN32) && !defined(CORE_SDL) // SV only
+#endif // ! CORE_SDL

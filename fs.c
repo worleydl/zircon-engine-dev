@@ -1,6 +1,4 @@
 // fs.c
-// Baker: FS_OpenRealFile2, nohome is the behavior on Windows unless userdir specified regardless of game
-
 /*
 	DarkPlaces file system
 
@@ -29,22 +27,22 @@
 #include <fcntl.h>
 
 #ifdef _WIN32
-# include <direct.h>
-# include <io.h>
-# include <shlobj.h>
-# include <sys/stat.h>
-# include <share.h>
+	# include <direct.h>
+	# include <io.h>
+	# include <shlobj.h>
+	# include <sys/stat.h>
+	# include <share.h>
 #else
-# include <pwd.h>
-# include <sys/stat.h>
-# include <unistd.h>
+	# include <pwd.h>
+	# include <sys/stat.h>
+	# include <unistd.h>
 #endif
 
-#include "darkplaces.h"
+#include "quakedef.h"
 
 #if TARGET_OS_IPHONE
-// include SDL for IPHONEOS code
-# include <SDL.h>
+	// include SDL for IPHONEOS code
+	# include <SDL.h>
 #endif
 
 #include "thread.h"
@@ -52,29 +50,33 @@
 #include "fs.h"
 #include "wad.h"
 
+#ifdef _WIN32
+	#include "utf8lib.h"
+#endif
+
 // Win32 requires us to add O_BINARY, but the other OSes don't have it
 #ifndef O_BINARY
-# define O_BINARY 0
+	# define O_BINARY 0
 #endif
 
 // In case the system doesn't support the O_NONBLOCK flag
 #ifndef O_NONBLOCK
-# define O_NONBLOCK 0
+	# define O_NONBLOCK 0
 #endif
 
 // largefile support for Win32
 #ifdef _WIN32
-#undef lseek
-# define lseek _lseeki64
+	#undef lseek
+	# define lseek _lseeki64
 #endif
 
 // suppress deprecated warnings
 #if _MSC_VER >= 1400
-# define read _read
-# define write _write
-# define close _close
-# define unlink _unlink
-# define dup _dup
+	# define read _read
+	# define write _write
+	# define close _close
+	# define unlink _unlink
+	# define dup _dup
 #endif
 
 #if USE_RWOPS
@@ -107,6 +109,66 @@ static filedesc_t FILEDESC_DUP(const char *filename, filedesc_t fd) {
 	return dup(fd);
 }
 #endif
+
+
+/* This code seems to have originally been written with the assumption that
+ * read(..., n) returns n on success. This is not the case (refer to
+ * <https://pubs.opengroup.org/onlinepubs/9699919799/functions/read.html>).
+ * Ditto for write.
+ */
+
+/*
+====================
+ReadAll
+
+Read exactly length bytes from fd into buf. If end of file is reached,
+the number of bytes read is returned. If an error occurred, that error
+is returned. Note that if an error is returned, any previously read
+data is lost.
+====================
+*/
+static fs_offset_t ReadAll(const filedesc_t fd, void *const buf, const size_t length)
+{
+	char *const p = (char *)buf;
+	size_t cursor = 0;
+	do
+	{
+		const fs_offset_t result = FILEDESC_READ(fd, p + cursor, (int) /*oof!*/ (length - cursor) );
+		if (result < 0) // Error
+			return result;
+		if (result == 0) // EOF
+			break;
+		cursor += result;
+	} while (cursor < length);
+	return cursor;
+}
+
+/*
+====================
+WriteAll
+
+Write exactly length bytes to fd from buf.
+If an error occurred, that error is returned.
+====================
+*/
+static fs_offset_t WriteAll(const filedesc_t fd, const void *const buf, const size_t length)
+{
+	const char *const p = (const char *)buf;
+	size_t cursor = 0;
+	do
+	{
+		const fs_offset_t result = FILEDESC_WRITE(fd, p + cursor, /*oof!*/ (int)(length - cursor));
+		if (result < 0) // Error
+			return result;
+		cursor += result;
+	} while (cursor < length);
+	return cursor;
+}
+
+#undef FILEDESC_READ
+#define FILEDESC_READ ReadAll
+#undef FILEDESC_WRITE
+#define FILEDESC_WRITE WriteAll
 
 /** \page fs File System
 
@@ -324,6 +386,7 @@ typedef struct pack_s
 	int ignorecase;  ///< PK3 ignores case
 	int numfiles;
 	qbool vpack;
+	qbool dlcache;
 	packfile_t *files;
 } pack_t;
 //@}
@@ -345,12 +408,12 @@ FUNCTION PROTOTYPES
 =============================================================================
 */
 
-void FS_Dir_f(void);
-void FS_Cwd_f(void);
-void FS_Ls_f(void);
-void FS_Which_f(void);
+void FS_Dir_f(cmd_state_t *cmd);
+void FS_Pwd_f(cmd_state_t* cmd); // Baker r3101: pwd command to say the current directory
+void FS_Ls_f(cmd_state_t *cmd);
+void FS_Which_f(cmd_state_t *cmd);
 
-static searchpath_t *FS_FindFile (const char *name, int* index, qbool quiet, int isgamedironly, const loadinfo_s *ploadinfo_in, loadinfo_s *ploadinfo_out);
+static searchpath_t *FS_FindFile (const char *name, int* index, qbool quiet);
 static packfile_t* FS_AddFileToPack (const char* name, pack_t* pack,
 									fs_offset_t offset, fs_offset_t packsize,
 									fs_offset_t realsize, int flags);
@@ -368,7 +431,6 @@ mempool_t *fs_mempool;
 void *fs_mutex = NULL;
 
 searchpath_t *fs_searchpaths = NULL;
-int fs_have_qex = 0; // AURA 3.0
 const char *const fs_checkgamedir_missing = "missing";
 
 #define MAX_FILES_IN_PACK_65536	65536
@@ -400,11 +462,11 @@ PRIVATE FUNCTIONS - PK3 HANDLING
 */
 
 #ifndef LINK_TO_ZLIB
-	// Functions exported from zlib
-	#if defined(_WIN32) && defined(ZLIB_USES_WINAPI)
-	# define ZEXPORT WINAPI
-	#else
-	# define ZEXPORT
+// Functions exported from zlib
+#if defined(_WIN32) && defined(ZLIB_USES_WINAPI)
+# define ZEXPORT WINAPI
+#else
+# define ZEXPORT
 #endif
 
 static int (ZEXPORT *qz_inflate) (z_stream* strm, int flush);
@@ -441,10 +503,10 @@ static dllhandle_t zlib_dll = NULL;
 #endif
 
 #ifdef _WIN32
-static HRESULT (WINAPI *qSHGetFolderPath) (HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, LPTSTR pszPath);
+static HRESULT (WINAPI *qSHGetFolderPath) (HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, LPWSTR pszPath);
 static dllfunction_t shfolderfuncs[] =
 {
-	{"SHGetFolderPathA", (void **) &qSHGetFolderPath},
+	{"SHGetFolderPathW", (void **) &qSHGetFolderPath},
 	{NULL, NULL}
 };
 static const char* shfolderdllnames [] =
@@ -686,7 +748,7 @@ static int PK3_BuildFileList (pack_t *pack, const pk3_endOfCentralDir_t *eocd)
 			return -1;
 		}
 
-		namesize = BuffLittleShort (&ptr[28]);	// filename length
+		namesize = (unsigned short)BuffLittleShort (&ptr[28]);	// filename length
 
 		// Check encryption, compression, and attributes
 		// 1st uint8  : general purpose bit flag
@@ -703,7 +765,7 @@ static int PK3_BuildFileList (pack_t *pack, const pk3_endOfCentralDir_t *eocd)
 		if ((ptr[8] & 0x21) == 0 && (ptr[38] & 0x18) == 0)
 		{
 			// Still enough bytes for the name?
-			if (namesize < 0 || remaining < namesize || namesize >= (int)sizeof (*pack->files))
+			if (remaining < namesize || namesize >= (int)sizeof (*pack->files))
 			{
 				Mem_Free (central_dir);
 				return -1;
@@ -747,7 +809,7 @@ static int PK3_BuildFileList (pack_t *pack, const pk3_endOfCentralDir_t *eocd)
 		// Skip the name, additionnal field, and comment
 		// 1er uint16 : extra field length
 		// 2eme uint16 : file comment length
-		count = namesize + BuffLittleShort (&ptr[30]) + BuffLittleShort (&ptr[32]);
+		count = namesize + (unsigned short)BuffLittleShort (&ptr[30]) + (unsigned short)BuffLittleShort (&ptr[32]);
 		ptr += ZIP_CDIR_CHUNK_BASE_SIZE + count;
 		remaining -= count;
 	}
@@ -774,24 +836,24 @@ static pack_t *FS_LoadPackPK3FromFD (const char *packfile, filedesc_t packhandle
 
 	if (! PK3_GetEndOfCentralDir (packfile, packhandle, &eocd)) {
 		if(!silent)
-			Con_PrintLinef ("%s is not a PK3 file", packfile);
+			Con_Printf ("%s is not a PK3 file\n", packfile);
 		FILEDESC_CLOSE(packhandle);
 		return NULL;
 	}
 
 	// Multi-volume ZIP archives are NOT allowed
 	if (eocd.disknum != 0 || eocd.cdir_disknum != 0) {
-		Con_PrintLinef ("%s is a multi-volume ZIP archive", packfile);
+		Con_Printf ("%s is a multi-volume ZIP archive\n", packfile);
 		FILEDESC_CLOSE(packhandle);
 		return NULL;
 	}
 
 	// We only need to do this test if MAX_FILES_IN_PACK_65536 is lesser than 65535
 	// since eocd.nbentries is an unsigned 16 bits integer
-#if MAX_FILES_IN_PACK_65536 < 65535 // MAX_FILES_IN_PACK_65536 is 65535
+#if MAX_FILES_IN_PACK_65536 < 65535
 	if (eocd.nbentries > MAX_FILES_IN_PACK_65536)
 	{
-		Con_PrintLinef ("%s contains too many files (%hu)", packfile, eocd.nbentries);
+		Con_Printf ("%s contains too many files (%hu)\n", packfile, eocd.nbentries);
 		FILEDESC_CLOSE(packhandle);
 		return NULL;
 	}
@@ -807,13 +869,13 @@ static pack_t *FS_LoadPackPK3FromFD (const char *packfile, filedesc_t packhandle
 
 	real_nb_files = PK3_BuildFileList (pack, &eocd);
 	if (real_nb_files < 0) {
-		Con_PrintLinef ("%s is not a valid PK3 file", packfile);
+		Con_Printf ("%s is not a valid PK3 file\n", packfile);
 		FILEDESC_CLOSE(pack->handle);
 		Mem_Free(pack);
 		return NULL;
 	}
 
-	Con_DPrintLinef ("Added packfile %s (%d files)", packfile, real_nb_files);
+	Con_DPrintf("Added packfile %s (%i files)\n", packfile, real_nb_files);
 	return pack;
 }
 
@@ -824,7 +886,7 @@ static pack_t *FS_LoadPackPK3 (const char *packfile)
 	packhandle = FS_SysOpenFiledesc (packfile, "rb", false);
 	if (!FILEDESC_ISVALID(packhandle))
 		return NULL;
-	return FS_LoadPackPK3FromFD(packfile, packhandle, false); // AURA PK3
+	return FS_LoadPackPK3FromFD(packfile, packhandle, false);
 }
 
 
@@ -847,12 +909,12 @@ static qbool PK3_GetTrueFileOffset (packfile_t *pfile, pack_t *pack)
 	// Load the local file description
 	if (FILEDESC_SEEK (pack->handle, pfile->offset, SEEK_SET) == -1)
 	{
-		Con_PrintLinef ("Can't seek in package %s", pack->filename);
+		Con_Printf ("Can't seek in package %s\n", pack->filename);
 		return false;
 	}
 	count = FILEDESC_READ (pack->handle, buffer, ZIP_LOCAL_CHUNK_BASE_SIZE);
 	if (count != ZIP_LOCAL_CHUNK_BASE_SIZE || BuffBigLong (buffer) != ZIP_DATA_HEADER) {
-		Con_PrintLinef ("Can't retrieve file %s in package %s", pfile->name, pack->filename);
+		Con_Printf ("Can't retrieve file %s in package %s\n", pfile->name, pack->filename);
 		return false;
 	}
 
@@ -925,14 +987,30 @@ static packfile_t* FS_AddFileToPack (const char* name, pack_t* pack,
 	return pfile;
 }
 
+#ifdef _WIN32
+#define WSTRBUF 4096
+static inline int wstrlen(wchar *wstr)
+{
+	int len = 0;
+	while (wstr[len] != 0 && len < WSTRBUF)
+		++len;
+	return len;
+}
+#define widen(str, wstr) fromwtf8(str, (int)strlen(str), wstr, WSTRBUF)
+#define narrow(wstr, str) towtf8(wstr, wstrlen(wstr), str, WSTRBUF)
+#endif
 
 static void FS_mkdir (const char *path)
 {
+#ifdef _WIN32
+	wchar pathw[WSTRBUF] = {0};
+#endif
 	if(Sys_CheckParm("-readonly"))
 		return;
 
 #ifdef _WIN32
-	if (_mkdir (path) == -1)
+	widen(path, pathw);
+	if (_wmkdir (pathw) == -1)
 #else
 	if (mkdir (path, 0777) == -1)
 #endif
@@ -943,7 +1021,6 @@ static void FS_mkdir (const char *path)
 		// thus will detect failure that way.
 	}
 }
-
 
 /*
 ============
@@ -976,7 +1053,7 @@ FS_Path_f
 
 ============
 */
-void FS_Path_f (void)
+static void FS_Path_f(cmd_state_t *cmd)
 {
 	searchpath_t *s;
 
@@ -1041,7 +1118,7 @@ static pack_t *FS_LoadPackPAK (const char *packfile)
 	numpackfiles = header.dirlen / sizeof(dpackfile_t);
 
 	if (numpackfiles < 0 || numpackfiles > MAX_FILES_IN_PACK_65536) {
-		Con_PrintLinef ("%s has %d files", packfile, numpackfiles);
+		Con_Printf ("%s has %d files\n", packfile, numpackfiles);
 		FILEDESC_CLOSE(packhandle);
 		return NULL;
 	}
@@ -1077,7 +1154,7 @@ static pack_t *FS_LoadPackPAK (const char *packfile)
 
 	Mem_Free(info);
 
-	Con_DPrintLinef ("Added packfile %s (%d files)", packfile, numpackfiles);
+	Con_DPrintf("Added packfile %s (%d files)\n", packfile, numpackfiles);
 	return pack;
 }
 
@@ -1117,42 +1194,43 @@ FS_AddPack_Fullpath
  * plain directories.
  *
  */
-
-// Baker: fs_searchpaths is the global that holds these
-WARP_X_ (fs_searchpaths)
-static qbool FS_AddPack_Fullpath(const char *pakfile, const char *shortname, qbool *already_loaded, qbool keep_plain_dirs)
+static qbool FS_AddPack_Fullpath(const char *pakfile, const char *shortname, qbool *already_loaded, qbool keep_plain_dirs, qbool dlcache)
 {
 	searchpath_t *search;
 	pack_t *pak = NULL;
 	const char *ext = FS_FileExtension(pakfile);
-	size_t slen;
+	size_t l;
 
-	for (search = fs_searchpaths; search; search = search->next) {
-		if (search->pack && String_Does_Match_Caseless(search->pack->filename, pakfile)) {
-			if (already_loaded)
+	for(search = fs_searchpaths; search; search = search->next) {
+		if(search->pack && !strcasecmp(search->pack->filename, pakfile)) {
+			if(already_loaded)
 				*already_loaded = true;
 			return true; // already loaded
 		} // if
 	} // for
 
-	if (already_loaded)
+	if(already_loaded)
 		*already_loaded = false;
 
-	     if (String_Does_Match_Caseless(ext, "pk3dir")) pak = FS_LoadPackVirtual (pakfile);
-	else if (String_Does_Match_Caseless(ext, "pak")) 	pak = FS_LoadPackPAK (pakfile);
-	else if (String_Does_Match_Caseless(ext, "pk3")) 	pak = FS_LoadPackPK3 (pakfile);
-	else if (String_Does_Match_Caseless(ext, "kpf")) 	pak = FS_LoadPackPK3 (pakfile); // AURA 3.1
-	else if (String_Does_Match_Caseless(ext, "obb"))	pak = FS_LoadPackPK3 (pakfile); // android apk expansion
-	else 												Con_PrintLinef ("\"%s\" does not have a pack extension", pakfile);
+	if(!strcasecmp(ext, "pk3dir") || !strcasecmp(ext, "dpkdir"))
+		pak = FS_LoadPackVirtual (pakfile);
+	else if(!strcasecmp(ext, "pak"))
+		pak = FS_LoadPackPAK (pakfile);
+	else if(!strcasecmp(ext, "pk3") || !strcasecmp(ext, "dpk"))
+		pak = FS_LoadPackPK3 (pakfile);
+	else if(!strcasecmp(ext, "obb")) // android apk expansion
+		pak = FS_LoadPackPK3 (pakfile);
+	else
+		Con_Printf("\"%s\" does not have a pack extension\n", pakfile);
 
 	if (pak) {
-		c_strlcpy (pak->shortname, shortname);
+		strlcpy(pak->shortname, shortname, sizeof(pak->shortname));
 
-		//Con_DPrintLinef ("  Registered pack with short name %s", shortname);
-		if(keep_plain_dirs) {
+		//Con_DPrintf("  Registered pack with short name %s\n", shortname);
+		if (keep_plain_dirs) {
 			// find the first item whose next one is a pack or NULL
 			searchpath_t *insertion_point = 0;
-			if (fs_searchpaths && !fs_searchpaths->pack) {
+			if(fs_searchpaths && !fs_searchpaths->pack) {
 				insertion_point = fs_searchpaths;
 				for (;;) {
 					if(!insertion_point->next)
@@ -1186,24 +1264,25 @@ static qbool FS_AddPack_Fullpath(const char *pakfile, const char *shortname, qbo
 			fs_searchpaths = search;
 		}
 		search->pack = pak;
+		search->pack->dlcache = dlcache;
 		if (pak->vpack) {
 			dpsnprintf(search->filename, sizeof(search->filename), "%s/", pakfile);
-			// if shortname ends with "pk3dir", strip that suffix to make it just "pk3"
+			// if shortname ends with "pk3dir" or "dpkdir", strip that suffix to make it just "pk3" or "dpk"
 			// same goes for the name inside the pack structure
-			slen = strlen(pak->shortname);
-			if (slen >= 7)
-				if (String_Does_Match_Caseless(pak->shortname + slen - 7, ".pk3dir"))
-					pak->shortname[slen - 3] = 0;
-			slen = strlen(pak->filename);
-			if (slen >= 7)
-				if (String_Does_Match_Caseless(pak->filename + slen - 7, ".pk3dir"))
-					pak->filename[slen - 3] = 0;
+			l = strlen(pak->shortname);
+			if(l >= 7)
+				if(!strcasecmp(pak->shortname + l - 7, ".pk3dir") || !strcasecmp(pak->shortname + l - 7, ".dpkdir"))
+					pak->shortname[l - 3] = 0;
+			l = strlen(pak->filename);
+			if(l >= 7)
+				if(!strcasecmp(pak->filename + l - 7, ".pk3dir") || !strcasecmp(pak->filename + l - 7, ".dpkdir"))
+					pak->filename[l - 3] = 0;
 		}
 		return true;
 	}
 	else
 	{
-		Con_PrintLinef ("unable to load pak " QUOTED_S, pakfile);
+		Con_Printf(CON_ERROR "unable to load pak \"%s\"\n", pakfile);
 		return false;
 	}
 }
@@ -1223,7 +1302,7 @@ FS_AddPack
  * If keep_plain_dirs is set, the pack will be added AFTER the first sequence of
  * plain directories.
  */
-qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_dirs)
+qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_dirs, qbool dlcache)
 {
 	char fullpath[MAX_OSPATH];
 	int index;
@@ -1233,7 +1312,7 @@ qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_di
 		*already_loaded = false;
 
 	// then find the real name...
-	search = FS_FindFile(pakfile, &index, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	search = FS_FindFile(pakfile, &index, true);
 	if(!search || search->pack)
 	{
 		Con_Printf("could not find pak \"%s\"\n", pakfile);
@@ -1242,7 +1321,7 @@ qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_di
 
 	dpsnprintf(fullpath, sizeof(fullpath), "%s%s", search->filename, pakfile);
 
-	return FS_AddPack_Fullpath(fullpath, pakfile, already_loaded, keep_plain_dirs);
+	return FS_AddPack_Fullpath(fullpath, pakfile, already_loaded, keep_plain_dirs, dlcache);
 }
 
 
@@ -1260,31 +1339,25 @@ static void FS_AddGameDirectory (const char *dir)
 	stringlist_t list;
 	searchpath_t *search;
 
-	c_strlcpy (fs_gamedir, dir);
+	strlcpy (fs_gamedir, dir, sizeof (fs_gamedir));
 
 	stringlistinit(&list);
 	listdirectory(&list, "", dir);
 	stringlistsort(&list, false);
 
-//AD	Con_PrintLinef ("FS_AddGameDirectory %s files we got %d", fs_gamedir, list.numstrings);
-
 	// add any PAK package in the directory
-	for (i = 0; i < list.numstrings; i++) {
-		char *sthis = list.strings[i];
-		const char *sthisext = FS_FileExtension(sthis);
-		if (String_Isin1_Caseless (sthisext, "pak")) {
-			const char *s_shortname = sthis + strlen(dir);
-			FS_AddPack_Fullpath (sthis, s_shortname, /*palready_loaded*/ NULL, /*keep_plain_dirs*/ false);
+	for (i = 0;i < list.numstrings;i++) {
+		if (!strcasecmp(FS_FileExtension(list.strings[i]), "pak")) {
+			FS_AddPack_Fullpath(list.strings[i], list.strings[i] + strlen(dir), NULL, false, false);
 		}
 	}
 
 	// add any PK3 package in the directory
-	for (i = 0; i < list.numstrings; i++) {
-		char *sthis = list.strings[i];
-		const char *sthisext = FS_FileExtension(sthis);
-		if (String_Isin3_Caseless (sthisext, "pk3", "obb" /*android apk*/, "pk3dir")) {
-			const char *s_shortname = sthis + strlen(dir);
-			FS_AddPack_Fullpath (sthis, s_shortname, /*palready_loaded*/ NULL, /*keep_plain_dirs*/ false);
+	for (i = 0;i < list.numstrings;i++) {
+		if (!strcasecmp(FS_FileExtension(list.strings[i]), "pk3") || !strcasecmp(FS_FileExtension(list.strings[i]), "obb") || !strcasecmp(FS_FileExtension(list.strings[i]), "pk3dir")
+			|| !strcasecmp(FS_FileExtension(list.strings[i]), "dpk") || !strcasecmp(FS_FileExtension(list.strings[i]), "dpkdir"))
+		{
+			FS_AddPack_Fullpath(list.strings[i], list.strings[i] + strlen(dir), NULL, false, false);
 		}
 	}
 
@@ -1293,7 +1366,7 @@ static void FS_AddGameDirectory (const char *dir)
 	// Add the directory to the search path
 	// (unpacked files have the priority over packed files)
 	search = (searchpath_t *)Mem_Alloc(fs_mempool, sizeof(searchpath_t));
-	c_strlcpy (search->filename, dir);
+	strlcpy (search->filename, dir, sizeof (search->filename));
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
 }
@@ -1308,7 +1381,7 @@ static void FS_AddGameHierarchy (const char *dir)
 {
 	char vabuf[1024];
 	// Add the common game directory
-	FS_AddGameDirectory (va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, dir)); // AURA PK3 2
+	FS_AddGameDirectory (va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, dir));
 
 	if (*fs_userdir)
 		FS_AddGameDirectory(va(vabuf, sizeof(vabuf), "%s%s/", fs_userdir, dir));
@@ -1324,6 +1397,10 @@ const char *FS_FileExtension (const char *in)
 {
 	const char *separator, *backslash, *colon, *dot;
 
+	dot = strrchr(in, '.');
+	if (dot == NULL)
+		return "";
+
 	separator = strrchr(in, '/');
 	backslash = strrchr(in, '\\');
 	if (!separator || separator < backslash)
@@ -1332,8 +1409,7 @@ const char *FS_FileExtension (const char *in)
 	if (!separator || separator < colon)
 		separator = colon;
 
-	dot = strrchr(in, '.');
-	if (dot == NULL || (separator && (dot < separator)))
+	if (separator && (dot < separator))
 		return "";
 
 	return dot + 1;
@@ -1390,6 +1466,46 @@ static void FS_ClearSearchPath (void)
 	}
 }
 
+/*
+================
+FS_UnloadPacks_dlcache
+
+Like FS_ClearSearchPath() but unloads only the packs loaded from dlcache
+so we don't need to use a full FS_Rescan() to prevent
+content from the previous server and/or map from interfering with the next
+================
+*/
+void FS_UnloadPacks_dlcache(void)
+{
+	searchpath_t *search = fs_searchpaths, *searchprev = fs_searchpaths, *searchnext;
+
+	while (search)
+	{
+		searchnext = search->next;
+		if (search->pack && search->pack->dlcache)
+		{
+			Con_DPrintf("Unloading pack: %s\n", search->pack->shortname);
+
+			// remove it from the search path list
+			if (search == fs_searchpaths)
+				fs_searchpaths = search->next;
+			else
+				searchprev->next = search->next;
+
+			// close the file
+			FILEDESC_CLOSE(search->pack->handle);
+			// free any memory associated with it
+			if (search->pack->files)
+				Mem_Free(search->pack->files);
+			Mem_Free(search->pack);
+			Mem_Free(search);
+		}
+		else
+			searchprev = search;
+		search = searchnext;
+	}
+}
+
 static void FS_AddSelfPack(void)
 {
 	if(fs_selfpack)
@@ -1408,7 +1524,6 @@ static void FS_AddSelfPack(void)
 FS_Rescan
 ================
 */
-
 void FS_Rescan (void)
 {
 	int i;
@@ -1439,7 +1554,6 @@ void FS_Rescan (void)
 	if (gamedirname2 && gamedirname2[0])
 	{
 		fs_modified = true;
-		WARP_X_ (FS_AddGameDirectory)
 		FS_AddGameHierarchy (gamedirname2);
 	}
 
@@ -1464,58 +1578,26 @@ void FS_Rescan (void)
 	// add back the selfpack as new first item
 	FS_AddSelfPack();
 
-	fs_have_qex = 0; // AURA 3.2
-	const char *s_qex = "QuakeEX.kpf";
-	if (File_Exists (s_qex)) {
-		Con_PrintLinef ("Found QuakeEX.kpf");
-		if (FS_AddPack_Fullpath (s_qex, s_qex, /*palready_loaded*/ NULL, /*keep_plain_dirs*/ false)) {
-			Con_PrintLinef ("Loaded QuakeEX.kpf");
-			LOC_LoadFile ();
-			fs_have_qex = 1;
-		} else {
-			Con_PrintLinef ("Load QuakeEX.kpf failed");
-		}
-	} else {
-		Con_PrintLinef ("Did not find QuakeEX.kpf");
+	if (cls.state != ca_dedicated)
+	{
+		// set the default screenshot name to either the mod name or the
+		// gamemode screenshot name
+		if (strcmp(com_modname, gamedirname1))
+			Cvar_SetQuick (&scr_screenshot_name, com_modname);
+		else
+			Cvar_SetQuick (&scr_screenshot_name, gamescreenshotname);
 	}
 
-	// set the default screenshot name to either the mod name or the
-	// gamemode screenshot name
-	if (strcmp(com_modname, gamedirname1))
-		Cvar_SetQuick (&scr_screenshot_name, com_modname);
-	else
-		Cvar_SetQuick (&scr_screenshot_name, gamescreenshotname);
-
-	if((i = Sys_CheckParm("-modname")) && i < com_argc - 1)
-		c_strlcpy(com_modname, com_argv[i+1]);
+	if((i = Sys_CheckParm("-modname")) && i < sys.argc - 1)
+		strlcpy(com_modname, sys.argv[i+1], sizeof(com_modname));
 
 	// If "-condebug" is in the command line, remove the previous log file
-#ifdef __ANDROID__
-	if (1)
-#else
-	if (Sys_CheckParm ("-condebug") != 0) // deletes a name from the filesystem
-#endif // __ANDROID__
-	{
-		// On success, zero is returned.  On error, -1 is returned, and
-       // errno is set to indicate the error.
-		const char *s_log = va(vabuf, sizeof(vabuf), "%s/zircon_log.log", fs_gamedir);
-		//int ret = 
-#if USE_RWOPS
-		int isok = remove (s_log) == 0;
-#else
-			
-		int isok = unlink (s_log) == 0;
-#endif
-		
-//		if (!isok) { // Mac hates errno
-			// Con_PrintLinef ("Remove " QUOTED_S " failed. %s ", vabuf, strerror(errno) );
-//		}
-		//unlink (va(vabuf, sizeof(vabuf), "%s/qconsole.log", fs_gamedir));
-	}
+	if (Sys_CheckParm ("-condebug") != 0)
+		unlink (va(vabuf, sizeof(vabuf), "%s/qconsole.log", fs_gamedir));
 
 	// look for the pop.lmp file and set registered to true if it is found
 	if (FS_FileExists("gfx/pop.lmp"))
-		Cvar_Set ("registered", "1");
+		Cvar_SetValueQuick(&registered, 1);
 	switch(gamemode)
 	{
 	case GAME_NORMAL:
@@ -1529,9 +1611,8 @@ void FS_Rescan (void)
 				Con_Print("Playing shareware version.\n");
 		}
 		else
-			Con_PrintLinef ("Playing registered version.");
+			Con_Print("Playing registered version.\n");
 		break;
-
 	case GAME_STEELSTORM:
 		if (registered.integer)
 			Con_Print("Playing registered version.\n");
@@ -1546,7 +1627,7 @@ void FS_Rescan (void)
 	W_UnloadAll();
 }
 
-static void FS_Rescan_f(void)
+static void FS_Rescan_f(cmd_state_t *cmd)
 {
 	FS_Rescan();
 }
@@ -1563,8 +1644,8 @@ qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH], qbool compl
 	const char *p;
 
 	if (fs_numgamedirs == numgamedirs) {
-		for (i = 0; i < numgamedirs; i++) {
-			if (String_Does_Match_Caseless (fs_gamedirs[i], gamedirs[i]) == false )
+		for (i = 0;i < numgamedirs;i++) {
+			if (strcasecmp(fs_gamedirs[i], gamedirs[i]))
 				break;
 		} // for
 		if (i == numgamedirs)
@@ -1574,50 +1655,44 @@ qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH], qbool compl
 	if (numgamedirs > MAX_GAMEDIRS)
 	{
 		if (complain)
-			Con_PrintLinef ("That is too many gamedirs (%d > %d)", numgamedirs, MAX_GAMEDIRS);
+			Con_Printf("That is too many gamedirs (%i > %i)\n", numgamedirs, MAX_GAMEDIRS);
 		return false; // too many gamedirs
 	}
 
-	for (i = 0; i < numgamedirs; i ++) {
+	for (i = 0;i < numgamedirs;i++) {
 		// if string is nasty, reject it
 		p = FS_CheckGameDir(gamedirs[i]);
-		if(!p) {
+		if (!p) {
 			if (complain)
-				Con_PrintLinef ("Nasty gamedir name rejected: %s", gamedirs[i]);
+				Con_Printf("Nasty gamedir name rejected: %s\n", gamedirs[i]);
 			return false; // nasty gamedirs
 		}
 		if (p == fs_checkgamedir_missing && failmissing) {
 			if (complain)
-				Con_PrintLinef ("Gamedir missing: %s%s/", fs_basedir, gamedirs[i]);
+				Con_Printf("Gamedir missing: %s%s/\n", fs_basedir, gamedirs[i]);
 			return false; // missing gamedirs
 		}
 	} // for
 
-	Key_History_Write ();
-	Host_SaveConfig();
+	Host_SaveConfig(CONFIGFILENAME);
 
 	fs_numgamedirs = numgamedirs;
-	for (i = 0;i < fs_numgamedirs; i++)
-		c_strlcpy(fs_gamedirs[i], gamedirs[i]); //, sizeof(fs_gamedirs[i]));
+	for (i = 0;i < fs_numgamedirs;i++)
+		strlcpy(fs_gamedirs[i], gamedirs[i], sizeof(fs_gamedirs[i]));
 
 	// reinitialize filesystem to detect the new paks
 	FS_Rescan();
-	m_maplist_count = 0;
 
 	if (cls.demoplayback) {
-		CL_Disconnect_f();
+		CL_Disconnect();
 		cls.demonum = 0;
 	}
 
 	// unload all sounds so they will be reloaded from the new files as needed
-	S_UnloadAllSounds_f();
-
-	// close down the video subsystem, it will start up again when the config finishes...
-	VID_Stop();
-	vid_opened = false;
+	S_UnloadAllSounds_f(cmd_local);
 
 	// restart the video subsystem after the config is executed
-	Cbuf_InsertText (NEWLINE "loadconfig" NEWLINE "vid_restart" NEWLINE NEWLINE);
+	Cbuf_InsertText(cmd_local, "\nloadconfig\nvid_restart\n\n");
 
 	return true;
 }
@@ -1627,50 +1702,56 @@ qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH], qbool compl
 FS_GameDir_f
 ================
 */
-int	lanConfig_cursor = -1;
 
-
-static void FS_GameDir_f (void)
+// Baker: What happens if dedicated server switches game?
+// I see CL_ stuff here.
+static void FS_GameDir_f(cmd_state_t *cmd)
 {
 	int i;
 	int numgamedirs;
 	char gamedirs[MAX_GAMEDIRS][MAX_QPATH];
 
-	if (Cmd_Argc() < 2) {
-		Con_Printf ("gamedirs active:");
+	if (Cmd_Argc(cmd) < 2) {
+		Con_Printf("gamedirs active:");
 		for (i = 0;i < fs_numgamedirs;i++)
-			Con_Printf (" %s", fs_gamedirs[i]);
-		Con_Printf ("\n");
+			Con_Printf(" %s", fs_gamedirs[i]);
+		Con_Printf("\n");
 		return;
 	}
 
-	numgamedirs = Cmd_Argc() - 1;
+	numgamedirs = Cmd_Argc(cmd) - 1;
 	if (numgamedirs > MAX_GAMEDIRS) {
 		Con_PrintLinef ("Too many gamedirs (%d > %d)", numgamedirs, MAX_GAMEDIRS);
 		return;
 	}
 
-	for (i = 0; i < numgamedirs; i++)
-		c_strlcpy(gamedirs[i], Cmd_Argv(i + 1) ); //, sizeof(gamedirs[i]));
+	for (i = 0;i < numgamedirs;i++)
+		c_strlcpy(gamedirs[i], Cmd_Argv(cmd, i+1) );
 
 	if ((cls.state == ca_connected && !cls.demoplayback) || sv.active) {
+#if 0		
 		// actually, changing during game would work fine, but would be stupid
-		// Con_Printf("Can not change gamedir while client is connected or server is running!\n");
-		//return;
+		Con_PrintLinef ("Can not change gamedir while client is connected or server is running!");
+		return;
+#else
+		// Baker r1301: Automatically disconnect if "game" / "gamedir" is used
 		Con_PrintLinef ("Disconnecting...");
+#endif
 	}
 
 	// halt demo playback to close the file
-
 	CL_Disconnect();
-	if (sv.active)
-		Host_ShutdownServer ();
 
-
+	// Baker: no server shutdown here in dpbeta?
+	if (sv.active) {
+		// Shutdown?	
+	}
+	
 	Menu_Resets (); // Cursor to 0 for all the menus
 
-	is_game_switch = true; // This does what?  Clear models thoroughly.  As opposed to video restart which shouldn't?
-	FS_ChangeGameDirs (numgamedirs, gamedirs, true, true);
+	// Baker r9003: Clear models/sounds on gamedir change
+	is_game_switch = true;   // This does what?  Clear models thoroughly.  As opposed to video restart which shouldn't?
+	FS_ChangeGameDirs(numgamedirs, gamedirs, true, true);
 	is_game_switch = false;
 }
 
@@ -1762,7 +1843,7 @@ static void FS_ListGameDirs(void)
 	for(i = 0; i < list.numstrings; ++i)
 	{
 		if(i)
-			if(String_Does_Match(list.strings[i-1], list.strings[i]))
+			if(!strcmp(list.strings[i-1], list.strings[i]))
 				continue;
 		info = FS_CheckGameDir(list.strings[i]);
 		if(!info)
@@ -1805,11 +1886,11 @@ static void COM_InsertFlags(const char *buf) {
 	const char **new_argv;
 	int i = 0;
 	int args_left = 256;
-	new_argv = (const char **)Mem_Alloc(fs_mempool, sizeof(*com_argv) * (com_argc + args_left + 2));
-	if(com_argc == 0)
+	new_argv = (const char **)Mem_Alloc(fs_mempool, sizeof(*sys.argv) * (sys.argc + args_left + 2));
+	if(sys.argc == 0)
 		new_argv[0] = "dummy";  // Can't really happen.
 	else
-		new_argv[0] = com_argv[0];
+		new_argv[0] = sys.argv[0];
 	++i;
 	p = buf;
 	while(COM_ParseToken_Console(&p))
@@ -1823,53 +1904,15 @@ static void COM_InsertFlags(const char *buf) {
 		++i;
 	}
 	// Now: i <= args_left + 1.
-	if (com_argc >= 1)
+	if (sys.argc >= 1)
 	{
-		memcpy((char *)(&new_argv[i]), &com_argv[1], sizeof(*com_argv) * (com_argc - 1));
-		i += com_argc - 1;
+		memcpy((char *)(&new_argv[i]), &sys.argv[1], sizeof(*sys.argv) * (sys.argc - 1));
+		i += sys.argc - 1;
 	}
-	// Now: i <= args_left + (com_argc || 1).
+	// Now: i <= args_left + (sys.argc || 1).
 	new_argv[i] = NULL;
-	com_argv = new_argv;
-	com_argc = i;
-}
-
-/*
-================
-FS_Init_SelfPack
-================
-*/
-void FS_Init_SelfPack (void)
-{
-	PK3_OpenLibrary ();
-	fs_mempool = Mem_AllocPool("file management", 0, NULL);
-
-	// Load darkplaces.opt from the FS.
-	if (!Sys_CheckParm("-noopt"))
-	{
-		char *buf = (char *) FS_SysLoadFile("darkplaces.opt", tempmempool, true, NULL);
-		if(buf)
-			COM_InsertFlags(buf);
-		Mem_Free(buf);
-	}
-
-#ifndef USE_RWOPS
-	// Provide the SelfPack.
-	if (!Sys_CheckParm("-noselfpack")) {
-		if (com_selffd >= 0) {
-			fs_selfpack = FS_LoadPackPK3FromFD(com_argv[0], com_selffd, true);
-			if(fs_selfpack) {
-				FS_AddSelfPack();
-				if (!Sys_CheckParm("-noopt")) {
-					char *buf = (char *) FS_LoadFile("darkplaces.opt", tempmempool, true, NULL, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-					if(buf)
-						COM_InsertFlags(buf);
-					Mem_Free(buf);
-				}
-			}
-		}
-	}
-#endif
+	sys.argv = new_argv;
+	sys.argc = i;
 }
 
 static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t userdirsize)
@@ -1885,13 +1928,15 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 	return -1;
 
 #elif defined(_WIN32)
-	char *homedir;
+	char homedir[WSTRBUF];
+	wchar *homedirw;
 #if _MSC_VER >= 1400
-	size_t homedirlen;
+	size_t homedirwlen;
 #endif
-	TCHAR mydocsdir[MAX_PATH + 1];
+	wchar_t mydocsdirw[WSTRBUF];
+	char mydocsdir[WSTRBUF];
 	wchar_t *savedgamesdirw;
-	char savedgamesdir[MAX_OSPATH];
+	char savedgamesdir[WSTRBUF] = {0};
 	int fd;
 	char vabuf[1024];
 
@@ -1907,22 +1952,23 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 		if (!shfolder_dll)
 			Sys_LoadDependency(shfolderdllnames, &shfolder_dll, shfolderfuncs);
 		mydocsdir[0] = 0;
-		if (qSHGetFolderPath && qSHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, mydocsdir) == S_OK)
-		{
+		if (qSHGetFolderPath && qSHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, mydocsdirw) == S_OK) {
+			narrow(mydocsdirw, mydocsdir);
 			dpsnprintf(userdir, userdirsize, "%s/My Games/%s/", mydocsdir, gameuserdirname);
 			break;
 		}
 #if _MSC_VER >= 1400
-		_dupenv_s(&homedir, &homedirlen, "USERPROFILE");
-		if(homedir)
-		{
+		_wdupenv_s(&homedirw, &homedirwlen, L"USERPROFILE");
+		narrow(homedirw, homedir);
+		if (homedir[0]) {
 			dpsnprintf(userdir, userdirsize, "%s/.%s/", homedir, gameuserdirname);
-			free(homedir);
+			free(homedirw);
 			break;
 		}
 #else
-		homedir = getenv("USERPROFILE");
-		if(homedir)
+		homedirw = _wgetenv(L"USERPROFILE");
+		narrow(homedirw, homedir);
+		if(homedir[0])
 		{
 			dpsnprintf(userdir, userdirsize, "%s/.%s/", homedir, gameuserdirname);
 			break;
@@ -1947,12 +1993,7 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 */
 			if (qSHGetKnownFolderPath(&qFOLDERID_SavedGames, qKF_FLAG_CREATE | qKF_FLAG_NO_ALIAS, NULL, &savedgamesdirw) == S_OK)
 			{
-				memset(savedgamesdir, 0, sizeof(savedgamesdir));
-#if _MSC_VER >= 1400
-				wcstombs_s(NULL, savedgamesdir, sizeof(savedgamesdir), savedgamesdirw, sizeof(savedgamesdir)-1);
-#else
-				wcstombs(savedgamesdir, savedgamesdirw, sizeof(savedgamesdir)-1);
-#endif
+				narrow(savedgamesdirw, savedgamesdir);
 				qCoTaskMemFree(savedgamesdirw);
 			}
 			qCoUninitialize();
@@ -2043,15 +2084,27 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 #endif
 }
 
-/*
-================
-FS_Init
-================
-*/
-void FS_Init (void)
+void FS_Init_Commands(void)
+{
+	Cvar_RegisterVariable (&scr_screenshot_name);
+	Cvar_RegisterVariable (&fs_empty_files_in_pack_mark_deletions);
+	Cvar_RegisterVariable (&cvar_fs_gamedir);
+
+	Cmd_AddCommand(CF_SHARED, "gamedir", FS_GameDir_f, "changes active gamedir list (can take multiple arguments), not including base directory (example usage: gamedir ctf)");
+	Cmd_AddCommand(CF_SHARED, "game", FS_GameDir_f, "changes active gamedir list (can take multiple arguments), not including base directory (example usage: gamedir ctf) [Zircon]"); // Baker r1203: "game" command like Quakespasm/FitzQuake 0.85, Quakespasm and most singleplayer engines use this command for "gamedir" switching
+	Cmd_AddCommand(CF_SHARED, "fs_rescan", FS_Rescan_f, "rescans filesystem for new pack archives and any other changes");
+	Cmd_AddCommand(CF_SHARED, "path", FS_Path_f, "print searchpath (game directories and archives)");
+	Cmd_AddCommand(CF_SHARED, "dir", FS_Dir_f, "list files in searchpath matching an * filename pattern, one per line");
+	Cmd_AddCommand(CF_SHARED, "pwd", FS_Pwd_f, "what is current working directory [Zircon]");  // Baker r3101: pwd command to say the current directory
+	Cmd_AddCommand(CF_SHARED, "ls", FS_Ls_f, "list files in searchpath matching an * filename pattern, multiple per line");
+	Cmd_AddCommand(CF_SHARED, "which", FS_Which_f, "accepts a file name as argument and reports where the file is taken from");
+}
+
+static void FS_Init_Dir (void)
 {
 	const char *p;
 	int i;
+	int is_forced = false; // Baker r1001: -nohome is the behavior on Windows and Mac
 
 	*fs_basedir = 0;
 	*fs_userdir = 0;
@@ -2061,12 +2114,13 @@ void FS_Init (void)
 	// Overrides the system supplied base directory (under GAMENAME)
 // COMMANDLINEOPTION: Filesystem: -basedir <path> chooses what base directory the game data is in, inside this there should be a data directory for the game (for example id1)
 	i = Sys_CheckParm ("-basedir");
-	if (i && i < com_argc-1)
+	if (i && i < sys.argc-1)
 	{
-		strlcpy (fs_basedir, com_argv[i+1], sizeof (fs_basedir));
+		strlcpy (fs_basedir, sys.argv[i+1], sizeof (fs_basedir));
 		i = (int)strlen (fs_basedir);
 		if (i > 0 && (fs_basedir[i-1] == '\\' || fs_basedir[i-1] == '/'))
 			fs_basedir[i-1] = 0;
+		is_forced = true; // // Baker r1001: -nohome is the behavior on Windows and Mac
 	}
 	else
 	{
@@ -2074,13 +2128,12 @@ void FS_Init (void)
 #ifdef DP_FS_BASEDIR
 		strlcpy(fs_basedir, DP_FS_BASEDIR, sizeof(fs_basedir));
 #elif defined(__ANDROID__)
-		dpsnprintf(fs_basedir, sizeof(fs_basedir), "/sdcard/zircon/"); // dpsnprintf(fs_basedir, sizeof(fs_basedir), "/sdcard/%s/", gameuserdirname);
+		dpsnprintf(fs_basedir, sizeof(fs_basedir), "/sdcard/%s/", gameuserdirname);
 #elif defined(MACOSX)
 		// FIXME: is there a better way to find the directory outside the .app, without using Objective-C?
-        // To prevent XCode debugging from being screwed up, we search for /XCode/ in the path, if found we do not use the path
-		if (!fs_basedir[0] && strstr(com_argv[0], ".app/") && strstr(com_argv[0], "/Xcode/") == NULL) {
+		if (strstr(sys.argv[0], ".app/")) {
 			char *split;
-			strlcpy(fs_basedir, com_argv[0], sizeof(fs_basedir));
+			strlcpy(fs_basedir, sys.argv[0], sizeof(fs_basedir));
 			split = strstr(fs_basedir, ".app/");
 			if (split)
 			{
@@ -2098,23 +2151,14 @@ void FS_Init (void)
 				{
 					// no gamedir found in Resources, gamedir is probably
 					// outside the .app, remove .app part of path
-					// Baker: find first '/' after .app, 0 it out
 					while (split > fs_basedir && *split != '/')
 						split--;
 					*split = 0;
 				}
 			}
 		}
-#endif // MACOSX
-	}
-    
-#ifdef CORE_XCODE
-    // Baker: So we can load dylibs sitting around the folder.
-    if (strstr(com_argv[0], ".app/") && strstr(com_argv[0], "/Xcode/") == NULL) {
-        chdir (fs_basedir);
-    }
 #endif
-    
+	}
 
 	// make sure the appending of a path separator won't create an unterminated string
 	memset(fs_basedir + sizeof(fs_basedir) - 2, 0, 2);
@@ -2123,8 +2167,10 @@ void FS_Init (void)
 		strlcat(fs_basedir, "/", sizeof(fs_basedir));
 
 	// Add the personal game directory
-	if((i = Sys_CheckParm("-userdir")) && i < com_argc - 1)
-		dpsnprintf(fs_userdir, sizeof(fs_userdir), "%s/", com_argv[i+1]);
+	if ((i = Sys_CheckParm("-userdir")) && i < sys.argc - 1) {
+		is_forced = true; // -userdir // Baker r1001: -nohome is the behavior on Windows and Mac
+		dpsnprintf(fs_userdir, sizeof(fs_userdir), "%s/", sys.argv[i+1]);
+	} // if
 	else if (Sys_CheckParm("-nohome"))
 		*fs_userdir = 0; // user wants roaming installation, no userdir
 	else
@@ -2138,7 +2184,7 @@ void FS_Init (void)
 		int userdirstatus[USERDIRMODE_COUNT];
 # if defined(_WIN32) || defined(MACOSX)
 		// historical behavior...
-		if (String_Does_Match(gamedirname1, "id1"))
+		if (!strcmp(gamedirname1, "id1"))
 			preferreduserdirmode = USERDIRMODE_NOHOME;
 # endif
 		// check what limitations the user wants to impose
@@ -2175,11 +2221,13 @@ void FS_Init (void)
 #endif
 	}
 
+// NOHOME IS THE BEHAVIOR EVERYWHERE EXCEPT LINUX
+// Baker r1001: -nohome is the behavior on Windows and Mac
 #if defined(_WIN32) || defined(MACOSX)
 	// Baker 7000 nohome is the behavior on Windows unless userdir specified regardless of game
 	// Or -home
 	// Quake on a Mac should be simple like Windows.
-	if ((i = Sys_CheckParm("-userdir")) && i < com_argc - 1) {
+	if ((i = Sys_CheckParm("-userdir")) && i < sys.argc - 1) {
 
 	} else if ((i = Sys_CheckParm("-home"))/**/) {
 
@@ -2189,39 +2237,39 @@ void FS_Init (void)
 #endif
 
 	// if userdir equal to basedir, clear it to avoid confusion later
-	if (String_Does_Match(fs_basedir, fs_userdir))
+	if (!strcmp(fs_basedir, fs_userdir))
 		fs_userdir[0] = 0;
 
 	FS_ListGameDirs();
 
 	p = FS_CheckGameDir(gamedirname1);
 	if(!p || p == fs_checkgamedir_missing)
-		Con_Printf("WARNING: base gamedir %s%s/ not found!\n", fs_basedir, gamedirname1);
+		Con_Printf(CON_WARN "WARNING: base gamedir %s%s/ not found!\n", fs_basedir, gamedirname1);
 
 	if(gamedirname2)
 	{
 		p = FS_CheckGameDir(gamedirname2);
 		if(!p || p == fs_checkgamedir_missing)
-			Con_Printf("WARNING: base gamedir %s%s/ not found!\n", fs_basedir, gamedirname2);
+			Con_Printf(CON_WARN "WARNING: base gamedir %s%s/ not found!\n", fs_basedir, gamedirname2);
 	}
 
 	// -game <gamedir>
 	// Adds basedir/gamedir as an override game
 	// LadyHavoc: now supports multiple -game directories
-	for (i = 1;i < com_argc && fs_numgamedirs < MAX_GAMEDIRS;i++)
+	for (i = 1;i < sys.argc && fs_numgamedirs < MAX_GAMEDIRS;i++)
 	{
-		if (!com_argv[i])
+		if (!sys.argv[i])
 			continue;
-		if (String_Does_Match (com_argv[i], "-game") && i < com_argc-1)
+		if (!strcmp (sys.argv[i], "-game") && i < sys.argc-1)
 		{
 			i++;
-			p = FS_CheckGameDir(com_argv[i]);
+			p = FS_CheckGameDir(sys.argv[i]);
 			if(!p)
-				Sys_Error("Nasty -game name rejected: %s", com_argv[i]);
+				Con_Printf("WARNING: Nasty -game name rejected: %s\n", sys.argv[i]);
 			if(p == fs_checkgamedir_missing)
-				Con_Printf("WARNING: -game %s%s/ not found!\n", fs_basedir, com_argv[i]);
+				Con_Printf(CON_WARN "WARNING: -game %s%s/ not found!\n", fs_basedir, sys.argv[i]);
 			// add the gamedir to the list of active gamedirs
-			strlcpy (fs_gamedirs[fs_numgamedirs], com_argv[i], sizeof(fs_gamedirs[fs_numgamedirs]));
+			strlcpy (fs_gamedirs[fs_numgamedirs], sys.argv[i], sizeof(fs_gamedirs[fs_numgamedirs]));
 			fs_numgamedirs++;
 		}
 	}
@@ -2233,20 +2281,69 @@ void FS_Init (void)
 		fs_mutex = Thread_CreateMutex();
 }
 
-void FS_Init_Commands(void)
+/*
+================
+FS_Init_SelfPack
+================
+*/
+void FS_Init_SelfPack (void)
 {
-	Cvar_RegisterVariable (&scr_screenshot_name);
-	Cvar_RegisterVariable (&fs_empty_files_in_pack_mark_deletions);
-	Cvar_RegisterVariable (&cvar_fs_gamedir);
+	char *buf;
 
-	Cmd_AddCommand ("gamedir", FS_GameDir_f, "changes active gamedir list (can take multiple arguments), not including base directory (example usage: gamedir ctf)");
-	Cmd_AddCommand ("game", FS_GameDir_f, "changes active gamedir list (can take multiple arguments), not including base directory (example usage: gamedir ctf) [Zircon]");
-	Cmd_AddCommand ("fs_rescan", FS_Rescan_f, "rescans filesystem for new pack archives and any other changes");
-	Cmd_AddCommand ("path", FS_Path_f, "print searchpath (game directories and archives)");
-	Cmd_AddCommand ("dir", FS_Dir_f, "list files in searchpath matching an * filename pattern, one per line");
-	Cmd_AddCommand ("cwd", FS_Cwd_f, "what is current working directory [Zircon]");
-	Cmd_AddCommand ("ls", FS_Ls_f, "list files in searchpath matching an * filename pattern, multiple per line");
-	Cmd_AddCommand ("which", FS_Which_f, "accepts a file name as argument and reports where the file is taken from");
+	// Load darkplaces.opt from the FS.
+	if (!Sys_CheckParm("-noopt"))
+	{
+		buf = (char *) FS_SysLoadFile("darkplaces.opt", tempmempool, true, NULL);
+		if(buf)
+		{
+			COM_InsertFlags(buf);
+			Mem_Free(buf);
+		}
+	}
+
+#ifndef USE_RWOPS
+	// Provide the SelfPack.
+	if (!Sys_CheckParm("-noselfpack") && sys.selffd >= 0)
+	{
+		fs_selfpack = FS_LoadPackPK3FromFD(sys.argv[0], sys.selffd, true);
+		if(fs_selfpack)
+		{
+			FS_AddSelfPack();
+			if (!Sys_CheckParm("-noopt"))
+			{
+				buf = (char *) FS_LoadFile("darkplaces.opt", tempmempool, true, NULL);
+				if(buf)
+				{
+					COM_InsertFlags(buf);
+					Mem_Free(buf);
+				}
+			}
+		}
+	}
+#endif
+}
+
+/*
+================
+FS_Init
+================
+*/
+
+void FS_Init(void)
+{
+	fs_mempool = Mem_AllocPool("file management", 0, NULL);
+
+	FS_Init_Commands();
+
+	PK3_OpenLibrary ();
+
+	// initialize the self-pack (must be before COM_InitGameType as it may add command line options)
+	FS_Init_SelfPack();
+
+	// detect gamemode from commandline options or executable name
+	COM_InitGameType();
+
+	FS_Init_Dir();
 }
 
 /*
@@ -2279,9 +2376,13 @@ static filedesc_t FS_SysOpenFiledesc(const char *filepath, const char *mode, qbo
 	int mod, opt;
 	unsigned int ind;
 	qbool dolock = false;
+	#ifdef _WIN32
+	wchar filepathw[WSTRBUF] = {0};
+	#endif
 
 	// Parse the mode string
-	switch (mode[0]) {
+	switch (mode[0])
+	{
 		case 'r':
 			mod = O_RDONLY;
 			opt = 0;
@@ -2295,7 +2396,7 @@ static filedesc_t FS_SysOpenFiledesc(const char *filepath, const char *mode, qbo
 			opt = O_CREAT | O_APPEND;
 			break;
 		default:
-			Con_Printf ("FS_SysOpen(%s, %s): invalid mode\n", filepath, mode);
+			Con_Printf(CON_ERROR "FS_SysOpen(%s, %s): invalid mode\n", filepath, mode);
 			return FILEDESC_INVALID;
 	}
 	for (ind = 1; mode[ind] != '\0'; ind++)
@@ -2312,7 +2413,7 @@ static filedesc_t FS_SysOpenFiledesc(const char *filepath, const char *mode, qbo
 				dolock = true;
 				break;
 			default:
-				Con_Printf ("FS_SysOpen(%s, %s): unknown character in mode (%c)\n",
+				Con_Printf(CON_ERROR "FS_SysOpen(%s, %s): unknown character in mode (%c)\n",
 							filepath, mode, mode[ind]);
 		}
 	}
@@ -2329,10 +2430,11 @@ static filedesc_t FS_SysOpenFiledesc(const char *filepath, const char *mode, qbo
 	handle = SDL_RWFromFile(filepath, mode);
 #else
 # ifdef _WIN32
+	widen(filepath, filepathw);
 #  if _MSC_VER >= 1400
-	_sopen_s(&handle, filepath, mod | opt, (dolock ? ((mod == O_RDONLY) ? _SH_DENYRD : _SH_DENYRW) : _SH_DENYNO), _S_IREAD | _S_IWRITE);
+	_wsopen_s(&handle, filepathw, mod | opt, (dolock ? ((mod == O_RDONLY) ? _SH_DENYRD : _SH_DENYRW) : _SH_DENYNO), _S_IREAD | _S_IWRITE);
 #  else
-	handle = _sopen (filepath, mod | opt, (dolock ? ((mod == O_RDONLY) ? _SH_DENYRD : _SH_DENYRW) : _SH_DENYNO), _S_IREAD | _S_IWRITE);
+	handle = _wsopen (filepathw, mod | opt, (dolock ? ((mod == O_RDONLY) ? _SH_DENYRD : _SH_DENYRW) : _SH_DENYNO), _S_IREAD | _S_IWRITE);
 #  endif
 # else
 	handle = open (filepath, mod | opt, 0666);
@@ -2378,7 +2480,8 @@ qfile_t* FS_SysOpen (const char* filepath, const char* mode, qbool nonblocking)
 	file = (qfile_t *)Mem_Alloc (fs_mempool, sizeof (*file));
 	file->ungetc = EOF;
 	file->handle = FS_SysOpenFiledesc(filepath, mode, nonblocking);
-	if (!FILEDESC_ISVALID(file->handle)) {
+	if (!FILEDESC_ISVALID(file->handle))
+	{
 		Mem_Free (file);
 		return NULL;
 	}
@@ -2421,7 +2524,7 @@ static qfile_t *FS_OpenPackedFile (pack_t* pack, int pack_ind)
 	// No Zlib DLL = no compressed files
 	if (!zlib_dll && (pfile->flags & PACKFILE_FLAG_DEFLATED))
 	{
-		Con_Printf("WARNING: can't open the compressed file %s\n"
+		Con_Printf(CON_WARN "WARNING: can't open the compressed file %s\n"
 					"You need the Zlib DLL to use compressed files\n",
 					pfile->name);
 		return NULL;
@@ -2551,6 +2654,20 @@ int FS_CheckNastyPath (const char *path, qbool isgamedir)
 	return false;
 }
 
+/*
+====================
+FS_SanitizePath
+
+Sanitize path (replace non-portable characters
+with portable ones in-place, etc)
+====================
+*/
+void FS_SanitizePath(char *path)
+{
+	for (; *path; path++)
+		if (*path == '\\')
+			*path = '/';
+}
 
 /*
 ====================
@@ -2562,61 +2679,41 @@ Return the searchpath where the file was found (or NULL)
 and the file index in the package if relevant
 ====================
 */
-static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int isgamedironly_in, const loadinfo_s *ploadinfo_in, loadinfo_s *ploadinfo_out)
+static searchpath_t *FS_FindFile (const char *name, int* index, qbool quiet)
 {
 	searchpath_t *search;
 	pack_t *pak;
-	int hit_limiter = false;
-	char sgamedironly[MAX_QPATH * 2] = {0};
-	int hit_gamedironly_limiter = false;
-
-	if (ploadinfo_in && ploadinfo_in->searchpathx[0] == 0) {
-		ploadinfo_in = NULL;
-	}
 
 	// search through the path, one element at a time
-	for (search = fs_searchpaths; search; search = search->next) {
-		if (isgamedironly_in && sgamedironly[0] == 0 && !search->pack) {
-			strlcpy (sgamedironly, search->filename, sizeof(sgamedironly));
-		}
-
+	for (search = fs_searchpaths;search;search = search->next)
+	{
 		// is the element a pak file?
-		if (search->pack && !search->pack->vpack) {
+		if (search->pack && !search->pack->vpack)
+		{
 			int (*strcmp_funct) (const char* str1, const char* str2);
 			int left, right, middle;
 
 			pak = search->pack;
 			strcmp_funct = pak->ignorecase ? strcasecmp : strcmp;
 
-			if (ploadinfo_in && hit_limiter && String_Does_Start_With_Caseless (search->pack->filename, ploadinfo_in->searchpathx) == false) {
-				if (developer_loading.value) {
-					Con_PrintLinef ("Surpassed limit at %s limit is %s", search->pack->filename, ploadinfo_in->searchpathx);
-				}
-				goto failout;
-			}
-
-			if (isgamedironly_in && hit_gamedironly_limiter && String_Does_Start_With_Caseless (search->pack->filename, sgamedironly) == false) {
-				if (developer_loading.value) {
-					Con_PrintLinef ("Surpassed isgamedironly limit at %s limit is %s", search->pack->filename, sgamedironly);
-				}
-				goto failout;
-			}
-
 			// Look for the file (binary search)
 			left = 0;
 			right = pak->numfiles - 1;
-			while (left <= right) {
+			while (left <= right)
+			{
 				int diff;
 
 				middle = (left + right) / 2;
 				diff = strcmp_funct (pak->files[middle].name, name);
 
 				// Found it
-				if (!diff) {
-					if (fs_empty_files_in_pack_mark_deletions.integer && pak->files[middle].realsize == 0) {
+				if (!diff)
+				{
+					if (fs_empty_files_in_pack_mark_deletions.integer && pak->files[middle].realsize == 0)
+					{
 						// yes, but the first one is empty so we treat it as not being there
 						if (!quiet && developer_extra.integer)
-							Con_DPrintLinef ("FS_FindFile: %s is marked as deleted", name);
+							Con_DPrintf("FS_FindFile: %s is marked as deleted\n", name);
 
 						if (index != NULL)
 							*index = -1;
@@ -2624,18 +2721,11 @@ static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int
 					}
 
 					if (!quiet && developer_extra.integer)
-						Con_DPrintLinef ("FS_FindFile: %s in %s",
+						Con_DPrintf("FS_FindFile: %s in %s\n",
 									pak->files[middle].name, pak->filename);
 
 					if (index != NULL)
 						*index = middle;
-
-					if (ploadinfo_out) {
-						WARP_X_ (FS_Which_f)
-						strlcpy (ploadinfo_out->searchpathx, search->pack->filename, sizeof(ploadinfo_out->searchpathx)); // OWT PAK
-						File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (ploadinfo_out->searchpathx);
-						//Con_PrintLinef ("FS_Fi %s in %s", name, ploadinfo_out->searchpathx);
-					} // ploadinfo_out
 					return search;
 				}
 
@@ -2645,62 +2735,25 @@ static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet, int
 				else
 					left = middle + 1;
 			}
-		} else {
+		}
+		else
+		{
 			char netpath[MAX_OSPATH];
-
-			if (ploadinfo_in) {
-				if (hit_limiter && String_Does_Match_Caseless (search->filename, ploadinfo_in->searchpathx) == false) {
-					if (developer_loading.value) {
-						Con_DPrintLinef ("Surpassed limit at %s limit is %s", search->filename, ploadinfo_in->searchpathx);
-					}
-					goto failout;
-				}
-
-				if (hit_gamedironly_limiter && String_Does_Start_With_Caseless (search->filename, sgamedironly) == false) {
-					if (developer_loading.value) {
-						Con_PrintLinef ("Surpassed isgamedironly limit at %s limit is %s", search->filename, sgamedironly);
-					}
-					goto failout;
-				}
-
-				if (hit_limiter == false && 0 /*host_path_protection.value*/ && String_Does_Match_Caseless (search->filename, ploadinfo_in->searchpathx)) {
-					if (developer_loading.value) {
-						Con_PrintLinef ("Found limit at %s limit is %s", search->filename, ploadinfo_in->searchpathx);
-					}
-					hit_limiter = true;
-				}
-				if (hit_gamedironly_limiter == false && isgamedironly_in && String_Does_Match_Caseless (search->filename, sgamedironly)) {
-					if (developer_loading.value) {
-						Con_PrintLinef ("Found limit at %s limit is %s", search->filename, sgamedironly);
-					}
-					hit_gamedironly_limiter = true;
-				}
-			}
-
 			dpsnprintf(netpath, sizeof(netpath), "%s%s", search->filename, name);
-
-			if (FS_SysFileExists (netpath)) {
+			if (FS_SysFileExists (netpath))
+			{
 				if (!quiet && developer_extra.integer)
-					Con_DPrintLinef ("FS_FindFile: %s", netpath);
+					Con_DPrintf("FS_FindFile: %s\n", netpath);
 
 				if (index != NULL)
 					*index = -1;
-
-				if (ploadinfo_out) {
-					WARP_X_ (FS_Which_f)
-
-					strlcpy (ploadinfo_out->searchpathx, search->filename, sizeof(ploadinfo_out->searchpathx)); // OWT DIR
-					//Con_PrintLinef ("FS_Fi %s in %s", name, ploadinfo_out->searchpathx);
-				} // ploadinfo_out
-
 				return search;
 			}
 		}
 	}
 
-failout:
 	if (!quiet && developer_extra.integer)
-		Con_DPrintLinef ("FS_FindFile: can't find %s", name);
+		Con_DPrintf("FS_FindFile: can't find %s\n", name);
 
 	if (index != NULL)
 		*index = -1;
@@ -2715,21 +2768,20 @@ FS_OpenReadFile
 Look for a file in the search paths and open it in read-only mode
 ===========
 */
-static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblocking, int symlinkLevels, int isgamedironly, const loadinfo_s *ploadinfo_in, loadinfo_s *ploadinfo_out)
+static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblocking, int symlinkLevels)
 {
 	searchpath_t *search;
 	int pack_ind;
 
-	search = FS_FindFile (filename, &pack_ind, quiet, isgamedironly, ploadinfo_in, ploadinfo_out);
+	search = FS_FindFile (filename, &pack_ind, quiet);
 
 	// Not found?
 	if (search == NULL)
 		return NULL;
 
-	WARP_X_ (FS_Which_f)
-
 	// Found in the filesystem?
-	if (pack_ind < 0) {
+	if (pack_ind < 0)
+	{
 		// this works with vpacks, so we are fine
 		char path [MAX_OSPATH];
 		dpsnprintf (path, sizeof (path), "%s%s", search->filename, filename);
@@ -2741,20 +2793,23 @@ static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblo
 	// Is it a PK3 symlink?
 	// TODO also handle directory symlinks by parsing the whole structure...
 	// but heck, file symlinks are good enough for now
-	if(search->pack->files[pack_ind].flags & PACKFILE_FLAG_SYMLINK) {
-		if (symlinkLevels <= 0) {
-			Con_PrintLinef ("symlink: %s: too many levels of symbolic links", filename);
+	if(search->pack->files[pack_ind].flags & PACKFILE_FLAG_SYMLINK)
+	{
+		if(symlinkLevels <= 0)
+		{
+			Con_Printf("symlink: %s: too many levels of symbolic links\n", filename);
 			return NULL;
-		} else {
+		}
+		else
+		{
 			char linkbuf[MAX_QPATH];
 			fs_offset_t count;
 			qfile_t *linkfile = FS_OpenPackedFile (search->pack, pack_ind);
 			const char *mergeslash;
 			char *mergestart;
 
-			if (!linkfile)
+			if(!linkfile)
 				return NULL;
-
 			count = FS_Read(linkfile, linkbuf, sizeof(linkbuf) - 1);
 			FS_Close(linkfile);
 			if(count < 0)
@@ -2764,29 +2819,32 @@ static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblo
 			// Now combine the paths...
 			mergeslash = strrchr(filename, '/');
 			mergestart = linkbuf;
-
 			if(!mergeslash)
 				mergeslash = filename;
-
-			while (!strncmp(mergestart, "../", 3)) {
+			while(!strncmp(mergestart, "../", 3))
+			{
 				mergestart += 3;
-				while(mergeslash > filename) {
+				while(mergeslash > filename)
+				{
 					--mergeslash;
 					if(*mergeslash == '/')
 						break;
 				}
 			}
-
 			// Now, mergestart will point to the path to be appended, and mergeslash points to where it should be appended
-			if (mergeslash == filename) {
+			if(mergeslash == filename)
+			{
 				// Either mergeslash == filename, then we just replace the name (done below)
-			} else {
+			}
+			else
+			{
 				// Or, we append the name after mergeslash;
 				// or rather, we can also shift the linkbuf so we can put everything up to and including mergeslash first
 				int spaceNeeded = mergeslash - filename + 1;
 				int spaceRemoved = mergestart - linkbuf;
-				if (count - spaceRemoved + spaceNeeded >= MAX_QPATH) {
-					Con_DPrintLinef ("symlink: too long path rejected");
+				if(count - spaceRemoved + spaceNeeded >= MAX_QPATH)
+				{
+					Con_DPrintf("symlink: too long path rejected\n");
 					return NULL;
 				}
 				memmove(linkbuf + spaceNeeded, linkbuf + spaceRemoved, count - spaceRemoved);
@@ -2794,15 +2852,14 @@ static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblo
 				linkbuf[count - spaceRemoved + spaceNeeded] = 0;
 				mergestart = linkbuf;
 			}
-
 			if (!quiet && developer_loading.integer)
-				Con_DPrintLinef ("symlink: %s -> %s", filename, mergestart);
-
-			if(FS_CheckNastyPath (mergestart, false)) {
-				Con_DPrintLinef ("symlink: nasty path %s rejected", mergestart);
+				Con_DPrintf("symlink: %s -> %s\n", filename, mergestart);
+			if(FS_CheckNastyPath (mergestart, false))
+			{
+				Con_DPrintf("symlink: nasty path %s rejected\n", mergestart);
 				return NULL;
 			}
-			return FS_OpenReadFile(mergestart, quiet, nonblocking, symlinkLevels - 1, isgamedironly, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+			return FS_OpenReadFile(mergestart, quiet, nonblocking, symlinkLevels - 1);
 		}
 	}
 
@@ -2826,35 +2883,17 @@ Open a file in the userpath. The syntax is the same as fopen
 Used for savegame scanning in menu, and all file writing.
 ====================
 */
-qfile_t *FS_OpenRealFile (const char *filepath, const char *mode /*rb or what not*/, qbool quiet)
+qfile_t* FS_OpenRealFile (const char* filepath, const char* mode, qbool quiet)
 {
 	char real_path [MAX_OSPATH];
 
-	if (FS_CheckNastyPath(filepath, false)) {
-		Con_PrintLinef ("FS_OpenRealFile(\"%s\", \"%s\", %s): nasty filename rejected", filepath, mode, quiet ? "true" : "false");
-		return NULL;
-	}
-
-	dpsnprintf (real_path, sizeof (real_path), "%s/%s", fs_gamedir, filepath); // this is never a vpack
-
-	// If the file is opened in "write", "append", or "read/write" mode,
-	// create directories up to the file.
-	if (mode[0] == 'w' || mode[0] == 'a' || strchr (mode, '+'))
-		FS_CreatePath (real_path);
-	return FS_SysOpen (real_path, mode /*rb or what not*/, false);
-}
-
-// Baker 1004.2  for what?
-qfile_t *FS_OpenRealFile2 (const char *filepath, const char *mode, qbool quiet)
-{
-	char real_path [MAX_OSPATH];
-
-	if (FS_CheckNastyPath(filepath, false)) {
+	if (FS_CheckNastyPath(filepath, false))
+	{
 		Con_Printf("FS_OpenRealFile(\"%s\", \"%s\", %s): nasty filename rejected\n", filepath, mode, quiet ? "true" : "false");
 		return NULL;
 	}
 
-	dpsnprintf (real_path, sizeof (real_path), "%s", filepath);
+	dpsnprintf (real_path, sizeof (real_path), "%s/%s", fs_gamedir, filepath); // this is never a vpack
 
 	// If the file is opened in "write", "append", or "read/write" mode,
 	// create directories up to the file.
@@ -2871,33 +2910,21 @@ FS_OpenVirtualFile
 Open a file. The syntax is the same as fopen
 ====================
 */
-qfile_t *FS_OpenVirtualFile (const char *filepath, qbool quiet, const loadinfo_s *ploadinfo_in, loadinfo_s *ploadinfo_out)
+qfile_t* FS_OpenVirtualFile (const char* filepath, qbool quiet)
 {
 	qfile_t *result = NULL;
-	if (FS_CheckNastyPath(filepath, false)) {
-		Con_PrintLinef ("FS_OpenVirtualFile(\"%s\", %s): nasty filename rejected", filepath, quiet ? "true" : "false");
+	if (FS_CheckNastyPath(filepath, false))
+	{
+		Con_Printf("FS_OpenVirtualFile(\"%s\", %s): nasty filename rejected\n", filepath, quiet ? "true" : "false");
 		return NULL;
 	}
 
 	if (fs_mutex) Thread_LockMutex(fs_mutex);
-	result = FS_OpenReadFile (filepath, quiet, false, 16, gamedironly_false, ploadinfo_in, ploadinfo_out);
+	result = FS_OpenReadFile (filepath, quiet, false, 16);
 	if (fs_mutex) Thread_UnlockMutex(fs_mutex);
 	return result;
 }
 
-qfile_t *FS_OpenVirtualFileGameDirOnly (const char *filepath, qbool quiet)
-{
-	qfile_t *result = NULL;
-	if (FS_CheckNastyPath(filepath, false)) {
-		Con_PrintLinef ("FS_OpenVirtualFile(\"%s\", %s): nasty filename rejected", filepath, quiet ? "true" : "false");
-		return NULL;
-	}
-
-	if (fs_mutex) Thread_LockMutex(fs_mutex);
-	result = FS_OpenReadFile (filepath, quiet, false, 16, gamedironly_true, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-	if (fs_mutex) Thread_UnlockMutex(fs_mutex);
-	return result;
-}
 
 /*
 ====================
@@ -2983,7 +3010,7 @@ fs_offset_t FS_Write (qfile_t* file, const void* data, size_t datasize)
 	{
 		if (FILEDESC_SEEK (file->handle, file->buff_ind - file->buff_len, SEEK_CUR) == -1)
 		{
-			Con_Printf("WARNING: could not seek in %s.\n", file->filename);
+			Con_Printf(CON_WARN "WARNING: could not seek in %s.\n", file->filename);
 		}
 	}
 
@@ -3025,7 +3052,7 @@ fs_offset_t FS_Read (qfile_t* file, void* buffer, size_t buffersize)
 {
 	fs_offset_t count, done;
 
-	if (buffersize == 0)
+	if (buffersize == 0 || !buffer)
 		return 0;
 
 	// Get rid of the ungetc character
@@ -3390,9 +3417,9 @@ int FS_Seek (qfile_t* file, fs_offset_t offset, int whence)
 	buffer = (unsigned char *)Mem_Alloc (tempmempool, buffersize);
 
 	// Skip all data until we reach the requested offset
-	while (offset > file->position)
+	while (offset > (file->position - file->buff_len + file->buff_ind))
 	{
-		fs_offset_t diff = offset - file->position;
+		fs_offset_t diff = offset - (file->position - file->buff_len + file->buff_ind);
 		fs_offset_t count, len;
 
 		count = (diff > buffersize) ? buffersize : diff;
@@ -3478,7 +3505,7 @@ static unsigned char *FS_LoadAndCloseQFile (qfile_t *file, const char *path, mem
 		FS_Read (file, buf, filesize);
 		FS_Close (file);
 		if (developer_loadfile.integer)
-			Con_PrintLinef ("loaded file \"%s\" (%u bytes)", path, (unsigned int)filesize);
+			Con_Printf("loaded file \"%s\" (%u bytes)\n", path, (unsigned int)filesize);
 	}
 
 	if (filesizepointer)
@@ -3495,9 +3522,9 @@ Filename are relative to the quake directory.
 Always appends a 0 byte.
 ============
 */
-unsigned char *FS_LoadFile (const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer, const loadinfo_s *ploadinfo_in, loadinfo_s *ploadinfo_out)
+unsigned char *FS_LoadFile (const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer)
 {
-	qfile_t *file = FS_OpenVirtualFile(path, quiet, ploadinfo_in, ploadinfo_out);
+	qfile_t *file = FS_OpenVirtualFile(path, quiet);
 	return FS_LoadAndCloseQFile(file, path, pool, quiet, filesizepointer);
 }
 
@@ -3533,14 +3560,14 @@ qbool FS_WriteFileInBlocks (const char *filename, const void *const *data, const
 	file = FS_OpenRealFile(filename, "wb", false);
 	if (!file)
 	{
-		Con_PrintLinef ("FS_WriteFile: failed on %s", filename);
+		Con_Printf("FS_WriteFile: failed on %s\n", filename);
 		return false;
 	}
 
 	lentotal = 0;
 	for(i = 0; i < count; ++i)
 		lentotal += len[i];
-	Con_DPrintLinef ("FS_WriteFile: %s (%u bytes)", filename, (unsigned int)lentotal);
+	Con_DPrintf("FS_WriteFile: %s (%u bytes)\n", filename, (unsigned int)lentotal);
 	for(i = 0; i < count; ++i)
 		FS_Write (file, data[i], len[i]);
 	FS_Close (file);
@@ -3604,7 +3631,8 @@ void FS_DefaultExtension (char *path, const char *extension, size_t size_path)
 	// (extension should include the .)
 	src = path + strlen(path);
 
-	while (*src != '/' && src != path) {
+	while (*src != '/' && src != path)
+	{
 		if (*src == '.')
 			return;                 // it has an extension
 		src--;
@@ -3626,11 +3654,11 @@ int FS_FileType (const char *filename)
 	searchpath_t *search;
 	char fullpath[MAX_OSPATH];
 
-	search = FS_FindFile (filename, NULL, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-	if (!search)
+	search = FS_FindFile (filename, NULL, true);
+	if(!search)
 		return FS_FILETYPE_NONE;
 
-	if (search->pack && !search->pack->vpack)
+	if(search->pack && !search->pack->vpack)
 		return FS_FILETYPE_FILE; // TODO can't check directories in paks yet, maybe later
 
 	dpsnprintf(fullpath, sizeof(fullpath), "%s%s", search->filename, filename);
@@ -3647,29 +3675,9 @@ Look for a file in the packages and in the filesystem
 */
 qbool FS_FileExists (const char *filename)
 {
-	return (FS_FindFile (filename, NULL, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL) != NULL);
+	return (FS_FindFile (filename, NULL, true) != NULL);
 }
 
-
-qbool FS_FileExists2 (const char *filename, loadinfo_s *loadinfoy)
-{
-	searchpath_t *search = FS_FindFile (filename, NULL, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
-
-	if (!search)
-		return false;
-
-	if (search->pack) {
-		strlcpy (loadinfoy->searchpathx, search->pack->filename, sizeof(loadinfoy->searchpathx)); // OWT PAK
-		File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (loadinfoy->searchpathx);
-		//Con_PrintLinef ("FS_Fi %s in %s", filename, loadinfoy->searchpathx);
-	} else {
-		strlcpy (loadinfoy->searchpathx, search->filename, sizeof(loadinfoy->searchpathx)); // OWT DIR
-		//Con_PrintLinef ("FS_Fi %s in %s", filename, loadinfoy->searchpathx);
-	}
-
-
-	return true;
-}
 
 /*
 ==================
@@ -3685,8 +3693,10 @@ int FS_SysFileType (const char *path)
 # ifndef INVALID_FILE_ATTRIBUTES
 #  define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
 # endif
-
-	DWORD result = GetFileAttributes(path);
+	wchar pathw[WSTRBUF] = {0};
+	DWORD result;
+	widen(path, pathw);
+	result = GetFileAttributesW(pathw);
 
 	if(result == INVALID_FILE_ATTRIBUTES)
 		return FS_FILETYPE_NONE;
@@ -3723,7 +3733,7 @@ FS_Search
 Allocate and fill a search structure with information on matching filenames.
 ===========
 */
-fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int isgamedironly_in)
+fssearch_t *FS_Search(const char *pattern, int caseinsensitive, int quiet, const char *packfile)
 {
 	fssearch_t *search;
 	searchpath_t *searchpath;
@@ -3731,16 +3741,16 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 	int i, basepathlength, numfiles, numchars, resultlistindex, dirlistindex;
 	stringlist_t resultlist;
 	stringlist_t dirlist;
-	const char *slash, *backslash, *colon, *separator;
+	stringlist_t matchedSet, foundSet;
+	const char *start, *slash, *backslash, *colon, *separator;
 	char *basepath;
-	char sgamedironly[MAX_QPATH * 2] = {0};
-	int hit_gamedironly_limiter = false;
 
 	for (i = 0;pattern[i] == '.' || pattern[i] == ':' || pattern[i] == '/' || pattern[i] == '\\';i++)
 		;
 
-	if (i > 0) {
-		Con_PrintLinef ("Don't use punctuation at the beginning of a search pattern!");
+	if (i > 0)
+	{
+		Con_Printf("Don't use punctuation at the beginning of a search pattern!\n");
 		return NULL;
 	}
 
@@ -3759,42 +3769,18 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 	basepath[basepathlength] = 0;
 
 	// search through the path, one element at a time
-	for (searchpath = fs_searchpaths; searchpath; searchpath = searchpath->next) {
-		if (isgamedironly_in && sgamedironly[0] == 0 && !searchpath->pack) {
-			// ignore the home directory for map menu
-			if ( !fs_userdir[0] /*not homed*/ || String_Does_Start_With (searchpath->filename, fs_userdir) == false /*homed, but not a home dir*/ ) {
-				c_strlcpy (sgamedironly, searchpath->filename);
-			}
-		}
-
-		if (searchpath->pack) {
-			if (isgamedironly_in && hit_gamedironly_limiter && String_Does_Start_With_Caseless (searchpath->pack->filename, sgamedironly) == false) {
-				if (developer_loading.value) {
-					Con_PrintLinef ("Surpassed isgamedironly limit at %s limit is %s", searchpath->pack->filename, sgamedironly);
-				}
-				goto failout;
-			}
-
-		} else {
-			if (hit_gamedironly_limiter && String_Does_Start_With_Caseless (searchpath->filename, sgamedironly) == false) {
-				if (developer_loading.value) {
-					Con_PrintLinef ("Surpassed isgamedironly limit at %s limit is %s", searchpath->filename, sgamedironly);
-				}
-				goto failout;
-			}
-
-			if (hit_gamedironly_limiter == false && isgamedironly_in && String_Does_Match_Caseless (searchpath->filename, sgamedironly)) {
-				if (developer_loading.value) {
-					Con_PrintLinef ("Found limit at %s limit is %s", searchpath->filename, sgamedironly);
-				}
-				hit_gamedironly_limiter = true;
-			}
-		}
-
+	for (searchpath = fs_searchpaths;searchpath;searchpath = searchpath->next)
+	{
 		// is the element a pak file?
-		if (searchpath->pack && !searchpath->pack->vpack) {
+		if (searchpath->pack && !searchpath->pack->vpack)
+		{
 			// look through all the pak file elements
 			pak = searchpath->pack;
+			if(packfile)
+			{
+				if(strcmp(packfile, pak->shortname))
+					continue;
+			}
 			for (i = 0;i < pak->numfiles;i++)
 			{
 				char temp[MAX_OSPATH];
@@ -3804,7 +3790,7 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 					if (matchpattern(temp, (char *)pattern, true))
 					{
 						for (resultlistindex = 0;resultlistindex < resultlist.numstrings;resultlistindex++)
-							if (String_Does_Match(resultlist.strings[resultlistindex], temp))
+							if (!strcmp(resultlist.strings[resultlistindex], temp))
 								break;
 						if (resultlistindex == resultlist.numstrings)
 						{
@@ -3831,8 +3817,10 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 		}
 		else
 		{
-			stringlist_t matchedSet, foundSet;
-			const char *start = pattern;
+			if(packfile)
+				continue;
+
+			start = pattern;
 
 			stringlistinit(&matchedSet);
 			stringlistinit(&foundSet);
@@ -3862,7 +3850,7 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 					nextseparator = NULL;
 				}
 
-				if ( !nextseparator ) {
+				if( !nextseparator ) {
 					nextseparator = start + strlen( start );
 				}
 
@@ -3909,23 +3897,19 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, int 
 				if (matchpattern(matchtemp, (char *)pattern, true))
 				{
 					for (resultlistindex = 0;resultlistindex < resultlist.numstrings;resultlistindex++)
-						if (String_Does_Match(resultlist.strings[resultlistindex], matchtemp))
+						if (!strcmp(resultlist.strings[resultlistindex], matchtemp))
 							break;
 					if (resultlistindex == resultlist.numstrings)
 					{
 						stringlistappend(&resultlist, matchtemp);
 						if (!quiet && developer_loading.integer)
-							Con_PrintLinef ("SearchDirFile: %s", matchtemp);
+							Con_Printf("SearchDirFile: %s\n", matchtemp);
 					}
 				}
 			}
 			stringlistfreecontents( &matchedSet );
 		}
-//		if (isgamedironly == gamedironly_true) {
-//			break;
-//		}
 	}
-failout:
 
 	if (resultlist.numstrings)
 	{
@@ -3973,7 +3957,7 @@ static int FS_ListDirectory(const char *pattern, int oneperline)
 	const char *name;
 	char linebuf[MAX_INPUTLINE];
 	fssearch_t *search;
-	search = FS_Search(pattern, true, true, gamedironly_false);
+	search = FS_Search(pattern, true, true, NULL);
 	if (!search)
 		return 0;
 	numfiles = search->numfilenames;
@@ -4030,93 +4014,71 @@ static int FS_ListDirectory(const char *pattern, int oneperline)
 	return (int)numfiles;
 }
 
-static void FS_ListDirectoryCmd (const char *cmdname, int oneperline)
+static void FS_ListDirectoryCmd (cmd_state_t *cmd, const char* cmdname, int oneperline)
 {
-	char pattern[1024] = {0};
-	int has_pat  = false;
-
-	if (Cmd_Argc() >= 3) {
-		Con_PrintLinef ("usage:" NEWLINE "%s [path/pattern]", cmdname);
+	const char *pattern;
+	if (Cmd_Argc(cmd) >= 3)
+	{
+		Con_Printf("usage:\n%s [path/pattern]\n", cmdname);
 		return;
 	}
-
-	if (Cmd_Argc() == 2) {
-		const char *spat = Cmd_Argv(1);
-		if (String_Does_End_With (spat, "*") || String_Does_End_With (spat, "?") || String_Does_End_With (spat, "/" ))
-			has_pat = true;
-		c_strlcpy (pattern, spat);
-		if (String_Does_End_With (pattern, "/")) {
-			c_strlcat (pattern, "*");
-		}
-	} else {
-		c_strlcpy (pattern, "*");
-	}
-
-	Con_PrintLinef ("Trying with " QUOTED_S "%s" , pattern, has_pat ? "" : " (* ? supported)");
-
-	int num_found = FS_ListDirectory (pattern, oneperline);
-	if (!num_found) {
-		Con_PrintLinef ("No files found.");
-		if (has_pat == false) {
-			c_strlcat (pattern, "*");
-			Con_PrintLinef ("Trying with " QUOTED_S, pattern);
-			if (!FS_ListDirectory (pattern, oneperline)) {
-				Con_PrintLinef ("No files found.");
-			}
-		}
-	} else if (num_found == 1 && has_pat ==false  ) {
-		Con_PrintLinef ("Note to list a folder, add trailing /");
-	}
+	if (Cmd_Argc(cmd) == 2)
+		pattern = Cmd_Argv(cmd, 1);
+	else
+		pattern = "*";
+	if (!FS_ListDirectory(pattern, oneperline))
+		Con_Print("No files found.\n");
 }
 
-void FS_Dir_f(void)
+void FS_Dir_f(cmd_state_t *cmd)
 {
-	FS_ListDirectoryCmd ("dir", true);
+	FS_ListDirectoryCmd(cmd, "dir", true);
 }
 
-void FS_Cwd_f(void)
+// Baker r3101: pwd command to say the current directory
+void FS_Pwd_f(cmd_state_t* cmd)
 {
-	const char *s_cwd = Sys_Getcwd_SBuf();
+	const char* s_cwd = Sys_Getcwd_SBuf();
 	Con_PrintLinef ("Current working directory: %s", s_cwd);
 }
 
-void FS_Ls_f(void)
+void FS_Ls_f(cmd_state_t *cmd)
 {
-	FS_ListDirectoryCmd ("ls", false);
+	FS_ListDirectoryCmd(cmd, "ls", false);
 }
 
-void FS_Which_f(void)
+void FS_Which_f(cmd_state_t *cmd)
 {
 	const char *filename;
 	int index;
 	searchpath_t *sp;
-	if (Cmd_Argc() != 2)
+	if (Cmd_Argc(cmd) != 2)
 	{
-		Con_PrintLinef ("usage:\n%s <file>", Cmd_Argv(0));
+		Con_Printf("usage:\n%s <file>\n", Cmd_Argv(cmd, 0));
 		return;
 	}
-	filename = Cmd_Argv(1);
-	sp = FS_FindFile (filename, &index, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	filename = Cmd_Argv(cmd, 1);
+	sp = FS_FindFile(filename, &index, true);
 	if (!sp) {
-		Con_PrintLinef ("%s isn't anywhere", filename);
+		Con_Printf("%s isn't anywhere\n", filename);
 		return;
 	}
 	if (sp->pack)
 	{
 		if(sp->pack->vpack)
-			Con_PrintLinef ("%s is in virtual package %sdir", filename, sp->pack->shortname);
+			Con_Printf("%s is in virtual package %sdir\n", filename, sp->pack->shortname);
 		else
-			Con_PrintLinef ("%s is in package %s", filename, sp->pack->shortname);
+			Con_Printf("%s is in package %s\n", filename, sp->pack->shortname);
 	}
 	else
-		Con_PrintLinef ("%s is file %s%s", filename, sp->filename, filename);
+		Con_Printf("%s is file %s%s\n", filename, sp->filename, filename);
 }
 
 
 const char *FS_WhichPack(const char *filename)
 {
 	int index;
-	searchpath_t *sp = FS_FindFile(filename, &index, true, gamedironly_false, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	searchpath_t *sp = FS_FindFile(filename, &index, true);
 	if(sp && sp->pack)
 		return sp->pack->shortname;
 	else if(sp)
@@ -4140,8 +4102,9 @@ qbool FS_IsRegisteredQuakePack(const char *name)
 	pack_t *pak;
 
 	// search through the path, one element at a time
-	for (search = fs_searchpaths;search;search = search->next) {
-		if (search->pack && !search->pack->vpack && String_Does_Match_Caseless(FS_FileWithoutPath(search->filename), name))
+	for (search = fs_searchpaths;search;search = search->next)
+	{
+		if (search->pack && !search->pack->vpack && !strcasecmp(FS_FileWithoutPath(search->filename), name))
 			// TODO do we want to support vpacks in here too?
 		{
 			int (*strcmp_funct) (const char* str1, const char* str2);
@@ -4178,6 +4141,7 @@ qbool FS_IsRegisteredQuakePack(const char *name)
 
 	return false;
 }
+
 int FS_CRCFile(const char *filename, size_t *filesizepointer)
 {
 	int crc = -1;
@@ -4187,7 +4151,7 @@ int FS_CRCFile(const char *filename, size_t *filesizepointer)
 		*filesizepointer = 0;
 	if (!filename || !*filename)
 		return crc;
-	filedata = FS_LoadFile(filename, tempmempool, true, &filesize, NOLOADINFO_IN_NULL, NOLOADINFO_OUT_NULL);
+	filedata = FS_LoadFile(filename, tempmempool, true, &filesize);
 	if (filedata)
 	{
 		if (filesizepointer)
@@ -4387,14 +4351,14 @@ unsigned char *FS_Inflate(const unsigned char *data, size_t size, size_t *inflat
 	return out;
 }
 
-// extras2
+// Baker r7002: Baker.h extras2
 int File_Exists (const char *path_to_file_)
 {
 	struct stat st_buf = {0};
 	char buf[SYSTEM_STRING_SIZE_1024];
 	const char *path_to_file = path_to_file_;
 	if (String_Does_End_With_Caseless (path_to_file_, "/")) { // TRAILING SLASH REMOVER
-		int slen = strlen (path_to_file_);
+		int slen = (int)strlen (path_to_file_);
 		c_strlcpy (buf, path_to_file);
 		if (slen <= (int)sizeof(buf /*1024*/)) { // Otherwise it is truncated ... which is bad.
 			buf[slen - 1] = 0; // CORRECT! max here is 1023, the last of a 1024 buffer index . String len is 10, we null at 9 to reduce length to 8.

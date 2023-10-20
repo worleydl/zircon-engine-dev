@@ -29,7 +29,7 @@ struct sfx_s;
 
 qbool OGG_OpenLibrary (void);
 void OGG_CloseLibrary (void);
-qbool OGG_LoadVorbisFile (const char *filename, sfx_t *sfx);
+qbool OGG_LoadVorbisFile (const char *filename, struct sfx_s *sfx);
 
 
 #endif

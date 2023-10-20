@@ -1,6 +1,7 @@
-#if defined(_WIN32) && !defined(CORE_SDL)
+#ifndef CORE_SDL
 
-#include "darkplaces.h"
+
+#include "quakedef.h"
 #include "thread.h"
 #include <process.h>
 
@@ -29,7 +30,7 @@ void *_Thread_CreateMutex(const char *filename, int fileline)
 {
 	void *mutex = (void *)CreateMutex(NULL, FALSE, NULL);
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p mutex create %s:%i\n" , mutex, filename, fileline);
+	Sys_Printf("%p mutex create %s:%i\n" , mutex, filename, fileline);
 #endif
 	return mutex;
 }
@@ -37,7 +38,7 @@ void *_Thread_CreateMutex(const char *filename, int fileline)
 void _Thread_DestroyMutex(void *mutex, const char *filename, int fileline)
 {
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p mutex destroy %s:%i\n", mutex, filename, fileline);
+	Sys_Printf("%p mutex destroy %s:%i\n", mutex, filename, fileline);
 #endif
 	CloseHandle(mutex);
 }
@@ -45,7 +46,7 @@ void _Thread_DestroyMutex(void *mutex, const char *filename, int fileline)
 int _Thread_LockMutex(void *mutex, const char *filename, int fileline)
 {
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p mutex lock %s:%i\n"   , mutex, filename, fileline);
+	Sys_Printf("%p mutex lock %s:%i\n"   , mutex, filename, fileline);
 #endif
 	return (WaitForSingleObject(mutex, INFINITE) == WAIT_FAILED) ? -1 : 0;
 }
@@ -53,9 +54,9 @@ int _Thread_LockMutex(void *mutex, const char *filename, int fileline)
 int _Thread_UnlockMutex(void *mutex, const char *filename, int fileline)
 {
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p mutex unlock %s:%i\n" , mutex, filename, fileline);
+	Sys_Printf("%p mutex unlock %s:%i\n" , mutex, filename, fileline);
 #endif
-	return (ReleaseMutex(mutex) == FALSE) ? -1 : 0;
+	return (ReleaseMutex(mutex) == false) ? -1 : 0;
 }
 
 typedef struct thread_semaphore_s
@@ -120,7 +121,7 @@ void *_Thread_CreateCond(const char *filename, int fileline)
 	c->waiting = 0;
 	c->signals = 0;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p cond create %s:%i\n"   , c, filename, fileline);
+	Sys_Printf("%p cond create %s:%i\n"   , c, filename, fileline);
 #endif
 	return c;
 }
@@ -129,7 +130,7 @@ void _Thread_DestroyCond(void *cond, const char *filename, int fileline)
 {
 	thread_cond_t *c = (thread_cond_t *)cond;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p cond destroy %s:%i\n"   , cond, filename, fileline);
+	Sys_Printf("%p cond destroy %s:%i\n"   , cond, filename, fileline);
 #endif
 	Thread_DestroySemaphore(c->sem);
 	Thread_DestroySemaphore(c->done);
@@ -141,7 +142,7 @@ int _Thread_CondSignal(void *cond, const char *filename, int fileline)
 	thread_cond_t *c = (thread_cond_t *)cond;
 	int n;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p cond signal %s:%i\n"   , cond, filename, fileline);
+	Sys_Printf("%p cond signal %s:%i\n"   , cond, filename, fileline);
 #endif
 	WaitForSingleObject(c->mutex, INFINITE);
 	n = c->waiting - c->signals;
@@ -162,7 +163,7 @@ int _Thread_CondBroadcast(void *cond, const char *filename, int fileline)
 	int i = 0;
 	int n = 0;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p cond broadcast %s:%i\n"   , cond, filename, fileline);
+	Sys_Printf("%p cond broadcast %s:%i\n"   , cond, filename, fileline);
 #endif
 	WaitForSingleObject(c->mutex, INFINITE);
 	n = c->waiting - c->signals;
@@ -183,7 +184,7 @@ int _Thread_CondWait(void *cond, void *mutex, const char *filename, int fileline
 	thread_cond_t *c = (thread_cond_t *)cond;
 	int waitresult;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p cond wait %s:%i\n"   , cond, filename, fileline);
+	Sys_Printf("%p cond wait %s:%i\n"   , cond, filename, fileline);
 #endif
 
 	WaitForSingleObject(c->mutex, INFINITE);
@@ -230,7 +231,7 @@ void *_Thread_CreateThread(int (*fn)(void *), void *data, const char *filename, 
 {
 	threadwrapper_t *w = (threadwrapper_t *)calloc(sizeof(*w), 1);
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p thread create %s:%i\n"   , w, filename, fileline);
+	Sys_Printf("%p thread create %s:%i\n"   , w, filename, fileline);
 #endif
 	w->fn = fn;
 	w->data = data;
@@ -244,7 +245,7 @@ int _Thread_WaitThread(void *d, int retval, const char *filename, int fileline)
 {
 	threadwrapper_t *w = (threadwrapper_t *)d;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p thread wait %s:%i\n"   , w, filename, fileline);
+	Sys_Printf("%p thread wait %s:%i\n"   , w, filename, fileline);
 #endif
 	WaitForSingleObject(w->handle, INFINITE);
 	CloseHandle(w->handle);
@@ -266,7 +267,7 @@ void *_Thread_CreateBarrier(unsigned int count, const char *filename, int fileli
 {
 	volatile barrier_t *b = (volatile barrier_t *) Z_Malloc(sizeof(barrier_t));
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p barrier create(%d) %s:%i\n", b, count, filename, fileline);
+	Sys_Printf("%p barrier create(%d) %s:%i\n", b, count, filename, fileline);
 #endif
 	b->needed = count;
 	b->called = 0;
@@ -279,7 +280,7 @@ void _Thread_DestroyBarrier(void *barrier, const char *filename, int fileline)
 {
 	volatile barrier_t *b = (volatile barrier_t *) barrier;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p barrier destroy %s:%i\n", b, filename, fileline);
+	Sys_Printf("%p barrier destroy %s:%i\n", b, filename, fileline);
 #endif
 	Thread_DestroyMutex(b->mutex);
 	Thread_DestroyCond(b->cond);
@@ -289,7 +290,7 @@ void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 {
 	volatile barrier_t *b = (volatile barrier_t *) barrier;
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p barrier wait %s:%i\n", b, filename, fileline);
+	Sys_Printf("%p barrier wait %s:%i\n", b, filename, fileline);
 #endif
 	Thread_LockMutex(b->mutex);
 	b->called++;
@@ -304,4 +305,4 @@ void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 	Thread_UnlockMutex(b->mutex);
 }
 
-#endif // defined(_WIN32) && !defined(CORE_SDL)
+#endif // !CORE_SDL

@@ -1,4 +1,4 @@
-#include "darkplaces.h"
+#include "quakedef.h"
 
 #include "prvm_cmds.h"
 #include "clvm_cmds.h"
@@ -10,46 +10,54 @@
 //============================================================================
 // Menu
 
-const char *vm_m_extensions =
-"BX_WAL_SUPPORT "
-"DP_CINEMATIC_DPV "
-"DP_COVERAGE "
-"DP_CRYPTO "
-"DP_CSQC_BINDMAPS "
-"DP_GFX_FONTS "
-"DP_GFX_FONTS_FREETYPE "
-"DP_UTF8 "
-"DP_FONT_VARIABLEWIDTH "
-"DP_MENU_EXTRESPONSEPACKET "
-"DP_QC_ASINACOSATANATAN2TAN "
-"DP_QC_AUTOCVARS "
-"DP_QC_CMD "
-"DP_QC_CRC16 "
-"DP_QC_CVAR_TYPE "
-"DP_QC_CVAR_DESCRIPTION "
-"DP_QC_DIGEST "
-"DP_QC_DIGEST_SHA256 "
-"DP_QC_FINDCHAIN_TOFIELD "
-"DP_QC_I18N "
-"DP_QC_LOG "
-"DP_QC_RENDER_SCENE "
-"DP_QC_SPRINTF "
-"DP_QC_STRFTIME "
-"DP_QC_STRINGBUFFERS "
-"DP_QC_STRINGBUFFERS_CVARLIST "
-"DP_QC_STRINGBUFFERS_EXT_WIP "
-"DP_QC_STRINGCOLORFUNCTIONS "
-"DP_QC_STRING_CASE_FUNCTIONS "
-"DP_QC_STRREPLACE "
-"DP_QC_TOKENIZEBYSEPARATOR "
-"DP_QC_TOKENIZE_CONSOLE "
-"DP_QC_UNLIMITEDTEMPSTRINGS "
-"DP_QC_URI_ESCAPE "
-"DP_QC_URI_GET "
-"DP_QC_URI_POST "
-"DP_QC_WHICHPACK "
-"FTE_STRINGS "
-;
+const char *vm_m_extensions[] = {
+"BX_WAL_SUPPORT",
+"DP_CINEMATIC_DPV",
+"DP_COVERAGE",
+"DP_CRYPTO",
+"DP_CSQC_BINDMAPS",
+"DP_GFX_FONTS",
+"DP_GFX_FONTS_FREETYPE",
+"DP_UTF8",
+"DP_FONT_VARIABLEWIDTH",
+"DP_MENU_EXTRESPONSEPACKET",
+"DP_QC_ASINACOSATANATAN2TAN",
+"DP_QC_AUTOCVARS",
+"DP_QC_CMD",
+"DP_QC_CRC16",
+"DP_QC_CVAR_TYPE",
+"DP_QC_CVAR_DESCRIPTION",
+"DP_QC_DIGEST",
+"DP_QC_DIGEST_SHA256",
+"DP_QC_FINDCHAIN_TOFIELD",
+"DP_QC_I18N",
+"DP_QC_LOG",
+"DP_QC_RENDER_SCENE",
+"DP_QC_SPRINTF",
+"DP_QC_STRFTIME",
+"DP_QC_STRINGBUFFERS",
+"DP_QC_STRINGBUFFERS_CVARLIST",
+"DP_QC_STRINGBUFFERS_EXT_WIP",
+"DP_QC_STRINGCOLORFUNCTIONS",
+"DP_QC_STRING_CASE_FUNCTIONS",
+"DP_QC_STRREPLACE",
+"DP_QC_TOKENIZEBYSEPARATOR",
+"DP_QC_TOKENIZE_CONSOLE",
+"DP_QC_UNLIMITEDTEMPSTRINGS",
+"DP_QC_URI_ESCAPE",
+"DP_QC_URI_GET",
+"DP_QC_URI_POST",
+"DP_QC_WHICHPACK",
+"FTE_STRINGS",
+"DP_QC_FS_SEARCH_PACKFILE",
+NULL
+};
+
+qbool MP_ConsoleCommand(const char *text)
+{
+	prvm_prog_t *prog = MVM_prog;
+	return PRVM_ConsoleCommand(prog, text, &prog->funcoffsets.GameCommand, false, -1, 0, prog->loaded, "QC function GameCommand is missing");
+}
 
 /*
 =========
@@ -619,37 +627,37 @@ static void VM_M_getserverlistindexforkey(prvm_prog_t *prog)
 	key = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, key );
 
-	if( String_Does_Match( key, "cname" ) )
+	if( !strcmp( key, "cname" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_CNAME;
-	else if( String_Does_Match( key, "ping" ) )
+	else if( !strcmp( key, "ping" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_PING;
-	else if( String_Does_Match( key, "game" ) )
+	else if( !strcmp( key, "game" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_GAME;
-	else if( String_Does_Match( key, "mod" ) )
+	else if( !strcmp( key, "mod" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_MOD;
-	else if( String_Does_Match( key, "map" ) )
+	else if( !strcmp( key, "map" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_MAP;
-	else if( String_Does_Match( key, "name" ) )
+	else if( !strcmp( key, "name" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NAME;
-	else if( String_Does_Match( key, "qcstatus" ) )
+	else if( !strcmp( key, "qcstatus" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_QCSTATUS;
-	else if( String_Does_Match( key, "players" ) )
+	else if( !strcmp( key, "players" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_PLAYERS;
-	else if( String_Does_Match( key, "maxplayers" ) )
+	else if( !strcmp( key, "maxplayers" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_MAXPLAYERS;
-	else if( String_Does_Match( key, "numplayers" ) )
+	else if( !strcmp( key, "numplayers" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NUMPLAYERS;
-	else if( String_Does_Match( key, "numbots" ) )
+	else if( !strcmp( key, "numbots" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NUMBOTS;
-	else if( String_Does_Match( key, "numhumans" ) )
+	else if( !strcmp( key, "numhumans" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NUMHUMANS;
-	else if( String_Does_Match( key, "freeslots" ) )
+	else if( !strcmp( key, "freeslots" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_FREESLOTS;
-	else if( String_Does_Match( key, "protocol" ) )
+	else if( !strcmp( key, "protocol" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_PROTOCOL;
-	else if( String_Does_Match( key, "category" ) )
+	else if( !strcmp( key, "category" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_CATEGORY;
-	else if( String_Does_Match( key, "isfavorite" ) )
+	else if( !strcmp( key, "isfavorite" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_ISFAVORITE;
 	else
 		PRVM_G_FLOAT( OFS_RETURN ) = -1;
@@ -868,7 +876,7 @@ static void VM_M_crypto_getmykeyfp(prvm_prog_t *prog)
 	int i;
 	char keyfp[FP64_SIZE + 1];
 
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykeyfp);
+	VM_SAFEPARMCOUNT(1, VM_M_crypto_getmykeyfp);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, keyfp, sizeof(keyfp), NULL, 0, NULL))
@@ -890,7 +898,7 @@ static void VM_M_crypto_getmyidfp(prvm_prog_t *prog)
 	int i;
 	char idfp[FP64_SIZE + 1];
 
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmyidfp);
+	VM_SAFEPARMCOUNT(1, VM_M_crypto_getmyidfp);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, NULL, 0, idfp, sizeof(idfp), NULL))
@@ -912,7 +920,7 @@ static void VM_M_crypto_getmyidstatus(prvm_prog_t *prog)
 	int i;
 	qbool issigned;
 
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmyidstatus);
+	VM_SAFEPARMCOUNT(1, VM_M_crypto_getmyidstatus);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, NULL, 0, NULL, 0, &issigned))
@@ -1046,6 +1054,13 @@ void VM_cin_restart(prvm_prog_t *prog)
 	if( video )
 		CL_RestartVideo( video );
 }
+
+static void VM_M_registercommand(prvm_prog_t *prog)
+{
+	VM_SAFEPARMCOUNT(1, VM_M_registercommand);
+	Cmd_AddCommand(CF_CLIENT, PRVM_G_STRING(OFS_PARM0), NULL, "console command created by QuakeC");
+}
+
 prvm_builtin_t vm_m_builtins[] = {
 NULL,									//   #0 NULL function (not callable)
 VM_checkextension,				//   #1
@@ -1110,7 +1125,7 @@ VM_argv,								//  #59
 VM_isserver,						//  #60
 VM_clientcount,					//  #61
 VM_clientstate,					//  #62
-VM_clcommand,						//  #63
+NULL,						//  #63 FIXME
 VM_changelevel,					//  #64
 VM_localsound,						//  #65
 VM_M_getmousepos,					//  #66
@@ -1426,7 +1441,7 @@ NULL,									// #348
 VM_CL_isdemo,							// #349
 NULL,									// #350
 NULL,									// #351
-NULL,									// #352
+VM_M_registercommand,					// #352 void(string cmdname)
 VM_wasfreed,							// #353 float(entity ent) wasfreed
 NULL,									// #354
 VM_CL_videoplaying,						// #355
@@ -1728,7 +1743,8 @@ void MVM_init_cmd(prvm_prog_t *prog)
 	r_refdef_scene_t *scene;
 
 	VM_Cmd_Init(prog);
-	VM_Polygons_Reset(prog);
+	prog->polygonbegin_model = NULL;
+	prog->polygonbegin_guess2d = 0;
 
 	scene = R_GetScenePointer( RST_MENU );
 
@@ -1741,7 +1757,7 @@ void MVM_init_cmd(prvm_prog_t *prog)
 	scene->entities = (entity_render_t **)Mem_Alloc(prog->progs_mempool, sizeof(entity_render_t *) * scene->maxentities);
 
 	// LadyHavoc: what is this for?
-	scene->ambient = 32.0f;
+	scene->ambientintensity = 32.0f;
 }
 
 void MVM_reset_cmd(prvm_prog_t *prog)
@@ -1750,5 +1766,6 @@ void MVM_reset_cmd(prvm_prog_t *prog)
 
 	//VM_Cmd_Init();
 	VM_Cmd_Reset(prog);
-	VM_Polygons_Reset(prog);
+	prog->polygonbegin_model = NULL;
+	prog->polygonbegin_guess2d = 0;
 }

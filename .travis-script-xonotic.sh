@@ -2,18 +2,17 @@
 
 set -e
 
-openssl aes-256-cbc -K $encrypted_eeb6f7a14a8e_key -iv $encrypted_eeb6f7a14a8e_iv -in .travis-id_rsa-xonotic -out id_rsa-xonotic -d
+openssl aes-256-cbc -K $encrypted_29b4419ace44_key -iv $encrypted_29b4419ace44_iv -in .travis-id_xonotic.enc -out /tmp/id_xonotic -d
 
 set -x
 
-chmod 0600 id_rsa-xonotic
-# ssh-keygen -y -f id_rsa-xonotic
+chmod 0600 /tmp/id_xonotic
 
 export USRLOCAL="$PWD"/usrlocal
 
 rev=`git rev-parse HEAD`
 
-sftp -oStrictHostKeyChecking=no -i id_rsa-xonotic -P 2222 -b - autobuild-bin-uploader@beta.xonotic.org <<EOF || true
+sftp -oStrictHostKeyChecking=no -i /tmp/id_xonotic -P 2342 -b - autobuild-bin-uploader@srv04.xonotic.org <<EOF || true
 mkdir ${rev}
 EOF
 
@@ -36,7 +35,7 @@ for os in "$@"; do
           LIB_ODE="../../../${deps}/lib/libode.a -lstdc++"
         DP_LINK_ZLIB=shared'
       maketargets='release'
-      outputs='darkplaces-glx:darkplaces-linux32-glx darkplaces-sdl:darkplaces-linux32-sdl darkplaces-dedicated:darkplaces-linux32-dedicated'
+      outputs='darkplaces-sdl:darkplaces-linux32-sdl darkplaces-dedicated:darkplaces-linux32-dedicated'
       ;;
     linux64)
       chroot=
@@ -53,20 +52,19 @@ for os in "$@"; do
           LIB_ODE="../../../${deps}/lib/libode.a -lstdc++"
         DP_LINK_ZLIB=shared'
       maketargets='release'
-      outputs='darkplaces-glx:darkplaces-linux64-glx darkplaces-sdl:darkplaces-linux64-sdl darkplaces-dedicated:darkplaces-linux64-dedicated'
+      outputs='darkplaces-sdl:darkplaces-linux64-sdl darkplaces-dedicated:darkplaces-linux64-dedicated'
       ;;
     win32)
-      # other Win32 DLLs - including SDL2 - retain 16 bytes alignment.
-      export LD_LIBRARY_PATH="$USRLOCAL/opt/cross_toolchain_32/x86_64-slackware-linux/i686-w64-mingw32/lib:$USRLOCAL/opt/cross_toolchain_32/libexec/gcc/i686-w64-mingw32/4.8.3"
       chroot=
       # Need to use -mstackrealign as nothing guarantees that callbacks from
+      # other Win32 DLLs - including SDL2 - retain 16 bytes alignment.
       makeflags='STRIP=:
         D3D=1
         DP_MAKE_TARGET=mingw
         UNAME=MINGW32
         WIN32RELEASE=1
-        CC="$USRLOCAL/opt/cross_toolchain_32/bin/i686-w64-mingw32-gcc -static -g1 -mstackrealign -Wl,--dynamicbase -Wl,--nxcompat -I../../../${deps}/include -L../../../${deps}/lib -DSUPPORTIPV6"
-        WINDRES="$USRLOCAL/opt/cross_toolchain_32/bin/i686-w64-mingw32-windres"
+        CC="i686-w64-mingw32-gcc -static -g1 -mstackrealign -Wl,--dynamicbase -Wl,--nxcompat -I../../../${deps}/include -L../../../${deps}/lib -DSUPPORTIPV6"
+        WINDRES="i686-w64-mingw32-windres"
         SDL_CONFIG="../../../${deps}/bin/sdl2-config"
         DP_LINK_CRYPTO=dlopen
         DP_LINK_CRYPTO_RIJNDAEL=dlopen
@@ -74,18 +72,17 @@ for os in "$@"; do
         DP_LINK_ODE=dlopen
         DP_LINK_ZLIB=dlopen'
       maketargets='release'
-      outputs='darkplaces.exe:darkplaces-x86-wgl.exe darkplaces-sdl.exe:darkplaces-x86.exe darkplaces-dedicated.exe:darkplaces-x86-dedicated.exe'
+      outputs='darkplaces-sdl.exe:darkplaces-x86.exe darkplaces-dedicated.exe:darkplaces-x86-dedicated.exe'
       ;;
     win64)
-      export LD_LIBRARY_PATH="$USRLOCAL/opt/cross_toolchain_64/x86_64-slackware-linux/x86_64-w64-mingw32/lib:$USRLOCAL/opt/cross_toolchain_64/libexec/gcc/x86_64-w64-mingw32/4.8.3"
       chroot=
       makeflags='STRIP=:
         D3D=1
         DP_MAKE_TARGET=mingw
         UNAME=MINGW32
         WIN64RELEASE=1
-        CC="$USRLOCAL/opt/cross_toolchain_64/bin/x86_64-w64-mingw32-gcc -static -g1 -Wl,--dynamicbase -Wl,--nxcompat -I../../../${deps}/include -L../../../${deps}/lib -DSUPPORTIPV6"
-        WINDRES="$USRLOCAL/opt/cross_toolchain_64/bin/x86_64-w64-mingw32-windres"
+        CC="x86_64-w64-mingw32-gcc -static -g1 -Wl,--dynamicbase -Wl,--nxcompat -I../../../${deps}/include -L../../../${deps}/lib -DSUPPORTIPV6"
+        WINDRES="x86_64-w64-mingw32-windres"
         SDL_CONFIG="../../../${deps}/bin/sdl2-config"
         DP_LINK_CRYPTO=dlopen
         DP_LINK_CRYPTO_RIJNDAEL=dlopen
@@ -93,7 +90,7 @@ for os in "$@"; do
         DP_LINK_ODE=dlopen
         DP_LINK_ZLIB=dlopen'
       maketargets='release'
-      outputs='darkplaces.exe:darkplaces-wgl.exe darkplaces-sdl.exe:darkplaces.exe darkplaces-dedicated.exe:darkplaces-dedicated.exe'
+      outputs='darkplaces-sdl.exe:darkplaces.exe darkplaces-dedicated.exe:darkplaces-dedicated.exe'
       ;;
     osx)
       chroot=
@@ -123,7 +120,7 @@ for os in "$@"; do
     for o in $outputs; do
       src=${o%%:*}
       dst=${o#*:}
-      sftp -oStrictHostKeyChecking=no -i id_rsa-xonotic -P 2222 -b - autobuild-bin-uploader@beta.xonotic.org <<EOF
+      sftp -oStrictHostKeyChecking=no -i /tmp/id_xonotic -P 2342 -b - autobuild-bin-uploader@srv04.xonotic.org <<EOF
 put ${src} ${rev}/${dst}
 EOF
     done

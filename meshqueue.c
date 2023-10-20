@@ -148,7 +148,3 @@ void R_MeshQueue_RenderTransparent(void)
 		callback(ent, rtlight, batchnumsurfaces, batchsurfaceindex);
 	mqt_count = 0;
 }
-
-
-
-

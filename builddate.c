@@ -3,9 +3,9 @@
 
 extern const char *buildstring;
 const char *buildstring =
-	#ifndef NO_BUILD_TIMESTAMPS
-		__TIME__ " " __DATE__ " "
-	#endif
+#ifndef NO_BUILD_TIMESTAMPS
+__TIME__ " " __DATE__ " "
+#endif
 
 #ifdef SVNREVISION
 STRINGIFY(SVNREVISION)
@@ -17,6 +17,7 @@ STRINGIFY(SVNREVISION)
 #endif
 ;
 
+// Baker r8002: Zircon console name
 // See engineversionshort (console.c)
-extern const char *buildstringshort;
+// extern const char *buildstringshort;
 const char *buildstringshort = __DATE__ " ";

@@ -1,5 +1,3 @@
-#ifdef CORE_SDL
-
 /*
 Copyright (C) 2004 Andreas Kirsch
 
@@ -19,13 +17,10 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include <math.h>
-#if defined(_MSC_VER) || defined(CORE_XCODE)
-	#include <SDL2/SDL.h>
-#else
-	#include <SDL.h>
-#endif // _MSC_VER
+#include <SDL.h>
 
 #include "darkplaces.h"
+#include "vid.h"
 
 #include "snd_main.h"
 
@@ -108,7 +103,7 @@ Create "snd_renderbuffer" with the proper sound format if the call is successful
 May return a suggested format if the requested format isn't available
 ====================
 */
-int SndSys_Init (snd_format_t *fmt)
+qbool SndSys_Init (snd_format_t* fmt)
 {
 	unsigned int buffersize;
 	SDL_AudioSpec wantspec;
@@ -135,7 +130,7 @@ int SndSys_Init (snd_format_t *fmt)
 	wantspec.channels = fmt->channels;
 	wantspec.samples = CeilPowerOf2(buffersize);  // needs to be a power of 2 on some platforms.
 
-	Con_DPrintf("Wanted audio Specification:\n"
+	Con_Printf("Wanted audio Specification:\n"
 				"    Channels  : %i\n"
 				"    Format    : 0x%X\n"
 				"    Frequency : %i\n"
@@ -144,11 +139,15 @@ int SndSys_Init (snd_format_t *fmt)
 
 	if ((audio_device = SDL_OpenAudioDevice(NULL, 0, &wantspec, &obtainspec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE)) == 0)
 	{
-		Con_Printf( "Failed to open the audio device! (%s)\n", SDL_GetError() );
+		Con_Printf(CON_ERROR "Failed to open the audio device! (%s)\n", SDL_GetError() );
 		return false;
 	}
 
-	Con_DPrintLinef ("Sound: Channels %d, Format 0x%X, Frequency %d, Samples %d",
+	Con_Printf("Obtained audio specification:\n"
+				"    Channels  : %i\n"
+				"    Format    : 0x%X\n"
+				"    Frequency : %i\n"
+				"    Samples   : %i\n",
 				obtainspec.channels, obtainspec.format, obtainspec.freq, obtainspec.samples);
 
 	fmt->speed = obtainspec.freq;
@@ -252,5 +251,3 @@ void SndSys_SendKeyEvents(void)
 {
 	// not supported
 }
-
-#endif // CORE_SDL

@@ -77,6 +77,7 @@ typedef struct _crect_t_s {
 
 // Baker
 #define Flag_Remove_From(x,flag)				x = (x) - ((x) & (flag))
+#define Flag_Toggle(x,flag)						x = ((x) ^= (flag))
 #define Flag_Mask_To_Only(x,flag)				x = ((x) & (flag))
 #define Flag_Add_To(x,flag)						x |= (flag)
 #define Have_Flag(x,flag)						((x) & (flag))
