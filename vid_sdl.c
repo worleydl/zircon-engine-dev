@@ -1,3 +1,4 @@
+#ifdef CORE_SDL
 /*
 Copyright (C) 2003  T. Joseph Carter
 
@@ -73,6 +74,7 @@ static qbool vid_usingmouse_relativeworks = false; // SDL2 workaround for unimpl
 static qbool vid_usinghidecursor = false;
 static qbool vid_hasfocus = false;
 static qbool vid_isfullscreen;
+
 static qbool vid_usingvsync = false;
 static SDL_Joystick *vid_sdljoystick = NULL;
 static SDL_GameController *vid_sdlgamecontroller = NULL;
@@ -188,13 +190,13 @@ static int MapKey( unsigned int sdlkey )
 	case SDLK_PRINTSCREEN:        return K_PRINTSCREEN;
 	case SDLK_SCROLLLOCK:         return K_SCROLLOCK;
 	case SDLK_PAUSE:              return K_PAUSE;
-	case SDLK_INSERT:             return K_INS;
+	case SDLK_INSERT:             return K_INSERT;
 	case SDLK_HOME:               return K_HOME;
 	case SDLK_PAGEUP:             return K_PGUP;
 #ifdef __IPHONEOS__
 	case SDLK_DELETE:             return K_BACKSPACE;
 #else
-	case SDLK_DELETE:             return K_DEL;
+	case SDLK_DELETE:             return K_DELETE;
 #endif
 	case SDLK_END:                return K_END;
 	case SDLK_PAGEDOWN:           return K_PGDN;
@@ -217,8 +219,8 @@ static int MapKey( unsigned int sdlkey )
 	case SDLK_KP_7:               return ((SDL_GetModState() & KMOD_NUM) ? K_KP_7 : K_HOME);
 	case SDLK_KP_8:               return ((SDL_GetModState() & KMOD_NUM) ? K_KP_8 : K_UPARROW);
 	case SDLK_KP_9:               return ((SDL_GetModState() & KMOD_NUM) ? K_KP_9 : K_PGUP);
-	case SDLK_KP_0:               return ((SDL_GetModState() & KMOD_NUM) ? K_KP_0 : K_INS);
-	case SDLK_KP_PERIOD:          return ((SDL_GetModState() & KMOD_NUM) ? K_KP_PERIOD : K_DEL);
+	case SDLK_KP_0:               return ((SDL_GetModState() & KMOD_NUM) ? K_KP_0 : K_INSERT);
+	case SDLK_KP_PERIOD:          return ((SDL_GetModState() & KMOD_NUM) ? K_KP_PERIOD : K_DELETE);
 //	case SDLK_APPLICATION:        return K_APPLICATION;
 //	case SDLK_POWER:              return K_POWER;
 	case SDLK_KP_EQUALS:          return K_KP_EQUALS;
@@ -459,22 +461,30 @@ float multitouch[MAXFINGERS][3];
 int multitouchs[MAXFINGERS];
 
 // modified heavily by ELUAN
-static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, float pheight, const char *icon, float textheight, const char *text, float *resultmove, qbool *resultbutton, keynum_t key, const char *typedtext, float deadzone, float oversizepixels_x, float oversizepixels_y, qbool iamexclusive)
+static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, float pheight, 
+	const char *icon, float textheight, const char *text, 
+	float *resultmove, qbool *resultbutton, keynum_t key, 
+	const char *typedtext, float deadzone, 
+	float oversizepixels_x, float oversizepixels_y, qbool iamexclusive)
 {
 	int finger;
 	float fx, fy, fwidth, fheight;
 	float overfx, overfy, overfwidth, overfheight;
-	float rel[3];
+	float rel[3] = {0}; //VectorClear(rel);
 	float sqsum;
 	qbool button = false;
-	VectorClear(rel);
-	if (pwidth > 0 && pheight > 0)
-	{
+
+	if (pwidth > 0 && pheight > 0) {
 		if (corner & 1) px += vid_conwidth.value;
 		if (corner & 2) py += vid_conheight.value;
 		if (corner & 4) px += vid_conwidth.value * 0.5f;
 		if (corner & 8) py += vid_conheight.value * 0.5f;
-		if (corner & 16) {px *= vid_conwidth.value * (1.0f / 640.0f);py *= vid_conheight.value * (1.0f / 480.0f);pwidth *= vid_conwidth.value * (1.0f / 640.0f);pheight *= vid_conheight.value * (1.0f / 480.0f);}
+		if (corner & 16) {
+			px *= vid_conwidth.value * (1.0f / 640.0f);
+			py *= vid_conheight.value * (1.0f / 480.0f);
+			pwidth *= vid_conwidth.value * (1.0f / 640.0f);
+			pheight *= vid_conheight.value * (1.0f / 480.0f);
+		}
 		fx = px / vid_conwidth.value;
 		fy = py / vid_conheight.value;
 		fwidth = pwidth / vid_conwidth.value;
@@ -496,12 +506,15 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 		overfwidth = fwidth + 2*oversizepixels_x;
 		overfheight = fheight + 2*oversizepixels_y;
 
-		for (finger = 0;finger < MAXFINGERS;finger++)
-		{
+		for (finger = 0;finger < MAXFINGERS;finger++) {
 			if (multitouchs[finger] && iamexclusive) // for this to work correctly, you must call touch areas in order of highest to lowest priority
 				continue;
 
-			if (multitouch[finger][0] && multitouch[finger][1] >= overfx && multitouch[finger][2] >= overfy && multitouch[finger][1] < overfx + overfwidth && multitouch[finger][2] < overfy + overfheight)
+			// Baker: look like hit rect ...
+			if (multitouch[finger][0] && 
+				multitouch[finger][1] >= overfx && 
+				multitouch[finger][2] >= overfy && 
+				multitouch[finger][1] < overfx + overfwidth && multitouch[finger][2] < overfy + overfheight)
 			{
 				multitouchs[finger]++;
 
@@ -524,9 +537,9 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 				button = true;
 				break;
 			}
-		}
-		if (scr_numtouchscreenareas < 128)
-		{
+		} // for finger
+
+		if (scr_numtouchscreenareas < 128) {
 			scr_touchscreenareas[scr_numtouchscreenareas].pic = icon;
 			scr_touchscreenareas[scr_numtouchscreenareas].text = text;
 			scr_touchscreenareas[scr_numtouchscreenareas].textheight = textheight;
@@ -554,12 +567,12 @@ static qbool VID_TouchscreenArea(int corner, float px, float py, float pwidth, f
 		{
 			if ((int)key > 0)
 				Key_Event(key, 0, button);
+
 			if (typedtext && typedtext[0] && !*resultbutton)
 			{
 				// FIXME: implement UTF8 support - nothing actually specifies a UTF8 string here yet, but should support it...
 				int i;
-				for (i = 0;typedtext[i];i++)
-				{
+				for (i = 0;typedtext[i];i++) {
 					Key_Event(K_TEXT, typedtext[i], true);
 					Key_Event(K_TEXT, typedtext[i], false);
 				}
@@ -585,6 +598,7 @@ static void VID_TouchscreenCursor(float px, float py, float pwidth, float pheigh
 	static double clickrealtime = 0;
 
 	if (steelstorm_showing_mousecursor && steelstorm_showing_mousecursor->integer)
+
 	if (pwidth > 0 && pheight > 0)
 	{
 		fx = px / vid_conwidth.value;
@@ -874,13 +888,16 @@ static void IN_Move_TouchScreen_SteelStorm(void)
 	cl.viewangles[1] -= aim[0] * cl_yawspeed.value * cl.realframetime;
 }
 
+WARP_X_ (Host_Main /*Host_CLFrame*/ -> CL_Input -> IN_Move)
 static void IN_Move_TouchScreen_Quake(void)
 {
 	int x, y;
 	float move[3], aim[3], click[3];
 	static qbool oldbuttons[128];
 	static qbool buttons[128];
+
 	keydest_t keydest = Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
+
 	memcpy(oldbuttons, buttons, sizeof(oldbuttons));
 	memset(multitouchs, 0, sizeof(multitouchs));
 
@@ -893,10 +910,11 @@ static void IN_Move_TouchScreen_Quake(void)
 	switch(keydest)
 	{
 	case key_console:
+		// Baker: arg1 is corner 0 1     16 is whole canvas?
+		//                       2 3
 		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
-		if (!VID_ShowingKeyboard())
-		{
+		if (!VID_ShowingKeyboard()) {
 			// user entered a command, close the console now
 			Con_ToggleConsole_f(cmd_local);
 		}
@@ -907,6 +925,7 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
 		break;
+
 	case key_game:
 		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
@@ -915,22 +934,24 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea( 2,   0,-160,  64,  32, "gfx/touch_jumpbutton.tga"   , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 3,-128,-160,  64,  32, "gfx/touch_attackbutton.tga" , 0.0f, NULL, NULL, &buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 3, -64,-160,  64,  32, "gfx/touch_attack2button.tga", 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
-		buttons[15] = false;
+		buttons[15] = false; // Baker: And this is?  touch_keyboard
 		break;
 	default:
 		VID_TouchscreenArea( 0,   0,   0,  64,  64, NULL                         , 0.0f, NULL, NULL, &buttons[13], (keynum_t)'`', NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
 		// in menus, an icon in the corner activates keyboard
 		VID_TouchscreenArea( 2,   0, -32,  32,  32, "gfx/touch_keyboard.tga"     , 0.0f, NULL, NULL, &buttons[15], (keynum_t)0, NULL, 0, 0, 0, true);
+
 		if (buttons[15])
 			VID_ShowKeyboard(true);
+
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, move, &buttons[0], K_MOUSE4, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, aim,  &buttons[1], K_MOUSE5, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea(16, -320,-480,640, 960, NULL                         , 0.0f, NULL, click,&buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
-		if (buttons[2])
-		{
+
+		if (buttons[2]) { // attack?
 			in_windowmouse_x = x;
 			in_windowmouse_y = y;
 		}
@@ -993,6 +1014,7 @@ void IN_Move( void )
 				if(!stuck)
 				{
 					SDL_WarpMouseInWindow(window, win_half_width, win_half_height);
+
 					SDL_GetMouseState(&x, &y);
 					SDL_GetRelativeMouseState(&x, &y);
 					++stuck;
@@ -1061,6 +1083,96 @@ static keynum_t buttonremap[] =
 
 //#define DEBUGSDLEVENTS
 
+#ifdef _WIN32
+
+
+
+LRESULT CALLBACK LLWinKeyHook(int Code, WPARAM wParam, LPARAM lParam)
+{
+	PKBDLLHOOKSTRUCT p;
+	p = (PKBDLLHOOKSTRUCT)lParam;
+
+	if (1 /*ActiveApp*/)
+	{
+		switch (p->vkCode)
+		{
+		case VK_LWIN:	// Left Windows Key
+		case VK_RWIN:	// Right Windows key
+		case VK_APPS: 	// Context Menu key
+
+			return 1; // Ignore these keys
+		}
+	}
+
+	return CallNextHookEx(NULL, Code, wParam, lParam);
+}
+
+
+
+void AllowWindowsShortcutKeys(int bAllowKeys)
+{
+	static int WinKeyHook_isActive = false;
+	static HHOOK WinKeyHook;
+
+	//if (COM_CheckParm("-nokeys_w"))
+	//	return;
+
+
+	if (!bAllowKeys)
+	{
+		// Disable if not already disabled
+		if (!WinKeyHook_isActive)
+		{
+			HINSTANCE		global_hInstance = GetModuleHandle(NULL);
+			if (!(WinKeyHook = SetWindowsHookEx(13, LLWinKeyHook, global_hInstance, 0)))
+			{
+				Con_Printf("Failed to install winkey hook.\n");
+				Con_Printf("Microsoft Windows NT 4.0, 2000 or XP is required.\n");
+				return;
+			}
+
+			WinKeyHook_isActive = true;
+			Con_DPrintf("Windows and context menu key disabled\n");
+		}
+	}
+
+	if (bAllowKeys)
+	{	// Keys allowed .. stop hook
+		if (WinKeyHook_isActive)
+		{
+			UnhookWindowsHookEx(WinKeyHook);
+			WinKeyHook_isActive = false;
+			Con_DPrintf("Windows and context menu key enabled\n");
+		}
+	}
+}
+
+void IN_Keyboard_Unacquire(void)
+{
+	//AllowAccessibilityShortcutKeys(true);
+	AllowWindowsShortcutKeys(true);
+}
+
+
+void IN_Keyboard_Acquire(void)
+{
+	AllowWindowsShortcutKeys(false);
+	//AllowAccessibilityShortcutKeys(false);
+
+}
+#else
+void IN_Keyboard_Unacquire(void)
+{
+}
+
+
+void IN_Keyboard_Acquire(void)
+{
+}
+
+
+#endif // !_WIN32
+
 // SDL2
 void Sys_SendKeyEvents( void )
 {
@@ -1074,12 +1186,12 @@ void Sys_SendKeyEvents( void )
 
 	VID_EnableJoystick(true);
 
-	while( SDL_PollEvent( &event ) )
+	while( SDL_PollEvent( &event ) ) {
 		loop_start:
 		switch( event.type ) {
 			case SDL_QUIT:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_QUIT\n");
+				Con_DPrintLinef ("SDL_Event: SDL_QUIT");
 #endif
 				host.state = host_shutdown;
 				break;
@@ -1087,9 +1199,9 @@ void Sys_SendKeyEvents( void )
 			case SDL_KEYUP:
 #ifdef DEBUGSDLEVENTS
 				if (event.type == SDL_KEYDOWN)
-					Con_DPrintf("SDL_Event: SDL_KEYDOWN %i\n", event.key.keysym.sym);
+					Con_DPrintLinef ("SDL_Event: SDL_KEYDOWN %d", event.key.keysym.sym);
 				else
-					Con_DPrintf("SDL_Event: SDL_KEYUP %i\n", event.key.keysym.sym);
+					Con_DPrintLinef ("SDL_Event: SDL_KEYUP %d", event.key.keysym.sym);
 #endif
 				keycode = MapKey(event.key.keysym.sym);
 				isdown = (event.key.state == SDL_PRESSED);
@@ -1122,13 +1234,15 @@ void Sys_SendKeyEvents( void )
 			case SDL_MOUSEBUTTONUP:
 #ifdef DEBUGSDLEVENTS
 				if (event.type == SDL_MOUSEBUTTONDOWN)
-					Con_DPrintf("SDL_Event: SDL_MOUSEBUTTONDOWN\n");
+					Con_DPrintLinef ("SDL_Event: SDL_MOUSEBUTTONDOWN");
 				else
-					Con_DPrintf("SDL_Event: SDL_MOUSEBUTTONUP\n");
+					Con_DPrintLinef ("SDL_Event: SDL_MOUSEBUTTONUP");
 #endif
-				if (!vid_touchscreen.integer)
-				if (event.button.button > 0 && event.button.button <= ARRAY_SIZE(buttonremap))
-					Key_Event( buttonremap[event.button.button - 1], 0, event.button.state == SDL_PRESSED );
+				if (!vid_touchscreen.integer) {
+					if (event.button.button > 0 && event.button.button <= ARRAY_COUNT(buttonremap)) {
+						Key_Event( buttonremap[event.button.button - 1], 0, event.button.state == SDL_PRESSED );
+					}
+				}
 				break;
 			case SDL_MOUSEWHEEL:
 				// TODO support wheel x direction.
@@ -1150,12 +1264,12 @@ void Sys_SendKeyEvents( void )
 			case SDL_JOYBALLMOTION:
 			case SDL_JOYHATMOTION:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_JOY*\n");
+				Con_DPrintLinef ("SDL_Event: SDL_JOY*");
 #endif
 				break;
 			case SDL_WINDOWEVENT:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_WINDOWEVENT %i\n", (int)event.window.event);
+				Con_DPrintLinef ("SDL_Event: SDL_WINDOWEVENT %d", (int)event.window.event);
 #endif
 				//if (event.window.windowID == window) // how to compare?
 				{
@@ -1171,22 +1285,20 @@ void Sys_SendKeyEvents( void )
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 #ifdef DEBUGSDLEVENTS
-						Con_DPrintf("SDL_Event: SDL_WINDOWEVENT_EXPOSED\n");
+						Con_DPrintLinef ("SDL_Event: SDL_WINDOWEVENT_EXPOSED");
 #endif
 						break;
 					case SDL_WINDOWEVENT_MOVED:
 						break;
 					case SDL_WINDOWEVENT_RESIZED:
-						if(vid_resizable.integer < 2)
-						{
+						if (vid_resizable.integer < 2) {
 							vid.width = event.window.data1;
 							vid.height = event.window.data2;
 #ifdef SDL_R_RESTART
-							// better not call R_Modules_Restart_f from here directly, as this may wreak havoc...
+							// better not call R_Modules_Restart from here directly, as this may wreak havoc...
 							// so, let's better queue it for next frame
-							if(!sdl_needs_restart)
-							{
-								Cbuf_AddText(cmd_local, "\nr_restart\n");
+							if (!sdl_needs_restart) {
+								Cbuf_AddText (cmd_local, NEWLINE "r_restart" NEWLINE);
 								sdl_needs_restart = true;
 							}
 #endif
@@ -1207,12 +1319,15 @@ void Sys_SendKeyEvents( void )
 						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						break;
 					case SDL_WINDOWEVENT_FOCUS_GAINED:
+						IN_Keyboard_Acquire(); // Baker r1413: Disable windows key
 						vid_hasfocus = true;
 						break;
 					case SDL_WINDOWEVENT_FOCUS_LOST:
+						IN_Keyboard_Unacquire(); // Baker r1413: Disable windows key
 						vid_hasfocus = false;
 						break;
 					case SDL_WINDOWEVENT_CLOSE:
+						IN_Keyboard_Unacquire();
 						host.state = host_shutdown;
 						break;
 					}
@@ -1220,13 +1335,13 @@ void Sys_SendKeyEvents( void )
 				break;
 			case SDL_TEXTEDITING:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_TEXTEDITING - composition = %s, cursor = %d, selection lenght = %d\n", event.edit.text, event.edit.start, event.edit.length);
+				Con_DPrintLinef ("SDL_Event: SDL_TEXTEDITING - composition = %s, cursor = %d, selection lenght = %d", event.edit.text, event.edit.start, event.edit.length);
 #endif
 				// FIXME!  this is where composition gets supported
 				break;
 			case SDL_TEXTINPUT:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_Event: SDL_TEXTINPUT - text: %s\n", event.text.text);
+				Con_DPrintLinef ("SDL_Event: SDL_TEXTINPUT - text: %s", event.text.text);
 #endif
 				// convert utf8 string to char
 				// NOTE: this code is supposed to run even if utf8enable is 0
@@ -1243,59 +1358,55 @@ void Sys_SendKeyEvents( void )
 				break;
 			case SDL_FINGERDOWN:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_FINGERDOWN for finger %i\n", (int)event.tfinger.fingerId);
+				Con_DPrintLinef ("SDL_FINGERDOWN for finger %d", (int)event.tfinger.fingerId);
 #endif
-				for (i = 0;i < MAXFINGERS-1;i++)
-				{
-					if (!multitouch[i][0])
-					{
+				for (i = 0;i < MAXFINGERS-1;i++) {
+					if (!multitouch[i][0]) {
 						multitouch[i][0] = event.tfinger.fingerId + 1;
 						multitouch[i][1] = event.tfinger.x;
 						multitouch[i][2] = event.tfinger.y;
 						// TODO: use event.tfinger.pressure?
 						break;
 					}
-				}
+				} // for
 				if (i == MAXFINGERS-1)
-					Con_DPrintf("Too many fingers at once!\n");
+					Con_DPrintLinef ("Too many fingers at once!");
 				break;
 			case SDL_FINGERUP:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_FINGERUP for finger %i\n", (int)event.tfinger.fingerId);
+				Con_DPrintLinef ("SDL_FINGERUP for finger %d", (int)event.tfinger.fingerId);
 #endif
-				for (i = 0;i < MAXFINGERS-1;i++)
-				{
-					if (multitouch[i][0] == event.tfinger.fingerId + 1)
-					{
+				for (i = 0;i < MAXFINGERS-1;i++) {
+					if (multitouch[i][0] == event.tfinger.fingerId + 1) {
 						multitouch[i][0] = 0;
 						break;
 					}
-				}
+				} // for
 				if (i == MAXFINGERS-1)
-					Con_DPrintf("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event\n");
+					Con_DPrintLinef ("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event");
 				break;
 			case SDL_FINGERMOTION:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("SDL_FINGERMOTION for finger %i\n", (int)event.tfinger.fingerId);
+				Con_DPrintLinef ("SDL_FINGERMOTION for finger %d", (int)event.tfinger.fingerId);
 #endif
-				for (i = 0;i < MAXFINGERS-1;i++)
-				{
-					if (multitouch[i][0] == event.tfinger.fingerId + 1)
-					{
+				for (i = 0;i < MAXFINGERS-1;i++) {
+					if (multitouch[i][0] == event.tfinger.fingerId + 1) {
 						multitouch[i][1] = event.tfinger.x;
 						multitouch[i][2] = event.tfinger.y;
 						break;
 					}
-				}
+				} // for
+
 				if (i == MAXFINGERS-1)
-					Con_DPrintf("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event\n");
+					Con_DPrintLinef ("No SDL_FINGERDOWN event matches this SDL_FINGERMOTION event");
 				break;
 			default:
 #ifdef DEBUGSDLEVENTS
-				Con_DPrintf("Received unrecognized SDL_Event type 0x%x\n", event.type);
+				Con_DPrintLinef ("Received unrecognized SDL_Event type 0x%x", event.type);
 #endif
 				break;
-		}
+		} // sw et
+	} // while
 
 	// enable/disable sound on focus gain/loss
 	if ((!vid_hidden && vid_activewindow) || !snd_mutewhenidle.integer)
@@ -1425,13 +1536,11 @@ void VID_EnableJoystick(qbool enable)
 	{
 		vid_sdljoystickindex = sdlindex;
 		// close SDL joystick if active
-		if (vid_sdljoystick)
-		{
+		if (vid_sdljoystick) {
 			SDL_JoystickClose(vid_sdljoystick);
 			vid_sdljoystick = NULL;
 		}
-		if (vid_sdlgamecontroller)
-		{
+		if (vid_sdlgamecontroller) {
 			SDL_GameControllerClose(vid_sdlgamecontroller);
 			vid_sdlgamecontroller = NULL;
 		}
@@ -1441,16 +1550,15 @@ void VID_EnableJoystick(qbool enable)
 			if (vid_sdljoystick)
 			{
 				const char *joystickname = SDL_JoystickName(vid_sdljoystick);
-				if (SDL_IsGameController(vid_sdljoystickindex))
-				{
+				if (SDL_IsGameController(vid_sdljoystickindex)) {
 					vid_sdlgamecontroller = SDL_GameControllerOpen(vid_sdljoystickindex);
-					Con_DPrintf("Using SDL GameController mappings for Joystick %i\n", index);
+					Con_DPrintLinef ("Using SDL GameController mappings for Joystick %d", index);
 				}
-				Con_Printf("Joystick %i opened (SDL_Joystick %i is \"%s\" with %i axes, %i buttons, %i balls)\n", index, sdlindex, joystickname, (int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
+				Con_PrintLinef ("Joystick %d opened (SDL_Joystick %d is \"%s\" with %d axes, %d buttons, %d balls)", index, sdlindex, joystickname, (int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
 			}
 			else
 			{
-				Con_Printf(CON_ERROR "Joystick %i failed (SDL_JoystickOpen(%i) returned: %s)\n", index, sdlindex, SDL_GetError());
+				Con_PrintLinef (CON_ERROR "Joystick %d failed (SDL_JoystickOpen(%d) returned: %s)", index, sdlindex, SDL_GetError());
 				sdlindex = -1;
 			}
 		}
@@ -1462,6 +1570,48 @@ void VID_EnableJoystick(qbool enable)
 	if (joy_active.integer != (success ? 1 : 0))
 		Cvar_SetValueQuick(&joy_active, success ? 1 : 0);
 }
+
+// Baker r9511: SDL ensure icon
+#ifdef _WIN32
+	#ifdef _MSC_VER
+		#include <SDL_syswm.h> // To expose things like HWND to us.
+	#else
+		#include <SDL_syswm.h> // To expose things like HWND to us.
+	#endif // _MSC_VER
+
+	#include <windows.h>
+
+	//cbool Shell_Platform_Icon_Window_Set (sys_handle_t cw)
+	int SetWIke (SDL_Window *cw)
+	{
+
+		HINSTANCE		hInst = GetModuleHandle(NULL);
+		#define IDI_ICON1         1
+		HICON hIcon = LoadIcon (hInst, MAKEINTRESOURCE (IDI_ICON1)) ;
+		SDL_SysWMinfo wminfo = {0};
+
+	//	if (!gAppIcon)
+	//		return false;
+
+		if (SDL_GetWindowWMInfo((SDL_Window*) cw, &wminfo) != SDL_TRUE) {
+			//logd (SPRINTSFUNC_ "Couldn't get hwnd", __func__);
+			return false;
+		}
+		else {
+
+			HWND hWnd = wminfo.info.win.window;
+
+#ifdef _WIN64
+			SetClassLongPtr (hWnd /*hwnd*/, GCLP_HICON, (intptr_t)hIcon /*gAppIcon*/);
+#else
+			SetClassLong (hWnd /*hwnd*/, GCL_HICON, (LONG) hIcon/*gAppIcon*/);
+#endif // _WIN64
+
+			return true;
+		}
+	}
+
+#endif // _WIN32
 
 static void VID_OutputVersion(void)
 {
@@ -1640,6 +1790,12 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 		VID_Shutdown();
 		return false;
 	}
+
+	// Baker r9511: SDL ensure icon
+#if defined(_WIN32)
+	SetWIke (window);
+#endif
+
 	SDL_GetWindowSize(window, &mode->width, &mode->height);
 	context = SDL_GL_CreateContext(window);
 	if (context == NULL)
@@ -1680,7 +1836,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 
 	vid_hidden = false;
 	vid_activewindow = false;
-	vid_hasfocus = true;
+	vid_hasfocus = true; 
 	vid_usingmouse = false;
 	vid_usinghidecursor = false;
 		
@@ -1704,6 +1860,7 @@ qbool VID_InitMode(viddef_mode_t *mode)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
 
 	Cvar_SetValueQuick(&vid_touchscreen_supportshowkeyboard, SDL_HasScreenKeyboardSupport() ? 1 : 0);
+
 	return VID_InitModeGL(mode);
 }
 
@@ -1750,7 +1907,7 @@ void VID_Finish (void)
 			}
 			SDL_GL_SwapWindow(window);
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1795,3 +1952,6 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 	}
 	return k;
 }
+
+#endif // CORE_SDL
+

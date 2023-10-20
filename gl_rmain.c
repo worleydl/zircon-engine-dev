@@ -205,7 +205,7 @@ cvar_t r_water_hideplayer = {CF_CLIENT | CF_ARCHIVE, "r_water_hideplayer", "0", 
 
 cvar_t r_lerpsprites = {CF_CLIENT | CF_ARCHIVE, "r_lerpsprites", "0", "enables animation smoothing on sprites"};
 cvar_t r_lerpmodels = {CF_CLIENT | CF_ARCHIVE, "r_lerpmodels", "1", "enables animation smoothing on models"};
-cvar_t r_nolerp_list = {CF_CLIENT | CF_ARCHIVE, "r_nolerp_list", "progs/v_nail.mdl,progs/v_nail2.mdl,progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", "comma separated list of models that will not have their animations smoothed"};
+cvar_t r_nolerp_list = {CF_CLIENT | CF_ARCHIVE, "r_nolerp_list", "progs/v_nail.mdl,progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", "comma separated list of models that will not have their animations smoothed"}; // Baker r8011: remove nail2.gun from nolerp list
 cvar_t r_lerplightstyles = {CF_CLIENT | CF_ARCHIVE, "r_lerplightstyles", "0", "enable animation smoothing on flickering lights"};
 cvar_t r_waterscroll = {CF_CLIENT | CF_ARCHIVE, "r_waterscroll", "1", "makes water scroll around, value controls how much"};
 
@@ -2548,7 +2548,10 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	return skinframe;
 }
 
-skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, const unsigned char *skindata, int width, int height, int comparewidth, int compareheight, int comparecrc, qbool sRGB)
+WARP_X_ (TEXF_FORCE_RELOAD)
+skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, 
+	const unsigned char *skindata, int width, int height, int comparewidth, 
+	int compareheight, int comparecrc, qbool sRGB, qbool is_q1skyload)
 {
 	int i;
 	skinframe_t *skinframe;
@@ -2559,8 +2562,16 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, co
 
 	// if already loaded just return it, otherwise make a new skinframe
 	skinframe = R_SkinFrame_Find(name, textureflags, comparewidth, compareheight, comparecrc, true);
-	if (skinframe->base)
-		return skinframe;
+
+	// Baker r9011 fix q1bsp sky never being reloaded after first map 
+	if (skinframe->base) {
+		if (is_q1skyload) {
+			R_SkinFrame_PurgeSkinFrame(skinframe);
+		} else {
+			return skinframe;
+		}
+	}
+
 	textureflags &= ~TEXF_FORCE_RELOAD;
 
 	skinframe->stain = NULL;
@@ -2590,6 +2601,7 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, co
 		skinframe->nmap = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_nmap", skinframe->basename), width, height, b, TEXTYPE_BGRA, (textureflags | TEXF_ALPHA) & (r_mipnormalmaps.integer ? ~0 : ~TEXF_MIPMAP), -1, NULL);
 		Mem_Free(a);
 	}
+	// Q1SKY Upload occurs here
 	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, sRGB ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags, -1, NULL);
 	if (textureflags & TEXF_ALPHA)
 	{
@@ -2839,7 +2851,7 @@ skinframe_t *R_SkinFrame_LoadNoTexture(void)
 	if (cls.state == ca_dedicated)
 		return NULL;
 
-	return R_SkinFrame_LoadInternalBGRA("notexture", TEXF_FORCENEAREST, Image_GenerateNoTexture(), 16, 16, 0, 0, 0, false);
+	return R_SkinFrame_LoadInternalBGRA("notexture", TEXF_FORCENEAREST, Image_GenerateNoTexture(), 16, 16, 0, 0, 0, false, /*q1skyload*/ false);
 }
 
 skinframe_t *R_SkinFrame_LoadInternalUsingTexture(const char *name, int textureflags, rtexture_t *tex, int width, int height, qbool sRGB)
@@ -3216,8 +3228,8 @@ static void gl_main_newmap(void)
 		Mem_Free(r_qwskincache);
 	r_qwskincache = NULL;
 	r_qwskincache_size = 0;
-	if (cl.worldmodel)
-	{
+
+	if (cl.worldmodel) {
 		dpsnprintf(entname, sizeof(entname), "%s.ent", cl.worldnamenoextension);
 		if ((entities = (char *)FS_LoadFile(entname, tempmempool, true, NULL)))
 		{
@@ -4033,14 +4045,14 @@ static void R_View_UpdateEntityVisible (void)
 		for (i = 0;i < r_refdef.scene.numentities;i++)
 		{
 			ent = r_refdef.scene.entities[i];
-			if (r_refdef.viewcache.world_novis && !(ent->flags & RENDER_VIEWMODEL))
+			if (r_refdef.viewcache.world_novis && !(ent->crflags & RENDER_VIEWMODEL))
 			{
 				r_refdef.viewcache.entityvisible[i] = false;
 				continue;
 			}
-			if (!(ent->flags & renderimask))
+			if (!(ent->crflags & renderimask))
 			if (!R_CullFrustum(ent->mins, ent->maxs) || (ent->model && ent->model->type == mod_sprite && (ent->model->sprite.sprnum_type == SPR_LABEL || ent->model->sprite.sprnum_type == SPR_LABEL_SCALE)))
-			if ((ent->flags & (RENDER_NODEPTHTEST | RENDER_WORLDOBJECT | RENDER_VIEWMODEL)) || r_refdef.scene.worldmodel->brush.BoxTouchingVisibleLeafs(r_refdef.scene.worldmodel, r_refdef.viewcache.world_leafvisible, ent->mins, ent->maxs))
+			if ((ent->crflags & (RENDER_NODEPTHTEST | RENDER_WORLDOBJECT | RENDER_VIEWMODEL)) || r_refdef.scene.worldmodel->brush.BoxTouchingVisibleLeafs(r_refdef.scene.worldmodel, r_refdef.viewcache.world_leafvisible, ent->mins, ent->maxs))
 				r_refdef.viewcache.entityvisible[i] = true;
 		}
 	}
@@ -4050,7 +4062,7 @@ static void R_View_UpdateEntityVisible (void)
 		for (i = 0;i < r_refdef.scene.numentities;i++)
 		{
 			ent = r_refdef.scene.entities[i];
-			if (!(ent->flags & renderimask))
+			if (!(ent->crflags & renderimask))
 			if (!R_CullFrustum(ent->mins, ent->maxs) || (ent->model && ent->model->type == mod_sprite && (ent->model->sprite.sprnum_type == SPR_LABEL || ent->model->sprite.sprnum_type == SPR_LABEL_SCALE)))
 				r_refdef.viewcache.entityvisible[i] = true;
 		}
@@ -4062,7 +4074,7 @@ static void R_View_UpdateEntityVisible (void)
 			if (!r_refdef.viewcache.entityvisible[i])
 				continue;
 			ent = r_refdef.scene.entities[i];
-			if (!(ent->flags & (RENDER_VIEWMODEL | RENDER_WORLDOBJECT | RENDER_NODEPTHTEST)) && !(ent->model && (ent->model->name[0] == '*')))
+			if (!(ent->crflags & (RENDER_VIEWMODEL | RENDER_WORLDOBJECT | RENDER_NODEPTHTEST)) && !(ent->model && (ent->model->name[0] == '*')))
 			{
 				samples = ent->last_trace_visibility == 0 ? r_cullentities_trace_tempentitysamples.integer : r_cullentities_trace_samples.integer;
 				if (R_CanSeeBox(samples, r_cullentities_trace_eyejitter.value, r_cullentities_trace_enlarge.value, r_cullentities_trace_expand.value, r_cullentities_trace_pad.value, r_refdef.view.origin, ent->mins, ent->maxs))
@@ -6196,7 +6208,7 @@ static void R_DrawNoModel_TransparentCallback(const entity_render_t *ent, const 
 	float f1, f2, *c;
 	float color4f[6*4];
 
-	RSurf_ActiveCustomEntity(&ent->matrix, &ent->inversematrix, ent->flags, ent->shadertime, ent->colormod[0], ent->colormod[1], ent->colormod[2], ent->alpha, 6, nomodelvertex3f, NULL, NULL, NULL, NULL, nomodelcolor4f, 8, nomodelelement3i, nomodelelement3s, false, false);
+	RSurf_ActiveCustomEntity(&ent->matrix, &ent->inversematrix, ent->crflags, ent->shadertime, ent->colormod[0], ent->colormod[1], ent->colormod[2], ent->alpha, 6, nomodelvertex3f, NULL, NULL, NULL, NULL, nomodelcolor4f, 8, nomodelelement3i, nomodelelement3s, false, false);
 
 	// this is only called once per entity so numsurfaces is always 1, and
 	// surfacelist is always {0}, so this code does not handle batches
@@ -6249,8 +6261,8 @@ void R_DrawNoModel(entity_render_t *ent)
 {
 	vec3_t org;
 	Matrix4x4_OriginFromMatrix(&ent->matrix, org);
-	if ((ent->flags & RENDER_ADDITIVE) || (ent->alpha < 1))
-		R_MeshQueue_AddTransparent((ent->flags & RENDER_NODEPTHTEST) ? TRANSPARENTSORT_HUD : TRANSPARENTSORT_DISTANCE, org, R_DrawNoModel_TransparentCallback, ent, 0, rsurface.rtlight);
+	if ((ent->crflags & RENDER_ADDITIVE) || (ent->alpha < 1))
+		R_MeshQueue_AddTransparent((ent->crflags & RENDER_NODEPTHTEST) ? TRANSPARENTSORT_HUD : TRANSPARENTSORT_DISTANCE, org, R_DrawNoModel_TransparentCallback, ent, 0, rsurface.rtlight);
 	else
 		R_DrawNoModel_TransparentCallback(ent, rsurface.rtlight, 0, NULL);
 }
@@ -6933,7 +6945,7 @@ void RSurf_ActiveModelEntity(const entity_render_t *ent, qbool wantnormals, qboo
 	memcpy(rsurface.userwavefunc_param, ent->userwavefunc_param, sizeof(rsurface.userwavefunc_param));
 	rsurface.ent_skinnum = ent->skinnum;
 	rsurface.ent_qwskin = (ent->entitynumber <= cl.maxclients && ent->entitynumber >= 1 && cls.protocol == PROTOCOL_QUAKEWORLD && cl.scores[ent->entitynumber - 1].qw_skin[0] && !strcmp(ent->model->name, "progs/player.mdl")) ? (ent->entitynumber - 1) : -1;
-	rsurface.ent_flags = ent->flags;
+	rsurface.ent_flags = ent->crflags;
 	if (r_fullbright_directed.integer && (r_fullbright.integer || !model->lit))
 		rsurface.ent_flags |= RENDER_LIGHT | RENDER_DYNAMICMODELLIGHT;
 	rsurface.shadertime = r_refdef.scene.time - ent->shadertime;
@@ -8909,7 +8921,7 @@ static void R_ProcessTransparentTextureSurfaceList(int texturenumsurfaces, const
 			center[1] += r_refdef.view.forward[1]*rsurface.entity->transparent_offset;
 			center[2] += r_refdef.view.forward[2]*rsurface.entity->transparent_offset;
 		}
-		R_MeshQueue_AddTransparent((rsurface.entity->flags & RENDER_WORLDOBJECT) ? TRANSPARENTSORT_SKY : (rsurface.texture->currentmaterialflags & MATERIALFLAG_NODEPTHTEST) ? TRANSPARENTSORT_HUD : rsurface.texture->transparentsort, center, R_DrawSurface_TransparentCallback, rsurface.entity, surface - rsurface.modelsurfaces, rsurface.rtlight);
+		R_MeshQueue_AddTransparent((rsurface.entity->crflags & RENDER_WORLDOBJECT) ? TRANSPARENTSORT_SKY : (rsurface.texture->currentmaterialflags & MATERIALFLAG_NODEPTHTEST) ? TRANSPARENTSORT_HUD : rsurface.texture->transparentsort, center, R_DrawSurface_TransparentCallback, rsurface.entity, surface - rsurface.modelsurfaces, rsurface.rtlight);
 	}
 }
 
@@ -9289,7 +9301,7 @@ static void R_DecalSystem_SplatEntity(entity_render_t *ent, const vec3_t worldor
 
 	decalsystem = &ent->decalsystem;
 	model = ent->model;
-	if (!model || !ent->allowdecals || ent->alpha < 1 || (ent->flags & (RENDER_ADDITIVE | RENDER_NODEPTHTEST)))
+	if (!model || !ent->allowdecals || ent->alpha < 1 || (ent->crflags & (RENDER_ADDITIVE | RENDER_NODEPTHTEST)))
 	{
 		R_DecalSystem_Reset(&ent->decalsystem);
 		return;
@@ -9504,7 +9516,7 @@ static void R_DrawModelDecals_FadeEntity(entity_render_t *ent)
 	if (r_showsurfaces.integer)
 		return;
 
-	if (ent->model != decalsystem->model || ent->alpha < 1 || (ent->flags & RENDER_ADDITIVE))
+	if (ent->model != decalsystem->model || ent->alpha < 1 || (ent->crflags & RENDER_ADDITIVE))
 	{
 		R_DecalSystem_Reset(decalsystem);
 		return;
@@ -9579,7 +9591,7 @@ static void R_DrawModelDecals_Entity(entity_render_t *ent)
 	if (r_showsurfaces.integer)
 		return;
 
-	if (ent->model != decalsystem->model || ent->alpha < 1 || (ent->flags & RENDER_ADDITIVE))
+	if (ent->model != decalsystem->model || ent->alpha < 1 || (ent->crflags & RENDER_ADDITIVE))
 	{
 		R_DecalSystem_Reset(decalsystem);
 		return;

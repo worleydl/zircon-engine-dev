@@ -210,14 +210,24 @@ void Host_SaveConfig(const char *file)
 	}
 }
 
-static void Host_SaveConfig_f(cmd_state_t *cmd)
+// Baker r1411: "saveconfig" takes an argument so "saveconfig mine" is possible.
+static void Host_SaveConfig_f(cmd_state_t* cmd)
 {
+	char vabuf[1024];
 	const char *file = CONFIGFILENAME;
+	c_strlcpy(vabuf, file);
 
-	if(Cmd_Argc(cmd) >= 2) {
+	if (Cmd_Argc(cmd) > 1) {
 		file = Cmd_Argv(cmd, 1);
-		Con_Printf("Saving to %s\n", file);
-	}
+		c_strlcpy(vabuf, file);
+
+		// If does not end with .cfg, default it.
+		if (String_Does_End_With(vabuf, ".cfg") == 0) {
+			c_strlcat(vabuf, ".cfg");
+		}
+	} // if argc > 1
+
+	Con_PrintLinef("Saving to %s", vabuf);
 
 	Host_SaveConfig(file);
 }

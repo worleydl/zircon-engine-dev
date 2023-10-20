@@ -2789,7 +2789,7 @@ static void M_Keys_Key(cmd_state_t *cmd, int k, int ascii)
 		break;
 
 	case K_BACKSPACE:		// delete bindings
-	case K_DEL:				// delete bindings
+	case K_DELETE:				// delete bindings
 		S_LocalSound ("sound/misc/menu2.wav");
 		M_UnbindCommand (bindnames[keys_cursor][0]);
 		break;

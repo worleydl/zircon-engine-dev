@@ -1996,7 +1996,8 @@ PRVM_LoadProgs
 ===============
 */
 static void PRVM_UpdateBreakpoints(prvm_prog_t *prog);
-void PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * data, fs_offset_t size, int numrequiredfunc, const char **required_func, int numrequiredfields, prvm_required_field_t *required_field, int numrequiredglobals, prvm_required_field_t *required_global)
+// Baker r1414 - automatic unload of fte csqc-lite csprogs.dat
+const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * data, fs_offset_t size, int numrequiredfunc, const char **required_func, int numrequiredfields, prvm_required_field_t *required_field, int numrequiredglobals, prvm_required_field_t *required_global)
 {
 	int i;
 	dprograms_t *dprograms;
@@ -2494,9 +2495,13 @@ void PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * da
 	dprograms = NULL;
 
 	// check required functions
-	for(i=0 ; i < numrequiredfunc ; i++)
-		if(PRVM_ED_FindFunction(prog, required_func[i]) == 0)
-			prog->error_cmd("%s: %s not found in %s",prog->name, required_func[i], filename);
+	for(i=0 ; i < numrequiredfunc ; i++) {
+		if (PRVM_ED_FindFunction(prog, required_func[i]) == 0) {
+			return required_func[i]; // Baker r1414 - automatic unload of fte csqc-lite csprogs.dat
+			// prog->error_cmd("%s: %s not found in %s",prog->name, required_func[i], filename);
+
+		}
+	}
 
 	PRVM_LoadLNO(prog, filename);
 
@@ -2522,7 +2527,7 @@ void PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned char * da
 				}
 			}
 		}
-		if(!strcmp(prvm_language.string, "dump"))
+		if(String_Does_Match(prvm_language.string, "dump"))
 		{
 			qfile_t *f = FS_OpenRealFile(va(vabuf, sizeof(vabuf), "%s.pot", realfilename), "w", false);
 			Con_Printf("Dumping to %s.pot\n", realfilename);
@@ -2714,6 +2719,7 @@ fail:
 	// Inittime is at least the time when this function finished. However,
 	// later events may bump it.
 	prog->inittime = host.realtime;
+	return NULL; // Baker r1414 - automatic unload of fte csqc-lite csprogs.dat
 }
 
 

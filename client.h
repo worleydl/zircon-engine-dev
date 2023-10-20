@@ -354,7 +354,7 @@ typedef struct entity_render_s
 	// for Alias models
 	int skinnum;
 	// render flags
-	int flags;
+	int crflags;
 
 	// colormod tinting of models
 	float colormod[3];

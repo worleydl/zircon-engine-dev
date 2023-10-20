@@ -55,9 +55,9 @@ static const char *cl_required_func[] =
 	"CSQC_ConsoleCommand",
 };
 
-static int cl_numrequiredfunc = sizeof(cl_required_func) / sizeof(char*);
+static int cl_numrequiredfunc = ARRAY_COUNT (cl_required_func);
 
-#define CL_REQFIELDS (sizeof(cl_reqfields) / sizeof(prvm_required_field_t))
+#define CL_REQFIELDS ARRAY_COUNT(cl_reqfields)
 
 prvm_required_field_t cl_reqfields[] =
 {
@@ -328,7 +328,7 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 		r_refdef.scene.entities[r_refdef.scene.numentities++] = entrender;
 		entrender->entitynumber = edictnum + MAX_EDICTS;
 		//entrender->shadertime = 0; // shadertime was set by spawn()
-		entrender->flags = 0;
+		entrender->crflags = 0;
 		entrender->effects = 0;
 		entrender->alpha = 1;
 		entrender->scale = 1;
@@ -388,17 +388,17 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 		if (PRVM_clientedictvector(ed, modellight_ambient)) VectorCopy(PRVM_clientedictvector(ed, modellight_ambient), entrender->custommodellight_ambient); else VectorClear(entrender->custommodellight_ambient);
 		if (PRVM_clientedictvector(ed, modellight_diffuse)) VectorCopy(PRVM_clientedictvector(ed, modellight_diffuse), entrender->custommodellight_diffuse); else VectorClear(entrender->custommodellight_diffuse);
 		if (PRVM_clientedictvector(ed, modellight_dir))     VectorCopy(PRVM_clientedictvector(ed, modellight_dir), entrender->custommodellight_lightdir);    else VectorClear(entrender->custommodellight_lightdir);
-		entrender->flags |= RENDER_CUSTOMIZEDMODELLIGHT;
+		entrender->crflags |= RENDER_CUSTOMIZEDMODELLIGHT;
 	}
 
 	if(renderflags)
 	{
-		if(renderflags & RF_VIEWMODEL) entrender->flags |= RENDER_VIEWMODEL | RENDER_NODEPTHTEST;
-		if(renderflags & RF_EXTERNALMODEL) entrender->flags |= RENDER_EXTERIORMODEL;
-		if(renderflags & RF_WORLDOBJECT) entrender->flags |= RENDER_WORLDOBJECT;
-		if(renderflags & RF_DEPTHHACK) entrender->flags |= RENDER_NODEPTHTEST;
-		if(renderflags & RF_ADDITIVE) entrender->flags |= RENDER_ADDITIVE;
-		if(renderflags & RF_DYNAMICMODELLIGHT) entrender->flags |= RENDER_DYNAMICMODELLIGHT;
+		if(renderflags & RF_VIEWMODEL) entrender->crflags |= RENDER_VIEWMODEL | RENDER_NODEPTHTEST;
+		if(renderflags & RF_EXTERNALMODEL) entrender->crflags |= RENDER_EXTERIORMODEL;
+		if(renderflags & RF_WORLDOBJECT) entrender->crflags |= RENDER_WORLDOBJECT;
+		if(renderflags & RF_DEPTHHACK) entrender->crflags |= RENDER_NODEPTHTEST;
+		if(renderflags & RF_ADDITIVE) entrender->crflags |= RENDER_ADDITIVE;
+		if(renderflags & RF_DYNAMICMODELLIGHT) entrender->crflags |= RENDER_DYNAMICMODELLIGHT;
 	}
 
 	c = (int)PRVM_clientedictfloat(ed, colormap);
@@ -409,31 +409,31 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 	else
 		CL_SetEntityColormapColors(entrender, c);
 
-	entrender->flags &= ~(RENDER_SHADOW | RENDER_LIGHT | RENDER_NOSELFSHADOW);
+	entrender->crflags &= ~(RENDER_SHADOW | RENDER_LIGHT | RENDER_NOSELFSHADOW);
 	// either fullbright or lit
 	if(!r_fullbright.integer && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) { // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 		if (!(entrender->effects & EF_FULLBRIGHT) && !(renderflags & RF_FULLBRIGHT))
-			entrender->flags |= RENDER_LIGHT;
+			entrender->crflags |= RENDER_LIGHT;
 	}
 	// hide player shadow during intermission or nehahra movie
 	if (!(entrender->effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST))
 	 &&  (entrender->alpha >= 1)
 	 && !(renderflags & RF_NOSHADOW)
-	 && !(entrender->flags & RENDER_VIEWMODEL)
-	 && (!(entrender->flags & RENDER_EXTERIORMODEL) || (!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
-		entrender->flags |= RENDER_SHADOW;
-	if (entrender->flags & RENDER_VIEWMODEL)
-		entrender->flags |= RENDER_NOSELFSHADOW;
+	 && !(entrender->crflags & RENDER_VIEWMODEL)
+	 && (!(entrender->crflags & RENDER_EXTERIORMODEL) || (!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
+		entrender->crflags |= RENDER_SHADOW;
+	if (entrender->crflags & RENDER_VIEWMODEL)
+		entrender->crflags |= RENDER_NOSELFSHADOW;
 	if (entrender->effects & EF_NOSELFSHADOW)
-		entrender->flags |= RENDER_NOSELFSHADOW;
+		entrender->crflags |= RENDER_NOSELFSHADOW;
 	if (entrender->effects & EF_NODEPTHTEST)
-		entrender->flags |= RENDER_NODEPTHTEST;
+		entrender->crflags |= RENDER_NODEPTHTEST;
 	if (entrender->effects & EF_ADDITIVE)
-		entrender->flags |= RENDER_ADDITIVE;
+		entrender->crflags |= RENDER_ADDITIVE;
 	if (entrender->effects & EF_DOUBLESIDED)
-		entrender->flags |= RENDER_DOUBLESIDED;
+		entrender->crflags |= RENDER_DOUBLESIDED;
 	if (entrender->effects & EF_DYNAMICMODELLIGHT)
-		entrender->flags |= RENDER_DYNAMICMODELLIGHT;
+		entrender->crflags |= RENDER_DYNAMICMODELLIGHT;
 
 	// make the other useful stuff
 	memcpy(entrender->framegroupblend, ed->priv.server->framegroupblend, sizeof(ed->priv.server->framegroupblend));
@@ -653,24 +653,22 @@ static void CL_VM_Parse_Print (const char *msg)
 void CSQC_AddPrintText (const char *msg)
 {
 	prvm_prog_t *prog = CLVM_prog;
-	size_t i;
+	size_t j;
 	CSQC_BEGIN
-	if(cl.csqc_loaded && PRVM_clientfunction(CSQC_Parse_Print))
-	{
+	if (cl.csqc_loaded && PRVM_clientfunction(CSQC_Parse_Print)) {
 		// FIXME: is this bugged?
-		i = strlen(msg)-1;
-		if(msg[i] != '\n' && msg[i] != '\r')
-		{
-			if(strlen(cl.csqc_printtextbuf)+i >= MAX_INPUTLINE)
-			{
+		j = strlen(msg)-1;
+		if(msg[j] != '\n' && msg[j] != '\r') {
+			if(strlen(cl.csqc_printtextbuf)+j >= MAX_INPUTLINE) {
 				CL_VM_Parse_Print(cl.csqc_printtextbuf);
 				cl.csqc_printtextbuf[0] = 0;
 			}
-			else
-				strlcat(cl.csqc_printtextbuf, msg, MAX_INPUTLINE);
+			else {
+				c_strlcat(cl.csqc_printtextbuf, msg);//, MAX_INPUTLINE);
+			}
 			return;
 		}
-		strlcat(cl.csqc_printtextbuf, msg, MAX_INPUTLINE);
+		c_strlcat(cl.csqc_printtextbuf, msg); //, MAX_INPUTLINE);
 		CL_VM_Parse_Print(cl.csqc_printtextbuf);
 		cl.csqc_printtextbuf[0] = 0;
 	}
@@ -994,8 +992,8 @@ void CL_VM_Init (void)
 
 	// reset csqc_progcrc after reading it, so that changing servers doesn't
 	// expect csqc on the next server
-	requiredcrc = csqc_progcrc.integer;
-	requiredsize = csqc_progsize.integer;
+	requiredcrc = csqc_progcrc.integer; // Baker:  a cvar
+	requiredsize = csqc_progsize.integer; // Baker:  a cvar
 	Cvar_SetValueQuick(&csqc_progcrc, -1);
 	Cvar_SetValueQuick(&csqc_progsize, -1);
 
@@ -1004,12 +1002,13 @@ void CL_VM_Init (void)
 		return;
 
 	// see if the requested csprogs.dat file matches the requested crc
-	if (!cls.demoplayback || csqc_usedemoprogs.integer)
-	{
+	if (!cls.demoplayback || csqc_usedemoprogs.integer) {
 		csprogsfn = va(vabuf, sizeof(vabuf), "dlcache/%s.%i.%i", csqc_progname.string, requiredsize, requiredcrc);
-		if(cls.caughtcsprogsdata && cls.caughtcsprogsdatasize == requiredsize && CRC_Block(cls.caughtcsprogsdata, (size_t)cls.caughtcsprogsdatasize) == requiredcrc)
+		if (cls.caughtcsprogsdata && 
+			cls.caughtcsprogsdatasize == requiredsize && 
+			CRC_Block(cls.caughtcsprogsdata, (size_t)cls.caughtcsprogsdatasize) == requiredcrc)
 		{
-			Con_DPrintf("Using buffered \"%s\"\n", csprogsfn);
+			Con_DPrintf("Using buffered \"%s\"\n", csprogsfn);  // Baker: and this is what?
 			csprogsdata = cls.caughtcsprogsdata;
 			csprogsdatasize = cls.caughtcsprogsdatasize;
 			cls.caughtcsprogsdata = NULL;
@@ -1021,13 +1020,14 @@ void CL_VM_Init (void)
 			csprogsdata = FS_LoadFile(csprogsfn, tempmempool, true, &csprogsdatasize);
 		}
 	}
+
 	if (!csprogsdata)
 	{
-		csprogsfn = csqc_progname.string;
+		csprogsfn = csqc_progname.string; // Baker: a cvar
 		csprogsdata = FS_LoadFile(csprogsfn, tempmempool, true, &csprogsdatasize);
 	}
-	if (csprogsdata)
-	{
+
+	if (csprogsdata) {
 		csprogsdatacrc = CRC_Block(csprogsdata, (size_t)csprogsdatasize);
 		if (csprogsdatacrc != requiredcrc || csprogsdatasize != requiredsize)
 		{
@@ -1049,8 +1049,9 @@ void CL_VM_Init (void)
 	}
 	else
 	{
-		if (requiredcrc >= 0)
+		if (requiredcrc >= 0) {
 			CL_DisconnectEx(false, CON_ERROR "CL_VM_Init: %s requires CSQC, but \"%s\" wasn't found\n", cls.demoplayback ? "demo" : "server", csqc_progname.string);
+		}
 		return;
 	}
 
@@ -1082,7 +1083,18 @@ void CL_VM_Init (void)
 	prog->error_cmd             = Host_Error;
 	prog->ExecuteProgram        = CLVM_ExecuteProgram;
 
-	PRVM_Prog_Load(prog, csprogsfn, csprogsdata, csprogsdatasize, cl_numrequiredfunc, cl_required_func, CL_REQFIELDS, cl_reqfields, CL_REQGLOBALS, cl_reqglobals);
+	// Baker r1414 - automatic unload of fte csqc-lite csprogs.dat
+	const char *s_missing_fn = PRVM_Prog_Load(prog, csprogsfn, csprogsdata, csprogsdatasize, cl_numrequiredfunc, cl_required_func, CL_REQFIELDS, cl_reqfields, CL_REQGLOBALS, cl_reqglobals);
+
+	// Baker: See if csprogs supports DarkPlaces (pass is no guarantee, but we elim some)
+	if (s_missing_fn) {
+		Con_PrintLinef ("csprogs.dat not supported (DarkPlaces was not a target engine, lacks %s).  Unloading.", s_missing_fn);
+		
+		// unload
+		PRVM_Prog_Reset(prog);
+		cl.csqc_loaded = false;
+		return;
+	}
 
 	if (!prog->loaded)
 	{
@@ -1090,8 +1102,8 @@ void CL_VM_Init (void)
 		Host_Error("CSQC %s failed to load\n", csprogsfn);
 	}
 
-	if(cls.demorecording)
-	{
+
+	if (cls.demorecording) {
 		if(cls.demo_lastcsprogssize != csprogsdatasize || cls.demo_lastcsprogscrc != csprogsdatacrc)
 		{
 			int i;

@@ -81,8 +81,8 @@ typedef enum keynum_e
 	K_F11,
 	K_F12,
 
-	K_INS,
-	K_DEL,
+	K_INSERT,
+	K_DELETE,
 	K_PGDN,
 	K_PGUP,
 	K_HOME,

@@ -1625,8 +1625,8 @@ static void Mod_Q1BSP_LoadSplitSky (unsigned char *src, int width, int height, i
 		}
 	}
 
-	loadmodel->brush.solidskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_solidtexture", 0         , (unsigned char *) solidpixels, w, h, 0, 0, 0, vid.sRGB3D);
-	loadmodel->brush.alphaskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_alphatexture", TEXF_ALPHA, (unsigned char *) alphapixels, w, h, 0, 0, 0, vid.sRGB3D);
+	loadmodel->brush.solidskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_solidtexture", 0         , (unsigned char *) solidpixels, w, h, 0, 0, 0, vid.sRGB3D, true); // Baker r9011 fix q1bsp sky never being reloaded after first map 
+	loadmodel->brush.alphaskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_alphatexture", TEXF_ALPHA, (unsigned char *) alphapixels, w, h, 0, 0, 0, vid.sRGB3D, true); // Baker r9011 fix q1bsp sky never being reloaded after first map 
 	Mem_Free(solidpixels);
 	Mem_Free(alphapixels);
 }
@@ -1684,7 +1684,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			for (j = (int)strlen(name); j < 16; j++)
 				name[j] = 0;
 
-			if (!strncmp(name, "sky", 3))
+			if (String_Does_Start_With (name, "sky") /*!strncmp(name, "sky", 3)*/) // Q1SKY
 				numsky++;
 		}
 
@@ -1762,8 +1762,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 	FS_StripExtension(s, mapname, sizeof(mapname));
 
 	// LadyHavoc: mostly rewritten map texture loader
-	for (i = 0;i < nummiptex;i++)
-	{
+	for (i = 0;i < nummiptex;i++) {
 		doffset = MSG_ReadLittleLong(sb);
 		if (r_nosurftextures.integer)
 			continue;
@@ -1817,8 +1816,11 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		tx = loadmodel->data_textures + i;
 		// try to load shader or external textures, but first we have to backup the texture_t because shader loading overwrites it even if it fails
 		backuptex = loadmodel->data_textures[i];
-		if (name[0] && /* HACK */ strncmp(name, "sky", 3) /* END HACK */ && (Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s/%s", mapname, name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL) ||
-		                Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s"   , name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)))
+		// Q1SKY - this is not Q1SKY
+		if (name[0] && /* HACK */ String_Does_Start_With(name, "sky") == false /*strncmp(name, "sky", 3)*/
+			/* END HACK */ && 
+			(Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s/%s", mapname, name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL) ||
+		    Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s"   , name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)))
 		{
 			// set the width/height fields which are used for parsing texcoords in this bsp format
 			tx->width = mtwidth;
@@ -1855,7 +1857,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				tx->surfaceflags = mod_q1bsp_texture_water.surfaceflags;
 			}
 		}
-		else if (!strncmp(tx->name, "sky", 3))
+		else if (String_Does_Start_With(tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/)
 		{
 			tx->supercontents = mod_q1bsp_texture_sky.supercontents;
 			tx->surfaceflags = mod_q1bsp_texture_sky.surfaceflags;
@@ -1872,9 +1874,10 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		{
 			skinframe_t *skinframe = R_SkinFrame_LoadExternal(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s/%s", mapname, tx->name), TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, false, false);
 			if ((!skinframe &&
-			    !(skinframe = R_SkinFrame_LoadExternal(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s", tx->name), TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, false, false)))
+			    !(skinframe = R_SkinFrame_LoadExternal(gamemode == GAME_TENEBRAE ? 
+					tx->name : va(vabuf, sizeof(vabuf), "textures/%s", tx->name), TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, false, false)))
 				// HACK: It loads custom skybox textures as a wall if loaded as a skinframe.
-				|| !strncmp(tx->name, "sky", 3))
+				|| String_Does_Start_With(tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/)
 			{
 				// did not find external texture via shader loading, load it from the bsp or wad3
 				if (loadmodel->brush.ishlbsp)
@@ -1890,32 +1893,45 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 					{
 						tx->width = image_width;
 						tx->height = image_height;
-						tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, pixels, image_width, image_height, image_width, image_height, CRC_Block(pixels, image_width * image_height * 4), true);
+						tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, pixels, image_width, image_height, image_width, image_height, CRC_Block(pixels, image_width * image_height * 4), true, /*q1skyload*/ false);
 					}
 					if (freepixels)
 						Mem_Free(freepixels);
 				}
-				else if (!strncmp(tx->name, "sky", 3) && mtwidth == mtheight * 2)
+				else if (String_Does_Start_With (tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/ 
+					&& mtwidth == mtheight * 2)
 				{
 					data = loadimagepixelsbgra(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s/%s", mapname, tx->name), false, false, false, NULL);
 					if (!data)
 						data = loadimagepixelsbgra(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s", tx->name), false, false, false, NULL);
 					if (data && image_width == image_height * 2)
 					{
-						Mod_Q1BSP_LoadSplitSky(data, image_width, image_height, 4);
+						Mod_Q1BSP_LoadSplitSky (data, image_width, image_height, 4);
 						Mem_Free(data);
 					}
 					else if (mtdata != NULL)
-						Mod_Q1BSP_LoadSplitSky(mtdata, mtwidth, mtheight, 1);
+						Mod_Q1BSP_LoadSplitSky (mtdata, mtwidth, mtheight, 1);
 				}
-				else if (mtdata) // texture included
+				else if (mtdata) { // texture included
+					// Baker r1210:  shot1sid shotgun shells texture fix, in most Quake engines since 2000 (look at shotgun shells on DM3 bridge)
+					if (String_Does_Match(tx->name, "shot1sid") && tx->width == 32 && tx->height == 32) {
+						int	 pixelcount = tx->width * tx->height;
+						if (CRC_Block(mtdata, pixelcount) == 65393) {
+							// This texture in b_shell1.bsp has some of the first 32 pixels painted white.
+							// They are invisible in software, but look really ugly in GL. So we just copy
+							// 32 pixels from the bottom to make it look nice.
+							memcpy(mtdata, mtdata + 32 * 31, 32);
+						} // CRC
+					} // shot1sid 32 32 w h
+
 					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalQuake(tx->name, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, false, r_fullbrights.integer, mtdata, tx->width, tx->height);
+				}
 				// if mtdata is NULL, the "missing" texture has already been assigned to this
 				// LadyHavoc: some Tenebrae textures get replaced by black
 				if (!strncmp(tx->name, "*glassmirror", 12)) // Tenebrae
-					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_MIPMAP | TEXF_ALPHA, zerotrans, 1, 1, 0, 0, 0, false);
+					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_MIPMAP | TEXF_ALPHA, zerotrans, 1, 1, 0, 0, 0, false, /*q1skyload*/ false);
 				else if (!strncmp(tx->name, "mirror", 6)) // Tenebrae
-					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, 0, zeroopaque, 1, 1, 0, 0, 0, false);
+					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, 0, zeroopaque, 1, 1, 0, 0, 0, false, /*q1skyload*/ false);
 			}
 			else
 				tx->materialshaderpass->skinframes[0] = skinframe;
@@ -2028,13 +2044,11 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			continue;
 
 		// If we have exactly one frame, something's wrong.
-		if (max + altmax <= 1)
-		{
-			Con_Printf("Texture %s is animated (leading +) but has only one frame\n", tx->name);
+		if (max + altmax <= 1) {
+			Con_DPrintLinef ("Texture %s is animated (leading +) but has only one frame", tx->name); // Baker r1412: dprint this happens in start.bsp
 		}
 
-		if (altmax < 1)
-		{
+		if (altmax < 1) {
 			// if there is no alternate animation, duplicate the primary
 			// animation into the alternate
 			altmax = max;
@@ -2042,10 +2056,9 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				altanims[k] = anims[k];
 		}
 
-		if (max < 1)
-		{
+		if (max < 1) {
 			// Warn.
-			Con_Printf("Missing frame 0 of %s\n", tx->name);
+			Con_PrintLinef ("Missing frame 0 of %s", tx->name);
 
 			// however, we can handle this by duplicating the alternate animation into the primary
 			max = altmax;
@@ -2669,11 +2682,13 @@ static void Mod_Q1BSP_LoadFaces(sizebuf_t *sb)
 		// generate surface extents information
 		texmins[0] = texmaxs[0] = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex), surface->lightmapinfo->texinfo->vecs[0]) + surface->lightmapinfo->texinfo->vecs[0][3];
 		texmins[1] = texmaxs[1] = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex), surface->lightmapinfo->texinfo->vecs[1]) + surface->lightmapinfo->texinfo->vecs[1][3];
-		for (i = 1;i < surface->num_vertices;i++)
-		{
-			for (j = 0;j < 2;j++)
-			{
-				val = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + surface->lightmapinfo->texinfo->vecs[j][3];
+		for (i = 1;i < surface->num_vertices;i++) {
+			for (j = 0;j < 2;j++) {
+				// Baker r1211: Quakespasm 64-bit lightmap fix
+				#define DotProduct222(a,b) ((double)(a)[0]*(double)(b)[0]+(double)(a)[1]*(double)(b)[1]+(double)(a)[2]*(double)(b)[2])
+
+				//val = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + surface->lightmapinfo->texinfo->vecs[j][3];
+				val = DotProduct222((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + (double)surface->lightmapinfo->texinfo->vecs[j][3];
 				texmins[j] = min(texmins[j], val);
 				texmaxs[j] = max(texmaxs[j], val);
 			}
@@ -8763,7 +8778,7 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 			Mod_BuildVBOs();
 	}
 
-	// Baker: This isn't where but whatever ...
+	// Baker r9007: Indicate that .obj map is lit.
 	loadmodel->lit = true;
 
 	mod = loadmodel;

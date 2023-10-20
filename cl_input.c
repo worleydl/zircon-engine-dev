@@ -61,7 +61,6 @@ kbutton_t	in_button9, in_button10, in_button11, in_button12, in_button13, in_but
 int			in_impulse;
 
 
-
 static void KeyDown (cmd_state_t *cmd, kbutton_t *b)
 {
 	int k;
@@ -134,10 +133,18 @@ static void IN_UpDown(cmd_state_t *cmd) {KeyDown(cmd, &in_up);}
 static void IN_UpUp(cmd_state_t *cmd) {KeyUp(cmd, &in_up);}
 static void IN_DownDown(cmd_state_t *cmd) {KeyDown(cmd, &in_down);}
 static void IN_DownUp(cmd_state_t *cmd) {KeyUp(cmd, &in_down);}
-static void IN_LeftDown(cmd_state_t *cmd) {KeyDown(cmd, &in_left);}
-static void IN_LeftUp(cmd_state_t *cmd) {KeyUp(cmd, &in_left);}
-static void IN_RightDown(cmd_state_t *cmd) {KeyDown(cmd, &in_right);}
-static void IN_RightUp(cmd_state_t *cmd) {KeyUp(cmd, &in_right);}
+static void IN_LeftDown(cmd_state_t *cmd) {
+	KeyDown(cmd, &in_left);
+}
+static void IN_LeftUp(cmd_state_t *cmd)  {
+	KeyUp(cmd, &in_left);
+}
+static void IN_RightDown(cmd_state_t *cmd) {
+	KeyDown(cmd, &in_right);
+}
+static void IN_RightUp(cmd_state_t *cmd) {
+	KeyUp(cmd, &in_right);
+}
 static void IN_ForwardDown(cmd_state_t *cmd) {KeyDown(cmd, &in_forward);}
 static void IN_ForwardUp(cmd_state_t *cmd) {KeyUp(cmd, &in_forward);}
 static void IN_BackDown(cmd_state_t *cmd) {KeyDown(cmd, &in_back);}
@@ -1901,8 +1908,9 @@ void CL_SendMove(void)
 	// (otherwise it is only for prediction)
 
 	// do not send 0ms packets because they mess up physics
-	if(cl.cmd.msec == 0 && cl.time > cl.oldtime && (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS))
+	if(cl.cmd.msec == 0 && cl.time > cl.oldtime && (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS)) {
 		return;
+	}
 
 	// don't send too often or else network connections can get clogged by a
 	// high renderer framerate

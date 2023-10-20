@@ -1071,7 +1071,7 @@ static void get_showspeed_unit(int unitnumber, double *conversion_factor, const 
 			*unit = "knots";
 			*conversion_factor = 1.0 * (cl_showspeed_factor.value * 0.01 * 3.6) * 0.539957;
 			break;
-	}
+	} // sw
 }
 
 static double showfps_nexttime = 0, showfps_lasttime = -1;
@@ -1083,8 +1083,7 @@ void Sbar_ShowFPS_Update(void)
 	double interval = 1;
 	double newtime;
 	newtime = host.realtime;
-	if (newtime >= showfps_nexttime)
-	{
+	if (newtime >= showfps_nexttime) {
 		showfps_framerate = showfps_framecount / (newtime - showfps_lasttime);
 		if (showfps_nexttime < newtime - interval * 1.5)
 			showfps_nexttime = newtime;
@@ -1139,28 +1138,23 @@ void Sbar_ShowFPS(void)
 			fps_strings++;
 		}
 	}
-	if (cl_showtime.integer)
-	{
+	if (cl_showtime.integer) {
 		strlcpy(timestring, Sys_TimeString(cl_showtime_format.string), sizeof(timestring));
 		fps_strings++;
 	}
-	if (cl_showdate.integer)
-	{
+	if (cl_showdate.integer) {
 		strlcpy(datestring, Sys_TimeString(cl_showdate_format.string), sizeof(datestring));
 		fps_strings++;
 	}
-	if (cl_showblur.integer)
-	{
+	if (cl_showblur.integer) {
 		dpsnprintf(blurstring, sizeof(blurstring), "%3i%% blur", (int)(cl.motionbluralpha * 100));
 		fps_strings++;
 	}
-	if (cl_showsound.integer)
-	{
+	if (cl_showsound.integer) {
 		dpsnprintf(soundstring, sizeof(soundstring), "%4i/4%i at %3ims", cls.soundstats.mixedsounds, cls.soundstats.totalsounds, cls.soundstats.latency_milliseconds);
 		fps_strings++;
 	}
-	if (cl_showspeed.integer || cl_showtopspeed.integer)
-	{
+	if (cl_showspeed.integer || cl_showtopspeed.integer) {
 		double speed, speedxy, f;
 		const char *unit;
 		speed = VectorLength(cl.movement_velocity);
@@ -1171,8 +1165,7 @@ void Sbar_ShowFPS(void)
 			dpsnprintf(speedstring, sizeof(speedstring), "%.0f (%.0f) %s", f*speed, f*speedxy, unit);
 			fps_strings++;
 		}
-		if (cl_showtopspeed.integer)
-		{
+		if (cl_showtopspeed.integer) {
 			qbool topspeed_latched = false, topspeedxy_latched = false;
 			get_showspeed_unit(cl_showtopspeed.integer, &f, &unit);
 			if (speed >= topspeed || current_time - top_time > 3)
@@ -1197,8 +1190,7 @@ void Sbar_ShowFPS(void)
 			fps_strings++;
 		}
 	}
-	if (cl_showtex.integer)
-	{
+	if (cl_showtex.integer) {
 		vec3_t org;
 		vec3_t dest;
 		vec3_t temp;
@@ -1222,8 +1214,7 @@ void Sbar_ShowFPS(void)
 		else
 			strlcpy(texstring, "(no texture hit)", sizeof(texstring));
 		fps_strings++;
-		if (svtrace.fraction < cltrace.fraction)
-		{
+		if (svtrace.fraction < cltrace.fraction) {
 			if (svtrace.ent != NULL)
 			{
 				prvm_prog_t *prog = SVVM_prog;
@@ -1248,8 +1239,7 @@ void Sbar_ShowFPS(void)
 		}
 		fps_strings++;
 	}
-	if (fps_strings)
-	{
+	if (fps_strings) {
 		fps_scalex = 12;
 		fps_scaley = 12;
 		//fps_y = vid_conheight.integer - sb_lines; // yes this may draw over the sbar
@@ -1266,6 +1256,7 @@ void Sbar_ShowFPS(void)
 		{
 			r_draw2d_force = true;
 			fps_x = vid_conwidth.integer - DrawQ_TextWidth(fpsstring, 0, fps_scalex, fps_scaley, true, FONT_INFOBAR);
+
 			DrawQ_Fill(fps_x, fps_y, vid_conwidth.integer - fps_x, fps_scaley, 0, 0, 0, 0.5, 0);
 			if (red)
 				DrawQ_String(fps_x, fps_y, fpsstring, 0, fps_scalex, fps_scaley, 1, 0, 0, 1, 0, NULL, true, FONT_INFOBAR);
@@ -1330,8 +1321,7 @@ void Sbar_ShowFPS(void)
 			DrawQ_String(fps_x, fps_y, texstring, 0, fps_scalex, fps_scaley, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
 			fps_y += fps_scaley;
 		}
-		if (entstring[0])
-		{
+		if (entstring[0]) {
 			fps_x = vid_conwidth.integer - DrawQ_TextWidth(entstring, 0, fps_scalex, fps_scaley, true, FONT_INFOBAR);
 			DrawQ_Fill(fps_x, fps_y, vid_conwidth.integer - fps_x, fps_scaley, 0, 0, 0, 0.5, 0);
 			DrawQ_String(fps_x, fps_y, entstring, 0, fps_scalex, fps_scaley, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
@@ -1663,65 +1653,54 @@ void Sbar_Draw (void)
 			// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
 			//if (cl.gametype == GAME_DEATHMATCH && gamemode != GAME_TRANSFUSION)
 
-			if (sb_lines > 24)
-			{
+			if (sb_lines > 24) {
 				if (gamemode != GAME_GOODVSBAD2)
 					Sbar_DrawInventory ();
 				if (!cl.islocalgame && gamemode != GAME_TRANSFUSION)
 					Sbar_DrawFrags ();
 			}
 
-			if (sb_showscores || (cl.stats[STAT_HEALTH] <= 0 && cl_deathscoreboard.integer))
-			{
+			if (sb_showscores || (cl.stats[STAT_HEALTH] <= 0 && cl_deathscoreboard.integer)) {
 				if (gamemode != GAME_GOODVSBAD2)
 					Sbar_DrawAlphaPic (0, 0, sb_scorebar, sbar_alpha_bg.value);
 				Sbar_DrawScoreboard ();
 			}
-			else if (sb_lines)
-			{
+			else if (sb_lines) {
 				Sbar_DrawAlphaPic (0, 0, sb_sbar, sbar_alpha_bg.value);
 
 				// keys (hipnotic only)
 				//MED 01/04/97 moved keys here so they would not be overwritten
-				if (gamemode == GAME_HIPNOTIC || gamemode == GAME_QUOTH)
-				{
+				if (gamemode == GAME_HIPNOTIC || gamemode == GAME_QUOTH) {
 					if (cl.stats[STAT_ITEMS] & IT_KEY1)
 						Sbar_DrawPic (209, 3, sb_items[0]);
 					if (cl.stats[STAT_ITEMS] & IT_KEY2)
 						Sbar_DrawPic (209, 12, sb_items[1]);
 				}
+
 				// armor
-				if (gamemode != GAME_GOODVSBAD2)
-				{
-					if (cl.stats[STAT_ITEMS] & IT_INVULNERABILITY)
-					{
-						Sbar_DrawNum (24, 0, 666, 3, 1);
-						Sbar_DrawPic (0, 0, sb_disc);
-					}
-					else
-					{
-						if (gamemode == GAME_ROGUE)
-						{
-							Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
-							if (cl.stats[STAT_ITEMS] & RIT_ARMOR3)
-								Sbar_DrawPic (0, 0, sb_armor[2]);
-							else if (cl.stats[STAT_ITEMS] & RIT_ARMOR2)
-								Sbar_DrawPic (0, 0, sb_armor[1]);
-							else if (cl.stats[STAT_ITEMS] & RIT_ARMOR1)
-								Sbar_DrawPic (0, 0, sb_armor[0]);
-						}
-						else
-						{
-							Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
-							if (cl.stats[STAT_ITEMS] & IT_ARMOR3)
-								Sbar_DrawPic (0, 0, sb_armor[2]);
-							else if (cl.stats[STAT_ITEMS] & IT_ARMOR2)
-								Sbar_DrawPic (0, 0, sb_armor[1]);
-							else if (cl.stats[STAT_ITEMS] & IT_ARMOR1)
-								Sbar_DrawPic (0, 0, sb_armor[0]);
-						}
+				if (cl.stats[STAT_ITEMS] & IT_INVULNERABILITY) {
+					Sbar_DrawNum (24, 0, 666, 3, 1);
+					Sbar_DrawPic (0, 0, sb_disc);
+				} else {
+					if (gamemode == GAME_ROGUE) {
+						Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
+						if (cl.stats[STAT_ITEMS] & RIT_ARMOR3)
+							Sbar_DrawPic (0, 0, sb_armor[2]);
+						else if (cl.stats[STAT_ITEMS] & RIT_ARMOR2)
+							Sbar_DrawPic (0, 0, sb_armor[1]);
+						else if (cl.stats[STAT_ITEMS] & RIT_ARMOR1)
+							Sbar_DrawPic (0, 0, sb_armor[0]);
+					} else {
+						Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
+						if (cl.stats[STAT_ITEMS] & IT_ARMOR3)
+							Sbar_DrawPic (0, 0, sb_armor[2]);
+						else if (cl.stats[STAT_ITEMS] & IT_ARMOR2)
+							Sbar_DrawPic (0, 0, sb_armor[1]);
+						else if (cl.stats[STAT_ITEMS] & IT_ARMOR1)
+							Sbar_DrawPic (0, 0, sb_armor[0]);
 					}
 				}
+
 
 				// face
 				Sbar_DrawFace ();
@@ -1730,8 +1709,7 @@ void Sbar_Draw (void)
 				Sbar_DrawNum (136, 0, cl.stats[STAT_HEALTH], 3, cl.stats[STAT_HEALTH] <= 25);
 
 				// ammo icon
-				if (gamemode == GAME_ROGUE)
-				{
+				if (gamemode == GAME_ROGUE) {
 					if (cl.stats[STAT_ITEMS] & RIT_SHELLS)
 						Sbar_DrawPic (224, 0, sb_ammo[0]);
 					else if (cl.stats[STAT_ITEMS] & RIT_NAILS)
@@ -1761,17 +1739,23 @@ void Sbar_Draw (void)
 
 				Sbar_DrawNum (248, 0, cl.stats[STAT_AMMO], 3, cl.stats[STAT_AMMO] <= 10);
 
+// Baker r8012: remove mini-overlay
+#if 0
 				// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
-				if ((!cl.islocalgame || cl.gametype != GAME_COOP))
-				{
+				if ((!cl.islocalgame || cl.gametype != GAME_COOP)) {
 					if (gamemode == GAME_TRANSFUSION)
 						Sbar_MiniDeathmatchOverlay (0, 0);
 					else
 						Sbar_MiniDeathmatchOverlay (sbar_x + 324, vid_conheight.integer - 8*8);
 					Sbar_Score(24);
 				}
+#endif
 			}
 		}
+
+
+
+
 	}
 
 	if (cl.csqc_vidvars.drawcrosshair && crosshair.integer >= 1 && !cl.intermission && !r_letterbox.value)
@@ -1806,17 +1790,13 @@ static float Sbar_PrintScoreboardItem(scoreboard_t *s, float x, float y)
 		if((s->colors & 15) == (cl.scores[cl.playerentity - 1].colors & 15))
 			myself = true;
 
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-	{
-		if (s->qw_spectator)
-		{
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
+		if (s->qw_spectator) {
 			if (s->qw_ping || s->qw_packetloss)
 				DrawQ_String(x, y, va(vabuf, sizeof(vabuf), "%4i %3i %4i spectator  %c%s", bound(0, s->qw_ping, 9999), bound(0, s->qw_packetloss, 99), minutes, myself ? 13 : ' ', s->name), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
 			else
 				DrawQ_String(x, y, va(vabuf, sizeof(vabuf), "         %4i spectator  %c%s", minutes, myself ? 13 : ' ', s->name), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
-		}
-		else
-		{
+		} else {
 			// draw colors behind score
 			//
 			//
@@ -1834,18 +1814,13 @@ static float Sbar_PrintScoreboardItem(scoreboard_t *s, float x, float y)
 			else
 				DrawQ_String(x, y, va(vabuf, sizeof(vabuf), "         %4i %5i %-4s %c%s", minutes,(int) s->frags, cl.qw_teamplay ? s->qw_team : "", myself ? 13 : ' ', s->name), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
 		}
-	}
-	else
-	{
-		if (s->qw_spectator)
-		{
+	} else {
+		if (s->qw_spectator) {
 			if (s->qw_ping || s->qw_packetloss)
 				DrawQ_String(x, y, va(vabuf, sizeof(vabuf), "%4i %3i spect %c%s", bound(0, s->qw_ping, 9999), bound(0, s->qw_packetloss, 99), myself ? 13 : ' ', s->name), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
 			else
 				DrawQ_String(x, y, va(vabuf, sizeof(vabuf), "         spect %c%s", myself ? 13 : ' ', s->name), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
-		}
-		else
-		{
+		} else {
 			// draw colors behind score
 			c = palette_rgb_pantsscoreboard[(s->colors & 0xf0) >> 4];
 			DrawQ_Fill(x + 9*8*FONT_SBAR->maxwidth, y+1, 40*FONT_SBAR->maxwidth, 3, c[0] * (1.0f / 255.0f), c[1] * (1.0f / 255.0f), c[2] * (1.0f / 255.0f), sbar_alpha_fg.value, 0);
@@ -1921,18 +1896,15 @@ void Sbar_DeathmatchOverlay (void)
 
 	// draw the text
 	y = 40;
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-	{
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 		DrawQ_String(xmin, y, va(vabuf, sizeof(vabuf), "ping pl%% time frags team  name"), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
-	}
-	else
-	{
+	} else {
+
 		DrawQ_String(xmin, y, va(vabuf, sizeof(vabuf), "ping pl%% frags  name"), 0, 8, 8, 1, 1, 1, 1 * sbar_alpha_fg.value, 0, NULL, false, FONT_SBAR );
 	}
 	y += 8;
 
-	if (Sbar_IsTeammatch ())
-	{
+	if (Sbar_IsTeammatch ()) {
 		// show team scores first
 		for (i = 0;i < teamlines && y < vid_conheight.integer;i++)
 			y += (int)Sbar_PrintScoreboardItem((teams + teamsort[i]), xmin, y);

@@ -61,8 +61,8 @@ cvar_t r_font_postprocess_shadow_y = {CF_CLIENT | CF_ARCHIVE, "r_font_postproces
 cvar_t r_font_postprocess_shadow_z = {CF_CLIENT | CF_ARCHIVE, "r_font_postprocess_shadow_z", "0", "font shadow Z shift amount, applied during blurring"};
 cvar_t r_font_hinting = {CF_CLIENT | CF_ARCHIVE, "r_font_hinting", "3", "0 = no hinting, 1 = light autohinting, 2 = full autohinting, 3 = full hinting"};
 cvar_t r_font_antialias = {CF_CLIENT | CF_ARCHIVE, "r_font_antialias", "1", "0 = monochrome, 1 = grey" /* , 2 = rgb, 3 = bgr" */};
-cvar_t r_nearest_2d = {CF_CLIENT | CF_ARCHIVE, "r_nearest_2d", "0", "use nearest filtering on all 2d textures (including conchars)"};
-cvar_t r_nearest_conchars = {CF_CLIENT | CF_ARCHIVE, "r_nearest_conchars", "0", "use nearest filtering on conchars texture"};
+cvar_t r_nearest_2d = {CF_CLIENT | CF_ARCHIVE, "r_nearest_2d", "1", "use nearest filtering on all 2d textures (including conchars) [Zircon default]"}; // Baker r8103 - default 1 for crispness
+cvar_t r_nearest_conchars = {CF_CLIENT | CF_ARCHIVE, "r_nearest_conchars", "1", "use nearest filtering on conchars texture [Zircon default]"}; // Baker r8103 - default 1 for crispness
 
 //=============================================================================
 /* Support Routines */
@@ -299,7 +299,7 @@ cachepic_t *Draw_NewPic(const char *picname, int width, int height, unsigned cha
 	pic->flags |= (texflags & TEXF_FORCENEAREST) ? CACHEPICFLAG_NEAREST : 0;
 	pic->width = width;
 	pic->height = height;
-	pic->skinframe = R_SkinFrame_LoadInternalBGRA(picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, 0, 0, 0, vid.sRGB2D);
+	pic->skinframe = R_SkinFrame_LoadInternalBGRA(picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, 0, 0, 0, vid.sRGB2D, /*q1skyload*/ false);
 	pic->lastusedframe = draw_frame;
 	return pic;
 }

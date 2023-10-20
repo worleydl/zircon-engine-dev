@@ -1218,7 +1218,7 @@ static void R_Shadow_MakeTextures_MakeCorona(void)
 			pixels[y][x][3] = 255;
 		}
 	}
-	r_shadow_lightcorona = R_SkinFrame_LoadInternalBGRA("lightcorona", TEXF_FORCELINEAR, &pixels[0][0][0], 32, 32, 0, 0, 0, false);
+	r_shadow_lightcorona = R_SkinFrame_LoadInternalBGRA("lightcorona", TEXF_FORCELINEAR, &pixels[0][0][0], 32, 32, 0, 0, 0, false, /*q1skyload*/ false);
 }
 
 static unsigned int R_Shadow_MakeTextures_SamplePoint(float x, float y, float z)
@@ -3565,7 +3565,7 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 			continue;
 		if (!(model = ent->model))
 			continue;
-		if (r_refdef.viewcache.entityvisible[i] && model->DrawLight && (ent->flags & RENDER_LIGHT))
+		if (r_refdef.viewcache.entityvisible[i] && model->DrawLight && (ent->crflags & RENDER_LIGHT))
 		{
 			// this entity wants to receive light, is visible, and is
 			// inside the light box
@@ -3573,14 +3573,14 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 			// so now check if it's in a leaf seen by the light
 			if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.BoxTouchingLeafPVS && !r_refdef.scene.worldmodel->brush.BoxTouchingLeafPVS(r_refdef.scene.worldmodel, leafpvs, ent->mins, ent->maxs))
 				continue;
-			if (ent->flags & RENDER_NOSELFSHADOW)
+			if (ent->crflags & RENDER_NOSELFSHADOW)
 				lightentities_noselfshadow[numlightentities_noselfshadow++] = ent;
 			else
 				lightentities[numlightentities++] = ent;
 			// since it is lit, it probably also casts a shadow...
 			// about the VectorDistance2 - light emitting entities should not cast their own shadow
 			Matrix4x4_OriginFromMatrix(&ent->matrix, org);
-			if ((ent->flags & RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1)
+			if ((ent->crflags & RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1)
 			{
 				// note: exterior models without the RENDER_NOSELFSHADOW
 				// flag still create a RENDER_NOSELFSHADOW shadow but
@@ -3588,13 +3588,13 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 				// self-shadowing but do not shadow other
 				// RENDER_NOSELFSHADOW entities such as the gun
 				// (very weird, but keeps the player shadow off the gun)
-				if (ent->flags & (RENDER_NOSELFSHADOW | RENDER_EXTERIORMODEL))
+				if (ent->crflags & (RENDER_NOSELFSHADOW | RENDER_EXTERIORMODEL))
 					shadowentities_noselfshadow[numshadowentities_noselfshadow++] = ent;
 				else
 					shadowentities[numshadowentities++] = ent;
 			}
 		}
-		else if (ent->flags & RENDER_SHADOW)
+		else if (ent->crflags & RENDER_SHADOW)
 		{
 			// this entity is not receiving light, but may still need to
 			// cast a shadow...
@@ -3604,9 +3604,9 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 				continue;
 			// about the VectorDistance2 - light emitting entities should not cast their own shadow
 			Matrix4x4_OriginFromMatrix(&ent->matrix, org);
-			if ((ent->flags & RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1)
+			if ((ent->crflags & RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1)
 			{
-				if (ent->flags & (RENDER_NOSELFSHADOW | RENDER_EXTERIORMODEL))
+				if (ent->crflags & (RENDER_NOSELFSHADOW | RENDER_EXTERIORMODEL))
 					shadowentities_noselfshadow[numshadowentities_noselfshadow++] = ent;
 				else
 					shadowentities[numshadowentities++] = ent;
@@ -4304,7 +4304,7 @@ void R_Shadow_PrepareModelShadows(void)
 		if (!BoxesOverlap(ent->mins, ent->maxs, shadowmins, shadowmaxs))
 			continue;
 		// cast shadows from anything of the map (submodels are optional)
-		if (ent->model && ent->model->DrawShadowMap != NULL && (!ent->model->brush.submodel || r_shadows_castfrombmodels.integer) && (ent->flags & RENDER_SHADOW))
+		if (ent->model && ent->model->DrawShadowMap != NULL && (!ent->model->brush.submodel || r_shadows_castfrombmodels.integer) && (ent->crflags & RENDER_SHADOW))
 		{
 			if (r_shadow_nummodelshadows >= MAX_MODELSHADOWS)
 				break;

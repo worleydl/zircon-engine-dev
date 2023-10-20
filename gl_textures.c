@@ -1132,6 +1132,10 @@ static rtexture_t *R_SetupTexture(rtexturepool_t *rtexturepool, const char *iden
 	unsigned char *temppixels = NULL;
 	qbool swaprb;
 
+	if (String_Does_Contain(identifier, "sky")) {
+		int j = 5;
+	}
+
 	if (cls.state == ca_dedicated)
 		return NULL;
 

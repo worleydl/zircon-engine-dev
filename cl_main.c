@@ -211,7 +211,7 @@ void CL_ClearState(void)
 	ent->state_current.active = true;
 	ent->render.model = cl.worldmodel = NULL; // no world model yet
 	ent->render.alpha = 1;
-	ent->render.flags = RENDER_SHADOW | RENDER_LIGHT;
+	ent->render.crflags = RENDER_SHADOW | RENDER_LIGHT;
 	Matrix4x4_CreateFromQuakeEntity(&ent->render.matrix, 0, 0, 0, 0, 0, 0, 1);
 	ent->render.allowdecals = true;
 	CL_UpdateRenderEntity(&ent->render);
@@ -1104,7 +1104,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		return;
 	e->render.alpha = e->state_current.alpha * (1.0f / 255.0f); // FIXME: interpolate?
 	e->render.scale = e->state_current.scale * (1.0f / 16.0f); // FIXME: interpolate?
-	e->render.flags = e->state_current.flags;
+	e->render.crflags = e->state_current.flags;
 	e->render.effects = e->state_current.effects;
 	VectorScale(e->state_current.colormod, (1.0f / 32.0f), e->render.colormod);
 	VectorScale(e->state_current.glowmod, (1.0f / 32.0f), e->render.glowmod);
@@ -1146,7 +1146,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		// make relative to the entity
 		matrix = &r->matrix;
 		// some properties of the tag entity carry over
-		e->render.flags |= r->flags & (RENDER_EXTERIORMODEL | RENDER_VIEWMODEL);
+		e->render.crflags |= r->crflags & (RENDER_EXTERIORMODEL | RENDER_VIEWMODEL);
 		// if a valid tagindex is used, make it relative to that tag instead
 		if (e->state_current.tagentity && e->state_current.tagindex >= 1 && r->model)
 		{
@@ -1159,7 +1159,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 			}
 		}
 	}
-	else if (e->render.flags & RENDER_VIEWMODEL)
+	else if (e->render.crflags & RENDER_VIEWMODEL)
 	{
 		// view-relative entity (guns and such)
 		if (e->render.effects & EF_NOGUNBOB)
@@ -1243,7 +1243,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		angles[0] = -angles[0];
 		// NOTE: this must be synced to SV_GetPitchSign!
 
-	if ((e->render.effects & EF_ROTATE) && !(e->render.flags & RENDER_VIEWMODEL))
+	if ((e->render.effects & EF_ROTATE) && !(e->render.crflags & RENDER_VIEWMODEL))
 	{
 		angles[1] = ANGLEMOD(100*cl.time);
 		if (cl_itembobheight.value)
@@ -1252,7 +1252,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 
 	// animation lerp
 	e->render.skeleton = NULL;
-	if (e->render.flags & RENDER_COMPLEXANIMATION)
+	if (e->render.crflags & RENDER_COMPLEXANIMATION)
 	{
 		e->render.framegroupblend[0] = e->state_current.framegroupblend[0];
 		e->render.framegroupblend[1] = e->state_current.framegroupblend[1];
@@ -1311,34 +1311,34 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 
 	// tenebrae's sprites are all additive mode (weird)
 	if (gamemode == GAME_TENEBRAE && e->render.model && e->render.model->type == mod_sprite)
-		e->render.flags |= RENDER_ADDITIVE;
+		e->render.crflags |= RENDER_ADDITIVE;
 	// player model is only shown with chase_active on
 	if (e->state_current.number == cl.viewentity)
-		e->render.flags |= RENDER_EXTERIORMODEL;
+		e->render.crflags |= RENDER_EXTERIORMODEL;
 	// either fullbright or lit
 	if(!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 	{
 		if (!(e->render.effects & EF_FULLBRIGHT))
-			e->render.flags |= RENDER_LIGHT;
+			e->render.crflags |= RENDER_LIGHT;
 	}
 	// hide player shadow during intermission or nehahra movie
 	if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST))
 	 && (e->render.alpha >= 1)
-	 && !(e->render.flags & RENDER_VIEWMODEL)
-	 && (!(e->render.flags & RENDER_EXTERIORMODEL) || (!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
-		e->render.flags |= RENDER_SHADOW;
-	if (e->render.flags & RENDER_VIEWMODEL)
-		e->render.flags |= RENDER_NOSELFSHADOW;
+	 && !(e->render.crflags & RENDER_VIEWMODEL)
+	 && (!(e->render.crflags & RENDER_EXTERIORMODEL) || (!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
+		e->render.crflags |= RENDER_SHADOW;
+	if (e->render.crflags & RENDER_VIEWMODEL)
+		e->render.crflags |= RENDER_NOSELFSHADOW;
 	if (e->render.effects & EF_NOSELFSHADOW)
-		e->render.flags |= RENDER_NOSELFSHADOW;
+		e->render.crflags |= RENDER_NOSELFSHADOW;
 	if (e->render.effects & EF_NODEPTHTEST)
-		e->render.flags |= RENDER_NODEPTHTEST;
+		e->render.crflags |= RENDER_NODEPTHTEST;
 	if (e->render.effects & EF_ADDITIVE)
-		e->render.flags |= RENDER_ADDITIVE;
+		e->render.crflags |= RENDER_ADDITIVE;
 	if (e->render.effects & EF_DOUBLESIDED)
-		e->render.flags |= RENDER_DOUBLESIDED;
+		e->render.crflags |= RENDER_DOUBLESIDED;
 	if (e->render.effects & EF_DYNAMICMODELLIGHT)
-		e->render.flags |= RENDER_DYNAMICMODELLIGHT;
+		e->render.crflags |= RENDER_DYNAMICMODELLIGHT;
 
 	// make the other useful stuff
 	e->render.allowdecals = true;
@@ -1389,7 +1389,7 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 	if (e->persistent.muzzleflash > 0)
 		e->persistent.muzzleflash -= bound(0, cl.time - cl.oldtime, 0.1) * 20;
 	// LadyHavoc: if the entity has no effects, don't check each
-	if (e->render.effects && !(e->render.flags & RENDER_VIEWMODEL))
+	if (e->render.effects && !(e->render.crflags & RENDER_VIEWMODEL))
 	{
 		if (e->render.effects & EF_GIB)
 			trailtype = EFFECT_TR_BLOOD;
@@ -1410,7 +1410,7 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 			trailtype = EFFECT_TR_VORESPIKE;
 	}
 	// do trails
-	if (e->render.flags & RENDER_GLOWTRAIL)
+	if (e->render.crflags & RENDER_GLOWTRAIL)
 		trailtype = EFFECT_TR_GLOWTRAIL;
 	if (e->state_current.traileffectnum)
 		trailtype = (effectnameindex_t)e->state_current.traileffectnum;
@@ -1448,7 +1448,7 @@ void CL_UpdateViewEntities(void)
 		if (cl.entities_active[i])
 		{
 			entity_t *ent = cl.entities + i;
-			if ((ent->render.flags & RENDER_VIEWMODEL) || ent->state_current.tagentity)
+			if ((ent->render.crflags & RENDER_VIEWMODEL) || ent->state_current.tagentity)
 				CL_UpdateNetworkEntity(ent, 32, true);
 		}
 	}
@@ -1503,7 +1503,7 @@ static void CL_UpdateNetworkEntities(void)
 			{
 				CL_UpdateNetworkEntity(ent, 32, true);
 				// view models should never create light/trails
-				if (!(ent->render.flags & RENDER_VIEWMODEL))
+				if (!(ent->render.crflags & RENDER_VIEWMODEL))
 					CL_UpdateNetworkEntityTrail(ent);
 			}
 			else
@@ -1651,7 +1651,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
 	// LadyHavoc: if the model has no flags, don't check each
-	if (e->render.model && e->render.effects && !(e->render.flags & RENDER_VIEWMODEL))
+	if (e->render.model && e->render.effects && !(e->render.crflags & RENDER_VIEWMODEL))
 	{
 		if (e->render.effects & EF_GIB)
 			trailtype = EFFECT_TR_BLOOD;
@@ -1697,7 +1697,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
 	// make the glow dlight
-	else if (dlightradius > 0 && (dlightcolor[0] || dlightcolor[1] || dlightcolor[2]) && !(e->render.flags & RENDER_VIEWMODEL) && r_refdef.scene.numlights < MAX_DLIGHTS)
+	else if (dlightradius > 0 && (dlightcolor[0] || dlightcolor[1] || dlightcolor[2]) && !(e->render.crflags & RENDER_VIEWMODEL) && r_refdef.scene.numlights < MAX_DLIGHTS)
 	{
 		matrix4x4_t dlightmatrix;
 		Matrix4x4_Normalize(&dlightmatrix, &e->render.matrix);
@@ -1709,7 +1709,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
 	// do trail light
-	if (e->render.flags & RENDER_GLOWTRAIL)
+	if (e->render.crflags & RENDER_GLOWTRAIL)
 		trailtype = EFFECT_TR_GLOWTRAIL;
 	if (e->state_current.traileffectnum)
 		trailtype = (effectnameindex_t)e->state_current.traileffectnum;
@@ -1729,9 +1729,9 @@ static void CL_RelinkWorld(void)
 	entity_t *ent = &cl.entities[0];
 	// FIXME: this should be done at load
 	ent->render.matrix = identitymatrix;
-	ent->render.flags = RENDER_SHADOW;
+	ent->render.crflags = RENDER_SHADOW;
 	if (!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
-		ent->render.flags |= RENDER_LIGHT;
+		ent->render.crflags |= RENDER_LIGHT;
 	VectorSet(ent->render.colormod, 1, 1, 1);
 	VectorSet(ent->render.glowmod, 1, 1, 1);
 	ent->render.allowdecals = true;
@@ -1750,7 +1750,7 @@ static void CL_RelinkStaticEntities(void)
 	entity_t *e;
 	for (i = 0, e = cl.static_entities;i < cl.num_static_entities && r_refdef.scene.numentities < r_refdef.scene.maxentities;i++, e++)
 	{
-		e->render.flags = 0;
+		e->render.crflags = 0;
 		// if the model was not loaded when the static entity was created we
 		// need to re-fetch the model pointer
 		e->render.model = CL_GetModelByIndex(e->state_baseline.modelindex);
@@ -1758,11 +1758,11 @@ static void CL_RelinkStaticEntities(void)
 		if(!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 		{
 			if (!(e->render.effects & EF_FULLBRIGHT))
-				e->render.flags |= RENDER_LIGHT;
+				e->render.crflags |= RENDER_LIGHT;
 		}
 		// hide player shadow during intermission or nehahra movie
 		if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST)) && (e->render.alpha >= 1))
-			e->render.flags |= RENDER_SHADOW;
+			e->render.crflags |= RENDER_SHADOW;
 		VectorSet(e->render.colormod, 1, 1, 1);
 		VectorSet(e->render.glowmod, 1, 1, 1);
 		VM_FrameBlendFromFrameGroupBlend(e->render.frameblend, e->render.framegroupblend, e->render.model, cl.time);
@@ -2586,7 +2586,7 @@ void CL_MeshEntities_Init(void)
 		ent->render.model = cl_meshentitymodels + i;
 		Mod_Mesh_Create(ent->render.model, cl_meshentitynames[i]);	
 		ent->render.alpha = 1;
-		ent->render.flags = RENDER_SHADOW | RENDER_LIGHT;
+		ent->render.crflags = RENDER_SHADOW | RENDER_LIGHT;
 		ent->render.framegroupblend[0].lerp = 1;
 		ent->render.frameblend[0].lerp = 1;
 		VectorSet(ent->render.colormod, 1, 1, 1);
@@ -2610,7 +2610,7 @@ void CL_MeshEntities_Init(void)
 		Matrix4x4_CreateIdentity(&ent->render.matrix);
 		CL_UpdateRenderEntity(&ent->render);
 	}
-	cl_meshentities[MESH_UI].render.flags = RENDER_NOSELFSHADOW;
+	cl_meshentities[MESH_UI].render.crflags = RENDER_NOSELFSHADOW;
 	R_RegisterModule("CL_MeshEntities", CL_MeshEntities_Start, CL_MeshEntities_Shutdown, CL_MeshEntities_Restart, CL_MeshEntities_Restart, CL_MeshEntities_Restart);
 }
 
@@ -2705,14 +2705,14 @@ static void CL_UpdateEntityShading_Entity(entity_render_t *ent)
 		Matrix4x4_OriginFromMatrix(&ent->matrix, shadingorigin);
 	}
 
-	if (!(ent->flags & RENDER_LIGHT) || (r_fullbright.integer || !r_refdef.scene.worldmodel || !r_refdef.scene.worldmodel->lit) ) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
+	if (!(ent->crflags & RENDER_LIGHT) || (r_fullbright.integer || !r_refdef.scene.worldmodel || !r_refdef.scene.worldmodel->lit) ) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 	{
 		// intentionally EF_FULLBRIGHT entity
 		// the only type that is not scaled by r_refdef.scene.lightmapintensity
 		// CSQC can still provide its own customized modellight values
 		ent->render_rtlight_disabled = true;
 		ent->render_modellight_forced = true;
-		if (ent->flags & RENDER_CUSTOMIZEDMODELLIGHT)
+		if (ent->crflags & RENDER_CUSTOMIZEDMODELLIGHT)
 		{
 			// custom colors provided by CSQC
 			for (q = 0; q < 3; q++)
@@ -2733,7 +2733,7 @@ static void CL_UpdateEntityShading_Entity(entity_render_t *ent)
 		// fetch the lighting from the worldmodel data
 
 		// CSQC can provide its own customized modellight values
-		if (ent->flags & RENDER_CUSTOMIZEDMODELLIGHT)
+		if (ent->crflags & RENDER_CUSTOMIZEDMODELLIGHT)
 		{
 			ent->render_modellight_forced = true;
 			for (q = 0; q < 3; q++)

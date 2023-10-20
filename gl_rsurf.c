@@ -1371,7 +1371,7 @@ static void R_Q1BSP_DrawLight_TransparentCallback(const entity_render_t *ent, co
 	// note: in practice this never actually receives batches
 	R_Shadow_RenderMode_Begin();
 	R_Shadow_RenderMode_ActiveLight(rtlight);
-	R_Shadow_RenderMode_Lighting(true, rtlight->shadowmapatlassidesize != 0, (ent->flags & RENDER_NOSELFSHADOW) != 0);
+	R_Shadow_RenderMode_Lighting(true, rtlight->shadowmapatlassidesize != 0, (ent->crflags & RENDER_NOSELFSHADOW) != 0);
 	R_Shadow_SetupEntityLight(ent);
 	for (i = 0;i < numsurfaces;i = j)
 	{
@@ -1462,7 +1462,7 @@ void R_Mod_DrawLight(entity_render_t *ent, int numsurfaces, const int *surfaceli
 						center[1] += r_refdef.view.forward[1]*ent->transparent_offset;
 						center[2] += r_refdef.view.forward[2]*ent->transparent_offset;
 					}
-					R_MeshQueue_AddTransparent((rsurface.entity->flags & RENDER_WORLDOBJECT) ? TRANSPARENTSORT_SKY : ((rsurface.texture->currentmaterialflags & MATERIALFLAG_NODEPTHTEST) ? TRANSPARENTSORT_HUD : rsurface.texture->transparentsort), center, R_Q1BSP_DrawLight_TransparentCallback, ent, surface - rsurface.modelsurfaces, rsurface.rtlight);
+					R_MeshQueue_AddTransparent((rsurface.entity->crflags & RENDER_WORLDOBJECT) ? TRANSPARENTSORT_SKY : ((rsurface.texture->currentmaterialflags & MATERIALFLAG_NODEPTHTEST) ? TRANSPARENTSORT_HUD : rsurface.texture->transparentsort), center, R_Q1BSP_DrawLight_TransparentCallback, ent, surface - rsurface.modelsurfaces, rsurface.rtlight);
 				}
 				continue;
 			}

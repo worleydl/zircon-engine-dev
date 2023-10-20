@@ -921,7 +921,8 @@ Load a program with LoadProgs
 */
 // Load expects to be called right after Reset
 void PRVM_Prog_Init(prvm_prog_t *prog, struct cmd_state_s *cmd);
-void PRVM_Prog_Load(prvm_prog_t *prog, const char *filename, unsigned char *data, int64_t size, int numrequiredfunc, const char **required_func, int numrequiredfields, prvm_required_field_t *required_field, int numrequiredglobals, prvm_required_field_t *required_global);
+// Baker r1414 - automatic unload of fte csqc-lite csprogs.dat
+const char *PRVM_Prog_Load(prvm_prog_t *prog, const char *filename, unsigned char *data, int64_t size, int numrequiredfunc, const char **required_func, int numrequiredfields, prvm_required_field_t *required_field, int numrequiredglobals, prvm_required_field_t *required_global);
 void PRVM_Prog_Reset(prvm_prog_t *prog);
 
 void PRVM_StackTrace(prvm_prog_t *prog);

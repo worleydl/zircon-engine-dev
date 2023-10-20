@@ -385,12 +385,12 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
 
 	const char *Sys_Binary_URL_SBuf (void)
 	{
-		static char binary_url[MAX_OSPATH_EX];
+		static char binary_url[MAX_OSPATH_EX_1024];
 		if (!binary_url[0]) {
 			pid_t pid = getpid();
 			int length;
 
-			char linkname[MAX_OSPATH_EX];
+			char linkname[MAX_OSPATH_EX_1024];
 			dpsnprintf (linkname, sizeof(linkname), "/proc/%d/exe", pid);
 
 			length = readlink (linkname, binary_url, sizeof(binary_url)-1);

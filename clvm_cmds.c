@@ -2616,17 +2616,17 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 		if(!r_fullbright.integer && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) { // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 		
 			if (!(staticent->render.effects & EF_FULLBRIGHT))
-				staticent->render.flags |= RENDER_LIGHT;
+				staticent->render.crflags |= RENDER_LIGHT;
 		}
 		// turn off shadows from transparent objects
 		if (!(staticent->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST)) && (staticent->render.alpha >= 1))
-			staticent->render.flags |= RENDER_SHADOW;
+			staticent->render.crflags |= RENDER_SHADOW;
 		if (staticent->render.effects & EF_NODEPTHTEST)
-			staticent->render.flags |= RENDER_NODEPTHTEST;
+			staticent->render.crflags |= RENDER_NODEPTHTEST;
 		if (staticent->render.effects & EF_ADDITIVE)
-			staticent->render.flags |= RENDER_ADDITIVE;
+			staticent->render.crflags |= RENDER_ADDITIVE;
 		if (staticent->render.effects & EF_DOUBLESIDED)
-			staticent->render.flags |= RENDER_DOUBLESIDED;
+			staticent->render.crflags |= RENDER_DOUBLESIDED;
 
 		staticent->render.allowdecals = true;
 		CL_UpdateRenderEntity(&staticent->render);

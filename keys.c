@@ -362,8 +362,8 @@ static const keyname_t   keynames[] = {
 	{"F11", K_F11},
 	{"F12", K_F12},
 
-	{"INS", K_INS},
-	{"DEL", K_DEL},
+	{"INS", K_INSERT},
+	{"DEL", K_DELETE},
 	{"PGDN", K_PGDN},
 	{"PGUP", K_PGUP},
 	{"HOME", K_HOME},
@@ -765,7 +765,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 		linestart = 0;
 	}
 
-	if ((key == 'v' && KM_CTRL) || ((key == K_INS || key == K_KP_INS) && KM_SHIFT))
+	if ((key == 'v' && KM_CTRL) || ((key == K_INSERT || key == K_KP_INS) && KM_SHIFT))
 	{
 		char *cbd, *p;
 		if ((cbd = Sys_GetClipboardData()) != 0)
@@ -956,7 +956,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 	}
 
 	// delete char on cursor
-	if ((key == K_DEL || key == K_KP_DEL) && KM_NONE)
+	if ((key == K_DELETE || key == K_KP_DEL) && KM_NONE)
 	{
 		size_t linelen;
 		linelen = strlen(line);
@@ -1046,7 +1046,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 
 	// Baker r0003: Thin cursor / no text overwrite mode	
 
-	//if ((key == K_INS || key == K_KP_INS) && KM_NONE) // toggle insert mode
+	//if ((key == K_INSERT || key == K_KP_INS) && KM_NONE) // toggle insert mode
 	//{
 	//	key_insert ^= 1;
 	//	return linepos;
@@ -1817,7 +1817,82 @@ typedef struct eventqueueitem_s
 eventqueueitem_t;
 static int events_blocked = 0;
 static eventqueueitem_t eventqueue[32];
-static unsigned eventqueue_idx = 0;
+unsigned eventqueue_idx = 0;
+
+// a helper to simulate release of ALL keys
+void Key_ReleaseAll(void)
+{
+	extern kbutton_t	in_mlook, in_klook;
+	extern kbutton_t	in_left, in_right, in_forward, in_back;
+	extern kbutton_t	in_lookup, in_lookdown, in_moveleft, in_moveright;
+	extern kbutton_t	in_strafe, in_speed, in_jump, in_attack, in_use;
+	extern kbutton_t	in_up, in_down;
+	// LadyHavoc: added 6 new buttons
+	extern kbutton_t	in_button3, in_button4, in_button5, in_button6, in_button7, in_button8;
+	//even more
+	extern kbutton_t	in_button9, in_button10, in_button11, in_button12, in_button13, in_button14, in_button15, in_button16;
+
+
+#define ClearBtnState(x) \
+	if (x.state) { \
+		memset (&x, 0, sizeof(x)); \
+	} // Ender
+
+	Con_DPrintLinef("Key_ReleaseAll");
+	int key;
+	// clear the event queue first
+	eventqueue_idx = 0;
+	// then send all down events (possibly into the event queue)
+	for (key = 0; key < MAX_KEYS; ++key) {
+		// Baker: What if keydown[key] > 1?
+		if (keydown[key])
+			Key_Event(/*scancode*/ key, /*ascii*/ 0, /*isdown*/ false);
+		if (developer.integer > 0 && keydown[key]) {
+			Con_DPrintLinef("Key_ReleaseAll key %d is still down", key);
+		}
+
+	}
+	// now all keys are guaranteed up (once the event queue is unblocked)
+	// and only future events count
+
+	ClearBtnState(in_mlook);
+	ClearBtnState(in_klook);
+	ClearBtnState(in_left);
+	ClearBtnState(in_right);
+	ClearBtnState(in_moveleft);
+	ClearBtnState(in_moveright);
+	ClearBtnState(in_forward);
+	ClearBtnState(in_back);
+	ClearBtnState(in_lookup);
+	ClearBtnState(in_lookdown);
+	ClearBtnState(in_strafe);
+	ClearBtnState(in_speed);
+	ClearBtnState(in_jump);
+	ClearBtnState(in_attack);
+	ClearBtnState(in_use);
+	ClearBtnState(in_button3);
+	ClearBtnState(in_button4);
+	ClearBtnState(in_button5);
+	ClearBtnState(in_button6);
+	ClearBtnState(in_button7);
+	ClearBtnState(in_button8);
+	ClearBtnState(in_button9);
+	ClearBtnState(in_button10);
+	ClearBtnState(in_button11);
+	ClearBtnState(in_button12);
+	ClearBtnState(in_button13);
+	ClearBtnState(in_button14);
+	ClearBtnState(in_button15);
+	ClearBtnState(in_button16);
+
+}
+
+void Key_ReleaseAll_f(cmd_state_t* cmd)
+{
+	Key_ReleaseAll();
+}
+
+
 
 static void Key_EventQueue_Add(int key, int ascii, qbool down)
 {
@@ -2124,22 +2199,3 @@ Key_Event (int key, int ascii, qbool down)
 	}
 }
 
-// a helper to simulate release of ALL keys
-void
-Key_ReleaseAll (void)
-{
-	int key;
-	// clear the event queue first
-	eventqueue_idx = 0;
-	// then send all down events (possibly into the event queue)
-	for(key = 0; key < MAX_KEYS; ++key)
-		if(keydown[key])
-			Key_Event(key, 0, false);
-	// now all keys are guaranteed down (once the event queue is unblocked)
-	// and only future events count
-}
-
-void Key_ReleaseAll_f(cmd_state_t *cmd)
-{
-	Key_ReleaseAll();
-}
