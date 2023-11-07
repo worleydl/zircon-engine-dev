@@ -1,3 +1,6 @@
+#ifndef VID_H
+#define VID_H
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -19,8 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // vid.h -- video driver defs
 
-#ifndef VID_H
-#define VID_H
 
 #include <stddef.h>
 #include "qtypes.h"
@@ -41,7 +42,8 @@ renderpath_t;
 
 typedef struct viddef_support_s
 {
-	int glshaderversion; // this is at least 150 (GL 3.2)
+	// glshaderversion - this is at least 150 (GL 3.2)
+	int glshaderversion;
 	qbool amd_texture_texture4;
 	qbool arb_texture_gather;
 	qbool ext_texture_compression_s3tc;
@@ -95,6 +97,8 @@ typedef struct viddef_s
 	viddef_support_t support;
 
 	int forcetextype; // always use GL_BGRA for D3D, always use GL_RGBA for GLES, etc
+
+	int restart_count; // Baker r1481: Reduce ALT-ENTER video restart spam
 } viddef_t;
 
 // global video state
@@ -134,19 +138,17 @@ extern qbool vid_activewindow;
 extern qbool vid_supportrefreshrate;
 
 extern struct cvar_s vid_fullscreen;
-extern struct cvar_s vid_borderless;
 extern struct cvar_s vid_width;
 extern struct cvar_s vid_height;
 
-
-extern cvar_t vid_window_width;			// Baker r0001 - ALT-ENTER support
-extern cvar_t vid_window_height;		// Baker r0001 - ALT-ENTER support
-extern cvar_t vid_fullscreen_width;		// Baker r0001 - ALT-ENTER support
-extern cvar_t vid_fullscreen_height;	// Baker r0001 - ALT-ENTER support
+extern struct cvar_s vid_window_width;			// Baker r0001 - ALT-ENTER support
+extern struct cvar_s vid_window_height;		// Baker r0001 - ALT-ENTER support
+extern struct cvar_s vid_fullscreen_width;		// Baker r0001 - ALT-ENTER support
+extern struct cvar_s vid_fullscreen_height;	// Baker r0001 - ALT-ENTER support
 
 // Baker r0005: Autoscale 360p
-extern cvar_t vid_fullscreen_conscale;
-extern cvar_t vid_window_conscale;
+extern struct cvar_s vid_fullscreen_conscale;
+extern struct cvar_s vid_window_conscale;
 
 extern float   yfactors;
 extern float   yfactor_mag_360;                    // output
@@ -156,7 +158,14 @@ extern float	scale_height_360;
 
 void scale_360_calc (void);
 
+// NEW DARKPLACES BETA
+extern struct cvar_s vid_borderless;
+extern struct cvar_s vid_mouse_clickthrough;
+#ifdef _WIN32
+extern struct cvar_s vid_ignore_taskbar;
+#endif
 
+// LEGACY
 
 extern struct cvar_s vid_bitsperpixel;
 extern struct cvar_s vid_samples;
@@ -167,7 +176,6 @@ extern struct cvar_s vid_touchscreen_xdpi;
 extern struct cvar_s vid_touchscreen_ydpi;
 extern struct cvar_s vid_vsync;
 extern struct cvar_s vid_mouse;
-extern struct cvar_s vid_mouse_clickthrough;
 extern struct cvar_s vid_grabkeyboard;
 extern struct cvar_s vid_touchscreen;
 extern struct cvar_s vid_touchscreen_showkeyboard;
@@ -175,9 +183,6 @@ extern struct cvar_s vid_touchscreen_supportshowkeyboard;
 extern struct cvar_s vid_stick_mouse;
 extern struct cvar_s vid_resizable;
 extern struct cvar_s vid_desktopfullscreen;
-#ifdef _WIN32
-extern struct cvar_s vid_ignore_taskbar;
-#endif
 extern struct cvar_s vid_minwidth;
 extern struct cvar_s vid_minheight;
 extern struct cvar_s vid_sRGB;
@@ -268,5 +273,5 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount);
 size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool userefreshrate, qbool useaspect);
 void VID_Soft_SharedSetup(void);
 
-#endif
+#endif // ! VID_H
 

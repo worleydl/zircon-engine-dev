@@ -123,7 +123,7 @@ void Mod_Skeletal_AnimateVertices_SSE(const model_t * RESTRICT model, const fram
 				float blendlerp = frameblend[blends].lerp,
 					blendtx = blendpose7s[0], blendty = blendpose7s[1], blendtz = blendpose7s[2],
 					qx = blendpose7s[3], qy = blendpose7s[4], qz = blendpose7s[5], qw = blendpose7s[6];
-				if(rx*qx + ry*qy + rz*qz + rw*qw < 0) blendlerp = -blendlerp;
+				if (rx*qx + ry*qy + rz*qz + rw*qw < 0) blendlerp = -blendlerp;
 				qx *= blendlerp;
 				qy *= blendlerp;
 				qz *= blendlerp;

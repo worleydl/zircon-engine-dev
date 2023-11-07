@@ -602,7 +602,7 @@ extern GLint(GLAPIENTRY *qglGetUniformLocation)(GLuint programObj, const GLchar 
 extern GLuint(GLAPIENTRY *qglCreateProgram)(void);
 extern GLuint(GLAPIENTRY *qglCreateShader)(GLenum shaderType);
 extern GLuint(GLAPIENTRY *qglGetDebugMessageLogARB)(GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar* messageLog);
-extern GLuint(GLAPIENTRY *qglGetUniformBlockIndex)(GLuint program, const char* uniformBlockName);
+extern GLuint(GLAPIENTRY *qglGetUniformBlockIndex)(GLuint program, const char *uniformBlockName);
 extern GLvoid(GLAPIENTRY *qglBindFramebuffer)(GLenum target, GLuint framebuffer);
 extern GLvoid(GLAPIENTRY *qglBindRenderbuffer)(GLenum target, GLuint renderbuffer);
 extern GLvoid(GLAPIENTRY *qglBlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
@@ -682,9 +682,9 @@ extern void (GLAPIENTRY *qglGenTextures)(GLsizei n, GLuint *textures);
 extern void (GLAPIENTRY *qglGenVertexArrays)(GLsizei n, GLuint *arrays);
 extern void (GLAPIENTRY *qglGetActiveAttrib)(GLuint programObj, GLuint index, GLsizei maxLength, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 extern void (GLAPIENTRY *qglGetActiveUniform)(GLuint programObj, GLuint index, GLsizei maxLength, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-extern void (GLAPIENTRY *qglGetActiveUniformBlockName)(GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, char* uniformBlockName);
+extern void (GLAPIENTRY *qglGetActiveUniformBlockName)(GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, char *uniformBlockName);
 extern void (GLAPIENTRY *qglGetActiveUniformBlockiv)(GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params);
-extern void (GLAPIENTRY *qglGetActiveUniformName)(GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei* length, char* uniformName);
+extern void (GLAPIENTRY *qglGetActiveUniformName)(GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei* length, char *uniformName);
 extern void (GLAPIENTRY *qglGetActiveUniformsiv)(GLuint program, GLsizei uniformCount, const GLuint* uniformIndices, GLenum pname, GLint* params);
 extern void (GLAPIENTRY *qglGetAttachedShaders)(GLuint containerObj, GLsizei maxCount, GLsizei *count, GLuint *obj);
 extern void (GLAPIENTRY *qglGetBooleanv)(GLenum pname, GLboolean *params);
@@ -707,7 +707,7 @@ extern void (GLAPIENTRY *qglGetTexLevelParameterfv)(GLenum target, GLint level, 
 extern void (GLAPIENTRY *qglGetTexLevelParameteriv)(GLenum target, GLint level, GLenum pname, GLint *params);
 extern void (GLAPIENTRY *qglGetTexParameterfv)(GLenum target, GLenum pname, GLfloat *params);
 extern void (GLAPIENTRY *qglGetTexParameteriv)(GLenum target, GLenum pname, GLint *params);
-extern void (GLAPIENTRY *qglGetUniformIndices)(GLuint program, GLsizei uniformCount, const char** uniformNames, GLuint* uniformIndices);
+extern void (GLAPIENTRY *qglGetUniformIndices)(GLuint program, GLsizei uniformCount, const char **uniformNames, GLuint* uniformIndices);
 extern void (GLAPIENTRY *qglGetUniformfv)(GLuint programObj, GLint location, GLfloat *params);
 extern void (GLAPIENTRY *qglGetUniformiv)(GLuint programObj, GLint location, GLint *params);
 extern void (GLAPIENTRY *qglGetVertexAttribPointerv)(GLuint index, GLenum pname, GLvoid **pointer);
@@ -1047,7 +1047,7 @@ void GL_PrintError(GLenum errornumber, const char *filename, unsigned int linenu
 	if (gl_paranoid.integer) { \
 		GLenum gl_errornumber; \
 		if (gl_printcheckerror.integer) \
-			Con_Printf("CHECKGLERROR at %s:%d\n", __FILE__, __LINE__); \
+			Con_Printf ("CHECKGLERROR at %s:%d\n", __FILE__, __LINE__); \
 		if (qglGetError) /* bones_was_here: is this pointer check still necessary? */ \
 			while ((gl_errornumber = qglGetError())) \
 				GL_PrintError(gl_errornumber, __FILE__, __LINE__); \

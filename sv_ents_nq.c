@@ -19,7 +19,7 @@ qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, co
 	for (i = 0;i < numstates;i++)
 	{
 		s = states[i];
-		if(PRVM_serveredictfunction((&prog->edicts[s->number]), SendEntity))
+		if (PRVM_serveredictfunction((&prog->edicts[s->number]), SendEntity))
 			continue;
 
 		// prepare the buffer

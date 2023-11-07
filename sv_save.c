@@ -48,7 +48,7 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 
 	isserver = prog == SVVM_prog;
 
-	Con_Printf("Saving game to %s...\n", name);
+	Con_Printf ("Saving game to %s...\n", name);
 	f = FS_OpenRealFile(name, "wb", false);
 	if (!f)
 	{
@@ -56,10 +56,10 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 		return;
 	}
 
-	FS_Printf(f, "%i\n", SAVEGAME_VERSION);
+	FS_Printf(f, "%d\n", SAVEGAME_VERSION);
 
 	memset(comment, 0, sizeof(comment));
-	if(isserver)
+	if (isserver)
 		dpsnprintf(comment, sizeof(comment), "%-21.21s kills:%3i/%3i", PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)), (int)PRVM_serverglobalfloat(killed_monsters), (int)PRVM_serverglobalfloat(total_monsters));
 	else
 		dpsnprintf(comment, sizeof(comment), "(crash dump of %s progs)", prog->name);
@@ -71,7 +71,7 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 	comment[SAVEGAME_COMMENT_LENGTH] = '\0';
 
 	FS_Printf(f, "%s\n", comment);
-	if(isserver)
+	if (isserver)
 	{
 		for (i=0 ; i<NUM_SPAWN_PARMS ; i++)
 			FS_Printf(f, "%f\n", svs.clients[0].spawn_parms[i]);
@@ -101,7 +101,7 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 	for (i=0 ; i<prog->num_edicts ; i++)
 	{
 		FS_Printf(f,"// edict %d\n", i);
-		//Con_Printf("edict %d...\n", i);
+		//Con_Printf ("edict %d...\n", i);
 		PRVM_ED_Write (prog, f, PRVM_EDICT_NUM(i));
 	}
 
@@ -111,26 +111,26 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 	// darkplaces extension - extra lightstyles, support for color lightstyles
 	for (i=0 ; i<MAX_LIGHTSTYLES ; i++)
 		if (isserver && sv.lightstyles[i][0])
-			FS_Printf(f, "sv.lightstyles %i %s\n", i, sv.lightstyles[i]);
+			FS_Printf(f, "sv.lightstyles %d %s\n", i, sv.lightstyles[i]);
 
 	// darkplaces extension - model precaches
 	for (i=1 ; i<MAX_MODELS ; i++)
 		if (sv.model_precache[i][0])
-			FS_Printf(f,"sv.model_precache %i %s\n", i, sv.model_precache[i]);
+			FS_Printf(f,"sv.model_precache %d %s\n", i, sv.model_precache[i]);
 
 	// darkplaces extension - sound precaches
 	for (i=1 ; i<MAX_SOUNDS ; i++)
 		if (sv.sound_precache[i][0])
-			FS_Printf(f,"sv.sound_precache %i %s\n", i, sv.sound_precache[i]);
+			FS_Printf(f,"sv.sound_precache %d %s\n", i, sv.sound_precache[i]);
 
 	// darkplaces extension - save buffers
 	numbuffers = (int)Mem_ExpandableArray_IndexRange(&prog->stringbuffersarray);
 	for (i = 0; i < numbuffers; i++)
 	{
 		prvm_stringbuffer_t *stringbuffer = (prvm_stringbuffer_t*) Mem_ExpandableArray_RecordAtIndex(&prog->stringbuffersarray, i);
-		if(stringbuffer && (stringbuffer->flags & STRINGBUFFER_SAVED))
+		if (stringbuffer && (stringbuffer->flags & STRINGBUFFER_SAVED))
 		{
-			FS_Printf(f,"sv.buffer %i %i \"string\"\n", i, stringbuffer->flags & STRINGBUFFER_QCFLAGS);
+			FS_Printf(f,"sv.buffer %d %d \"string\"\n", i, stringbuffer->flags & STRINGBUFFER_QCFLAGS);
 			for(k = 0; k < stringbuffer->num_strings; k++)
 			{
 				if (!stringbuffer->strings[k])
@@ -165,7 +165,7 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 					s++;
 				}
 				line[l] = '\0';
-				FS_Printf(f,"sv.bufstr %i %i \"%s\"\n", i, k, line);
+				FS_Printf(f,"sv.bufstr %d %d \"%s\"\n", i, k, line);
 			}
 		}
 	}
@@ -179,24 +179,24 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 static qbool SV_CanSave(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	if(SV_IsLocalServer() == 1)
+	if (SV_IsLocalServer() == 1)
 	{
 		// singleplayer checks
 		// FIXME: This only checks if the first player is dead?
 		if ((svs.clients[0].active && PRVM_serveredictfloat(svs.clients[0].edict, deadflag)))
 		{
-			Con_Print("Can't savegame with a dead player\n");
+			Con_PrintLinef ("Can't savegame with a dead player");
 			return false;
 		}
 
-		if(host.hook.CL_Intermission && host.hook.CL_Intermission())
+		if (host.hook.CL_Intermission && host.hook.CL_Intermission())
 		{
-			Con_Print("Can't save in intermission.\n");
+			Con_PrintLinef ("Can't save in intermission.");
 			return false;
 		}
 	}
 	else
-		Con_Print(CON_WARN "Warning: saving a multiplayer game may have strange results when restored (to properly resume, all players must join in the same player slots and then the game can be reloaded).\n");
+		Con_PrintLinef (CON_WARN "Warning: saving a multiplayer game may have strange results when restored (to properly resume, all players must join in the same player slots and then the game can be reloaded).");
 	return true;
 }
 
@@ -212,22 +212,24 @@ void SV_Savegame_f(cmd_state_t *cmd)
 
 	if (!sv.active)
 	{
-		Con_Print("Can't save - no server running.\n");
+		Con_PrintLinef ("Can't save - no server running.");
 		return;
 	}
 
-	if(!SV_CanSave())
+	// Baker: This does dead player check, intermission
+	// And multiplayer save warning
+	if (!SV_CanSave())
 		return;
 
 	if (Cmd_Argc(cmd) != 2)
 	{
-		Con_Print("save <savename> : save a game\n");
+		Con_PrintLinef ("save <savename> : save a game");
 		return;
 	}
 
 	if (strstr(Cmd_Argv(cmd, 1), ".."))
 	{
-		Con_Print("Relative pathnames are not allowed.\n");
+		Con_PrintLinef ("Relative pathnames are not allowed.");
 		return;
 	}
 
@@ -259,55 +261,51 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 	float spawn_parms[NUM_SPAWN_PARMS];
 	prvm_stringbuffer_t *stringbuffer;
 
-	if (Cmd_Argc(cmd) != 2)
-	{
-		Con_Print("load <savename> : load a game\n");
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("load <savename> : load a game");
 		return;
 	}
 
 	strlcpy (filename, Cmd_Argv(cmd, 1), sizeof(filename));
 	FS_DefaultExtension (filename, ".sav", sizeof (filename));
 
-	Con_Printf("Loading game from %s...\n", filename);
+	Con_PrintLinef ("Loading game from %s...", filename);
 
-	if(host.hook.Disconnect)
+	if (host.hook.Disconnect)
 		host.hook.Disconnect(false, NULL);
 
 	Con_CloseConsole_If_Client(); // Baker r1003: close console for map/load/etc.
 
-	if(host.hook.ToggleMenu)
+	if (host.hook.ToggleMenu)
 		host.hook.ToggleMenu();
 
 	cls.demonum = -1;		// stop demo loop in case this fails
 
 	t = text = (char *)FS_LoadFile (filename, tempmempool, false, NULL);
-	if (!text)
-	{
-		Con_Print("ERROR: couldn't open.\n");
+	if (!text) {
+		Con_PrintLinef ("ERROR: couldn't open.");
 		return;
 	}
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: loading version\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: loading version");
 
 	// version
 	COM_ParseToken_Simple(&t, false, false, true);
 	version = atoi(com_token);
-	if (version != SAVEGAME_VERSION)
-	{
+	if (version != SAVEGAME_VERSION) {
 		Mem_Free(text);
-		Con_Printf("Savegame is version %i, not %i\n", version, SAVEGAME_VERSION);
+		Con_PrintLinef ("Savegame is version %d, not %d", version, SAVEGAME_VERSION);
 		return;
 	}
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: loading description\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: loading description");
 
 	// description
 	COM_ParseToken_Simple(&t, false, false, true);
 
-	for (i = 0;i < NUM_SPAWN_PARMS;i++)
-	{
+	for (i = 0;i < NUM_SPAWN_PARMS;i++) {
 		COM_ParseToken_Simple(&t, false, false, true);
 		spawn_parms[i] = atof(com_token);
 	}
@@ -317,65 +315,62 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 	current_skill = (int)(atof(com_token) + 0.5);
 	Cvar_SetValue (&cvars_all, "skill", (float)current_skill);
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: loading mapname\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: loading mapname");
 
 	// mapname
 	COM_ParseToken_Simple(&t, false, false, true);
 	strlcpy (mapname, com_token, sizeof(mapname));
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: loading time\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: loading time");
 
 	// time
 	COM_ParseToken_Simple(&t, false, false, true);
 	time = atof(com_token);
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: spawning server\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: spawning server");
 
 	SV_SpawnServer (mapname);
 	if (!sv.active)
 	{
 		Mem_Free(text);
-		Con_Print("Couldn't load map\n");
+		Con_PrintLinef ("Couldn't load map");
 		return;
 	}
 	sv.paused = true;		// pause until all clients connect
 	sv.loadgame = true;
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: loading light styles\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: loading light styles");
 
 // load the light styles
 
 	// -1 is the globals
 	entnum = -1;
 
-	for (i = 0;i < MAX_LIGHTSTYLES;i++)
-	{
+	for (i = 0; i < MAX_LIGHTSTYLES; i++) {
 		// light style
 		start = t;
 		COM_ParseToken_Simple(&t, false, false, true);
 		// if this is a 64 lightstyle savegame produced by Quake, stop now
 		// we have to check this because darkplaces may save more than 64
-		if (com_token[0] == '{')
-		{
+		if (com_token[0] == '{') {
 			t = start;
 			break;
 		}
 		strlcpy(sv.lightstyles[i], com_token, sizeof(sv.lightstyles[i]));
 	}
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: skipping until globals\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: skipping until globals");
 
 	// now skip everything before the first opening brace
 	// (this is for forward compatibility, so that older versions (at
 	// least ones with this fix) can load savegames with extra data before the
 	// first brace, as might be produced by a later engine version)
-	for (;;)
-	{
+	for (;;) {
 		start = t;
 		if (!COM_ParseToken_Simple(&t, false, false, true))
 			break;
@@ -395,23 +390,20 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 	{
 		start = t;
 		while (COM_ParseToken_Simple(&t, false, false, true))
-			if (!strcmp(com_token, "}"))
+			if (String_Does_Match(com_token, "}"))
 				break;
-		if (!COM_ParseToken_Simple(&start, false, false, true))
-		{
+		if (!COM_ParseToken_Simple(&start, false, false, true)) {
 			// end of file
 			break;
 		}
-		if (strcmp(com_token,"{"))
-		{
+		if (strcmp(com_token,"{")) {
 			Mem_Free(text);
-			Host_Error ("First token isn't a brace");
+			Host_Error_Line ("First token isn't a brace");
 		}
 
-		if (entnum == -1)
-		{
-			if(developer_entityparsing.integer)
-				Con_Printf("SV_Loadgame_f: loading globals\n");
+		if (entnum == -1) {
+			if (developer_entityparsing.integer)
+				Con_PrintLinef ("SV_Loadgame_f: loading globals");
 
 			// parse the global vars
 			PRVM_ED_ParseGlobals (prog, start);
@@ -422,10 +414,9 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 		else
 		{
 			// parse an edict
-			if (entnum >= MAX_EDICTS)
-			{
+			if (entnum >= MAX_EDICTS) {
 				Mem_Free(text);
-				Host_Error("Host_PerformLoadGame: too many edicts in save file (reached MAX_EDICTS %i)", MAX_EDICTS);
+				Host_Error_Line ("Host_PerformLoadGame: too many edicts in save file (reached MAX_EDICTS %d)", MAX_EDICTS);
 			}
 			while (entnum >= prog->max_edicts)
 				PRVM_MEM_IncreaseEdicts(prog);
@@ -433,8 +424,8 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 			memset(ent->fields.fp, 0, prog->entityfields * sizeof(prvm_vec_t));
 			ent->free = false;
 
-			if(developer_entityparsing.integer)
-				Con_Printf("SV_Loadgame_f: loading edict %d\n", entnum);
+			if (developer_entityparsing.integer)
+				Con_PrintLinef ("SV_Loadgame_f: loading edict %d", entnum);
 
 			PRVM_ED_ParseEdict (prog, start, ent);
 
@@ -453,86 +444,84 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 	for (i = 0;i < NUM_SPAWN_PARMS;i++)
 		svs.clients[0].spawn_parms[i] = spawn_parms[i];
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: skipping until extended data\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: skipping until extended data");
 
 	// read extended data if present
 	// the extended data is stored inside a /* */ comment block, which the
 	// parser intentionally skips, so we have to check for it manually here
-	if(end)
-	{
+	if (end) {
 		while (*end == '\r' || *end == '\n')
 			end++;
-		if (end[0] == '/' && end[1] == '*' && (end[2] == '\r' || end[2] == '\n'))
-		{
-			if(developer_entityparsing.integer)
-				Con_Printf("SV_Loadgame_f: loading extended data\n");
+		// /*
+		// // DarkPlaces extended savegame
+		// sv.lightstyles 0 m
+		// sv.lightstyles 63 a
+		// sv.model_precache 1 maps/z2m1_somewhere.bsp
+		// sv.sound_precache 1 weapons/r_exp3.wav
 
-			Con_Printf("Loading extended DarkPlaces savegame\n");
+		if (end[0] == '/' && end[1] == '*' && (end[2] == '\r' || end[2] == '\n')) {
+			if (developer_entityparsing.integer)
+				Con_PrintLinef ("SV_Loadgame_f: loading extended data");
+
+			Con_PrintLinef ("Loading extended DarkPlaces savegame");
 			t = end + 2;
 			memset(sv.lightstyles[0], 0, sizeof(sv.lightstyles));
 			memset(sv.model_precache[0], 0, sizeof(sv.model_precache));
 			memset(sv.sound_precache[0], 0, sizeof(sv.sound_precache));
 			BufStr_Flush(prog);
 
-			while (COM_ParseToken_Simple(&t, false, false, true))
-			{
-				if (!strcmp(com_token, "sv.lightstyles"))
-				{
+			// t is ptr
+			while (COM_ParseToken_Simple(&t, false, false, true)) {
+				if (String_Does_Match(com_token, "sv.lightstyles")) {
 					COM_ParseToken_Simple(&t, false, false, true);
 					i = atoi(com_token);
 					COM_ParseToken_Simple(&t, false, false, true);
 					if (i >= 0 && i < MAX_LIGHTSTYLES)
 						strlcpy(sv.lightstyles[i], com_token, sizeof(sv.lightstyles[i]));
 					else
-						Con_Printf("unsupported lightstyle %i \"%s\"\n", i, com_token);
+						Con_PrintLinef ("unsupported lightstyle %d " QUOTED_S, i, com_token);
 				}
-				else if (!strcmp(com_token, "sv.model_precache"))
-				{
+				else if (String_Does_Match(com_token, "sv.model_precache")) {
 					COM_ParseToken_Simple(&t, false, false, true);
 					i = atoi(com_token);
 					COM_ParseToken_Simple(&t, false, false, true);
-					if (i >= 0 && i < MAX_MODELS)
-					{
+					if (i >= 0 && i < MAX_MODELS) {
 						strlcpy(sv.model_precache[i], com_token, sizeof(sv.model_precache[i]));
 						sv.models[i] = Mod_ForName (sv.model_precache[i], true, false, sv.model_precache[i][0] == '*' ? sv.worldname : NULL);
 					}
 					else
-						Con_Printf("unsupported model %i \"%s\"\n", i, com_token);
+						Con_PrintLinef ("unsupported model %d " QUOTED_S, i, com_token);
 				}
-				else if (!strcmp(com_token, "sv.sound_precache"))
-				{
+				else if (String_Does_Match(com_token, "sv.sound_precache")) {
 					COM_ParseToken_Simple(&t, false, false, true);
 					i = atoi(com_token);
 					COM_ParseToken_Simple(&t, false, false, true);
 					if (i >= 0 && i < MAX_SOUNDS)
 						strlcpy(sv.sound_precache[i], com_token, sizeof(sv.sound_precache[i]));
 					else
-						Con_Printf("unsupported sound %i \"%s\"\n", i, com_token);
+						Con_PrintLinef ("unsupported sound %d " QUOTED_S, i, com_token);
 				}
-				else if (!strcmp(com_token, "sv.buffer"))
-				{
-					if (COM_ParseToken_Simple(&t, false, false, true))
-					{
+				else if (String_Does_Match(com_token, "sv.buffer")) {
+					if (COM_ParseToken_Simple(&t, false, false, true)) {
 						i = atoi(com_token);
-						if (i >= 0)
-						{
+						if (i >= 0) {
 							k = STRINGBUFFER_SAVED;
 							if (COM_ParseToken_Simple(&t, false, false, true))
 								k |= atoi(com_token);
 							if (!BufStr_FindCreateReplace(prog, i, k, "string"))
-								Con_Printf(CON_ERROR "failed to create stringbuffer %i\n", i);
+								Con_PrintLinef (CON_ERROR "failed to create stringbuffer %d", i);
 						}
 						else
-							Con_Printf("unsupported stringbuffer index %i \"%s\"\n", i, com_token);
+							Con_PrintLinef ("unsupported stringbuffer index %d " QUOTED_S, i, com_token);
 					}
 					else
-						Con_Printf("unexpected end of line when parsing sv.buffer (expected buffer index)\n");
+						Con_PrintLinef ("unexpected end of line when parsing sv.buffer (expected buffer index)");
 				}
-				else if (!strcmp(com_token, "sv.bufstr"))
+				else if (String_Does_Match(com_token, "sv.bufstr"))
 				{
 					if (!COM_ParseToken_Simple(&t, false, false, true))
-						Con_Printf("unexpected end of line when parsing sv.bufstr\n");
+						Con_PrintLinef ("unexpected end of line when parsing sv.bufstr");
 					else
 					{
 						i = atoi(com_token);
@@ -545,13 +534,13 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 								if (COM_ParseToken_Simple(&t, false, false, true))
 									BufStr_Set(prog, stringbuffer, k, com_token);
 								else
-									Con_Printf("unexpected end of line when parsing sv.bufstr (expected string)\n");
+									Con_PrintLinef ("unexpected end of line when parsing sv.bufstr (expected string)");
 							}
 							else
-								Con_Printf("unexpected end of line when parsing sv.bufstr (expected strindex)\n");
+								Con_PrintLinef ("unexpected end of line when parsing sv.bufstr (expected strindex)");
 						}
 						else
-							Con_Printf(CON_ERROR "failed to create stringbuffer %i \"%s\"\n", i, com_token);
+							Con_PrintLinef (CON_ERROR "failed to create stringbuffer %d " QUOTED_S, i, com_token);
 					}
 				}	
 				// skip any trailing text or unrecognized commands
@@ -560,21 +549,21 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 			}
 		}
 	}
-	Mem_Free(text);
+	// Success
+	Mem_Free(text); // AXX1 END
 
 	// remove all temporary flagged string buffers (ones created with BufStr_FindCreateReplace)
 	numbuffers = (int)Mem_ExpandableArray_IndexRange(&prog->stringbuffersarray);
-	for (i = 0; i < numbuffers; i++)
-	{
+	for (i = 0; i < numbuffers; i++) {
 		if ( (stringbuffer = (prvm_stringbuffer_t *)Mem_ExpandableArray_RecordAtIndex(&prog->stringbuffersarray, i)) )
 			if (stringbuffer->flags & STRINGBUFFER_TEMP)
 				BufStr_Del(prog, stringbuffer);
 	}
 
-	if(developer_entityparsing.integer)
-		Con_Printf("SV_Loadgame_f: finished\n");
+	if (developer_entityparsing.integer)
+		Con_PrintLinef ("SV_Loadgame_f: finished");
 
 	// make sure we're connected to loopback
-	if(sv.active && host.hook.ConnectLocal)
+	if (sv.active && host.hook.ConnectLocal)
 		host.hook.ConnectLocal();
 }

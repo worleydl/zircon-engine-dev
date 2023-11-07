@@ -43,7 +43,7 @@ typedef struct q3dheader_s
 
 typedef struct q3dtexture_s
 {
-	char name[Q3PATHLENGTH];
+	char name[Q3PATHLENGTH_64];
 	int surfaceflags;
 	int contents;
 }
@@ -131,7 +131,7 @@ q3dmeshvertex_t;
 
 typedef struct q3deffect_s
 {
-	char shadername[Q3PATHLENGTH];
+	char shadername[Q3PATHLENGTH_64];
 	int brushindex;
 	int unknown; // I read this is always 5 except in q3dm8 which has one effect with -1
 }
@@ -370,4 +370,4 @@ typedef struct model_brushq3_s
 }
 model_brushq3_t;
 
-#endif
+#endif // ! MODEL_Q3BSP_H

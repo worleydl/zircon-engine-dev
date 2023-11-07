@@ -129,7 +129,7 @@ void R_BuildLightMap (const entity_render_t *ent, msurface_t *surface, int combi
 		}
 	}
 
-	if(vid_sRGB.integer && vid_sRGB_fallback.integer && !vid.sRGB3D)
+	if (vid_sRGB.integer && vid_sRGB_fallback.integer && !vid.sRGB3D)
 		Image_MakesRGBColorsFromLinear_Lightmap(templight, templight, size);
 	R_UpdateTexture(surface->lightmaptexture, templight, surface->lightmapinfo->lightmaporigin[0], surface->lightmapinfo->lightmaporigin[1], 0, smax, tmax, 1, combine);
 
@@ -320,10 +320,8 @@ void R_Stain (const vec3_t origin, float radius, int cr1, int cg1, int cb1, int 
 	{
 		ent = &cl.entities[cl.brushmodel_entities[n]].render;
 		model = ent->model;
-		if (model && model->model_name[0] == '*')
-		{
-			if (model->brush.data_nodes)
-			{
+		if (model && model->model_name[0] == '*') {
+			if (model->brush.data_nodes) {
 				Matrix4x4_Transform(&ent->inversematrix, origin, org);
 				R_StainNode(model->brush.data_nodes + model->brushq1.hulls[0].firstclipnode, model, org, radius, fcolor);
 			}
@@ -448,7 +446,7 @@ void R_View_WorldVisibility(qbool forcenovis)
 
 	// clear the visible surface and leaf flags arrays
 	memset(r_refdef.viewcache.world_surfacevisible, 0, model->num_surfaces);
-	if(!r_lockpvs.integer)
+	if (!r_lockpvs.integer)
 		memset(r_refdef.viewcache.world_leafvisible, 0, model->brush.num_leafs);
 
 	r_refdef.viewcache.world_novis = false;
@@ -623,7 +621,7 @@ void R_Mod_DrawAddWaterPlanes(entity_render_t *ent)
 	}
 	else
 	{
-		if(ent->entitynumber >= MAX_EDICTS) // && CL_VM_TransformView(ent->entitynumber - MAX_EDICTS, NULL, NULL, NULL))
+		if (ent->entitynumber >= MAX_EDICTS) // && CL_VM_TransformView(ent->entitynumber - MAX_EDICTS, NULL, NULL, NULL))
 			n = ent->entitynumber;
 		else
 			n = 0;
@@ -906,7 +904,7 @@ static void R_Q1BSP_RecursiveGetLightInfo_BSP(r_q1bsp_getlightinfo_t *info, qboo
 				{
 					surfaceindex = leafsurfaceindices[leafsurfaceindex];
 					surface = surfaces + surfaceindex;
-					if(!surface->texture)
+					if (!surface->texture)
 						continue;	
 					if (CHECKPVSBIT(info->outsurfacepvs, surfaceindex))
 						continue;
@@ -1176,9 +1174,9 @@ static void R_Q1BSP_CallRecursiveGetLightInfo(r_q1bsp_getlightinfo_t *info, qboo
 	r_svbsp.nodes = NULL;
 	if (developer_extra.integer && use_svbsp)
 	{
-		Con_DPrintf("GetLightInfo: svbsp built with %i nodes, polygon stats:\n", r_svbsp.numnodes);
-		Con_DPrintf("occluders: %i accepted, %i rejected, %i fragments accepted, %i fragments rejected.\n", r_svbsp.stat_occluders_accepted, r_svbsp.stat_occluders_rejected, r_svbsp.stat_occluders_fragments_accepted, r_svbsp.stat_occluders_fragments_rejected);
-		Con_DPrintf("queries  : %i accepted, %i rejected, %i fragments accepted, %i fragments rejected.\n", r_svbsp.stat_queries_accepted, r_svbsp.stat_queries_rejected, r_svbsp.stat_queries_fragments_accepted, r_svbsp.stat_queries_fragments_rejected);
+		Con_DPrintf ("GetLightInfo: svbsp built with %d nodes, polygon stats:\n", r_svbsp.numnodes);
+		Con_DPrintf ("occluders: %d accepted, %d rejected, %d fragments accepted, %d fragments rejected.\n", r_svbsp.stat_occluders_accepted, r_svbsp.stat_occluders_rejected, r_svbsp.stat_occluders_fragments_accepted, r_svbsp.stat_occluders_fragments_rejected);
+		Con_DPrintf ("queries  : %d accepted, %d rejected, %d fragments accepted, %d fragments rejected.\n", r_svbsp.stat_queries_accepted, r_svbsp.stat_queries_rejected, r_svbsp.stat_queries_fragments_accepted, r_svbsp.stat_queries_fragments_rejected);
 	}
 }
 
@@ -1306,7 +1304,7 @@ void R_Mod_CompileShadowMap(entity_render_t *ent, vec3_t relativelightorigin, ve
 	r_shadow_compilingrtlight->static_meshchain_shadow_shadowmap = Mod_ShadowMesh_Finish(r_shadow_compilingrtlight->static_meshchain_shadow_shadowmap, true);
 	r_shadow_compilingrtlight->static_shadowmap_receivers &= sidemasks;
 	for(i = 0;i<6;i++)
-		if(!sidetotals[i])
+		if (!sidetotals[i])
 			r_shadow_compilingrtlight->static_shadowmap_casters &= ~(1 << i);
 }
 
@@ -1484,41 +1482,37 @@ static void R_ReplaceWorldTexture_f(cmd_state_t *cmd)
 	int			i;
 	const char	*r, *newt;
 	skinframe_t *skinframe;
-	if (!r_refdef.scene.worldmodel)
-	{
-		Con_Printf("There is no worldmodel\n");
+	if (!r_refdef.scene.worldmodel) {
+		Con_PrintLinef ("There is no worldmodel");
 		return;
 	}
 	m = r_refdef.scene.worldmodel;
 
-	if(Cmd_Argc(cmd) < 2)
-	{
-		Con_Print("r_replacemaptexture <texname> <newtexname> - replaces texture\n");
-		Con_Print("r_replacemaptexture <texname> - switch back to default texture\n");
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("r_replacemaptexture <texname> <newtexname> - replaces texture");
+		// Con_PrintLinef ("r_replacemaptexture <texname> - switch back to default texture");
+		Con_PrintLinef ("vid_restart or press ALT-ENTER will reload textures to defaults");
 		return;
 	}
-	if(!cl.islocalgame || !cl.worldmodel)
+	if (!cl.islocalgame || !cl.worldmodel)
 	{
-		Con_Print("This command works only in singleplayer\n");
+		Con_PrintLinef ("This command works only in singleplayer");
 		return;
 	}
 	r = Cmd_Argv(cmd, 1);
 	newt = Cmd_Argv(cmd, 2);
-	if(!newt[0])
+	if (!newt[0])
 		newt = r;
-	for(i=0,t=m->data_textures;i<m->num_textures;i++,t++)
-	{
-		if(/*t->width && !strcasecmp(t->name, r)*/ matchpattern( t->name, r, true ) )
-		{
-			if ((skinframe = R_SkinFrame_LoadExternal(newt, TEXF_MIPMAP | TEXF_ALPHA | TEXF_PICMIP, true, false)))
-			{
+	for(i=0,t=m->data_textures;i<m->num_textures;i++,t++) {
+		if (/*t->width && String_Does_Match_Caseless(t->name, r)*/ matchpattern( t->name, r, true ) ) {
+			if ((skinframe = R_SkinFrame_LoadExternal(newt, TEXF_MIPMAP | TEXF_ALPHA | TEXF_PICMIP, true, false))) {
 //				t->skinframes[0] = skinframe;
 				t->currentskinframe = skinframe;
-				Con_Printf("%s replaced with %s\n", r, newt);
+				Con_PrintLinef ("%s replaced with %s", r, newt);
 			}
 			else
 			{
-				Con_Printf("%s was not found\n", newt);
+				Con_PrintLinef ("%s was not found", newt);
 				return;
 			}
 		}
@@ -1530,18 +1524,31 @@ static void R_ListWorldTextures_f(cmd_state_t *cmd)
 {
 	model_t		*m;
 	texture_t	*t;
-	int			i;
+	int			j;
 	if (!r_refdef.scene.worldmodel)
 	{
-		Con_Printf("There is no worldmodel\n");
+		Con_PrintLinef ("There is no worldmodel");
 		return;
 	}
-	m = r_refdef.scene.worldmodel;
 
-	Con_Print("Worldmodel textures :\n");
-	for(i=0,t=m->data_textures;i<m->num_textures;i++,t++)
-		if (t->name[0] && strcasecmp(t->name, "NO TEXTURE FOUND"))
-			Con_Printf("%s\n", t->name);
+	m = r_refdef.scene.worldmodel;
+	int c  = Cmd_Argc(cmd);
+	const char *spartial = Cmd_Argv(cmd, 1);
+
+	if (c > 1)  {
+		Con_PrintLinef ("Worldmodel textures containing "  QUOTED_S  " :", spartial);
+	} else {
+		Con_PrintLinef ("Worldmodel textures :");
+	}
+
+	for (j = 0, t = m->data_textures; j < m->num_textures; j++, t++) {
+		if (!t->name[0]) continue;
+		if (String_Does_Contain_Caseless(t->name, "NO TEXTURE FOUND")) continue;
+		
+		if (c > 1 && String_Does_Contain_Caseless (t->name, spartial) == false) continue;
+		
+		Con_PrintLinef ("%s", t->name);
+	} // for
 }
 
 #if 0
@@ -1577,7 +1584,8 @@ void GL_Surf_Init(void)
 	Cvar_RegisterVariable(&r_q3bsp_renderskydepth);
 
 	Cmd_AddCommand(CF_CLIENT, "r_replacemaptexture", R_ReplaceWorldTexture_f, "override a map texture for testing purposes");
-	Cmd_AddCommand(CF_CLIENT, "r_listmaptextures", R_ListWorldTextures_f, "list all textures used by the current map");
+	Cmd_AddCommand (CF_CLIENT, "r_listmaptextures", R_ListWorldTextures_f, "list all textures used by the current map or specify a partial to find [Zircon]"); // Baker r7063: r_listmaptextures [optional partial to find] like "r_listmaptextures water"
+
 
 	//R_RegisterModule("GL_Surf", gl_surf_start, gl_surf_shutdown, gl_surf_newmap);
 }

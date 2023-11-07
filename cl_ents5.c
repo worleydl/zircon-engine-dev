@@ -192,7 +192,7 @@ static void EntityState5_ReadUpdate(entity_state_t *s, int number)
 			model = CL_GetModelByIndex(modelindex);
 			numbones = MSG_ReadByte(&cl_message);
 			if (model && numbones != model->num_bones)
-				Host_Error("E5_COMPLEXANIMATION: model has different number of bones than network packet describes\n");
+				Host_Error_Line ("E5_COMPLEXANIMATION: model has different number of bones than network packet describes");
 			if (!skeleton->relativetransforms || skeleton->model != model)
 			{
 				skeleton->model = model;
@@ -214,7 +214,7 @@ static void EntityState5_ReadUpdate(entity_state_t *s, int number)
 			s->skeletonobject = *skeleton;
 			break;
 		default:
-			Host_Error("E5_COMPLEXANIMATION: Parse error - unknown type %i\n", type);
+			Host_Error_Line ("E5_COMPLEXANIMATION: Parse error - unknown type %d", type);
 			break;
 		}
 	}
@@ -225,23 +225,23 @@ static void EntityState5_ReadUpdate(entity_state_t *s, int number)
 	bytes = cl_message.readcount - startoffset;
 	if (developer_networkentities.integer >= 2)
 	{
-		Con_Printf("ReadFields e%i (%i bytes)", number, bytes);
+		Con_Printf ("ReadFields e%d (%d bytes)", number, bytes);
 
 		if (bits & E5_ORIGIN)
-			Con_Printf(" E5_ORIGIN %f %f %f", s->origin[0], s->origin[1], s->origin[2]);
+			Con_Printf (" E5_ORIGIN %f %f %f", s->origin[0], s->origin[1], s->origin[2]);
 		if (bits & E5_ANGLES)
-			Con_Printf(" E5_ANGLES %f %f %f", s->angles[0], s->angles[1], s->angles[2]);
+			Con_Printf (" E5_ANGLES %f %f %f", s->angles[0], s->angles[1], s->angles[2]);
 		if (bits & E5_MODEL)
-			Con_Printf(" E5_MODEL %i", s->modelindex);
+			Con_Printf (" E5_MODEL %d", s->modelindex);
 		if (bits & E5_FRAME)
-			Con_Printf(" E5_FRAME %i", s->frame);
+			Con_Printf (" E5_FRAME %d", s->frame);
 		if (bits & E5_SKIN)
-			Con_Printf(" E5_SKIN %i", s->skin);
+			Con_Printf (" E5_SKIN %d", s->skin);
 		if (bits & E5_EFFECTS)
-			Con_Printf(" E5_EFFECTS %i", s->effects);
+			Con_Printf (" E5_EFFECTS %d", s->effects);
 		if (bits & E5_FLAGS)
 		{
-			Con_Printf(" E5_FLAGS %i (", s->flags);
+			Con_Printf (" E5_FLAGS %d (", s->flags);
 			if (s->flags & RENDER_STEP)
 				Con_Print(" STEP");
 			if (s->flags & RENDER_GLOWTRAIL)
@@ -263,25 +263,25 @@ static void EntityState5_ReadUpdate(entity_state_t *s, int number)
 			Con_Print(")");
 		}
 		if (bits & E5_ALPHA)
-			Con_Printf(" E5_ALPHA %f", s->alpha / 255.0f);
+			Con_Printf (" E5_ALPHA %f", s->alpha / 255.0f);
 		if (bits & E5_SCALE)
-			Con_Printf(" E5_SCALE %f", s->scale / 16.0f);
+			Con_Printf (" E5_SCALE %f", s->scale / 16.0f);
 		if (bits & E5_COLORMAP)
-			Con_Printf(" E5_COLORMAP %i", s->colormap);
+			Con_Printf (" E5_COLORMAP %d", s->colormap);
 		if (bits & E5_ATTACHMENT)
-			Con_Printf(" E5_ATTACHMENT e%i:%i", s->tagentity, s->tagindex);
+			Con_Printf (" E5_ATTACHMENT e%d:%d", s->tagentity, s->tagindex);
 		if (bits & E5_LIGHT)
-			Con_Printf(" E5_LIGHT %i:%i:%i:%i %i:%i", s->light[0], s->light[1], s->light[2], s->light[3], s->lightstyle, s->lightpflags);
+			Con_Printf (" E5_LIGHT %d:%d:%d:%d %d:%d", s->light[0], s->light[1], s->light[2], s->light[3], s->lightstyle, s->lightpflags);
 		if (bits & E5_GLOW)
-			Con_Printf(" E5_GLOW %i:%i", s->glowsize * 4, s->glowcolor);
+			Con_Printf (" E5_GLOW %d:%d", s->glowsize * 4, s->glowcolor);
 		if (bits & E5_COLORMOD)
-			Con_Printf(" E5_COLORMOD %f:%f:%f", s->colormod[0] / 32.0f, s->colormod[1] / 32.0f, s->colormod[2] / 32.0f);
+			Con_Printf (" E5_COLORMOD %f:%f:%f", s->colormod[0] / 32.0f, s->colormod[1] / 32.0f, s->colormod[2] / 32.0f);
 		if (bits & E5_GLOWMOD)
-			Con_Printf(" E5_GLOWMOD %f:%f:%f", s->glowmod[0] / 32.0f, s->glowmod[1] / 32.0f, s->glowmod[2] / 32.0f);
+			Con_Printf (" E5_GLOWMOD %f:%f:%f", s->glowmod[0] / 32.0f, s->glowmod[1] / 32.0f, s->glowmod[2] / 32.0f);
 		if (bits & E5_COMPLEXANIMATION)
-			Con_Printf(" E5_COMPLEXANIMATION");
+			Con_Printf (" E5_COMPLEXANIMATION");
 		if (bits & E5_TRAILEFFECTNUM)
-			Con_Printf(" E5_TRAILEFFECTNUM %i", s->traileffectnum);
+			Con_Printf (" E5_TRAILEFFECTNUM %d", s->traileffectnum);
 		Con_Print("\n");
 	}
 }
@@ -338,9 +338,9 @@ void EntityFrame5_CL_ReadFrame(void)
 		if (developer_networkentities.integer >= 2 && cl.entities[enumber].state_current.active != cl.entities[enumber].state_previous.active)
 		{
 			if (cl.entities[enumber].state_current.active == ACTIVE_NETWORK)
-				Con_Printf("entity #%i has become active\n", enumber);
+				Con_Printf ("entity #%d has become active\n", enumber);
 			else if (cl.entities[enumber].state_previous.active)
-				Con_Printf("entity #%i has become inactive\n", enumber);
+				Con_Printf ("entity #%d has become inactive\n", enumber);
 		}
 	}
 }

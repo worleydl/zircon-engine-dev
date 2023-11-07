@@ -104,7 +104,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 	modelradius = 0;
 
 	if (loadmodel->numframes < 1)
-		Host_Error ("Mod_Sprite_SharedSetup: Invalid # of frames: %d", loadmodel->numframes);
+		Host_Error_Line ("Mod_Sprite_SharedSetup: Invalid # of frames: %d", loadmodel->numframes);
 
 	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
@@ -175,10 +175,10 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 
 			interval = LittleFloat(pinintervals[0].interval);
 			if (interval < 0.01f)
-				Host_Error("Mod_Sprite_SharedSetup: invalid interval");
+				Host_Error_Line ("Mod_Sprite_SharedSetup: invalid interval");
 		}
 
-		dpsnprintf(loadmodel->animscenes[i].name, sizeof(loadmodel->animscenes[i].name), "frame %i", i);
+		dpsnprintf(loadmodel->animscenes[i].name, sizeof(loadmodel->animscenes[i].name), "frame %d", i);
 		loadmodel->animscenes[i].firstframe = realframes;
 		loadmodel->animscenes[i].framecount = groupframes;
 		loadmodel->animscenes[i].framerate = 1.0f / interval;
@@ -212,13 +212,13 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 				{
 					if (groupframes > 1)
 					{
-						dpsnprintf (name, sizeof(name), "%s_%i_%i", loadmodel->model_name, i, j);
-						dpsnprintf (fogname, sizeof(fogname), "%s_%i_%ifog", loadmodel->model_name, i, j);
+						dpsnprintf (name, sizeof(name), "%s_%d_%d", loadmodel->model_name, i, j);
+						dpsnprintf (fogname, sizeof(fogname), "%s_%d_%dfog", loadmodel->model_name, i, j);
 					}
 					else
 					{
-						dpsnprintf (name, sizeof(name), "%s_%i", loadmodel->model_name, i);
-						dpsnprintf (fogname, sizeof(fogname), "%s_%ifog", loadmodel->model_name, i);
+						dpsnprintf (name, sizeof(name), "%s_%d", loadmodel->model_name, i);
+						dpsnprintf (fogname, sizeof(fogname), "%s_%dfog", loadmodel->model_name, i);
 					}
 					if (!(skinframe = R_SkinFrame_LoadExternal(name, texflags | TEXF_COMPRESS, false, false)))
 					{
@@ -311,7 +311,7 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 		datapointer += 2;
 		i = in[0] + in[1] * 256;
 		if (i != 256)
-			Host_Error ("Mod_IDSP_Load: unexpected number of palette colors %i (should be 256)", i);
+			Host_Error_Line ("Mod_IDSP_Load: unexpected number of palette colors %d (should be 256)", i);
 		in = datapointer;
 		datapointer += 768;
 		switch(rendermode)
@@ -357,14 +357,14 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 			// should this use alpha test or alpha blend?  (currently blend)
 			break;
 		default:
-			Host_Error("Mod_IDSP_Load: unknown texFormat (%i, should be 0, 1, 2, or 3)", i);
+			Host_Error_Line ("Mod_IDSP_Load: unknown texFormat (%d, should be 0, 1, 2, or 3)", i);
 			return;
 		}
 
 		Mod_Sprite_SharedSetup(datapointer, LittleLong (pinhlsprite->version), (unsigned int *)(&palette[0][0]), rendermode == SPRHL_ADDITIVE);
 	}
 	else
-		Host_Error("Mod_IDSP_Load: %s has wrong version number (%i). Only %i (quake), %i (HalfLife), and %i (sprite32) supported",
+		Host_Error_Line ("Mod_IDSP_Load: %s has wrong version number (%d). Only %d (quake), %d (HalfLife), and %d (sprite32) supported",
 					loadmodel->model_name, version, SPRITE_VERSION, SPRITEHL_VERSION, SPRITE32_VERSION);
 
 	// TODO: Note that isanimated only means whether vertices change due to
@@ -395,11 +395,11 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 
 	version = LittleLong(pinqsprite->version);
 	if (version != SPRITE2_VERSION)
-		Host_Error("Mod_IDS2_Load: %s has wrong version number (%i should be 2 (quake 2)", loadmodel->model_name, version);
+		Host_Error_Line ("Mod_IDS2_Load: %s has wrong version number (%d should be 2 (quake 2)", loadmodel->model_name, version);
 
 	loadmodel->numframes = LittleLong (pinqsprite->numframes);
 	if (loadmodel->numframes < 1)
-		Host_Error ("Mod_IDS2_Load: Invalid # of frames: %d", loadmodel->numframes);
+		Host_Error_Line ("Mod_IDS2_Load: Invalid # of frames: %d", loadmodel->numframes);
 	loadmodel->sprite.sprnum_type = SPR_VP_PARALLEL;
 	loadmodel->synctype = ST_SYNC;
 
@@ -422,7 +422,7 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 		const dsprite2frame_t *pinframe;
 		mspriteframe_t *sprframe;
 
-		dpsnprintf(loadmodel->animscenes[i].name, sizeof(loadmodel->animscenes[i].name), "frame %i", i);
+		dpsnprintf(loadmodel->animscenes[i].name, sizeof(loadmodel->animscenes[i].name), "frame %d", i);
 		loadmodel->animscenes[i].firstframe = i;
 		loadmodel->animscenes[i].framecount = 1;
 		loadmodel->animscenes[i].framerate = 10;

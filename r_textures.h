@@ -242,5 +242,9 @@ int R_PicmipForFlags(int flags);
 
 void R_TextureStats_Print(qbool printeach, qbool printpool, qbool printtotal);
 
+// Baker: real-time r_nearest_conchars cvar support
+void R_Nearest_Conchars_Callback(cvar_t* var);
+extern cvar_t r_nearest_conchars; 
+
 #endif
 

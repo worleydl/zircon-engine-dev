@@ -10,7 +10,8 @@ cvar_t gl_printcheckerror = {CF_CLIENT, "gl_printcheckerror", "0", "prints all O
 
 cvar_t r_render = {CF_CLIENT, "r_render", "1", "enables rendering 3D views (you want this on!)"};
 cvar_t r_renderview = {CF_CLIENT, "r_renderview", "1", "enables rendering 3D views (you want this on!)"};
-cvar_t r_waterwarp = {CF_CLIENT | CF_ARCHIVE, "r_waterwarp", "1", "warp view while underwater"};
+cvar_t r_waterwarp = {CF_CLIENT | CF_ARCHIVE, "r_waterwarp", "1", "warp view while underwater, 2 = WinQuake style warp [Zircon]"};  // Baker r0082
+cvar_t r_waterdeform = {CF_CLIENT | CF_ARCHIVE, "r_waterdeform", "0", "1 draws water/slime like WinQuake, 2 draws lava / teleporter textures too [Zircon]"};  // Baker r0083
 cvar_t gl_polyblend = {CF_CLIENT | CF_ARCHIVE, "gl_polyblend", "1", "tints view while underwater, hurt, etc"};
 
 cvar_t v_flipped = {CF_CLIENT, "v_flipped", "0", "mirror the screen (poor man's left handed mode)"};
@@ -33,46 +34,46 @@ void GL_PrintError(GLenum errornumber, const char *filename, unsigned int linenu
 	{
 #ifdef GL_INVALID_ENUM
 	case GL_INVALID_ENUM:
-		Con_Printf("GL_INVALID_ENUM at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_INVALID_ENUM at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_INVALID_VALUE
 	case GL_INVALID_VALUE:
-		Con_Printf("GL_INVALID_VALUE at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_INVALID_VALUE at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_INVALID_OPERATION
 	case GL_INVALID_OPERATION:
-		Con_Printf("GL_INVALID_OPERATION at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_INVALID_OPERATION at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_STACK_OVERFLOW
 	case GL_STACK_OVERFLOW:
-		Con_Printf("GL_STACK_OVERFLOW at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_STACK_OVERFLOW at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_STACK_UNDERFLOW
 	case GL_STACK_UNDERFLOW:
-		Con_Printf("GL_STACK_UNDERFLOW at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_STACK_UNDERFLOW at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_OUT_OF_MEMORY
 	case GL_OUT_OF_MEMORY:
-		Con_Printf("GL_OUT_OF_MEMORY at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_OUT_OF_MEMORY at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_TABLE_TOO_LARGE
 	case GL_TABLE_TOO_LARGE:
-		Con_Printf("GL_TABLE_TOO_LARGE at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_TABLE_TOO_LARGE at %s:%d\n", filename, linenumber);
 		break;
 #endif
 #ifdef GL_INVALID_FRAMEBUFFER_OPERATION
 	case GL_INVALID_FRAMEBUFFER_OPERATION:
-		Con_Printf("GL_INVALID_FRAMEBUFFER_OPERATION at %s:%i\n", filename, linenumber);
+		Con_Printf ("GL_INVALID_FRAMEBUFFER_OPERATION at %s:%d\n", filename, linenumber);
 		break;
 #endif
 	default:
-		Con_Printf("GL UNKNOWN (%i) at %s:%i\n", errornumber, filename, linenumber);
+		Con_Printf ("GL UNKNOWN (%d) at %s:%d\n", errornumber, filename, linenumber);
 		break;
 	}
 }
@@ -104,11 +105,11 @@ static void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint
 	case GL_DEBUG_SOURCE_APPLICATION_ARB: src = "APP"; break;
 	case GL_DEBUG_SOURCE_OTHER_ARB: src = "OTHER"; break;
 	}
-	Con_Printf("GLDEBUG: %s %s %s: %u: %s\n", sev, typ, src, (unsigned int)id, message);
+	Con_Printf ("GLDEBUG: %s %s %s: %u: %s\n", sev, typ, src, (unsigned int)id, message);
 }
 #endif
 
-#define BACKENDACTIVECHECK if (!gl_state.active) Sys_Error("GL backend function called when backend is not active");
+#define BACKENDACTIVECHECK if (!gl_state.active) Sys_Error ("GL backend function called when backend is not active");
 
 void SCR_ScreenShot_f(cmd_state_t *cmd);
 
@@ -256,7 +257,7 @@ static void gl_backend_start(void)
 
 	Mem_ExpandableArray_NewArray(&gl_state.meshbufferarray, r_main_mempool, sizeof(r_meshbuffer_t), 128);
 
-	Con_Printf("OpenGL backend started\n");
+	Con_DPrintLinef ("OpenGL backend started");
 
 	CHECKGLERROR
 
@@ -281,7 +282,7 @@ static void gl_backend_start(void)
 
 static void gl_backend_shutdown(void)
 {
-	Con_Print("OpenGL backend shutting down\n");
+	Con_DPrintLinef ("OpenGL backend shutting down");
 
 	switch(vid.renderpath)
 	{
@@ -306,6 +307,7 @@ static void gl_backend_devicelost(void)
 {
 	int i, endindex;
 	r_meshbuffer_t *buffer;
+
 	switch(vid.renderpath)
 	{
 	case RENDERPATH_GL32:
@@ -366,6 +368,7 @@ void gl_backend_init(void)
 	Cvar_RegisterVariable(&r_render);
 	Cvar_RegisterVariable(&r_renderview);
 	Cvar_RegisterVariable(&r_waterwarp);
+	Cvar_RegisterVariable(&r_waterdeform); // Baker r0083
 	Cvar_RegisterVariable(&gl_polyblend);
 	Cvar_RegisterVariable(&v_flipped);
 	Cvar_RegisterVariable(&gl_debug);
@@ -404,7 +407,7 @@ void GL_Finish(void)
 		CHECKGLERROR
 		qglFinish();CHECKGLERROR
 		break;
-	}
+	} // switch
 }
 
 static int bboxedges[12][2] =
@@ -489,12 +492,12 @@ qbool R_ScissorForBBox(const float *mins, const float *maxs, int *scissor)
 	// if we have some points to transform, check what screen area is covered
 	x1 = y1 = x2 = y2 = 0;
 	v[3] = 1.0f;
-	//Con_Printf("%i vertices to transform...\n", numvertices);
+	//Con_Printf ("%d vertices to transform...\n", numvertices);
 	for (i = 0;i < numvertices;i++)
 	{
 		VectorCopy(vertex[i], v);
 		R_Viewport_TransformToScreen(&r_refdef.view.viewport, v, v2);
-		//Con_Printf("%.3f %.3f %.3f %.3f transformed to %.3f %.3f %.3f %.3f\n", v[0], v[1], v[2], v[3], v2[0], v2[1], v2[2], v2[3]);
+		//Con_Printf ("%.3f %.3f %.3f %.3f transformed to %.3f %.3f %.3f %.3f\n", v[0], v[1], v[2], v[3], v2[0], v2[1], v2[2], v2[3]);
 		if (i)
 		{
 			if (x1 > v2[0]) x1 = v2[0];
@@ -518,7 +521,7 @@ qbool R_ScissorForBBox(const float *mins, const float *maxs, int *scissor)
 	//iy2 = vid.height - (int)(y1 + 1.0f);
 	//iy2 = r_refdef.view.viewport.height + 2 * r_refdef.view.viewport.y - (int)(y1 + 1.0f);
 	iy2 = (int)(y2 + 1.0f);
-	//Con_Printf("%f %f %f %f\n", x1, y1, x2, y2);
+	//Con_Printf ("%f %f %f %f\n", x1, y1, x2, y2);
 
 	// clamp it to the screen
 	if (ix1 < r_refdef.view.viewport.x) ix1 = r_refdef.view.viewport.x;
@@ -604,12 +607,7 @@ void R_Viewport_InitOrtho(r_viewport_t *v, const matrix4x4_t *cameramatrix, int 
 	m[13] = - (top + bottom)/(top - bottom);
 	m[14] = - (zFar + zNear)/(zFar - zNear);
 	m[15] = 1;
-	switch(vid.renderpath)
-	{
-	case RENDERPATH_GL32:
-	case RENDERPATH_GLES2:
-		break;
-	}
+
 	v->screentodepth[0] = -farclip / (farclip - nearclip);
 	v->screentodepth[1] = farclip * nearclip / (farclip - nearclip);
 
@@ -626,7 +624,7 @@ void R_Viewport_InitOrtho(r_viewport_t *v, const matrix4x4_t *cameramatrix, int 
 		vec4_t test2;
 		Vector4Set(test1, (x1+x2)*0.5f, (y1+y2)*0.5f, 0.0f, 1.0f);
 		R_Viewport_TransformToScreen(v, test1, test2);
-		Con_Printf("%f %f %f -> %f %f %f\n", test1[0], test1[1], test1[2], test2[0], test2[1], test2[2]);
+		Con_Printf ("%f %f %f -> %f %f %f\n", test1[0], test1[1], test1[2], test2[0], test2[1], test2[2]);
 	}
 #endif
 }
@@ -662,7 +660,7 @@ void R_Viewport_InitOrtho3D(r_viewport_t *v, const matrix4x4_t *cameramatrix, in
 	if (nearplane)
 		R_Viewport_ApplyNearClipPlaneFloatGL(v, m, nearplane[0], nearplane[1], nearplane[2], nearplane[3]);
 
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 	{
 		m[0] = -m[0];
 		m[4] = -m[4];
@@ -704,7 +702,7 @@ void R_Viewport_InitPerspective(r_viewport_t *v, const matrix4x4_t *cameramatrix
 	if (nearplane)
 		R_Viewport_ApplyNearClipPlaneFloatGL(v, m, nearplane[0], nearplane[1], nearplane[2], nearplane[3]);
 
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 	{
 		m[0] = -m[0];
 		m[4] = -m[4];
@@ -747,7 +745,7 @@ void R_Viewport_InitPerspectiveInfinite(r_viewport_t *v, const matrix4x4_t *came
 	if (nearplane)
 		R_Viewport_ApplyNearClipPlaneFloatGL(v, m, nearplane[0], nearplane[1], nearplane[2], nearplane[3]);
 
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 	{
 		m[0] = -m[0];
 		m[4] = -m[4];
@@ -1023,7 +1021,7 @@ int R_Mesh_CreateFramebufferObject(rtexture_t *depthtexture, rtexture_t *colorte
 		status = qglCheckFramebufferStatus(GL_FRAMEBUFFER);CHECKGLERROR
 		if (status != GL_FRAMEBUFFER_COMPLETE)
 		{
-			Con_Printf("R_Mesh_CreateFramebufferObject: glCheckFramebufferStatus returned %i\n", status);
+			Con_Printf ("R_Mesh_CreateFramebufferObject: glCheckFramebufferStatus returned %d\n", status);
 			gl_state.framebufferobject = 0; // GL unbinds it for us
 			qglDeleteFramebuffers(1, (GLuint*)&temp);CHECKGLERROR
 			temp = 0;
@@ -1156,7 +1154,7 @@ void GL_ActiveTexture(unsigned int num)
 			CHECKGLERROR
 			qglActiveTexture(GL_TEXTURE0 + gl_state.unit);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1194,7 +1192,7 @@ void GL_BlendFunc(int blendfunc1, int blendfunc2)
 				}
 			}
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1210,7 +1208,7 @@ void GL_DepthMask(int state)
 			CHECKGLERROR
 			qglDepthMask(gl_state.depthmask);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1233,7 +1231,7 @@ void GL_DepthTest(int state)
 				qglDisable(GL_DEPTH_TEST);CHECKGLERROR
 			}
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1249,7 +1247,7 @@ void GL_DepthFunc(int state)
 			CHECKGLERROR
 			qglDepthFunc(gl_state.depthfunc);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1270,7 +1268,7 @@ void GL_DepthRange(float nearfrac, float farfrac)
 			qglDepthRange(gl_state.depthrange[0], gl_state.depthrange[1]);CHECKGLERROR
 #endif
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1294,7 +1292,7 @@ void R_SetStencil(qbool enable, int writemask, int fail, int zfail, int zpass, i
 		qglStencilFunc(compare, comparereference, comparemask);CHECKGLERROR
 		CHECKGLERROR
 		break;
-	}
+	} // switch
 }
 
 void GL_PolygonOffset(float planeoffset, float depthoffset)
@@ -1310,7 +1308,7 @@ void GL_PolygonOffset(float planeoffset, float depthoffset)
 			CHECKGLERROR
 			qglPolygonOffset(gl_state.polygonoffset[0], gl_state.polygonoffset[1]);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1332,17 +1330,17 @@ void GL_SetMirrorState(qbool state)
 			CHECKGLERROR
 			qglCullFace(gl_state.cullface);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
 
 void GL_CullFace(int state)
 {
-	if(v_flipped_state)
+	if (v_flipped_state)
 	{
-		if(state == GL_FRONT)
+		if (state == GL_FRONT)
 			state = GL_BACK;
-		else if(state == GL_BACK)
+		else if (state == GL_BACK)
 			state = GL_FRONT;
 	}
 
@@ -1374,7 +1372,8 @@ void GL_CullFace(int state)
 			}
 		}
 		break;
-	}
+// mark 2
+	} // switch
 }
 
 void GL_AlphaToCoverage(qbool state)
@@ -1449,7 +1448,8 @@ void GL_Scissor (int x, int y, int width, int height)
 	case RENDERPATH_GL32:
 	case RENDERPATH_GLES2:
 		CHECKGLERROR
-		qglScissor(x, y,width,height);CHECKGLERROR
+		qglScissor(x, y,width,height);
+		CHECKGLERROR
 		break;
 	}
 }
@@ -1464,13 +1464,13 @@ void GL_ScissorTest(int state)
 		case RENDERPATH_GL32:
 		case RENDERPATH_GLES2:
 			CHECKGLERROR
-			if(gl_state.scissortest)
+			if (gl_state.scissortest)
 				qglEnable(GL_SCISSOR_TEST);
 			else
 				qglDisable(GL_SCISSOR_TEST);
 			CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
 
@@ -1509,7 +1509,7 @@ void GL_Clear(int mask, const float *colorvalue, float depthvalue, int stencilva
 		}
 		qglClear(mask);CHECKGLERROR
 		break;
-	}
+	} // switch
 }
 
 void GL_ReadPixelsBGRA(int x, int y, int width, int height, unsigned char *outpixels)
@@ -1543,7 +1543,7 @@ void GL_ReadPixelsBGRA(int x, int y, int width, int height, unsigned char *outpi
 		qglReadPixels(x, y, width, height, GL_BGRA, GL_UNSIGNED_BYTE, outpixels);CHECKGLERROR
 #endif
 			break;
-	}
+	} // switch
 }
 
 // called at beginning of frame
@@ -1553,7 +1553,7 @@ void R_Mesh_Start(void)
 	R_Mesh_SetRenderTargets(0, NULL, NULL, NULL, NULL, NULL);
 	if (gl_printcheckerror.integer && !gl_paranoid.integer)
 	{
-		Con_Printf(CON_WARN "WARNING: gl_printcheckerror is on but gl_paranoid is off, turning it on...\n");
+		Con_PrintLinef (CON_WARN "WARNING: gl_printcheckerror is on but gl_paranoid is off, turning it on...");
 		Cvar_SetValueQuick(&gl_paranoid, 1);
 	}
 }
@@ -1577,8 +1577,9 @@ static qbool GL_Backend_CompileShader(int programobject, GLenum shadertypeenum, 
 			for (j = 0;strings[i][j];j++)
 				if (strings[i][j] == '\n')
 					pretextlines++;
-		Con_Printf("%s shader compile log:\n%s\n(line offset for any above warnings/errors: %i)\n", shadertype, compilelog, pretextlines);
-	}
+		Con_PrintLinef ("%s shader compile log:" NEWLINE "%s" NEWLINE "(line offset for any above warnings/errors: %d)", shadertype, compilelog, pretextlines);
+	} // compilelog[0]
+
 	if (!shadercompiled)
 	{
 		qglDeleteShader(shaderobject);CHECKGLERROR
@@ -1634,7 +1635,7 @@ unsigned int GL_Backend_CompileProgram(int vertexstrings_count, const char **ver
 	{
 
 		if (strstr(linklog, "error") || strstr(linklog, "ERROR") || strstr(linklog, "Error") || strstr(linklog, "WARNING") || strstr(linklog, "warning") || strstr(linklog, "Warning") || developer_extra.integer)
-			Con_DPrintf("program link log:\n%s\n", linklog);
+			Con_DPrintf ("program link log:\n%s\n", linklog);
 
 		// software vertex shader is ok but software fragment shader is WAY
 		// too slow, fail program if so.
@@ -1673,7 +1674,7 @@ void R_Mesh_Draw(int firstvertex, int numvertices, int firsttriangle, int numtri
 	if (numvertices < 3 || numtriangles < 1)
 	{
 		if (numvertices < 0 || numtriangles < 0 || developer_extra.integer)
-			Con_DPrintf("R_Mesh_Draw(%d, %d, %d, %d, %8p, %8p, %8x, %8p, %8p, %8x);\n", firstvertex, numvertices, firsttriangle, numtriangles, (void *)element3i, (void *)element3i_indexbuffer, (int)element3i_bufferoffset, (void *)element3s, (void *)element3s_indexbuffer, (int)element3s_bufferoffset);
+			Con_DPrintf ("R_Mesh_Draw(%d, %d, %d, %d, %8p, %8p, %8x, %8p, %8p, %8x);\n", firstvertex, numvertices, firsttriangle, numtriangles, (void *)element3i, (void *)element3i_indexbuffer, (int)element3i_bufferoffset, (void *)element3s, (void *)element3s_indexbuffer, (int)element3s_bufferoffset);
 		return;
 	}
 	// adjust the pointers for firsttriangle
@@ -1712,7 +1713,7 @@ void R_Mesh_Draw(int firstvertex, int numvertices, int firsttriangle, int numtri
 			{
 				if (element3i[i] < firstvertex || element3i[i] >= firstvertex + numvertices)
 				{
-					Con_Printf("R_Mesh_Draw: invalid vertex index %i (outside range %i - %i) in element3i array\n", element3i[i], firstvertex, firstvertex + numvertices);
+					Con_Printf ("R_Mesh_Draw: invalid vertex index %d (outside range %d - %d) in element3i array\n", element3i[i], firstvertex, firstvertex + numvertices);
 					return;
 				}
 			}
@@ -1723,7 +1724,7 @@ void R_Mesh_Draw(int firstvertex, int numvertices, int firsttriangle, int numtri
 			{
 				if (element3s[i] < firstvertex || element3s[i] >= firstvertex + numvertices)
 				{
-					Con_Printf("R_Mesh_Draw: invalid vertex index %i (outside range %i - %i) in element3s array\n", element3s[i], firstvertex, firstvertex + numvertices);
+					Con_Printf ("R_Mesh_Draw: invalid vertex index %d (outside range %d - %d) in element3s array\n", element3s[i], firstvertex, firstvertex + numvertices);
 					return;
 				}
 			}
@@ -1825,7 +1826,8 @@ void R_Mesh_UpdateMeshBuffer(r_meshbuffer_t *buffer, const void *data, size_t si
 		if (buffer->isuniformbuffer)
 			GL_BindUBO(0);
 		break;
-	}
+	} // switch
+// mark 3
 }
 
 void R_Mesh_DestroyMeshBuffer(r_meshbuffer_t *buffer)
@@ -1846,7 +1848,7 @@ void R_Mesh_DestroyMeshBuffer(r_meshbuffer_t *buffer)
 		CHECKGLERROR
 		qglDeleteBuffers(1, (GLuint *)&buffer->bufferobject);CHECKGLERROR
 		break;
-	}
+	} // switch
 	Mem_ExpandableArray_FreeRecord(&gl_state.meshbufferarray, (void *)buffer);
 }
 
@@ -1882,7 +1884,7 @@ void GL_Mesh_ListVBOs(qbool printeach)
 		bufferstat[type][isdynamic][0]++;
 		bufferstat[type][isdynamic][1] += buffer->size;
 		if (printeach)
-			Con_Printf("buffer #%i %s = %i bytes (%s %s)\n", i, buffer->name, (int)buffer->size, isdynamic ? "dynamic" : "static", buffertypename[type]);
+			Con_Printf ("buffer #%d %s = %d bytes (%s %s)\n", i, buffer->name, (int)buffer->size, isdynamic ? "dynamic" : "static", buffertypename[type]);
 	}
 	index16count   = (int)(bufferstat[R_BUFFERDATA_INDEX16][0][0] + bufferstat[R_BUFFERDATA_INDEX16][1][0]);
 	index16mem     = (int)(bufferstat[R_BUFFERDATA_INDEX16][0][1] + bufferstat[R_BUFFERDATA_INDEX16][1][1]);
@@ -1894,7 +1896,7 @@ void GL_Mesh_ListVBOs(qbool printeach)
 	uniformmem   = (int)(bufferstat[R_BUFFERDATA_UNIFORM][0][1] + bufferstat[R_BUFFERDATA_UNIFORM][1][1]);
 	totalcount = index16count + index32count + vertexcount + uniformcount;
 	totalmem = index16mem + index32mem + vertexmem + uniformmem;
-	Con_Printf("%i 16bit indexbuffers totalling %i bytes (%.3f MB)\n%i 32bit indexbuffers totalling %i bytes (%.3f MB)\n%i vertexbuffers totalling %i bytes (%.3f MB)\n%i uniformbuffers totalling %i bytes (%.3f MB)\ncombined %i buffers totalling %i bytes (%.3fMB)\n", index16count, index16mem, index16mem / 10248576.0, index32count, index32mem, index32mem / 10248576.0, vertexcount, vertexmem, vertexmem / 10248576.0, uniformcount, uniformmem, uniformmem / 10248576.0, totalcount, totalmem, totalmem / 10248576.0);
+	Con_Printf ("%d 16bit indexbuffers totalling %d bytes (%.3f MB)\n%d 32bit indexbuffers totalling %d bytes (%.3f MB)\n%d vertexbuffers totalling %d bytes (%.3f MB)\n%d uniformbuffers totalling %d bytes (%.3f MB)\ncombined %d buffers totalling %d bytes (%.3fMB)\n", index16count, index16mem, index16mem / 10248576.0, index32count, index32mem, index32mem / 10248576.0, vertexcount, vertexmem, vertexmem / 10248576.0, uniformcount, uniformmem, uniformmem / 10248576.0, totalcount, totalmem, totalmem / 10248576.0);
 }
 
 
@@ -1909,7 +1911,7 @@ void R_Mesh_VertexPointer(int components, int gltype, size_t stride, const void 
 		{
 			int bufferobject = vertexbuffer ? vertexbuffer->bufferobject : 0;
 			if (!bufferobject && gl_paranoid.integer)
-				Con_DPrintf("Warning: no bufferobject in R_Mesh_VertexPointer(%i, %i, %i, %p, %p, %08x)", components, gltype, (int)stride, pointer, (void *)vertexbuffer, (unsigned int)bufferoffset);
+				Con_DPrintf ("Warning: no bufferobject in R_Mesh_VertexPointer(%d, %d, %d, %p, %p, %08x)", components, gltype, (int)stride, pointer, (void *)vertexbuffer, (unsigned int)bufferoffset);
 			gl_state.pointer_vertex_components = components;
 			gl_state.pointer_vertex_gltype = gltype;
 			gl_state.pointer_vertex_stride = stride;
@@ -1922,7 +1924,7 @@ void R_Mesh_VertexPointer(int components, int gltype, size_t stride, const void 
 			qglVertexAttribPointer(GLSLATTRIB_POSITION, components, gltype & ~0x80000000, (gltype & 0x80000000) == 0, (GLsizei)stride, bufferobject ? (void *)bufferoffset : pointer);CHECKGLERROR
 		}
 		break;
-	}
+	} // switch
 }
 
 void R_Mesh_ColorPointer(int components, int gltype, size_t stride, const void *pointer, const r_meshbuffer_t *vertexbuffer, size_t bufferoffset)
@@ -1978,7 +1980,7 @@ void R_Mesh_TexCoordPointer(unsigned int unitnum, int components, int gltype, si
 {
 	gltextureunit_t *unit = gl_state.units + unitnum;
 	if (unitnum >= MAX_TEXTUREUNITS)
-		Sys_Error("R_Mesh_TexCoordPointer: unitnum %i > max units %i\n", unitnum, MAX_TEXTUREUNITS);
+		Sys_Error ("R_Mesh_TexCoordPointer: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS);
 	// update array settings
 	// note: there is no need to check bufferobject here because all cases
 	// that involve a valid bufferobject also supply a texcoord array
@@ -2027,7 +2029,7 @@ int R_Mesh_TexBound(unsigned int unitnum, int id)
 {
 	gltextureunit_t *unit = gl_state.units + unitnum;
 	if (unitnum >= MAX_TEXTUREUNITS)
-		Sys_Error("R_Mesh_TexCoordPointer: unitnum %i > max units %i\n", unitnum, MAX_TEXTUREUNITS);
+		Sys_Error ("R_Mesh_TexCoordPointer: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS);
 	if (id == GL_TEXTURE_2D)
 		return unit->t2d;
 	if (id == GL_TEXTURE_3D)
@@ -2068,7 +2070,7 @@ void R_Mesh_TexBind(unsigned int unitnum, rtexture_t *tex)
 	gltextureunit_t *unit = gl_state.units + unitnum;
 	int texnum;
 	if (unitnum >= MAX_TEXTUREUNITS)
-		Sys_Error("R_Mesh_TexBind: unitnum %i > max units %i\n", unitnum, MAX_TEXTUREUNITS);
+		Sys_Error ("R_Mesh_TexBind: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS);
 	switch(vid.renderpath)
 	{
 	case RENDERPATH_GL32:
@@ -2093,7 +2095,7 @@ void R_Mesh_TexBind(unsigned int unitnum, rtexture_t *tex)
 				if (unit->t3d) { GL_ActiveTexture(unitnum); qglBindTexture(GL_TEXTURE_3D, 0); CHECKGLERROR unit->t3d = 0; }
 				if (unit->tcubemap != texnum) { GL_ActiveTexture(unitnum); qglBindTexture(GL_TEXTURE_CUBE_MAP, texnum); CHECKGLERROR unit->tcubemap = texnum; }
 				break;
-			}
+			} // switch
 		}
 		else
 		{
@@ -2205,7 +2207,7 @@ void R_Mesh_PrepareVertices_Mesh_Arrays(int numvertices, const float *vertex3f, 
 void GL_BlendEquationSubtract(qbool negated)
 {
 	CHECKGLERROR
-	if(negated)
+	if (negated)
 	{
 		switch(vid.renderpath)
 		{
@@ -2213,7 +2215,7 @@ void GL_BlendEquationSubtract(qbool negated)
 		case RENDERPATH_GLES2:
 			qglBlendEquation(GL_FUNC_REVERSE_SUBTRACT);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 	else
 	{
@@ -2223,6 +2225,8 @@ void GL_BlendEquationSubtract(qbool negated)
 		case RENDERPATH_GLES2:
 			qglBlendEquation(GL_FUNC_ADD);CHECKGLERROR
 			break;
-		}
+		} // switch
 	}
 }
+
+// mark v

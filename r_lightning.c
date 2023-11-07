@@ -8,7 +8,25 @@ cvar_t r_lightningbeam_repeatdistance = {CF_CLIENT | CF_ARCHIVE, "r_lightningbea
 cvar_t r_lightningbeam_color_red = {CF_CLIENT | CF_ARCHIVE, "r_lightningbeam_color_red", "1", "color of the lightning beam effect"};
 cvar_t r_lightningbeam_color_green = {CF_CLIENT | CF_ARCHIVE, "r_lightningbeam_color_green", "1", "color of the lightning beam effect"};
 cvar_t r_lightningbeam_color_blue = {CF_CLIENT | CF_ARCHIVE, "r_lightningbeam_color_blue", "1", "color of the lightning beam effect"};
-cvar_t r_lightningbeam_qmbtexture = {CF_CLIENT | CF_ARCHIVE, "r_lightningbeam_qmbtexture", "0", "load the qmb textures/particles/lightning.pcx texture instead of generating one, can look better"};
+
+#pragma message ("Is this r_lightningbeam_qmbtexture new? It is existing cvar.")
+#pragma message ("qmb lightning is wrong for all zircons with quake3_quake1")
+#pragma message ("After everything, list all that don't work with Arcane Dimensions")
+#pragma message ("After everything, list all that don't work with Nehahra")
+#pragma message ("After everything, list all that don't work with Alkaline")
+#pragma message ("After everything, list all that don't work with Qualker")
+#pragma message ("After everything, list all that don't work with Try Rivalz")
+#pragma message ("After everything, list all that don't work with Quake Combat +")
+#pragma message ("After everything, list all that don't work with Demo of Doombringer")
+#pragma message ("After everything, list all that don't work with Is there a Battlemech demo?")
+#pragma message ("Check directories don't use dot, see Alk1.2")
+
+#pragma message ("Document all 3 physics issues")
+#pragma message ("obj to map list")
+#pragma message ("obj check ent files")
+#pragma message ("md3 check for false .bsp?")
+
+cvar_t r_lightningbeam_qmbtexture = {CF_CLIENT | CF_ARCHIVE, "r_lightningbeam_qmbtexture", "0", "load the particles/lightning.pcx texture instead of generating one, can look better"};
 
 static texture_t cl_beams_externaltexture;
 static texture_t cl_beams_builtintexture;
@@ -21,8 +39,8 @@ static void r_lightningbeams_start(void)
 
 static void CL_Beams_SetupExternalTexture(void)
 {
-	if (Mod_LoadTextureFromQ3Shader(r_main_mempool, "r_lightning.c", &cl_beams_externaltexture, "textures/particles/lightning", false, false, TEXF_ALPHA | TEXF_FORCELINEAR, MATERIALFLAG_WALL | MATERIALFLAG_NOCULLFACE | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW))
-		Cvar_SetValueQuick(&r_lightningbeam_qmbtexture, false);
+	if (Mod_LoadTextureFromQ3Shader(r_main_mempool, "r_lightning.c", &cl_beams_externaltexture, "particles/lightning", false, false, TEXF_ALPHA | TEXF_FORCELINEAR, MATERIALFLAG_WALL | MATERIALFLAG_NOCULLFACE | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW))
+		Cvar_SetValueQuick(&r_lightningbeam_qmbtexture, false); // Baker r7062 textures/particles/lightning -> particles/lightning .. this is a change but all particle gfx live in particles folder and it is silly to have 1 file related to particles living in a weird place as the only member of its folder.
 }
 
 static void CL_Beams_SetupBuiltinTexture(void)

@@ -58,7 +58,6 @@ interface from being ambiguous.
 */
 
 
-
 #include "qtypes.h"
 #include "qdefs.h"
 struct cmd_state_s;
@@ -152,7 +151,7 @@ const char *Cvar_CompleteVariable (cvar_state_t *cvars, const char *partial, int
 
 void Cvar_PrintHelp(cvar_t *cvar, const char *name, qbool full);
 
-void Cvar_CompleteCvarPrint (cvar_state_t *cvars, const char *partial, int neededflags);
+void Cvar_CompleteCvarPrint (cvar_state_t *cvars, const char *partial, int neededflags, int is_from_nothing);
 
 qbool Cvar_Command (struct cmd_state_s *cmd);
 // called by Cmd_ExecuteString when Cmd_Argv(cmd, 0) doesn't match a known
@@ -167,6 +166,8 @@ void Cvar_LockDefaults_f(struct cmd_state_s *cmd);
 void Cvar_ResetToDefaults_All_f(struct cmd_state_s *cmd);
 void Cvar_ResetToDefaults_NoSaveOnly_f(struct cmd_state_s *cmd);
 void Cvar_ResetToDefaults_SaveOnly_f(struct cmd_state_s *cmd);
+void Cvar_Reset_f(struct cmd_state_s *cmd); // Baker r3173: inc, dec, cvar_reset commands
+
 
 void Cvar_WriteVariables (cvar_state_t *cvars, struct qfile_s *f);
 // Writes lines containing "set variable value" for all variables
@@ -175,8 +176,8 @@ void Cvar_WriteVariables (cvar_state_t *cvars, struct qfile_s *f);
 cvar_t *Cvar_FindVar(cvar_state_t *cvars, const char *var_name, int neededflags);
 cvar_t *Cvar_FindVarAfter(cvar_state_t *cvars, const char *prev_var_name, int neededflags);
 
-int Cvar_CompleteCountPossible(cvar_state_t *cvars, const char *partial, int neededflags);
-const char **Cvar_CompleteBuildList(cvar_state_t *cvars, const char *partial, int neededflags);
+int Cvar_CompleteCountPossible(cvar_state_t *cvars, const char *partial, int neededflags, int is_from_nothing);
+const char **Cvar_CompleteBuildList(cvar_state_t *cvars, const char *partial, int neededflags, int is_from_nothing);
 // Added by EvilTypeGuy - functions for tab completion system
 // Thanks to Fett erich@heintz.com
 // Thanks to taniwha

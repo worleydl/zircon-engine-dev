@@ -29,6 +29,8 @@ extern const char *buildstringshort; // Baker r8002: Zircon console name
 extern char engineversion[128];
 extern char engineversionshort[128]; // Baker r8002: Zircon console name
 
+
+
 #ifdef __APPLE__
 # include <TargetConditionals.h>
 #endif
@@ -50,6 +52,33 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #include "com_game.h"
 #include "com_infostring.h"
 #include "baker.h"
+
+// Baker: Function call clarity ...
+
+#define ALL_FLAGS_ANTIZERO			(~0)
+
+#define fs_caseless_true			true
+#define fs_quiet_true				true
+#define fs_quiet_FALSE				false
+
+#define fs_size_ptr_null			NULL
+#define fs_pakfile_null				NULL
+
+#define q_is_from_nothing_false		false
+#define q_is_from_nothing_true		true
+#define q_is_menu_fill_false		false
+#define q_is_menu_fill_true			true
+#define q_is_zautocomplete_true		true
+#define q_is_zautocomplete_false	false
+#define q_is_suppress_print_true	true
+#define q_is_suppress_print_false	false
+#define q_darken_true				true
+#define q_darken_false				false
+#define q_strip_exten_true			true
+#define q_strip_exten_false			false
+#define q_reply_buf_NULL			NULL
+#define q_reply_size_0				0
+
 #include "common.h"
 #include "filematch.h"
 #include "fs.h"

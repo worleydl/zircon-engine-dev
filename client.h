@@ -487,7 +487,7 @@ typedef struct lightstyle_s
 
 typedef struct scoreboard_s
 {
-	char	name[MAX_SCOREBOARDNAME];
+	char	name[MAX_SCOREBOARDNAME_128];
 	int		frags;
 	int		colors; // two 4 bit fields
 	// QW fields:
@@ -913,6 +913,7 @@ typedef struct client_state_s
 	int maxclients;
 	// type of game (deathmatch, coop, singleplayer)
 	int gametype;
+	int skill_level_p1; // Baker r8191 skill level hint, plus 1 so init to 0 is fine.  Any non-zero means received from server.
 
 	// models and sounds used by engine code (particularly cl_parse.c)
 	model_t *model_bolt;

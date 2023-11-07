@@ -61,4 +61,4 @@ qbool _Thread_AtomicTryLock(Thread_SpinLock *lock, const char *filename, int fil
 void _Thread_AtomicLock(Thread_SpinLock *lock, const char *filename, int fileline);
 void _Thread_AtomicUnlock(Thread_SpinLock *lock, const char *filename, int fileline);
 
-#endif
+#endif // ! THREAD_H

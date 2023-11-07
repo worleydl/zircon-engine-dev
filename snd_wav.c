@@ -116,7 +116,7 @@ static void DumpChunks(void)
 		memcpy (str, data_p, 4);
 		data_p += 4;
 		iff_chunk_len = GetLittleLong();
-		Con_Printf("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
+		Con_Printf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
 		data_p += (iff_chunk_len + 1) & ~1;
 	} while (data_p < iff_end);
 }
@@ -296,7 +296,7 @@ qbool S_LoadWavFile (const char *filename, sfx_t *sfx)
 	info = GetWavinfo (sfx->name, data, (int)filesize);
 	if (info.channels < 1 || info.channels > 2)  // Stereo sounds are allowed (intended for music)
 	{
-		Con_Printf("%s has an unsupported number of channels (%i)\n",sfx->name, info.channels);
+		Con_PrintLinef ("%s has an unsupported number of channels (%d)",sfx->name, info.channels);
 		Mem_Free(data);
 		return false;
 	}

@@ -1,3 +1,5 @@
+#ifdef CORE_SDL
+
 /*
 Copyright (C) 2004 Andreas Kirsch
 
@@ -17,7 +19,12 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include <math.h>
-#include <SDL.h>
+
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	#include <SDL2/SDL.h>
+#else
+	#include <SDL.h>
+#endif
 
 #include "darkplaces.h"
 #include "vid.h"
@@ -37,7 +44,7 @@ static void Buffer_Callback (void *userdata, Uint8 *stream, int len)
 
 	factor = snd_renderbuffer->format.channels * snd_renderbuffer->format.width;
 	if ((unsigned int)len % factor != 0)
-		Sys_Error("SDL sound: invalid buffer length passed to Buffer_Callback (%d bytes)\n", len);
+		Sys_Error ("SDL sound: invalid buffer length passed to Buffer_Callback (%d bytes)\n", len);
 
 	RequestedFrames = (unsigned int)len / factor;
 
@@ -86,7 +93,7 @@ static void Buffer_Callback (void *userdata, Uint8 *stream, int len)
 		snd_renderbuffer->startframe += FrameCount;
 
 		if (FrameCount < RequestedFrames && developer_insane.integer && vid_activewindow)
-			Con_DPrintf("SDL sound: %u sample frames missing\n", RequestedFrames - FrameCount);
+			Con_DPrintf ("SDL sound: %u sample frames missing\n", RequestedFrames - FrameCount);
 
 		sdlaudiotime += RequestedFrames;
 
@@ -114,7 +121,7 @@ qbool SndSys_Init (snd_format_t* fmt)
 	Con_DPrint ("SndSys_Init: using the SDL module\n");
 
 	// Init the SDL Audio subsystem
-	if( SDL_InitSubSystem( SDL_INIT_AUDIO ) ) {
+	if ( SDL_InitSubSystem( SDL_INIT_AUDIO ) ) {
 		Con_Print( "Initializing the SDL Audio subsystem failed!\n" );
 		return false;
 	}
@@ -130,24 +137,24 @@ qbool SndSys_Init (snd_format_t* fmt)
 	wantspec.channels = fmt->channels;
 	wantspec.samples = CeilPowerOf2(buffersize);  // needs to be a power of 2 on some platforms.
 
-	Con_Printf("Wanted audio Specification:\n"
-				"    Channels  : %i\n"
+	Con_DPrintf ("Wanted audio Specification:\n"
+				"    Channels  : %d\n"
 				"    Format    : 0x%X\n"
-				"    Frequency : %i\n"
-				"    Samples   : %i\n",
+				"    Frequency : %d\n"
+				"    Samples   : %d\n",
 				wantspec.channels, wantspec.format, wantspec.freq, wantspec.samples);
 
 	if ((audio_device = SDL_OpenAudioDevice(NULL, 0, &wantspec, &obtainspec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE)) == 0)
 	{
-		Con_Printf(CON_ERROR "Failed to open the audio device! (%s)\n", SDL_GetError() );
+		Con_PrintLinef (CON_ERROR "Failed to open the audio device! (%s)", SDL_GetError() );
 		return false;
 	}
 
-	Con_Printf("Obtained audio specification:\n"
-				"    Channels  : %i\n"
+	Con_DPrintf ("Obtained audio specification:\n"
+				"    Channels  : %d\n"
 				"    Format    : 0x%X\n"
-				"    Frequency : %i\n"
-				"    Samples   : %i\n",
+				"    Frequency : %d\n"
+				"    Samples   : %d\n",
 				obtainspec.channels, obtainspec.format, obtainspec.freq, obtainspec.samples);
 
 	fmt->speed = obtainspec.freq;
@@ -251,3 +258,5 @@ void SndSys_SendKeyEvents(void)
 {
 	// not supported
 }
+
+#endif // CORE_SDL

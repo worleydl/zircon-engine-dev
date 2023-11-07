@@ -205,6 +205,7 @@ extern cvar_t r_drawworld;
 extern cvar_t r_speeds;
 extern cvar_t r_fullbright;
 extern cvar_t r_wateralpha;
+extern cvar_t r_waterdeform; // Baker r0083
 extern cvar_t r_dynamic;
 
 extern cvar_t r_q1bsp_lightmap_updates_enabled;
@@ -406,7 +407,7 @@ typedef struct r_refdef_s
 
 	// these are set for water warping before
 	// frustum_x/frustum_y are calculated
-	float frustumscale_x, frustumscale_y;
+	float frustumscale_x, frustumscale_y, waterwarp2; // Baker r0082 r_waterwarp 2
 
 	// current view settings (these get reset a few times during rendering because of water rendering, reflections, etc)
 	r_refdef_view_t view;
@@ -1017,4 +1018,4 @@ qbool R_CompileShader_CheckStaticParms(void);
 void R_GLSL_Restart_f(cmd_state_t *cmd);
 
 
-#endif // RENDER_H
+#endif // ! RENDER_H

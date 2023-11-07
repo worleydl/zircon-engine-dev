@@ -1,63 +1,64 @@
+// vid_shared.c
 
 #include "quakedef.h"
 #include "cdaudio.h"
 #include "image.h"
 
 #ifdef _WIN32
-//#include <XInput.h>
-#define XINPUT_GAMEPAD_DPAD_UP          0x0001
-#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
-#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
-#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
-#define XINPUT_GAMEPAD_START            0x0010
-#define XINPUT_GAMEPAD_BACK             0x0020
-#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
-#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
-#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
-#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
-#define XINPUT_GAMEPAD_A                0x1000
-#define XINPUT_GAMEPAD_B                0x2000
-#define XINPUT_GAMEPAD_X                0x4000
-#define XINPUT_GAMEPAD_Y                0x8000
-#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE  7849
-#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD    30
-#define XUSER_INDEX_ANY                 0x000000FF
+	//#include <XInput.h>
+	#define XINPUT_GAMEPAD_DPAD_UP          0x0001
+	#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
+	#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
+	#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
+	#define XINPUT_GAMEPAD_START            0x0010
+	#define XINPUT_GAMEPAD_BACK             0x0020
+	#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
+	#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
+	#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
+	#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
+	#define XINPUT_GAMEPAD_A                0x1000
+	#define XINPUT_GAMEPAD_B                0x2000
+	#define XINPUT_GAMEPAD_X                0x4000
+	#define XINPUT_GAMEPAD_Y                0x8000
+	#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE  7849
+	#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
+	#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD    30
+	#define XUSER_INDEX_ANY                 0x000000FF
 
-typedef struct xinput_gamepad_s
-{
-	WORD wButtons;
-	BYTE bLeftTrigger;
-	BYTE bRightTrigger;
-	SHORT sThumbLX;
-	SHORT sThumbLY;
-	SHORT sThumbRX;
-	SHORT sThumbRY;
-}
-xinput_gamepad_t;
-
-typedef struct xinput_state_s
-{
-	DWORD dwPacketNumber;
-	xinput_gamepad_t Gamepad;
-}
-xinput_state_t;
-
-typedef struct xinput_keystroke_s
-{
-    WORD    VirtualKey;
-    WCHAR   Unicode;
-    WORD    Flags;
-    BYTE    UserIndex;
-    BYTE    HidCode;
-}
-xinput_keystroke_t;
-
-DWORD (WINAPI *qXInputGetState)(DWORD index, xinput_state_t *state);
-DWORD (WINAPI *qXInputGetKeystroke)(DWORD index, DWORD reserved, xinput_keystroke_t *keystroke);
-
-qbool vid_xinputinitialized = false;
-int vid_xinputindex = -1;
+	typedef struct xinput_gamepad_s
+	{
+		WORD wButtons;
+		BYTE bLeftTrigger;
+		BYTE bRightTrigger;
+		SHORT sThumbLX;
+		SHORT sThumbLY;
+		SHORT sThumbRX;
+		SHORT sThumbRY;
+	}
+	xinput_gamepad_t;
+	
+	typedef struct xinput_state_s
+	{
+		DWORD dwPacketNumber;
+		xinput_gamepad_t Gamepad;
+	}
+	xinput_state_t;
+	
+	typedef struct xinput_keystroke_s
+	{
+	    WORD    VirtualKey;
+	    WCHAR   Unicode;
+	    WORD    Flags;
+	    BYTE    UserIndex;
+	    BYTE    HidCode;
+	}
+	xinput_keystroke_t;
+	
+	DWORD (WINAPI *qXInputGetState)(DWORD index, xinput_state_t *state);
+	DWORD (WINAPI *qXInputGetKeystroke)(DWORD index, DWORD reserved, xinput_keystroke_t *keystroke);
+	
+	qbool vid_xinputinitialized = false;
+	int vid_xinputindex = -1;
 #endif // _WIN32 xinput
 
 // global video state
@@ -133,9 +134,9 @@ cvar_t gl_info_platform = {CF_CLIENT | CF_READONLY, "gl_info_platform", "", "ind
 cvar_t gl_info_driver = {CF_CLIENT | CF_READONLY, "gl_info_driver", "", "name of driver library (opengl32.dll, libGL.so.1, or whatever)."};
 
 cvar_t vid_fullscreen = {CF_CLIENT | CF_ARCHIVE, "vid_fullscreen", "1", "use fullscreen (1) or windowed (0)"};
-cvar_t vid_borderless = {CF_CLIENT | CF_ARCHIVE, "vid_borderless", "0", "make the window borderless by removing all window decorations. has no effect in fullscreen mode"};
-cvar_t vid_width = {CF_CLIENT | CF_ARCHIVE, "vid_width", "640", "resolution"};
-cvar_t vid_height = {CF_CLIENT | CF_ARCHIVE, "vid_height", "480", "resolution"};
+
+cvar_t vid_width = {CF_CLIENT | CF_ARCHIVE, "vid_width", "1024", "resolution"};
+cvar_t vid_height = {CF_CLIENT | CF_ARCHIVE, "vid_height", "768", "resolution"};
 
 // Baker r0001 - ALT-ENTER support
 cvar_t vid_fullscreen_width = {CF_CLIENT | CF_ARCHIVE, "_vid_fullscreen_width", "1024", "most recent user set fullscreen width for ALT-ENTER [Zircon]"};
@@ -147,8 +148,6 @@ cvar_t vid_window_height = {CF_CLIENT | CF_ARCHIVE, "_vid_window_height", "640",
 cvar_t vid_fullscreen_conscale = {CF_CLIENT | CF_ARCHIVE, "_vid_fullscreen_conscale", "1", "user set fullscreen 2d magnification factor [Zircon]"};
 cvar_t vid_window_conscale = {CF_CLIENT | CF_ARCHIVE, "_vid_window_conscale", "1", "user set windowed 2d magnification factor [Zircon]"};
 
-
-cvar_t vid_bitsperpixel = {CF_CLIENT | CF_READONLY, "vid_bitsperpixel", "32", "how many bits per pixel to render at (this is not currently configurable)"};
 cvar_t vid_samples = {CF_CLIENT | CF_ARCHIVE, "vid_samples", "1", "how many anti-aliasing samples per pixel to request from the graphics driver (4 is recommended, 1 is faster)"};
 cvar_t vid_refreshrate = {CF_CLIENT | CF_ARCHIVE, "vid_refreshrate", "60", "refresh rate to use, in hz (higher values flicker less, if supported by your monitor)"};
 cvar_t vid_userefreshrate = {CF_CLIENT | CF_ARCHIVE, "vid_userefreshrate", "0", "set this to 1 to make vid_refreshrate used, or to 0 to let the engine choose a sane default"};
@@ -162,11 +161,9 @@ cvar_t vid_touchscreen_ydpi = {CF_CLIENT, "vid_touchscreen_ydpi", "300", "Vertic
 
 cvar_t vid_vsync = {CF_CLIENT | CF_ARCHIVE, "vid_vsync", "0", "sync to vertical blank, prevents 'tearing' (seeing part of one frame and part of another on the screen at the same time), automatically disabled when doing timedemo benchmarks"};
 cvar_t vid_mouse = {CF_CLIENT | CF_ARCHIVE, "vid_mouse", "1", "whether to use the mouse in windowed mode (fullscreen always does)"};
-cvar_t vid_mouse_clickthrough = {CF_CLIENT | CF_ARCHIVE, "vid_mouse_clickthrough", "0", "mouse behavior in windowed mode: 0 = click to focus, 1 = allow interaction even if the window is not focused (click-through behaviour, can be useful when using third-party game overlays)"};
 cvar_t vid_grabkeyboard = {CF_CLIENT | CF_ARCHIVE, "vid_grabkeyboard", "0", "whether to grab the keyboard when mouse is active (prevents use of volume control keys, music player keys, etc on some keyboards)"};
 cvar_t vid_minwidth = {CF_CLIENT, "vid_minwidth", "0", "minimum vid_width that is acceptable (to be set in default.cfg in mods)"};
 cvar_t vid_minheight = {CF_CLIENT, "vid_minheight", "0", "minimum vid_height that is acceptable (to be set in default.cfg in mods)"};
-cvar_t gl_finish = {CF_CLIENT | CF_CLIENT, "gl_finish", "0", "make the cpu wait for the graphics processor at the end of each rendered frame (can help with strange input or video lag problems on some machines)"};
 cvar_t vid_sRGB = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB", "0", "if hardware is capable, modify rendering to be gamma corrected for the sRGB color standard (computer monitors, TVs), recommended"};
 cvar_t vid_sRGB_fallback = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB_fallback", "0", "do an approximate sRGB fallback if not properly supported by hardware (2: also use the fallback if framebuffer is 8bit, 3: always use the fallback even if sRGB is supported)"};
 
@@ -174,11 +171,9 @@ cvar_t vid_touchscreen = {CF_CLIENT, "vid_touchscreen", "0", "Use touchscreen-st
 cvar_t vid_touchscreen_showkeyboard = {CF_CLIENT, "vid_touchscreen_showkeyboard", "0", "shows the platform's screen keyboard for text entry, can be set by csqc or menu qc if it wants to receive text input, does nothing if the platform has no screen keyboard"};
 cvar_t vid_touchscreen_supportshowkeyboard = {CF_CLIENT | CF_READONLY, "vid_touchscreen_supportshowkeyboard", "0", "indicates if the platform supports a virtual keyboard"};
 cvar_t vid_stick_mouse = {CF_CLIENT | CF_ARCHIVE, "vid_stick_mouse", "0", "have the mouse stuck in the center of the screen" };
-cvar_t vid_resizable = {CF_CLIENT | CF_ARCHIVE, "vid_resizable", "0", "0: window not resizable, 1: resizable, 2: window can be resized but the framebuffer isn't adjusted" };
+cvar_t vid_resizable = {CF_CLIENT | CF_ARCHIVE, "vid_resizable", "1", "0: window not resizable, 1: resizable, 2: window can be resized but the framebuffer isn't adjusted [Zircon default]" }; // Baker r1483: vid_resizable defaults 1 -- seems ok on Windows so far.
 cvar_t vid_desktopfullscreen = {CF_CLIENT | CF_ARCHIVE, "vid_desktopfullscreen", "1", "force desktop resolution for fullscreen; also use some OS dependent tricks for better fullscreen integration"};
-#ifdef _WIN32
-cvar_t vid_ignore_taskbar = {CF_CLIENT | CF_ARCHIVE, "vid_ignore_taskbar", "1", "in windowed mode, prevent the Windows taskbar and window borders from affecting the size and placement of the window. it will be aligned centered and uses the unaltered vid_width/vid_height values [Zircon default]"}; // Baker r9501: new default, the old default makes the windowed mode window literally not center of the screen ... felt weird.
-#endif
+cvar_t vid_bitsperpixel = {CF_CLIENT | CF_READONLY, "vid_bitsperpixel", "32", "how many bits per pixel to render at (this is not currently configurable)"};
 
 cvar_t v_gamma = {CF_CLIENT | CF_ARCHIVE, "v_gamma", "1", "inverse gamma correction value, a brightness effect that does not affect white or black, and tends to make the image grey and dull"};
 cvar_t v_contrast = {CF_CLIENT | CF_ARCHIVE, "v_contrast", "1", "brightness of white (values above 1 give a brighter image with increased color saturation, unlike v_gamma)"};
@@ -194,8 +189,21 @@ cvar_t v_color_grey_b = {CF_CLIENT | CF_ARCHIVE, "v_color_grey_b", "0.5", "desir
 cvar_t v_color_white_r = {CF_CLIENT | CF_ARCHIVE, "v_color_white_r", "1", "desired color of white"};
 cvar_t v_color_white_g = {CF_CLIENT | CF_ARCHIVE, "v_color_white_g", "1", "desired color of white"};
 cvar_t v_color_white_b = {CF_CLIENT | CF_ARCHIVE, "v_color_white_b", "1", "desired color of white"};
-cvar_t v_glslgamma_2d = {CF_CLIENT | CF_ARCHIVE, "v_glslgamma_2d", "1", "applies GLSL gamma to 2d pictures (HUD, fonts)"};
 cvar_t v_psycho = {CF_CLIENT, "v_psycho", "0", "easter egg - R.I.P. zinx http://obits.al.com/obituaries/birmingham/obituary.aspx?n=christopher-robert-lais&pid=186080667"};
+
+cvar_t gl_finish = {CF_CLIENT, "gl_finish", "0", "make the cpu wait for the graphics processor at the end of each rendered frame (can help with strange input or video lag problems on some machines)"};
+
+cvar_t v_glslgamma_2d = {CF_CLIENT | CF_ARCHIVE, "v_glslgamma_2d", "1", "applies GLSL gamma to 2d pictures (HUD, fonts)"};
+
+// NEW DARKPLACES BETA CVARS
+cvar_t vid_mouse_clickthrough = {CF_CLIENT | CF_ARCHIVE, "vid_mouse_clickthrough", "0", "mouse behavior in windowed mode: 0 = click to focus, 1 = allow interaction even if the window is not focused (click-through behaviour, can be useful when using third-party game overlays)"};
+cvar_t vid_borderless = {CF_CLIENT | CF_ARCHIVE, "vid_borderless", "0", "make the window borderless by removing all window decorations. has no effect in fullscreen mode"};
+
+
+
+#ifdef _WIN32
+cvar_t vid_ignore_taskbar = {CF_CLIENT | CF_ARCHIVE, "vid_ignore_taskbar", "1", "in windowed mode, prevent the Windows taskbar and window borders from affecting the size and placement of the window. it will be aligned centered and uses the unaltered vid_width/vid_height values [Zircon default]"}; // Baker r9501: new default, the old default makes the windowed mode window literally not center of the screen ... felt weird.
+#endif
 
 // brand of graphics chip
 const char *gl_vendor;
@@ -224,7 +232,7 @@ GLint (GLAPIENTRY *qglGetUniformLocation)(GLuint programObj, const GLchar *name)
 GLuint (GLAPIENTRY *qglCreateProgram)(void);
 GLuint (GLAPIENTRY *qglCreateShader)(GLenum shaderType);
 GLuint (GLAPIENTRY *qglGetDebugMessageLogARB)(GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar* messageLog);
-GLuint (GLAPIENTRY *qglGetUniformBlockIndex)(GLuint program, const char* uniformBlockName);
+GLuint (GLAPIENTRY *qglGetUniformBlockIndex)(GLuint program, const char *uniformBlockName);
 GLvoid (GLAPIENTRY *qglBindFramebuffer)(GLenum target, GLuint framebuffer);
 GLvoid (GLAPIENTRY *qglBindRenderbuffer)(GLenum target, GLuint renderbuffer);
 GLvoid (GLAPIENTRY *qglBlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
@@ -305,9 +313,9 @@ void (GLAPIENTRY *qglGenTextures)(GLsizei n, GLuint *textures);
 void (GLAPIENTRY *qglGenVertexArrays)(GLsizei n, GLuint *arrays);
 void (GLAPIENTRY *qglGetActiveAttrib)(GLuint programObj, GLuint index, GLsizei maxLength, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 void (GLAPIENTRY *qglGetActiveUniform)(GLuint programObj, GLuint index, GLsizei maxLength, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-void (GLAPIENTRY *qglGetActiveUniformBlockName)(GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, char* uniformBlockName);
+void (GLAPIENTRY *qglGetActiveUniformBlockName)(GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, char *uniformBlockName);
 void (GLAPIENTRY *qglGetActiveUniformBlockiv)(GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params);
-void (GLAPIENTRY *qglGetActiveUniformName)(GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei* length, char* uniformName);
+void (GLAPIENTRY *qglGetActiveUniformName)(GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei* length, char *uniformName);
 void (GLAPIENTRY *qglGetActiveUniformsiv)(GLuint program, GLsizei uniformCount, const GLuint* uniformIndices, GLenum pname, GLint* params);
 void (GLAPIENTRY *qglGetAttachedShaders)(GLuint containerObj, GLsizei maxCount, GLsizei *count, GLuint *obj);
 void (GLAPIENTRY *qglGetBooleanv)(GLenum pname, GLboolean *params);
@@ -330,7 +338,7 @@ void (GLAPIENTRY *qglGetTexLevelParameterfv)(GLenum target, GLint level, GLenum 
 void (GLAPIENTRY *qglGetTexLevelParameteriv)(GLenum target, GLint level, GLenum pname, GLint *params);
 void (GLAPIENTRY *qglGetTexParameterfv)(GLenum target, GLenum pname, GLfloat *params);
 void (GLAPIENTRY *qglGetTexParameteriv)(GLenum target, GLenum pname, GLint *params);
-void (GLAPIENTRY *qglGetUniformIndices)(GLuint program, GLsizei uniformCount, const char** uniformNames, GLuint* uniformIndices);
+void (GLAPIENTRY *qglGetUniformIndices)(GLuint program, GLsizei uniformCount, const char **uniformNames, GLuint* uniformIndices);
 void (GLAPIENTRY *qglGetUniformfv)(GLuint programObj, GLint location, GLfloat *params);
 void (GLAPIENTRY *qglGetUniformiv)(GLuint programObj, GLint location, GLint *params);
 void (GLAPIENTRY *qglGetVertexAttribPointerv)(GLuint index, GLenum pname, GLvoid **pointer);
@@ -653,7 +661,7 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 	const glfunction_t *func;
 	char extstr[MAX_INPUTLINE];
 
-	Con_DPrintf("checking for %s...  ", name);
+	Con_DPrintf ("checking for %s...  ", name);
 
 	if (disableparm && (Sys_CheckParm(disableparm) || Sys_CheckParm("-safe")))
 	{
@@ -663,17 +671,17 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 
 	if (!GL_ExtensionSupported(name))
 	{
-		Con_DPrint("not detected\n");
+		Con_DPrintLinef ("not detected");
 		return false;
 	}
 
 #ifndef USE_GLES2
 	for (func = openglfuncs; func && func->name != NULL; func++)
 	{
-		if (!*func->funcvariable && !strcmp(name, func->extension))
+		if (!*func->funcvariable && String_Does_Match(name, func->extension))
 		{
 			if (!silent)
-				Con_DPrintf("%s is missing function \"%s\" - broken driver!\n", name, func->name);
+				Con_DPrintf ("%s is missing function \"%s\" - broken driver!\n", name, func->name);
 			failed = true;
 		}
 	}
@@ -685,7 +693,7 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 	dpsnprintf(extstr, sizeof(extstr), "%s %s ", gl_info_extensions.string, name);
 	Cvar_SetQuick(&gl_info_extensions, extstr);
 
-	Con_DPrint("enabled\n");
+	Con_DPrintLinef ("enabled");
 	return true;
 }
 
@@ -717,30 +725,37 @@ void GL_Setup(void)
 	gl_vendor = (const char *)qglGetString(GL_VENDOR);
 	gl_version = (const char *)qglGetString(GL_VERSION);
 
-	Con_Printf("GL_VENDOR: %s\n", gl_vendor);
-	Con_Printf("GL_RENDERER: %s\n", gl_renderer);
-	Con_Printf("GL_VERSION: %s\n", gl_version);
+	if (vid.restart_count > 0) // Baker r1481: Reduce ALT-ENTER video restart spam
+		goto skip_spam1;
+	Con_Printf ("GL_VENDOR: %s\n", gl_vendor);
+	Con_Printf ("GL_RENDERER: %s\n", gl_renderer);
+	Con_Printf ("GL_VERSION: %s\n", gl_version);
+
+skip_spam1:
 
 #ifndef USE_GLES2
 	qglGetIntegerv(GL_NUM_EXTENSIONS, &numextensions);
+	if (vid.restart_count > 0) // Baker r1481: Reduce ALT-ENTER video restart spam
+		goto skip_spam2;
 	Con_DPrint("GL_EXTENSIONS:\n");
 	for (j = 0; j < numextensions; j++)
 	{
 		const char *ext = (const char *)qglGetStringi(GL_EXTENSIONS, j);
-		Con_DPrintf(" %s", ext);
-		if(j && !(j % 3))
-			Con_DPrintf("\n");
+		Con_DPrintf (" %s", ext);
+		if (j && !(j % 3))
+			Con_DPrintf ("\n");
 	}
 	Con_DPrint("\n");
+skip_spam2:
 #endif //USE_GLES2
 
 #ifndef USE_GLES2
 	missingfuncs[0] = 0;
 	for (func = openglfuncs; func && func->name != NULL; func++)
 	{
-		if (!*func->funcvariable && !strcmp(func->extension, "core"))
+		if (!*func->funcvariable && String_Does_Match(func->extension, "core"))
 		{
-			Con_DPrintf("GL context is missing required function \"%s\"!\n", func->name);
+			Con_DPrintf ("GL context is missing required function \"%s\"!\n", func->name);
 			missingrequiredfuncs = true;
 			strlcat(missingfuncs, " ", sizeof(missingfuncs));
 			strlcat(missingfuncs, func->name, sizeof(missingfuncs));
@@ -748,10 +763,11 @@ void GL_Setup(void)
 	}
 
 	if (missingrequiredfuncs)
-		Sys_Error("OpenGL driver/hardware lacks required features:\n%s", missingfuncs);
+		Sys_Error ("OpenGL driver/hardware lacks required features:\n%s", missingfuncs);
 #endif
 
-	Con_DPrint("Checking OpenGL extensions...\n");
+	if (vid.restart_count == 0) // Baker r1481: Reduce ALT-ENTER video restart spam
+		Con_DPrint("Checking OpenGL extensions...\n");
 
 	// detect what GLSL version is available, to enable features like higher quality reliefmapping
 	vid.support.glshaderversion = 100;
@@ -760,7 +776,9 @@ void GL_Setup(void)
 		vid.support.glshaderversion = (int)(atof(s) * 100.0f + 0.5f);
 	if (vid.support.glshaderversion < 100)
 		vid.support.glshaderversion = 100;
-	Con_Printf("Detected GLSL version %i\n", vid.support.glshaderversion);
+
+	if (vid.restart_count == 0) // Baker r1481: Reduce ALT-ENTER video restart spam
+		Con_PrintLinef ("Detected GLSL version %d", vid.support.glshaderversion);
 
 #ifdef USE_GLES2
 	// GLES devices in general do not like GL_BGRA, so use GL_RGBA
@@ -798,7 +816,7 @@ void GL_Setup(void)
 #endif
 	{
 		qglGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, (GLint*)&vid.maxtexturesize_cubemap);
-		Con_DPrintf("GL_MAX_CUBE_MAP_TEXTURE_SIZE = %i\n", vid.maxtexturesize_cubemap);
+		Con_DPrintf ("GL_MAX_CUBE_MAP_TEXTURE_SIZE = %d\n", vid.maxtexturesize_cubemap);
 	}
 	CHECKGLERROR
 #endif
@@ -809,18 +827,19 @@ void GL_Setup(void)
 #endif
 	{
 		qglGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, (GLint*)&vid.maxtexturesize_3d);
-		Con_DPrintf("GL_MAX_3D_TEXTURE_SIZE = %i\n", vid.maxtexturesize_3d);
+		Con_DPrintf ("GL_MAX_3D_TEXTURE_SIZE = %d\n", vid.maxtexturesize_3d);
 	}
 #endif
 	CHECKGLERROR
 
 #ifdef USE_GLES2
-	Con_Print("Using GLES2 rendering path\n");
+	Con_DPrintLinef ("Using GLES2 rendering path");
 	vid.renderpath = RENDERPATH_GLES2;
 	vid.sRGBcapable2D = false;
 	vid.sRGBcapable3D = false;
 #else
-	Con_Print("Using GL32 rendering path\n");
+	Con_DPrintLinef ("Using GL32 rendering path");
+
 	vid.renderpath = RENDERPATH_GL32;
 	vid.sRGBcapable2D = false;
 	vid.sRGBcapable3D = true;
@@ -1017,7 +1036,7 @@ void VID_ApplyJoyState(vid_joystate_t *joystate)
 		// DOES NOT WORK - no driver support in xinput1_3.dll :(
 		xinput_keystroke_t keystroke;
 		while (qXInputGetKeystroke && qXInputGetKeystroke(XUSER_INDEX_ANY, 0, &keystroke) == S_OK)
-			Con_Printf("XInput KeyStroke: VirtualKey %i, Unicode %i, Flags %x, UserIndex %i, HidCode %i\n", keystroke.VirtualKey, keystroke.Unicode, keystroke.Flags, keystroke.UserIndex, keystroke.HidCode);
+			Con_Printf ("XInput KeyStroke: VirtualKey %d, Unicode %d, Flags %x, UserIndex %d, HidCode %d\n", keystroke.VirtualKey, keystroke.Unicode, keystroke.Flags, keystroke.UserIndex, keystroke.HidCode);
 #endif
 
 		// emit key events for buttons
@@ -1075,7 +1094,7 @@ int VID_Shared_SetJoystick(int index)
 	{
 		vid_xinputindex = xinputindex;
 		if (xinputindex >= 0)
-			Con_Printf("Joystick %i opened (XInput Device %i)\n", index, xinputindex);
+			Con_Printf ("Joystick %d opened (XInput Device %d)\n", index, xinputindex);
 	}
 	return xinputcount;
 #else
@@ -1099,12 +1118,12 @@ void VID_ApplyGammaToColor(const float *rgb, float *out)
 	if (cachecolorenable)
 	{
 		for (i = 0; i < 3; i++)
-			out[i] = pow(cachecontrastboost * rgb[i] / ((cachecontrastboost - 1) * rgb[i] + 1), 1.0 / invpow(0.5, 1 - cachegrey[i])) * cachewhite[i] + cacheblack[i];
+			out[i] = pow(cachecontrastboost * rgb[i] / ((cachecontrastboost - 1) * rgb[i] + 1), 1.0f / invpow(0.5f, 1 - cachegrey[i])) * cachewhite[i] + cacheblack[i];
 	}
 	else
 	{
 		for (i = 0; i < 3; i++)
-			out[i] = pow(cachecontrastboost * rgb[i] / ((cachecontrastboost - 1) * rgb[i] + 1), 1.0 / cachegamma) * cachecontrast + cachebrightness;
+			out[i] = pow(cachecontrastboost * rgb[i] / ((cachecontrastboost - 1) * rgb[i] + 1), 1.0f / cachegamma) * cachecontrast + cachebrightness;
 	}
 }
 
@@ -1125,7 +1144,7 @@ void VID_BuildGammaTables(unsigned short *ramps, int rampsize)
 		BuildGammaTable16(1.0f, cachegamma, cachecontrast, cachebrightness, cachecontrastboost, ramps + rampsize*2, rampsize);
 	}
 
-	if(vid.sRGB2D || vid.sRGB3D)
+	if (vid.sRGB2D || vid.sRGB3D)
 	{
 		int i;
 		for(i = 0; i < 3*rampsize; ++i)
@@ -1198,36 +1217,36 @@ void VID_UpdateGamma(void)
 
 	// set vid_gammatables_trivial to true if the current settings would generate the identity gamma table
 	vid_gammatables_trivial = false;
-	if(v_psycho.integer == 0)
-	if(v_contrastboost.value == 1)
-	if(!vid.sRGB2D)
-	if(!vid.sRGB3D)
+	if (v_psycho.integer == 0)
+	if (v_contrastboost.value == 1)
+	if (!vid.sRGB2D)
+	if (!vid.sRGB3D)
 	{
-		if(v_color_enable.integer)
+		if (v_color_enable.integer)
 		{
-			if(v_color_black_r.value == 0)
-			if(v_color_black_g.value == 0)
-			if(v_color_black_b.value == 0)
-			if(fabs(v_color_grey_r.value - 0.5) < 1e-6)
-			if(fabs(v_color_grey_g.value - 0.5) < 1e-6)
-			if(fabs(v_color_grey_b.value - 0.5) < 1e-6)
-			if(v_color_white_r.value == 1)
-			if(v_color_white_g.value == 1)
-			if(v_color_white_b.value == 1)
+			if (v_color_black_r.value == 0)
+			if (v_color_black_g.value == 0)
+			if (v_color_black_b.value == 0)
+			if (fabs(v_color_grey_r.value - 0.5) < 1e-6)
+			if (fabs(v_color_grey_g.value - 0.5) < 1e-6)
+			if (fabs(v_color_grey_b.value - 0.5) < 1e-6)
+			if (v_color_white_r.value == 1)
+			if (v_color_white_g.value == 1)
+			if (v_color_white_b.value == 1)
 				vid_gammatables_trivial = true;
 		}
 		else
 		{
-			if(v_gamma.value == 1)
-			if(v_contrast.value == 1)
-			if(v_brightness.value == 0)
+			if (v_gamma.value == 1)
+			if (v_contrast.value == 1)
+			if (v_brightness.value == 0)
 				vid_gammatables_trivial = true;
 		}
 	}
 
 	// if any gamma settings were changed, bump vid_gammatables_serial so we regenerate the gamma ramp texture
 #define GAMMACHECK(cache, value) if (cache != (value)) gamma_changed = true;cache = (value)
-	if(v_psycho.integer)
+	if (v_psycho.integer)
 		gamma_changed = true;
 	GAMMACHECK(cachegamma      , v_gamma.value);
 	GAMMACHECK(cachecontrast   , v_contrast.value);
@@ -1244,7 +1263,7 @@ void VID_UpdateGamma(void)
 	GAMMACHECK(cachewhite[1]   , v_color_white_g.value);
 	GAMMACHECK(cachewhite[2]   , v_color_white_b.value);
 
-	if(gamma_changed)
+	if (gamma_changed)
 		++vid_gammatables_serial;
 #undef GAMMACHECK
 }
@@ -1256,7 +1275,7 @@ static dllfunction_t xinputdllfuncs[] =
 	{"XInputGetKeystroke", (void **) &qXInputGetKeystroke},
 	{NULL, NULL}
 };
-static const char* xinputdllnames [] =
+static const char *xinputdllnames [] =
 {
 	"xinput1_3.dll",
 	"xinput1_2.dll",
@@ -1295,7 +1314,6 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&v_psycho);
 
 	Cvar_RegisterVariable(&vid_fullscreen);
-	Cvar_RegisterVariable(&vid_borderless);
 	Cvar_RegisterVariable(&vid_width);
 	Cvar_RegisterVariable(&vid_height);
 
@@ -1319,19 +1337,28 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&vid_touchscreen_ydpi);
 	Cvar_RegisterVariable(&vid_vsync);
 	Cvar_RegisterVariable(&vid_mouse);
-	Cvar_RegisterVariable(&vid_mouse_clickthrough);
 	Cvar_RegisterVariable(&vid_grabkeyboard);
 	Cvar_RegisterVariable(&vid_touchscreen);
 	Cvar_RegisterVariable(&vid_touchscreen_showkeyboard);
 	Cvar_RegisterVariable(&vid_touchscreen_supportshowkeyboard);
 	Cvar_RegisterVariable(&vid_stick_mouse);
-	Cvar_RegisterVariable(&vid_resizable);
+	
 	Cvar_RegisterVariable(&vid_desktopfullscreen);
+	Cvar_RegisterVariable(&vid_minwidth);
+	Cvar_RegisterVariable(&vid_minheight);
+
+	Cvar_RegisterVariable(&vid_resizable);
+
+	// NEW DARKPLACES BETA CVARS
+	Cvar_RegisterVariable(&vid_mouse_clickthrough);
+	Cvar_RegisterVariable(&vid_borderless);
 #ifdef _WIN32
 	Cvar_RegisterVariable(&vid_ignore_taskbar);
 #endif
-	Cvar_RegisterVariable(&vid_minwidth);
-	Cvar_RegisterVariable(&vid_minheight);
+
+	// LEGACY
+	// END LEGACY
+
 	Cvar_RegisterVariable(&gl_finish);
 	Cvar_RegisterVariable(&vid_sRGB);
 	Cvar_RegisterVariable(&vid_sRGB_fallback);
@@ -1390,64 +1417,6 @@ void VID_Shared_Init(void)
 	Cmd_AddCommand(CF_CLIENT, "vid_restart", VID_Restart_f, "restarts video system (closes and reopens the window, restarts renderer)");
 }
 
-// Baker r0005: Autoscale 360p
-float   yfactors;
-float    yfactor_mag_360;                    // output
-float    scale_width_360;
-float    scale_height_360;
-
-int        old_vid_height;
-int        old_vid_width;
-qbool    old_vid_fullscreen;
-
-// Allow adjustment over automatic math
-float    old_vid_fullscreen_conscale;
-float    old_vid_window_conscale;
-
-void scale_360_calc (void)
-{
-    if (old_vid_height == vid.height &&
-		old_vid_width == vid.width &&
-        old_vid_fullscreen == vid.fullscreen &&
-        old_vid_fullscreen_conscale == vid_fullscreen_conscale.value &&
-        old_vid_window_conscale == vid_window_conscale.value)
-        return;
-    
-    old_vid_width				  = vid.width;
-	old_vid_height                = vid.height;
-    old_vid_fullscreen            = vid.fullscreen;
-    old_vid_fullscreen_conscale    = vid_fullscreen_conscale.value;
-    old_vid_window_conscale        = vid_window_conscale.value;
-
-    cvar_t *pcvar;
-    pcvar  = vid.fullscreen ? &vid_fullscreen_conscale : &vid_window_conscale;
-
-    yfactors = vid.height / 360.0f;
-    yfactors = Q_rint (yfactors); // 720 + is magnification of 2 or more
-    if (yfactors < 0)
-        yfactors = 1;
-
-    /*Con_PrintLinef ("conscale %d %d fs? %d conscale %f",
-                    vid.width,
-                    vid.height,
-                    vid.fullscreen,
-                    pcvar->value);
-    Con_PrintLinef ("yfactors %f",
-                    yfactors);
-    */
-    float multo = bound (0.5, pcvar->value, 2);
-
-    if (yfactors)
-        yfactor_mag_360 = (1 / yfactors) * multo;
-    else yfactor_mag_360 = 1;
-
-    //Con_PrintLinef ("yfactor_mag_360 %f",
-      //              yfactor_mag_360);
-    
-    scale_width_360 =  vid.width * yfactor_mag_360;
-    scale_height_360 = vid.height * yfactor_mag_360;
-}
-
 
 static int VID_Mode(int fullscreen, int width, int height, int bpp, float refreshrate, int stereobuffer)
 {
@@ -1496,7 +1465,7 @@ static int VID_Mode(int fullscreen, int width, int height, int bpp, float refres
 			break;
 		}
 
-		if(
+		if (
 			(vid_sRGB_fallback.integer >= 3) // force fallback
 			||
 			(vid_sRGB_fallback.integer >= 2 && // fallback if framebuffer is 8bit
@@ -1504,7 +1473,8 @@ static int VID_Mode(int fullscreen, int width, int height, int bpp, float refres
 		)
 			vid.sRGB2D = vid.sRGB3D = false;
 
-		Con_Printf("Video Mode: %s %dx%dx%dx%.2fhz%s\n", mode.fullscreen ? "fullscreen" : "window", mode.width, mode.height, mode.bitsperpixel, mode.refreshrate, mode.stereobuffer ? " stereo" : "");
+		if (vid.restart_count == 0) // Baker r1481: Reduce ALT-ENTER video restart spam
+			Con_PrintLinef ("Video Mode: %s %dx%dx%dx%.2fhz%s", mode.fullscreen ? "fullscreen" : "window", mode.width, mode.height, mode.bitsperpixel, mode.refreshrate, mode.stereobuffer ? " stereo" : "");
 
 		Cvar_SetValueQuick(&vid_fullscreen, vid.mode.fullscreen);
 
@@ -1517,11 +1487,13 @@ static int VID_Mode(int fullscreen, int width, int height, int bpp, float refres
 			Cvar_SetValueQuick(&vid_window_height, height);
 		}
 
+		old_vid_kickme ++;
+
 		Cvar_SetValueQuick(&vid_width, vid.mode.width);
 		Cvar_SetValueQuick(&vid_height, vid.mode.height);
 		Cvar_SetValueQuick(&vid_bitsperpixel, vid.mode.bitsperpixel);
 		Cvar_SetValueQuick(&vid_samples, vid.mode.samples);
-		if(vid_userefreshrate.integer)
+		if (vid_userefreshrate.integer)
 			Cvar_SetValueQuick(&vid_refreshrate, vid.mode.refreshrate);
 		Cvar_SetValueQuick(&vid_stereobuffer, vid.stereobuffer ? 1 : 0);
 
@@ -1565,16 +1537,17 @@ void VID_Restart_f(cmd_state_t *cmd)
 	if (vid_commandlinecheck)
 		return;
 
-	Con_Printf("VID_Restart: changing from %s %dx%dx%dbpp%s, to %s %dx%dx%dbpp%s.\n",
+	// Baker r1481: Reduce ALT-ENTER video restart spam
+	Con_DPrintLinef ("VID_Restart: changing from %s %dx%dx%dbpp%s, to %s %dx%dx%dbpp%s.",
 		vid.mode.fullscreen ? "fullscreen" : "window", vid.mode.width, vid.mode.height, vid.mode.bitsperpixel, vid.mode.fullscreen && vid.mode.userefreshrate ? va(vabuf, sizeof(vabuf), "x%.2fhz", vid.mode.refreshrate) : "",
 		vid_fullscreen.integer ? "fullscreen" : "window", vid_width.integer, vid_height.integer, vid_bitsperpixel.integer, vid_fullscreen.integer && vid_userefreshrate.integer ? va(vabuf, sizeof(vabuf), "x%.2fhz", vid_refreshrate.value) : "");
 	VID_CloseSystems();
 	VID_Shutdown();
 	if (!VID_Mode(vid_fullscreen.integer, vid_width.integer, vid_height.integer, vid_bitsperpixel.integer, vid_refreshrate.value, vid_stereobuffer.integer))
 	{
-		Con_Print("Video mode change failed\n");
+		Con_PrintLinef ("Video mode change failed");
 		if (!VID_Mode(vid.mode.fullscreen, vid.mode.width, vid.mode.height, vid.mode.bitsperpixel, vid.mode.refreshrate, vid.mode.stereobuffer))
-			Sys_Error("Unable to restore to last working video mode");
+			Sys_Error ("Unable to restore to last working video mode");
 	}
 
 	SCR_DeferLoadingPlaque(false);
@@ -1583,8 +1556,7 @@ void VID_Restart_f(cmd_state_t *cmd)
 	if (1) { // RESTORE
 		Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
 		Cvar_SetValueQuick (&vid_conheight, scale_height_360);
-		Flag_Remove_From (vid_conwidth.flags,  CF_CLIENT | CF_READONLY);
-		Flag_Remove_From (vid_conheight.flags,  CF_CLIENT | CF_READONLY);
+		old_vid_kickme ++;
 	}
 
 	VID_OpenSystems();
@@ -1650,8 +1622,7 @@ void VID_Start(void)
 	}
 
 	success = VID_Mode(vid_fullscreen.integer, vid_width.integer, vid_height.integer, vid_bitsperpixel.integer, vid_refreshrate.value, vid_stereobuffer.integer);
-	if (!success)
-	{
+	if (!success) {
 		Con_Print("Desired video mode fail, trying fallbacks...\n");
 		for (i = 0;!success && vidfallbacks[i][0] != NULL;i++)
 		{
@@ -1659,7 +1630,7 @@ void VID_Start(void)
 			success = VID_Mode(vid_fullscreen.integer, vid_width.integer, vid_height.integer, vid_bitsperpixel.integer, vid_refreshrate.value, vid_stereobuffer.integer);
 		}
 		if (!success)
-			Sys_Error("Video modes failed");
+			Sys_Error ("Video modes failed");
 	}
 	VID_OpenSystems();
 }
@@ -1674,58 +1645,58 @@ static int VID_SortModes_Compare(const void *a_, const void *b_)
 {
 	vid_mode_t *a = (vid_mode_t *) a_;
 	vid_mode_t *b = (vid_mode_t *) b_;
-	if(a->width > b->width)
+	if (a->width > b->width)
 		return +1;
-	if(a->width < b->width)
+	if (a->width < b->width)
 		return -1;
-	if(a->height > b->height)
+	if (a->height > b->height)
 		return +1;
-	if(a->height < b->height)
+	if (a->height < b->height)
 		return -1;
-	if(a->refreshrate > b->refreshrate)
+	if (a->refreshrate > b->refreshrate)
 		return +1;
-	if(a->refreshrate < b->refreshrate)
+	if (a->refreshrate < b->refreshrate)
 		return -1;
-	if(a->bpp > b->bpp)
+	if (a->bpp > b->bpp)
 		return +1;
-	if(a->bpp < b->bpp)
+	if (a->bpp < b->bpp)
 		return -1;
-	if(a->pixelheight_num * b->pixelheight_denom > a->pixelheight_denom * b->pixelheight_num)
+	if (a->pixelheight_num * b->pixelheight_denom > a->pixelheight_denom * b->pixelheight_num)
 		return +1;
-	if(a->pixelheight_num * b->pixelheight_denom < a->pixelheight_denom * b->pixelheight_num)
+	if (a->pixelheight_num * b->pixelheight_denom < a->pixelheight_denom * b->pixelheight_num)
 		return -1;
 	return 0;
 }
 size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool userefreshrate, qbool useaspect)
 {
 	size_t i;
-	if(count == 0)
+	if (count == 0)
 		return 0;
 	// 1. sort them
 	qsort(modes, count, sizeof(*modes), VID_SortModes_Compare);
 	// 2. remove duplicates
 	for(i = 0; i < count; ++i)
 	{
-		if(modes[i].width && modes[i].height)
+		if (modes[i].width && modes[i].height)
 		{
-			if(i == 0)
+			if (i == 0)
 				continue;
-			if(modes[i].width != modes[i-1].width)
+			if (modes[i].width != modes[i-1].width)
 				continue;
-			if(modes[i].height != modes[i-1].height)
+			if (modes[i].height != modes[i-1].height)
 				continue;
-			if(userefreshrate)
-				if(modes[i].refreshrate != modes[i-1].refreshrate)
+			if (userefreshrate)
+				if (modes[i].refreshrate != modes[i-1].refreshrate)
 					continue;
-			if(usebpp)
-				if(modes[i].bpp != modes[i-1].bpp)
+			if (usebpp)
+				if (modes[i].bpp != modes[i-1].bpp)
 					continue;
-			if(useaspect)
-				if(modes[i].pixelheight_num * modes[i-1].pixelheight_denom != modes[i].pixelheight_denom * modes[i-1].pixelheight_num)
+			if (useaspect)
+				if (modes[i].pixelheight_num * modes[i-1].pixelheight_denom != modes[i].pixelheight_denom * modes[i-1].pixelheight_num)
 					continue;
 		}
 		// a dupe, or a bogus mode!
-		if(i < count-1)
+		if (i < count-1)
 			memmove(&modes[i], &modes[i+1], sizeof(*modes) * (count-1 - i));
 		--i; // check this index again, as mode i+1 is now here
 		--count;

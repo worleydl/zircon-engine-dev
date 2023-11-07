@@ -3,13 +3,13 @@
 
 static double anim_reducetime(double t, double frameduration, double maxtime)
 {
-	if(t < 0) // clamp to non-negative
+	if (t < 0) // clamp to non-negative
 		return 0;
-	if(t <= maxtime) // time can be represented normally
+	if (t <= maxtime) // time can be represented normally
 		return t;
-	if(frameduration == 0) // don't like dividing by zero
+	if (frameduration == 0) // don't like dividing by zero
 		return t;
-	if(maxtime <= 2 * frameduration) // if two frames don't fit, we better not do this
+	if (maxtime <= 2 * frameduration) // if two frames don't fit, we better not do this
 		return t;
 	t -= frameduration * ceil((t - maxtime) / frameduration);
 	// now maxtime - frameduration < t <= maxtime
@@ -21,7 +21,7 @@ static double anim_frameduration(model_t *model, int framenum)
 {
 	if (!model || !model->animscenes || framenum < 0 || framenum >= model->numframes)
 		return 0;
-	if(model->animscenes[framenum].framerate)
+	if (model->animscenes[framenum].framerate)
 		return model->animscenes[framenum].framecount / model->animscenes[framenum].framerate;
 	return 0;
 }
@@ -101,7 +101,7 @@ static int EntityState5_Priority(entityframe5_database_t *d, int stateindex)
 			EntityFrame5_ExpandEdicts(d, (stateindex+256)&~255);
 	}
 	if (limit >= 256)
-		Con_DPrintf("Protocol: Runaway loop recursing tagentity links on entity %i\n", stateindex);
+		Con_DPrintf ("Protocol: Runaway loop recursing tagentity links on entity %d\n", stateindex);
 	// now that we have the parent entity we can make some decisions based on
 	// distance from the player
 	if (VectorDistance(d->states[d->viewentnum].netcenter, s->netcenter) < 1024.0f)
@@ -154,11 +154,11 @@ static int EntityState5_DeltaBits(const entity_state_t *o, const entity_state_t 
 			}
 			else if (o->skeletonobject.model && o->skeletonobject.relativetransforms)
 			{
-				if(o->modelindex != n->modelindex)
+				if (o->modelindex != n->modelindex)
 					bits |= E5_COMPLEXANIMATION;
-				else if(o->skeletonobject.model->num_bones != n->skeletonobject.model->num_bones)
+				else if (o->skeletonobject.model->num_bones != n->skeletonobject.model->num_bones)
 					bits |= E5_COMPLEXANIMATION;
-				else if(memcmp(o->skeletonobject.relativetransforms, n->skeletonobject.relativetransforms, o->skeletonobject.model->num_bones * sizeof(*o->skeletonobject.relativetransforms)))
+				else if (memcmp(o->skeletonobject.relativetransforms, n->skeletonobject.relativetransforms, o->skeletonobject.model->num_bones * sizeof(*o->skeletonobject.relativetransforms)))
 					bits |= E5_COMPLEXANIMATION;
 			}
 			else if (memcmp(o->framegroupblend, n->framegroupblend, sizeof(o->framegroupblend)))
@@ -429,7 +429,7 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 			break;
 	if (packetlognumber == ENTITYFRAME5_MAXPACKETLOGS)
 	{
-		Con_DPrintf("EntityFrame5_WriteFrame: packetlog overflow for a client, resetting\n");
+		Con_DPrintf ("EntityFrame5_WriteFrame: packetlog overflow for a client, resetting\n");
 		EntityFrame5_LostFrame(d, framenum);
 		packetlognumber = 0;
 	}
@@ -518,10 +518,8 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 	// write stat updates
 	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3 && sv.protocol != PROTOCOL_DARKPLACES1 && sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5)
 	{
-		for (i = 0;i < MAX_CL_STATS && msg->cursize + 6 + 11 <= maxsize;i++)
-		{
-			if (host_client->statsdeltabits[i>>3] & (1<<(i&7)))
-			{
+		for (i = 0;i < MAX_CL_STATS && msg->cursize + 6 + 11 <= maxsize;i++) {
+			if (host_client->statsdeltabits[i>>3] & (1<<(i&7))) {
 				host_client->statsdeltabits[i>>3] &= ~(1<<(i&7));
 				// add packetlog entry now that we have something for it
 				if (!packetlog)
@@ -532,8 +530,7 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 					memset(packetlog->statsdeltabits, 0, sizeof(packetlog->statsdeltabits));
 				}
 				packetlog->statsdeltabits[i>>3] |= (1<<(i&7));
-				if (host_client->stats[i] >= 0 && host_client->stats[i] < 256)
-				{
+				if (host_client->stats[i] >= 0 && host_client->stats[i] < 256) {
 					MSG_WriteByte(msg, svc_updatestatubyte);
 					MSG_WriteByte(msg, i);
 					MSG_WriteByte(msg, host_client->stats[i]);
@@ -551,7 +548,7 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 	}
 
 	// only send empty svc_entities frame if needed
-	if(!l && !need_empty)
+	if (!l && !need_empty)
 		return false;
 
 	// add packetlog entry now that we have something for it
@@ -565,7 +562,7 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 
 	// write state updates
 	if (developer_networkentities.integer >= 10)
-		Con_Printf("send: svc_entities %i\n", framenum);
+		Con_Printf ("send: svc_entities %d\n", framenum);
 	d->latestframenum = framenum;
 	MSG_WriteByte(msg, svc_entities);
 	MSG_WriteLong(msg, framenum);
@@ -664,7 +661,7 @@ void EntityFrame5_LostFrame(entityframe5_database_t *d, int framenum)
 	for(i = 0; i < d->maxedicts; ++i)
 	{
 		bits = deltabits[i] & ~d->deltabits[i];
-		if(bits)
+		if (bits)
 		{
 			d->deltabits[i] |= bits;
 			// if it was a very important update, set priority higher

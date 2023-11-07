@@ -108,7 +108,7 @@ findchar:
 	}
 
 	// If we hit the end, well, we're out and invalid
-	if(i >= _maxlen || !s[i]) {
+	if (i >= _maxlen || !s[i]) {
 		if (_start) *_start = i;
 		if (_len) *_len = 0;
 		return false;
@@ -136,7 +136,7 @@ findchar:
 		++i;
 		goto findchar;
 	}
-	if(i + bits > _maxlen) {
+	if (i + bits > _maxlen) {
 		/*
 		if (_start) *_start = i;
 		if (_len) *_len = 0;
@@ -155,7 +155,7 @@ findchar:
 		//if (s[i+j] < 0x80 || s[i+j] >= 0xC0)
 		if ( (s[i+j] & 0xC0) != 0x80 )
 		{
-			//fprintf(stderr, "sequence of %i f'd at %i by %x\n", bits, j, (unsigned int)s[i+j]);
+			//fprintf(stderr, "sequence of %d f'd at %d by %x\n", bits, j, (unsigned int)s[i+j]);
 			// this byte sequence is invalid, skip it
 			i += j;
 			// find a character after it
@@ -173,7 +173,7 @@ findchar:
 	)
 	{
 		i += bits;
-		//fprintf(stderr, "overlong: %i bytes for %x\n", bits, ch);
+		//fprintf(stderr, "overlong: %d bytes for %x\n", bits, ch);
 		goto findchar;
 	}
 #endif
@@ -229,13 +229,13 @@ size_t u8_strlen(const char *_s)
 
 static int colorcode_skipwidth(const unsigned char *s)
 {
-	if(*s == STRING_COLOR_TAG)
+	if (*s == STRING_COLOR_TAG)
 	{
-		if(s[1] <= '9' && s[1] >= '0') // ^[0-9] found
+		if (s[1] <= '9' && s[1] >= '0') // ^[0-9] found
 			return 2;
-		else if(s[1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(s[2]) && isxdigit(s[3]) && isxdigit(s[4]))
+		else if (s[1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(s[2]) && isxdigit(s[3]) && isxdigit(s[4]))
 			return 5;
-		else if(s[1] == STRING_COLOR_TAG)
+		else if (s[1] == STRING_COLOR_TAG)
 			return 1; // special case, do NOT call colorcode_skipwidth for next char
 	}
 	return 0;
@@ -300,7 +300,7 @@ static size_t u8_strnlen_colorcodes(const char *_s, size_t n)
 		int w = colorcode_skipwidth(s);
 		n -= w;
 		s += w;
-		if(w > 1) // == 1 means single caret
+		if (w > 1) // == 1 means single caret
 			continue;
 
 		// ascii char, skip u8_analyze
@@ -387,7 +387,7 @@ static size_t u8_bytelen_colorcodes(const char *_s, size_t n)
 		int w = colorcode_skipwidth(s);
 		len += w;
 		s += w;
-		if(w > 1) // == 1 means single caret
+		if (w > 1) // == 1 means single caret
 			continue;
 
 		// ascii char, skip u8_analyze
@@ -791,7 +791,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		switch((s == end) ? 0 : *s)
 		{
 			case 0:
-				if(valid)
+				if (valid)
 					*valid = true;
 				return len;
 			case STRING_COLOR_TAG:
@@ -811,7 +811,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 						break;
 					case 0: // ends with unfinished color code!
 						++len;
-						if(valid)
+						if (valid)
 							*valid = false;
 						return len;
 					case STRING_COLOR_TAG: // escaped ^
@@ -849,15 +849,15 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		if (!u8_analyze((const char*)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 		{
 			// we CAN end up here, if an invalid char is between this one and the end of the string
-			if(valid)
+			if (valid)
 				*valid = true;
 			return len;
 		}
 
-		if(end && s + st + ln > end)
+		if (end && s + st + ln > end)
 		{
 			// string length exceeded by new character
-			if(valid)
+			if (valid)
 				*valid = true;
 			return len;
 		}
@@ -880,7 +880,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
  */
 size_t u8_strpad(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth)
 {
-	if(!utf8_enable.integer)
+	if (!utf8_enable.integer)
 	{
 		return dpsnprintf(out, outsize, "%*.*s", leftalign ? -(int) minwidth : (int) minwidth, (int) maxwidth, in);
 	}

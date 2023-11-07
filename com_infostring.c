@@ -29,23 +29,23 @@ char *InfoString_GetValue(const char *buffer, const char *key, char *value, size
 	keylength = strlen(key);
 	if (valuelength < 1 || !value)
 	{
-		Con_Printf("InfoString_GetValue: no room in value\n");
+		Con_Printf ("InfoString_GetValue: no room in value\n");
 		return NULL;
 	}
 	value[0] = 0;
 	if (strchr(key, '\\'))
 	{
-		Con_Printf("InfoString_GetValue: key name \"%s\" contains \\ which is not possible in an infostring\n", key);
+		Con_Printf ("InfoString_GetValue: key name \"%s\" contains \\ which is not possible in an infostring\n", key);
 		return NULL;
 	}
 	if (strchr(key, '\"'))
 	{
-		Con_Printf("InfoString_SetValue: key name \"%s\" contains \" which is not allowed in an infostring\n", key);
+		Con_Printf ("InfoString_SetValue: key name \"%s\" contains \" which is not allowed in an infostring\n", key);
 		return NULL;
 	}
 	if (!key[0])
 	{
-		Con_Printf("InfoString_GetValue: can not look up a key with no name\n");
+		Con_Printf ("InfoString_GetValue: can not look up a key with no name\n");
 		return NULL;
 	}
 	while (buffer[pos] == '\\')
@@ -81,17 +81,17 @@ void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, con
 	keylength = strlen(key);
 	if (strchr(key, '\\') || strchr(value, '\\'))
 	{
-		Con_Printf("InfoString_SetValue: \"%s\" \"%s\" contains \\ which is not possible to store in an infostring\n", key, value);
+		Con_Printf ("InfoString_SetValue: \"%s\" \"%s\" contains \\ which is not possible to store in an infostring\n", key, value);
 		return;
 	}
 	if (strchr(key, '\"') || strchr(value, '\"'))
 	{
-		Con_Printf("InfoString_SetValue: \"%s\" \"%s\" contains \" which is not allowed in an infostring\n", key, value);
+		Con_Printf ("InfoString_SetValue: \"%s\" \"%s\" contains \" which is not allowed in an infostring\n", key, value);
 		return;
 	}
 	if (!key[0])
 	{
-		Con_Printf("InfoString_SetValue: can not set a key with no name\n");
+		Con_Printf ("InfoString_SetValue: can not set a key with no name\n");
 		return;
 	}
 	while (buffer[pos] == '\\')
@@ -115,7 +115,7 @@ void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, con
 	}
 	if (bufferlength <= pos + 1 + strlen(key) + 1 + strlen(value) + strlen(buffer + pos2))
 	{
-		Con_Printf("InfoString_SetValue: no room for \"%s\" \"%s\" in infostring\n", key, value);
+		Con_Printf ("InfoString_SetValue: no room for \"%s\" \"%s\" in infostring\n", key, value);
 		return;
 	}
 	if (value[0])
@@ -141,7 +141,7 @@ void InfoString_Print(char *buffer)
 	{
 		if (*buffer != '\\')
 		{
-			Con_Printf("InfoString_Print: corrupt string\n");
+			Con_Printf ("InfoString_Print: corrupt string\n");
 			return;
 		}
 		for (buffer++, i = 0;*buffer && *buffer != '\\';buffer++)
@@ -150,7 +150,7 @@ void InfoString_Print(char *buffer)
 		key[i] = 0;
 		if (*buffer != '\\')
 		{
-			Con_Printf("InfoString_Print: corrupt string\n");
+			Con_Printf ("InfoString_Print: corrupt string\n");
 			return;
 		}
 		for (buffer++, i = 0;*buffer && *buffer != '\\';buffer++)
@@ -158,6 +158,6 @@ void InfoString_Print(char *buffer)
 				value[i++] = *buffer;
 		value[i] = 0;
 		// empty value is an error case
-		Con_Printf("%20s %s\n", key, value[0] ? value : "NO VALUE");
+		Con_Printf ("%20s %s\n", key, value[0] ? value : "NO VALUE");
 	}
 }

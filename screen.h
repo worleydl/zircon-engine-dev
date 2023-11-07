@@ -47,9 +47,9 @@ extern int sb_lines;
 
 extern struct cvar_s scr_viewsize;
 extern struct cvar_s scr_fov;
-extern struct cvar_s cl_showfps;
-extern struct cvar_s cl_showtime;
-extern struct cvar_s cl_showdate;
+extern struct cvar_s showfps;
+extern struct cvar_s showtime;
+extern struct cvar_s showdate;
 
 extern struct cvar_s crosshair;
 extern struct cvar_s crosshair_size;
@@ -93,5 +93,5 @@ scr_touchscreenarea_t;
 extern int scr_numtouchscreenareas;
 extern scr_touchscreenarea_t scr_touchscreenareas[128];
 
-#endif
+#endif // ! SCREEN_H
 

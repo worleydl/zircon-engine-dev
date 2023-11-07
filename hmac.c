@@ -14,16 +14,16 @@ qbool hmac(
 	unsigned char *catbuf;
 	int i;
 
-	if(sizeof(hashbuf) < (size_t) hlen)
+	if (sizeof(hashbuf) < (size_t) hlen)
 		return false;
-	if(sizeof(k_xor_ipad) < (size_t) hblock)
+	if (sizeof(k_xor_ipad) < (size_t) hblock)
 		return false;
-	if(sizeof(k_xor_ipad) < (size_t) hlen)
+	if (sizeof(k_xor_ipad) < (size_t) hlen)
 		return false;
 
 	catbuf = (unsigned char *)Mem_Alloc(tempmempool, (size_t) hblock + max((size_t) hlen, (size_t) n));
 
-	if(k > hblock)
+	if (k > hblock)
 	{
 		// hash the key if it is too long
 		hfunc(k_xor_opad, key, k);
@@ -31,10 +31,10 @@ qbool hmac(
 		k = hlen;
 	}
 
-	if(k < hblock)
+	if (k < hblock)
 	{
 		// zero pad the key if it is too short
-		if(key != k_xor_opad)
+		if (key != k_xor_opad)
 			memcpy(k_xor_opad, key, k);
 		for(i = k; i < hblock; ++i)
 			k_xor_opad[i] = 0;

@@ -144,19 +144,19 @@ static void SCR_CaptureVideo_RIFF_Pop(void)
 	sizehint = format->riffstacksizehint[format->riffstacklevel];
 	x = (int)(offset - (format->riffstackstartoffset[format->riffstacklevel]));
 
-	if(x != sizehint)
+	if (x != sizehint)
 	{
-		if(sizehint != -1)
+		if (sizehint != -1)
 		{
 			int i;
-			Con_Printf(CON_WARN "WARNING: invalid size hint %d when writing video data (actual size: %d)\n", (int) sizehint, x);
+			Con_Printf (CON_WARN "WARNING: invalid size hint %d when writing video data (actual size: %d)\n", (int) sizehint, x);
 			for(i = 0; i <= format->riffstacklevel; ++i)
 			{
-				Con_Printf("  RIFF level %d = %s\n", i, format->riffstackfourcc[i]);
+				Con_Printf ("  RIFF level %d = %s\n", i, format->riffstackfourcc[i]);
 			}
 		}
 		sizebytes[0] = (x) & 0xff;sizebytes[1] = (x >> 8) & 0xff;sizebytes[2] = (x >> 16) & 0xff;sizebytes[3] = (x >> 24) & 0xff;
-		if(FS_Seek(cls.capturevideo.videofile, -(x + 4), SEEK_END) >= 0)
+		if (FS_Seek(cls.capturevideo.videofile, -(x + 4), SEEK_END) >= 0)
 		{
 			FS_Write(cls.capturevideo.videofile, sizebytes, 4);
 		}
@@ -171,14 +171,14 @@ static void SCR_CaptureVideo_RIFF_Pop(void)
 
 static void GrowBuf(sizebuf_t *buf, int extralen)
 {
-	if(buf->cursize + extralen > buf->maxsize)
+	if (buf->cursize + extralen > buf->maxsize)
 	{
 		int oldsize = buf->maxsize;
 		unsigned char *olddata;
 		olddata = buf->data;
 		buf->maxsize = max(buf->maxsize * 2, 4096);
 		buf->data = (unsigned char *) Mem_Alloc(tempmempool, buf->maxsize);
-		if(olddata)
+		if (olddata)
 		{
 			memcpy(buf->data, olddata, oldsize);
 			Mem_Free(olddata);
@@ -189,11 +189,11 @@ static void GrowBuf(sizebuf_t *buf, int extralen)
 static void SCR_CaptureVideo_RIFF_IndexEntry(const char *chunkfourcc, int chunksize, int flags)
 {
 	LOAD_FORMATSPECIFIC_AVI();
-	if(!format->canseek)
-		Sys_Error("SCR_CaptureVideo_RIFF_IndexEntry called on non-seekable AVI");
+	if (!format->canseek)
+		Sys_Error ("SCR_CaptureVideo_RIFF_IndexEntry called on non-seekable AVI");
 
 	if (format->riffstacklevel != 2)
-		Sys_Error("SCR_Capturevideo_RIFF_IndexEntry: RIFF stack level is %i (should be 2)\n", format->riffstacklevel);
+		Sys_Error ("SCR_Capturevideo_RIFF_IndexEntry: RIFF stack level is %d (should be 2)\n", format->riffstacklevel);
 	GrowBuf(&format->riffindexbuffer, 16);
 	SCR_CaptureVideo_RIFF_Flush();
 	MSG_WriteUnterminatedString(&format->riffindexbuffer, chunkfourcc);
@@ -210,20 +210,20 @@ static void SCR_CaptureVideo_RIFF_MakeIxChunk(const char *fcc, const char *dwChu
 	fs_offset_t ix = SCR_CaptureVideo_RIFF_GetPosition();
 	fs_offset_t pos, sz;
 	
-	if(!format->canseek)
-		Sys_Error("SCR_CaptureVideo_RIFF_MakeIxChunk called on non-seekable AVI");
+	if (!format->canseek)
+		Sys_Error ("SCR_CaptureVideo_RIFF_MakeIxChunk called on non-seekable AVI");
 
-	if(*masteridx_count >= AVI_MASTER_INDEX_SIZE)
+	if (*masteridx_count >= AVI_MASTER_INDEX_SIZE)
 		return;
 
 	nMatching = 0; // go through index and enumerate them
 	for(i = 0; i < format->riffindexbuffer.cursize; i += 16)
-		if(!memcmp(format->riffindexbuffer.data + i, dwChunkId, 4))
+		if (!memcmp(format->riffindexbuffer.data + i, dwChunkId, 4))
 			++nMatching;
 
 	sz = 2+2+4+4+4+4+4;
 	for(i = 0; i < format->riffindexbuffer.cursize; i += 16)
-		if(!memcmp(format->riffindexbuffer.data + i, dwChunkId, 4))
+		if (!memcmp(format->riffindexbuffer.data + i, dwChunkId, 4))
 			sz += 8;
 
 	SCR_CaptureVideo_RIFF_Push(fcc, NULL, sz);
@@ -236,14 +236,14 @@ static void SCR_CaptureVideo_RIFF_MakeIxChunk(const char *fcc, const char *dwChu
 	SCR_CaptureVideo_RIFF_Write32(0); // dwReserved
 
 	for(i = 0; i < format->riffindexbuffer.cursize; i += 16)
-		if(!memcmp(format->riffindexbuffer.data + i, dwChunkId, 4))
+		if (!memcmp(format->riffindexbuffer.data + i, dwChunkId, 4))
 		{
 			unsigned int *p = (unsigned int *) (format->riffindexbuffer.data + i);
 			unsigned int flags = p[1];
 			unsigned int rpos = p[2];
 			unsigned int size = p[3];
 			size &= ~0x80000000;
-			if(!(flags & 0x10)) // no keyframe?
+			if (!(flags & 0x10)) // no keyframe?
 				size |= 0x80000000;
 			SCR_CaptureVideo_RIFF_Write32(rpos + 8);
 			SCR_CaptureVideo_RIFF_Write32(size);
@@ -253,7 +253,7 @@ static void SCR_CaptureVideo_RIFF_MakeIxChunk(const char *fcc, const char *dwChu
 	SCR_CaptureVideo_RIFF_Pop();
 	pos = SCR_CaptureVideo_RIFF_GetPosition();
 
-	if(FS_Seek(cls.capturevideo.videofile, masteridx_start + 16 * *masteridx_count, SEEK_SET) >= 0)
+	if (FS_Seek(cls.capturevideo.videofile, masteridx_start + 16 * *masteridx_count, SEEK_SET) >= 0)
 	{
 		SCR_CaptureVideo_RIFF_Write32(ix & (fs_offset_t) 0xFFFFFFFFu);
 		SCR_CaptureVideo_RIFF_Write32(((fs_offset_t) ix) >> 32);
@@ -262,7 +262,7 @@ static void SCR_CaptureVideo_RIFF_MakeIxChunk(const char *fcc, const char *dwChu
 		SCR_CaptureVideo_RIFF_FlushNoIncrease();
 	}
 
-	if(FS_Seek(cls.capturevideo.videofile, masteridx_counter, SEEK_SET) >= 0)
+	if (FS_Seek(cls.capturevideo.videofile, masteridx_counter, SEEK_SET) >= 0)
 	{
 		SCR_CaptureVideo_RIFF_Write32(++*masteridx_count);
 		SCR_CaptureVideo_RIFF_FlushNoIncrease();
@@ -276,12 +276,12 @@ static void SCR_CaptureVideo_RIFF_Finish(qbool final)
 	LOAD_FORMATSPECIFIC_AVI();
 	// close the "movi" list
 	SCR_CaptureVideo_RIFF_Pop();
-	if(format->videofile_ix_master_video_inuse_offset)
+	if (format->videofile_ix_master_video_inuse_offset)
 		SCR_CaptureVideo_RIFF_MakeIxChunk("ix00", "00dc", format->videofile_ix_master_video_inuse_offset, &format->videofile_ix_master_video_inuse, format->videofile_ix_master_video_start_offset);
-	if(format->videofile_ix_master_audio_inuse_offset)
+	if (format->videofile_ix_master_audio_inuse_offset)
 		SCR_CaptureVideo_RIFF_MakeIxChunk("ix01", "01wb", format->videofile_ix_master_audio_inuse_offset, &format->videofile_ix_master_audio_inuse, format->videofile_ix_master_audio_start_offset);
 	// write the idx1 chunk that we've been building while saving the frames (for old style players)
-	if(final && format->videofile_firstchunkframes_offset)
+	if (final && format->videofile_firstchunkframes_offset)
 	// TODO replace index creating by OpenDML ix##/##ix/indx chunk so it works for more than one AVI part too
 	{
 		SCR_CaptureVideo_RIFF_Push("idx1", NULL, format->riffindexbuffer.cursize);
@@ -293,10 +293,10 @@ static void SCR_CaptureVideo_RIFF_Finish(qbool final)
 	while (format->riffstacklevel > 0)
 		SCR_CaptureVideo_RIFF_Pop();
 	SCR_CaptureVideo_RIFF_Flush();
-	if(format->videofile_firstchunkframes_offset)
+	if (format->videofile_firstchunkframes_offset)
 	{
-		Con_DPrintf("Finishing first chunk (%d frames)\n", cls.capturevideo.frame);
-		if(FS_Seek(cls.capturevideo.videofile, format->videofile_firstchunkframes_offset, SEEK_SET) >= 0)
+		Con_DPrintf ("Finishing first chunk (%d frames)\n", cls.capturevideo.frame);
+		if (FS_Seek(cls.capturevideo.videofile, format->videofile_firstchunkframes_offset, SEEK_SET) >= 0)
 		{
 			SCR_CaptureVideo_RIFF_Write32(cls.capturevideo.frame);
 			SCR_CaptureVideo_RIFF_FlushNoIncrease();
@@ -305,7 +305,7 @@ static void SCR_CaptureVideo_RIFF_Finish(qbool final)
 		format->videofile_firstchunkframes_offset = 0;
 	}
 	else
-		Con_DPrintf("Finishing another chunk (%d frames)\n", cls.capturevideo.frame);
+		Con_DPrintf ("Finishing another chunk (%d frames)\n", cls.capturevideo.frame);
 }
 
 static void SCR_CaptureVideo_RIFF_OverflowCheck(int framesize)
@@ -314,9 +314,9 @@ static void SCR_CaptureVideo_RIFF_OverflowCheck(int framesize)
 	fs_offset_t cursize;
 	//fs_offset_t curfilesize;
 	if (format->riffstacklevel != 2)
-		Sys_Error("SCR_CaptureVideo_RIFF_OverflowCheck: chunk stack leakage!\n");
+		Sys_Error ("SCR_CaptureVideo_RIFF_OverflowCheck: chunk stack leakage!\n");
 	
-	if(!format->canseek)
+	if (!format->canseek)
 		return;
 
 	// check where we are in the file
@@ -384,13 +384,13 @@ static void SCR_CaptureVideo_Avi_VideoFrames(int num)
 	x = width*height+(width/2)*(height/2)*2;
 	while(num-- > 0)
 	{
-		if(format->canseek)
+		if (format->canseek)
 		{
 			SCR_CaptureVideo_RIFF_OverflowCheck(8 + x);
 			SCR_CaptureVideo_RIFF_IndexEntry("00dc", x, 0x10); // AVIIF_KEYFRAME
 		}
 
-		if(!format->canseek)
+		if (!format->canseek)
 		{
 			SCR_CaptureVideo_RIFF_Push("RIFF", "AVIX", 12+8+x);
 			SCR_CaptureVideo_RIFF_Push("LIST", "movi", 8+x);
@@ -398,7 +398,7 @@ static void SCR_CaptureVideo_Avi_VideoFrames(int num)
 		SCR_CaptureVideo_RIFF_Push("00dc", NULL, x);
 		SCR_CaptureVideo_RIFF_WriteBytes(out, x);
 		SCR_CaptureVideo_RIFF_Pop();
-		if(!format->canseek)
+		if (!format->canseek)
 		{
 			SCR_CaptureVideo_RIFF_Pop();
 			SCR_CaptureVideo_RIFF_Pop();
@@ -410,28 +410,28 @@ static void SCR_CaptureVideo_Avi_EndVideo(void)
 {
 	LOAD_FORMATSPECIFIC_AVI();
 
-	if(format->canseek)
+	if (format->canseek)
 	{
 		// close any open chunks
 		SCR_CaptureVideo_RIFF_Finish(true);
 
 		// go back and fix the video frames and audio samples fields
-		if(format->videofile_totalframes_offset1)
-			if(FS_Seek(cls.capturevideo.videofile, format->videofile_totalframes_offset1, SEEK_SET) >= 0)
+		if (format->videofile_totalframes_offset1)
+			if (FS_Seek(cls.capturevideo.videofile, format->videofile_totalframes_offset1, SEEK_SET) >= 0)
 			{
 				SCR_CaptureVideo_RIFF_Write32(cls.capturevideo.frame);
 				SCR_CaptureVideo_RIFF_FlushNoIncrease();
 			}
-		if(format->videofile_totalframes_offset2)
-			if(FS_Seek(cls.capturevideo.videofile, format->videofile_totalframes_offset2, SEEK_SET) >= 0)
+		if (format->videofile_totalframes_offset2)
+			if (FS_Seek(cls.capturevideo.videofile, format->videofile_totalframes_offset2, SEEK_SET) >= 0)
 			{
 				SCR_CaptureVideo_RIFF_Write32(cls.capturevideo.frame);
 				SCR_CaptureVideo_RIFF_FlushNoIncrease();
 			}
 		if (cls.capturevideo.soundrate)
 		{
-			if(format->videofile_totalsampleframes_offset)
-				if(FS_Seek(cls.capturevideo.videofile, format->videofile_totalsampleframes_offset, SEEK_SET) >= 0)
+			if (format->videofile_totalsampleframes_offset)
+				if (FS_Seek(cls.capturevideo.videofile, format->videofile_totalsampleframes_offset, SEEK_SET) >= 0)
 				{
 					SCR_CaptureVideo_RIFF_Write32(cls.capturevideo.soundsampleframe);
 					SCR_CaptureVideo_RIFF_FlushNoIncrease();
@@ -456,7 +456,7 @@ static void SCR_CaptureVideo_Avi_SoundFrame(const portable_sampleframe_t *paintb
 	LOAD_FORMATSPECIFIC_AVI();
 	int x;
 	unsigned char bufstereo16le[PAINTBUFFER_SIZE * 4];
-	unsigned char* out_ptr;
+	unsigned char *out_ptr;
 	size_t i;
 
 	// write the sound buffer as little endian 16bit interleaved stereo
@@ -476,13 +476,13 @@ static void SCR_CaptureVideo_Avi_SoundFrame(const portable_sampleframe_t *paintb
 	}
 
 	x = (int)length*4;
-	if(format->canseek)
+	if (format->canseek)
 	{
 		SCR_CaptureVideo_RIFF_OverflowCheck(8 + x);
 		SCR_CaptureVideo_RIFF_IndexEntry("01wb", x, 0x10); // AVIIF_KEYFRAME
 	}
 
-	if(!format->canseek)
+	if (!format->canseek)
 	{
 		SCR_CaptureVideo_RIFF_Push("RIFF", "AVIX", 12+8+x);
 		SCR_CaptureVideo_RIFF_Push("LIST", "movi", 8+x);
@@ -490,7 +490,7 @@ static void SCR_CaptureVideo_Avi_SoundFrame(const portable_sampleframe_t *paintb
 	SCR_CaptureVideo_RIFF_Push("01wb", NULL, x);
 	SCR_CaptureVideo_RIFF_WriteBytes(bufstereo16le, x);
 	SCR_CaptureVideo_RIFF_Pop();
-	if(!format->canseek)
+	if (!format->canseek)
 	{
 		SCR_CaptureVideo_RIFF_Pop();
 		SCR_CaptureVideo_RIFF_Pop();
@@ -581,7 +581,7 @@ void SCR_CaptureVideo_Avi_BeginVideo(void)
 		SCR_CaptureVideo_RIFF_Write32(0); // color important
 		SCR_CaptureVideo_RIFF_Pop();
 		// master index
-		if(format->canseek)
+		if (format->canseek)
 		{
 			SCR_CaptureVideo_RIFF_Push("indx", NULL, -1);
 			SCR_CaptureVideo_RIFF_Write16(4); // wLongsPerEntry
@@ -653,7 +653,7 @@ void SCR_CaptureVideo_Avi_BeginVideo(void)
 			SCR_CaptureVideo_RIFF_Write16(0); // size
 			SCR_CaptureVideo_RIFF_Pop();
 			// master index
-			if(format->canseek)
+			if (format->canseek)
 			{
 				SCR_CaptureVideo_RIFF_Push("indx", NULL, -1);
 				SCR_CaptureVideo_RIFF_Write16(4); // wLongsPerEntry
@@ -709,9 +709,9 @@ void SCR_CaptureVideo_Avi_BeginVideo(void)
 		// we're done with the headers now...
 		SCR_CaptureVideo_RIFF_Flush();
 		if (format->riffstacklevel != 2)
-			Sys_Error("SCR_CaptureVideo_BeginVideo: broken AVI writing code (stack level is %i (should be 2) at end of headers)\n", format->riffstacklevel);
+			Sys_Error ("SCR_CaptureVideo_BeginVideo: broken AVI writing code (stack level is %d (should be 2) at end of headers)\n", format->riffstacklevel);
 
-		if(!format->canseek)
+		if (!format->canseek)
 		{
 			// close the movi immediately
 			SCR_CaptureVideo_RIFF_Pop();

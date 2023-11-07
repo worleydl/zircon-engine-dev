@@ -178,7 +178,7 @@ static void BIH_GetTriangleListForBox_Node(const bih_t *bih, int nodenum, int ma
 						++*numtrianglespointer; // so the caller can detect overflow
 						break;
 					}
-					if(trianglelist_surf)
+					if (trianglelist_surf)
 						trianglelist_surf[*numtrianglespointer] = leaf->surfaceindex;
 					trianglelist_idx[*numtrianglespointer] = leaf->itemindex;
 					++*numtrianglespointer;

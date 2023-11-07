@@ -22,7 +22,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WAD_H
 #define WAD_H
 
-#include <stdint.h>
+#if defined(_MSC_VER) && _MSC_VER< 1900 // Baker: cutoff?
+	#include "vc_stdint.h"
+#else
+	#include <stdint.h>
+#endif
+
 struct sizebuf_s;
 
 //===============

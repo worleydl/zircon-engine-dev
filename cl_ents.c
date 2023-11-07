@@ -116,50 +116,50 @@ void EntityState_ReadFields(entity_state_t *e, unsigned int bits)
 
 	if (developer_networkentities.integer >= 2)
 	{
-		Con_Printf("ReadFields e%i", e->number);
+		Con_Printf ("ReadFields e%d", e->number);
 
 		if (bits & E_ORIGIN1)
-			Con_Printf(" E_ORIGIN1 %f", e->origin[0]);
+			Con_Printf (" E_ORIGIN1 %f", e->origin[0]);
 		if (bits & E_ORIGIN2)
-			Con_Printf(" E_ORIGIN2 %f", e->origin[1]);
+			Con_Printf (" E_ORIGIN2 %f", e->origin[1]);
 		if (bits & E_ORIGIN3)
-			Con_Printf(" E_ORIGIN3 %f", e->origin[2]);
+			Con_Printf (" E_ORIGIN3 %f", e->origin[2]);
 		if (bits & E_ANGLE1)
-			Con_Printf(" E_ANGLE1 %f", e->angles[0]);
+			Con_Printf (" E_ANGLE1 %f", e->angles[0]);
 		if (bits & E_ANGLE2)
-			Con_Printf(" E_ANGLE2 %f", e->angles[1]);
+			Con_Printf (" E_ANGLE2 %f", e->angles[1]);
 		if (bits & E_ANGLE3)
-			Con_Printf(" E_ANGLE3 %f", e->angles[2]);
+			Con_Printf (" E_ANGLE3 %f", e->angles[2]);
 		if (bits & (E_MODEL1 | E_MODEL2))
-			Con_Printf(" E_MODEL %i", e->modelindex);
+			Con_Printf (" E_MODEL %d", e->modelindex);
 
 		if (bits & (E_FRAME1 | E_FRAME2))
-			Con_Printf(" E_FRAME %i", e->frame);
+			Con_Printf (" E_FRAME %d", e->frame);
 		if (bits & (E_EFFECTS1 | E_EFFECTS2))
-			Con_Printf(" E_EFFECTS %i", e->effects);
+			Con_Printf (" E_EFFECTS %d", e->effects);
 		if (bits & E_ALPHA)
-			Con_Printf(" E_ALPHA %f", e->alpha / 255.0f);
+			Con_Printf (" E_ALPHA %f", e->alpha / 255.0f);
 		if (bits & E_SCALE)
-			Con_Printf(" E_SCALE %f", e->scale / 16.0f);
+			Con_Printf (" E_SCALE %f", e->scale / 16.0f);
 		if (bits & E_COLORMAP)
-			Con_Printf(" E_COLORMAP %i", e->colormap);
+			Con_Printf (" E_COLORMAP %d", e->colormap);
 		if (bits & E_SKIN)
-			Con_Printf(" E_SKIN %i", e->skin);
+			Con_Printf (" E_SKIN %d", e->skin);
 
 		if (bits & E_GLOWSIZE)
-			Con_Printf(" E_GLOWSIZE %i", e->glowsize * 4);
+			Con_Printf (" E_GLOWSIZE %d", e->glowsize * 4);
 		if (bits & E_GLOWCOLOR)
-			Con_Printf(" E_GLOWCOLOR %i", e->glowcolor);
+			Con_Printf (" E_GLOWCOLOR %d", e->glowcolor);
 
 		if (bits & E_LIGHT)
-			Con_Printf(" E_LIGHT %i:%i:%i:%i", e->light[0], e->light[1], e->light[2], e->light[3]);
+			Con_Printf (" E_LIGHT %d:%d:%d:%d", e->light[0], e->light[1], e->light[2], e->light[3]);
 		if (bits & E_LIGHTPFLAGS)
-			Con_Printf(" E_LIGHTPFLAGS %i", e->lightpflags);
+			Con_Printf (" E_LIGHTPFLAGS %d", e->lightpflags);
 
 		if (bits & E_TAGATTACHMENT)
-			Con_Printf(" E_TAGATTACHMENT e%i:%i", e->tagentity, e->tagindex);
+			Con_Printf (" E_TAGATTACHMENT e%d:%d", e->tagentity, e->tagindex);
 		if (bits & E_LIGHTSTYLE)
-			Con_Printf(" E_LIGHTSTYLE %i", e->lightstyle);
+			Con_Printf (" E_LIGHTSTYLE %d", e->lightstyle);
 		Con_Print("\n");
 	}
 }
@@ -248,17 +248,17 @@ void EntityFrame_CL_ReadFrame(void)
 	while ((number = (unsigned short) MSG_ReadShort(&cl_message)) != 0xFFFF && !cl_message.badread)
 	{
 		if (cl_message.badread)
-			Host_Error("EntityFrame_Read: read error");
+			Host_Error_Line ("EntityFrame_Read: read error");
 		removed = number & 0x8000;
 		number &= 0x7FFF;
 		if (number >= MAX_EDICTS)
-			Host_Error("EntityFrame_Read: number (%i) >= MAX_EDICTS (%i)", number, MAX_EDICTS);
+			Host_Error_Line ("EntityFrame_Read: number (%d) >= MAX_EDICTS (%d)", number, MAX_EDICTS);
 
 		// seek to entity, while copying any skipped entities (assume unchanged)
 		while (old < oldend && old->number < number)
 		{
 			if (f->numentities >= MAX_ENTITY_DATABASE)
-				Host_Error("EntityFrame_Read: entity list too big");
+				Host_Error_Line ("EntityFrame_Read: entity list too big");
 			f->entitydata[f->numentities] = *old++;
 			f->entitydata[f->numentities++].time = cl.mtime[0];
 		}
@@ -267,12 +267,12 @@ void EntityFrame_CL_ReadFrame(void)
 			if (old < oldend && old->number == number)
 				old++;
 			else
-				Con_Printf("EntityFrame_Read: REMOVE on unused entity %i\n", number);
+				Con_Printf ("EntityFrame_Read: REMOVE on unused entity %d\n", number);
 		}
 		else
 		{
 			if (f->numentities >= MAX_ENTITY_DATABASE)
-				Host_Error("EntityFrame_Read: entity list too big");
+				Host_Error_Line ("EntityFrame_Read: entity list too big");
 
 			// reserve this slot
 			e = f->entitydata + f->numentities++;
@@ -304,7 +304,7 @@ void EntityFrame_CL_ReadFrame(void)
 	while (old < oldend)
 	{
 		if (f->numentities >= MAX_ENTITY_DATABASE)
-			Host_Error("EntityFrame_Read: entity list too big");
+			Host_Error_Line ("EntityFrame_Read: entity list too big");
 		f->entitydata[f->numentities] = *old++;
 		f->entitydata[f->numentities++].time = cl.mtime[0];
 	}
@@ -343,7 +343,6 @@ void EntityFrame_CL_ReadFrame(void)
 	}
 }
 
-
 // (client) returns the frame number of the most recent frame recieved
 int EntityFrame_MostRecentlyRecievedFrameNum(entityframe_database_t *d)
 {
@@ -352,3 +351,4 @@ int EntityFrame_MostRecentlyRecievedFrameNum(entityframe_database_t *d)
 	else
 		return -1;
 }
+

@@ -2,11 +2,20 @@
 #ifndef QTYPES_H
 #define QTYPES_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <inttypes.h>
+//#pragma message ("qtypes")
+#if defined(_MSC_VER) && _MSC_VER< 1900 // Baker: cutoff?
+	#include "vc_stdint.h"
+#else
+	#include <stdint.h>
+	#include <stdbool.h>
+	#include <inttypes.h>
+#endif // _WIN32 // _MSC_VER
 
-typedef bool qbool;
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	typedef int qbool;
+#else
+	typedef bool qbool;
+#endif
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -44,17 +53,22 @@ typedef uintptr_t uptr;
 // LadyHavoc: to be enabled when bugs are worked out...
 //#define PRVM_64
 #ifdef PRVM_64
-typedef double prvm_vec_t;
-typedef int64_t prvm_int_t;
-typedef uint64_t prvm_uint_t;
-#define PRVM_PRIi PRIi64
-#define PRVM_PRIu PRIu64
+	typedef double prvm_vec_t;
+	typedef int64_t prvm_int_t;
+	typedef uint64_t prvm_uint_t;
+	#define PRVM_PRIi PRIi64
+	#define PRVM_PRIu PRIu64
 #else
-typedef float prvm_vec_t;
-typedef int32_t prvm_int_t;
-typedef uint32_t prvm_uint_t;
-#define PRVM_PRIi PRIi32
-#define PRVM_PRIu PRIu32
+	typedef float prvm_vec_t;
+	typedef int32_t prvm_int_t;
+	typedef uint32_t prvm_uint_t;
+	#if defined(_MSC_VER) && _MSC_VER < 1900
+		#define PRVM_PRIi "%d"
+		#define PRVM_PRIu "%u"
+	#else
+		#define PRVM_PRIi PRIi32
+		#define PRVM_PRIu PRIu32
+	#endif
 #endif
 typedef prvm_vec_t prvm_vec3_t[3];
 
@@ -63,7 +77,9 @@ typedef double vec_t;
 #else
 typedef float vec_t;
 #endif
+
 typedef vec_t vec2_t[2];
 typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
-#endif
+
+#endif // ! QTYPES_H

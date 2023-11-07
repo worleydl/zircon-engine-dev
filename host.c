@@ -78,12 +78,12 @@ void Host_AbortCurrentFrame(void)
 
 /*
 ================
-Host_Error
+Host_Error_Line
 
 This shuts down both the client and server
 ================
 */
-void Host_Error (const char *error, ...)
+void Host_Error_Line (const char *error, ...)
 {
 	static char hosterrorstring1[MAX_INPUTLINE]; // THREAD UNSAFE
 	static char hosterrorstring2[MAX_INPUTLINE]; // THREAD UNSAFE
@@ -98,7 +98,7 @@ void Host_Error (const char *error, ...)
 	dpvsnprintf (hosterrorstring1,sizeof(hosterrorstring1),error,argptr);
 	va_end (argptr);
 
-	Con_Printf(CON_ERROR "Host_Error: %s\n", hosterrorstring1);
+	Con_Printf (CON_ERROR "Host_Error: %s\n", hosterrorstring1);
 
 	// LadyHavoc: if crashing very early, or currently shutting down, do
 	// Sys_Error instead
@@ -127,11 +127,11 @@ void Host_Error (const char *error, ...)
 	Cvar_SetValueQuick(&csqc_progcrc, -1);
 	Cvar_SetValueQuick(&csqc_progsize, -1);
 
-	if(host.hook.SV_Shutdown)
+	if (host.hook.SV_Shutdown)
 		host.hook.SV_Shutdown();
 
 	if (cls.state == ca_dedicated)
-		Sys_Error ("Host_Error: %s",hosterrorstring2);	// dedicated servers exit
+		Sys_Error ("Host_Error_Line: %s",hosterrorstring2);	// dedicated servers exit
 
 	CL_Disconnect();
 	cls.demonum = -1;
@@ -148,15 +148,15 @@ Host_Quit_f
 */
 static void Host_Quit_f(cmd_state_t *cmd)
 {
-	if(host.state == host_shutdown)
-		Con_Printf("shutting down already!\n");
+	if (host.state == host_shutdown)
+		Con_Printf ("shutting down already!\n");
 	else
 		host.state = host_shutdown;
 }
 
 static void Host_Version_f(cmd_state_t *cmd)
 {
-	Con_Printf("Version: %s build %s\n", gamename, buildstring);
+	Con_Printf ("Version: %s build %s\n", gamename, buildstring);
 }
 
 static void Host_Framerate_c(cvar_t *var)
@@ -168,12 +168,12 @@ static void Host_Framerate_c(cvar_t *var)
 // TODO: Find a better home for this.
 static void SendCvar_f(cmd_state_t *cmd)
 {
-	if(cmd->source == src_local && host.hook.SV_SendCvar)
+	if (cmd->source == src_local && host.hook.SV_SendCvar)
 	{
 		host.hook.SV_SendCvar(cmd);
 		return;
 	}
-	if(cmd->source == src_client && host.hook.CL_SendCvar)
+	if (cmd->source == src_client && host.hook.CL_SendCvar)
 	{
 		host.hook.CL_SendCvar(cmd);
 		return;
@@ -199,7 +199,7 @@ void Host_SaveConfig(const char *file)
 		f = FS_OpenRealFile(file, "wb", false);
 		if (!f)
 		{
-			Con_Printf(CON_ERROR "Couldn't write %s.\n", file);
+			Con_Printf (CON_ERROR "Couldn't write %s.\n", file);
 			return;
 		}
 
@@ -227,7 +227,7 @@ static void Host_SaveConfig_f(cmd_state_t* cmd)
 		}
 	} // if argc > 1
 
-	Con_PrintLinef("Saving to %s", vabuf);
+	Con_PrintLinef ("Saving to %s", vabuf);
 
 	Host_SaveConfig(file);
 }
@@ -315,7 +315,7 @@ static void Host_InitSession(void)
 	// load the session ID into the read-only cvar
 	if ((i = Sys_CheckParm("-sessionid")) && (i + 1 < sys.argc))
 	{
-		if(sys.argv[i+1][0] == '.')
+		if (sys.argv[i+1][0] == '.')
 			Cvar_SetQuick(&sessionid, sys.argv[i+1]);
 		else
 		{
@@ -328,25 +328,25 @@ static void Host_InitSession(void)
 
 void Host_LockSession(void)
 {
-	if(locksession_run)
+	if (locksession_run)
 		return;
 	locksession_run = true;
-	if(locksession.integer != 0 && !Sys_CheckParm("-readonly"))
+	if (locksession.integer != 0 && !Sys_CheckParm("-readonly"))
 	{
 		char vabuf[1024];
 		char *p = va(vabuf, sizeof(vabuf), "%slock%s", *fs_userdir ? fs_userdir : fs_basedir, sessionid.string);
 		FS_CreatePath(p);
 		locksession_fh = FS_SysOpen(p, "wl", false);
 		// TODO maybe write the pid into the lockfile, while we are at it? may help server management tools
-		if(!locksession_fh)
+		if (!locksession_fh)
 		{
-			if(locksession.integer == 2)
+			if (locksession.integer == 2)
 			{
-				Con_Printf(CON_WARN "WARNING: session lock %s could not be acquired. Please run with -sessionid and an unique session name. Continuing anyway.\n", p);
+				Con_Printf (CON_WARN "WARNING: session lock %s could not be acquired. Please run with -sessionid and an unique session name. Continuing anyway.\n", p);
 			}
 			else
 			{
-				Sys_Error("session lock %s could not be acquired. Please run with -sessionid and an unique session name.\n", p);
+				Sys_Error ("session lock %s could not be acquired. Please run with -sessionid and an unique session name.\n", p);
 			}
 		}
 	}
@@ -354,11 +354,11 @@ void Host_LockSession(void)
 
 void Host_UnlockSession(void)
 {
-	if(!locksession_run)
+	if (!locksession_run)
 		return;
 	locksession_run = false;
 
-	if(locksession_fh)
+	if (locksession_fh)
 	{
 		FS_Close(locksession_fh);
 		// NOTE: we can NOT unlink the lock here, as doing so would
@@ -376,7 +376,7 @@ Host_Init
 static void Host_Init (void)
 {
 	int i;
-	const char* os;
+	const char *os;
 	char vabuf[1024];
 
 	host.hook.ConnectLocal = NULL;
@@ -388,7 +388,7 @@ static void Host_Init (void)
 	host.state = host_init;
 
 	if (setjmp(host.abortframe)) // Huh?!
-		Sys_Error("Engine initialization failed. Check the console (if available) for additional information.\n");
+		Sys_Error ("Engine initialization failed. Check the console (if available) for additional information.\n");
 
 	if (Sys_CheckParm("-profilegameonly"))
 		Sys_AllowProfiling(false);
@@ -458,7 +458,7 @@ static void Host_Init (void)
 	// construct a version string for the corner of the console
 	os = DP_OS_NAME;
 	dpsnprintf (engineversion, sizeof (engineversion), "%s %s %s", gamename, os, buildstring);
-	Con_Printf("%s\n", engineversion);
+	Con_Printf ("%s\n", engineversion);
 
 	// Baker r8002: Zircon console name
 	const char *sfmt = "%s " // ...
@@ -478,7 +478,7 @@ static void Host_Init (void)
 
 	c_dpsnprintf2 (engineversionshort, sfmt, gamename, buildstringshort);
 
-	Con_PrintLinef ("%s", engineversion);
+	//Con_PrintLinef ("%s", engineversion);
 
 	// initialize process nice level
 	Sys_InitProcessNice();
@@ -573,14 +573,15 @@ static void Host_Init (void)
 	if (cls.state == ca_dedicated || Sys_CheckParm("-listen"))
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying)
 	{
-		Cbuf_AddText(cmd_local, "startmap_dm\n");
+		Cbuf_AddTextLine (cmd_local, "startmap_dm");
 		Cbuf_Execute(cmd_local->cbuf);
 	}
 
-	if (!sv.active && !cls.demoplayback && !cls.connect_trying)
-	{
+	if (!sv.active && !cls.demoplayback && !cls.connect_trying) {
 #ifdef CONFIG_MENU
-		Cbuf_AddText(cmd_local, "togglemenu 1\n");
+		extern cvar_t nostartdemos;
+		if (!nostartdemos.value)
+			Cbuf_AddTextLine (cmd_local, "togglemenu 1");
 #endif
 		Cbuf_Execute(cmd_local->cbuf);
 	}
@@ -615,7 +616,7 @@ void Host_Shutdown(void)
 	}
 	isdown = true;
 
-	if(cls.state != ca_dedicated)
+	if (cls.state != ca_dedicated)
 		CL_Shutdown();
 
 	// end the server thread
@@ -623,7 +624,7 @@ void Host_Shutdown(void)
 		SV_StopThread();
 
 	// shut down local server if active
-	if(host.hook.SV_Shutdown)
+	if (host.hook.SV_Shutdown)
 		host.hook.SV_Shutdown();
 
 	// AK shutdown PRVM
@@ -664,7 +665,7 @@ static double Host_Frame(double time)
 	TaskQueue_Frame(false);
 
 	// keep the random time dependent, but not when playing demos/benchmarking
-	if(!*sv_random_seed.string && !host.restless)
+	if (!*sv_random_seed.string && !host.restless)
 		rand();
 
 	NetConn_UpdateSockets();
@@ -706,7 +707,7 @@ static inline double Host_Sleep(double time)
 	if (time < 1 || host.restless)
 		return 0; // not sleeping this frame
 
-	if(host_maxwait.value <= 0)
+	if (host_maxwait.value <= 0)
 		time = min(time, 1000000.0);
 	else
 		time = min(time, host_maxwait.value * 1000.0);
@@ -742,12 +743,12 @@ static inline double Host_UpdateTime (double newtime, double oldtime)
 	{
 		// warn if it's significant
 		if (time < -0.01)
-			Con_Printf(CON_WARN "Host_UpdateTime: time stepped backwards (went from %f to %f, difference %f)\n", oldtime, newtime, time);
+			Con_Printf (CON_WARN "Host_UpdateTime: time stepped backwards (went from %f to %f, difference %f)\n", oldtime, newtime, time);
 		time = 0;
 	}
 	else if (time >= 1800)
 	{
-		Con_Printf(CON_WARN "Host_UpdateTime: time stepped forward (went from %f to %f, difference %f)\n", oldtime, newtime, time);
+		Con_Printf (CON_WARN "Host_UpdateTime: time stepped forward (went from %f to %f, difference %f)\n", oldtime, newtime, time);
 		time = 0;
 	}
 

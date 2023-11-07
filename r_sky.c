@@ -92,7 +92,7 @@ static void R_UnloadSkyBox(void)
 		skyboxskinframe[i] = NULL;
 	}
 	if (c && developer_loading.integer)
-		Con_Printf("unloading skybox\n");
+		Con_Printf ("unloading skybox\n");
 }
 
 static int R_LoadSkyBox(void)
@@ -141,7 +141,7 @@ static int R_LoadSkyBox(void)
 		return false;
 
 	if (developer_loading.integer)
-		Con_Printf("loading skybox \"%s\"\n", name);
+		Con_Printf ("loading skybox \"%s\"\n", name);
 
 	return true;
 }
@@ -153,7 +153,7 @@ int R_SetSkyBox(const char *sky)
 
 	if (strlen(sky) > 1000)
 	{
-		Con_Printf("sky name too long (%i, max is 1000)\n", (int)strlen(sky));
+		Con_PrintLinef ("sky name too long (%d, max is 1000)", (int)strlen(sky));
 		return false;
 	}
 
@@ -169,23 +169,24 @@ static void LoadSky_f(cmd_state_t *cmd)
 	{
 	case 1:
 		if (skyname[0])
-			Con_Printf("current sky: %s\n", skyname);
+			Con_PrintLinef ("current sky: %s", skyname);
 		else
-			Con_Print("no skybox has been set\n");
+			Con_PrintLinef ("no skybox has been set");
 		break;
 	case 2:
-		if (R_SetSkyBox(Cmd_Argv(cmd, 1)))
-		{
+		// Baker r1451: reduce spam to console, the skybox messages were printing during single player games
+		// for games like Nehahra when they change the sky, made this dprint
+		if (R_SetSkyBox(Cmd_Argv(cmd, 1))) {
 			if (skyname[0])
-				Con_Printf("skybox set to %s\n", skyname);
+				Con_DPrintLinef ("skybox set to %s", skyname);
 			else
-				Con_Print("skybox disabled\n");
+				Con_DPrintLinef ("skybox disabled");
 		}
 		else
-			Con_Printf(CON_ERROR "failed to load skybox %s\n", Cmd_Argv(cmd, 1));
+			Con_PrintLinef (CON_ERROR "failed to load skybox %s", Cmd_Argv(cmd, 1));
 		break;
 	default:
-		Con_Print("usage: loadsky skyname\n");
+		Con_PrintLinef ("usage: loadsky skyname");
 		break;
 	}
 }
@@ -307,7 +308,7 @@ static void R_SkyBox(void)
 	int i;
 	RSurf_ActiveCustomEntity(&skymatrix, &skyinversematrix, 0, 0, 1, 1, 1, 1, 6*4, skyboxvertex3f, skyboxtexcoord2f, NULL, NULL, NULL, NULL, 6*2, skyboxelement3i, skyboxelement3s, false, false);
 	for (i = 0;i < 6;i++)
-		if(skyboxskinframe[i])
+		if (skyboxskinframe[i])
 			R_DrawCustomSurface(skyboxskinframe[i], &identitymatrix, MATERIALFLAG_SKY | MATERIALFLAG_FULLBRIGHT | MATERIALFLAG_NOCULLFACE | MATERIALFLAG_NODEPTHTEST, i*4, 4, i*2, 2, false, false, false);
 }
 

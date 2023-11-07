@@ -22,7 +22,7 @@
     <ProjectGuid>{72D93E63-FDBB-4AA3-B42B-FAADA6D7F5B2}</ProjectGuid>
     <RootNamespace>darkplacessdl2</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>zircon_dpbeta</ProjectName>
+    <ProjectName>zircon_dpbeta_x</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -317,6 +317,7 @@
     <ClCompile Include="zone.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="baker.h" />
     <ClInclude Include="bih.h" />
     <ClInclude Include="bspfile.h" />
     <ClInclude Include="cap.h" />
@@ -329,6 +330,8 @@
     <ClInclude Include="cl_particles.h" />
     <ClInclude Include="cl_screen.h" />
     <ClInclude Include="cl_video.h" />
+    <ClInclude Include="cl_video_jamdecode.c.h" />
+    <ClInclude Include="cl_video_libavw.c.h" />
     <ClInclude Include="cl_video_libavw.h" />
     <ClInclude Include="client.h" />
     <ClInclude Include="clprogdefs.h" />
@@ -340,6 +343,7 @@
     <ClInclude Include="com_list.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="console.h" />
+    <ClInclude Include="console_autocomplete.c.h" />
     <ClInclude Include="crypto.h" />
     <ClInclude Include="csprogs.h" />
     <ClInclude Include="curves.h" />
@@ -369,6 +373,30 @@
     <ClInclude Include="matrixlib.h" />
     <ClInclude Include="mdfour.h" />
     <ClInclude Include="menu.h" />
+    <ClInclude Include="menu_color.c.h" />
+    <ClInclude Include="menu_effects.c.h" />
+    <ClInclude Include="menu_game.c.h" />
+    <ClInclude Include="menu_help.c.h" />
+    <ClInclude Include="menu_keys.c.h" />
+    <ClInclude Include="menu_lan.c.h" />
+    <ClInclude Include="menu_lighting.c.h" />
+    <ClInclude Include="menu_main.c.h" />
+    <ClInclude Include="menu_main_neh.c.h" />
+    <ClInclude Include="menu_main_zirc.c.h" />
+    <ClInclude Include="menu_maps.c.h" />
+    <ClInclude Include="menu_modlist.c.h" />
+    <ClInclude Include="menu_multiplayer.c.h" />
+    <ClInclude Include="menu_options_classic.c.h" />
+    <ClInclude Include="menu_options_nova.c.h" />
+    <ClInclude Include="menu_options_nova_extra.c.h" />
+    <ClInclude Include="menu_qc.c.h" />
+    <ClInclude Include="menu_quit.c.h" />
+    <ClInclude Include="menu_saveload.c.h" />
+    <ClInclude Include="menu_setup.c.h" />
+    <ClInclude Include="menu_single_player.c.h" />
+    <ClInclude Include="menu_slist.c.h" />
+    <ClInclude Include="menu_video_classic.c.h" />
+    <ClInclude Include="menu_video_nova.c.h" />
     <ClInclude Include="meshqueue.h" />
     <ClInclude Include="mod_skeletal_animatevertices_generic.h" />
     <ClInclude Include="mod_skeletal_animatevertices_sse.h" />

@@ -36,7 +36,7 @@ int matchpattern_with_separator(const char *in, const char *pattern, int caseins
 			pattern++;
 			break;
 		case '*': // match anything until following string
-			if(wildcard_least_one)
+			if (wildcard_least_one)
 			{
 				if (*in == 0 || strchr(separators, *in))
 					return 0; // no match
@@ -129,17 +129,17 @@ static int stringlistsort_cmp(const void *a, const void *b)
 void stringlistsort(stringlist_t *list, qbool uniq)
 {
 	int i, j;
-	if(list->numstrings < 1)
+	if (list->numstrings < 1)
 		return;
 	qsort(&list->strings[0], list->numstrings, sizeof(list->strings[0]), stringlistsort_cmp);
-	if(uniq)
+	if (uniq)
 	{
 		// i: the item to read
 		// j: the item last written
 		for (i = 1, j = 0; i < list->numstrings; ++i)
 		{
 			char *save;
-			if(!strcasecmp(list->strings[i], list->strings[j]))
+			if (String_Does_Match_Caseless(list->strings[i], list->strings[j]))
 				continue;
 			++j;
 			save = list->strings[j];
@@ -182,7 +182,7 @@ void listdirectory(stringlist_t *list, const char *basepath, const char *path)
 	fromwtf8(pattern, (int)strlen(pattern), patternw, BUFSIZE);
 	// ask for the directory listing handle
 	hFile = FindFirstFileW(patternw, &n_file);
-	if(hFile == INVALID_HANDLE_VALUE)
+	if (hFile == INVALID_HANDLE_VALUE)
 		return;
 	do {
 		filenamew = n_file.cFileName;

@@ -277,20 +277,20 @@ static void CL_ParseStartSoundPacket(int largesoundindex)
 
 	if (sound_num < 0 || sound_num >= MAX_SOUNDS)
 	{
-		Con_Printf("CL_ParseStartSoundPacket: sound_num (%i) >= MAX_SOUNDS (%i)\n", sound_num, MAX_SOUNDS);
+		Con_PrintLinef ("CL_ParseStartSoundPacket: sound_num (%d) >= MAX_SOUNDS (%d)", sound_num, MAX_SOUNDS);
 		return;
 	}
 
 	if (ent >= MAX_EDICTS)
 	{
-		Con_Printf("CL_ParseStartSoundPacket: ent = %i", ent);
+		Con_PrintLinef ("CL_ParseStartSoundPacket: ent = %d", ent);
 		return;
 	}
 
 	if (ent >= cl.max_entities)
 		CL_ExpandEntities(ent);
 
-	if( !CL_VM_Event_Sound(sound_num, nvolume / 255.0f, channel, attenuation, ent, pos, fflags, speed) )
+	if ( !CL_VM_Event_Sound(sound_num, nvolume / 255.0f, channel, attenuation, ent, pos, fflags, speed) )
 		S_StartSound_StartPosition_Flags (ent, channel, cl.sound_precache[sound_num], pos, nvolume/255.0f, attenuation, 0, fflags, speed);
 }
 
@@ -328,12 +328,11 @@ void CL_KeepaliveMessage (qbool readmessages)
 	countdownmsg -= deltatime;
 	countdownupdate -= deltatime;
 
-	if(!thisrecursive)
-	{
-		if(cls.state != ca_dedicated)
-		{
-			if(countdownupdate <= 0) // check if time stepped backwards
+	if (!thisrecursive) {
+		if (cls.state != ca_dedicated) {
+			if (countdownupdate <= 0) { // check if time stepped backwards
 				countdownupdate = 2;
+			}
 		}
 	}
 
@@ -404,22 +403,22 @@ void CL_ParseEntityLump(char *entdata)
 		if (!COM_ParseToken_Simple(&data, false, false, true))
 			return; // error
 		strlcpy (value, com_token, sizeof (value));
-		if (!strcmp("sky", key))
+		if (String_Does_Match("sky", key))
 		{
 			loadedsky = true;
 			R_SetSkyBox(value);
 		}
-		else if (!strcmp("skyname", key)) // non-standard, introduced by QuakeForge... sigh.
+		else if (String_Does_Match("skyname", key)) // non-standard, introduced by QuakeForge... sigh.
 		{
 			loadedsky = true;
 			R_SetSkyBox(value);
 		}
-		else if (!strcmp("qlsky", key)) // non-standard, introduced by QuakeLives (EEK)
+		else if (String_Does_Match("qlsky", key)) // non-standard, introduced by QuakeLives (EEK)
 		{
 			loadedsky = true;
 			R_SetSkyBox(value);
 		}
-		else if (!strcmp("fog", key))
+		else if (String_Does_Match("fog", key))
 		{
 			FOG_clear(); // so missing values get good defaults
 			r_refdef.fog_start = 0;
@@ -428,8 +427,11 @@ void CL_ParseEntityLump(char *entdata)
 			r_refdef.fog_height = 1<<30;
 			r_refdef.fog_fadedepth = 128;
 #if _MSC_VER >= 1400
-#define sscanf sscanf_s
+	#define sscanf sscanf_s
 #endif
+			// Baker r1201: FitzQuake r_skyfog
+			r_refdef.fog_alpha = 0;
+
 			sscanf(value, "%f %f %f %f %f %f %f %f %f", 
 				&r_refdef.fog_density0, 
 				&r_refdef.fog_red, 
@@ -448,25 +450,25 @@ void CL_ParseEntityLump(char *entdata)
 				r_refdef.fog_density = r_refdef.fog_density0;
 			}
 		}
-		else if (!strcmp("fog_density", key))
+		else if (String_Does_Match("fog_density", key))
 			r_refdef.fog_density = atof(value);
-		else if (!strcmp("fog_red", key))
+		else if (String_Does_Match("fog_red", key))
 			r_refdef.fog_red = atof(value);
-		else if (!strcmp("fog_green", key))
+		else if (String_Does_Match("fog_green", key))
 			r_refdef.fog_green = atof(value);
-		else if (!strcmp("fog_blue", key))
+		else if (String_Does_Match("fog_blue", key))
 			r_refdef.fog_blue = atof(value);
-		else if (!strcmp("fog_alpha", key))
+		else if (String_Does_Match("fog_alpha", key))
 			r_refdef.fog_alpha = atof(value);
-		else if (!strcmp("fog_start", key))
+		else if (String_Does_Match("fog_start", key))
 			r_refdef.fog_start = atof(value);
-		else if (!strcmp("fog_end", key))
+		else if (String_Does_Match("fog_end", key))
 			r_refdef.fog_end = atof(value);
-		else if (!strcmp("fog_height", key))
+		else if (String_Does_Match("fog_height", key))
 			r_refdef.fog_height = atof(value);
-		else if (!strcmp("fog_fadedepth", key))
+		else if (String_Does_Match("fog_fadedepth", key))
 			r_refdef.fog_fadedepth = atof(value);
-		else if (!strcmp("fog_heighttexture", key))
+		else if (String_Does_Match("fog_heighttexture", key))
 		{
 			FOG_clear(); // so missing values get good defaults
 #if _MSC_VER >= 1400
@@ -495,9 +497,8 @@ static void CL_SetupWorldModel(void)
 
 	// make sure the cl.worldname and related cvars are set up now that we know the world model name
 	// set up csqc world for collision culling
-	if (cl.worldmodel)
-	{
-		strlcpy(cl.worldname, cl.worldmodel->model_name, sizeof(cl.worldname));
+	if (cl.worldmodel) {
+		c_strlcpy(cl.worldname, cl.worldmodel->model_name);
 		FS_StripExtension(cl.worldname, cl.worldnamenoextension, sizeof(cl.worldnamenoextension));
 		strlcpy(cl.worldbasename, !strncmp(cl.worldnamenoextension, "maps/", 5) ? cl.worldnamenoextension + 5 : cl.worldnamenoextension, sizeof(cl.worldbasename));
 		Cvar_SetQuick(&cl_worldmessage, cl.worldmessage);
@@ -563,7 +564,7 @@ static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 	// download messages in a demo would be bad
 	if (cls.demorecording)
 	{
-		Con_Printf("Unable to download \"%s\" when recording.\n", filename);
+		Con_Printf ("Unable to download \"%s\" when recording.\n", filename);
 		return true;
 	}
 
@@ -572,7 +573,7 @@ static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 		return true;
 
 	strlcpy(cls.qw_downloadname, filename, sizeof(cls.qw_downloadname));
-	Con_Printf("Downloading %s\n", filename);
+	Con_Printf ("Downloading %s\n", filename);
 
 	if (!cls.qw_downloadmemory)
 	{
@@ -594,7 +595,7 @@ static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 static void QW_CL_ProcessUserInfo(int slot);
 static void QW_CL_RequestNextDownload(void)
 {
-	int i;
+	int j;
 	char vabuf[1024];
 
 	// clear name of file that just finished
@@ -612,7 +613,7 @@ static void QW_CL_RequestNextDownload(void)
 		break;
 	case dl_skin:
 		if (cls.qw_downloadnumber == 0)
-			Con_Printf("Checking skins...\n");
+			Con_Printf ("Checking skins...\n");
 		for (;cls.qw_downloadnumber < cl.maxclients;cls.qw_downloadnumber++)
 		{
 			if (!cl.scores[cls.qw_downloadnumber].name[0])
@@ -625,8 +626,8 @@ static void QW_CL_RequestNextDownload(void)
 		cls.qw_downloadtype = dl_none;
 
 		// load any newly downloaded skins
-		for (i = 0;i < cl.maxclients;i++)
-			QW_CL_ProcessUserInfo(i);
+		for (j = 0;j < cl.maxclients;j++)
+			QW_CL_ProcessUserInfo(j);
 
 		// if we're still in signon stages, request the next one
 		if (cls.signon != SIGNONS)
@@ -634,13 +635,13 @@ static void QW_CL_RequestNextDownload(void)
 			cls.signon = SIGNONS-1;
 			// we'll go to SIGNONS when the first entity update is received
 			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "begin %i", cl.qw_servercount));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "begin %d", cl.qw_servercount));
 		}
 		break;
 	case dl_model:
 		if (cls.qw_downloadnumber == 0)
 		{
-			Con_Printf("Checking models...\n");
+			Con_PrintLinef ("Checking models...");
 			cls.qw_downloadnumber = 1;
 		}
 
@@ -649,13 +650,13 @@ static void QW_CL_RequestNextDownload(void)
 			// skip submodels
 			if (cl.model_name[cls.qw_downloadnumber][0] == '*')
 				continue;
-			if (!strcmp(cl.model_name[cls.qw_downloadnumber], "progs/spike.mdl"))
+			if (String_Does_Match(cl.model_name[cls.qw_downloadnumber], "progs/spike.mdl"))
 				cl.qw_modelindex_spike = cls.qw_downloadnumber;
-			if (!strcmp(cl.model_name[cls.qw_downloadnumber], "progs/player.mdl"))
+			if (String_Does_Match(cl.model_name[cls.qw_downloadnumber], "progs/player.mdl"))
 				cl.qw_modelindex_player = cls.qw_downloadnumber;
-			if (!strcmp(cl.model_name[cls.qw_downloadnumber], "progs/flag.mdl"))
+			if (String_Does_Match(cl.model_name[cls.qw_downloadnumber], "progs/flag.mdl"))
 				cl.qw_modelindex_flag = cls.qw_downloadnumber;
-			if (!strcmp(cl.model_name[cls.qw_downloadnumber], "progs/s_explod.spr"))
+			if (String_Does_Match(cl.model_name[cls.qw_downloadnumber], "progs/s_explod.spr"))
 				cl.qw_modelindex_s_explod = cls.qw_downloadnumber;
 			// check if we need to download the file, and return if so
 			if (!QW_CL_CheckOrDownloadFile(cl.model_name[cls.qw_downloadnumber]))
@@ -668,12 +669,14 @@ static void QW_CL_RequestNextDownload(void)
 		// anything that isn't needed
 		if (!sv.active)
 			Mod_ClearUsed();
-		for (i = 1;i < MAX_MODELS && cl.model_name[i][0];i++)
-			Mod_FindName(cl.model_name[i], cl.model_name[i][0] == '*' ? cl.model_name[1] : NULL);
+
+		for (j = 1; j < MAX_MODELS && cl.model_name[j][0]; j++)
+			Mod_FindName(cl.model_name[j], cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL);
 		// precache any models used by the client (this also marks them used)
 		cl.model_bolt = Mod_ForName("progs/bolt.mdl", false, false, NULL);
 		cl.model_bolt2 = Mod_ForName("progs/bolt2.mdl", false, false, NULL);
 		cl.model_bolt3 = Mod_ForName("progs/bolt3.mdl", false, false, NULL);
+
 		cl.model_beam = Mod_ForName("progs/beam.mdl", false, false, NULL);
 
 		// we purge the models and sounds later in CL_SignonReply
@@ -684,12 +687,12 @@ static void QW_CL_RequestNextDownload(void)
 		// world model
 		cl.model_precache[1] = Mod_ForName(cl.model_name[1], false, false, NULL);
 		if (cl.model_precache[1]->Draw == NULL)
-			Con_Printf("Map %s could not be found or downloaded\n", cl.model_name[1]);
+			Con_Printf ("Map %s could not be found or downloaded\n", cl.model_name[1]);
 
 		// normal models
-		for (i = 2;i < MAX_MODELS && cl.model_name[i][0];i++)
-			if ((cl.model_precache[i] = Mod_ForName(cl.model_name[i], false, false, cl.model_name[i][0] == '*' ? cl.model_name[1] : NULL))->Draw == NULL)
-				Con_Printf("Model %s could not be found or downloaded\n", cl.model_name[i]);
+		for (j = 2;j < MAX_MODELS && cl.model_name[j][0];j++)
+			if ((cl.model_precache[j] = Mod_ForName(cl.model_name[j], false, false, cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL))->Draw == NULL)
+				Con_Printf ("Model %s could not be found or downloaded\n", cl.model_name[j]);
 
 		// check memory integrity
 		Mem_CheckSentinelsGlobal();
@@ -699,12 +702,12 @@ static void QW_CL_RequestNextDownload(void)
 		CL_SetupWorldModel();
 
 		// add pmodel/emodel CRCs to userinfo
-		CL_SetInfo("pmodel", va(vabuf, sizeof(vabuf), "%i", FS_CRCFile("progs/player.mdl", NULL)), true, true, true, true);
-		CL_SetInfo("emodel", va(vabuf, sizeof(vabuf), "%i", FS_CRCFile("progs/eyes.mdl", NULL)), true, true, true, true);
+		CL_SetInfo("pmodel", va(vabuf, sizeof(vabuf), "%d", FS_CRCFile("progs/player.mdl", NULL)), true, true, true, true);
+		CL_SetInfo("emodel", va(vabuf, sizeof(vabuf), "%d", FS_CRCFile("progs/eyes.mdl", NULL)), true, true, true, true);
 
 		// done checking sounds and models, send a prespawn command now
 		MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "prespawn %i 0 %i", cl.qw_servercount, cl.model_precache[1]->brush.qw_md4sum2));
+		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "prespawn %d 0 %d", cl.qw_servercount, cl.model_precache[1]->brush.qw_md4sum2));
 
 		if (cls.qw_downloadmemory)
 		{
@@ -718,7 +721,7 @@ static void QW_CL_RequestNextDownload(void)
 	case dl_sound:
 		if (cls.qw_downloadnumber == 0)
 		{
-			Con_Printf("Checking sounds...\n");
+			Con_Printf ("Checking sounds...\n");
 			cls.qw_downloadnumber = 1;
 		}
 
@@ -744,8 +747,8 @@ static void QW_CL_RequestNextDownload(void)
 		cl.sfx_r_exp3 = S_PrecacheSound(cl_sound_r_exp3.string, false, true);
 
 		// sounds used by the game
-		for (i = 1;i < MAX_SOUNDS && cl.sound_name[i][0];i++)
-			cl.sound_precache[i] = S_PrecacheSound(cl.sound_name[i], true, true);
+		for (j = 1;j < MAX_SOUNDS && cl.sound_name[j][0];j++)
+			cl.sound_precache[j] = S_PrecacheSound(cl.sound_name[j], true, true);
 
 		// we purge the models and sounds later in CL_SignonReply
 		//S_PurgeUnused();
@@ -755,11 +758,11 @@ static void QW_CL_RequestNextDownload(void)
 
 		// done with sound downloads, next we check models
 		MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "modellist %i %i", cl.qw_servercount, 0));
+		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "modellist %d %d", cl.qw_servercount, 0));
 		break;
 	case dl_none:
 	default:
-		Con_Printf("Unknown download type.\n");
+		Con_PrintLinef ("Unknown download type.");
 	}
 }
 
@@ -768,7 +771,7 @@ static void QW_CL_ParseDownload(void)
 	int size = (signed short)MSG_ReadShort(&cl_message);
 	int percent = MSG_ReadByte(&cl_message);
 
-	//Con_Printf("download %i %i%% (%i/%i)\n", size, percent, cls.qw_downloadmemorycursize, cls.qw_downloadmemorymaxsize);
+	//Con_Printf ("download %d %d%% (%d/%d)\n", size, percent, cls.qw_downloadmemorycursize, cls.qw_downloadmemorymaxsize);
 
 	// skip the download fragment if playing a demo
 	if (!cls.netcon)
@@ -780,13 +783,13 @@ static void QW_CL_ParseDownload(void)
 
 	if (size == -1)
 	{
-		Con_Printf("File not found.\n");
+		Con_Printf ("File not found.\n");
 		QW_CL_RequestNextDownload();
 		return;
 	}
 
 	if (cl_message.readcount + (unsigned short)size > cl_message.cursize)
-		Host_Error("corrupt download message\n");
+		Host_Error_Line ("corrupt download message");
 
 	// make sure the buffer is big enough to include this new fragment
 	if (!cls.qw_downloadmemory || cls.qw_downloadmemorymaxsize < cls.qw_downloadmemorycursize + size)
@@ -819,7 +822,7 @@ static void QW_CL_ParseDownload(void)
 	else
 	{
 		// finished file
-		Con_Printf("Downloaded \"%s\"\n", cls.qw_downloadname);
+		Con_Printf ("Downloaded \"%s\"\n", cls.qw_downloadname);
 
 		FS_WriteFile(cls.qw_downloadname, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
 
@@ -845,9 +848,9 @@ static void QW_CL_ParseModelList(void)
 			break;
 		nummodels++;
 		if (nummodels==MAX_MODELS)
-			Host_Error("Server sent too many model precaches");
+			Host_Error_Line ("Server sent too many model precaches");
 		if (strlen(str) >= MAX_QPATH)
-			Host_Error("Server sent a precache name of %i characters (max %i)", (int)strlen(str), MAX_QPATH - 1);
+			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
 		strlcpy(cl.model_name[nummodels], str, sizeof (cl.model_name[nummodels]));
 	}
 
@@ -855,7 +858,7 @@ static void QW_CL_ParseModelList(void)
 	if (n)
 	{
 		MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "modellist %i %i", cl.qw_servercount, n));
+		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "modellist %d %d", cl.qw_servercount, n));
 		return;
 	}
 
@@ -880,9 +883,9 @@ static void QW_CL_ParseSoundList(void)
 			break;
 		numsounds++;
 		if (numsounds==MAX_SOUNDS)
-			Host_Error("Server sent too many sound precaches");
+			Host_Error_Line ("Server sent too many sound precaches");
 		if (strlen(str) >= MAX_QPATH)
-			Host_Error("Server sent a precache name of %i characters (max %i)", (int)strlen(str), MAX_QPATH - 1);
+			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
 		strlcpy(cl.sound_name[numsounds], str, sizeof (cl.sound_name[numsounds]));
 	}
 
@@ -891,7 +894,7 @@ static void QW_CL_ParseSoundList(void)
 	if (n)
 	{
 		MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "soundlist %i %i", cl.qw_servercount, n));
+		MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "soundlist %d %d", cl.qw_servercount, n));
 		return;
 	}
 
@@ -916,7 +919,7 @@ static void QW_CL_Changing_f(cmd_state_t *cmd)
 	S_StopAllSounds();
 	cl.intermission = 0;
 	cls.signon = 1;	// not active anymore, but not disconnected
-	Con_Printf("\nChanging map...\n");
+	Con_Printf ("\nChanging map...\n");
 }
 
 void QW_CL_NextUpload_f(cmd_state_t *cmd)
@@ -937,14 +940,14 @@ void QW_CL_NextUpload_f(cmd_state_t *cmd)
 	MSG_WriteByte(&cls.netcon->message, percent);
 	SZ_Write(&cls.netcon->message, cls.qw_uploaddata + cls.qw_uploadpos, r);
 
-	Con_DPrintf("UPLOAD: %6d: %d written\n", cls.qw_uploadpos, r);
+	Con_DPrintf ("UPLOAD: %6d: %d written\n", cls.qw_uploadpos, r);
 
 	cls.qw_uploadpos += r;
 
 	if (cls.qw_uploadpos < cls.qw_uploadsize)
 		return;
 
-	Con_Printf("Upload completed\n");
+	Con_Printf ("Upload completed\n");
 
 	QW_CL_StopUpload_f(cmd);
 }
@@ -958,7 +961,7 @@ void QW_CL_StartUpload(unsigned char *data, int size)
 	// abort existing upload if in progress
 	QW_CL_StopUpload_f(cmd_local);
 
-	Con_DPrintf("Starting upload of %d bytes...\n", size);
+	Con_DPrintf ("Starting upload of %d bytes...\n", size);
 
 	cls.qw_uploaddata = (unsigned char *)Mem_Alloc(cls.permanentmempool, size);
 	memcpy(cls.qw_uploaddata, data, size);
@@ -1007,7 +1010,7 @@ static void QW_CL_UpdateUserInfo(void)
 	slot = MSG_ReadByte(&cl_message);
 	if (slot >= cl.maxclients)
 	{
-		Con_Printf("svc_updateuserinfo >= cl.maxclients\n");
+		Con_Printf ("svc_updateuserinfo >= cl.maxclients\n");
 		MSG_ReadLong(&cl_message);
 		MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
 		return;
@@ -1028,7 +1031,7 @@ static void QW_CL_SetInfo(void)
 	strlcpy(value, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof(value));
 	if (slot >= cl.maxclients)
 	{
-		Con_Printf("svc_setinfo >= cl.maxclients\n");
+		Con_Printf ("svc_setinfo >= cl.maxclients\n");
 		return;
 	}
 	InfoString_SetValue(cl.scores[slot].qw_userinfo, sizeof(cl.scores[slot].qw_userinfo), key, value);
@@ -1043,7 +1046,7 @@ static void QW_CL_ServerInfo(void)
 	char temp[32];
 	strlcpy(key, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof(key));
 	strlcpy(value, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof(value));
-	Con_DPrintf("SERVERINFO: %s=%s\n", key, value);
+	Con_DPrintf ("SERVERINFO: %s=%s\n", key, value);
 	InfoString_SetValue(cl.qw_serverinfo, sizeof(cl.qw_serverinfo), key, value);
 	InfoString_GetValue(cl.qw_serverinfo, "teamplay", temp, sizeof(temp));
 	cl.qw_teamplay = atoi(temp);
@@ -1102,7 +1105,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 		return;
 
 	// this would be a good place to do curl downloads
-	if(Curl_Have_forthismap())
+	if (Curl_Have_forthismap())
 	{
 		Curl_Register_predownload(); // come back later
 		return;
@@ -1110,7 +1113,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 
 	// if we got here...
 	// curl is done, so let's start with the business
-	if(!cl.loadbegun)
+	if (!cl.loadbegun)
 		SCR_PushLoadingScreen("Loading precaches", 1);
 	cl.loadbegun = true;
 
@@ -1129,10 +1132,10 @@ static void CL_BeginDownloads(qbool aborteddownload)
 		 && csqc_progcrc.integer >= 0
 		 && cl_serverextension_download.integer
 		 && (FS_CRCFile(csqc_progname.string, &progsize) != csqc_progcrc.integer || ((int)progsize != csqc_progsize.integer && csqc_progsize.integer != -1))
-		 && !FS_FileExists(va(vabuf, sizeof(vabuf), "dlcache/%s.%i.%i", csqc_progname.string, csqc_progsize.integer, csqc_progcrc.integer)))
+		 && !FS_FileExists(va(vabuf, sizeof(vabuf), "dlcache/%s.%d.%d", csqc_progname.string, csqc_progsize.integer, csqc_progcrc.integer)))
 		{
-			Con_Printf("Downloading new CSQC code to dlcache/%s.%i.%i\n", csqc_progname.string, csqc_progsize.integer, csqc_progcrc.integer);
-			if(cl_serverextension_download.integer == 2 && FS_HasZlib())
+			Con_Printf ("Downloading new CSQC code to dlcache/%s.%d.%d\n", csqc_progname.string, csqc_progsize.integer, csqc_progcrc.integer);
+			if (cl_serverextension_download.integer == 2 && FS_HasZlib())
 				CL_ForwardToServer(va(vabuf, sizeof(vabuf), "download %s deflate", csqc_progname.string));
 			else
 				CL_ForwardToServer(va(vabuf, sizeof(vabuf), "download %s", csqc_progname.string));
@@ -1143,7 +1146,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 	if (cl.loadmodel_current < cl.loadmodel_total)
 	{
 		// loading models
-		if(cl.loadmodel_current == 1)
+		if (cl.loadmodel_current == 1)
 		{
 			// worldmodel counts as 16 models (15 + world model setup), for better progress bar
 			SCR_PushLoadingScreen("Loading precached models",
@@ -1159,8 +1162,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 				)
 			);
 		}
-		for (;cl.loadmodel_current < cl.loadmodel_total;cl.loadmodel_current++)
-		{
+		for (; cl.loadmodel_current < cl.loadmodel_total;cl.loadmodel_current++) {
 			SCR_PushLoadingScreen(cl.model_name[cl.loadmodel_current],
 				(
 					(cl.loadmodel_current == 1) ? LOADPROGRESSWEIGHT_WORLDMODEL : LOADPROGRESSWEIGHT_MODEL
@@ -1173,7 +1175,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 			if (cl.model_precache[cl.loadmodel_current] && cl.model_precache[cl.loadmodel_current]->Draw)
 			{
 				SCR_PopLoadingScreen(false);
-				if(cl.loadmodel_current == 1)
+				if (cl.loadmodel_current == 1)
 				{
 					SCR_PushLoadingScreen(cl.model_name[cl.loadmodel_current], 1.0 / cl.loadmodel_total);
 					SCR_PopLoadingScreen(false);
@@ -1187,7 +1189,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 				cl.model_precache[cl.loadmodel_current] = sv.models[cl.loadmodel_current];
 			else
 			{
-				if(cl.loadmodel_current == 1)
+				if (cl.loadmodel_current == 1)
 				{
 					// they'll be soon loaded, but make sure we apply freshly downloaded shaders from a curled pk3
 					Mod_FreeQ3Shaders();
@@ -1225,7 +1227,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 	if (cl.loadsound_current < cl.loadsound_total)
 	{
 		// loading sounds
-		if(cl.loadsound_current == 1)
+		if (cl.loadsound_current == 1)
 			SCR_PushLoadingScreen("Loading precached sounds",
 				(
 					cl.loadsound_total * LOADPROGRESSWEIGHT_SOUND
@@ -1252,7 +1254,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 		// finished loading sounds
 	}
 
-	if(IS_NEXUIZ_DERIVED(gamemode))
+	if (IS_NEXUIZ_DERIVED(gamemode))
 		Cvar_SetValueQuick(&cl_serverextension_download, false);
 		// in Nexuiz/Xonotic, the built in download protocol is kinda broken (misses lots
 		// of dependencies) anyway, and can mess around with the game directory;
@@ -1296,9 +1298,9 @@ static void CL_BeginDownloads(qbool aborteddownload)
 			if (cl.model_name[cl.downloadmodel_current][0] != '*' && strcmp(cl.model_name[cl.downloadmodel_current], "null") && !FS_FileExists(cl.model_name[cl.downloadmodel_current]))
 			{
 				if (cl.downloadmodel_current == 1)
-					Con_Printf("Map %s not found\n", cl.model_name[cl.downloadmodel_current]);
+					Con_Printf ("Map %s not found\n", cl.model_name[cl.downloadmodel_current]);
 				else
-					Con_Printf("Model %s not found\n", cl.model_name[cl.downloadmodel_current]);
+					Con_Printf ("Model %s not found\n", cl.model_name[cl.downloadmodel_current]);
 				// regarding the * check: don't try to download submodels
 				if (cl_serverextension_download.integer && cls.netcon && cl.model_name[cl.downloadmodel_current][0] != '*' && !sv.active)
 				{
@@ -1308,7 +1310,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 				}
 			}
 
-			if(cl.downloadmodel_current == 1)
+			if (cl.downloadmodel_current == 1)
 			{
 				// they'll be soon loaded, but make sure we apply freshly downloaded shaders from a curled pk3
 				Mod_FreeQ3Shaders();
@@ -1384,8 +1386,8 @@ static void CL_BeginDownloads_f(cmd_state_t *cmd)
 {
 	// prevent cl_begindownloads from being issued multiple times in one match
 	// to prevent accidentally cancelled downloads
-	if(cl.loadbegun)
-		Con_Printf("cl_begindownloads is only valid once per match\n");
+	if (cl.loadbegun)
+		Con_Printf ("cl_begindownloads is only valid once per match\n");
 	else
 		CL_BeginDownloads(false);
 }
@@ -1398,15 +1400,15 @@ static void CL_StopDownload(int size, int crc)
 		size_t existingsize;
 		const char *extension;
 
-		if(cls.qw_download_deflate)
+		if (cls.qw_download_deflate)
 		{
 			unsigned char *out;
 			size_t inflated_size;
 			out = FS_Inflate(cls.qw_downloadmemory, cls.qw_downloadmemorycursize, &inflated_size, tempmempool);
 			Mem_Free(cls.qw_downloadmemory);
-			if(out)
+			if (out)
 			{
-				Con_Printf("Inflated download: new size: %u (%g%%)\n", (unsigned)inflated_size, 100.0 - 100.0*(cls.qw_downloadmemorycursize / (float)inflated_size));
+				Con_Printf ("Inflated download: new size: %u (%g%%)\n", (unsigned)inflated_size, 100.0 - 100.0*(cls.qw_downloadmemorycursize / (float)inflated_size));
 				cls.qw_downloadmemory = out;
 				cls.qw_downloadmemorycursize = (int)inflated_size;
 			}
@@ -1414,13 +1416,13 @@ static void CL_StopDownload(int size, int crc)
 			{
 				cls.qw_downloadmemory = NULL;
 				cls.qw_downloadmemorycursize = 0;
-				Con_Printf("Cannot inflate download, possibly corrupt or zlib not present\n");
+				Con_Printf ("Cannot inflate download, possibly corrupt or zlib not present\n");
 			}
 		}
 
-		if(!cls.qw_downloadmemory)
+		if (!cls.qw_downloadmemory)
 		{
-			Con_Printf("Download \"%s\" is corrupt (see above!)\n", cls.qw_downloadname);
+			Con_Printf ("Download \"%s\" is corrupt (see above!)\n", cls.qw_downloadname);
 		}
 		else
 		{
@@ -1430,26 +1432,26 @@ static void CL_StopDownload(int size, int crc)
 			// save to disk only if we don't already have it
 			// (this is mainly for playing back demos)
 			existingcrc = FS_CRCFile(cls.qw_downloadname, &existingsize);
-			if (existingsize || IS_NEXUIZ_DERIVED(gamemode) || !strcmp(cls.qw_downloadname, csqc_progname.string))
+			if (existingsize || IS_NEXUIZ_DERIVED(gamemode) || String_Does_Match(cls.qw_downloadname, csqc_progname.string))
 				// let csprogs ALWAYS go to dlcache, to prevent "viral csprogs"; also, never put files outside dlcache for Nexuiz/Xonotic
 			{
 				if ((int)existingsize != size || existingcrc != crc)
 				{
 					// we have a mismatching file, pick another name for it
 					char name[MAX_QPATH*2];
-					dpsnprintf(name, sizeof(name), "dlcache/%s.%i.%i", cls.qw_downloadname, size, crc);
+					dpsnprintf(name, sizeof(name), "dlcache/%s.%d.%d", cls.qw_downloadname, size, crc);
 					if (!FS_FileExists(name))
 					{
-						Con_Printf("Downloaded \"%s\" (%i bytes, %i CRC)\n", name, size, crc);
+						Con_PrintLinef ("Downloaded " QUOTED_S " (%d bytes, %d CRC)", name, size, crc);
 						FS_WriteFile(name, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
-						if(!strcmp(cls.qw_downloadname, csqc_progname.string))
+						if (String_Does_Match(cls.qw_downloadname, csqc_progname.string))
 						{
-							if(cls.caughtcsprogsdata)
+							if (cls.caughtcsprogsdata)
 								Mem_Free(cls.caughtcsprogsdata);
 							cls.caughtcsprogsdata = (unsigned char *) Mem_Alloc(cls.permanentmempool, cls.qw_downloadmemorycursize);
 							memcpy(cls.caughtcsprogsdata, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
 							cls.caughtcsprogsdatasize = cls.qw_downloadmemorycursize;
-							Con_DPrintf("Buffered \"%s\"\n", name);
+							Con_DPrintf ("Buffered \"%s\"\n", name);
 						}
 					}
 				}
@@ -1461,17 +1463,17 @@ static void CL_StopDownload(int size, int crc)
 				// but if we already have a mismatching file we need to rename
 				// this new one, and if we already have this file in renamed form,
 				// we do nothing
-				Con_Printf("Downloaded \"%s\" (%i bytes, %i CRC)\n", cls.qw_downloadname, size, crc);
+				Con_PrintLinef ("Downloaded " QUOTED_S " (%d bytes, %d CRC)", cls.qw_downloadname, size, crc);
 				FS_WriteFile(cls.qw_downloadname, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
 				extension = FS_FileExtension(cls.qw_downloadname);
-				if (!strcasecmp(extension, "pak") || !strcasecmp(extension, "pk3") || !strcasecmp(extension, "dpk"))
+				if (String_Does_Match_Caseless(extension, "pak") || String_Does_Match_Caseless(extension, "pk3") || String_Does_Match_Caseless(extension, "dpk"))
 					FS_Rescan();
 			}
 		}
 	}
 	else if (cls.qw_downloadmemory && size)
 	{
-		Con_Printf("Download \"%s\" is corrupt (%i bytes, %i CRC, should be %i bytes, %i CRC), discarding\n", cls.qw_downloadname, size, crc, (int)cls.qw_downloadmemorycursize, (int)CRC_Block(cls.qw_downloadmemory, cls.qw_downloadmemorycursize));
+		Con_PrintLinef ("Download " QUOTED_S " is corrupt (%d bytes, %d CRC, should be %d bytes, %d CRC), discarding", cls.qw_downloadname, size, crc, (int)cls.qw_downloadmemorycursize, (int)CRC_Block(cls.qw_downloadmemory, cls.qw_downloadmemorycursize));
 		CL_BeginDownloads(true);
 	}
 
@@ -1486,18 +1488,18 @@ static void CL_StopDownload(int size, int crc)
 
 static void CL_ParseDownload(void)
 {
-	int i, start, size;
+	int j, start, size;
 	static unsigned char data[NET_MAXMESSAGE];
 	start = MSG_ReadLong(&cl_message);
 	size = (unsigned short)MSG_ReadShort(&cl_message);
 
 	// record the start/size information to ack in the next input packet
-	for (i = 0;i < CL_MAX_DOWNLOADACKS;i++)
+	for (j = 0;j < CL_MAX_DOWNLOADACKS;j++)
 	{
-		if (!cls.dp_downloadack[i].start && !cls.dp_downloadack[i].size)
+		if (!cls.dp_downloadack[j].start && !cls.dp_downloadack[j].size)
 		{
-			cls.dp_downloadack[i].start = start;
-			cls.dp_downloadack[i].size = size;
+			cls.dp_downloadack[j].start = start;
+			cls.dp_downloadack[j].size = size;
 			break;
 		}
 	}
@@ -1507,12 +1509,12 @@ static void CL_ParseDownload(void)
 	if (!cls.qw_downloadname[0])
 	{
 		if (size > 0)
-			Con_Printf("CL_ParseDownload: received %i bytes with no download active\n", size);
+			Con_PrintLinef ("CL_ParseDownload: received %d bytes with no download active", size);
 		return;
 	}
 
 	if (start + size > cls.qw_downloadmemorymaxsize)
-		Host_Error("corrupt download message\n");
+		Host_Error_Line ("corrupt download message");
 
 	// only advance cursize if the data is at the expected position
 	// (gaps are unacceptable)
@@ -1529,13 +1531,13 @@ static void CL_DownloadBegin_f(cmd_state_t *cmd)
 
 	if (size < 0 || size > 1<<30 || FS_CheckNastyPath(Cmd_Argv(cmd, 2), false))
 	{
-		Con_Printf("cl_downloadbegin: received bogus information\n");
+		Con_Printf ("cl_downloadbegin: received bogus information\n");
 		CL_StopDownload(0, 0);
 		return;
 	}
 
 	if (cls.qw_downloadname[0])
-		Con_Printf("Download of %s aborted\n", cls.qw_downloadname);
+		Con_Printf ("Download of %s aborted\n", cls.qw_downloadname);
 
 	CL_StopDownload(0, 0);
 
@@ -1546,9 +1548,9 @@ static void CL_DownloadBegin_f(cmd_state_t *cmd)
 	cls.qw_downloadnumber++;
 
 	cls.qw_download_deflate = false;
-	if(Cmd_Argc(cmd) >= 4)
+	if (Cmd_Argc(cmd) >= 4)
 	{
-		if(!strcmp(Cmd_Argv(cmd, 3), "deflate"))
+		if (String_Does_Match(Cmd_Argv(cmd, 3), "deflate"))
 			cls.qw_download_deflate = true;
 		// check further encodings here
 	}
@@ -1561,7 +1563,7 @@ static void CL_StopDownload_f(cmd_state_t *cmd)
 	Curl_CancelAll();
 	if (cls.qw_downloadname[0])
 	{
-		Con_Printf("Download of %s aborted\n", cls.qw_downloadname);
+		Con_Printf ("Download of %s aborted\n", cls.qw_downloadname);
 		CL_StopDownload(0, 0);
 	}
 	CL_BeginDownloads(true);
@@ -1571,7 +1573,7 @@ static void CL_DownloadFinished_f(cmd_state_t *cmd)
 {
 	if (Cmd_Argc(cmd) < 3)
 	{
-		Con_Printf("Malformed cl_downloadfinished command\n");
+		Con_Printf ("Malformed cl_downloadfinished command\n");
 		return;
 	}
 	CL_StopDownload(atoi(Cmd_Argv(cmd, 1)), atoi(Cmd_Argv(cmd, 2)));
@@ -1587,18 +1589,18 @@ static void CL_SendPlayerInfo(void)
 	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "name \"%s\"", cl_name.string));
 
 	MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
-	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "color %i %i", cl_topcolor.integer, cl_bottomcolor.integer));
+	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "color %d %d", cl_topcolor.integer, cl_bottomcolor.integer));
 
 	MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
-	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate %i", cl_rate.integer));
+	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate %d", cl_rate.integer));
 
 	MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
-	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate_burstsize %i", cl_rate_burstsize.integer));
+	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate_burstsize %d", cl_rate_burstsize.integer));
 
 	if (cl_pmodel.integer)
 	{
 		MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
-		MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "pmodel %i", cl_pmodel.integer));
+		MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "pmodel %d", cl_pmodel.integer));
 	}
 	if (*cl_playermodel.string)
 	{
@@ -1621,7 +1623,7 @@ An svc_signonnum has been received, perform a client side setup
 */
 static void CL_SignonReply (void)
 {
-	Con_DPrintf("CL_SignonReply: %i\n", cls.signon);
+	Con_DPrintLinef ("CL_SignonReply: %d", cls.signon);
 
 	switch (cls.signon)
 	{
@@ -1635,7 +1637,7 @@ static void CL_SignonReply (void)
 			// execute cl_begindownloads next frame
 			// (after any commands added by svc_stufftext have been executed)
 			// when done with downloads the "prespawn" will be sent
-			Cbuf_AddText(cmd_local, "\ncl_begindownloads\n");
+			Cbuf_AddTextLine (cmd_local, NEWLINE "cl_begindownloads" NEWLINE);
 
 			//MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 			//MSG_WriteString (&cls.netcon->message, "prespawn");
@@ -1688,7 +1690,7 @@ CL_ParseServerInfo
 static void CL_ParseServerInfo (void)
 {
 	char *str;
-	int i;
+	int j;
 	protocolversion_t protocol;
 	int nummodels, numsounds;
 	char vabuf[1024];
@@ -1723,18 +1725,18 @@ static void CL_ParseServerInfo (void)
 	CL_ClearState ();
 
 // parse protocol version number
-	i = MSG_ReadLong(&cl_message);
-	protocol = Protocol_EnumForNumber(i);
+	j = MSG_ReadLong(&cl_message);
+	protocol = Protocol_EnumForNumber(j);
 	if (protocol == PROTOCOL_UNKNOWN)
 	{
-		Host_Error("CL_ParseServerInfo: Server is unrecognized protocol number (%i)", i);
+		Host_Error_Line ("CL_ParseServerInfo: Server is unrecognized protocol number (%d)", j);
 		return;
 	}
 	// hack for unmarked Nehahra movie demos which had a custom protocol
 	if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback && gamemode == GAME_NEHAHRA)
 		protocol = PROTOCOL_NEHAHRAMOVIE;
 	cls.protocol = protocol;
-	Con_Printf("Server protocol is %s\n", Protocol_NameForEnum(cls.protocol));
+	Con_DPrintLinef ("Server protocol is %s", Protocol_NameForEnum(cls.protocol));
 
 	cl.num_entities = 1;
 
@@ -1745,21 +1747,21 @@ static void CL_ParseServerInfo (void)
 		cl.qw_servercount = MSG_ReadLong(&cl_message);
 
 		str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-		Con_Printf("server gamedir is %s\n", str);
+		Con_Printf ("server gamedir is %s\n", str);
 		strlcpy(gamedir[0], str, sizeof(gamedir[0]));
 
 		// change gamedir if needed
 		if (!FS_ChangeGameDirs(1, gamedir, true, false))
-			Host_Error("CL_ParseServerInfo: unable to switch to server specified gamedir");
+			Host_Error_Line ("CL_ParseServerInfo: unable to switch to server specified gamedir");
 
 		cl.gametype = GAME_DEATHMATCH;
 		cl.maxclients = 32;
 
 		// parse player number
-		i = MSG_ReadByte(&cl_message);
+		j = MSG_ReadByte(&cl_message);
 		// cl.qw_spectator is an unneeded flag, cl.scores[cl.playerentity].qw_spectator works better (it can be updated by the server during the game)
-		//cl.qw_spectator = (i & 128) != 0;
-		cl.realplayerentity = cl.playerentity = cl.viewentity = (i & 127) + 1;
+		//cl.qw_spectator = (j & 128) != 0;
+		cl.realplayerentity = cl.playerentity = cl.viewentity = (j & 127) + 1;
 		cl.scores = (scoreboard_t *)Mem_Alloc(cls.levelmempool, cl.maxclients*sizeof(*cl.scores));
 
 		// get the full level name
@@ -1789,7 +1791,10 @@ static void CL_ParseServerInfo (void)
 		cl.movevars_airaccel_sideways_friction = 0;
 
 		// seperate the printfs so the server message can have a color
-		Con_Printf("\n\n<===================================>\n\n\2%s\n", str);
+		//Con_Printf ("\n\n<===================================>\n\n\2%s\n", str);
+
+		// Baker r1431: Less console spam.
+		Con_PrintLinef (NEWLINE NEWLINE NEWLINE NEWLINE "\2%s", str);
 
 		// check memory integrity
 		Mem_CheckSentinelsGlobal();
@@ -1797,7 +1802,7 @@ static void CL_ParseServerInfo (void)
 		if (cls.netcon)
 		{
 			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "soundlist %i %i", cl.qw_servercount, 0));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "soundlist %d %d", cl.qw_servercount, 0));
 		}
 
 		cl.loadbegun = false;
@@ -1827,7 +1832,7 @@ static void CL_ParseServerInfo (void)
 		cl.maxclients = MSG_ReadByte(&cl_message);
 		if (cl.maxclients < 1 || cl.maxclients > MAX_SCOREBOARD)
 		{
-			Host_Error("Bad maxclients (%u) from server", cl.maxclients);
+			Host_Error_Line ("Bad maxclients (%u) from server", cl.maxclients);
 			return;
 		}
 		cl.scores = (scoreboard_t *)Mem_Alloc(cls.levelmempool, cl.maxclients*sizeof(*cl.scores));
@@ -1841,11 +1846,13 @@ static void CL_ParseServerInfo (void)
 
 	// parse signon message
 		str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-		strlcpy (cl.worldmessage, str, sizeof(cl.worldmessage));
+		c_strlcpy (cl.worldmessage, str);
 
 	// seperate the printfs so the server message can have a color
-		if (cls.protocol != PROTOCOL_NEHAHRAMOVIE) // no messages when playing the Nehahra movie
-			Con_Printf("\n<===================================>\n\n\2%s\n", str);
+		if (cls.protocol != PROTOCOL_NEHAHRAMOVIE) { // no messages when playing the Nehahra movie
+// Baker r1431: Less console spam.
+			Con_PrintLinef (NEWLINE NEWLINE NEWLINE "\2%s", str);
+		}
 
 		// check memory integrity
 		Mem_CheckSentinelsGlobal();
@@ -1857,10 +1864,10 @@ static void CL_ParseServerInfo (void)
 			if (!str[0])
 				break;
 			if (nummodels==MAX_MODELS)
-				Host_Error ("Server sent too many model precaches");
+				Host_Error_Line ("Server sent too many model precaches");
 			if (strlen(str) >= MAX_QPATH)
-				Host_Error ("Server sent a precache name of %i characters (max %i)", (int)strlen(str), MAX_QPATH - 1);
-			strlcpy (cl.model_name[nummodels], str, sizeof (cl.model_name[nummodels]));
+				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
+			c_strlcpy (cl.model_name[nummodels], str);
 		}
 		// parse sound precache list
 		for (numsounds=1 ; ; numsounds++)
@@ -1869,16 +1876,17 @@ static void CL_ParseServerInfo (void)
 			if (!str[0])
 				break;
 			if (numsounds==MAX_SOUNDS)
-				Host_Error("Server sent too many sound precaches");
+				Host_Error_Line ("Server sent too many sound precaches");
 			if (strlen(str) >= MAX_QPATH)
-				Host_Error("Server sent a precache name of %i characters (max %i)", (int)strlen(str), MAX_QPATH - 1);
-			strlcpy (cl.sound_name[numsounds], str, sizeof (cl.sound_name[numsounds]));
+				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
+			c_strlcpy (cl.sound_name[numsounds], str);
 		}
 
 		// set the base name for level-specific things...  this gets updated again by CL_SetupWorldModel later
-		strlcpy(cl.worldname, cl.model_name[1], sizeof(cl.worldname));
+		c_strlcpy(cl.worldname, cl.model_name[1]);
 		FS_StripExtension(cl.worldname, cl.worldnamenoextension, sizeof(cl.worldnamenoextension));
-		strlcpy(cl.worldbasename, !strncmp(cl.worldnamenoextension, "maps/", 5) ? cl.worldnamenoextension + 5 : cl.worldnamenoextension, sizeof(cl.worldbasename));
+		c_strlcpy(cl.worldbasename, 
+			String_Does_Start_With(cl.worldnamenoextension, "maps/") ? cl.worldnamenoextension + 5 : cl.worldnamenoextension);
 		Cvar_SetQuick(&cl_worldmessage, cl.worldmessage);
 		Cvar_SetQuick(&cl_worldname, cl.worldname);
 		Cvar_SetQuick(&cl_worldnamenoextension, cl.worldnamenoextension);
@@ -1888,8 +1896,8 @@ static void CL_ParseServerInfo (void)
 		// anything that isn't needed
 		if (!sv.active)
 			Mod_ClearUsed();
-		for (i = 1;i < nummodels;i++)
-			Mod_FindName(cl.model_name[i], cl.model_name[i][0] == '*' ? cl.model_name[1] : NULL);
+		for (j = 1;j < nummodels;j++)
+			Mod_FindName(cl.model_name[j], cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL);
 		// precache any models used by the client (this also marks them used)
 		cl.model_bolt = Mod_ForName("progs/bolt.mdl", false, false, NULL);
 		cl.model_bolt2 = Mod_ForName("progs/bolt2.mdl", false, false, NULL);
@@ -1913,8 +1921,8 @@ static void CL_ParseServerInfo (void)
 		cl.sfx_r_exp3 = S_PrecacheSound(cl_sound_r_exp3.string, false, true);
 
 		// sounds used by the game
-		for (i = 1;i < MAX_SOUNDS && cl.sound_name[i][0];i++)
-			cl.sound_precache[i] = S_PrecacheSound(cl.sound_name[i], true, true);
+		for (j = 1;j < MAX_SOUNDS && cl.sound_name[j][0];j++)
+			cl.sound_precache[j] = S_PrecacheSound(cl.sound_name[j], true, true);
 
 		// now we try to load everything that is new
 		cl.loadmodel_current = 1;
@@ -1945,7 +1953,7 @@ static void CL_ParseServerInfo (void)
 			// start a new demo file
 			dpsnprintf (demofile, sizeof(demofile), "%s_%s.dem", Sys_TimeString (cl_autodemo_nameformat.string), cl.worldbasename);
 
-			Con_Printf ("Auto-recording to %s.\n", demofile);
+			Con_PrintLinef ("Auto-recording to %s.", demofile);
 
 			// Reset bit 0 for every new demo
 			Cvar_SetValueQuick(&cl_autodemo_delete,
@@ -1958,14 +1966,14 @@ static void CL_ParseServerInfo (void)
 			if (cls.demofile)
 			{
 				cls.forcetrack = -1;
-				FS_Printf (cls.demofile, "%i\n", cls.forcetrack);
+				FS_Printf (cls.demofile, "%d\n", cls.forcetrack);
 				cls.demorecording = true;
 				strlcpy(cls.demoname, demofile, sizeof(cls.demoname));
 				cls.demo_lastcsprogssize = -1;
 				cls.demo_lastcsprogscrc = -1;
 			}
 			else
-				Con_Print(CON_ERROR "ERROR: couldn't open.\n");
+				Con_PrintLinef (CON_ERROR "ERROR: couldn't open %s", demofile );
 		}
 	}
 	cl.islocalgame = NetConn_IsLocalGame();
@@ -1979,7 +1987,7 @@ void CL_ValidateState(entity_state_t *s)
 		return;
 
 	if (s->modelindex >= MAX_MODELS)
-		Host_Error("CL_ValidateState: modelindex (%i) >= MAX_MODELS (%i)\n", s->modelindex, MAX_MODELS);
+		Host_Error_Line ("CL_ValidateState: modelindex (%d) >= MAX_MODELS (%d)", s->modelindex, MAX_MODELS);
 
 	// these warnings are only warnings, no corrections are made to the state
 	// because states are often copied for decoding, which otherwise would
@@ -1988,15 +1996,15 @@ void CL_ValidateState(entity_state_t *s)
 
 	// colormap is client index + 1
 	if (!(s->flags & RENDER_COLORMAPPED) && s->colormap > cl.maxclients)
-		Con_DPrintf("CL_ValidateState: colormap (%i) > cl.maxclients (%i)\n", s->colormap, cl.maxclients);
+		Con_DPrintLinef ("CL_ValidateState: colormap (%d) > cl.maxclients (%d)", s->colormap, cl.maxclients);
 
 	if (developer_extra.integer)
 	{
 		model = CL_GetModelByIndex(s->modelindex);
 		if (model && model->type && s->frame >= model->numframes)
-			Con_DPrintf("CL_ValidateState: no such frame %i in \"%s\" (which has %i frames)\n", s->frame, model->model_name, model->numframes);
+			Con_DPrintLinef ("CL_ValidateState: no such frame %d in \"%s\" (which has %d frames)", s->frame, model->model_name, model->numframes);
 		if (model && model->type && s->skin > 0 && s->skin >= model->numskins && !(s->lightpflags & PFLAGS_FULLDYNAMIC))
-			Con_DPrintf("CL_ValidateState: no such skin %i in \"%s\" (which has %i skins)\n", s->skin, model->model_name, model->numskins);
+			Con_DPrintLinef ("CL_ValidateState: no such skin %d in \"%s\" (which has %d skins)", s->skin, model->model_name, model->numskins);
 	}
 }
 
@@ -2034,7 +2042,7 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 		VectorCopy(ent->state_current.angles, ent->persistent.newangles);
 		ent->persistent.trail_allowed = false;
 
-		// if(ent->state_current.frame != ent->state_previous.frame)
+		// if (ent->state_current.frame != ent->state_previous.frame)
 		// do this even if we did change the frame
 		// teleport bit is only used if an animation restart, or a jump, is necessary
 		// so it should be always harmless to do this
@@ -2115,7 +2123,7 @@ CL_ParseBaseline
 */
 static void CL_ParseBaseline (entity_t *ent, int large)
 {
-	int i;
+	int j;
 
 	ent->state_baseline = defaultstate;
 	// FIXME: set ent->state_baseline.number?
@@ -2137,10 +2145,10 @@ static void CL_ParseBaseline (entity_t *ent, int large)
 	}
 	ent->state_baseline.colormap = MSG_ReadByte(&cl_message);
 	ent->state_baseline.skin = MSG_ReadByte(&cl_message);
-	for (i = 0;i < 3;i++)
+	for (j = 0; j < 3; j++)
 	{
-		ent->state_baseline.origin[i] = MSG_ReadCoord(&cl_message, cls.protocol);
-		ent->state_baseline.angles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+		ent->state_baseline.origin[j] = MSG_ReadCoord(&cl_message, cls.protocol);
+		ent->state_baseline.angles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 	}
 	ent->state_previous = ent->state_current = ent->state_baseline;
 }
@@ -2155,15 +2163,14 @@ Server information pertaining to this client only
 */
 static void CL_ParseClientdata (void)
 {
-	int i, bits;
+	int j, bits;
 
 	VectorCopy (cl.mpunchangle[0], cl.mpunchangle[1]);
 	VectorCopy (cl.mpunchvector[0], cl.mpunchvector[1]);
 	VectorCopy (cl.mvelocity[0], cl.mvelocity[1]);
 	cl.mviewzoom[1] = cl.mviewzoom[0];
 
-	if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4 || cls.protocol == PROTOCOL_DARKPLACES5)
-	{
+	if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4 || cls.protocol == PROTOCOL_DARKPLACES5) {
 		cl.stats[STAT_VIEWHEIGHT] = DEFAULT_VIEWHEIGHT;
 		cl.stats[STAT_ITEMS] = 0;
 		cl.stats[STAT_VIEWZOOM] = 255;
@@ -2192,40 +2199,46 @@ static void CL_ParseClientdata (void)
 	if (bits & SU_IDEALPITCH)
 		cl.idealpitch = MSG_ReadChar(&cl_message);
 
-	for (i = 0;i < 3;i++)
+	for (j = 0;j < 3;j++)
 	{
-		if (bits & (SU_PUNCH1<<i) )
+		if (bits & (SU_PUNCH1<<j) )
 		{
-			if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3)
-				cl.mpunchangle[0][i] = MSG_ReadChar(&cl_message);
+			if (isin6 (cls.protocol,	PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE, PROTOCOL_NEHAHRABJP,
+										PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3))
+				cl.mpunchangle[0][j] = MSG_ReadChar(&cl_message);
 			else
-				cl.mpunchangle[0][i] = MSG_ReadAngle16i(&cl_message);
+				cl.mpunchangle[0][j] = MSG_ReadAngle16i(&cl_message);
 		}
-		if (bits & (SU_PUNCHVEC1<<i))
+		if (bits & (SU_PUNCHVEC1<<j))
 		{
-			if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4)
-				cl.mpunchvector[0][i] = MSG_ReadCoord16i(&cl_message);
+			if (isin4 (cls.protocol, PROTOCOL_DARKPLACES1, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
+				cl.mpunchvector[0][j] = MSG_ReadCoord16i(&cl_message);
 			else
-				cl.mpunchvector[0][i] = MSG_ReadCoord32f(&cl_message);
+				cl.mpunchvector[0][j] = MSG_ReadCoord32f(&cl_message);
 		}
-		if (bits & (SU_VELOCITY1<<i) )
+		if (bits & (SU_VELOCITY1<<j) )
 		{
-			if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4)
-				cl.mvelocity[0][i] = MSG_ReadChar(&cl_message)*16;
+			if (isin10 (cls.protocol,	PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
+										PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,
+										PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4))
+				cl.mvelocity[0][j] = MSG_ReadChar(&cl_message)*16;
 			else
-				cl.mvelocity[0][i] = MSG_ReadCoord32f(&cl_message);
+				cl.mvelocity[0][j] = MSG_ReadCoord32f(&cl_message);
 		}
 	}
 
 	// LadyHavoc: hipnotic demos don't have this bit set but should
-	if (bits & SU_ITEMS || cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4 || cls.protocol == PROTOCOL_DARKPLACES5)
+	if (bits & SU_ITEMS || 
+		isin11 (cls.protocol, 
+				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
+				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2, 
+				PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5) )
 		cl.stats[STAT_ITEMS] = MSG_ReadLong(&cl_message);
 
 	cl.onground = (bits & SU_ONGROUND) != 0;
 	cl.inwater = (bits & SU_INWATER) != 0;
 
-	if (cls.protocol == PROTOCOL_DARKPLACES5)
-	{
+	if (cls.protocol == PROTOCOL_DARKPLACES5) {
 		cl.stats[STAT_WEAPONFRAME] = (bits & SU_WEAPONFRAME) ? MSG_ReadShort(&cl_message) : 0;
 		cl.stats[STAT_ARMOR] = (bits & SU_ARMOR) ? MSG_ReadShort(&cl_message) : 0;
 		cl.stats[STAT_WEAPON] = (bits & SU_WEAPON) ? MSG_ReadShort(&cl_message) : 0;
@@ -2237,11 +2250,13 @@ static void CL_ParseClientdata (void)
 		cl.stats[STAT_CELLS] = MSG_ReadShort(&cl_message);
 		cl.stats[STAT_ACTIVEWEAPON] = (unsigned short) MSG_ReadShort(&cl_message);
 	}
-	else if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4)
-	{
+	else if (isin10 (cls.protocol,
+							PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,		PROTOCOL_NEHAHRABJP,
+							PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,		PROTOCOL_DARKPLACES2,
+							PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4)) {
 		cl.stats[STAT_WEAPONFRAME] = (bits & SU_WEAPONFRAME) ? MSG_ReadByte(&cl_message) : 0;
 		cl.stats[STAT_ARMOR] = (bits & SU_ARMOR) ? MSG_ReadByte(&cl_message) : 0;
-		if (cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3)
+		if (isin3 (cls.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 			cl.stats[STAT_WEAPON] = (bits & SU_WEAPON) ? (unsigned short)MSG_ReadShort(&cl_message) : 0;
 		else
 			cl.stats[STAT_WEAPON] = (bits & SU_WEAPON) ? MSG_ReadByte(&cl_message) : 0;
@@ -2251,7 +2266,7 @@ static void CL_ParseClientdata (void)
 		cl.stats[STAT_NAILS] = MSG_ReadByte(&cl_message);
 		cl.stats[STAT_ROCKETS] = MSG_ReadByte(&cl_message);
 		cl.stats[STAT_CELLS] = MSG_ReadByte(&cl_message);
-		if (gamemode == GAME_HIPNOTIC || gamemode == GAME_ROGUE || gamemode == GAME_QUOTH || IS_OLDNEXUIZ_DERIVED(gamemode))
+		if (isin3 (gamemode, GAME_HIPNOTIC, GAME_ROGUE, GAME_QUOTH) || IS_OLDNEXUIZ_DERIVED(gamemode) )
 			cl.stats[STAT_ACTIVEWEAPON] = (1<<MSG_ReadByte(&cl_message));
 		else
 			cl.stats[STAT_ACTIVEWEAPON] = MSG_ReadByte(&cl_message);
@@ -2259,7 +2274,7 @@ static void CL_ParseClientdata (void)
 
 	if (bits & SU_VIEWZOOM)
 	{
-		if (cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4)
+		if (isin3 (cls.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4) )
 			cl.stats[STAT_VIEWZOOM] = MSG_ReadByte(&cl_message);
 		else
 			cl.stats[STAT_VIEWZOOM] = (unsigned short) MSG_ReadShort(&cl_message);
@@ -2279,13 +2294,13 @@ static void CL_ParseStatic (int large)
 	entity_t *ent;
 
 	if (cl.num_static_entities >= cl.max_static_entities)
-		Host_Error ("Too many static entities");
+		Host_Error_Line ("Too many static entities");
 	ent = &cl.static_entities[cl.num_static_entities++];
 	CL_ParseBaseline (ent, large);
 
 	if (ent->state_baseline.modelindex == 0)
 	{
-		Con_DPrintf("svc_parsestatic: static entity without model at %f %f %f\n", ent->state_baseline.origin[0], ent->state_baseline.origin[1], ent->state_baseline.origin[2]);
+		Con_DPrintf ("svc_parsestatic: static entity without model at %f %f %f\n", ent->state_baseline.origin[0], ent->state_baseline.origin[1], ent->state_baseline.origin[2]);
 		cl.num_static_entities--;
 		// This is definitely a cheesy way to conserve resources...
 		return;
@@ -2327,7 +2342,7 @@ static void CL_ParseStaticSound (int large)
 
 	if (sound_num < 0 || sound_num >= MAX_SOUNDS)
 	{
-		Con_Printf("CL_ParseStaticSound: sound_num(%i) >= MAX_SOUNDS (%i)\n", sound_num, MAX_SOUNDS);
+		Con_Printf ("CL_ParseStaticSound: sound_num(%d) >= MAX_SOUNDS (%d)\n", sound_num, MAX_SOUNDS);
 		return;
 	}
 
@@ -2367,12 +2382,12 @@ static void CL_ParseEffect2 (void)
 
 void CL_NewBeam (int ent, vec3_t start, vec3_t end, model_t *m, int lightning)
 {
-	int i;
+	int j;
 	beam_t *b = NULL;
 
 	if (ent >= MAX_EDICTS)
 	{
-		Con_Printf("CL_NewBeam: invalid entity number %i\n", ent);
+		Con_Printf ("CL_NewBeam: invalid entity number %d\n", ent);
 		ent = 0;
 	}
 
@@ -2380,19 +2395,19 @@ void CL_NewBeam (int ent, vec3_t start, vec3_t end, model_t *m, int lightning)
 		CL_ExpandEntities(ent);
 
 	// override any beam with the same entity
-	i = cl.max_beams;
+	j = cl.max_beams;
 	if (ent)
-		for (i = 0, b = cl.beams;i < cl.max_beams;i++, b++)
+		for (j = 0, b = cl.beams;j < cl.max_beams;j++, b++)
 			if (b->entity == ent)
 				break;
 	// if the entity was not found then just replace an unused beam
-	if (i == cl.max_beams)
-		for (i = 0, b = cl.beams;i < cl.max_beams;i++, b++)
+	if (j == cl.max_beams)
+		for (j = 0, b = cl.beams;j < cl.max_beams;j++, b++)
 			if (!b->model)
 				break;
-	if (i < cl.max_beams)
+	if (j < cl.max_beams)
 	{
-		cl.num_beams = max(cl.num_beams, i + 1);
+		cl.num_beams = max(cl.num_beams, j + 1);
 		b->entity = ent;
 		b->lightning = lightning;
 		b->model = m;
@@ -2401,7 +2416,7 @@ void CL_NewBeam (int ent, vec3_t start, vec3_t end, model_t *m, int lightning)
 		VectorCopy (end, b->end);
 	}
 	else
-		Con_DPrint("beam list overflow!\n");
+		Con_DPrintLinef ("beam list overflow!");
 }
 
 static void CL_ParseBeam (model_t *m, int lightning)
@@ -2415,7 +2430,7 @@ static void CL_ParseBeam (model_t *m, int lightning)
 
 	if (ent >= MAX_EDICTS)
 	{
-		Con_Printf("CL_ParseBeam: invalid entity number %i\n", ent);
+		Con_Printf ("CL_ParseBeam: invalid entity number %d\n", ent);
 		ent = 0;
 	}
 
@@ -2543,7 +2558,7 @@ static void CL_ParseTempEntity(void)
 			VectorSet(pos2, pos[0] + radius, pos[1] + radius, pos[2] + radius);
 			VectorSet(pos, pos[0] - radius, pos[1] - radius, pos[2] - radius);
 			CL_ParticleEffect(EFFECT_TE_GUNSHOT, radius, pos, pos2, vec3_origin, vec3_origin, NULL, 0);
-			if(cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
+			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
 			{
 				if (rand() % 5)
 					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
@@ -2574,7 +2589,7 @@ static void CL_ParseTempEntity(void)
 			break;
 
 		default:
-			Host_Error("CL_ParseTempEntity: bad type %d (hex %02X)", type, type);
+			Host_Error_Line ("CL_ParseTempEntity: bad type %d (hex %02X)", type, type);
 		}
 	}
 	else
@@ -2749,7 +2764,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_GUNSHOT, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			if(cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
+			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
 			{
 				if (rand() % 5)
 					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
@@ -2771,7 +2786,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_GUNSHOTQUAD, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			if(cl_sound_ric_gunshot.integer & RIC_GUNSHOTQUAD)
+			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOTQUAD)
 			{
 				if (rand() % 5)
 					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
@@ -2949,7 +2964,7 @@ static void CL_ParseTempEntity(void)
 			break;
 
 		default:
-			Host_Error("CL_ParseTempEntity: bad type %d (hex %02X)", type, type);
+			Host_Error_Line ("CL_ParseTempEntity: bad type %d (hex %02X)", type, type);
 		}
 	}
 }
@@ -3005,23 +3020,23 @@ static cl_iplog_item_t *cl_iplog_items;
 static void CL_IPLog_Load(void);
 static void CL_IPLog_Add(const char *address, const char *name, qbool checkexisting, qbool addtofile)
 {
-	int i;
+	int j;
 	size_t sz_name, sz_address;
 	if (!address || !address[0] || !name || !name[0])
 		return;
 	if (!cl_iplog_loaded)
 		CL_IPLog_Load();
 	if (developer_extra.integer)
-		Con_DPrintf("CL_IPLog_Add(\"%s\", \"%s\", %i, %i);\n", address, name, checkexisting, addtofile);
+		Con_DPrintf ("CL_IPLog_Add(" QUOTED_S ", " QUOTED_S ", %d, %d);\n", address, name, checkexisting, addtofile);
 	// see if it already exists
 	if (checkexisting)
 	{
-		for (i = 0;i < cl_iplog_numitems;i++)
+		for (j = 0;j < cl_iplog_numitems;j++)
 		{
-			if (!strcmp(cl_iplog_items[i].address, address) && !strcmp(cl_iplog_items[i].name, name))
+			if (String_Does_Match(cl_iplog_items[j].address, address) && String_Does_Match(cl_iplog_items[j].name, name))
 			{
 				if (developer_extra.integer)
-					Con_DPrintf("... found existing \"%s\" \"%s\"\n", cl_iplog_items[i].address, cl_iplog_items[i].name);
+					Con_DPrintLinef ("... found existing " QUOTED_S " " QUOTED_S, cl_iplog_items[j].address, cl_iplog_items[j].name);
 				return;
 			}
 		}
@@ -3057,14 +3072,14 @@ static void CL_IPLog_Add(const char *address, const char *name, qbool checkexist
 #ifndef DP_MOBILETOUCH
 		Log_Printf(cl_iplog_name.string, "%s %s\n", address, name);
 		if (developer_extra.integer)
-			Con_DPrintf("CL_IPLog_Add: appending this line to %s: %s %s\n", cl_iplog_name.string, address, name);
+			Con_DPrintf ("CL_IPLog_Add: appending this line to %s: %s %s\n", cl_iplog_name.string, address, name);
 #endif
 	}
 }
 
 static void CL_IPLog_Load(void)
 {
-	int i, len, linenumber;
+	int j, len, linenumber;
 	char *text, *textend;
 	unsigned char *filedata;
 	fs_offset_t filesize;
@@ -3095,17 +3110,17 @@ static void CL_IPLog_Load(void)
 			text++;
 		if (line[0] == '/' && line[1] == '/')
 			continue; // skip comments if anyone happens to add them
-		for (i = 0;i < len && !ISWHITESPACE(line[i]);i++)
-			address[i] = line[i];
-		address[i] = 0;
+		for (j = 0;j < len && !ISWHITESPACE(line[j]);j++)
+			address[j] = line[j];
+		address[j] = 0;
 		// skip exactly one space character
-		i++;
+		j++;
 		// address contains the address with termination,
-		// line + i contains the name with termination
-		if (address[0] && line[i])
-			CL_IPLog_Add(address, line + i, false, false);
+		// line + j contains the name with termination
+		if (address[0] && line[j])
+			CL_IPLog_Add(address, line + j, false, false);
 		else
-			Con_Printf("%s:%i: could not parse address and name:\n%s\n", cl_iplog_name.string, linenumber, line);
+			Con_PrintLinef ("%s:%d: could not parse address and name:" NEWLINE "%s", cl_iplog_name.string, linenumber, line);
 	}
 }
 
@@ -3115,7 +3130,7 @@ static void CL_IPLog_List_f(cmd_state_t *cmd)
 	const char *addressprefix;
 	if (Cmd_Argc(cmd) > 2)
 	{
-		Con_Printf("usage: %s 123.456.789.\n", Cmd_Argv(cmd, 0));
+		Con_Printf ("usage: %s 123.456.789.\n", Cmd_Argv(cmd, 0));
 		return;
 	}
 	addressprefix = "";
@@ -3124,10 +3139,10 @@ static void CL_IPLog_List_f(cmd_state_t *cmd)
 	if (!cl_iplog_loaded)
 		CL_IPLog_Load();
 	if (addressprefix && addressprefix[0])
-		Con_Printf("Listing iplog addresses beginning with %s\n", addressprefix);
+		Con_PrintLinef ("Listing iplog addresses beginning with %s", addressprefix);
 	else
-		Con_Printf("Listing all iplog entries\n");
-	Con_Printf("address         name\n");
+		Con_PrintLinef ("Listing all iplog entries");
+	Con_PrintLinef ("address         name");
 	for (i = 0;i < cl_iplog_numitems;i++)
 	{
 		if (addressprefix && addressprefix[0])
@@ -3144,9 +3159,9 @@ static void CL_IPLog_List_f(cmd_state_t *cmd)
 		// if name is more than 15 characters, print all of it, not worrying
 		// about the fact it will misalign the columns
 		if (strlen(cl_iplog_items[i].address) < 15)
-			Con_Printf("%-15s %s\n", cl_iplog_items[i].address, cl_iplog_items[i].name);
+			Con_Printf ("%-15s %s\n", cl_iplog_items[i].address, cl_iplog_items[i].name);
 		else
-			Con_Printf("%5s %s\n", cl_iplog_items[i].address, cl_iplog_items[i].name);
+			Con_Printf ("%5s %s\n", cl_iplog_items[i].address, cl_iplog_items[i].name);
 	}
 }
 
@@ -3156,8 +3171,7 @@ static qbool CL_ExaminePrintString(const char *text)
 	int len;
 	const char *t;
 	char temp[MAX_INPUTLINE];
-	if (!strcmp(text, "Client ping times:\n"))
-	{
+	if (String_Does_Match(text, "Client ping times:\n")) {
 		cl.parsingtextmode = CL_PARSETEXTMODE_PING;
 		// hide ping reports in demos
 		if (cls.demoplayback)
@@ -3166,46 +3180,44 @@ static qbool CL_ExaminePrintString(const char *text)
 			;
 		if (cl.parsingtextplayerindex >= cl.maxclients) // should never happen, since the client itself should be in cl.scores
 		{
-			Con_Printf("ping reply but empty scoreboard?!?\n");
+			Con_PrintLinef ("ping reply but empty scoreboard?!?");
 			cl.parsingtextmode = CL_PARSETEXTMODE_NONE;
 			cl.parsingtextexpectingpingforscores = 0;
 		}
 		cl.parsingtextexpectingpingforscores = cl.parsingtextexpectingpingforscores ? 2 : 0;
 		return !cl.parsingtextexpectingpingforscores;
 	}
-	if (!strncmp(text, "host:    ", 9))
-	{
+
+	if (String_Does_Start_With(text, "host:    " /*, 9*/)) {
 		// cl.parsingtextexpectingpingforscores = false; // really?
 		cl.parsingtextmode = CL_PARSETEXTMODE_STATUS;
 		cl.parsingtextplayerindex = 0;
 		return true;
 	}
-	if (cl.parsingtextmode == CL_PARSETEXTMODE_PING)
-	{
+
+	if (cl.parsingtextmode == CL_PARSETEXTMODE_PING) {
 		// if anything goes wrong, we'll assume this is not a ping report
 		qbool expected = cl.parsingtextexpectingpingforscores != 0;
 		cl.parsingtextexpectingpingforscores = 0;
 		cl.parsingtextmode = CL_PARSETEXTMODE_NONE;
 		t = text;
+
 		while (*t == ' ')
 			t++;
-		if ((*t >= '0' && *t <= '9') || *t == '-')
-		{
+
+		if ((*t >= '0' && *t <= '9') || *t == '-') {
 			int ping = atoi(t);
 			while ((*t >= '0' && *t <= '9') || *t == '-')
 				t++;
-			if (*t == ' ')
-			{
+			if (*t == ' ') {
 				int charindex = 0;
 				t++;
-				if(cl.parsingtextplayerindex < cl.maxclients)
-				{
+				if (cl.parsingtextplayerindex < cl.maxclients) {
 					for (charindex = 0;cl.scores[cl.parsingtextplayerindex].name[charindex] == t[charindex];charindex++)
 						;
 					// note: the matching algorithm stops at the end of the player name because some servers append text such as " READY" after the player name in the scoreboard but not in the ping report
 					//if (cl.scores[cl.parsingtextplayerindex].name[charindex] == 0 && t[charindex] == '\n')
-					if (t[charindex] == '\n')
-					{
+					if (t[charindex] == '\n') {
 						cl.scores[cl.parsingtextplayerindex].qw_ping = bound(0, ping, 9999);
 						for (cl.parsingtextplayerindex++;cl.parsingtextplayerindex < cl.maxclients && !cl.scores[cl.parsingtextplayerindex].name[0];cl.parsingtextplayerindex++)
 							;
@@ -3218,56 +3230,50 @@ static qbool CL_ExaminePrintString(const char *text)
 						return !expected;
 					}
 				}
-				if (!strncmp(t, "unconnected\n", 12))
-				{
+				if (String_Does_Start_With(t, "unconnected\n"/*, 12*/)) {
 					// just ignore
 					cl.parsingtextmode = CL_PARSETEXTMODE_PING;
 					cl.parsingtextexpectingpingforscores = expected;
 					return !expected;
 				}
 				else
-					Con_DPrintf("player names '%s' and '%s' didn't match\n", cl.scores[cl.parsingtextplayerindex].name, t);
+					Con_DPrintLinef ("player names '%s' and '%s' didn't match", cl.scores[cl.parsingtextplayerindex].name, t);
 			}
 		}
 	}
-	if (cl.parsingtextmode == CL_PARSETEXTMODE_STATUS)
-	{
-		if (!strncmp(text, "players: ", 9))
-		{
+
+	if (cl.parsingtextmode == CL_PARSETEXTMODE_STATUS) {
+		if (String_Does_Start_With(text, "players: " /*, 9*/)) {
 			cl.parsingtextmode = CL_PARSETEXTMODE_STATUS_PLAYERID;
 			cl.parsingtextplayerindex = 0;
 			return true;
 		}
-		else if (!strstr(text, ": "))
-		{
+		else if (!strstr(text, ": ")) {
 			cl.parsingtextmode = CL_PARSETEXTMODE_NONE; // status report ended
 			return true;
 		}
 	}
-	if (cl.parsingtextmode == CL_PARSETEXTMODE_STATUS_PLAYERID)
-	{
+
+	if (cl.parsingtextmode == CL_PARSETEXTMODE_STATUS_PLAYERID) {
 		// if anything goes wrong, we'll assume this is not a status report
 		cl.parsingtextmode = CL_PARSETEXTMODE_NONE;
-		if (text[0] == '#' && text[1] >= '0' && text[1] <= '9')
-		{
+		if (text[0] == '#' && text[1] >= '0' && text[1] <= '9') {
 			t = text + 1;
 			cl.parsingtextplayerindex = atoi(t) - 1;
 			while (*t >= '0' && *t <= '9')
 				t++;
-			if (*t == ' ')
-			{
+			if (*t == ' ') {
 				cl.parsingtextmode = CL_PARSETEXTMODE_STATUS_PLAYERIP;
 				return true;
 			}
 			// the player name follows here, along with frags and time
 		}
 	}
-	if (cl.parsingtextmode == CL_PARSETEXTMODE_STATUS_PLAYERIP)
-	{
+
+	if (cl.parsingtextmode == CL_PARSETEXTMODE_STATUS_PLAYERIP) {
 		// if anything goes wrong, we'll assume this is not a status report
 		cl.parsingtextmode = CL_PARSETEXTMODE_NONE;
-		if (text[0] == ' ')
-		{
+		if (text[0] == ' ') {
 			t = text;
 			while (*t == ' ')
 				t++;
@@ -3277,11 +3283,10 @@ static qbool CL_ExaminePrintString(const char *text)
 			temp[len] = 0;
 			// botclient is perfectly valid, but we don't care about bots
 			// also don't try to look up the name of an invalid player index
-			if (strcmp(temp, "botclient")
+			if (String_Does_Match(temp, "botclient") == false   //  strcmp(temp, "botclient")
 			 && cl.parsingtextplayerindex >= 0
 			 && cl.parsingtextplayerindex < cl.maxclients
-			 && cl.scores[cl.parsingtextplayerindex].name[0])
-			{
+			 && cl.scores[cl.parsingtextplayerindex].name[0]) {
 				// log the player name and IP address string
 				// (this operates entirely on strings to avoid issues with the
 				//  nature of a network address)
@@ -3318,9 +3323,9 @@ static void CL_NetworkTimeReceived(double newtime)
 		if (developer_extra.integer && vid_activewindow)
 		{
 			if (cl.time < cl.mtime[1] - (cl.mtime[0] - cl.mtime[1]))
-				Con_DPrintf("--- cl.time < cl.mtime[1] (%f < %f ... %f)\n", cl.time, cl.mtime[1], cl.mtime[0]);
+				Con_DPrintf ("--- cl.time < cl.mtime[1] (%f < %f ... %f)\n", cl.time, cl.mtime[1], cl.mtime[0]);
 			else if (cl.time > cl.mtime[0] + (cl.mtime[0] - cl.mtime[1]))
-				Con_DPrintf("--- cl.time > cl.mtime[0] (%f > %f ... %f)\n", cl.time, cl.mtime[1], cl.mtime[0]);
+				Con_DPrintf ("--- cl.time > cl.mtime[0] (%f > %f ... %f)\n", cl.time, cl.mtime[1], cl.mtime[0]);
 		}
 
 		if (cl_nettimesyncboundmode.integer < 4)
@@ -3381,14 +3386,14 @@ static void CL_NetworkTimeReceived(double newtime)
 			 * smoothest mode esp. for vsynced clients on servers with aggressive inputtimeout
 			 */
 			{
-				unsigned char i;
+				unsigned char j;
 				float error;
 				// in event of packet loss, cl.mtime[1] could be very old, so avoid if possible
 				double target = cl.movevars_ticrate ? cl.mtime[0] - cl.movevars_ticrate : cl.mtime[1];
 				cl.ts_error_stor[cl.ts_error_num] = 1.0f / max(fabs(cl.time - target), FLT_MIN);
 				cl.ts_error_num = (cl.ts_error_num + 1) % NUM_TS_ERRORS;
-				for (i = 0, error = 0.0f; i < NUM_TS_ERRORS; i++)
-					error += cl.ts_error_stor[i];
+				for (j = 0, error = 0.0f; j < NUM_TS_ERRORS; j++)
+					error += cl.ts_error_stor[j];
 				error = 0.1f / (error / NUM_TS_ERRORS);
 				cl.time = bound(cl.time - error, target, cl.time + error);
 			}
@@ -3416,21 +3421,21 @@ static void CL_NetworkTimeReceived(double newtime)
 #endif
 
 	// only lerp entities that also get an update in this frame, when lerp excess is used
-	if(cl_lerpexcess.value > 0)
+	if (cl_lerpexcess.value > 0)
 	{
-		int i;
-		for (i = 1;i < cl.num_entities;i++)
+		int j;
+		for (j = 1;j < cl.num_entities;j++)
 		{
-			if (cl.entities_active[i])
+			if (cl.entities_active[j])
 			{
-				entity_t *ent = cl.entities + i;
+				entity_t *ent = cl.entities + j;
 				ent->persistent.lerpdeltatime = 0;
 			}
 		}
 	}
 }
 
-#define SHOWNET(x) if(cl_shownet.integer==2)Con_Printf("%3i:%s(%i)\n", cl_message.readcount-1, x, cmd);
+#define SHOWNET(x) if (cl_shownet.integer==2)Con_PrintLinef ("%3i:%s(%d)", cl_message.readcount-1, x, cmd);
 
 /*
 =====================
@@ -3441,10 +3446,10 @@ int parsingerror = false;
 void CL_ParseServerMessage(void)
 {
 	int			cmd;
-	int			i;
+	int			j;
 	protocolversion_t protocol;
 	unsigned char		cmdlog[32];
-	const char		*cmdlogname[32], *temp;
+	const char		*cmdlogname[32], *str;
 	int			cmdindex, cmdcount = 0;
 	qbool	qwplayerupdatereceived;
 	qbool	strip_pqc;
@@ -3464,7 +3469,7 @@ void CL_ParseServerMessage(void)
 // if recording demos, copy the message out
 //
 	if (cl_shownet.integer == 1)
-		Con_Printf("%f %i\n", host.realtime, cl_message.cursize);
+		Con_PrintLinef ("%f %d", host.realtime, cl_message.cursize);
 	else if (cl_shownet.integer == 2)
 		Con_Print("------------------\n");
 
@@ -3492,7 +3497,7 @@ void CL_ParseServerMessage(void)
 		while (1)
 		{
 			if (cl_message.badread)
-				Host_Error ("CL_ParseServerMessage: Bad QW server message");
+				Host_Error_Line ("CL_ParseServerMessage: Bad QW server message");
 
 			cmd = MSG_ReadByte(&cl_message);
 
@@ -3523,27 +3528,27 @@ void CL_ParseServerMessage(void)
 					char description[32*64], logtemp[64];
 					int count;
 					strlcpy(description, "packet dump: ", sizeof(description));
-					i = cmdcount - 32;
-					if (i < 0)
-						i = 0;
-					count = cmdcount - i;
-					i &= 31;
+					j = cmdcount - 32;
+					if (j < 0)
+						j = 0;
+					count = cmdcount - j;
+					j &= 31;
 					while(count > 0)
 					{
-						dpsnprintf(logtemp, sizeof(logtemp), "%3i:%s ", cmdlog[i], cmdlogname[i]);
+						dpsnprintf(logtemp, sizeof(logtemp), "%3i:%s ", cmdlog[j], cmdlogname[j]);
 						strlcat(description, logtemp, sizeof(description));
 						count--;
-						i++;
-						i &= 31;
+						j++;
+						j &= 31;
 					}
 					description[strlen(description)-1] = '\n'; // replace the last space with a newline
 					Con_Print(description);
-					Host_Error("CL_ParseServerMessage: Illegible server message");
+					Host_Error_Line ("CL_ParseServerMessage: Illegible server message");
 				}
 				break;
 
 			case qw_svc_nop:
-				//Con_Printf("qw_svc_nop\n");
+				//Con_Printf ("qw_svc_nop\n");
 				break;
 
 			case qw_svc_disconnect:
@@ -3554,14 +3559,14 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_print:
-				i = MSG_ReadByte(&cl_message);
-				temp = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(temp)) // look for anything interesting like player IP addresses or ping reports
+				j = MSG_ReadByte(&cl_message);
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (CL_ExaminePrintString(str)) // look for anything interesting like player IP addresses or ping reports
 				{
-					if (i == 3) // chat
-						CSQC_AddPrintText(va(vabuf, sizeof(vabuf), "\1%s", temp));	//[515]: csqc
+					if (j == 3) // chat
+						CSQC_AddPrintText(va(vabuf, sizeof(vabuf), "\1%s", str));	//[515]: csqc
 					else
-						CSQC_AddPrintText(temp);
+						CSQC_AddPrintText(str);
 				}
 				break;
 
@@ -3584,8 +3589,8 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_setangle:
-				for (i=0 ; i<3 ; i++)
-					cl.viewangles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+				for (j = 0 ; j < 3 ; j ++)
+					cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 				if (!cls.demoplayback)
 				{
 					cl.fixangle[0] = true;
@@ -3597,15 +3602,15 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_lightstyle:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.max_lightstyle)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.max_lightstyle)
 				{
-					Con_Printf ("svc_lightstyle >= MAX_LIGHTSTYLES");
+					Con_PrintLinef ("svc_lightstyle >= MAX_LIGHTSTYLES");
 					break;
 				}
-				strlcpy (cl.lightstyle[i].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[i].map));
-				cl.lightstyle[i].map[MAX_STYLESTRING - 1] = 0;
-				cl.lightstyle[i].length = (int)strlen(cl.lightstyle[i].map);
+				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
+				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
 				break;
 
 			case qw_svc_sound:
@@ -3613,52 +3618,52 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_stopsound:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				S_StopSound(i>>3, i&7);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				S_StopSound(j>>3, j&7);
 				break;
 
 			case qw_svc_updatefrags:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
-				cl.scores[i].frags = (signed short) MSG_ReadShort(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
+				cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
 				break;
 
 			case qw_svc_updateping:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error("CL_ParseServerMessage: svc_updateping >= cl.maxclients");
-				cl.scores[i].qw_ping = MSG_ReadShort(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updateping >= cl.maxclients");
+				cl.scores[j].qw_ping = MSG_ReadShort(&cl_message);
 				break;
 
 			case qw_svc_updatepl:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error("CL_ParseServerMessage: svc_updatepl >= cl.maxclients");
-				cl.scores[i].qw_packetloss = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updatepl >= cl.maxclients");
+				cl.scores[j].qw_packetloss = MSG_ReadByte(&cl_message);
 				break;
 
 			case qw_svc_updateentertime:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error("CL_ParseServerMessage: svc_updateentertime >= cl.maxclients");
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updateentertime >= cl.maxclients");
 				// seconds ago
-				cl.scores[i].qw_entertime = cl.time - MSG_ReadFloat(&cl_message);
+				cl.scores[j].qw_entertime = cl.time - MSG_ReadFloat(&cl_message);
 				break;
 
 			case qw_svc_spawnbaseline:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				CL_ParseBaseline(cl.entities + i, false);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				CL_ParseBaseline(cl.entities + j, false);
 				break;
 			case qw_svc_spawnstatic:
 				CL_ParseStatic(false);
 				break;
 			case qw_svc_temp_entity:
-				if(!CL_VM_Parse_TempEntity())
+				if (!CL_VM_Parse_TempEntity())
 					CL_ParseTempEntity ();
 				break;
 
@@ -3671,17 +3676,17 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_updatestat:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestat: %i is invalid", i);
-				cl.stats[i] = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error_Line ("svc_updatestat: %d is invalid", j);
+				cl.stats[j] = MSG_ReadByte(&cl_message);
 				break;
 
 			case qw_svc_updatestatlong:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestatlong: %i is invalid", i);
-				cl.stats[i] = MSG_ReadLong(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error_Line ("svc_updatestatlong: %d is invalid", j);
+				cl.stats[j] = MSG_ReadLong(&cl_message);
 				break;
 
 			case qw_svc_spawnstaticsound:
@@ -3690,23 +3695,25 @@ void CL_ParseServerMessage(void)
 
 			case qw_svc_cdtrack:
 				cl.cdtrack = cl.looptrack = MSG_ReadByte(&cl_message);
+
 				if ( (cls.demoplayback || cls.demorecording) && (cls.forcetrack != -1) )
 					CDAudio_Play ((unsigned char)cls.forcetrack, true);
 				else
 					CDAudio_Play ((unsigned char)cl.cdtrack, true);
+
 				break;
 
 			case qw_svc_intermission:
-				if(!cl.intermission)
+				if (!cl.intermission)
 					cl.completed_time = cl.time;
 				cl.intermission = 1;
 				MSG_ReadVector(&cl_message, cl.qw_intermission_origin, cls.protocol);
-				for (i = 0;i < 3;i++)
-					cl.qw_intermission_angles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+				for (j = 0; j < 3; j++)
+					cl.qw_intermission_angles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 				break;
 
 			case qw_svc_finale:
-				if(!cl.intermission)
+				if (!cl.intermission)
 					cl.completed_time = cl.time;
 				cl.intermission = 2;
 				SCR_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
@@ -3724,13 +3731,13 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case qw_svc_muzzleflash:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
 				// NOTE: in QW this only worked on clients
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				cl.entities[i].persistent.muzzleflash = 1.0f;
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				cl.entities[j].persistent.muzzleflash = 1.0f;
 				break;
 
 			case qw_svc_updateuserinfo:
@@ -3755,8 +3762,8 @@ void CL_ParseServerMessage(void)
 				if (!qwplayerupdatereceived)
 				{
 					qwplayerupdatereceived = true;
-					for (i = 1;i < cl.maxclients;i++)
-						cl.entities_active[i] = false;
+					for (j = 1; j < cl.maxclients; j++)
+						cl.entities_active[j] = false;
 				}
 				EntityStateQW_ReadPlayerUpdate();
 				break;
@@ -3768,7 +3775,7 @@ void CL_ParseServerMessage(void)
 			case qw_svc_chokecount:
 				(void) MSG_ReadByte(&cl_message);
 				// FIXME: apply to netgraph
-				//for (j = 0;j < i;j++)
+				//for (j = 0;j < j;j++)
 				//	cl.frames[(cls.netcon->qw.incoming_acknowledged-1-j)&QW_UPDATE_MASK].receivedtime = -2;
 				break;
 
@@ -3816,6 +3823,7 @@ void CL_ParseServerMessage(void)
 					CDAudio_Pause ();
 				else if (bgmvolume.value > 0.0f)
 					CDAudio_Resume ();
+
 				S_PauseGameSounds (cl.paused);
 				break;
 			}
@@ -3824,9 +3832,9 @@ void CL_ParseServerMessage(void)
 		if (qwplayerupdatereceived)
 		{
 			// fully kill any player entities that were not updated this frame
-			for (i = 1;i <= cl.maxclients;i++)
-				if (!cl.entities_active[i])
-					cl.entities[i].state_current.active = false;
+			for (j = 1; j <= cl.maxclients; j++)
+				if (!cl.entities_active[j])
+					cl.entities[j].state_current.active = false;
 		}
 	}
 	else
@@ -3834,7 +3842,7 @@ void CL_ParseServerMessage(void)
 		while (1)
 		{
 			if (cl_message.badread)
-				Host_Error ("CL_ParseServerMessage: Bad server message");
+				Host_Error_Line ("CL_ParseServerMessage: Bad server message");
 
 			cmd = MSG_ReadByte(&cl_message);
 
@@ -3849,15 +3857,16 @@ void CL_ParseServerMessage(void)
 			cmdcount++;
 			cmdlog[cmdindex] = cmd;
 
-			// if the high bit of the command byte is set, it is a fast update
-			if (cmd & 128)
-			{
+			// if the high bit of the command byte is set, it is a fast update (Baker: and that is what?)
+			if (cmd & U_SIGNAL_128) { // just differentiates from other updates
+// Baker: hit test here (demo play hits here immed Q start)  Does not happen on start map.
+				// I only get this for the Quake demos, my own demo record does not hit here.
+				//
 				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
-				temp = "entity";
-				cmdlogname[cmdindex] = temp;
+				str = "entity";
+				cmdlogname[cmdindex] = str;
 				SHOWNET("fast update");
-				if (cls.signon == SIGNONS - 1)
-				{
+				if (cls.signon == SIGNONS - 1) {
 					// first update is the final signon stage
 					cls.signon = SIGNONS;
 					CL_SignonReply ();
@@ -3876,29 +3885,28 @@ void CL_ParseServerMessage(void)
 			}
 
 			// other commands
-			switch (cmd)
-			{
+			switch (cmd) {
 			default:
 				{
 					char description[32*64], tempdesc[64];
 					int count;
-					strlcpy (description, "packet dump: ", sizeof(description));
-					i = cmdcount - 32;
-					if (i < 0)
-						i = 0;
-					count = cmdcount - i;
-					i &= 31;
+					c_strlcpy (description, "packet dump: ");
+					j = cmdcount - 32;
+					if (j < 0)
+						j = 0;
+					count = cmdcount - j;
+					j &= 31;
 					while(count > 0)
 					{
-						dpsnprintf (tempdesc, sizeof (tempdesc), "%3i:%s ", cmdlog[i], cmdlogname[i]);
-						strlcat (description, tempdesc, sizeof (description));
+						dpsnprintf (tempdesc, sizeof (tempdesc), "%3d:%s ", cmdlog[j], cmdlogname[j]);
+						c_strlcat (description, tempdesc);
 						count--;
-						i++;
-						i &= 31;
+						j++;
+						j &= 31;
 					}
 					description[strlen(description)-1] = '\n'; // replace the last space with a newline
 					Con_Print(description);
-					Host_Error ("CL_ParseServerMessage: Illegible server message");
+					Host_Error_Line ("CL_ParseServerMessage: Illegible server message");
 				}
 				break;
 
@@ -3916,10 +3924,10 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_version:
-				i = MSG_ReadLong(&cl_message);
-				protocol = Protocol_EnumForNumber(i);
+				j = MSG_ReadLong(&cl_message);
+				protocol = Protocol_EnumForNumber(j);
 				if (protocol == PROTOCOL_UNKNOWN)
-					Host_Error("CL_ParseServerMessage: Server is unrecognized protocol number (%i)", i);
+					Host_Error_Line ("CL_ParseServerMessage: Server is unrecognized protocol number (%d)", j);
 				// hack for unmarked Nehahra movie demos which had a custom protocol
 				if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback && gamemode == GAME_NEHAHRA)
 					protocol = PROTOCOL_NEHAHRAMOVIE;
@@ -3934,9 +3942,9 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_print:
-				temp = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(temp)) // look for anything interesting like player IP addresses or ping reports
-					CSQC_AddPrintText(temp);	//[515]: csqc
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (CL_ExaminePrintString(str)) // look for anything interesting like player IP addresses or ping reports
+					CSQC_AddPrintText(str);	//[515]: csqc
 				break;
 
 			case svc_centerprint:
@@ -3944,8 +3952,9 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_stufftext:
-				temp = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				/* if(utf8_enable.integer)
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+
+				/* if (utf8_enable.integer)
 				{
 					strip_pqc = true;
 					// we can safely strip and even
@@ -3966,20 +3975,20 @@ void CL_ParseServerMessage(void)
 						strip_pqc = false;
 						break;
 				}
-				if(strip_pqc)
+				if (strip_pqc)
 				{
 					// skip over ProQuake messages,
 					// TODO actually interpret them
 					// (they are sbar team score
 					// updates), see proquake cl_parse.c
-					if(*temp == 0x01)
+					if (*str == 0x01)
 					{
-						++temp;
-						while(*temp >= 0x01 && *temp <= 0x1F)
-							++temp;
+						++str;
+						while(*str >= 0x01 && *str <= 0x1F)
+							++str;
 					}
 				}
-				CL_VM_Parse_StuffCmd(temp);	//[515]: csqc
+				CL_VM_Parse_StuffCmd(str);	//[515]: csqc
 				break;
 
 			case svc_damage:
@@ -3991,8 +4000,8 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_setangle:
-				for (i=0 ; i<3 ; i++)
-					cl.viewangles[i] = MSG_ReadAngle(&cl_message, cls.protocol);
+				for (j = 0 ; j < 3 ; j ++)
+					cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 				if (!cls.demoplayback)
 				{
 					cl.fixangle[0] = true;
@@ -4006,7 +4015,7 @@ void CL_ParseServerMessage(void)
 			case svc_setview:
 				cl.viewentity = (unsigned short)MSG_ReadShort(&cl_message);
 				if (cl.viewentity >= MAX_EDICTS)
-					Host_Error("svc_setview >= MAX_EDICTS");
+					Host_Error_Line ("svc_setview >= MAX_EDICTS");
 				if (cl.viewentity >= cl.max_entities)
 					CL_ExpandEntities(cl.viewentity);
 				// LadyHavoc: assume first setview recieved is the real player entity
@@ -4018,15 +4027,15 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_lightstyle:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.max_lightstyle)
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.max_lightstyle)
 				{
 					Con_Printf ("svc_lightstyle >= MAX_LIGHTSTYLES");
 					break;
 				}
-				strlcpy (cl.lightstyle[i].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[i].map));
-				cl.lightstyle[i].map[MAX_STYLESTRING - 1] = 0;
-				cl.lightstyle[i].length = (int)strlen(cl.lightstyle[i].map);
+				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
+				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
 				break;
 
 			case svc_sound:
@@ -4042,60 +4051,60 @@ void CL_ParseServerMessage(void)
 				else
 				{
 					char *s;
-					i = (unsigned short)MSG_ReadShort(&cl_message);
+					j = (unsigned short)MSG_ReadShort(&cl_message);
 					s = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-					if (i < 32768)
+					if (j < 32768)
 					{
-						if (i >= 1 && i < MAX_MODELS)
+						if (j >= 1 && j < MAX_MODELS)
 						{
 							model_t *model = Mod_ForName(s, false, false, s[0] == '*' ? cl.model_name[1] : NULL);
 							if (!model)
-								Con_DPrintf("svc_precache: Mod_ForName(\"%s\") failed\n", s);
-							cl.model_precache[i] = model;
+								Con_DPrintf ("svc_precache: Mod_ForName(\"%s\") failed\n", s);
+							cl.model_precache[j] = model;
 						}
 						else
-							Con_Printf("svc_precache: index %i outside range %i...%i\n", i, 1, MAX_MODELS);
+							Con_PrintLinef ("svc_precache: index %d outside range %d...%d", j, 1, MAX_MODELS);
 					}
 					else
 					{
-						i -= 32768;
-						if (i >= 1 && i < MAX_SOUNDS)
+						j -= 32768;
+						if (j >= 1 && j < MAX_SOUNDS)
 						{
 							sfx_t *sfx = S_PrecacheSound (s, true, true);
 							if (!sfx && snd_initialized.integer)
-								Con_DPrintf("svc_precache: S_PrecacheSound(\"%s\") failed\n", s);
-							cl.sound_precache[i] = sfx;
+								Con_DPrintf ("svc_precache: S_PrecacheSound(\"%s\") failed\n", s);
+							cl.sound_precache[j] = sfx;
 						}
 						else
-							Con_Printf("svc_precache: index %i outside range %i...%i\n", i, 1, MAX_SOUNDS);
+							Con_PrintLinef ("svc_precache: index %d outside range %d...%d", j, 1, MAX_SOUNDS);
 					}
 				}
 				break;
 
 			case svc_stopsound:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				S_StopSound(i>>3, i&7);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				S_StopSound(j>>3, j&7);
 				break;
 
 			case svc_updatename:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error ("CL_ParseServerMessage: svc_updatename >= cl.maxclients");
-				strlcpy (cl.scores[i].name, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.scores[i].name));
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updatename >= cl.maxclients");
+				strlcpy (cl.scores[j].name, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.scores[j].name));
 				break;
 
 			case svc_updatefrags:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
-				cl.scores[i].frags = (signed short) MSG_ReadShort(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
+				cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
 				break;
 
 			case svc_updatecolors:
-				i = MSG_ReadByte(&cl_message);
-				if (i >= cl.maxclients)
-					Host_Error ("CL_ParseServerMessage: svc_updatecolors >= cl.maxclients");
-				cl.scores[i].colors = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j >= cl.maxclients)
+					Host_Error_Line ("CL_ParseServerMessage: svc_updatecolors >= cl.maxclients");
+				cl.scores[j].colors = MSG_ReadByte(&cl_message);
 				break;
 
 			case svc_particle:
@@ -4111,48 +4120,52 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_spawnbaseline:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				CL_ParseBaseline (cl.entities + i, false);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				CL_ParseBaseline (cl.entities + j, false);
 				break;
 			case svc_spawnbaseline2:
-				i = (unsigned short) MSG_ReadShort(&cl_message);
-				if (i < 0 || i >= MAX_EDICTS)
-					Host_Error ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %i", i);
-				if (i >= cl.max_entities)
-					CL_ExpandEntities(i);
-				CL_ParseBaseline (cl.entities + i, true);
+				j = (unsigned short) MSG_ReadShort(&cl_message);
+				if (j < 0 || j >= MAX_EDICTS)
+					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %d", j);
+				if (j >= cl.max_entities)
+					CL_ExpandEntities(j);
+				CL_ParseBaseline (cl.entities + j, true);
 				break;
 			case svc_spawnstatic:
 				CL_ParseStatic (false);
 				break;
+
 			case svc_spawnstatic2:
 				CL_ParseStatic (true);
 				break;
+
 			case svc_temp_entity:
-				if(!CL_VM_Parse_TempEntity())
+				if (!CL_VM_Parse_TempEntity())
 					CL_ParseTempEntity ();
 				break;
 
 			case svc_setpause:
 				cl.paused = MSG_ReadByte(&cl_message) != 0;
+
 				if (cl.paused && snd_cdautopause.integer)
 					CDAudio_Pause ();
 				else if (bgmvolume.value > 0.0f)
 					CDAudio_Resume ();
+
 				S_PauseGameSounds (cl.paused);
 				break;
 
 			case svc_signonnum:
-				i = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
 				// LadyHavoc: it's rude to kick off the client if they missed the
 				// reconnect somehow, so allow signon 1 even if at signon 1
-				if (i <= cls.signon && i != 1)
-					Host_Error ("Received signon %i when at %i", i, cls.signon);
-				cls.signon = i;
+				if (j <= cls.signon && j != 1)
+					Host_Error_Line ("Received signon %d when at %d", j, cls.signon);
+				cls.signon = j;
 				CL_SignonReply ();
 				break;
 
@@ -4165,17 +4178,17 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_updatestat:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestat: %i is invalid", i);
-				cl.stats[i] = MSG_ReadLong(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error_Line ("svc_updatestat: %d is invalid", j);
+				cl.stats[j] = MSG_ReadLong(&cl_message);
 				break;
 
 			case svc_updatestatubyte:
-				i = MSG_ReadByte(&cl_message);
-				if (i < 0 || i >= MAX_CL_STATS)
-					Host_Error ("svc_updatestat: %i is invalid", i);
-				cl.stats[i] = MSG_ReadByte(&cl_message);
+				j = MSG_ReadByte(&cl_message);
+				if (j < 0 || j >= MAX_CL_STATS)
+					Host_Error_Line ("svc_updatestat: %d is invalid", j);
+				cl.stats[j] = MSG_ReadByte(&cl_message);
 				break;
 
 			case svc_spawnstaticsound:
@@ -4189,21 +4202,23 @@ void CL_ParseServerMessage(void)
 			case svc_cdtrack:
 				cl.cdtrack = MSG_ReadByte(&cl_message);
 				cl.looptrack = MSG_ReadByte(&cl_message);
+
 				if ( (cls.demoplayback || cls.demorecording) && (cls.forcetrack != -1) )
 					CDAudio_Play ((unsigned char)cls.forcetrack, true);
 				else
 					CDAudio_Play ((unsigned char)cl.cdtrack, true);
+
 				break;
 
 			case svc_intermission:
-				if(!cl.intermission)
+				if (!cl.intermission)
 					cl.completed_time = cl.time;
 				cl.intermission = 1;
 				CL_VM_UpdateIntermissionState(cl.intermission);
 				break;
 
 			case svc_finale:
-				if(!cl.intermission)
+				if (!cl.intermission)
 					cl.completed_time = cl.time;
 				cl.intermission = 2;
 				CL_VM_UpdateIntermissionState(cl.intermission);
@@ -4211,7 +4226,7 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_cutscene:
-				if(!cl.intermission)
+				if (!cl.intermission)
 					cl.completed_time = cl.time;
 				cl.intermission = 3;
 				CL_VM_UpdateIntermissionState(cl.intermission);
@@ -4221,6 +4236,7 @@ void CL_ParseServerMessage(void)
 			case svc_sellscreen:
 				Cmd_ExecuteString(cmd_local, "help", src_local, true);
 				break;
+
 			case svc_hidelmp:
 				if (gamemode == GAME_TENEBRAE)
 				{
@@ -4239,7 +4255,7 @@ void CL_ParseServerMessage(void)
 				else
 					SHOWLMP_decodehide();
 				break;
-			case svc_showlmp:
+			case svc_showlmp: // 35
 				if (gamemode == GAME_TENEBRAE)
 				{
 					// particle effect
@@ -4252,9 +4268,11 @@ void CL_ParseServerMessage(void)
 				else
 					SHOWLMP_decodeshow();
 				break;
+
 			case svc_skybox:
 				R_SetSkyBox(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
 				break;
+
 			case svc_entities:
 				if (cls.signon == SIGNONS - 1)
 				{
@@ -4269,9 +4287,11 @@ void CL_ParseServerMessage(void)
 				else
 					EntityFrame5_CL_ReadFrame();
 				break;
+
 			case svc_csqcentities:
 				CSQC_ReadEntities();
 				break;
+
 			case svc_downloaddata:
 				CL_ParseDownload();
 				break;
@@ -4284,6 +4304,7 @@ void CL_ParseServerMessage(void)
 			case svc_pointparticles1:
 				CL_ParsePointParticles1();
 				break;
+
 			}
 //			R_TimeReport(svc_strings[cmd]);
 		}

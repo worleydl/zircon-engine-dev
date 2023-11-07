@@ -1,3 +1,5 @@
+// r_stats.c
+
 #include "quakedef.h"
 #include "r_stats.h"
 
@@ -454,7 +456,7 @@ void R_TimeReport_EndFrame(void)
 			if (!r_speeds_graph_filter[color].string)
 				continue;
 			for (stat = 0;stat < r_stat_count;stat++)
-				if (!strcmp(r_stat_name[stat], r_speeds_graph_filter[color].string))
+				if (String_Does_Match(r_stat_name[stat], r_speeds_graph_filter[color].string))
 					break;
 			if (stat >= r_stat_count)
 				continue;

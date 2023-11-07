@@ -1,3 +1,6 @@
+#ifndef COM_GAME_H
+#define COM_GAME_H
+
 /*
 Copyright (C) 2000-2021 DarkPlaces contributors
 
@@ -17,9 +20,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-
-#ifndef COM_GAME_H
-#define COM_GAME_H
 
 #include "qdefs.h"
 
@@ -82,4 +82,4 @@ extern char com_modname[MAX_OSPATH];
 void COM_InitGameType (void);
 void COM_ChangeGameTypeForGameDirs(void);
 
-#endif
+#endif // COM_GAME_H

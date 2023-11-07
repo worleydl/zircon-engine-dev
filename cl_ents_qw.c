@@ -210,31 +210,31 @@ static void EntityStateQW_ReadEntityUpdate(entity_state_t *s, int bits)
 
 	if (developer_networkentities.integer >= 2)
 	{
-		Con_Printf("ReadFields e%i", s->number);
+		Con_Printf ("ReadFields e%d", s->number);
 		if (bits & QW_U_MODEL)
-			Con_Printf(" U_MODEL %i", s->modelindex);
+			Con_Printf (" U_MODEL %d", s->modelindex);
 		if (bits & QW_U_FRAME)
-			Con_Printf(" U_FRAME %i", s->frame);
+			Con_Printf (" U_FRAME %d", s->frame);
 		if (bits & QW_U_COLORMAP)
-			Con_Printf(" U_COLORMAP %i", s->colormap);
+			Con_Printf (" U_COLORMAP %d", s->colormap);
 		if (bits & QW_U_SKIN)
-			Con_Printf(" U_SKIN %i", s->skin);
+			Con_Printf (" U_SKIN %d", s->skin);
 		if (bits & QW_U_EFFECTS)
-			Con_Printf(" U_EFFECTS %i", qweffects);
+			Con_Printf (" U_EFFECTS %d", qweffects);
 		if (bits & QW_U_ORIGIN1)
-			Con_Printf(" U_ORIGIN1 %f", s->origin[0]);
+			Con_Printf (" U_ORIGIN1 %f", s->origin[0]);
 		if (bits & QW_U_ANGLE1)
-			Con_Printf(" U_ANGLE1 %f", s->angles[0]);
+			Con_Printf (" U_ANGLE1 %f", s->angles[0]);
 		if (bits & QW_U_ORIGIN2)
-			Con_Printf(" U_ORIGIN2 %f", s->origin[1]);
+			Con_Printf (" U_ORIGIN2 %f", s->origin[1]);
 		if (bits & QW_U_ANGLE2)
-			Con_Printf(" U_ANGLE2 %f", s->angles[1]);
+			Con_Printf (" U_ANGLE2 %f", s->angles[1]);
 		if (bits & QW_U_ORIGIN3)
-			Con_Printf(" U_ORIGIN3 %f", s->origin[2]);
+			Con_Printf (" U_ORIGIN3 %f", s->origin[2]);
 		if (bits & QW_U_ANGLE3)
-			Con_Printf(" U_ANGLE3 %f", s->angles[2]);
+			Con_Printf (" U_ANGLE3 %f", s->angles[2]);
 		if (bits & QW_U_SOLID)
-			Con_Printf(" U_SOLID");
+			Con_Printf (" U_SOLID");
 		Con_Print("\n");
 	}
 }
@@ -278,12 +278,12 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 		number = MSG_ReadByte(&cl_message);
 		oldsnapindex = cl.qw_deltasequence[newsnapindex];
 		if ((number & QW_UPDATE_MASK) != (oldsnapindex & QW_UPDATE_MASK))
-			Con_DPrintf("WARNING: from mismatch\n");
+			Con_DPrintf ("WARNING: from mismatch\n");
 		if (oldsnapindex != -1)
 		{
 			if (cls.qw_outgoing_sequence - oldsnapindex >= QW_UPDATE_BACKUP-1)
 			{
-				Con_DPrintf("delta update too old\n");
+				Con_DPrintf ("delta update too old\n");
 				newsnap->invalid = invalid = true; // too old
 				delta = false;
 			}
@@ -313,10 +313,10 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 		while (newnum > oldnum) // delta only
 		{
 			if (developer_networkentities.integer >= 2)
-				Con_Printf("copy %i\n", oldnum);
+				Con_Printf ("copy %d\n", oldnum);
 			// copy one of the old entities
 			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES)
-				Host_Error("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == MAX_PACKETENTITIES");
+				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == MAX_PACKETENTITIES");
 			newsnap->entities[newsnap->num_entities] = oldsnap->entities[oldindex++];
 			newsnap->num_entities++;
 			oldnum = oldindex >= oldsnap->num_entities ? 9999 : oldsnap->entities[oldindex].number;
@@ -328,11 +328,11 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 		if (developer_networkentities.integer >= 2)
 		{
 			if (word & QW_U_REMOVE)
-				Con_Printf("remove %i\n", newnum);
+				Con_Printf ("remove %d\n", newnum);
 			else if (newnum == oldnum)
-				Con_Printf("delta %i\n", newnum);
+				Con_Printf ("delta %d\n", newnum);
 			else
-				Con_Printf("baseline %i\n", newnum);
+				Con_Printf ("baseline %d\n", newnum);
 		}
 
 		if (word & QW_U_REMOVE)
@@ -340,13 +340,13 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 			if (newnum != oldnum && !delta && !invalid)
 			{
 				cl.qw_validsequence = 0;
-				Con_Printf(CON_WARN "WARNING: U_REMOVE %i on full update\n", newnum);
+				Con_PrintLinef (CON_WARN "WARNING: U_REMOVE %d on full update", newnum);
 			}
 		}
 		else
 		{
 			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES)
-				Host_Error("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == MAX_PACKETENTITIES");
+				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == MAX_PACKETENTITIES");
 			newsnap->entities[newsnap->num_entities] = (newnum == oldnum) ? oldsnap->entities[oldindex] : cl.entities[newnum].state_baseline;
 			EntityStateQW_ReadEntityUpdate(newsnap->entities + newsnap->num_entities, word);
 			newsnap->num_entities++;

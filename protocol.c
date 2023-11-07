@@ -67,6 +67,21 @@ protocolversioninfo[] =
 	{    0, PROTOCOL_UNKNOWN     , NULL}
 };
 
+#pragma message ("nehstart nehahra?  is it an issue yes or no")
+#pragma message ("neh movie ok -- use -nehahra")
+#pragma message ("does nehahra use special textures like bump? no")
+
+#pragma message ("nehahra somehow uses the right start map")
+
+#pragma message ("demo play hides mouse")
+
+
+#pragma message ("quakeworld server list issue with cursor and stuff")
+#pragma message ("pausedemo must clear on new map")
+
+#pragma message ("less warning: new portal was clipped away happens in nehahra demo")
+
+
 protocolversion_t Protocol_EnumForName(const char *s)
 {
 	int i;

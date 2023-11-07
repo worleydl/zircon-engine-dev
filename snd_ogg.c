@@ -266,7 +266,7 @@ Try to load the VorbisFile DLL
 */
 qbool OGG_OpenLibrary (void)
 {
-	const char* dllnames_vo [] =
+	const char *dllnames_vo [] =
 	{
 #if defined(_WIN32)
 		"libvorbis-0.dll",
@@ -280,7 +280,7 @@ qbool OGG_OpenLibrary (void)
 #endif
 		NULL
 	};
-	const char* dllnames_vf [] =
+	const char *dllnames_vf [] =
 	{
 #if defined(_WIN32)
 		"libvorbisfile-3.dll",
@@ -468,7 +468,7 @@ static void OGG_GetSamplesFloat (channel_t *ch, sfx_t *sfx, int firstsampleframe
 		if (ret != 0)
 		{
 			// LadyHavoc: we can't Con_Printf here, not thread safe...
-			//Con_Printf("OGG_FetchSound: qov_pcm_seek(..., %d) returned %d\n", firstsampleframe, ret);
+			//Con_Printf ("OGG_FetchSound: qov_pcm_seek(..., %d) returned %d\n", firstsampleframe, ret);
 			return;
 		}
 	}
@@ -546,30 +546,30 @@ static void OGG_DecodeTags(vorbis_comment *vc, unsigned int *start, unsigned int
 	*peak = 0.0;
 	*gaindb = 0.0;
 
-	if(!vc)
+	if (!vc)
 		return;
 
 	thiscomment = qvorbis_comment_query(vc, "REPLAYGAIN_TRACK_PEAK", 0);
-	if(thiscomment)
+	if (thiscomment)
 		*peak = atof(thiscomment);
 	thiscomment = qvorbis_comment_query(vc, "REPLAYGAIN_TRACK_GAIN", 0);
-	if(thiscomment)
+	if (thiscomment)
 		*gaindb = atof(thiscomment);
 	
 	startcomment = qvorbis_comment_query(vc, "LOOP_START", 0); // DarkPlaces, and some Japanese app
-	if(startcomment)
+	if (startcomment)
 	{
 		endcomment = qvorbis_comment_query(vc, "LOOP_END", 0);
-		if(!endcomment)
+		if (!endcomment)
 			lengthcomment = qvorbis_comment_query(vc, "LOOP_LENGTH", 0);
 	}
 	else
 	{
 		startcomment = qvorbis_comment_query(vc, "LOOPSTART", 0); // RPG Maker VX
-		if(startcomment)
+		if (startcomment)
 		{
 			lengthcomment = qvorbis_comment_query(vc, "LOOPLENGTH", 0);
-			if(!lengthcomment)
+			if (!lengthcomment)
 				endcomment = qvorbis_comment_query(vc, "LOOPEND", 0);
 		}
 		else
@@ -578,12 +578,12 @@ static void OGG_DecodeTags(vorbis_comment *vc, unsigned int *start, unsigned int
 		}
 	}
 
-	if(startcomment)
+	if (startcomment)
 	{
 		*start = (unsigned int) bound(0, atof(startcomment), numsamples);
-		if(endcomment)
+		if (endcomment)
 			*length = (unsigned int) bound(0, atof(endcomment), numsamples);
-		else if(lengthcomment)
+		else if (lengthcomment)
 			*length = (unsigned int) bound(0, *start + atof(lengthcomment), numsamples);
 	}
 }
@@ -620,7 +620,7 @@ qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 		return false;
 
 	if (developer_loading.integer >= 2)
-		Con_Printf("Loading Ogg Vorbis file \"%s\"\n", filename);
+		Con_Printf ("Loading Ogg Vorbis file \"%s\"\n", filename);
 
 	// Open it with the VorbisFile API
 	ov_decode.buffer = data;
@@ -628,7 +628,7 @@ qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 	ov_decode.buffsize = filesize;
 	if (qov_open_callbacks(&ov_decode, &vf, NULL, 0, callbacks) < 0)
 	{
-		Con_Printf("error while opening Ogg Vorbis file \"%s\"\n", filename);
+		Con_Printf ("error while opening Ogg Vorbis file \"%s\"\n", filename);
 		Mem_Free(data);
 		return false;
 	}
@@ -637,7 +637,7 @@ qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 	vi = qov_info(&vf, -1);
 	if (vi->channels < 1 || vi->channels > 2)
 	{
-		Con_Printf("%s has an unsupported number of channels (%i)\n",
+		Con_PrintLinef ("%s has an unsupported number of channels (%d)",
 					sfx->name, vi->channels);
 		qov_clear (&vf);
 		Mem_Free(data);
@@ -655,7 +655,7 @@ qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 		// large sounds use the OGG fetcher to decode the file on demand (but the entire file is held in memory)
 		ogg_stream_persfx_t* per_sfx;
 		if (developer_loading.integer >= 2)
-			Con_Printf("Ogg sound file \"%s\" will be streamed\n", filename);
+			Con_Printf ("Ogg sound file \"%s\" will be streamed\n", filename);
 		per_sfx = (ogg_stream_persfx_t *)Mem_Alloc(snd_mempool, sizeof(*per_sfx));
 		sfx->memsize += sizeof (*per_sfx);
 		per_sfx->file = data;
@@ -694,14 +694,14 @@ qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 		Mem_Free(data);
 	}
 
-	if(peak)
+	if (peak)
 	{
 		sfx->volume_mult = min(1.0f / peak, exp(gaindb * 0.05f * log(10.0f)));
 		sfx->volume_peak = peak;
 		if (developer_loading.integer >= 2)
 			Con_Printf ("Ogg sound file \"%s\" uses ReplayGain (gain %f, peak %f)\n", filename, sfx->volume_mult, sfx->volume_peak);
 	}
-	else if(gaindb != 0)
+	else if (gaindb != 0)
 	{
 		sfx->volume_mult = min(1.0f / peak, exp(gaindb * 0.05f * log(10.0f)));
 		sfx->volume_peak = 1.0; // if peak is not defined, we won't trust it

@@ -235,7 +235,7 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 
 	if (nvolume < 0 || nvolume > 255)
 	{
-		Con_Printf ("SV_StartSound: volume = %i\n", nvolume);
+		Con_Printf ("SV_StartSound: volume = %d\n", nvolume);
 		return;
 	}
 
@@ -247,7 +247,7 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 
 	if (!IS_CHAN(channel))
 	{
-		Con_Printf ("SV_StartSound: channel = %i\n", channel);
+		Con_Printf ("SV_StartSound: channel = %d\n", channel);
 		return;
 	}
 
@@ -300,7 +300,7 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 		MSG_WriteCoord (dest, PRVM_serveredictvector(entity, origin)[i]+0.5*(PRVM_serveredictvector(entity, mins)[i]+PRVM_serveredictvector(entity, maxs)[i]), sv.protocol);
 
 	// TODO do we have to do anything here when dest is &sv.reliable_datagram?
-	if(!reliable)
+	if (!reliable)
 		SV_FlushBroadcastMessages();
 }
 
@@ -323,7 +323,7 @@ void SV_StartPointSound (vec3_t origin, const char *sample, int nvolume, float a
 
 	if (nvolume < 0 || nvolume > 255)
 	{
-		Con_Printf ("SV_StartPointSound: volume = %i\n", nvolume);
+		Con_Printf ("SV_StartPointSound: volume = %d\n", nvolume);
 		return;
 	}
 
@@ -782,7 +782,7 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 	if (numtouchedicts > MAX_EDICTS)
 	{
 		// this never happens
-		Con_Printf("SV_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 		numtouchedicts = MAX_EDICTS;
 	}
 	// iterate the entities found in the sweep box and filter them
@@ -820,7 +820,7 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 		{
 			touch = touchedicts[touchindex];
 			model = SV_GetModelFromEdict(touch);
-			if(model && model->brush.TraceLineOfSight)
+			if (model && model->brush.TraceLineOfSight)
 			{
 				// get the entity matrix
 				pitchsign = SV_GetPitchSign(prog, touch);
@@ -877,7 +877,7 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 		PRVM_serverglobaledict(self) = s->number;
 		PRVM_serverglobaledict(other) = sv.writeentitiestoclient_cliententitynumber;
 		prog->ExecuteProgram(prog, s->customizeentityforclient, "customizeentityforclient: NULL function");
-		if(!PRVM_G_FLOAT(OFS_RETURN) || !SV_PrepareEntityForSending(PRVM_EDICT_NUM(s->number), s, s->number))
+		if (!PRVM_G_FLOAT(OFS_RETURN) || !SV_PrepareEntityForSending(PRVM_EDICT_NUM(s->number), s, s->number))
 			return;
 	}
 
@@ -957,13 +957,13 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 						? sv_cullentities_trace_samples_extra.integer
 						: sv_cullentities_trace_samples.integer;
 
-				if(samples > 0)
+				if (samples > 0)
 				{
 					int eyeindex;
 					for (eyeindex = 0;eyeindex < sv.writeentitiestoclient_numeyes;eyeindex++)
-						if(SV_CanSeeBox(samples, sv_cullentities_trace_eyejitter.value, sv_cullentities_trace_enlarge.value, sv_cullentities_trace_expand.value, sv.writeentitiestoclient_eyes[eyeindex], ed->priv.server->cullmins, ed->priv.server->cullmaxs))
+						if (SV_CanSeeBox(samples, sv_cullentities_trace_eyejitter.value, sv_cullentities_trace_enlarge.value, sv_cullentities_trace_expand.value, sv.writeentitiestoclient_eyes[eyeindex], ed->priv.server->cullmins, ed->priv.server->cullmaxs))
 							break;
-					if(eyeindex < sv.writeentitiestoclient_numeyes)
+					if (eyeindex < sv.writeentitiestoclient_numeyes)
 						svs.clients[sv.writeentitiestoclient_clientnumber].visibletime[s->number] =
 							host.realtime + (
 								s->number <= svs.maxclients
@@ -1005,7 +1005,7 @@ void SV_AddCameraEyes(void)
 	{
 		if (!ed->free)
 		{
-			if(PRVM_serveredictfunction(ed, camera_transform))
+			if (PRVM_serveredictfunction(ed, camera_transform))
 			{
 				PRVM_serverglobalfloat(time) = sv.time;
 				PRVM_serverglobaledict(self) = e;
@@ -1014,34 +1014,34 @@ void SV_AddCameraEyes(void)
 				VectorCopy(sv.writeentitiestoclient_eyes[0], PRVM_G_VECTOR(OFS_PARM0));
 				VectorClear(PRVM_G_VECTOR(OFS_PARM1));
 				prog->ExecuteProgram(prog, PRVM_serveredictfunction(ed, camera_transform), "QC function e.camera_transform is missing");
-				if(!VectorCompare(PRVM_serverglobalvector(trace_endpos), sv.writeentitiestoclient_eyes[0]))
+				if (!VectorCompare(PRVM_serverglobalvector(trace_endpos), sv.writeentitiestoclient_eyes[0]))
 				{
 					VectorCopy(PRVM_serverglobalvector(trace_endpos), camera_origins[n_cameras]);
 					cameras[n_cameras] = e;
 					++n_cameras;
-					if(n_cameras >= MAX_LEVELNETWORKEYES)
+					if (n_cameras >= MAX_LEVELNETWORKEYES)
 						break;
 				}
 			}
 		}
 	}
 
-	if(!n_cameras)
+	if (!n_cameras)
 		return;
 
 	// i is loop counter, is reset to 0 when an eye got added
 	// j is camera index to check
 	for(i = 0, j = 0; sv.writeentitiestoclient_numeyes < MAX_CLIENTNETWORKEYES && i < n_cameras; ++i, ++j, j %= n_cameras)
 	{
-		if(!cameras[j])
+		if (!cameras[j])
 			continue;
 		ed = PRVM_EDICT_NUM(cameras[j]);
 		VectorAdd(PRVM_serveredictvector(ed, origin), PRVM_serveredictvector(ed, mins), mi);
 		VectorAdd(PRVM_serveredictvector(ed, origin), PRVM_serveredictvector(ed, maxs), ma);
 		for(k = 0; k < sv.writeentitiestoclient_numeyes; ++k)
-		if(eye_levels[k] <= MAX_EYE_RECURSION)
+		if (eye_levels[k] <= MAX_EYE_RECURSION)
 		{
-			if(SV_CanSeeBox(sv_cullentities_trace_samples_extra.integer, sv_cullentities_trace_eyejitter.value, sv_cullentities_trace_enlarge.value, sv_cullentities_trace_expand.value, sv.writeentitiestoclient_eyes[k], mi, ma))
+			if (SV_CanSeeBox(sv_cullentities_trace_samples_extra.integer, sv_cullentities_trace_eyejitter.value, sv_cullentities_trace_enlarge.value, sv_cullentities_trace_expand.value, sv.writeentitiestoclient_eyes[k], mi, ma))
 				svs.clients[sv.writeentitiestoclient_clientnumber].visibletime[cameras[j]] = host.realtime + sv_cullentities_trace_delay.value;
 
 			// bones_was_here: this use of visibletime doesn't conflict because sv_cullentities_trace doesn't consider portal entities
@@ -1050,7 +1050,7 @@ void SV_AddCameraEyes(void)
 			{
 				eye_levels[sv.writeentitiestoclient_numeyes] = eye_levels[k] + 1;
 				VectorCopy(camera_origins[j], sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes]);
-				// Con_Printf("added eye %d: %f %f %f because we can see %f %f %f .. %f %f %f from eye %d\n", j, sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes][0], sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes][1], sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes][2], mi[0], mi[1], mi[2], ma[0], ma[1], ma[2], k);
+				// Con_Printf ("added eye %d: %f %f %f because we can see %f %f %f .. %f %f %f from eye %d\n", j, sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes][0], sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes][1], sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes][2], mi[0], mi[1], mi[2], ma[0], ma[1], ma[2], k);
 				sv.writeentitiestoclient_numeyes++;
 				cameras[j] = 0;
 				i = 0;
@@ -1123,7 +1123,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	SV_SetIdealPitch ();		// how much to look up / down ideally
 
 // a fixangle might get lost in a dropped packet.  Oh well.
-	if(PRVM_serveredictfloat(ent, fixangle))
+	if (PRVM_serveredictfloat(ent, fixangle))
 	{
 		// angle fixing was requested by global thinking code...
 		// so store the current angles for later use
@@ -1207,7 +1207,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 
 // Baker: This defaults 0.  Xonotic uses it.
 // Baker: Custom stats disables stats above 220
-	if(sv_gameplayfix_customstats.integer == 0) {
+	if (sv_gameplayfix_customstats.integer == 0) {
 		statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value;
 		statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
 		statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;		
@@ -1497,7 +1497,7 @@ static void SV_SendClientDatagram (client_t *client)
 
 		// csqc entities can easily exceed 128 bytes, so disable throttling in
 		// mods that use csqc (they are likely to use less bandwidth anyway)
-		if((net_usesizelimit.integer == 1) ? (sv.csqc_progsize > 0) : (net_usesizelimit.integer < 1))
+		if ((net_usesizelimit.integer == 1) ? (sv.csqc_progsize > 0) : (net_usesizelimit.integer < 1))
 			maxsize = maxsize2;
 
 		break;
@@ -1576,7 +1576,7 @@ static void SV_SendClientDatagram (client_t *client)
 	}
 
 	// reliable only if none is in progress
-	if(client->sendsignon != 2 && !client->netconnection->sendMessageLength)
+	if (client->sendsignon != 2 && !client->netconnection->sendMessageLength)
 		SV_WriteDemoMessage(client, &(client->netconnection->message), false);
 	// unreliable
 	SV_WriteDemoMessage(client, &msg, false);
@@ -1667,8 +1667,8 @@ static void SV_UpdateToReliableMessages (void)
 
 		// frags
 		host_client->frags = (int)PRVM_serveredictfloat(host_client->edict, frags);
-		if(IS_OLDNEXUIZ_DERIVED(gamemode))
-			if(!host_client->begun && host_client->netconnection)
+		if (IS_OLDNEXUIZ_DERIVED(gamemode))
+			if (!host_client->begun && host_client->netconnection)
 				host_client->frags = -666;
 		if (host_client->old_frags != host_client->frags)
 		{
@@ -1697,7 +1697,7 @@ void SV_SendClientMessages(void)
 	int i, prepared = false;
 
 	if (sv.protocol == PROTOCOL_QUAKEWORLD)
-		Sys_Error("SV_SendClientMessages: no quakeworld support\n");
+		Sys_Error ("SV_SendClientMessages: no quakeworld support\n");
 
 	SV_FlushBroadcastMessages();
 

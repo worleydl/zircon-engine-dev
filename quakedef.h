@@ -181,5 +181,5 @@ void Sys_Shared_Init(void);
 
 
 
-#endif // QUAKEDEF_H
+#endif // ! QUAKEDEF_H
 

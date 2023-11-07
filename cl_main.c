@@ -58,9 +58,6 @@ cvar_t m_side = {CF_CLIENT | CF_ARCHIVE, "m_side","0.8","mouse side speed multip
 
 cvar_t freelook = {CF_CLIENT | CF_ARCHIVE, "freelook", "1","mouse controls pitch instead of forward/back"};
 
-cvar_t cl_autodemo = {CF_CLIENT | CF_ARCHIVE, "cl_autodemo", "0", "records every game played, using the date/time and map name to name the demo file" };
-cvar_t cl_autodemo_nameformat = {CF_CLIENT | CF_ARCHIVE, "cl_autodemo_nameformat", "autodemos/%Y-%m-%d_%H-%M", "The format of the cl_autodemo filename, followed by the map name (the date is encoded using strftime escapes)" };
-cvar_t cl_autodemo_delete = {CF_CLIENT, "cl_autodemo_delete", "0", "Delete demos after recording.  This is a bitmask, bit 1 gives the default, bit 0 the value for the current demo.  Thus, the values are: 0 = disabled; 1 = delete current demo only; 2 = delete all demos except the current demo; 3 = delete all demos from now on" };
 
 cvar_t r_skyfog = { CF_CLIENT, "r_skyfog", "0.5"," Controls how much the sky is obscured by the fog. 0 = sky is completely unfogged, 1 = sky is completely fogged.  [Zircon]" }; // Baker r1201: FitzQuake r_skyfog
 cvar_t r_draweffects = {CF_CLIENT, "r_draweffects", "1","renders temporary sprite effects"};
@@ -104,13 +101,13 @@ cvar_t cl_minfps_qualitymultiply = {CF_CLIENT | CF_ARCHIVE, "cl_minfps_qualitymu
 cvar_t cl_minfps_qualityhysteresis = {CF_CLIENT | CF_ARCHIVE, "cl_minfps_qualityhysteresis", "0.05", "reduce all quality increments by this to reduce flickering"};
 cvar_t cl_minfps_qualitystepmax = {CF_CLIENT | CF_ARCHIVE, "cl_minfps_qualitystepmax", "0.1", "maximum quality change in a single frame"};
 cvar_t cl_minfps_force = {CF_CLIENT, "cl_minfps_force", "0", "also apply quality reductions in timedemo/capturevideo"};
-cvar_t cl_maxfps = {CF_CLIENT | CF_ARCHIVE, "cl_maxfps", "144", "maximum fps cap, 0 = unlimited, if game is running faster than this it will wait before running another frame (useful to make cpu time available to other programs)"};  // Baker r5001: laptop battery/cooling fan nice defaults, that means cl_maxfps 144, 800 fps does a laptop no favors.
+cvar_t cl_maxfps = {CF_CLIENT | CF_ARCHIVE, "cl_maxfps", "144", "maximum fps cap, 0 = unlimited, if game is running faster than this it will wait before running another frame (useful to make cpu time available to other programs) [Zircon default]"};  // Baker r5001: laptop battery/cooling fan nice defaults, that means cl_maxfps 144, 800 fps does a laptop no favors.
 cvar_t cl_maxfps_alwayssleep = {CF_CLIENT | CF_ARCHIVE, "cl_maxfps_alwayssleep","1", "gives up some processing time to other applications each frame, value in milliseconds, disabled if cl_maxfps is 0"};
 cvar_t cl_maxidlefps = {CF_CLIENT | CF_ARCHIVE, "cl_maxidlefps", "20", "maximum fps cap when the game is not the active window (makes cpu time available to other programs"};
+cvar_t cl_maxconsole_menu_fps = { CF_CLIENT, "cl_maxconsole_menu_fps", "72", "maximum fps cap when console is up or menu is up and not hosting a game [Zircon]" }; // Baker r8192: throttle
 
 cvar_t cl_areagrid_link_SOLID_NOT = {CF_CLIENT, "cl_areagrid_link_SOLID_NOT", "1", "set to 0 to prevent SOLID_NOT entities from being linked to the area grid, and unlink any that are already linked (in the code paths that would otherwise link them), for better performance"};
 cvar_t cl_gameplayfix_nudgeoutofsolid_separation = {CF_CLIENT, "cl_gameplayfix_nudgeoutofsolid_separation", "0.03125", "keep objects this distance apart to prevent collision issues on seams"};
-
 
 client_static_t	cls;
 client_state_t	cl;
@@ -238,7 +235,7 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 	char vabuf[1024];
 	if (!allowstarkey && key[0] == '*')
 		fail = true;
-	if (!allowmodel && (!strcasecmp(key, "pmodel") || !strcasecmp(key, "emodel")))
+	if (!allowmodel && (String_Does_Match_Caseless(key, "pmodel") || String_Does_Match_Caseless(key, "emodel")))
 		fail = true;
 	for (i = 0;key[i];i++)
 		if (ISWHITESPACE(key[i]) || key[i] == '\"')
@@ -249,7 +246,7 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 	if (fail)
 	{
 		if (!quiet)
-			Con_Printf("Can't setinfo \"%s\" \"%s\"\n", key, value);
+			Con_Printf ("Can't setinfo \"%s\" \"%s\"\n", key, value);
 		return;
 	}
 	InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), key, value);
@@ -260,37 +257,37 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "setinfo \"%s\" \"%s\"", key, value));
 		}
-		else if (!strcasecmp(key, "name"))
+		else if (String_Does_Match_Caseless(key, "name"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "name \"%s\"", value));
 		}
-		else if (!strcasecmp(key, "playermodel"))
+		else if (String_Does_Match_Caseless(key, "playermodel"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "playermodel \"%s\"", value));
 		}
-		else if (!strcasecmp(key, "playerskin"))
+		else if (String_Does_Match_Caseless(key, "playerskin"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "playerskin \"%s\"", value));
 		}
-		else if (!strcasecmp(key, "topcolor"))
+		else if (String_Does_Match_Caseless(key, "topcolor"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "color %i %i", atoi(value), cl_bottomcolor.integer));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "color %d %d", atoi(value), cl_bottomcolor.integer));
 		}
-		else if (!strcasecmp(key, "bottomcolor"))
+		else if (String_Does_Match_Caseless(key, "bottomcolor"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "color %i %i", cl_topcolor.integer, atoi(value)));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "color %d %d", cl_topcolor.integer, atoi(value)));
 		}
-		else if (!strcasecmp(key, "rate"))
+		else if (String_Does_Match_Caseless(key, "rate"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate \"%s\"", value));
 		}
-		else if (!strcasecmp(key, "rate_burstsize"))
+		else if (String_Does_Match_Caseless(key, "rate_burstsize"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate_burstsize \"%s\"", value));
@@ -305,9 +302,9 @@ void CL_ExpandEntities(int num)
 	if (num >= cl.max_entities)
 	{
 		if (!cl.entities)
-			Sys_Error("CL_ExpandEntities: cl.entities not initialized");
+			Sys_Error ("CL_ExpandEntities: cl.entities not initialized");
 		if (num >= MAX_EDICTS)
-			Host_Error("CL_ExpandEntities: num %i >= %i", num, MAX_EDICTS);
+			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS);
 		oldmaxentities = cl.max_entities;
 		oldentities = cl.entities;
 		cl.max_entities = (num & ~255) + 256;
@@ -331,7 +328,7 @@ void CL_ExpandCSQCRenderEntities(int num)
 	if (num >= cl.max_csqcrenderentities)
 	{
 		if (num >= MAX_EDICTS)
-			Host_Error("CL_ExpandEntities: num %i >= %i", num, MAX_EDICTS);
+			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS);
 		oldmaxcsqcrenderentities = cl.max_csqcrenderentities;
 		oldcsqcrenderentities = cl.csqcrenderentities;
 		cl.max_csqcrenderentities = (num & ~255) + 256;
@@ -340,7 +337,7 @@ void CL_ExpandCSQCRenderEntities(int num)
 		{
 			memcpy(cl.csqcrenderentities, oldcsqcrenderentities, oldmaxcsqcrenderentities * sizeof(entity_render_t));
 			for (i = 0;i < r_refdef.scene.numentities;i++)
-				if(r_refdef.scene.entities[i] >= oldcsqcrenderentities && r_refdef.scene.entities[i] < (oldcsqcrenderentities + oldmaxcsqcrenderentities))
+				if (r_refdef.scene.entities[i] >= oldcsqcrenderentities && r_refdef.scene.entities[i] < (oldcsqcrenderentities + oldmaxcsqcrenderentities))
 					r_refdef.scene.entities[i] = cl.csqcrenderentities + (r_refdef.scene.entities[i] - oldcsqcrenderentities);
 			Mem_Free(oldcsqcrenderentities);
 		}
@@ -389,7 +386,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 
 	Curl_Clear_forthismap();
 
-	Con_DPrintf("CL_Disconnect\n");
+	Con_DPrintLinef ("CL_Disconnect");
 
 	Cvar_SetValueQuick(&csqc_progcrc, -1);
 	Cvar_SetValueQuick(&csqc_progsize, -1);
@@ -420,8 +417,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 		if (cls.demorecording)
 			CL_Stop_f(cmd_local);
 
-		if(!kicked)
-		{
+		if (!kicked) {
 			// send disconnect message 3 times to improve chances of server
 			// receiving it (but it still fails sometimes)
 			memset(&buf, 0, sizeof(buf));
@@ -437,20 +433,24 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 			{
 				Con_DPrint("Sending clc_disconnect\n");
 				MSG_WriteByte(&buf, clc_disconnect);
-				if(cls.protocol == PROTOCOL_DARKPLACES8)
+				if (cls.protocol == PROTOCOL_DARKPLACES8)
 					MSG_WriteString(&buf, reason);
 			}
 			NetConn_SendUnreliableMessage(cls.netcon, &buf, cls.protocol, 10000, 0, false);
 			NetConn_SendUnreliableMessage(cls.netcon, &buf, cls.protocol, 10000, 0, false);
 			NetConn_SendUnreliableMessage(cls.netcon, &buf, cls.protocol, 10000, 0, false);
-		}
+		} // !kicked
 
 		NetConn_Close(cls.netcon);
 		cls.netcon = NULL;
-		if(fmt)
-			Con_Printf("Disconnect: %s\n", reason);
+		if (fmt) {
+			// Baker r1481: Reduce spam in this case if there is no reason, it may just be a new map
+			if (reason && reason[0]) {
+				Con_PrintLinef ("Disconnect: %s", reason);
+			}
+		}
 		else
-			Con_Printf("Disconnected\n");
+			Con_PrintLinef ("Disconnected");
 	}
 	cls.state = ca_disconnected;
 	cl.islocalgame = false;
@@ -463,7 +463,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 	// If we're dropped mid-connection attempt, it won't clear otherwise.
 	SCR_ClearLoadingScreen(false);
 
-	if(host.hook.SV_Shutdown)
+	if (host.hook.SV_Shutdown)
 		host.hook.SV_Shutdown();
 }
 
@@ -484,32 +484,29 @@ static void CL_Reconnect_f(cmd_state_t *cmd)
 {
 	char temp[128];
 	// if not connected, reconnect to the most recent server
-	if (!cls.netcon)
-	{
+	if (!cls.netcon) {
 		// if we have connected to a server recently, the userinfo
 		// will still contain its IP address, so get the address...
 		InfoString_GetValue(cls.userinfo, "*ip", temp, sizeof(temp));
 		if (temp[0])
 			CL_EstablishConnection(temp, -1);
 		else
-			Con_Printf("Reconnect to what server?  (you have not connected to a server yet)\n");
+			Con_PrintLinef ("Reconnect to what server?  (you have not connected to a server yet)");
 		return;
 	}
 
 	Con_CloseConsole_If_Client(); // Baker r1003: close console for map/load/etc.
 
 	// if connected, do something based on protocol
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-	{
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 		// quakeworld can just re-login
 		if (cls.qw_downloadmemory)  // don't change when downloading
 			return;
 
 		S_StopAllSounds();
 
-		if (cls.state == ca_connected)
-		{
-			Con_Printf("Server is changing level...\n");
+		if (cls.state == ca_connected) {
+			Con_PrintLinef ("Server is changing level...");
 			MSG_WriteChar(&cls.netcon->message, qw_clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, "new");
 		}
@@ -517,14 +514,12 @@ static void CL_Reconnect_f(cmd_state_t *cmd)
 	else
 	{
 		// netquake uses reconnect on level changes (silly)
-		if (Cmd_Argc(cmd) != 1)
-		{
-			Con_Print("reconnect : wait for signon messages again\n");
+		if (Cmd_Argc(cmd) != 1) {
+			Con_PrintLinef ("reconnect : wait for signon messages again");
 			return;
 		}
-		if (!cls.signon)
-		{
-			Con_Print("reconnect: no signon, ignoring reconnect\n");
+		if (!cls.signon) {
+			Con_PrintLinef ("reconnect: no signon, ignoring reconnect");
 			return;
 		}
 		cls.signon = 0;		// need new connection messages
@@ -540,16 +535,15 @@ User command to connect to server
 */
 static void CL_Connect_f(cmd_state_t *cmd)
 {
-	if (Cmd_Argc(cmd) < 2)
-	{
-		Con_Print("connect <serveraddress> [<key> <value> ...]: connect to a multiplayer game\n");
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("connect <serveraddress> [<key> <value> ...]: connect to a multiplayer game");
 		return;
 	}
 
 	Con_CloseConsole_If_Client(); // Baker r1003: close console for map/load/etc.
 
 	// clear the rcon password, to prevent vulnerability by stuffcmd-ing a connect command
-	if(rcon_secure.integer <= 0)
+	if (rcon_secure.integer <= 0)
 		Cvar_SetQuick(&rcon_password, "");
 	CL_EstablishConnection(Cmd_Argv(cmd, 1), 2);
 }
@@ -558,9 +552,6 @@ void CL_Disconnect_f(cmd_state_t *cmd)
 {
 	Cmd_Argc(cmd) < 1 ? CL_Disconnect() : CL_DisconnectEx(false, Cmd_Argv(cmd, 1));
 }
-
-
-
 
 /*
 =====================
@@ -593,14 +584,14 @@ void CL_EstablishConnection(const char *address, int firstarg)
 		cls.connect_nextsendtime = 0;
 
 		// only NOW, set connect_userinfo
-		if(firstarg >= 0)
+		if (firstarg >= 0)
 		{
 			int i;
 			*cls.connect_userinfo = 0;
 			for(i = firstarg; i+2 <= Cmd_Argc(cmd_local); i += 2)
-				InfoString_SetValue(cls.connect_userinfo, sizeof(cls.connect_userinfo), Cmd_Argv(cmd_local, i), Cmd_Argv(cmd_local, i+1));
+				InfoString_SetValue(cls.connect_userinfo, sizeof(cls.connect_userinfo), Cmd_Argv(cmd_local, i), Cmd_Argv(cmd_local, i + 1));
 		}
-		else if(firstarg < -1)
+		else if (firstarg < -1)
 		{
 			// -1: keep as is (reconnect)
 			// -2: clear
@@ -614,7 +605,7 @@ void CL_EstablishConnection(const char *address, int firstarg)
 	}
 	else
 	{
-		Con_Print("Unable to find a suitable network socket to connect to server.\n");
+		Con_PrintLinef ("Unable to find a suitable network socket to connect to server.");
 #ifdef CONFIG_MENU
 		M_Update_Return_Reason("No network");
 #endif
@@ -623,7 +614,7 @@ void CL_EstablishConnection(const char *address, int firstarg)
 
 static void CL_EstablishConnection_Local(void)
 {
-	if(cls.state == ca_disconnected)
+	if (cls.state == ca_disconnected)
 		CL_EstablishConnection("local:1", -2);
 }
 
@@ -644,7 +635,7 @@ static void CL_PrintEntities_f(cmd_state_t *cmd)
 
 	for (i = 0, ent = cl.entities;i < cl.num_entities;i++, ent++)
 	{
-		const char* modelname;
+		const char *modelname;
 
 		if (!ent->state_current.active)
 			continue;
@@ -653,7 +644,7 @@ static void CL_PrintEntities_f(cmd_state_t *cmd)
 			modelname = ent->render.model->model_name;
 		else
 			modelname = "--no model--";
-		Con_Printf("%3i: %-25s:%4i (%5i %5i %5i) [%3i %3i %3i] %4.2f %5.3f\n", i, modelname, ent->render.framegroupblend[0].frame, (int) ent->state_current.origin[0], (int) ent->state_current.origin[1], (int) ent->state_current.origin[2], (int) ent->state_current.angles[0] % 360, (int) ent->state_current.angles[1] % 360, (int) ent->state_current.angles[2] % 360, ent->render.scale, ent->render.alpha);
+		Con_PrintLinef ("%3d: %-25s:%4d (%5d %5d %5d) [%3d %3d %3d] %4.2f %5.3f", i, modelname, ent->render.framegroupblend[0].frame, (int) ent->state_current.origin[0], (int) ent->state_current.origin[1], (int) ent->state_current.origin[2], (int) ent->state_current.angles[0] % 360, (int) ent->state_current.angles[1] % 360, (int) ent->state_current.angles[2] % 360, ent->render.scale, ent->render.alpha);
 	}
 }
 
@@ -670,17 +661,17 @@ static void CL_ModelIndexList_f(cmd_state_t *cmd)
 	model_t *model;
 
 	// Print Header
-	Con_Printf("%3s: %-30s %-8s %-8s\n", "ID", "Name", "Type", "Triangles");
+	Con_Printf ("%3s: %-30s %-8s %-8s\n", "ID", "Name", "Type", "Triangles");
 
 	for (i = -MAX_MODELS;i < MAX_MODELS;i++)
 	{
 		model = CL_GetModelByIndex(i);
 		if (!model)
 			continue;
-		if(model->loaded || i == 1)
-			Con_Printf("%3i: %-30s %-8s %-10i\n", i, model->model_name, model->modeldatatypestring, model->surfmesh.num_triangles);
+		if (model->loaded || i == 1)
+			Con_PrintLinef ("%3d: %-30s %-8s %-10d", i, model->model_name, model->modeldatatypestring, model->surfmesh.num_triangles);
 		else
-			Con_Printf("%3i: %-30s %-30s\n", i, model->model_name, "--no local model found--");
+			Con_PrintLinef ("%3d: %-30s %-30s", i, model->model_name, "--no local model found--");
 		i++;
 	}
 }
@@ -698,7 +689,7 @@ static void CL_SoundIndexList_f(cmd_state_t *cmd)
 
 	while(cl.sound_precache[i] && i != MAX_SOUNDS)
 	{ // Valid Sound
-		Con_Printf("%i : %s\n", i, cl.sound_precache[i]->name);
+		Con_Printf ("%d : %s\n", i, cl.sound_precache[i]->name);
 		i++;
 	}
 }
@@ -795,7 +786,7 @@ void CL_ClearTempEntities (void)
 	// grow tempentities buffer on request
 	if (r_refdef.scene.expandtempentities)
 	{
-		Con_Printf("CL_NewTempEntity: grow maxtempentities from %i to %i\n", r_refdef.scene.maxtempentities, r_refdef.scene.maxtempentities * 2);
+		Con_Printf ("CL_NewTempEntity: grow maxtempentities from %d to %d\n", r_refdef.scene.maxtempentities, r_refdef.scene.maxtempentities * 2);
 		r_refdef.scene.maxtempentities *= 2;
 		r_refdef.scene.tempentities = (entity_render_t *)Mem_Realloc(cls.permanentmempool, r_refdef.scene.tempentities, sizeof(entity_render_t) * r_refdef.scene.maxtempentities);
 		r_refdef.scene.expandtempentities = false;
@@ -832,12 +823,12 @@ void CL_Effect(vec3_t org, model_t *model, int startframe, int framecount, float
 		return;
 	if (framerate < 1)
 	{
-		Con_Printf("CL_Effect: framerate %f is < 1\n", framerate);
+		Con_DPrintLinef ("CL_Effect: framerate %f is < 1", framerate); // SEPuS
 		return;
 	}
 	if (framecount < 1)
 	{
-		Con_Printf("CL_Effect: framecount %i is < 1\n", framecount);
+		Con_PrintLinef ("CL_Effect: framecount %d is < 1", framecount); // SEPuS
 		return;
 	}
 	for (i = 0, e = cl.effects;i < cl.max_effects;i++, e++)
@@ -875,7 +866,7 @@ void CL_AllocLightFlash(entity_render_t *ent, matrix4x4_t *matrix, float radius,
 	if (i == cl.max_dlights)
 		return;
 
-	//Con_Printf("dlight %i : %f %f %f : %f %f %f\n", i, org[0], org[1], org[2], red * radius, green * radius, blue * radius);
+	//Con_Printf ("dlight %d : %f %f %f : %f %f %f\n", i, org[0], org[1], org[2], red * radius, green * radius, blue * radius);
 	memset (dl, 0, sizeof(*dl));
 	cl.num_dlights = max(cl.num_dlights, i + 1);
 	Matrix4x4_Normalize(&dl->matrix, matrix);
@@ -899,7 +890,7 @@ void CL_AllocLightFlash(entity_render_t *ent, matrix4x4_t *matrix, float radius,
 		dl->die = 0;
 	dl->cubemapname[0] = 0;
 	if (cubemapname && cubemapname[0])
-		strlcpy(dl->cubemapname, cubemapname, sizeof(dl->cubemapname));
+		c_strlcpy(dl->cubemapname, cubemapname);
 	dl->style = style;
 	dl->shadow = shadowenable;
 	dl->corona = corona;
@@ -1108,7 +1099,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 	e->render.effects = e->state_current.effects;
 	VectorScale(e->state_current.colormod, (1.0f / 32.0f), e->render.colormod);
 	VectorScale(e->state_current.glowmod, (1.0f / 32.0f), e->render.glowmod);
-	if(e >= cl.entities && e < cl.entities + cl.num_entities)
+	if (e >= cl.entities && e < cl.entities + cl.num_entities)
 		e->render.entitynumber = e - cl.entities;
 	else
 		e->render.entitynumber = 0;
@@ -1137,10 +1128,10 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		{
 			// it may still be a CSQC entity... trying to use its
 			// info from last render frame (better than nothing)
-			if(!cl.csqc_server2csqcentitynumber[e->state_current.tagentity])
+			if (!cl.csqc_server2csqcentitynumber[e->state_current.tagentity])
 				return;
 			r = cl.csqcrenderentities + cl.csqc_server2csqcentitynumber[e->state_current.tagentity];
-			if(!r->entitynumber)
+			if (!r->entitynumber)
 				return; // neither CSQC nor legacy entity... can't attach
 		}
 		// make relative to the entity
@@ -1150,7 +1141,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		// if a valid tagindex is used, make it relative to that tag instead
 		if (e->state_current.tagentity && e->state_current.tagindex >= 1 && r->model)
 		{
-			if(!Mod_Alias_GetTagMatrix(r->model, r->frameblend, r->skeleton, e->state_current.tagindex - 1, &blendmatrix)) // i.e. no error
+			if (!Mod_Alias_GetTagMatrix(r->model, r->frameblend, r->skeleton, e->state_current.tagindex - 1, &blendmatrix)) // i.e. no error
 			{
 				// concat the tag matrices onto the entity matrix
 				Matrix4x4_Concat(&tempmatrix, &r->matrix, &blendmatrix);
@@ -1232,7 +1223,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		// if model is alias or this is a tenebrae-like dlight, reverse pitch direction
 		if (e->render.model->type == mod_alias)
 			angles[0] = -angles[0];
-		if ((e->render.effects & EF_SELECTABLE) && cl.cmd.cursor_entitynumber == e->state_current.number)
+		if (Have_Flag(e->render.effects, EF_SELECTABLE) && cl.cmd.cursor_entitynumber == e->state_current.number)
 		{
 			VectorScale(e->render.colormod, 2, e->render.colormod);
 			VectorScale(e->render.glowmod, 2, e->render.glowmod);
@@ -1272,9 +1263,9 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 			// (this mainly helps with models that use framegroups and
 			// switch between them infrequently)
 			float maxdelta = cl_lerpanim_maxdelta_server.value;
-			if(e->render.model)
-			if(e->render.model->animscenes)
-			if(e->render.model->animscenes[e->render.framegroupblend[0].frame].framecount > 1 || e->render.model->animscenes[e->render.framegroupblend[1].frame].framecount > 1)
+			if (e->render.model)
+			if (e->render.model->animscenes)
+			if (e->render.model->animscenes[e->render.framegroupblend[0].frame].framecount > 1 || e->render.model->animscenes[e->render.framegroupblend[1].frame].framecount > 1)
 				maxdelta = cl_lerpanim_maxdelta_framegroups.value;
 			maxdelta = max(maxdelta, cl.mtime[0] - cl.mtime[1]);
 			e->render.framegroupblend[0].lerp = (cl.time - e->render.framegroupblend[0].start) / min(e->render.framegroupblend[0].start - e->render.framegroupblend[1].start, maxdelta);
@@ -1316,8 +1307,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 	if (e->state_current.number == cl.viewentity)
 		e->render.crflags |= RENDER_EXTERIORMODEL;
 	// either fullbright or lit
-	if(!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
-	{
+	if (!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) { // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 		if (!(e->render.effects & EF_FULLBRIGHT))
 			e->render.crflags |= RENDER_LIGHT;
 	}
@@ -1468,13 +1458,10 @@ static void CL_UpdateNetworkCollisionEntities(void)
 
 	// start on the entity after the world
 	cl.num_brushmodel_entities = 0;
-	for (i = cl.maxclients + 1;i < cl.num_entities;i++)
-	{
-		if (cl.entities_active[i])
-		{
+	for (i = cl.maxclients + 1;i < cl.num_entities;i++) {
+		if (cl.entities_active[i]) {
 			ent = cl.entities + i;
-			if (ent->state_current.active && ent->render.model && ent->render.model->model_name[0] == '*' && ent->render.model->TraceBox)
-			{
+			if (ent->state_current.active && ent->render.model && ent->render.model->model_name[0] == '*' && ent->render.model->TraceBox) {
 				// do not interpolate the bmodels for this
 				CL_UpdateNetworkEntity(ent, 32, false);
 				cl.brushmodel_entities[cl.num_brushmodel_entities++] = i;
@@ -1569,9 +1556,9 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		// if the tag entity is inactive, skip it
 		if (!cl.entities[e->state_current.tagentity].state_current.active)
 		{
-			if(!cl.csqc_server2csqcentitynumber[e->state_current.tagentity])
+			if (!cl.csqc_server2csqcentitynumber[e->state_current.tagentity])
 				return;
-			if(!cl.csqcrenderentities[cl.csqc_server2csqcentitynumber[e->state_current.tagentity]].entitynumber)
+			if (!cl.csqcrenderentities[cl.csqc_server2csqcentitynumber[e->state_current.tagentity]].entitynumber)
 				return;
 			// if we get here, it's properly csqc networked and attached
 		}
@@ -1693,12 +1680,11 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		// FIXME: add ambient/diffuse/specular scales as an extension ontop of TENEBRAE_GFX_DLIGHTS?
 		Matrix4x4_Normalize(&dlightmatrix, &e->render.matrix);
 		Matrix4x4_Scale(&dlightmatrix, light[3], 1);
-		R_RTLight_Update(&r_refdef.scene.templights[r_refdef.scene.numlights], false, &dlightmatrix, light, e->state_current.lightstyle, e->state_current.skin > 0 ? va(vabuf, sizeof(vabuf), "cubemaps/%i", e->state_current.skin) : NULL, !(e->state_current.lightpflags & PFLAGS_NOSHADOW), (e->state_current.lightpflags & PFLAGS_CORONA) != 0, 0.25, 0, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
+		R_RTLight_Update(&r_refdef.scene.templights[r_refdef.scene.numlights], false, &dlightmatrix, light, e->state_current.lightstyle, e->state_current.skin > 0 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", e->state_current.skin) : NULL, !(e->state_current.lightpflags & PFLAGS_NOSHADOW), (e->state_current.lightpflags & PFLAGS_CORONA) != 0, 0.25, 0, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
 	// make the glow dlight
-	else if (dlightradius > 0 && (dlightcolor[0] || dlightcolor[1] || dlightcolor[2]) && !(e->render.crflags & RENDER_VIEWMODEL) && r_refdef.scene.numlights < MAX_DLIGHTS)
-	{
+	else if (dlightradius > 0 && (dlightcolor[0] || dlightcolor[1] || dlightcolor[2]) && !(e->render.crflags & RENDER_VIEWMODEL) && r_refdef.scene.numlights < MAX_DLIGHTS) {
 		matrix4x4_t dlightmatrix;
 		Matrix4x4_Normalize(&dlightmatrix, &e->render.matrix);
 		// hack to make glowing player light shine on their gun
@@ -1709,7 +1695,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
 	// do trail light
-	if (e->render.crflags & RENDER_GLOWTRAIL)
+	if (Have_Flag (e->render.crflags, RENDER_GLOWTRAIL))
 		trailtype = EFFECT_TR_GLOWTRAIL;
 	if (e->state_current.traileffectnum)
 		trailtype = (effectnameindex_t)e->state_current.traileffectnum;
@@ -1730,8 +1716,11 @@ static void CL_RelinkWorld(void)
 	// FIXME: this should be done at load
 	ent->render.matrix = identitymatrix;
 	ent->render.crflags = RENDER_SHADOW;
-	if (!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
+
+	// Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
+	if (!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit)
 		ent->render.crflags |= RENDER_LIGHT;
+
 	VectorSet(ent->render.colormod, 1, 1, 1);
 	VectorSet(ent->render.glowmod, 1, 1, 1);
 	ent->render.allowdecals = true;
@@ -1755,8 +1744,9 @@ static void CL_RelinkStaticEntities(void)
 		// need to re-fetch the model pointer
 		e->render.model = CL_GetModelByIndex(e->state_baseline.modelindex);
 		// either fullbright or lit
-		if(!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
-		{
+
+		// Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
+		if (!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) {
 			if (!(e->render.effects & EF_FULLBRIGHT))
 				e->render.crflags |= RENDER_LIGHT;
 		}
@@ -1925,8 +1915,7 @@ void CL_RelinkBeams(void)
 				R_RTLight_Update(&r_refdef.scene.templights[r_refdef.scene.numlights], false, &tempmatrix, dlightcolor, -1, NULL, true, 1, 0.25, 1, 0, 0, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 				r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 			}
-			if (cl_beams_polygons.integer)
-			{
+			if (cl_beams_polygons.integer) {
 				CL_Beam_AddPolygons(b);
 				continue;
 			}
@@ -2099,8 +2088,7 @@ void CL_UpdateWorld(void)
 		CL_UpdateViewModel();
 
 		// when csqc is loaded, it will call this in CSQC_UpdateView
-		if (!cl.csqc_loaded)
-		{
+		if (!cl.csqc_loaded) {
 			// clear the CL_Mesh_Scene() used for some engine effects
 			CL_MeshEntities_Scene_Clear();
 			// add engine entities and effects
@@ -2123,24 +2111,26 @@ static void CL_Fog_f(cmd_state_t *cmd)
 	int is_fog_alpha_requested = false; // Baker r1201: FitzQuake r_skyfog
 	if (Cmd_Argc (cmd) == 1)
 	{
-		Con_Printf("\"fog\" is \"%f %f %f %f %f %f %f %f %f\"\n", r_refdef.fog_density, r_refdef.fog_red, r_refdef.fog_green, r_refdef.fog_blue, r_refdef.fog_alpha, r_refdef.fog_start, r_refdef.fog_end, r_refdef.fog_height, r_refdef.fog_fadedepth);
+		Con_Printf ("\"fog\" is \"%f %f %f %f %f %f %f %f %f\"\n", r_refdef.fog_density, r_refdef.fog_red, r_refdef.fog_green, r_refdef.fog_blue, r_refdef.fog_alpha, r_refdef.fog_start, r_refdef.fog_end, r_refdef.fog_height, r_refdef.fog_fadedepth);
 		return;
 	}
 	FOG_clear(); // so missing values get good defaults
-	if(Cmd_Argc(cmd) > 1)
+	if (Cmd_Argc(cmd) > 1) {
 		r_refdef.fog_density0 = atof(Cmd_Argv(cmd, 1)); // Baker r1201: FitzQuake r_skyfog
-	if(Cmd_Argc(cmd) > 2)
+	}
+
+	if (Cmd_Argc(cmd) > 2)
 		r_refdef.fog_red = atof(Cmd_Argv(cmd, 2));
-	if(Cmd_Argc(cmd) > 3)
+	if (Cmd_Argc(cmd) > 3)
 		r_refdef.fog_green = atof(Cmd_Argv(cmd, 3));
-	if(Cmd_Argc(cmd) > 4)
+	if (Cmd_Argc(cmd) > 4)
 		r_refdef.fog_blue = atof(Cmd_Argv(cmd, 4));
 	if (Cmd_Argc(cmd) > 5) {
 		is_fog_alpha_requested = true; // Baker r1201: FitzQuake r_skyfog
 		r_refdef.fog_alpha = atof(Cmd_Argv(cmd, 5));
 	}
 
-	// Baker r1201: FitzQuake r_skyfog			
+	// Baker r1201: FitzQuake r_skyfog		
 	if (is_fog_alpha_requested == false && r_skyfog.value) {
 		float a = bound(0.0, r_skyfog.value, 1.0);
 		r_refdef.fog_density = r_refdef.fog_density0 / (a * a);
@@ -2149,13 +2139,13 @@ static void CL_Fog_f(cmd_state_t *cmd)
 		r_refdef.fog_density = r_refdef.fog_density0;
 	}
 		
-	if(Cmd_Argc(cmd) > 6)
+	if (Cmd_Argc(cmd) > 6)
 		r_refdef.fog_start = atof(Cmd_Argv(cmd, 6));
-	if(Cmd_Argc(cmd) > 7)
+	if (Cmd_Argc(cmd) > 7)
 		r_refdef.fog_end = atof(Cmd_Argv(cmd, 7));
-	if(Cmd_Argc(cmd) > 8)
+	if (Cmd_Argc(cmd) > 8)
 		r_refdef.fog_height = atof(Cmd_Argv(cmd, 8));
-	if(Cmd_Argc(cmd) > 9)
+	if (Cmd_Argc(cmd) > 9)
 		r_refdef.fog_fadedepth = atof(Cmd_Argv(cmd, 9));
 }
 
@@ -2168,7 +2158,7 @@ static void CL_Fog_HeightTexture_f(cmd_state_t *cmd)
 {
 	if (Cmd_Argc (cmd) < 11)
 	{
-		Con_Printf("\"fog_heighttexture\" is \"%f %f %f %f %f %f %f %f %f %s\"\n", r_refdef.fog_density, r_refdef.fog_red, r_refdef.fog_green, r_refdef.fog_blue, r_refdef.fog_alpha, r_refdef.fog_start, r_refdef.fog_end, r_refdef.fog_height, r_refdef.fog_fadedepth, r_refdef.fog_height_texturename);
+		Con_Printf ("\"fog_heighttexture\" is \"%f %f %f %f %f %f %f %f %f %s\"\n", r_refdef.fog_density, r_refdef.fog_red, r_refdef.fog_green, r_refdef.fog_blue, r_refdef.fog_alpha, r_refdef.fog_start, r_refdef.fog_end, r_refdef.fog_height, r_refdef.fog_fadedepth, r_refdef.fog_height_texturename);
 		return;
 	}
 	FOG_clear(); // so missing values get good defaults
@@ -2208,7 +2198,7 @@ static void CL_TimeRefresh_f(cmd_state_t *cmd)
 	}
 	timedelta = Sys_DirtyTime() - timestart;
 
-	Con_Printf("%f seconds (%f fps)\n", timedelta, 128/timedelta);
+	Con_Printf ("%f seconds (%f fps)\n", timedelta, 128/timedelta);
 }
 
 static void CL_AreaStats_f(cmd_state_t *cmd)
@@ -2264,7 +2254,7 @@ static void CL_Locs_FreeNode(cl_locnode_t *node)
 			return;
 		}
 	}
-	Con_Printf("CL_Locs_FreeNode: no such node! (%p)\n", (void *)node);
+	Con_Printf ("CL_Locs_FreeNode: no such node! (%p)\n", (void *)node);
 }
 
 static void CL_Locs_AddNode(vec3_t mins, vec3_t maxs, const char *name)
@@ -2291,7 +2281,7 @@ static void CL_Locs_Add_f(cmd_state_t *cmd)
 	vec3_t mins, maxs;
 	if (Cmd_Argc(cmd) != 5 && Cmd_Argc(cmd) != 8)
 	{
-		Con_Printf("usage: %s x y z[ x y z] name\n", Cmd_Argv(cmd, 0));
+		Con_Printf ("usage: %s x y z[ x y z] name\n", Cmd_Argv(cmd, 0));
 		return;
 	}
 	mins[0] = atof(Cmd_Argv(cmd, 1));
@@ -2315,7 +2305,7 @@ static void CL_Locs_RemoveNearest_f(cmd_state_t *cmd)
 	if (loc)
 		CL_Locs_FreeNode(loc);
 	else
-		Con_Printf("no loc point or box found for your location\n");
+		Con_Printf ("no loc point or box found for your location\n");
 }
 
 static void CL_Locs_Clear_f(cmd_state_t *cmd)
@@ -2331,12 +2321,12 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 	char locfilename[MAX_QPATH];
 	if (!cl.locnodes)
 	{
-		Con_Printf("No loc points/boxes exist!\n");
+		Con_Printf ("No loc points/boxes exist!\n");
 		return;
 	}
 	if (cls.state != ca_connected || !cl.worldmodel)
 	{
-		Con_Printf("No level loaded!\n");
+		Con_Printf ("No level loaded!\n");
 		return;
 	}
 	dpsnprintf(locfilename, sizeof(locfilename), "%s.loc", cl.worldnamenoextension);
@@ -2356,7 +2346,7 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 			if (VectorCompare(loc->mins, loc->maxs))
 				break;
 		if (loc)
-			Con_Printf(CON_WARN "Warning: writing loc file containing a mixture of qizmo-style points and proquake-style boxes may not work in qizmo or proquake!\n");
+			Con_Printf (CON_WARN "Warning: writing loc file containing a mixture of qizmo-style points and proquake-style boxes may not work in qizmo or proquake!\n");
 	}
 	for (loc = cl.locnodes;loc;loc = loc->next)
 	{
@@ -2369,16 +2359,16 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 			for (len = 0;len < (int)sizeof(name) - 1 && *in;)
 			{
 				if (*in == ' ') {s = "$loc_name_separator";in++;}
-				else if (!strncmp(in, "SSG", 3)) {s = "$loc_name_ssg";in += 3;}
-				else if (!strncmp(in, "NG", 2)) {s = "$loc_name_ng";in += 2;}
-				else if (!strncmp(in, "SNG", 3)) {s = "$loc_name_sng";in += 3;}
-				else if (!strncmp(in, "GL", 2)) {s = "$loc_name_gl";in += 2;}
-				else if (!strncmp(in, "RL", 2)) {s = "$loc_name_rl";in += 2;}
-				else if (!strncmp(in, "LG", 2)) {s = "$loc_name_lg";in += 2;}
-				else if (!strncmp(in, "GA", 2)) {s = "$loc_name_ga";in += 2;}
-				else if (!strncmp(in, "YA", 2)) {s = "$loc_name_ya";in += 2;}
-				else if (!strncmp(in, "RA", 2)) {s = "$loc_name_ra";in += 2;}
-				else if (!strncmp(in, "MEGA", 4)) {s = "$loc_name_mh";in += 4;}
+				else if (String_Does_Start_With(in, "SSG"/*, 3*/))		{s = "$loc_name_ssg";in += 3;}
+				else if (String_Does_Start_With(in, "NG"/*, 2*/))		{s = "$loc_name_ng";in += 2;}
+				else if (String_Does_Start_With(in, "SNG"/*, 3*/))		{s = "$loc_name_sng";in += 3;}
+				else if (String_Does_Start_With(in, "GL"/*, 2*/))		{s = "$loc_name_gl";in += 2;}
+				else if (String_Does_Start_With(in, "RL"/*, 2*/))		{s = "$loc_name_rl";in += 2;}
+				else if (String_Does_Start_With(in, "LG"/*, 2*/))		{s = "$loc_name_lg";in += 2;}
+				else if (String_Does_Start_With(in, "GA"/*, 2*/))		{s = "$loc_name_ga";in += 2;}
+				else if (String_Does_Start_With(in, "YA"/*, 2*/))		{s = "$loc_name_ya";in += 2;}
+				else if (String_Does_Start_With(in, "RA"/*, 2*/))		{s = "$loc_name_ra";in += 2;}
+				else if (String_Does_Start_With(in, "MEGA"/*, 4*/))		{s = "$loc_name_mh";in += 4;}
 				else s = NULL;
 				if (s)
 				{
@@ -2409,7 +2399,7 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 
 	if (cls.state != ca_connected || !cl.worldmodel)
 	{
-		Con_Printf("No level loaded!\n");
+		Con_Printf ("No level loaded!\n");
 		return;
 	}
 
@@ -2418,8 +2408,7 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 	// try maps/something.loc first (LadyHavoc: where I think they should be)
 	dpsnprintf(locfilename, sizeof(locfilename), "%s.loc", cl.worldnamenoextension);
 	filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, false, &filesize);
-	if (!filedata)
-	{
+	if (!filedata) {
 		// try proquake name as well (LadyHavoc: I hate path mangling)
 		dpsnprintf(locfilename, sizeof(locfilename), "locs/%s.loc", cl.worldbasename);
 		filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, false, &filesize);
@@ -2445,7 +2434,7 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 		while (linestart < lineend && ISWHITESPACE(*linestart))
 			linestart++;
 		// check if this is a comment
-		if (linestart + 2 <= lineend && !strncmp(linestart, "//", 2))
+		if (linestart + 2 <= lineend && String_Does_Start_With(linestart, "//"/*, 2*/))
 			continue;
 		linetext = linestart;
 		limit = 3;
@@ -2502,17 +2491,17 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 			{
 				if (*linetext == '$')
 				{
-					if (linetext + 18 <= lineend && !strncmp(linetext, "$loc_name_separator", 19)) {s = " ";linetext += 19;}
-					else if (linetext + 13 <= lineend && !strncmp(linetext, "$loc_name_ssg", 13)) {s = "SSG";linetext += 13;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_ng", 12)) {s = "NG";linetext += 12;}
-					else if (linetext + 13 <= lineend && !strncmp(linetext, "$loc_name_sng", 13)) {s = "SNG";linetext += 13;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_gl", 12)) {s = "GL";linetext += 12;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_rl", 12)) {s = "RL";linetext += 12;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_lg", 12)) {s = "LG";linetext += 12;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_ga", 12)) {s = "GA";linetext += 12;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_ya", 12)) {s = "YA";linetext += 12;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_ra", 12)) {s = "RA";linetext += 12;}
-					else if (linetext + 12 <= lineend && !strncmp(linetext, "$loc_name_mh", 12)) {s = "MEGA";linetext += 12;}
+					if (linetext + 18 <= lineend && String_Does_Start_With(linetext, "$loc_name_separator"/*, 19*/)) {s = " ";linetext += 19;}
+					else if (linetext + 13 <= lineend && String_Does_Start_With(linetext, "$loc_name_ssg"/*, 13*/)) {s = "SSG";linetext += 13;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_ng"/*, 12*/)) {s = "NG";linetext += 12;}
+					else if (linetext + 13 <= lineend && String_Does_Start_With(linetext, "$loc_name_sng"/*, 13*/)) {s = "SNG";linetext += 13;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_gl"/*, 12*/)) {s = "GL";linetext += 12;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_rl"/*, 12*/)) {s = "RL";linetext += 12;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_lg"/*, 12*/)) {s = "LG";linetext += 12;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_ga"/*, 12*/)) {s = "GA";linetext += 12;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_ya"/*, 12*/)) {s = "YA";linetext += 12;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_ra"/*, 12*/)) {s = "RA";linetext += 12;}
+					else if (linetext + 12 <= lineend && String_Does_Start_With(linetext, "$loc_name_mh"/*, 12*/)) {s = "MEGA";linetext += 12;}
 					else s = NULL;
 					if (s)
 					{
@@ -2837,7 +2826,7 @@ double CL_Frame (double time)
 	 * run the frame. Everything that happens before this
 	 * point will happen even if we're sleeping this frame.
 	 */
-	if((cl_timer += time) < 0)
+	if ((cl_timer += time) < 0)
 		return cl_timer;
 
 	// limit the frametime steps to no more than 100ms each
@@ -2846,15 +2835,26 @@ double CL_Frame (double time)
 
 	if (cls.state != ca_dedicated && (cl_timer > 0 || cls.timedemo || ((vid_activewindow ? cl_maxfps : cl_maxidlefps).value < 1)))
 	{
+		qbool is_active_hosting_server = sv.active && svs.maxclients > 1;
+
 		R_TimeReport("---");
 		Collision_Cache_NewFrame();
 		R_TimeReport("photoncache");
+
+		if (!vid_activewindow && cl_maxidlefps.value >= 1 && !cls.timedemo) {
+			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxidlefps.value);
+		} else if ( (!vid_activewindow || key_consoleactive || key_dest == key_menu) && 
+			is_active_hosting_server == false && 
+			!cls.timedemo && cl_maxconsole_menu_fps.value >= 1) {
+			// Baker r8192: throttle engine in low intensity situations
+			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxconsole_menu_fps.value);
+		} else
 #ifdef CONFIG_VIDEO_CAPTURE
 		// decide the simulation time
 		if (cls.capturevideo.active)
 		{
 			//***
-			if (cls.capturevideo.realtime)
+			if (cls.capturevideo.is_realtime)
 				clframetime = cl.realframetime = max(time, 1.0 / cls.capturevideo.framerate);
 			else
 			{
@@ -2873,8 +2873,6 @@ double CL_Frame (double time)
 			if (cl_maxfps_alwayssleep.value > 0)
 				Sys_Sleep((int)bound(0, cl_maxfps_alwayssleep.value * 1000, 100000));
 		}
-		else if (!vid_activewindow && cl_maxidlefps.value >= 1 && !cls.timedemo)
-			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxidlefps.value);
 		else
 			clframetime = cl.realframetime = cl_timer;
 
@@ -2943,7 +2941,7 @@ double CL_Frame (double time)
 			time2 = Sys_DirtyTime();
 
 		// update audio
-		if(cl.csqc_usecsqclistener)
+		if (cl.csqc_usecsqclistener)
 		{
 			S_Update(&cl.csqc_listenermatrix);
 			cl.csqc_usecsqclistener = false;
@@ -2963,7 +2961,7 @@ double CL_Frame (double time)
 			time3 = Sys_DirtyTime();
 			pass2 = (int)((time2 - time1)*1000000);
 			pass3 = (int)((time3 - time2)*1000000);
-			Con_Printf("%6ius total %6ius server %6ius gfx %6ius snd\n",
+			Con_Printf ("%6ius total %6ius server %6ius gfx %6ius snd\n",
 						pass1+pass2+pass3, pass1, pass2, pass3);
 		}
 	}
@@ -2988,7 +2986,7 @@ void CL_Shutdown (void)
 
 #ifdef CONFIG_MENU
 	// Shutdown menu
-	if(MR_Shutdown)
+	if (MR_Shutdown)
 		MR_Shutdown();
 #endif
 
@@ -3023,7 +3021,7 @@ void CL_Init (void)
 	}
 	else
 	{
-		Con_Printf("Initializing client\n");
+		Con_DPrintLinef ("Initializing client");
 
 		Cvar_SetValueQuick(&host_isclient, 1);
 
@@ -3057,7 +3055,7 @@ void CL_Init (void)
 	//
 	// register our commands
 	//
-		CL_InitCommands();
+		CL_InitCommands(); // rate, userinfo, color, ...
 
 		Cvar_RegisterVariable (&cl_upspeed);
 		Cvar_RegisterVariable (&cl_forwardspeed);
@@ -3138,9 +3136,7 @@ void CL_Init (void)
 		Cmd_AddCommand(CF_CLIENT, "locs_clear", CL_Locs_Clear_f, "remove all loc points/boxes");
 		Cmd_AddCommand(CF_CLIENT, "locs_reload", CL_Locs_Reload_f, "reload .loc file for this map");
 		Cmd_AddCommand(CF_CLIENT, "locs_save", CL_Locs_Save_f, "save .loc file for this map containing currently defined points and boxes");
-
-		Cvar_RegisterVariable(&csqc_polygons_defaultmaterial_nocullface);
-
+			
 		Cvar_RegisterVariable (&cl_minfps);
 		Cvar_RegisterVariable (&cl_minfps_fade);
 		Cvar_RegisterVariable (&cl_minfps_qualitymax);
@@ -3152,7 +3148,9 @@ void CL_Init (void)
 		Cvar_RegisterVariable (&cl_maxfps);
 		Cvar_RegisterVariable (&cl_maxfps_alwayssleep);
 		Cvar_RegisterVariable (&cl_maxidlefps);
-
+		Cvar_RegisterVariable (&cl_maxconsole_menu_fps); // Baker r8192: thottle
+		
+		Cvar_RegisterVariable(&csqc_polygons_defaultmaterial_nocullface);
 		Cvar_RegisterVariable (&cl_areagrid_link_SOLID_NOT);
 		Cvar_RegisterVariable (&cl_gameplayfix_nudgeoutofsolid_separation);
 

@@ -100,7 +100,7 @@ void PRVM_MEM_IncreaseEdicts(prvm_prog_t *prog)
 {
 	int		i;
 
-	if(prog->max_edicts >= prog->limit_edicts)
+	if (prog->max_edicts >= prog->limit_edicts)
 		return;
 
 	prog->begin_increase_edicts(prog);
@@ -159,12 +159,12 @@ PRVM_ProgFromString
 */
 prvm_prog_t *PRVM_ProgFromString(const char *str)
 {
-	if (!strcmp(str, "server"))
+	if (String_Does_Match(str, "server"))
 		return SVVM_prog;
-	if (!strcmp(str, "client"))
+	if (String_Does_Match(str, "client"))
 		return CLVM_prog;
 #ifdef CONFIG_MENU
-	if (!strcmp(str, "menu"))
+	if (String_Does_Match(str, "menu"))
 		return MVM_prog;
 #endif
 	return NULL;
@@ -180,12 +180,12 @@ prvm_prog_t *PRVM_FriendlyProgFromString(const char *str)
 	prvm_prog_t *prog = PRVM_ProgFromString(str);
 	if (!prog)
 	{
-		Con_Printf("%s: unknown program name\n", str);
+		Con_Printf ("%s: unknown program name\n", str);
 		return NULL;
 	}
 	if (!prog->loaded)
 	{
-		Con_Printf("%s: program is not loaded\n", str);
+		Con_Printf ("%s: program is not loaded\n", str);
 		return NULL;
 	}
 	return prog;
@@ -206,7 +206,7 @@ void PRVM_ED_ClearEdict(prvm_prog_t *prog, prvm_edict_t *e)
 	memset(e->fields.fp, 0, prog->entityfields * sizeof(prvm_vec_t));
 	e->free = false;
 	e->freetime = host.realtime;
-	if(e->priv.required->allocation_origin)
+	if (e->priv.required->allocation_origin)
 		Mem_Free((char *)e->priv.required->allocation_origin);
 	e->priv.required->allocation_origin = PRVM_AllocationOrigin(prog);
 
@@ -217,8 +217,8 @@ void PRVM_ED_ClearEdict(prvm_prog_t *prog, prvm_edict_t *e)
 const char *PRVM_AllocationOrigin(prvm_prog_t *prog)
 {
 	char *buf = NULL;
-	if(prog->leaktest_active)
-	if(prog->depth > 0) // actually in QC code and not just parsing the entities block of a map/savegame
+	if (prog->leaktest_active)
+	if (prog->depth > 0) // actually in QC code and not just parsing the entities block of a map/savegame
 	{
 		buf = (char *)PRVM_Alloc(256);
 		PRVM_ShortStackTrace(prog, buf, 256);
@@ -235,15 +235,15 @@ Returns if this particular edict could get allocated by PRVM_ED_Alloc
 */
 qbool PRVM_ED_CanAlloc(prvm_prog_t *prog, prvm_edict_t *e)
 {
-	if(!e->free)
+	if (!e->free)
 		return false;
-	if(prvm_reuseedicts_always_allow == host.realtime)
+	if (prvm_reuseedicts_always_allow == host.realtime)
 		return true;
-	if(host.realtime <= e->freetime + 0.1 && prvm_reuseedicts_neverinsameframe.integer)
+	if (host.realtime <= e->freetime + 0.1 && prvm_reuseedicts_neverinsameframe.integer)
 		return false; // never allow reuse in same frame (causes networking trouble)
-	if(e->freetime < prog->starttime + prvm_reuseedicts_startuptime.value)
+	if (e->freetime < prog->starttime + prvm_reuseedicts_startuptime.value)
 		return true;
-	if(host.realtime > e->freetime + 1)
+	if (host.realtime > e->freetime + 1)
 		return true;
 	return false; // entity slot still blocked because the entity was freed less than one second ago
 }
@@ -272,7 +272,7 @@ prvm_edict_t *PRVM_ED_Alloc(prvm_prog_t *prog)
 	for (i = prog->reserved_edicts + 1;i < prog->num_edicts;i++)
 	{
 		e = PRVM_EDICT_NUM(i);
-		if(PRVM_ED_CanAlloc(prog, e))
+		if (PRVM_ED_CanAlloc(prog, e))
 		{
 			PRVM_ED_ClearEdict (prog, e);
 			return e;
@@ -314,7 +314,7 @@ void PRVM_ED_Free(prvm_prog_t *prog, prvm_edict_t *ed)
 
 	ed->free = true;
 	ed->freetime = host.realtime;
-	if(ed->priv.required->allocation_origin)
+	if (ed->priv.required->allocation_origin)
 	{
 		Mem_Free((char *)ed->priv.required->allocation_origin);
 		ed->priv.required->allocation_origin = NULL;
@@ -374,7 +374,7 @@ mdef_t *PRVM_ED_FindField (prvm_prog_t *prog, const char *name)
 	for (i = 0;i < prog->numfielddefs;i++)
 	{
 		def = &prog->fielddefs[i];
-		if (!strcmp(PRVM_GetString(prog, def->s_name), name))
+		if (String_Does_Match(PRVM_GetString(prog, def->s_name), name))
 			return def;
 	}
 	return NULL;
@@ -393,7 +393,7 @@ mdef_t *PRVM_ED_FindGlobal (prvm_prog_t *prog, const char *name)
 	for (i = 0;i < prog->numglobaldefs;i++)
 	{
 		def = &prog->globaldefs[i];
-		if (!strcmp(PRVM_GetString(prog, def->s_name), name))
+		if (String_Does_Match(PRVM_GetString(prog, def->s_name), name))
 			return def;
 	}
 	return NULL;
@@ -423,7 +423,7 @@ mfunction_t *PRVM_ED_FindFunction (prvm_prog_t *prog, const char *name)
 	for (i = 0;i < prog->numfunctions;i++)
 	{
 		func = &prog->functions[i];
-		if (!strcmp(PRVM_GetString(prog, func->s_name), name))
+		if (String_Does_Match(PRVM_GetString(prog, func->s_name), name))
 			return func;
 	}
 	return NULL;
@@ -453,9 +453,9 @@ static char *PRVM_ValueString (prvm_prog_t *prog, etype_t type, prvm_eval_t *val
 	case ev_entity:
 		n = val->edict;
 		if (n < 0 || n >= prog->max_edicts)
-			dpsnprintf (line, linelength, "entity %i (invalid!)", n);
+			dpsnprintf (line, linelength, "entity %d (invalid!)", n);
 		else
-			dpsnprintf (line, linelength, "entity %i", n);
+			dpsnprintf (line, linelength, "entity %d", n);
 		break;
 	case ev_function:
 		if ((unsigned int)val->function < (unsigned int)prog->progs_numfunctions)
@@ -488,7 +488,7 @@ static char *PRVM_ValueString (prvm_prog_t *prog, etype_t type, prvm_eval_t *val
 		dpsnprintf (line, linelength, "pointer");
 		break;
 	default:
-		dpsnprintf (line, linelength, "bad type %i", (int) type);
+		dpsnprintf (line, linelength, "bad type %d", (int) type);
 		break;
 	}
 
@@ -549,7 +549,7 @@ char *PRVM_UglyValueString (prvm_prog_t *prog, etype_t type, prvm_eval_t *val, c
 		break;
 	case ev_entity:
 		i = val->edict;
-		dpsnprintf (line, linelength, "%i", i);
+		dpsnprintf (line, linelength, "%d", i);
 		break;
 	case ev_function:
 		if ((unsigned int)val->function < (unsigned int)prog->progs_numfunctions)
@@ -577,7 +577,7 @@ char *PRVM_UglyValueString (prvm_prog_t *prog, etype_t type, prvm_eval_t *val, c
 		dpsnprintf (line, linelength, PRVM_VECTOR_LOSSLESS_FORMAT, val->vector[0], val->vector[1], val->vector[2]);
 		break;
 	default:
-		dpsnprintf (line, linelength, "bad type %i", type);
+		dpsnprintf (line, linelength, "bad type %d", type);
 		break;
 	}
 
@@ -603,7 +603,7 @@ char *PRVM_GlobalString (prvm_prog_t *prog, int ofs, char *line, size_t lineleng
 	val = (prvm_eval_t *)&prog->globals.fp[ofs];
 	def = PRVM_ED_GlobalAtOfs(prog, ofs);
 	if (!def)
-		dpsnprintf (line, linelength, "GLOBAL%i", ofs);
+		dpsnprintf (line, linelength, "GLOBAL%d", ofs);
 	else
 	{
 		s = PRVM_ValueString (prog, (etype_t)def->type, val, valuebuf, sizeof(valuebuf));
@@ -625,7 +625,7 @@ char *PRVM_GlobalStringNoContents (prvm_prog_t *prog, int ofs, char *line, size_
 
 	def = PRVM_ED_GlobalAtOfs(prog, ofs);
 	if (!def)
-		dpsnprintf (line, linelength, "GLOBAL%i", ofs);
+		dpsnprintf (line, linelength, "GLOBAL%d", ofs);
 	else
 		dpsnprintf (line, linelength, "%s", PRVM_GetString(prog, def->s_name));
 
@@ -660,22 +660,22 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, const char *wildcard_fie
 
 	if (ed->free)
 	{
-		Con_Printf("%s: FREE\n",prog->name);
+		Con_Printf ("%s: FREE\n",prog->name);
 		return;
 	}
 
 	tempstring[0] = 0;
-	dpsnprintf(tempstring, sizeof(tempstring), "\n%s EDICT %i:\n", prog->name, PRVM_NUM_FOR_EDICT(ed));
+	dpsnprintf(tempstring, sizeof(tempstring), "\n%s EDICT %d:\n", prog->name, PRVM_NUM_FOR_EDICT(ed));
 	for (i = 1;i < prog->numfielddefs;i++)
 	{
 		d = &prog->fielddefs[i];
 		name = PRVM_GetString(prog, d->s_name);
-		if(strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
+		if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
 			continue;	// skip _x, _y, _z vars
 
 		// Check Field Name Wildcard
-		if(wildcard_fieldname)
-			if( !matchpattern(name, wildcard_fieldname, 1) )
+		if (wildcard_fieldname)
+			if ( !matchpattern(name, wildcard_fieldname, 1) )
 				// Didn't match; skip
 				continue;
 
@@ -752,11 +752,11 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 		d = &prog->fielddefs[i];
 		name = PRVM_GetString(prog, d->s_name);
 
-		if(developer_entityparsing.integer)
-			Con_Printf("PRVM_ED_Write: at entity %d field %s\n", PRVM_NUM_FOR_EDICT(ed), name);
+		if (developer_entityparsing.integer)
+			Con_Printf ("PRVM_ED_Write: at entity %d field %s\n", PRVM_NUM_FOR_EDICT(ed), name);
 
-		//if(strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
-		if(strlen(name) > 1 && name[strlen(name)-2] == '_')
+		//if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
+		if (strlen(name) > 1 && name[strlen(name)-2] == '_')
 			continue;	// skip _x, _y, _z vars, and ALSO other _? vars as some mods expect them to be never saved (TODO: a gameplayfix for using the "more precise" condition above?)
 
 		val = (prvm_eval_t *)(ed->fields.fp + d->ofs);
@@ -796,21 +796,21 @@ void PRVM_ED_PrintEdicts_f(cmd_state_t *cmd)
 	int		i;
 	const char *wildcard_fieldname;
 
-	if(Cmd_Argc(cmd) < 2 || Cmd_Argc(cmd) > 3)
+	if (Cmd_Argc(cmd) < 2 || Cmd_Argc(cmd) > 3)
 	{
-		Con_Print("prvm_edicts <program name> <optional field name wildcard>\n");
+		Con_PrintLinef ("prvm_edicts <program name> <optional field name wildcard>");
 		return;
 	}
 
 	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
-	if( Cmd_Argc(cmd) == 3)
+	if ( Cmd_Argc(cmd) == 3)
 		wildcard_fieldname = Cmd_Argv(cmd, 2);
 	else
 		wildcard_fieldname = NULL;
 
-	Con_Printf("%s: %i entities\n", prog->name, prog->num_edicts);
+	Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
 	for (i=0 ; i<prog->num_edicts ; i++)
 		PRVM_ED_PrintNum (prog, i, wildcard_fieldname);
 }
@@ -828,7 +828,7 @@ static void PRVM_ED_PrintEdict_f(cmd_state_t *cmd)
 	int		i;
 	const char	*wildcard_fieldname;
 
-	if(Cmd_Argc(cmd) < 3 || Cmd_Argc(cmd) > 4)
+	if (Cmd_Argc(cmd) < 3 || Cmd_Argc(cmd) > 4)
 	{
 		Con_Print("prvm_edict <program name> <edict number> <optional field name wildcard>\n");
 		return;
@@ -843,7 +843,7 @@ static void PRVM_ED_PrintEdict_f(cmd_state_t *cmd)
 		Con_Print("Bad edict number\n");
 		return;
 	}
-	if( Cmd_Argc(cmd) == 4)
+	if ( Cmd_Argc(cmd) == 4)
 		// Optional Wildcard Provided
 		wildcard_fieldname = Cmd_Argv(cmd, 3);
 	else
@@ -865,7 +865,7 @@ static void PRVM_ED_Count_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 
-	if(Cmd_Argc(cmd) != 2)
+	if (Cmd_Argc(cmd) != 2)
 	{
 		Con_Print("prvm_count <program name>\n");
 		return;
@@ -914,8 +914,8 @@ void PRVM_ED_WriteGlobals (prvm_prog_t *prog, qfile_t *f)
 
 		name = PRVM_GetString(prog, def->s_name);
 
-		if(developer_entityparsing.integer)
-			Con_Printf("PRVM_ED_WriteGlobals: at global %s\n", name);
+		if (developer_entityparsing.integer)
+			Con_Printf ("PRVM_ED_WriteGlobals: at global %s\n", name);
 
 		prog->statestring = va(vabuf, sizeof(vabuf), "PRVM_ED_WriteGlobals, name=%s", name);
 		FS_Printf(f,"\"%s\" ", name);
@@ -944,7 +944,7 @@ void PRVM_ED_ParseGlobals (prvm_prog_t *prog, const char *data)
 			break;
 
 		if (developer_entityparsing.integer)
-			Con_Printf("Key: \"%s\"", com_token);
+			Con_Printf ("Key: \"%s\"", com_token);
 
 		strlcpy (keyname, com_token, sizeof(keyname));
 
@@ -953,7 +953,7 @@ void PRVM_ED_ParseGlobals (prvm_prog_t *prog, const char *data)
 			prog->error_cmd("PRVM_ED_ParseGlobals: EOF without closing brace");
 
 		if (developer_entityparsing.integer)
-			Con_Printf(" \"%s\"\n", com_token);
+			Con_Printf (" \"%s\"\n", com_token);
 
 		if (com_token[0] == '}')
 			prog->error_cmd("PRVM_ED_ParseGlobals: closing brace without data");
@@ -961,7 +961,7 @@ void PRVM_ED_ParseGlobals (prvm_prog_t *prog, const char *data)
 		key = PRVM_ED_FindGlobal (prog, keyname);
 		if (!key)
 		{
-			Con_DPrintf("'%s' is not a global on %s\n", keyname, prog->name);
+			Con_DPrintf ("'%s' is not a global on %s\n", keyname, prog->name);
 			continue;
 		}
 
@@ -1041,7 +1041,7 @@ qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, mdef_t *key, cons
 			s++;
 		i = atoi(s);
 		if (i >= prog->limit_edicts)
-			Con_Printf("PRVM_ED_ParseEpair: ev_entity reference too large (edict %u >= MAX_EDICTS %u) on %s\n", (unsigned int)i, prog->limit_edicts, prog->name);
+			Con_Printf ("PRVM_ED_ParseEpair: ev_entity reference too large (edict %u >= MAX_EDICTS %u) on %s\n", (unsigned int)i, prog->limit_edicts, prog->name);
 		while (i >= prog->max_edicts)
 			PRVM_MEM_IncreaseEdicts(prog);
 		// if IncreaseEdicts was called the base pointer needs to be updated
@@ -1053,13 +1053,13 @@ qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, mdef_t *key, cons
 	case ev_field:
 		if (*s != '.')
 		{
-			Con_DPrintf("PRVM_ED_ParseEpair: Bogus field name %s in %s\n", s, prog->name);
+			Con_DPrintf ("PRVM_ED_ParseEpair: Bogus field name %s in %s\n", s, prog->name);
 			return false;
 		}
 		def = PRVM_ED_FindField(prog, s + 1);
 		if (!def)
 		{
-			Con_DPrintf("PRVM_ED_ParseEpair: Can't find field %s in %s\n", s, prog->name);
+			Con_DPrintf ("PRVM_ED_ParseEpair: Can't find field %s in %s\n", s, prog->name);
 			return false;
 		}
 		val->_int = def->ofs;
@@ -1069,14 +1069,14 @@ qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, mdef_t *key, cons
 		func = PRVM_ED_FindFunction(prog, s);
 		if (!func)
 		{
-			Con_Printf("PRVM_ED_ParseEpair: Can't find function %s in %s\n", s, prog->name);
+			Con_Printf ("PRVM_ED_ParseEpair: Can't find function %s in %s\n", s, prog->name);
 			return false;
 		}
 		val->function = func - prog->functions;
 		break;
 
 	default:
-		Con_Printf("PRVM_ED_ParseEpair: Unknown key->type %i for key \"%s\" on %s\n", key->type, PRVM_GetString(prog, key->s_name), prog->name);
+		Con_Printf ("PRVM_ED_ParseEpair: Unknown key->type %d for key \"%s\" on %s\n", key->type, PRVM_GetString(prog, key->s_name), prog->name);
 		return false;
 	}
 	return true;
@@ -1101,18 +1101,18 @@ QC, mg in menu QC.
 static void PRVM_GameCommand(cmd_state_t *cmd, const char *whichprogs, const char *whichcmd)
 {
 	prvm_prog_t *prog;
-	if(Cmd_Argc(cmd) < 1)
+	if (Cmd_Argc(cmd) < 1)
 	{
-		Con_Printf("%s text...\n", whichcmd);
+		Con_Printf ("%s text...\n", whichcmd);
 		return;
 	}
 
 	if (!(prog = PRVM_FriendlyProgFromString(whichprogs)))
 		return;
 
-	if(!PRVM_allfunction(GameCommand))
+	if (!PRVM_allfunction(GameCommand))
 	{
-		Con_Printf("%s program do not support GameCommand!\n", whichprogs);
+		Con_Printf ("%s program do not support GameCommand!\n", whichprogs);
 	}
 	else
 	{
@@ -1156,7 +1156,7 @@ static void PRVM_ED_EdictGet_f(cmd_state_t *cmd)
 	prvm_eval_t *v;
 	char valuebuf[MAX_INPUTLINE];
 
-	if(Cmd_Argc(cmd) != 4 && Cmd_Argc(cmd) != 5)
+	if (Cmd_Argc(cmd) != 4 && Cmd_Argc(cmd) != 5)
 	{
 		Con_Print("prvm_edictget <program name> <edict number> <field> [<cvar>]\n");
 		return;
@@ -1167,25 +1167,25 @@ static void PRVM_ED_EdictGet_f(cmd_state_t *cmd)
 
 	ed = PRVM_EDICT_NUM(atoi(Cmd_Argv(cmd, 2)));
 
-	if((key = PRVM_ED_FindField(prog, Cmd_Argv(cmd, 3))) == 0)
+	if ((key = PRVM_ED_FindField(prog, Cmd_Argv(cmd, 3))) == 0)
 	{
-		Con_Printf("Key %s not found !\n", Cmd_Argv(cmd, 3));
+		Con_Printf ("Key %s not found !\n", Cmd_Argv(cmd, 3));
 		goto fail;
 	}
 
 	v = (prvm_eval_t *)(ed->fields.fp + key->ofs);
 	s = PRVM_UglyValueString(prog, (etype_t)key->type, v, valuebuf, sizeof(valuebuf));
-	if(Cmd_Argc(cmd) == 5)
+	if (Cmd_Argc(cmd) == 5)
 	{
 		cvar_t *cvar = Cvar_FindVar(cmd->cvars, Cmd_Argv(cmd, 4), cmd->cvars_flagsmask);
 		if (cvar)
-			if(Cvar_Readonly(cvar, "prvm_edictget"))
+			if (Cvar_Readonly(cvar, "prvm_edictget"))
 				goto fail;
 
 		Cvar_Get(cmd->cvars, Cmd_Argv(cmd, 4), s, cmd->cvars_flagsmask, NULL);
 	}
 	else
-		Con_Printf("%s\n", s);
+		Con_Printf ("%s\n", s);
 
 fail:
 	;
@@ -1199,7 +1199,7 @@ static void PRVM_ED_GlobalGet_f(cmd_state_t *cmd)
 	prvm_eval_t *v;
 	char valuebuf[MAX_INPUTLINE];
 
-	if(Cmd_Argc(cmd) != 3 && Cmd_Argc(cmd) != 4)
+	if (Cmd_Argc(cmd) != 3 && Cmd_Argc(cmd) != 4)
 	{
 		Con_Print("prvm_globalget <program name> <global> [<cvar>]\n");
 		return;
@@ -1209,24 +1209,24 @@ static void PRVM_ED_GlobalGet_f(cmd_state_t *cmd)
 		return;
 
 	key = PRVM_ED_FindGlobal(prog, Cmd_Argv(cmd, 2));
-	if(!key)
+	if (!key)
 	{
-		Con_Printf( "No global '%s' in %s!\n", Cmd_Argv(cmd, 2), Cmd_Argv(cmd, 1) );
+		Con_Printf ( "No global '%s' in %s!\n", Cmd_Argv(cmd, 2), Cmd_Argv(cmd, 1) );
 		goto fail;
 	}
 
 	v = (prvm_eval_t *) &prog->globals.fp[key->ofs];
 	s = PRVM_UglyValueString(prog, (etype_t)key->type, v, valuebuf, sizeof(valuebuf));
-	if(Cmd_Argc(cmd) == 4)
+	if (Cmd_Argc(cmd) == 4)
 	{
 		cvar_t *cvar = Cvar_FindVar(cmd->cvars, Cmd_Argv(cmd, 3), cmd->cvars_flagsmask);
 		if (cvar)
-			if(Cvar_Readonly(cvar, "prvm_globalget"))
+			if (Cvar_Readonly(cvar, "prvm_globalget"))
 				goto fail;
 		Cvar_Get(cmd->cvars, Cmd_Argv(cmd, 3), s, cmd->cvars_flagsmask, NULL);
 	}
 	else
-		Con_Printf("%s\n", s);
+		Con_Printf ("%s\n", s);
 
 fail:
 	;
@@ -1245,7 +1245,7 @@ static void PRVM_ED_EdictSet_f(cmd_state_t *cmd)
 	prvm_edict_t *ed;
 	mdef_t *key;
 
-	if(Cmd_Argc(cmd) != 5)
+	if (Cmd_Argc(cmd) != 5)
 	{
 		Con_Print("prvm_edictset <program name> <edict number> <field> <value>\n");
 		return;
@@ -1256,8 +1256,8 @@ static void PRVM_ED_EdictSet_f(cmd_state_t *cmd)
 
 	ed = PRVM_EDICT_NUM(atoi(Cmd_Argv(cmd, 2)));
 
-	if((key = PRVM_ED_FindField(prog, Cmd_Argv(cmd, 3))) == 0)
-		Con_Printf("Key %s not found!\n", Cmd_Argv(cmd, 3));
+	if ((key = PRVM_ED_FindField(prog, Cmd_Argv(cmd, 3))) == 0)
+		Con_Printf ("Key %s not found!\n", Cmd_Argv(cmd, 3));
 	else
 		PRVM_ED_ParseEpair(prog, ed, key, Cmd_Argv(cmd, 4), true);
 }
@@ -1288,13 +1288,13 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 		if (!COM_ParseToken_Simple(&data, false, false, true))
 			prog->error_cmd("PRVM_ED_ParseEdict: EOF without closing brace");
 		if (developer_entityparsing.integer)
-			Con_Printf("Key: \"%s\"", com_token);
+			Con_Printf ("Key: \"%s\"", com_token);
 		if (com_token[0] == '}')
 			break;
 
 		// anglehack is to allow QuakeEd to write single scalar angles
 		// and allow them to be turned into vectors. (FIXME...)
-		if (!strcmp(com_token, "angle"))
+		if (String_Does_Match(com_token, "angle"))
 		{
 			strlcpy (com_token, "angles", sizeof(com_token));
 			anglehack = true;
@@ -1303,7 +1303,7 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 			anglehack = false;
 
 		// FIXME: change light to _light to get rid of this hack
-		if (!strcmp(com_token, "light"))
+		if (String_Does_Match(com_token, "light"))
 			strlcpy (com_token, "light_lev", sizeof(com_token));	// hack for single light def
 
 		strlcpy (keyname, com_token, sizeof(keyname));
@@ -1320,7 +1320,7 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 		if (!COM_ParseToken_Simple(&data, false, false, true))
 			prog->error_cmd("PRVM_ED_ParseEdict: EOF without closing brace");
 		if (developer_entityparsing.integer)
-			Con_Printf(" \"%s\"\n", com_token);
+			Con_Printf (" \"%s\"\n", com_token);
 
 		if (com_token[0] == '}')
 			prog->error_cmd("PRVM_ED_ParseEdict: closing brace without data");
@@ -1339,7 +1339,7 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 		key = PRVM_ED_FindField (prog, keyname);
 		if (!key)
 		{
-			Con_DPrintf("%s: '%s' is not a field\n", prog->name, keyname);
+			Con_DPrintf ("%s: '%s' is not a field\n", prog->name, keyname);
 			continue;
 		}
 
@@ -1399,7 +1399,7 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 		 */
 		else if (data && start)
 		{
-			if((fulldata = PRVM_ED_FindGlobalEval(prog, "__fullspawndata")))
+			if ((fulldata = PRVM_ED_FindGlobalEval(prog, "__fullspawndata")))
 			{
 				const char *in;
 				char *spawndata;
@@ -1407,7 +1407,7 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 				for(in = start; in < data; )
 				{
 					char c = *in++;
-					if(c == '\n')
+					if (c == '\n')
 						*spawndata++ = '\t';
 					else
 						*spawndata++ = c;
@@ -1419,8 +1419,8 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 		// look for the spawn function
 		funcname = PRVM_GetString(prog, PRVM_alledictstring(ent, classname));
 		func = PRVM_ED_FindFunction (prog, va(vabuf, sizeof(vabuf), "spawnfunc_%s", funcname));
-		if(!func)
-			if(!PRVM_allglobalfloat(require_spawnfunc_prefix))
+		if (!func)
+			if (!PRVM_allglobalfloat(require_spawnfunc_prefix))
 				func = PRVM_ED_FindFunction (prog, funcname);
 
 		if (!func)
@@ -1459,7 +1459,7 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 
 void PRVM_ED_CallPostspawnFunction (prvm_prog_t *prog, prvm_edict_t *ent)
 {
-	if(!ent->free)
+	if (!ent->free)
 	if (PRVM_serverfunction(SV_OnEntityPostSpawnFunction))
 	{
 		// self = ent
@@ -1509,7 +1509,7 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 			prog->error_cmd("PRVM_ED_LoadFromFile: %s: found %s when expecting {", prog->name, com_token);
 
 		// CHANGED: this is not conform to PR_LoadFromFile
-		if(prog->loadintoworld)
+		if (prog->loadintoworld)
 		{
 			prog->loadintoworld = false;
 			ent = PRVM_EDICT_NUM(0);
@@ -1525,7 +1525,7 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 		parsed++;
 
 		// remove the entity ?
-		if(!prog->load_edict(prog, ent))
+		if (!prog->load_edict(prog, ent))
 		{
 			PRVM_ED_Free(prog, ent);
 			inhibited++;
@@ -1534,7 +1534,7 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 
 		PRVM_ED_CallPrespawnFunction(prog, ent);
 
-		if(ent->free)
+		if (ent->free)
 		{
 			inhibited++;
 			continue;
@@ -1542,7 +1542,7 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 
 		SV_LinkEdict(ent);
 
-		if(!PRVM_ED_CallSpawnFunction(prog, ent, data, start))
+		if (!PRVM_ED_CallSpawnFunction(prog, ent, data, start))
 			continue;
 		
 		PRVM_ED_CallPostspawnFunction(prog, ent);
@@ -1552,7 +1552,7 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 			died++;
 	}
 
-	Con_DPrintf("%s: %i new entities parsed, %i new inhibited, %i (%i new) spawned (whereas %i removed self, %i stayed)\n", prog->name, parsed, inhibited, prog->num_edicts, spawned, died, spawned - died);
+	Con_DPrintf ("%s: %d new entities parsed, %d new inhibited, %d (%d new) spawned (whereas %d removed self, %d stayed)\n", prog->name, parsed, inhibited, prog->num_edicts, spawned, died, spawned - died);
 
 	prvm_reuseedicts_always_allow = 0;
 }
@@ -1682,17 +1682,17 @@ static void PRVM_PO_UnparseString(char *out, const char *in, size_t outsize)
 			case 0:
 				*out++ = 0;
 				return;
-			case '\a': if(outsize >= 2) { *out++ = '\\'; *out++ = 'a'; outsize -= 2; } break;
-			case '\b': if(outsize >= 2) { *out++ = '\\'; *out++ = 'b'; outsize -= 2; } break;
-			case '\t': if(outsize >= 2) { *out++ = '\\'; *out++ = 't'; outsize -= 2; } break;
-			case '\r': if(outsize >= 2) { *out++ = '\\'; *out++ = 'r'; outsize -= 2; } break;
-			case '\n': if(outsize >= 2) { *out++ = '\\'; *out++ = 'n'; outsize -= 2; } break;
-			case '\\': if(outsize >= 2) { *out++ = '\\'; *out++ = '\\'; outsize -= 2; } break;
-			case '"': if(outsize >= 2) { *out++ = '\\'; *out++ = '"'; outsize -= 2; } break;
+			case '\a': if (outsize >= 2) { *out++ = '\\'; *out++ = 'a'; outsize -= 2; } break;
+			case '\b': if (outsize >= 2) { *out++ = '\\'; *out++ = 'b'; outsize -= 2; } break;
+			case '\t': if (outsize >= 2) { *out++ = '\\'; *out++ = 't'; outsize -= 2; } break;
+			case '\r': if (outsize >= 2) { *out++ = '\\'; *out++ = 'r'; outsize -= 2; } break;
+			case '\n': if (outsize >= 2) { *out++ = '\\'; *out++ = 'n'; outsize -= 2; } break;
+			case '\\': if (outsize >= 2) { *out++ = '\\'; *out++ = '\\'; outsize -= 2; } break;
+			case '"': if (outsize >= 2) { *out++ = '\\'; *out++ = '"'; outsize -= 2; } break;
 			default:
-				if(*in >= 0 && *in <= 0x1F)
+				if (*in >= 0 && *in <= 0x1F)
 				{
-					if(outsize >= 4)
+					if (outsize >= 4)
 					{
 						*out++ = '\\';
 						*out++ = '0' + ((*in & 0700) >> 6);
@@ -1703,7 +1703,7 @@ static void PRVM_PO_UnparseString(char *out, const char *in, size_t outsize)
 				}
 				else
 				{
-					if(outsize >= 1)
+					if (outsize >= 1)
 					{
 						*out++ = *in;
 						outsize -= 1;
@@ -1727,43 +1727,43 @@ static void PRVM_PO_ParseString(char *out, const char *in, size_t outsize)
 				++in;
 				switch(*in)
 				{
-					case 'a': if(outsize > 0) { *out++ = '\a'; --outsize; } break;
-					case 'b': if(outsize > 0) { *out++ = '\b'; --outsize; } break;
-					case 't': if(outsize > 0) { *out++ = '\t'; --outsize; } break;
-					case 'r': if(outsize > 0) { *out++ = '\r'; --outsize; } break;
-					case 'n': if(outsize > 0) { *out++ = '\n'; --outsize; } break;
-					case '\\': if(outsize > 0) { *out++ = '\\'; --outsize; } break;
-					case '"': if(outsize > 0) { *out++ = '"'; --outsize; } break;
+					case 'a': if (outsize > 0) { *out++ = '\a'; --outsize; } break;
+					case 'b': if (outsize > 0) { *out++ = '\b'; --outsize; } break;
+					case 't': if (outsize > 0) { *out++ = '\t'; --outsize; } break;
+					case 'r': if (outsize > 0) { *out++ = '\r'; --outsize; } break;
+					case 'n': if (outsize > 0) { *out++ = '\n'; --outsize; } break;
+					case '\\': if (outsize > 0) { *out++ = '\\'; --outsize; } break;
+					case '"': if (outsize > 0) { *out++ = '"'; --outsize; } break;
 					case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
-						if(outsize > 0)
+						if (outsize > 0)
 							*out = *in - '0';
 						++in;
-						if(*in >= '0' && *in <= '7')
+						if (*in >= '0' && *in <= '7')
 						{
-							if(outsize > 0)
+							if (outsize > 0)
 								*out = (*out << 3) | (*in - '0');
 							++in;
 						}
-						if(*in >= '0' && *in <= '7')
+						if (*in >= '0' && *in <= '7')
 						{
-							if(outsize > 0)
+							if (outsize > 0)
 								*out = (*out << 3) | (*in - '0');
 							++in;
 						}
 						--in;
-						if(outsize > 0)
+						if (outsize > 0)
 						{
 							++out;
 							--outsize;
 						}
 						break;
 					default:
-						if(outsize > 0) { *out++ = *in; --outsize; }
+						if (outsize > 0) { *out++ = *in; --outsize; }
 						break;
 				}
 				break;
 			default:
-				if(outsize > 0)
+				if (outsize > 0)
 				{
 					*out++ = *in;
 					--outsize;
@@ -1793,7 +1793,7 @@ static po_t *PRVM_PO_Load(const char *filename, const char *filename2, mempool_t
 		// so that progs.dat.de.po wins over common.de.po
 		// and within file, last item wins
 
-		if(!buf)
+		if (!buf)
 			continue;
 
 		if (!po)
@@ -1807,26 +1807,26 @@ static po_t *PRVM_PO_Load(const char *filename, const char *filename2, mempool_t
 		p = buf;
 		while(*p)
 		{
-			if(*p == '#')
+			if (*p == '#')
 			{
 				// skip to newline
 				p = strchr(p, '\n');
-				if(!p)
+				if (!p)
 					break;
 				++p;
 				continue;
 			}
-			if(*p == '\r' || *p == '\n')
+			if (*p == '\r' || *p == '\n')
 			{
 				++p;
 				continue;
 			}
-			if(!strncmp(p, "msgid \"", 7))
+			if (!strncmp(p, "msgid \"", 7))
 			{
 				mode = 0;
 				p += 6;
 			}
-			else if(!strncmp(p, "msgstr \"", 8))
+			else if (!strncmp(p, "msgstr \"", 8))
 			{
 				mode = 1;
 				p += 7;
@@ -1834,7 +1834,7 @@ static po_t *PRVM_PO_Load(const char *filename, const char *filename2, mempool_t
 			else
 			{
 				p = strchr(p, '\n');
-				if(!p)
+				if (!p)
 					break;
 				++p;
 				continue;
@@ -1844,31 +1844,31 @@ static po_t *PRVM_PO_Load(const char *filename, const char *filename2, mempool_t
 			{
 				++p;
 				q = strchr(p, '\n');
-				if(!q)
+				if (!q)
 					break;
-				if(*(q-1) == '\r')
+				if (*(q-1) == '\r')
 					--q;
-				if(*(q-1) != '"')
+				if (*(q-1) != '"')
 					break;
-				if((size_t)(q - p) >= (size_t) sizeof(inbuf))
+				if ((size_t)(q - p) >= (size_t) sizeof(inbuf))
 					break;
 				strlcpy(inbuf, p, q - p); // not - 1, because this adds a NUL
 				PRVM_PO_ParseString(decodedbuf + decodedpos, inbuf, sizeof(decodedbuf) - decodedpos);
 				decodedpos += strlen(decodedbuf + decodedpos);
-				if(*q == '\r')
+				if (*q == '\r')
 					++q;
-				if(*q == '\n')
+				if (*q == '\n')
 					++q;
 				p = q;
 			}
-			if(mode == 0)
+			if (mode == 0)
 			{
-				if(thisstr.key)
+				if (thisstr.key)
 					Mem_Free(thisstr.key);
 				thisstr.key = (char *)Mem_Alloc(pool, decodedpos + 1);
 				memcpy(thisstr.key, decodedbuf, decodedpos + 1);
 			}
-			else if(decodedpos > 0 && thisstr.key) // skip empty translation results
+			else if (decodedpos > 0 && thisstr.key) // skip empty translation results
 			{
 				thisstr.value = (char *)Mem_Alloc(pool, decodedpos + 1);
 				memcpy(thisstr.value, decodedbuf, decodedpos + 1);
@@ -1891,7 +1891,7 @@ static const char *PRVM_PO_Lookup(po_t *po, const char *str)
 	po_string_t *p = po->hashtable[hashindex];
 	while(p)
 	{
-		if(!strcmp(str, p->key))
+		if (String_Does_Match(str, p->key))
 			return p->value;
 		p = p->nextonhashchain;
 	}
@@ -1920,13 +1920,13 @@ void PRVM_Prog_Reset(prvm_prog_t *prog)
 {
 	if (prog->loaded)
 	{
-		if(prog->tempstringsbuf.cursize)
+		if (prog->tempstringsbuf.cursize)
 			Mem_Free(prog->tempstringsbuf.data);
 		prog->tempstringsbuf.cursize = 0;
 		PRVM_LeakTest(prog);
 		prog->reset_cmd(prog);
 		Mem_FreePool(&prog->progs_mempool);
-		if(prog->po)
+		if (prog->po)
 			PRVM_PO_Destroy((po_t *) prog->po);
 	}
 	memset(prog,0,sizeof(prvm_prog_t));
@@ -1950,7 +1950,7 @@ static void PRVM_LoadLNO( prvm_prog_t *prog, const char *progname ) {
 	strlcat( filename, ".lno", sizeof( filename ) );
 
 	lno = FS_LoadFile( filename, tempmempool, false, &filesize );
-	if( !lno ) {
+	if ( !lno ) {
 		return;
 	}
 
@@ -1970,7 +1970,7 @@ static void PRVM_LoadLNO( prvm_prog_t *prog, const char *progname ) {
 	}
 
 	header = (unsigned int *) lno;
-	if( header[ 0 ] == *(unsigned int *) "LNOF" &&
+	if ( header[ 0 ] == *(unsigned int *) "LNOF" &&
 		LittleLong( header[ 1 ] ) == 1 &&
 		(unsigned int)LittleLong( header[ 2 ] ) == (unsigned int)prog->progs_numglobaldefs &&
 		(unsigned int)LittleLong( header[ 3 ] ) == (unsigned int)prog->progs_numglobals &&
@@ -2059,21 +2059,20 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 // byte swap the header
 	prog->progs_version = LittleLong(dprograms->version);
 	prog->progs_crc = LittleLong(dprograms->crc);
-	if (prog->progs_version == 7)
-	{
+	if (prog->progs_version == /*fte*/ 7 ) {
 		dprograms_v7_t *v7 = (dprograms_v7_t*)dprograms;
 		structtype = LittleLong(v7->secondaryversion);
 		if (structtype == PROG_SECONDARYVERSION16 ||
 			structtype == PROG_SECONDARYVERSION32) // barely supported
-			Con_Printf(CON_WARN "WARNING: %s: %s targets FTEQW, for which support is incomplete. Proceed at your own risk.\n", prog->name, filename);
+			Con_PrintLinef (CON_WARN "WARNING: %s: %s targets FTEQW, for which support is incomplete. Proceed at your own risk.", prog->name, filename);
 		else
 			prog->error_cmd("%s: %s targets unknown engine", prog->name, filename);
 
 		if (v7->numbodylessfuncs != 0 || v7->numtypes != 0 || v7->blockscompressed != 0)
 			prog->error_cmd("%s: %s uses unsupported features.", prog->name, filename);
 	}
-	else if (prog->progs_version != PROG_VERSION)
-		prog->error_cmd("%s: %s has wrong version number (%i should be %i)", prog->name, filename, prog->progs_version, PROG_VERSION);
+	else if (prog->progs_version != PROG_VERSION_6)
+		prog->error_cmd("%s: %s has wrong version number (%d should be %d)", prog->name, filename, prog->progs_version, PROG_VERSION_6);
 	instatements16 = (dstatement16_t *)((unsigned char *)dprograms + LittleLong(dprograms->ofs_statements));
 	instatements32 = (dstatement32_t *)instatements16;
 	prog->progs_numstatements = LittleLong(dprograms->numstatements);
@@ -2136,7 +2135,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 		prog->functions[i].numparms = LittleLong(infunctions[i].numparms);
 		prog->functions[i].locals = LittleLong(infunctions[i].locals);
 		memcpy(prog->functions[i].parm_size, infunctions[i].parm_size, sizeof(infunctions[i].parm_size));
-		if(prog->functions[i].first_statement >= prog->numstatements)
+		if (prog->functions[i].first_statement >= prog->numstatements)
 			prog->error_cmd("PRVM_LoadProgs: out of bounds function statement (function %d) in %s", i, prog->name);
 		// TODO bounds check parm_start, s_name, s_file, numparms, locals, parm_size
 	}
@@ -2286,7 +2285,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 			prog->statements[i].jumpabsolute = i + a;
 			break;
 		default:
-			Con_DPrintf("PRVM_LoadProgs: unknown opcode %d at statement %d in %s\n", (int)op, i, prog->name);
+			Con_DPrintf ("PRVM_LoadProgs: unknown opcode %d at statement %d in %s\n", (int)op, i, prog->name);
 
 			//make sure its something well defined.
 			prog->statements[i].op = OP_BOUNDCHECK;
@@ -2427,7 +2426,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 		case OP_STOREP_S:
 		case OP_STOREP_FNC:
 			if (c)	//Spike -- DP is alergic to pointers in QC. Try to avoid too many nasty surprises.
-				Con_DPrintf("PRVM_LoadProgs: storep-with-offset is not permitted in %s\n", prog->name);
+				Con_DPrintf ("PRVM_LoadProgs: storep-with-offset is not permitted in %s\n", prog->name);
 			//fallthrough
 		case OP_STORE_F:
 		case OP_STORE_ENT:
@@ -2465,7 +2464,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 			if ( a >= prog->progs_numglobals)
 				prog->error_cmd("PRVM_LoadProgs: out of bounds global index (statement %d) in %s", i, prog->name);
 			if (b || c)	//Spike -- added this check just as a diagnostic...
-				Con_DPrintf("PRVM_LoadProgs: unexpected offset on call opcode in %s. Hexen2 format is not supported\n", prog->name);
+				Con_DPrintf ("PRVM_LoadProgs: unexpected offset on call opcode in %s. Hexen2 format is not supported\n", prog->name);
 			prog->statements[i].op = op;
 			prog->statements[i].operand[0] = remapglobal(a);
 			prog->statements[i].operand[1] = -1;
@@ -2474,7 +2473,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 			break;
 		}
 	}
-	if(prog->numstatements < 1)
+	if (prog->numstatements < 1)
 	{
 		prog->error_cmd("PRVM_LoadProgs: empty program in %s", prog->name);
 	}
@@ -2490,7 +2489,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 	}
 
 	// we're done with the file now
-	if(!data)
+	if (!data)
 		Mem_Free(dprograms);
 	dprograms = NULL;
 
@@ -2507,42 +2506,42 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 
 	PRVM_Init_Exec(prog);
 
-	if(*prvm_language.string)
+	if (*prvm_language.string)
 	// in CSQC we really shouldn't be able to change how stuff works... sorry for now
 	// later idea: include a list of authorized .po file checksums with the csprogs
 	{
 		qbool deftrans = prog == CLVM_prog;
 		const char *realfilename = (prog != CLVM_prog ? filename : csqc_progname.string);
-		if(deftrans) // once we have dotranslate_ strings, ALWAYS use the opt-in method!
+		if (deftrans) // once we have dotranslate_ strings, ALWAYS use the opt-in method!
 		{
 			for (i=0 ; i<prog->numglobaldefs ; i++)
 			{
 				const char *name;
 				name = PRVM_GetString(prog, prog->globaldefs[i].s_name);
-				if((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
-				if(name && !strncmp(name, "dotranslate_", 12))
+				if ((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
+				if (name && !strncmp(name, "dotranslate_", 12))
 				{
 					deftrans = false;
 					break;
 				}
 			}
 		}
-		if(String_Does_Match(prvm_language.string, "dump"))
+		if (String_Does_Match(prvm_language.string, "dump"))
 		{
 			qfile_t *f = FS_OpenRealFile(va(vabuf, sizeof(vabuf), "%s.pot", realfilename), "w", false);
-			Con_Printf("Dumping to %s.pot\n", realfilename);
-			if(f)
+			Con_Printf ("Dumping to %s.pot\n", realfilename);
+			if (f)
 			{
 				for (i=0 ; i<prog->numglobaldefs ; i++)
 				{
 					const char *name;
 					name = PRVM_GetString(prog, prog->globaldefs[i].s_name);
-					if(deftrans ? (!name || strncmp(name, "notranslate_", 12)) : (name && !strncmp(name, "dotranslate_", 12)))
-					if((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
+					if (deftrans ? (!name || strncmp(name, "notranslate_", 12)) : (name && !strncmp(name, "dotranslate_", 12)))
+					if ((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
 					{
 						prvm_eval_t *val = PRVM_GLOBALFIELDVALUE(prog->globaldefs[i].ofs);
 						const char *value = PRVM_GetString(prog, val->string);
-						if(*value)
+						if (*value)
 						{
 							char buf[MAX_INPUTLINE];
 							PRVM_PO_UnparseString(buf, value, sizeof(buf));
@@ -2559,21 +2558,21 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 					va(vabuf, sizeof(vabuf), "%s.%s.po", realfilename, prvm_language.string),
 					va(vabuf2, sizeof(vabuf2), "common.%s.po", prvm_language.string),
 					prog->progs_mempool);
-			if(po)
+			if (po)
 			{
 				for (i=0 ; i<prog->numglobaldefs ; i++)
 				{
 					const char *name;
 					name = PRVM_GetString(prog, prog->globaldefs[i].s_name);
-					if(deftrans ? (!name || strncmp(name, "notranslate_", 12)) : (name && !strncmp(name, "dotranslate_", 12)))
-					if((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
+					if (deftrans ? (!name || strncmp(name, "notranslate_", 12)) : (name && !strncmp(name, "dotranslate_", 12)))
+					if ((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
 					{
 						prvm_eval_t *val = PRVM_GLOBALFIELDVALUE(prog->globaldefs[i].ofs);
 						const char *value = PRVM_GetString(prog, val->string);
-						if(*value)
+						if (*value)
 						{
 							value = PRVM_PO_Lookup(po, value);
-							if(value)
+							if (value)
 								val->string = PRVM_SetEngineString(prog, value);
 						}
 					}
@@ -2589,27 +2588,27 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 	{
 		const char *name;
 		name = PRVM_GetString(prog, prog->globaldefs[i].s_name);
-		//Con_Printf("found var %s\n", name);
-		if(name
+		//Con_Printf ("found var %s\n", name);
+		if (name
 			&& !strncmp(name, "autocvar_", 9)
 			&& !(strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
 		)
 		{
 			prvm_eval_t *val = PRVM_GLOBALFIELDVALUE(prog->globaldefs[i].ofs);
 			cvar = Cvar_FindVar(prog->console_cmd->cvars, name + 9, prog->console_cmd->cvars_flagsmask);
-			//Con_Printf("PRVM_LoadProgs: autocvar global %s in %s, processing...\n", name, prog->name);
-			if(!cvar)
+			//Con_Printf ("PRVM_LoadProgs: autocvar global %s in %s, processing...\n", name, prog->name);
+			if (!cvar)
 			{
 				const char *value;
 				char buf[128];
 				int prec[3];
 				float f;
-				Con_DPrintf("PRVM_LoadProgs: no cvar for autocvar global %s in %s, creating...\n", name, prog->name);
+				Con_DPrintf ("PRVM_LoadProgs: no cvar for autocvar global %s in %s, creating...\n", name, prog->name);
 				switch(prog->globaldefs[i].type & ~DEF_SAVEGLOBAL)
 				{
 					case ev_float:
-						if((float)((int)(val->_float)) == val->_float)
-							dpsnprintf(buf, sizeof(buf), "%i", (int)(val->_float));
+						if ((float)((int)(val->_float)) == val->_float)
+							dpsnprintf(buf, sizeof(buf), "%d", (int)(val->_float));
 						else
 						{
 							// ftos_slow
@@ -2643,20 +2642,20 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 						value = PRVM_GetString(prog, val->string);
 						break;
 					default:
-						Con_Printf("PRVM_LoadProgs: invalid type of autocvar global %s in %s\n", name, prog->name);
+						Con_Printf ("PRVM_LoadProgs: invalid type of autocvar global %s in %s\n", name, prog->name);
 						goto fail;
 				}
 				cvar = Cvar_Get(prog->console_cmd->cvars, name + 9, value, prog->console_cmd->cvars_flagsmask, NULL);
-				if((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
+				if ((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
 				{
 					val->string = PRVM_SetEngineString(prog, cvar->string);
 					cvar->globaldefindex_stringno[prog - prvm_prog_list] = val->string;
 				}
-				if(!cvar)
+				if (!cvar)
 					prog->error_cmd("PRVM_LoadProgs: could not create cvar for autocvar global %s in %s", name, prog->name);
 				cvar->globaldefindex[prog - prvm_prog_list] = i;
 			}
-			else if((cvar->flags & CF_PRIVATE) == 0)
+			else if (Have_Flag(cvar->flags, CF_PRIVATE) == 0)
 			{
 				// MUST BE SYNCED WITH cvar.c Cvar_Set
 				int j;
@@ -2687,13 +2686,13 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 						cvar->globaldefindex_stringno[prog - prvm_prog_list] = val->string;
 						break;
 					default:
-						Con_Printf("PRVM_LoadProgs: invalid type of autocvar global %s in %s\n", name, prog->name);
+						Con_Printf ("PRVM_LoadProgs: invalid type of autocvar global %s in %s\n", name, prog->name);
 						goto fail;
 				}
 				cvar->globaldefindex[prog - prvm_prog_list] = i;
 			}
 			else
-				Con_Printf("PRVM_LoadProgs: private cvar for autocvar global %s in %s\n", name, prog->name);
+				Con_Printf ("PRVM_LoadProgs: private cvar for autocvar global %s in %s\n", name, prog->name);
 		}
 fail:
 		;
@@ -2714,7 +2713,7 @@ fail:
 	// init mempools
 	PRVM_MEM_Alloc(prog);
 
-	Con_Printf("%s: program loaded (crc %i, size %iK)\n", prog->name, prog->filecrc, (int)(filesize/1024));
+	Con_Printf ("%s: program loaded (crc %d, size %dK)\n", prog->name, prog->filecrc, (int)(filesize/1024));
 
 	// Inittime is at least the time when this function finished. However,
 	// later events may bump it.
@@ -2743,7 +2742,7 @@ static void PRVM_Fields_f(cmd_state_t *cmd)
 	}
 	*/
 
-	if(Cmd_Argc(cmd) != 2)
+	if (Cmd_Argc(cmd) != 2)
 	{
 		Con_Print("prvm_fields <program name>\n");
 		return;
@@ -2812,7 +2811,7 @@ static void PRVM_Fields_f(cmd_state_t *cmd)
 			strlcat(tempstring, "pointer  ", sizeof(tempstring));
 			break;
 		default:
-			dpsnprintf (tempstring2, sizeof(tempstring2), "bad type %i ", d->type & ~DEF_SAVEGLOBAL);
+			dpsnprintf (tempstring2, sizeof(tempstring2), "bad type %d ", d->type & ~DEF_SAVEGLOBAL);
 			strlcat(tempstring, tempstring2, sizeof(tempstring));
 			break;
 		}
@@ -2841,7 +2840,7 @@ static void PRVM_Fields_f(cmd_state_t *cmd)
 		}
 	}
 	Mem_Free(counts);
-	Con_Printf("%s: %i entity fields (%i in use), totalling %i bytes per edict (%i in use), %i edicts allocated, %i bytes total spent on edict fields (%i needed)\n", prog->name, prog->entityfields, used, prog->entityfields * 4, usedamount * 4, prog->max_edicts, prog->entityfields * 4 * prog->max_edicts, usedamount * 4 * prog->max_edicts);
+	Con_Printf ("%s: %d entity fields (%d in use), totalling %d bytes per edict (%d in use), %d edicts allocated, %d bytes total spent on edict fields (%d needed)\n", prog->name, prog->entityfields, used, prog->entityfields * 4, usedamount * 4, prog->max_edicts, prog->entityfields * 4 * prog->max_edicts, usedamount * 4 * prog->max_edicts);
 }
 
 static void PRVM_Globals_f(cmd_state_t *cmd)
@@ -2857,7 +2856,7 @@ static void PRVM_Globals_f(cmd_state_t *cmd)
 		Con_Print("no progs loaded\n");
 		return;
 	}*/
-	if(Cmd_Argc (cmd) < 2 || Cmd_Argc(cmd) > 3)
+	if (Cmd_Argc (cmd) < 2 || Cmd_Argc(cmd) > 3)
 	{
 		Con_Print("prvm_globals <program name> <optional name wildcard>\n");
 		return;
@@ -2866,24 +2865,24 @@ static void PRVM_Globals_f(cmd_state_t *cmd)
 	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
-	if( Cmd_Argc(cmd) == 3)
+	if ( Cmd_Argc(cmd) == 3)
 		wildcard = Cmd_Argv(cmd, 2);
 	else
 		wildcard = NULL;
 
-	Con_Printf("%s :", prog->name);
+	Con_Printf ("%s :", prog->name);
 
 	for (i = 0;i < prog->numglobaldefs;i++)
 	{
-		if(wildcard)
-			if( !matchpattern( PRVM_GetString(prog, prog->globaldefs[i].s_name), wildcard, 1) )
+		if (wildcard)
+			if ( !matchpattern( PRVM_GetString(prog, prog->globaldefs[i].s_name), wildcard, 1) )
 			{
 				numculled++;
 				continue;
 			}
-		Con_Printf("%s\n", PRVM_GetString(prog, prog->globaldefs[i].s_name));
+		Con_Printf ("%s\n", PRVM_GetString(prog, prog->globaldefs[i].s_name));
 	}
-	Con_Printf("%i global variables, %i culled, totalling %i bytes\n", prog->numglobals, numculled, prog->numglobals * 4);
+	Con_Printf ("%d global variables, %d culled, totalling %d bytes\n", prog->numglobals, numculled, prog->numglobals * 4);
 }
 
 /*
@@ -2896,8 +2895,8 @@ static void PRVM_Global_f(cmd_state_t *cmd)
 	prvm_prog_t *prog;
 	mdef_t *global;
 	char valuebuf[MAX_INPUTLINE];
-	if( Cmd_Argc(cmd) != 3 ) {
-		Con_Printf( "prvm_global <program name> <global name>\n" );
+	if ( Cmd_Argc(cmd) != 3 ) {
+		Con_Printf ( "prvm_global <program name> <global name>\n" );
 		return;
 	}
 
@@ -2905,10 +2904,10 @@ static void PRVM_Global_f(cmd_state_t *cmd)
 		return;
 
 	global = PRVM_ED_FindGlobal( prog, Cmd_Argv(cmd, 2) );
-	if( !global )
-		Con_Printf( "No global '%s' in %s!\n", Cmd_Argv(cmd, 2), Cmd_Argv(cmd, 1) );
+	if ( !global )
+		Con_Printf ( "No global '%s' in %s!\n", Cmd_Argv(cmd, 2), Cmd_Argv(cmd, 1) );
 	else
-		Con_Printf( "%s: %s\n", Cmd_Argv(cmd, 2), PRVM_ValueString( prog, (etype_t)global->type, PRVM_GLOBALFIELDVALUE(global->ofs), valuebuf, sizeof(valuebuf) ) );
+		Con_Printf ( "%s: %s\n", Cmd_Argv(cmd, 2), PRVM_ValueString( prog, (etype_t)global->type, PRVM_GLOBALFIELDVALUE(global->ofs), valuebuf, sizeof(valuebuf) ) );
 }
 
 /*
@@ -2920,8 +2919,8 @@ static void PRVM_GlobalSet_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 	mdef_t *global;
-	if( Cmd_Argc(cmd) != 4 ) {
-		Con_Printf( "prvm_globalset <program name> <global name> <value>\n" );
+	if ( Cmd_Argc(cmd) != 4 ) {
+		Con_Printf ( "prvm_globalset <program name> <global name> <value>\n" );
 		return;
 	}
 
@@ -2929,8 +2928,8 @@ static void PRVM_GlobalSet_f(cmd_state_t *cmd)
 		return;
 
 	global = PRVM_ED_FindGlobal( prog, Cmd_Argv(cmd, 2) );
-	if( !global )
-		Con_Printf( "No global '%s' in %s!\n", Cmd_Argv(cmd, 2), Cmd_Argv(cmd, 1) );
+	if ( !global )
+		Con_Printf ( "No global '%s' in %s!\n", Cmd_Argv(cmd, 2), Cmd_Argv(cmd, 1) );
 	else
 		PRVM_ED_ParseEpair( prog, NULL, global, Cmd_Argv(cmd, 3), true );
 }
@@ -2953,7 +2952,7 @@ static debug_data_t debug_data[PRVM_PROG_MAX];
 void PRVM_Breakpoint(prvm_prog_t *prog, int stack_index, const char *text)
 {
 	char vabuf[1024];
-	Con_Printf("PRVM_Breakpoint: %s\n", text);
+	Con_Printf ("PRVM_Breakpoint: %s\n", text);
 	PRVM_PrintState(prog, stack_index);
 	if (prvm_breakpointdump.integer)
 		SV_Savegame_to(prog, va(vabuf, sizeof(vabuf), "breakpoint-%s.dmp", prog->name));
@@ -2993,7 +2992,7 @@ static void PRVM_UpdateBreakpoints(prvm_prog_t *prog)
 			func = PRVM_ED_FindFunction (prog, debug->break_statement);
 			if (!func)
 			{
-				Con_Printf("%s progs: no function or statement named %s to break on!\n", prog->name, debug->break_statement);
+				Con_Printf ("%s progs: no function or statement named %s to break on!\n", prog->name, debug->break_statement);
 				prog->break_statement = -1;
 			}
 			else
@@ -3003,7 +3002,7 @@ static void PRVM_UpdateBreakpoints(prvm_prog_t *prog)
 			}
 		}
 		if (prog->break_statement >= -1)
-			Con_Printf("%s progs: breakpoint is at statement %d\n", prog->name, prog->break_statement);
+			Con_Printf ("%s progs: breakpoint is at statement %d\n", prog->name, prog->break_statement);
 	}
 	else
 		prog->break_statement = -1;
@@ -3011,9 +3010,9 @@ static void PRVM_UpdateBreakpoints(prvm_prog_t *prog)
 	if (debug->watch_global[0])
 	{
 		mdef_t *global = PRVM_ED_FindGlobal( prog, debug->watch_global );
-		if( !global )
+		if ( !global )
 		{
-			Con_Printf( "%s progs: no global named '%s' to watch!\n", prog->name, debug->watch_global );
+			Con_Printf ( "%s progs: no global named '%s' to watch!\n", prog->name, debug->watch_global );
 			prog->watch_global_type = ev_void;
 		}
 		else
@@ -3024,7 +3023,7 @@ static void PRVM_UpdateBreakpoints(prvm_prog_t *prog)
 			memcpy(&prog->watch_global_value, PRVM_GLOBALFIELDVALUE(prog->watch_global), sz);
 		}
 		if (prog->watch_global_type != ev_void)
-			Con_Printf("%s progs: global watchpoint is at global index %d\n", prog->name, prog->watch_global);
+			Con_Printf ("%s progs: global watchpoint is at global index %d\n", prog->name, prog->watch_global);
 	}
 	else
 		prog->watch_global_type = ev_void;
@@ -3032,9 +3031,9 @@ static void PRVM_UpdateBreakpoints(prvm_prog_t *prog)
 	if (debug->watch_field[0])
 	{
 		mdef_t *field = PRVM_ED_FindField( prog, debug->watch_field );
-		if( !field )
+		if ( !field )
 		{
-			Con_Printf( "%s progs: no field named '%s' to watch!\n", prog->name, debug->watch_field );
+			Con_Printf ( "%s progs: no field named '%s' to watch!\n", prog->name, debug->watch_field );
 			prog->watch_field_type = ev_void;
 		}
 		else
@@ -3049,7 +3048,7 @@ static void PRVM_UpdateBreakpoints(prvm_prog_t *prog)
 				memset(&prog->watch_edictfield_value, 0, sz);
 		}
 		if (prog->watch_edict != ev_void)
-			Con_Printf("%s progs: edict field watchpoint is at edict %d field index %d\n", prog->name, prog->watch_edict, prog->watch_field);
+			Con_Printf ("%s progs: edict field watchpoint is at edict %d field index %d\n", prog->name, prog->watch_edict, prog->watch_field);
 	}
 	else
 		prog->watch_field_type = ev_void;
@@ -3059,7 +3058,7 @@ static void PRVM_Breakpoint_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 
-	if( Cmd_Argc(cmd) == 2 ) {
+	if ( Cmd_Argc(cmd) == 2 ) {
 		if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 			return;
 		{
@@ -3069,8 +3068,8 @@ static void PRVM_Breakpoint_f(cmd_state_t *cmd)
 		PRVM_UpdateBreakpoints(prog);
 		return;
 	}
-	if( Cmd_Argc(cmd) != 3 ) {
-		Con_Printf( "prvm_breakpoint <program name> <function name | statement>\n" );
+	if ( Cmd_Argc(cmd) != 3 ) {
+		Con_Printf ( "prvm_breakpoint <program name> <function name | statement>\n" );
 		return;
 	}
 
@@ -3088,7 +3087,7 @@ static void PRVM_GlobalWatchpoint_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 
-	if( Cmd_Argc(cmd) == 2 ) {
+	if ( Cmd_Argc(cmd) == 2 ) {
 		if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 			return;
 		{
@@ -3098,8 +3097,8 @@ static void PRVM_GlobalWatchpoint_f(cmd_state_t *cmd)
 		PRVM_UpdateBreakpoints(prog);
 		return;
 	}
-	if( Cmd_Argc(cmd) != 3 ) {
-		Con_Printf( "prvm_globalwatchpoint <program name> <global name>\n" );
+	if ( Cmd_Argc(cmd) != 3 ) {
+		Con_Printf ( "prvm_globalwatchpoint <program name> <global name>\n" );
 		return;
 	}
 
@@ -3117,7 +3116,7 @@ static void PRVM_EdictWatchpoint_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 
-	if( Cmd_Argc(cmd) == 2 ) {
+	if ( Cmd_Argc(cmd) == 2 ) {
 		if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 			return;
 		{
@@ -3127,8 +3126,8 @@ static void PRVM_EdictWatchpoint_f(cmd_state_t *cmd)
 		PRVM_UpdateBreakpoints(prog);
 		return;
 	}
-	if( Cmd_Argc(cmd) != 4 ) {
-		Con_Printf( "prvm_edictwatchpoint <program name> <edict number> <field name>\n" );
+	if ( Cmd_Argc(cmd) != 4 ) {
+		Con_Printf ( "prvm_edictwatchpoint <program name> <edict number> <field name>\n" );
 		return;
 	}
 
@@ -3167,6 +3166,7 @@ void PRVM_Init (void)
 	Cmd_AddCommand(CF_SHARED, "cl_cmd", PRVM_GameCommand_Client_f, "calls the client QC function GameCommand with the supplied string as argument");
 	Cmd_AddCommand(CF_SHARED, "menu_cmd", PRVM_GameCommand_Menu_f, "calls the menu QC function GameCommand with the supplied string as argument");
 	Cmd_AddCommand(CF_SHARED, "sv_cmd", PRVM_GameCommand_Server_f, "calls the server QC function GameCommand with the supplied string as argument");
+
 	Cmd_AddCommand(CF_SHARED, "prvm_breakpoint", PRVM_Breakpoint_f, "marks a statement or function as breakpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear breakpoint");
 	Cmd_AddCommand(CF_SHARED, "prvm_globalwatchpoint", PRVM_GlobalWatchpoint_f, "marks a global as watchpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear watchpoint");
 	Cmd_AddCommand(CF_SHARED, "prvm_edictwatchpoint", PRVM_EdictWatchpoint_f, "marks an entity field as watchpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear watchpoint");
@@ -3211,7 +3211,7 @@ void PRVM_Prog_Init(prvm_prog_t *prog, cmd_state_t *cmd)
 // LadyHavoc: turned PRVM_EDICT_NUM into a #define for speed reasons
 unsigned int PRVM_EDICT_NUM_ERROR(prvm_prog_t *prog, unsigned int n, const char *filename, int fileline)
 {
-	prog->error_cmd("PRVM_EDICT_NUM: %s: bad number %i (called at %s:%i)", prog->name, n, filename, fileline);
+	prog->error_cmd("PRVM_EDICT_NUM: %s: bad number %d (called at %s:%d)", prog->name, n, filename, fileline);
 	return 0;
 }
 
@@ -3223,7 +3223,7 @@ const char *PRVM_GetString(prvm_prog_t *prog, int num)
 	{
 		// invalid
 		if (prvm_stringdebug.integer)
-			VM_Warning(prog, "PRVM_GetString: Invalid string offset (%i < 0)\n", num);
+			VM_Warning(prog, "PRVM_GetString: Invalid string offset (%d < 0)\n", num);
 		return "";
 	}
 	else if (num < prog->stringssize)
@@ -3240,7 +3240,7 @@ const char *PRVM_GetString(prvm_prog_t *prog, int num)
 		else
 		{
 			if (prvm_stringdebug.integer)
-				VM_Warning(prog, "PRVM_GetString: Invalid temp-string offset (%i >= %i prog->tempstringsbuf.cursize)\n", num, prog->tempstringsbuf.cursize);
+				VM_Warning(prog, "PRVM_GetString: Invalid temp-string offset (%d >= %d prog->tempstringsbuf.cursize)\n", num, prog->tempstringsbuf.cursize);
 			return "";
 		}
 	}
@@ -3253,7 +3253,7 @@ const char *PRVM_GetString(prvm_prog_t *prog, int num)
 			if (!prog->knownstrings[num])
 			{
 				if (prvm_stringdebug.integer)
-					VM_Warning(prog, "PRVM_GetString: Invalid zone-string offset (%i has been freed)\n", num);
+					VM_Warning(prog, "PRVM_GetString: Invalid zone-string offset (%d has been freed)\n", num);
 				return "";
 			}
 			// refresh the garbage collection on the string - this guards
@@ -3266,7 +3266,7 @@ const char *PRVM_GetString(prvm_prog_t *prog, int num)
 		else
 		{
 			if (prvm_stringdebug.integer)
-				VM_Warning(prog, "PRVM_GetString: Invalid zone-string offset (%i >= %i)\n", num, prog->numknownstrings);
+				VM_Warning(prog, "PRVM_GetString: Invalid zone-string offset (%d >= %d)\n", num, prog->numknownstrings);
 			return "";
 		}
 	}
@@ -3274,7 +3274,7 @@ const char *PRVM_GetString(prvm_prog_t *prog, int num)
 	{
 		// invalid string offset
 		if (prvm_stringdebug.integer)
-			VM_Warning(prog, "PRVM_GetString: Invalid constant-string offset (%i >= %i prog->stringssize)\n", num, prog->stringssize);
+			VM_Warning(prog, "PRVM_GetString: Invalid constant-string offset (%d >= %d prog->stringssize)\n", num, prog->stringssize);
 		return "";
 	}
 }
@@ -3284,9 +3284,9 @@ const char *PRVM_ChangeEngineString(prvm_prog_t *prog, int i, const char *s)
 	const char *old;
 	i = i - PRVM_KNOWNSTRINGBASE;
 	if (i < 0 || i >= prog->numknownstrings)
-		prog->error_cmd("PRVM_ChangeEngineString: string index %i is out of bounds", i);
+		prog->error_cmd("PRVM_ChangeEngineString: string index %d is out of bounds", i);
 	else if ((prog->knownstrings_flags[i] & KNOWNSTRINGFLAG_ENGINE) == 0)
-		prog->error_cmd("PRVM_ChangeEngineString: string index %i is not an engine string", i);
+		prog->error_cmd("PRVM_ChangeEngineString: string index %d is not an engine string", i);
 	old = prog->knownstrings[i];
 	prog->knownstrings[i] = s;
 	return old;
@@ -3341,7 +3341,7 @@ int PRVM_SetEngineString(prvm_prog_t *prog, const char *s)
 			return PRVM_KNOWNSTRINGBASE + i;
 	// new unknown engine string
 	if (developer_insane.integer)
-		Con_DPrintf("new engine string %p = \"%s\"\n", (void *)s, s);
+		Con_DPrintf ("new engine string %p = \"%s\"\n", (void *)s, s);
 	for (i = prog->firstfreeknownstring;i < prog->numknownstrings;i++)
 		if (!prog->knownstrings[i])
 			break;
@@ -3366,18 +3366,18 @@ int PRVM_SetTempString(prvm_prog_t *prog, const char *s)
 		return 0;
 	size = (int)strlen(s) + 1;
 	if (developer_insane.integer)
-		Con_DPrintf("PRVM_SetTempString: cursize %i, size %i\n", prog->tempstringsbuf.cursize, size);
+		Con_DPrintf ("PRVM_SetTempString: cursize %d, size %d\n", prog->tempstringsbuf.cursize, size);
 	if (prog->tempstringsbuf.maxsize < prog->tempstringsbuf.cursize + size)
 	{
 		sizebuf_t old = prog->tempstringsbuf;
 		if (prog->tempstringsbuf.cursize + size >= 1<<28)
-			prog->error_cmd("PRVM_SetTempString: ran out of tempstring memory!  (refusing to grow tempstring buffer over 256MB, cursize %i, size %i)\n", prog->tempstringsbuf.cursize, size);
+			prog->error_cmd("PRVM_SetTempString: ran out of tempstring memory!  (refusing to grow tempstring buffer over 256MB, cursize %d, size %d)\n", prog->tempstringsbuf.cursize, size);
 		prog->tempstringsbuf.maxsize = max(prog->tempstringsbuf.maxsize, 65536);
 		while (prog->tempstringsbuf.maxsize < prog->tempstringsbuf.cursize + size)
 			prog->tempstringsbuf.maxsize *= 2;
 		if (prog->tempstringsbuf.maxsize != old.maxsize || prog->tempstringsbuf.data == NULL)
 		{
-			Con_DPrintf("PRVM_SetTempString: enlarging tempstrings buffer (%iKB -> %iKB)\n", old.maxsize/1024, prog->tempstringsbuf.maxsize/1024);
+			Con_DPrintf ("PRVM_SetTempString: enlarging tempstrings buffer (%dKB -> %dKB)\n", old.maxsize/1024, prog->tempstringsbuf.maxsize/1024);
 			prog->tempstringsbuf.data = (unsigned char *) Mem_Alloc(prog->progs_mempool, prog->tempstringsbuf.maxsize);
 			if (old.data)
 			{
@@ -3408,7 +3408,7 @@ int PRVM_AllocString(prvm_prog_t *prog, size_t bufferlength, char **pointer)
 			break;
 	s = (char *)PRVM_Alloc(bufferlength);
 	PRVM_NewKnownString(prog, i, KNOWNSTRINGFLAG_GCMARK, s);
-	if(prog->leaktest_active)
+	if (prog->leaktest_active)
 		prog->knownstrings_origin[i] = PRVM_AllocationOrigin(prog);
 	if (pointer)
 		*pointer = (char *)(prog->knownstrings[i]);
@@ -3429,15 +3429,15 @@ void PRVM_FreeString(prvm_prog_t *prog, int num)
 		if (!prog->knownstrings_flags[num])
 			prog->error_cmd("PRVM_FreeString: attempt to free a string owned by the engine");
 		PRVM_Free((char *)prog->knownstrings[num]);
-		if(prog->leaktest_active)
-			if(prog->knownstrings_origin[num])
+		if (prog->leaktest_active)
+			if (prog->knownstrings_origin[num])
 				PRVM_Free((char *)prog->knownstrings_origin[num]);
 		prog->knownstrings[num] = NULL;
 		prog->knownstrings_flags[num] = 0;
 		prog->firstfreeknownstring = min(prog->firstfreeknownstring, num);
 	}
 	else
-		prog->error_cmd("PRVM_FreeString: invalid string offset %i", num);
+		prog->error_cmd("PRVM_FreeString: invalid string offset %d", num);
 }
 
 static qbool PRVM_IsStringReferenced(prvm_prog_t *prog, string_t string)
@@ -3447,9 +3447,9 @@ static qbool PRVM_IsStringReferenced(prvm_prog_t *prog, string_t string)
 	for (i = 0;i < prog->numglobaldefs;i++)
 	{
 		mdef_t *d = &prog->globaldefs[i];
-		if((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_string)
+		if ((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_string)
 			continue;
-		if(string == PRVM_GLOBALFIELDSTRING(d->ofs))
+		if (string == PRVM_GLOBALFIELDSTRING(d->ofs))
 			return true;
 	}
 
@@ -3461,9 +3461,9 @@ static qbool PRVM_IsStringReferenced(prvm_prog_t *prog, string_t string)
 		for (i=0; i<prog->numfielddefs; ++i)
 		{
 			mdef_t *d = &prog->fielddefs[i];
-			if((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_string)
+			if ((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_string)
 				continue;
-			if(string == PRVM_EDICTFIELDSTRING(ed, d->ofs))
+			if (string == PRVM_EDICTFIELDSTRING(ed, d->ofs))
 				return true;
 		}
 	}
@@ -3475,44 +3475,44 @@ static qbool PRVM_IsEdictRelevant(prvm_prog_t *prog, prvm_edict_t *edict)
 {
 	char vabuf[1024];
 	char vabuf2[1024];
-	if(PRVM_NUM_FOR_EDICT(edict) <= prog->reserved_edicts)
+	if (PRVM_NUM_FOR_EDICT(edict) <= prog->reserved_edicts)
 		return true; // world or clients
 	if (edict->freetime <= prog->inittime)
 		return true; // created during startup
 	if (prog == SVVM_prog)
 	{
-		if(PRVM_serveredictfloat(edict, solid)) // can block other stuff, or is a trigger?
+		if (PRVM_serveredictfloat(edict, solid)) // can block other stuff, or is a trigger?
 			return true;
-		if(PRVM_serveredictfloat(edict, modelindex)) // visible ent?
+		if (PRVM_serveredictfloat(edict, modelindex)) // visible ent?
 			return true;
-		if(PRVM_serveredictfloat(edict, effects)) // particle effect?
+		if (PRVM_serveredictfloat(edict, effects)) // particle effect?
 			return true;
-		if(PRVM_serveredictfunction(edict, think)) // has a think function?
-			if(PRVM_serveredictfloat(edict, nextthink) > 0) // that actually will eventually run?
+		if (PRVM_serveredictfunction(edict, think)) // has a think function?
+			if (PRVM_serveredictfloat(edict, nextthink) > 0) // that actually will eventually run?
 				return true;
-		if(PRVM_serveredictfloat(edict, takedamage))
+		if (PRVM_serveredictfloat(edict, takedamage))
 			return true;
-		if(*prvm_leaktest_ignore_classnames.string)
+		if (*prvm_leaktest_ignore_classnames.string)
 		{
-			if(strstr(va(vabuf, sizeof(vabuf), " %s ", prvm_leaktest_ignore_classnames.string), va(vabuf2, sizeof(vabuf2), " %s ", PRVM_GetString(prog, PRVM_serveredictstring(edict, classname)))))
+			if (strstr(va(vabuf, sizeof(vabuf), " %s ", prvm_leaktest_ignore_classnames.string), va(vabuf2, sizeof(vabuf2), " %s ", PRVM_GetString(prog, PRVM_serveredictstring(edict, classname)))))
 				return true;
 		}
 	}
 	else if (prog == CLVM_prog)
 	{
 		// TODO someone add more stuff here
-		if(PRVM_clientedictfloat(edict, entnum)) // csqc networked
+		if (PRVM_clientedictfloat(edict, entnum)) // csqc networked
 			return true;
-		if(PRVM_clientedictfloat(edict, modelindex)) // visible ent?
+		if (PRVM_clientedictfloat(edict, modelindex)) // visible ent?
 			return true;
-		if(PRVM_clientedictfloat(edict, effects)) // particle effect?
+		if (PRVM_clientedictfloat(edict, effects)) // particle effect?
 			return true;
-		if(PRVM_clientedictfunction(edict, think)) // has a think function?
-			if(PRVM_clientedictfloat(edict, nextthink) > 0) // that actually will eventually run?
+		if (PRVM_clientedictfunction(edict, think)) // has a think function?
+			if (PRVM_clientedictfloat(edict, nextthink) > 0) // that actually will eventually run?
 				return true;
-		if(*prvm_leaktest_ignore_classnames.string)
+		if (*prvm_leaktest_ignore_classnames.string)
 		{
-			if(strstr(va(vabuf, sizeof(vabuf), " %s ", prvm_leaktest_ignore_classnames.string), va(vabuf2, sizeof(vabuf2), " %s ", PRVM_GetString(prog, PRVM_clientedictstring(edict, classname)))))
+			if (strstr(va(vabuf, sizeof(vabuf), " %s ", prvm_leaktest_ignore_classnames.string), va(vabuf2, sizeof(vabuf2), " %s ", PRVM_GetString(prog, PRVM_clientedictstring(edict, classname)))))
 				return true;
 		}
 	}
@@ -3532,8 +3532,8 @@ static qbool PRVM_IsEdictReferenced(prvm_prog_t *prog, prvm_edict_t *edict, int 
 	if (prog == SVVM_prog && prvm_leaktest_follow_targetname.integer)
 		targetname = PRVM_GetString(prog, PRVM_serveredictstring(edict, targetname));
 
-	if(targetname)
-		if(!*targetname) // ""
+	if (targetname)
+		if (!*targetname) // ""
 			targetname = NULL;
 
 	for(j = 0; j < prog->num_edicts; ++j)
@@ -3541,21 +3541,21 @@ static qbool PRVM_IsEdictReferenced(prvm_prog_t *prog, prvm_edict_t *edict, int 
 		prvm_edict_t *ed = PRVM_EDICT_NUM(j);
 		if (ed->priv.required->mark < mark)
 			continue;
-		if(ed == edict)
+		if (ed == edict)
 			continue;
-		if(targetname)
+		if (targetname)
 		{
 			const char *target = PRVM_GetString(prog, PRVM_serveredictstring(ed, target));
-			if(target)
-				if(!strcmp(target, targetname))
+			if (target)
+				if (String_Does_Match(target, targetname))
 					return true;
 		}
 		for (i=0; i<prog->numfielddefs; ++i)
 		{
 			mdef_t *d = &prog->fielddefs[i];
-			if((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_entity)
+			if ((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_entity)
 				continue;
-			if(edictnum == PRVM_EDICTFIELDEDICT(ed, d->ofs))
+			if (edictnum == PRVM_EDICTFIELDEDICT(ed, d->ofs))
 				return true;
 		}
 	}
@@ -3574,7 +3574,7 @@ static void PRVM_MarkReferencedEdicts(prvm_prog_t *prog)
 	for(j = 0; j < prog->num_edicts; ++j)
 	{
 		prvm_edict_t *ed = PRVM_EDICT_NUM(j);
-		if(ed->free)
+		if (ed->free)
 			continue;
 		ed->priv.required->mark = PRVM_IsEdictRelevant(prog, ed) ? stage : 0;
 	}
@@ -3582,11 +3582,11 @@ static void PRVM_MarkReferencedEdicts(prvm_prog_t *prog)
 	{
 		mdef_t *d = &prog->globaldefs[i];
 		prvm_edict_t *ed;
-		if((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_entity)
+		if ((etype_t)((int) d->type & ~DEF_SAVEGLOBAL) != ev_entity)
 			continue;
 		j = PRVM_GLOBALFIELDEDICT(d->ofs);
 		if (i < 0 || j >= prog->max_edicts) {
-			Con_Printf("Invalid entity reference from global %s.\n", PRVM_GetString(prog, d->s_name));
+			Con_Printf ("Invalid entity reference from global %s.\n", PRVM_GetString(prog, d->s_name));
 			continue;
 		}
 		ed = PRVM_EDICT_NUM(j);;
@@ -3600,11 +3600,11 @@ static void PRVM_MarkReferencedEdicts(prvm_prog_t *prog)
 		for(j = 0; j < prog->num_edicts; ++j)
 		{
 			prvm_edict_t *ed = PRVM_EDICT_NUM(j);
-			if(ed->free)
+			if (ed->free)
 				continue;
-			if(ed->priv.required->mark)
+			if (ed->priv.required->mark)
 				continue;
-			if(PRVM_IsEdictReferenced(prog, ed, stage))
+			if (PRVM_IsEdictReferenced(prog, ed, stage))
 			{
 				ed->priv.required->mark = stage + 1;
 				found_new = true;
@@ -3613,7 +3613,7 @@ static void PRVM_MarkReferencedEdicts(prvm_prog_t *prog)
 		++stage;
 	}
 	while(found_new);
-	Con_DPrintf("leak check used %d stages to find all references\n", stage);
+	Con_DPrintf ("leak check used %d stages to find all references\n", stage);
 }
 
 void PRVM_LeakTest(prvm_prog_t *prog)
@@ -3621,18 +3621,18 @@ void PRVM_LeakTest(prvm_prog_t *prog)
 	int i, j;
 	qbool leaked = false;
 
-	if(!prog->leaktest_active)
+	if (!prog->leaktest_active)
 		return;
 
 	// 1. Strings
 	for (i = 0; i < prog->numknownstrings; ++i)
 	{
-		if(prog->knownstrings[i])
-		if(prog->knownstrings_flags[i])
-		if(prog->knownstrings_origin[i])
-		if(!PRVM_IsStringReferenced(prog, PRVM_KNOWNSTRINGBASE + i))
+		if (prog->knownstrings[i])
+		if (prog->knownstrings_flags[i])
+		if (prog->knownstrings_origin[i])
+		if (!PRVM_IsStringReferenced(prog, PRVM_KNOWNSTRINGBASE + i))
 		{
-			Con_Printf("Unreferenced string found!\n  Value: %s\n  Origin: %s\n", prog->knownstrings[i], prog->knownstrings_origin[i]);
+			Con_Printf ("Unreferenced string found!\n  Value: %s\n  Origin: %s\n", prog->knownstrings[i], prog->knownstrings_origin[i]);
 			leaked = true;
 		}
 	}
@@ -3642,12 +3642,12 @@ void PRVM_LeakTest(prvm_prog_t *prog)
 	for(j = 0; j < prog->num_edicts; ++j)
 	{
 		prvm_edict_t *ed = PRVM_EDICT_NUM(j);
-		if(ed->free)
+		if (ed->free)
 			continue;
-		if(!ed->priv.required->mark)
-		if(ed->priv.required->allocation_origin)
+		if (!ed->priv.required->mark)
+		if (ed->priv.required->allocation_origin)
 		{
-			Con_Printf("Unreferenced edict found!\n  Allocated at: %s\n", ed->priv.required->allocation_origin);
+			Con_PrintLinef ("Unreferenced edict found!\n  Allocated at: %s", ed->priv.required->allocation_origin);
 			PRVM_ED_Print(prog, ed, NULL);
 			Con_Print("\n");
 			leaked = true;
@@ -3659,36 +3659,36 @@ void PRVM_LeakTest(prvm_prog_t *prog)
 	for (i = 0; i < (int)Mem_ExpandableArray_IndexRange(&prog->stringbuffersarray); ++i)
 	{
 		prvm_stringbuffer_t *stringbuffer = (prvm_stringbuffer_t*) Mem_ExpandableArray_RecordAtIndex(&prog->stringbuffersarray, i);
-		if(stringbuffer)
-		if(stringbuffer->origin)
+		if (stringbuffer)
+		if (stringbuffer->origin)
 		{
-			Con_Printf("Open string buffer handle found!\n  Allocated at: %s\n", stringbuffer->origin);
+			Con_Printf ("Open string buffer handle found!\n  Allocated at: %s\n", stringbuffer->origin);
 			leaked = true;
 		}
 	}
 
 	for(i = 0; i < PRVM_MAX_OPENFILES; ++i)
 	{
-		if(prog->openfiles[i])
-		if(prog->openfiles_origin[i])
+		if (prog->openfiles[i])
+		if (prog->openfiles_origin[i])
 		{
-			Con_Printf("Open file handle found!\n  Allocated at: %s\n", prog->openfiles_origin[i]);
+			Con_Printf ("Open file handle found!\n  Allocated at: %s\n", prog->openfiles_origin[i]);
 			leaked = true;
 		}
 	}
 
 	for(i = 0; i < PRVM_MAX_OPENSEARCHES; ++i)
 	{
-		if(prog->opensearches[i])
-		if(prog->opensearches_origin[i])
+		if (prog->opensearches[i])
+		if (prog->opensearches_origin[i])
 		{
-			Con_Printf("Open search handle found!\n  Allocated at: %s\n", prog->opensearches_origin[i]);
+			Con_Printf ("Open search handle found!\n  Allocated at: %s\n", prog->opensearches_origin[i]);
 			leaked = true;
 		}
 	}
 
-	if(!leaked)
-		Con_Printf("Congratulations. No leaks found.\n");
+	if (!leaked)
+		Con_Printf ("Congratulations. No leaks found.\n");
 }
 
 void PRVM_GarbageCollection(prvm_prog_t *prog)
@@ -3722,7 +3722,7 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 						if (!prog->knownstrings[num])
 						{
 							// invalid
-							Con_DPrintf("PRVM_GarbageCollection: Found bogus strzone reference in global %i (global name: \"%s\"), erasing reference", d->ofs, PRVM_GetString(prog, d->s_name));
+							Con_DPrintf ("PRVM_GarbageCollection: Found bogus strzone reference in global %d (global name: \"%s\"), erasing reference", d->ofs, PRVM_GetString(prog, d->s_name));
 							prog->globals.ip[d->ofs] = 0;
 							continue;
 						}
@@ -3755,7 +3755,7 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 						if (!prog->knownstrings[num])
 						{
 							// invalid
-							Con_DPrintf("PRVM_GarbageCollection: Found bogus strzone reference in edict %i field %i (field name: \"%s\"), erasing reference", entityindex, d->ofs, PRVM_GetString(prog, d->s_name));
+							Con_DPrintf ("PRVM_GarbageCollection: Found bogus strzone reference in edict %d field %d (field name: \"%s\"), erasing reference", entityindex, d->ofs, PRVM_GetString(prog, d->s_name));
 							prog->edictsfields.ip[entityindex * prog->entityfields + d->ofs] = 0;
 							continue;
 						}
@@ -3793,7 +3793,7 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 				{
 					// string has been marked for pruning two passes in a row
 					if (prvm_garbagecollection_notify.integer)
-						Con_DPrintf("prvm_garbagecollection_notify: %s: freeing unreferenced string %i: \"%s\"\n", prog->name, num, prog->knownstrings[num]);
+						Con_DPrintf ("prvm_garbagecollection_notify: %s: freeing unreferenced string %d: \"%s\"\n", prog->name, num, prog->knownstrings[num]);
 					Mem_Free((char *)prog->knownstrings[num]);
 					prog->knownstrings[num] = NULL;
 					prog->knownstrings_flags[num] = 0;

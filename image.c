@@ -192,7 +192,7 @@ typedef struct pcx_s
 LoadPCX
 ============
 */
-static unsigned char* LoadPCX_BGRA (const unsigned char *f, int filesize, int *miplevel)
+static unsigned char *LoadPCX_BGRA (const unsigned char *f, int filesize, int *miplevel)
 {
 	pcx_t pcx;
 	unsigned char *a, *b, *image_buffer, *pbuf;
@@ -233,7 +233,7 @@ static unsigned char* LoadPCX_BGRA (const unsigned char *f, int filesize, int *m
 	image_buffer = (unsigned char *)Mem_Alloc(tempmempool, image_width*image_height*4);
 	if (!image_buffer)
 	{
-		Con_Printf("LoadPCX: not enough memory for %i by %i image\n", image_width, image_height);
+		Con_Printf ("LoadPCX: not enough memory for %d by %d image\n", image_width, image_height);
 		return NULL;
 	}
 	pbuf = image_buffer + image_width*image_height*3;
@@ -245,7 +245,7 @@ static unsigned char* LoadPCX_BGRA (const unsigned char *f, int filesize, int *m
 		for (x = 0;x < image_width && fin < enddata;)
 		{
 			dataByte = *fin++;
-			if(dataByte >= 0xC0)
+			if (dataByte >= 0xC0)
 			{
 				if (fin >= enddata)
 					break;
@@ -331,7 +331,7 @@ qbool LoadPCX_QWSkin(const unsigned char *f, int filesize, unsigned char *pixels
 			if (fin >= enddata)
 				return false;
 			dataByte = *fin++;
-			if(dataByte >= 0xC0)
+			if (dataByte >= 0xC0)
 			{
 				x2 = x + (dataByte & 0x3F);
 				if (fin >= enddata)
@@ -390,7 +390,7 @@ TargaHeader;
 
 static void PrintTargaHeader(TargaHeader *t)
 {
-	Con_Printf("TargaHeader:\nuint8 id_length = %i;\nuint8 colormap_type = %i;\nuint8 image_type = %i;\nuint16 colormap_index = %i;\nuint16 colormap_length = %i;\nuint8 colormap_size = %i;\nuint16 x_origin = %i;\nuint16 y_origin = %i;\nuint16 width = %i;\nuint16 height = %i;\nuint8 pixel_size = %i;\nuint8 attributes = %i;\n", t->id_length, t->colormap_type, t->image_type, t->colormap_index, t->colormap_length, t->colormap_size, t->x_origin, t->y_origin, t->width, t->height, t->pixel_size, t->attributes);
+	Con_Printf ("TargaHeader:\nuint8 id_length = %d;\nuint8 colormap_type = %d;\nuint8 image_type = %d;\nuint16 colormap_index = %d;\nuint16 colormap_length = %d;\nuint8 colormap_size = %d;\nuint16 x_origin = %d;\nuint16 y_origin = %d;\nuint16 width = %d;\nuint16 height = %d;\nuint8 pixel_size = %d;\nuint8 attributes = %d;\n", t->id_length, t->colormap_type, t->image_type, t->colormap_index, t->colormap_length, t->colormap_size, t->x_origin, t->y_origin, t->width, t->height, t->pixel_size, t->attributes);
 }
 
 /*
@@ -517,7 +517,7 @@ unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel
 		}
 		break;
 	default:
-		Con_Printf("LoadTGA: Only type 1, 2, 3, 9, 10, and 11 targa RGB images supported, image_type = %i\n", targa_header.image_type);
+		Con_Printf ("LoadTGA: Only type 1, 2, 3, 9, 10, and 11 targa RGB images supported, image_type = %d\n", targa_header.image_type);
 		PrintTargaHeader(&targa_header);
 		return NULL;
 	}
@@ -539,7 +539,7 @@ unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel
 	image_buffer = (unsigned char *)Mem_Alloc(tempmempool, image_width * image_height * 4);
 	if (!image_buffer)
 	{
-		Con_Printf("LoadTGA: not enough memory for %i by %i image\n", image_width, image_height);
+		Con_Printf ("LoadTGA: not enough memory for %d by %d image\n", image_width, image_height);
 		return NULL;
 	}
 
@@ -629,7 +629,7 @@ unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel
 			if (x != image_width)
 			{
 				// pixbufi is useless now
-				Con_Printf("LoadTGA: corrupt file\n");
+				Con_Printf ("LoadTGA: corrupt file\n");
 				break;
 			}
 		}
@@ -684,7 +684,7 @@ unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel
 				if (x != image_width)
 				{
 					// pixbufi is useless now
-					Con_Printf("LoadTGA: corrupt file\n");
+					Con_Printf ("LoadTGA: corrupt file\n");
 					break;
 				}
 			}
@@ -737,7 +737,7 @@ unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel
 				if (x != image_width)
 				{
 					// pixbufi is useless now
-					Con_Printf("LoadTGA: corrupt file\n");
+					Con_Printf ("LoadTGA: corrupt file\n");
 					break;
 				}
 			}
@@ -777,7 +777,7 @@ static unsigned char *LoadWAL_BGRA (const unsigned char *f, int filesize, int *m
 	image_height = LittleLong(inwal->height);
 	if (image_width > 32768 || image_height > 32768 || image_width <= 0 || image_height <= 0)
 	{
-		Con_Printf("LoadWAL: invalid size %ix%i\n", image_width, image_height);
+		Con_Printf ("LoadWAL: invalid size %dx%d\n", image_width, image_height);
 		return NULL;
 	}
 
@@ -790,7 +790,7 @@ static unsigned char *LoadWAL_BGRA (const unsigned char *f, int filesize, int *m
 	image_buffer = (unsigned char *)Mem_Alloc(tempmempool, image_width * image_height * 4);
 	if (!image_buffer)
 	{
-		Con_Printf("LoadWAL: not enough memory for %i by %i image\n", image_width, image_height);
+		Con_Printf ("LoadWAL: not enough memory for %d by %d image\n", image_width, image_height);
 		return NULL;
 	}
 	Image_Copy8bitBGRA(f + LittleLong(inwal->offsets[0]), image_buffer, image_width * image_height, q2palette_bgra_complete);
@@ -838,7 +838,7 @@ qbool LoadWAL_GetMetadata(const unsigned char *f, int filesize, int *retwidth, i
 }
 
 // gfx/* wad lumps and gfx/*.lmp files are simply width and height and paletted pixels, with color 255 as transparent
-static unsigned char* LoadLMP_BGRA(const unsigned char *f, int filesize, int *miplevel)
+static unsigned char *LoadLMP_BGRA(const unsigned char *f, int filesize, int *miplevel)
 {
 	unsigned char *image_buffer;
 	int i;
@@ -861,7 +861,7 @@ static unsigned char* LoadLMP_BGRA(const unsigned char *f, int filesize, int *mi
 	image_buffer = (unsigned char *)Mem_Alloc(tempmempool, image_width*image_height * 4);
 	if (!image_buffer)
 	{
-		Con_Printf("LoadLMP: not enough memory for %i by %i image\n", image_width, image_height);
+		Con_Printf ("LoadLMP: not enough memory for %d by %d image\n", image_width, image_height);
 		return NULL;
 	}
 
@@ -894,7 +894,7 @@ static unsigned char *LoadConChars_BGRA(const unsigned char *f, int filesize, in
 	image_buffer = (unsigned char *)Mem_Alloc(tempmempool, image_width*image_height * 4);
 	if (!image_buffer)
 	{
-		Con_Printf("LoadConChars: not enough memory for %i by %i image\n", image_width, image_height);
+		Con_Printf ("LoadConChars: not enough memory for %d by %d image\n", image_width, image_height);
 		return NULL;
 	}
 
@@ -918,7 +918,7 @@ void Image_StripImageExtension (const char *in, char *out, size_t size_out)
 		return;
 
 	ext = FS_FileExtension(in);
-	if (ext && (!strcmp(ext, "tga") || !strcmp(ext, "pcx") || !strcmp(ext, "lmp") || !strcmp(ext, "png") || !strcmp(ext, "jpg") || !strcmp(ext, "wal")))
+	if (ext && (String_Does_Match(ext, "tga") || String_Does_Match(ext, "pcx") || String_Does_Match(ext, "lmp") || String_Does_Match(ext, "png") || String_Does_Match(ext, "jpg") || String_Does_Match(ext, "wal")))
 		FS_StripExtension(in, out, size_out);
 	else
 		strlcpy(out, in, size_out);
@@ -1072,9 +1072,9 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 		firstformat = imageformats_tenebrae;
 	else if (gamemode == GAME_DELUXEQUAKE)
 		firstformat = imageformats_dq;
-	else if (!strcasecmp(path, "textures"))
+	else if (String_Does_Match_Caseless(path, "textures"))
 		firstformat = imageformats_textures;
-	else if (!strcasecmp(path, "gfx") || !strcasecmp(path, "locale")) // locale/ is used in GAME_BLOODOMNICIDE
+	else if (String_Does_Match_Caseless(path, "gfx") || String_Does_Match_Caseless(path, "locale")) // locale/ is used in GAME_BLOODOMNICIDE
 		firstformat = imageformats_gfx;
 	else if (!path[0])
 		firstformat = imageformats_nopath;
@@ -1087,7 +1087,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 
 		FS_SanitizePath(name);
 
-		if(FS_FileExists(name) && (f = FS_LoadFile(name, tempmempool, true, &filesize)) != NULL)
+		if (FS_FileExists(name) && (f = FS_LoadFile(name, tempmempool, true, &filesize)) != NULL)
 		{
 			mymiplevel = miplevel ? *miplevel : 0;
 			image_width = 0;
@@ -1096,46 +1096,46 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 			Mem_Free(f);
 			if (data)
 			{
-				if(format->loadfunc == JPEG_LoadImage_BGRA) // jpeg can't do alpha, so let's simulate it by loading another jpeg
+				if (format->loadfunc == JPEG_LoadImage_BGRA) // jpeg can't do alpha, so let's simulate it by loading another jpeg
 				{
 					dpsnprintf (name2, sizeof(name2), format->formatstring, va(vabuf, sizeof(vabuf), "%s_alpha", basename));
 					f = FS_LoadFile(name2, tempmempool, true, &filesize);
-					if(f)
+					if (f)
 					{
 						int mymiplevel2 = miplevel ? *miplevel : 0;
 						int image_width_save = image_width;
 						int image_height_save = image_height;
 						data2 = format->loadfunc(f, (int)filesize, &mymiplevel2);
-						if(data2 && mymiplevel == mymiplevel2 && image_width == image_width_save && image_height == image_height_save)
+						if (data2 && mymiplevel == mymiplevel2 && image_width == image_width_save && image_height == image_height_save)
 							Image_CopyAlphaFromBlueBGRA(data, data2, image_width, image_height);
 						else
-							Con_Printf("loadimagepixelsrgba: corrupt or invalid alpha image %s_alpha\n", basename);
+							Con_Printf ("loadimagepixelsrgba: corrupt or invalid alpha image %s_alpha\n", basename);
 						image_width = image_width_save;
 						image_height = image_height_save;
-						if(data2)
+						if (data2)
 							Mem_Free(data2);
 						Mem_Free(f);
 					}
 				}
 				if (developer_loading.integer)
-					Con_DPrintf("loaded image %s (%dx%d)\n", name, image_width, image_height);
-				if(miplevel)
+					Con_DPrintf ("loaded image %s (%dx%d)\n", name, image_width, image_height);
+				if (miplevel)
 					*miplevel = mymiplevel;
 				//if (developer_memorydebug.integer)
 				//	Mem_CheckSentinelsGlobal();
-				if(allowFixtrans && r_fixtrans_auto.integer)
+				if (allowFixtrans && r_fixtrans_auto.integer)
 				{
 					int n = fixtransparentpixels(data, image_width, image_height);
-					if(n)
+					if (n)
 					{
-						Con_Printf("- had to fix %s (%d pixels changed)\n", name, n);
-						if(r_fixtrans_auto.integer >= 2)
+						Con_Printf ("- had to fix %s (%d pixels changed)\n", name, n);
+						if (r_fixtrans_auto.integer >= 2)
 						{
 							char outfilename[MAX_QPATH], buf[MAX_QPATH];
 							Image_StripImageExtension(name, buf, sizeof(buf));
 							dpsnprintf(outfilename, sizeof(outfilename), "fixtrans/%s.tga", buf);
 							Image_WriteTGABGRA(outfilename, image_width, image_height, data);
-							Con_Printf("- %s written.\n", outfilename);
+							Con_Printf ("- %s written.\n", outfilename);
 						}
 					}
 				}
@@ -1144,19 +1144,19 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 				return data;
 			}
 			else
-				Con_DPrintf("Error loading image %s (file loaded but decode failed)\n", name);
+				Con_DPrintf ("Error loading image %s (file loaded but decode failed)\n", name);
 		}
 	}
-	if (!strcasecmp(path, "gfx"))
+	if (String_Does_Match_Caseless(path, "gfx"))
 	{
 		unsigned char *lmpdata;
 		if ((lmpdata = W_GetLumpName(afterpath, &filesize)))
 		{
 			if (developer_loading.integer)
-				Con_Printf("loading gfx.wad lump \"%s\"\n", afterpath);
+				Con_Printf ("loading gfx.wad lump \"%s\"\n", afterpath);
 
 			mymiplevel = miplevel ? *miplevel : 0;
-			if (!strcmp(afterpath, "conchars"))
+			if (String_Does_Match(afterpath, "conchars"))
 			{
 				// conchars is a raw image and with color 0 as transparent instead of 255
 				data = LoadConChars_BGRA(lmpdata, filesize, &mymiplevel);
@@ -1166,7 +1166,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 			// no cleanup after looking up a wad lump - the whole gfx.wad is loaded at once
 			if (data)
 				return data;
-			Con_DPrintf("Error loading image %s (file loaded but decode failed)\n", name);
+			Con_DPrintf ("Error loading image %s (file loaded but decode failed)\n", name);
 		}
 	}
 
@@ -1176,11 +1176,11 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 
 	if (complain)
 	{
-		Con_Printf("Couldn't load %s using ", filename);
+		Con_Printf ("Couldn't load %s using ", filename);
 		for (format = firstformat;format->formatstring;format++)
 		{
 			dpsnprintf (name, sizeof(name), format->formatstring, basename);
-			Con_Printf(format == firstformat ? "\"%s\"" : (format[1].formatstring ? ", \"%s\"" : " or \"%s\".\n"), format->formatstring);
+			Con_Printf (format == firstformat ? "\"%s\"" : (format[1].formatstring ? ", \"%s\"" : " or \"%s\".\n"), format->formatstring);
 		}
 	}
 
@@ -1198,7 +1198,7 @@ qbool Image_GetStockPicSize(const char *filename, int *returnwidth, int *returnh
 	unsigned char *data;
 	fs_offset_t filesize;
 	char lmppath[MAX_QPATH];
-	if (!strcasecmp(filename, "gfx/conchars"))
+	if (String_Does_Match_Caseless(filename, "gfx/conchars"))
 	{
 		*returnwidth = 128;
 		*returnheight = 128;
@@ -1277,7 +1277,7 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 	for(y = 0; y < h; ++y)
 		for(x = 0; x < w; ++x)
 		{
-			if(data[FIXTRANS_PIXEL * 4 + 3] == 0)
+			if (data[FIXTRANS_PIXEL * 4 + 3] == 0)
 			{
 				fixMask[FIXTRANS_PIXEL] |= FIXTRANS_NEEDED;
 				++fixPixels;
@@ -1290,17 +1290,17 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 				fixMask[FIXTRANS_PIXEL_L] |= FIXTRANS_HAS_R;
 			}
 		}
-	if(fixPixels == w * h)
+	if (fixPixels == w * h)
 		return 0; // sorry, can't do anything about this
 	while(fixPixels)
 	{
 		for(y = 0; y < h; ++y)
 			for(x = 0; x < w; ++x)
-				if(fixMask[FIXTRANS_PIXEL] & FIXTRANS_NEEDED)
+				if (fixMask[FIXTRANS_PIXEL] & FIXTRANS_NEEDED)
 				{
 					unsigned int sumR = 0, sumG = 0, sumB = 0, sumA = 0, sumRA = 0, sumGA = 0, sumBA = 0, cnt = 0;
 					unsigned char r, g, b, a, r0, g0, b0;
-					if(fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_U)
+					if (fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_U)
 					{
 						r = data[FIXTRANS_PIXEL_U * 4 + 2];
 						g = data[FIXTRANS_PIXEL_U * 4 + 1];
@@ -1308,7 +1308,7 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 						a = data[FIXTRANS_PIXEL_U * 4 + 3];
 						sumR += r; sumG += g; sumB += b; sumA += a; sumRA += r*a; sumGA += g*a; sumBA += b*a; ++cnt;
 					}
-					if(fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_D)
+					if (fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_D)
 					{
 						r = data[FIXTRANS_PIXEL_D * 4 + 2];
 						g = data[FIXTRANS_PIXEL_D * 4 + 1];
@@ -1316,7 +1316,7 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 						a = data[FIXTRANS_PIXEL_D * 4 + 3];
 						sumR += r; sumG += g; sumB += b; sumA += a; sumRA += r*a; sumGA += g*a; sumBA += b*a; ++cnt;
 					}
-					if(fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_L)
+					if (fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_L)
 					{
 						r = data[FIXTRANS_PIXEL_L * 4 + 2];
 						g = data[FIXTRANS_PIXEL_L * 4 + 1];
@@ -1324,7 +1324,7 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 						a = data[FIXTRANS_PIXEL_L * 4 + 3];
 						sumR += r; sumG += g; sumB += b; sumA += a; sumRA += r*a; sumGA += g*a; sumBA += b*a; ++cnt;
 					}
-					if(fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_R)
+					if (fixMask[FIXTRANS_PIXEL] & FIXTRANS_HAS_R)
 					{
 						r = data[FIXTRANS_PIXEL_R * 4 + 2];
 						g = data[FIXTRANS_PIXEL_R * 4 + 1];
@@ -1332,12 +1332,12 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 						a = data[FIXTRANS_PIXEL_R * 4 + 3];
 						sumR += r; sumG += g; sumB += b; sumA += a; sumRA += r*a; sumGA += g*a; sumBA += b*a; ++cnt;
 					}
-					if(!cnt)
+					if (!cnt)
 						continue;
 					r0 = data[FIXTRANS_PIXEL * 4 + 2];
 					g0 = data[FIXTRANS_PIXEL * 4 + 1];
 					b0 = data[FIXTRANS_PIXEL * 4 + 0];
-					if(sumA)
+					if (sumA)
 					{
 						// there is a surrounding non-alpha pixel
 						r = (sumRA + sumA / 2) / sumA;
@@ -1351,7 +1351,7 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 						g = (sumG + cnt / 2) / cnt;
 						b = (sumB + cnt / 2) / cnt;
 					}
-					if(r != r0 || g != g0 || b != b0)
+					if (r != r0 || g != g0 || b != b0)
 						++changedPixels;
 					data[FIXTRANS_PIXEL * 4 + 2] = r;
 					data[FIXTRANS_PIXEL * 4 + 1] = g;
@@ -1360,7 +1360,7 @@ int fixtransparentpixels(unsigned char *data, int w, int h)
 				}
 		for(y = 0; y < h; ++y)
 			for(x = 0; x < w; ++x)
-				if(fixMask[FIXTRANS_PIXEL] & FIXTRANS_FIXED)
+				if (fixMask[FIXTRANS_PIXEL] & FIXTRANS_FIXED)
 				{
 					fixMask[FIXTRANS_PIXEL] &= ~(FIXTRANS_NEEDED | FIXTRANS_FIXED);
 					fixMask[FIXTRANS_PIXEL_D] |= FIXTRANS_HAS_U;
@@ -1380,30 +1380,30 @@ void Image_FixTransparentPixels_f(cmd_state_t *cmd)
 	int i, n;
 	char outfilename[MAX_QPATH], buf[MAX_QPATH];
 	unsigned char *data;
-	if(Cmd_Argc(cmd) != 2)
+	if (Cmd_Argc(cmd) != 2)
 	{
-		Con_Printf("Usage: %s imagefile\n", Cmd_Argv(cmd, 0));
+		Con_PrintLinef ("Usage: %s imagefile", Cmd_Argv(cmd, 0));
 		return;
 	}
 	filename_pattern = Cmd_Argv(cmd, 1);
-	search = FS_Search(filename_pattern, true, true, NULL);
-	if(!search)
+	search = FS_Search(filename_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+	if (!search)
 		return;
 	for(i = 0; i < search->numfilenames; ++i)
 	{
 		filename = search->filenames[i];
-		Con_Printf("Processing %s... ", filename);
+		Con_Printf ("Processing %s... ", filename);
 		Image_StripImageExtension(filename, buf, sizeof(buf));
 		dpsnprintf(outfilename, sizeof(outfilename), "fixtrans/%s.tga", buf);
-		if(!(data = loadimagepixelsbgra(filename, true, false, false, NULL)))
+		if (!(data = loadimagepixelsbgra(filename, true, false, false, NULL)))
 			return;
-		if((n = fixtransparentpixels(data, image_width, image_height)))
+		if ((n = fixtransparentpixels(data, image_width, image_height)))
 		{
 			Image_WriteTGABGRA(outfilename, image_width, image_height, data);
-			Con_Printf("%s written (%d pixels changed).\n", outfilename, n);
+			Con_Printf ("%s written (%d pixels changed).\n", outfilename, n);
 		}
 		else
-			Con_Printf("unchanged.\n");
+			Con_Printf ("unchanged.\n");
 		Mem_Free(data);
 	}
 	FS_FreeSearch(search);
@@ -2081,7 +2081,7 @@ unsigned char *Image_GetEmbeddedPicBGRA(const char *name)
 	const embeddedpic_t *p;
 	for (p = embeddedpics; p->name; p++)
 	{
-		if (!strcmp(name, p->name))
+		if (String_Does_Match(name, p->name))
 		{
 			int i;
 			unsigned char *data = (unsigned char *)Mem_Alloc(tempmempool, p->width * p->height * 4);
@@ -2095,11 +2095,11 @@ unsigned char *Image_GetEmbeddedPicBGRA(const char *name)
 			return data;
 		}
 	}
-	if (!strcmp(name, "white") || !strcmp(name, "#white") || !strcmp(name, "*white") || !strcmp(name, "$whiteimage"))
+	if (String_Does_Match(name, "white") || String_Does_Match(name, "#white") || String_Does_Match(name, "*white") || String_Does_Match(name, "$whiteimage"))
 		return Image_GenerateWhite();
-	if (!strcmp(name, "gfx/conchars"))
+	if (String_Does_Match(name, "gfx/conchars"))
 		return Image_GenerateConChars();
-	if (!strcmp(name, "gfx/colorcontrol/ditherpattern"))
+	if (String_Does_Match(name, "gfx/colorcontrol/ditherpattern"))
 		return Image_GenerateDitherPattern();
 	return NULL;
 }

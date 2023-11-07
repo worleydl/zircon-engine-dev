@@ -22,7 +22,7 @@ typedef struct capturevideostate_s
 	int framestep;
 	int framestepframe;
 	qbool active;
-	qbool realtime;
+	qbool is_realtime;
 	qbool error;
 	int soundrate;
 	int soundchannels;
@@ -59,6 +59,6 @@ typedef struct capturevideostate_s
 	void *formatspecific;
 }
 capturevideostate_t;
-#endif
+#endif // CONFIG_VIDEO_CAPTURE
 
-#endif
+#endif // !CAP_H

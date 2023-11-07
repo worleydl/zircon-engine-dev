@@ -27,5 +27,7 @@ void CL_UpdateScreen(void);
 qbool R_Stereo_Active(void);
 qbool R_Stereo_ColorMasking(void);
 
+extern int old_vid_kickme; // Baker: 360p scaling
+
 #endif // ! CL_SCREEN_H
 

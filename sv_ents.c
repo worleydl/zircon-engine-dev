@@ -382,7 +382,7 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 			sv.writeentitiestoclient_numeyes++;
 		}
 		//if (!sv.writeentitiestoclient_useprediction)
-		//	Con_DPrintf("Trying to walk into solid in a pingtime... not predicting for culling\n");
+		//	Con_DPrintf ("Trying to walk into solid in a pingtime... not predicting for culling\n");
 	}
 
 	SV_AddCameraEyes();
@@ -404,7 +404,7 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 		s = &sv.sendentities[i];
 		if (sv.sententities[s->number] == sv.sententitiesmark)
 		{
-			if(s->active == ACTIVE_NETWORK)
+			if (s->active == ACTIVE_NETWORK)
 			{
 				if (s->exteriormodelforclient)
 				{
@@ -415,7 +415,7 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 				}
 				sv.writeentitiestoclient_sendstates[numsendstates++] = s;
 			}
-			else if(sv.sendentities[i].active == ACTIVE_SHARED)
+			else if (sv.sendentities[i].active == ACTIVE_SHARED)
 				sv.writeentitiestoclient_csqcsendstates[numcsqcsendstates++] = s->number;
 			else
 				Con_Printf("entity %d is in sv.sendentities and marked, but not active, please breakpoint me\n", s->number);
@@ -425,7 +425,7 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 	if (sv_cullentities_stats.integer)
 		Con_Printf("client \"%s\" entities: %d total, %d visible, %d culled by: %d pvs %d trace\n", client->name, sv.writeentitiestoclient_stats_totalentities, sv.writeentitiestoclient_stats_visibleentities, sv.writeentitiestoclient_stats_culled_pvs + sv.writeentitiestoclient_stats_culled_trace, sv.writeentitiestoclient_stats_culled_pvs, sv.writeentitiestoclient_stats_culled_trace);
 
-	if(client->entitydatabase5)
+	if (client->entitydatabase5)
 		need_empty = EntityFrameCSQC_WriteFrame(msg, maxsize, numcsqcsendstates, sv.writeentitiestoclient_csqcsendstates, client->entitydatabase5->latestframenum + 1);
 	else
 		EntityFrameCSQC_WriteFrame(msg, maxsize, numcsqcsendstates, sv.writeentitiestoclient_csqcsendstates, 0);
@@ -434,11 +434,11 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 	// too long)
 	// BTW, this should normally not kick in any more due to the check
 	// below, except if the client stopped sending movement frames
-	if(client->num_skippedentityframes >= 16)
+	if (client->num_skippedentityframes >= 16)
 		need_empty = true;
 
 	// help cl_movement a bit more
-	if(client->movesequence != client->lastmovesequence)
+	if (client->movesequence != client->lastmovesequence)
 		need_empty = true;
 	client->lastmovesequence = client->movesequence;
 
@@ -460,7 +460,7 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 		Protocol_WriteStatsReliable();
 	}
 
-	if(success)
+	if (success)
 		client->num_skippedentityframes = 0;
 	else
 		++client->num_skippedentityframes;

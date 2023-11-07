@@ -1,3 +1,6 @@
+#ifndef MODEL_SHARED_H
+#define MODEL_SHARED_H
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -17,9 +20,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-
-#ifndef MODEL_SHARED_H
-#define MODEL_SHARED_H
 
 extern int is_game_switch; // Baker r9003: Clear models/sounds on gamedir change
 
@@ -186,6 +186,8 @@ typedef struct shadowmesh_s
 }
 shadowmesh_t;
 
+
+
 typedef struct texture_s
 {
 	// name
@@ -241,8 +243,8 @@ typedef struct texture_s
 	matrix4x4_t currentbackgroundtexmatrix;
 
 	// various q3 shader features
-	q3shaderinfo_deform_t deforms[Q3MAXDEFORMS];
-	texture_shaderpass_t *shaderpasses[Q3SHADER_MAXLAYERS]; // all shader passes in one array
+	q3shaderinfo_deform_t deforms[Q3MAXDEFORMS_4];
+	texture_shaderpass_t *shaderpasses[Q3SHADER_MAXLAYERS_8]; // all shader passes in one array
 	texture_shaderpass_t *materialshaderpass; // equal to one of shaderpasses[] or NULL
 	texture_shaderpass_t *backgroundshaderpass; // equal to one of shaderpasses[] or NULL
 	unsigned char startpreshaderpass; // range within shaderpasses[]
@@ -317,7 +319,7 @@ typedef struct texture_s
 	float r_water_wateralpha; // additional wateralpha to apply when r_water is active
 	float r_water_waterscroll[2]; // scale and speed
 	float refractive_index; // used by r_shadow_bouncegrid for bending photons for refracted light
-	int camera_entity; // entity number for use by cameras
+	int tcamera_entity; // entity number for use by cameras
 
 	// offsetmapping
 	dpoffsetmapping_technique_t offsetmapping;
@@ -384,25 +386,25 @@ typedef struct msurface_s
 	int num_vertices; // length of the range referenced by elements
 	int num_firstvertex; // min vertex referenced by elements
 
-	/// the texture to use on the surface
+	// the texture to use on the surface
 	texture_t *texture;
-	/// the lightmap texture fragment to use on the rendering mesh
+	// the lightmap texture fragment to use on the rendering mesh
 	struct rtexture_s *lightmaptexture;
-	/// the lighting direction texture fragment to use on the rendering mesh
+	// the lighting direction texture fragment to use on the rendering mesh
 	struct rtexture_s *deluxemaptexture;
 
 	// the following fields are used situationally and are not part of rendering in typical usage
 
-	/// bounding box for onscreen checks
+	// bounding box for onscreen checks
 	vec3_t mins;
 	vec3_t maxs;
 
-	/// lightmaptexture rebuild information not used in q3bsp
+	// lightmaptexture rebuild information not used in q3bsp
 	msurface_lightmapinfo_t* lightmapinfo; // q1bsp
-	/// fog volume info in q3bsp
+	// fog volume info in q3bsp
 	struct q3deffect_s* effect; // q3bsp
 
-	/// mesh information for collisions (only used by q3bsp curves)
+	// mesh information for collisions (only used by q3bsp curves)
 	int num_firstcollisiontriangle; // q3bsp only
 	int num_collisiontriangles; // number of triangles (if surface has collisions enabled)
 	int num_collisionvertices; // number of vertices referenced by collision triangles (if surface has collisions enabled)
@@ -612,9 +614,9 @@ void Mod_MakeSortedSurfaces(model_t *mod);
 // automatically called after model loader returns
 void Mod_BuildVBOs(void);
 
-/// Sets the mod->DrawSky and mod->DrawAddWaterPlanes pointers conditionally based on whether surfaces in this submodel use these features
-/// called specifically by brush model loaders when generating submodels
-/// automatically called after model loader returns
+// Sets the mod->DrawSky and mod->DrawAddWaterPlanes pointers conditionally based on whether surfaces in this submodel use these features
+// called specifically by brush model loaders when generating submodels
+// automatically called after model loader returns
 void Mod_SetDrawSkyAndWater(model_t* mod);
 
 shadowmesh_t *Mod_ShadowMesh_Alloc(struct mempool_s *mempool, int maxverts, int maxtriangles);

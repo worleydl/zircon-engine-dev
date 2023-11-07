@@ -228,7 +228,7 @@ void BuildGammaTable8(float prescale, float gamma, float scale, float base, floa
 	{
 		t = i * prescale;
 		d = ((contrastboost - 1) * t + 1);
-		if(d == 0)
+		if (d == 0)
 			t = 0; // we could just as well assume 1 here, depending on which side of the division by zero we want to be
 		else
 			t = contrastboost * t / d;
@@ -318,7 +318,7 @@ static void Palette_Load(void)
 		out[i*4+3] = 255;
 	}
 
-	if(*r_colormap_palette.string)
+	if (*r_colormap_palette.string)
 		palfile = (unsigned char *)FS_LoadFile (r_colormap_palette.string, tempmempool, false, &filesize);
 	else
 		palfile = NULL;
@@ -348,7 +348,7 @@ static void Palette_Load(void)
 		memcpy(palette_rgb_pantsscoreboard, palette_rgb_shirtscoreboard, sizeof(palette_rgb_pantsscoreboard));
 	}
 
-	if(palfile)
+	if (palfile)
 		Mem_Free(palfile);
 
 	memset(palette_bgra_embeddedpic, 0, sizeof(palette_bgra_embeddedpic));

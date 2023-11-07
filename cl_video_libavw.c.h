@@ -86,7 +86,7 @@ static dllfunction_t libavwfuncs[] =
 	{NULL, NULL}
 };
 
-const char* dllnames_libavw[] =
+const char *dllnames_libavw[] =
 {
 #if defined(_WIN32)
 		"libavcodec.dll",
@@ -122,7 +122,7 @@ cvar_t cl_video_libavw_minheight = {CF_ARCHIVE, "cl_video_libavw_minheight", "0"
 cvar_t cl_video_libavw_scaler    = {CF_ARCHIVE, "cl_video_libavw_scaler", "1", "selects a scaler for libavcode played videos. Scalers are: 0 - bilinear, 1 - bicubic, 2 - x, 3 - point, 4 - area, 5 - bicublin, 6 - gauss, 7 - sinc, 8 - lanczos, 9 - spline."};
 
 // video extensions
-const char* libavw_extensions[] =
+const char *libavw_extensions[] =
 {
 	"ogv",
 	"avi",
@@ -189,7 +189,7 @@ static int libavw_decodeframe(void *stream, void *imagedata, unsigned int Rmask,
 		pixel_format = LIBAVW_PIXEL_FORMAT_BGR;
 	else
 	{
-		Con_Printf(CON_ERROR "LibAvW: cannot determine pixel format for bpp %i\n", bytesperpixel);
+		Con_Printf(CON_ERROR "LibAvW: cannot determine pixel format for bpp %d\n", bytesperpixel);
 		return 1;
 	}
 	if (!qLibAvW_PlayGetFrameImage(s->stream, pixel_format, imagedata, s->info_imagewidth, s->info_imageheight, min(9, max(0, cl_video_libavw_scaler.integer))))

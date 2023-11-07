@@ -119,7 +119,7 @@ void Q3PatchTesselateFloat(int numcomponents, int outputstride, float *outputver
 	}
 #if 0
 	// enable this if you want results printed out
-	printf("vertices[%i][%i] =\n{\n", (patchheight-1)*tesselationheight+1, (patchwidth-1)*tesselationwidth+1);
+	printf("vertices[%d][%d] =\n{\n", (patchheight-1)*tesselationheight+1, (patchwidth-1)*tesselationwidth+1);
 	for (y = 0;y < (patchheight-1)*tesselationheight+1;y++)
 	{
 		for (x = 0;x < (patchwidth-1)*tesselationwidth+1;x++)
@@ -140,10 +140,10 @@ static int Q3PatchTesselation(float largestsquared3xcurvearea, float tolerance)
 	float f;
 	// f is actually a squared 2x curve area... so the formula had to be adjusted to give roughly the same subdivisions
 	f = pow(largestsquared3xcurvearea / 64.0f, 0.25f) / tolerance;
-	//if(f < 0.25) // VERY flat patches
-	if(f < 0.0001) // TOTALLY flat patches
+	//if (f < 0.25) // VERY flat patches
+	if (f < 0.0001) // TOTALLY flat patches
 		return 0;
-	else if(f < 2)
+	else if (f < 2)
 		return 1;
 	else
 		return (int) floor(log(f) / log(2.0f)) + 1;
@@ -286,7 +286,7 @@ static int FindEqualOddVertexInArray(int numcomponents, float *vertex, float *ve
 					found = false;
 					break;
 				}
-			if(found)
+			if (found)
 				return y*width+x;
 			vertices += numcomponents*2;
 		}
@@ -363,7 +363,7 @@ int Q3PatchAdjustTesselation(int numcomponents, patchinfo_t *patch1, float *patc
 			if (side1 == SIDE_INVALID || side2 == SIDE_INVALID)
 				continue;
 
-			if(dist1 != dist2)
+			if (dist1 != dist2)
 			{
 				// no patch welding if the resolutions mismatch
 				continue;
@@ -401,7 +401,7 @@ void Q3PatchTriangleElements(int *elements, int width, int height, int firstvert
 	int x, y, row0, row1;
 	for (y = 0;y < height - 1;y++)
 	{
-		if(y % 2)
+		if (y % 2)
 		{
 			// swap the triangle order in odd rows as optimization for collision stride
 			row0 = firstvertex + (y + 0) * width + width - 2;

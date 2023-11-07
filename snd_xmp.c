@@ -348,7 +348,7 @@ Try to load the libxmp DLL
 */
 qbool XMP_OpenLibrary (void)
 {
-	const char* dllnames_xmp [] =
+	const char *dllnames_xmp [] =
 	{
 #if defined(_WIN32)
 		"libxmp-4.dll",
@@ -375,12 +375,12 @@ qbool XMP_OpenLibrary (void)
 	{
 		if (*qxmp_vercode < 0x040200)
 		{
-			Con_Printf("Found incompatible XMP library version %s, not loading. (4.2.0 or higher required)\n", *qxmp_version);
+			Con_PrintLinef ("Found incompatible XMP library version %s, not loading. (4.2.0 or higher required)", *qxmp_version);
 			Sys_FreeLibrary (&xmp_dll);
 			return false;
 		}
-		if (developer_loading.integer >= 1)
-			Con_Printf("XMP library loaded, version %s (0x0%x)\n", *qxmp_version, *qxmp_vercode);
+		//if (developer_loading.integer >= 1)
+			Con_DPrintLinef ("XMP library loaded, version %s (0x0%x)", *qxmp_version, *qxmp_vercode);
 		return true;
 	}
 	else
@@ -452,7 +452,7 @@ static void XMP_GetSamplesFloat(channel_t *ch, sfx_t *sfx, int firstsampleframe,
 		// create an xmp file context
 		if ((per_ch->playercontext = qxmp_create_context()) == NULL)
 		{
-			//Con_Printf("error getting a libxmp file context; while trying to load file \"%s\"\n", filename);
+			//Con_Printf ("error getting a libxmp file context; while trying to load file \"%s\"\n", filename);
 			Mem_Free(per_ch);
 			return;
 		}
@@ -622,17 +622,17 @@ qbool XMP_LoadModFile(const char *filename, sfx_t *sfx)
 	// Create an xmp file context
 	if ((xc = qxmp_create_context()) == NULL)
 	{
-		Con_Printf("error creating a libxmp file context; while trying to load file \"%s\"\n", filename);
+		Con_Printf ("error creating a libxmp file context; while trying to load file \"%s\"\n", filename);
 		Mem_Free(data);
 		return false;
 	}
 
 	if (developer_loading.integer >= 2)
-		Con_Printf("Loading Module file (libxmp) \"%s\"\n", filename);
+		Con_Printf ("Loading Module file (libxmp) \"%s\"\n", filename);
 
 	if (qxmp_load_module_from_memory(xc, (void *)data, (long)filesize) < 0) // Added in libxmp 4.2
 	{
-		Con_Printf("error while trying to load xmp module \"%s\"\n", filename);
+		Con_Printf ("error while trying to load xmp module \"%s\"\n", filename);
 		qxmp_free_context(xc);
 		Mem_Free(data);
 		return false;
@@ -666,25 +666,25 @@ qbool XMP_LoadModFile(const char *filename, sfx_t *sfx)
 	qxmp_get_module_info(xc, &mi);
 	if (developer_loading.integer >= 2)
 	{
-		Con_Printf("Decoding module (libxmp):\n"
+		Con_Printf ("Decoding module (libxmp):\n"
 			"    Module name  : %s\n"
 			"    Module type  : %s\n"
-			"    Module length: %i patterns\n"
-			"    Patterns     : %i\n"
-			"    Instruments  : %i\n"
-			"    Samples      : %i\n"
-			"    Channels     : %i\n"
-			"    Initial Speed: %i\n"
-			"    Initial BPM  : %i\n"
-			"    Restart Pos. : %i\n"
-			"    Global Volume: %i\n",
+			"    Module length: %d patterns\n"
+			"    Patterns     : %d\n"
+			"    Instruments  : %d\n"
+			"    Samples      : %d\n"
+			"    Channels     : %d\n"
+			"    Initial Speed: %d\n"
+			"    Initial BPM  : %d\n"
+			"    Restart Pos. : %d\n"
+			"    Global Volume: %d\n",
 			mi.mod->name, mi.mod->type,
 			mi.mod->len, mi.mod->pat, mi.mod->ins, mi.mod->smp, mi.mod->chn,
 			mi.mod->spd, mi.mod->bpm, mi.mod->rst, mi.mod->gvl
 		);
 	}
 	else if (developer_loading.integer == 1)
-		Con_Printf("Decoding module (libxmp) \"%s\" (%s)\n", mi.mod->name, mi.mod->type);
+		Con_Printf ("Decoding module (libxmp) \"%s\" (%s)\n", mi.mod->name, mi.mod->type);
 
 	qxmp_free_context(xc);
 	return true;

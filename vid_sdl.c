@@ -18,7 +18,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #undef WIN32_LEAN_AND_MEAN  //hush a warning, SDL.h redefines this
-#include <SDL.h>
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	#include <SDL2/SDL.h>
+#else
+	#include <SDL.h>
+#endif
 #include <stdio.h>
 
 #include "quakedef.h"
@@ -45,11 +49,11 @@ static io_connect_t IN_GetIOHandle(void)
 	mach_port_t masterport;
 
 	status = IOMainPort(MACH_PORT_NULL, &masterport);
-	if(status != KERN_SUCCESS)
+	if (status != KERN_SUCCESS)
 		return 0;
 
 	iohidsystem = IORegistryEntryFromPath(masterport, kIOServicePlane ":/IOResources/IOHIDSystem");
-	if(!iohidsystem)
+	if (!iohidsystem)
 		return 0;
 
 	status = IOServiceOpen(iohidsystem, mach_task_self(), kIOHIDParamConnectType, &iohandle);
@@ -385,8 +389,8 @@ void VID_SetMouse(qbool relative, qbool hidecursor)
 {
 #ifndef DP_MOBILETOUCH
 #ifdef MACOSX
-	if(relative)
-		if(vid_usingmouse && (vid_usingnoaccel != !!apple_mouse_noaccel.integer))
+	if (relative)
+		if (vid_usingmouse && (vid_usingnoaccel != !!apple_mouse_noaccel.integer))
 			VID_SetMouse(false, false); // ungrab first!
 #endif
 	if (vid_usingmouse != relative)
@@ -394,21 +398,21 @@ void VID_SetMouse(qbool relative, qbool hidecursor)
 		vid_usingmouse = relative;
 		cl_ignoremousemoves = 2;
 		vid_usingmouse_relativeworks = SDL_SetRelativeMouseMode(relative ? SDL_TRUE : SDL_FALSE) == 0;
-//		Con_Printf("VID_SetMouse(%i, %i) relativeworks = %i\n", (int)relative, (int)hidecursor, (int)vid_usingmouse_relativeworks);
+//		Con_Printf ("VID_SetMouse(%d, %d) relativeworks = %d\n", (int)relative, (int)hidecursor, (int)vid_usingmouse_relativeworks);
 #ifdef MACOSX
-		if(relative)
+		if (relative)
 		{
 			// Save the status of mouse acceleration
 			originalMouseSpeed = -1.0; // in case of error
-			if(apple_mouse_noaccel.integer)
+			if (apple_mouse_noaccel.integer)
 			{
 				io_connect_t mouseDev = IN_GetIOHandle();
-				if(mouseDev != 0)
+				if (mouseDev != 0)
 				{
-					if(IOHIDGetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), &originalMouseSpeed) == kIOReturnSuccess)
+					if (IOHIDGetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), &originalMouseSpeed) == kIOReturnSuccess)
 					{
-						Con_DPrintf("previous mouse acceleration: %f\n", originalMouseSpeed);
-						if(IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), -1.0) != kIOReturnSuccess)
+						Con_DPrintf ("previous mouse acceleration: %f\n", originalMouseSpeed);
+						if (IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), -1.0) != kIOReturnSuccess)
 						{
 							Con_Print("Could not disable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
 							Cvar_SetValueQuick(&apple_mouse_noaccel, 0);
@@ -432,13 +436,13 @@ void VID_SetMouse(qbool relative, qbool hidecursor)
 		}
 		else
 		{
-			if(originalMouseSpeed != -1.0)
+			if (originalMouseSpeed != -1.0)
 			{
 				io_connect_t mouseDev = IN_GetIOHandle();
-				if(mouseDev != 0)
+				if (mouseDev != 0)
 				{
-					Con_DPrintf("restoring mouse acceleration to: %f\n", originalMouseSpeed);
-					if(IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), originalMouseSpeed) != kIOReturnSuccess)
+					Con_DPrintf ("restoring mouse acceleration to: %f\n", originalMouseSpeed);
+					if (IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), originalMouseSpeed) != kIOReturnSuccess)
 						Con_Print("Could not re-enable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
 					IOServiceClose(mouseDev);
 				}
@@ -448,8 +452,7 @@ void VID_SetMouse(qbool relative, qbool hidecursor)
 		}
 #endif
 	}
-	if (vid_usinghidecursor != hidecursor)
-	{
+	if (vid_usinghidecursor != hidecursor) {
 		vid_usinghidecursor = hidecursor;
 		SDL_ShowCursor( hidecursor ? SDL_DISABLE : SDL_ENABLE);
 	}
@@ -923,7 +926,7 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea( 0,  64,   0,  64,  64, "gfx/touch_menu.tga"         , 0.0f, NULL, NULL, &buttons[14], K_ESCAPE, NULL, 0, 0, 0, true);
 		if (!VID_ShowingKeyboard()) {
 			// user entered a command, close the console now
-			Con_ToggleConsole_f(cmd_local);
+			Con_ToggleConsole (); // Baker: This does not close the console, it toggles it.
 		}
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[15], (keynum_t)0, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, move, &buttons[0], K_MOUSE4, NULL, 0, 0, 0, true);
@@ -1020,7 +1023,7 @@ void IN_Move( void )
 				// window grabbing. --blub
 	
 				// we need 2 frames to initialize the center position
-				if(!stuck)
+				if (!stuck)
 				{
 					SDL_WarpMouseInWindow(window, win_half_width, win_half_height);
 
@@ -1135,13 +1138,13 @@ void AllowWindowsShortcutKeys(int bAllowKeys)
 			HINSTANCE		global_hInstance = GetModuleHandle(NULL);
 			if (!(WinKeyHook = SetWindowsHookEx(13, LLWinKeyHook, global_hInstance, 0)))
 			{
-				Con_Printf("Failed to install winkey hook.\n");
-				Con_Printf("Microsoft Windows NT 4.0, 2000 or XP is required.\n");
+				Con_Printf ("Failed to install winkey hook.\n");
+				Con_Printf ("Microsoft Windows NT 4.0, 2000 or XP is required.\n");
 				return;
 			}
 
 			WinKeyHook_isActive = true;
-			Con_DPrintf("Windows and context menu key disabled\n");
+			Con_DPrintf ("Windows and context menu key disabled\n");
 		}
 	}
 
@@ -1151,7 +1154,7 @@ void AllowWindowsShortcutKeys(int bAllowKeys)
 		{
 			UnhookWindowsHookEx(WinKeyHook);
 			WinKeyHook_isActive = false;
-			Con_DPrintf("Windows and context menu key enabled\n");
+			Con_DPrintf ("Windows and context menu key enabled\n");
 		}
 	}
 }
@@ -1215,16 +1218,16 @@ void Sys_SendKeyEvents( void )
 				keycode = MapKey(event.key.keysym.sym);
 				isdown = (event.key.state == SDL_PRESSED);
 				unicode = 0;
-				if(isdown)
+				if (isdown)
 				{
-					if(SDL_PollEvent(&event))
+					if (SDL_PollEvent(&event))
 					{
-						if(event.type == SDL_TEXTINPUT)
+						if (event.type == SDL_TEXTINPUT)
 						{
 							// combine key code from SDL_KEYDOWN event and character
 							// from SDL_TEXTINPUT event in a single Key_Event call
 #ifdef DEBUGSDLEVENTS
-							Con_DPrintf("SDL_Event: SDL_TEXTINPUT - text: %s\n", event.text.text);
+							Con_DPrintf ("SDL_Event: SDL_TEXTINPUT - text: %s\n", event.text.text);
 #endif
 							unicode = u8_getchar_utf8_enabled(event.text.text + (int)u8_bytelen(event.text.text, 0), NULL);
 						}
@@ -1517,7 +1520,7 @@ void VID_Init (void)
 	// Baker: Returns -1 on an error or 0 on success.
 	vid_sdl_initjoysticksystem = SDL_InitSubSystem(SDL_INIT_JOYSTICK) >= 0;
 	if (!vid_sdl_initjoysticksystem)
-		Con_Printf(CON_ERROR "Failed to init SDL joystick subsystem: %s\n", SDL_GetError());
+		Con_Printf (CON_ERROR "Failed to init SDL joystick subsystem: %s\n", SDL_GetError());
 	vid_isfullscreen = false;
 }
 
@@ -1584,7 +1587,11 @@ void VID_EnableJoystick(qbool enable)
 // Baker r9511: SDL ensure icon
 #ifdef _WIN32
 	#ifdef _MSC_VER
-		#include <SDL_syswm.h> // To expose things like HWND to us.
+		#if _MSC_VER < 1900
+			#include <SDL2/SDL_syswm.h> // To expose things like HWND to us.
+		#else
+			#include <SDL_syswm.h> // To expose things like HWND to us.
+		#endif
 	#else
 		#include <SDL_syswm.h> // To expose things like HWND to us.
 	#endif // _MSC_VER
@@ -1627,7 +1634,7 @@ static void VID_OutputVersion(void)
 {
 	SDL_version version;
 	SDL_GetVersion(&version);
-	Con_Printf(	"Linked against SDL version %d.%d.%d\n"
+	Con_Printf (	"Linked against SDL version %d.%d.%d\n"
 					"Using SDL library version %d.%d.%d\n",
 					SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
 					version.major, version.minor, version.patch );
@@ -1662,7 +1669,7 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 	if (screenHeight == workHeight)
 		titleBarPixels = -rect->top;
 
-	//Con_Printf("window mode: %dx%d, workArea: %d/%d-%d/%d (%dx%d), title: %d\n", width, height, workArea.left, workArea.top, workArea.right, workArea.bottom, workArea.right - workArea.left, workArea.bottom - workArea.top, titleBarPixels);
+	//Con_Printf ("window mode: %dx%d, workArea: %d/%d-%d/%d (%dx%d), title: %d\n", width, height, workArea.left, workArea.top, workArea.right, workArea.bottom, workArea.right - workArea.left, workArea.bottom - workArea.top, titleBarPixels);
 
 	// if height and width matches the physical or previously adjusted screen height and width, adjust it to available desktop area
 	if ((width == GetSystemMetrics(SM_CXSCREEN) || width == workWidth) && (height == screenHeight || height == workHeight - titleBarPixels))
@@ -1696,10 +1703,11 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	win_half_width = mode->width>>1;
 	win_half_height = mode->height>>1;
 
-	if(vid_resizable.integer)
+	if (vid_resizable.integer)
 		windowflags |= SDL_WINDOW_RESIZABLE;
 
-	VID_OutputVersion();
+	if (vid.restart_count == 0) // Baker r1481: Reduce ALT-ENTER video restart spam
+		VID_OutputVersion();
 
 #ifndef USE_GLES2
 	// SDL usually knows best
@@ -1709,9 +1717,8 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	i = Sys_CheckParm("-gl_driver");
 	if (i && i < sys.argc - 1)
 		drivername = sys.argv[i + 1];
-	if (SDL_GL_LoadLibrary(drivername) < 0)
-	{
-		Con_Printf(CON_ERROR "Unable to load GL driver \"%s\": %s\n", drivername, SDL_GetError());
+	if (SDL_GL_LoadLibrary(drivername) < 0) {
+		Con_PrintLinef (CON_ERROR "Unable to load GL driver " QUOTED_S ": %s", drivername, SDL_GetError());
 		return false;
 	}
 #endif
@@ -1740,6 +1747,13 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 		else {
 			if (vid_borderless.integer)
 				windowflags |= SDL_WINDOW_BORDERLESS;
+
+			// Baker r1482: Windowed mode uses 75% desktop size with vid_fullscreendesktop
+			if (vid_desktopfullscreen.integer) {
+				vid_mode_t* m = VID_GetDesktopMode();
+				mode->width = m->width * 0.75;
+				mode->height = m->height * 0.75;
+			}
 #ifdef _WIN32
 			if (vid_ignore_taskbar.integer) {
 				xPos = SDL_WINDOWPOS_CENTERED;
@@ -1750,8 +1764,8 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 				AdjustWindowBounds(mode, &rect);
 				xPos = rect.left;
 				yPos = rect.top;
-			}
-#endif
+			} // vid_ignore_taskbar
+#endif // WIN32
 		}
 	}
 	//flags |= SDL_HWSURFACE;
@@ -1791,7 +1805,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	window = SDL_CreateWindow(gamename, xPos, yPos, mode->width, mode->height, windowflags);
 	if (window == NULL)
 	{
-		Con_Printf (CON_ERROR "Failed to set video mode to %ix%i: %s\n", mode->width, mode->height, SDL_GetError());
+		Con_Printf (CON_ERROR "Failed to set video mode to %dx%d: %s\n", mode->width, mode->height, SDL_GetError());
 		VID_Shutdown();
 		return false;
 	}
@@ -1805,7 +1819,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	context = SDL_GL_CreateContext(window);
 	if (context == NULL)
 	{
-		Con_Printf(CON_ERROR "Failed to initialize OpenGL context: %s\n", SDL_GetError());
+		Con_Printf (CON_ERROR "Failed to initialize OpenGL context: %s\n", SDL_GetError());
 		VID_Shutdown();
 		return false;
 	}
@@ -1825,15 +1839,15 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	Cvar_SetQuick(&gl_info_driver, gl_driver);
 
 	// LadyHavoc: report supported extensions
-	Con_DPrintf("\nQuakeC extensions for server and client:");
+	Con_DPrintf ("\nQuakeC extensions for server and client:");
 	for (i = 0; vm_sv_extensions[i]; i++)
-		Con_DPrintf(" %s", vm_sv_extensions[i]);
-	Con_DPrintf("\n");
+		Con_DPrintf (" %s", vm_sv_extensions[i]);
+	Con_DPrintf ("\n");
 #ifdef CONFIG_MENU
-	Con_DPrintf("\nQuakeC extensions for menu:");
+	Con_DPrintf ("\nQuakeC extensions for menu:");
 	for (i = 0; vm_m_extensions[i]; i++)
-		Con_DPrintf(" %s", vm_m_extensions[i]);
-	Con_DPrintf("\n");
+		Con_DPrintf (" %s", vm_m_extensions[i]);
+	Con_DPrintf ("\n");
 #endif
 
 	// clear to black (loading plaque will be seen over this)
@@ -1845,6 +1859,7 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	vid_usingmouse = false;
 	vid_usinghidecursor = false;
 		
+	vid.restart_count++;
 	return true;
 }
 
@@ -1858,8 +1873,8 @@ extern cvar_t gl_info_driver;
 qbool VID_InitMode(viddef_mode_t *mode)
 {
 	// GAME_STEELSTORM specific
-	steelstorm_showing_map = Cvar_FindVar(&cvars_all, "steelstorm_showing_map", ~0);
-	steelstorm_showing_mousecursor = Cvar_FindVar(&cvars_all, "steelstorm_showing_mousecursor", ~0);
+	steelstorm_showing_map = Cvar_FindVar(&cvars_all, "steelstorm_showing_map", ALL_FLAGS_ANTIZERO);
+	steelstorm_showing_mousecursor = Cvar_FindVar(&cvars_all, "steelstorm_showing_mousecursor", ALL_FLAGS_ANTIZERO);
 
 	if (!SDL_WasInit(SDL_INIT_VIDEO) && SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
@@ -1906,9 +1921,9 @@ void VID_Finish (void)
 			{
 				vid_usingvsync = vid_usevsync;
 				if (SDL_GL_SetSwapInterval(vid_usevsync != 0) >= 0)
-					Con_DPrintf("Vsync %s\n", vid_usevsync ? "activated" : "deactivated");
+					Con_DPrintf ("Vsync %s\n", vid_usevsync ? "activated" : "deactivated");
 				else
-					Con_DPrintf("ERROR: can't %s vsync\n", vid_usevsync ? "activate" : "deactivate");
+					Con_DPrintf ("ERROR: can't %s vsync\n", vid_usevsync ? "activate" : "deactivate");
 			}
 			SDL_GL_SwapWindow(window);
 			break;

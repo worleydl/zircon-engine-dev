@@ -41,7 +41,7 @@ typedef enum cachepicflags_e
 	CACHEPICFLAG_MIPMAP = 32,
 	CACHEPICFLAG_NEAREST = 64, // force nearest filtering instead of linear
 	CACHEPICFLAG_LINEAR = 128, // force linear filtering even if nearest_2d is enabled
-	CACHEPICFLAG_FAILONMISSING = 256 // return NULL if the pic has no texture
+	CACHEPICFLAG_FAILONMISSING_256 = 256 // return NULL if the pic has no texture
 }
 cachepicflags_t;
 

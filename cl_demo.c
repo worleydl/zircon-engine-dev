@@ -26,6 +26,13 @@ extern cvar_t cl_capturevideo_demo_stop;
 #endif
 int old_vsync = 0;
 
+cvar_t nostartdemos = {CF_CLIENT | CF_ARCHIVE , "nostartdemos", "0", "Do not play start demos on startup [Zircon change]"}; // Baker r3172: nostartdemos
+
+cvar_t cl_autodemo = {CF_CLIENT | CF_ARCHIVE, "cl_autodemo", "0", "records every game played, using the date/time and map name to name the demo file" };
+cvar_t cl_autodemo_nameformat = {CF_CLIENT | CF_ARCHIVE, "cl_autodemo_nameformat", "autodemos/%Y-%m-%d_%H-%M", "The format of the cl_autodemo filename, followed by the map name (the date is encoded using strftime escapes)" };
+cvar_t cl_autodemo_delete = {CF_CLIENT, "cl_autodemo_delete", "0", "Delete demos after recording.  This is a bitmask, bit 1 gives the default, bit 0 the value for the current demo.  Thus, the values are: 0 = disabled; 1 = delete current demo only; 2 = delete all demos except the current demo; 3 = delete all demos from now on" };
+
+
 static void CL_FinishTimeDemo (void);
 
 /*
@@ -145,9 +152,9 @@ void CL_CutDemo (unsigned char **buf, fs_offset_t *filesize)
 
 	// restart the demo recording
 	cls.demofile = FS_OpenRealFile(cls.demoname, "wb", false);
-	if(!cls.demofile)
-		Sys_Error("failed to reopen the demo file");
-	FS_Printf(cls.demofile, "%i\n", cls.forcetrack);
+	if (!cls.demofile)
+		Sys_Error ("failed to reopen the demo file");
+	FS_Printf(cls.demofile, "%d\n", cls.forcetrack);
 }
 
 /*
@@ -162,13 +169,13 @@ void CL_PasteDemo (unsigned char **buf, fs_offset_t *filesize)
 {
 	fs_offset_t startoffset = 0;
 
-	if(!*buf)
+	if (!*buf)
 		return;
 
 	// skip cdtrack
 	while(startoffset < *filesize && ((char *)(*buf))[startoffset] != '\n')
 		++startoffset;
-	if(startoffset < *filesize)
+	if (startoffset < *filesize)
 		++startoffset;
 
 	FS_Write(cls.demofile, *buf + startoffset, *filesize - startoffset);
@@ -248,7 +255,7 @@ void CL_ReadDemoMessage(void)
 		// get the next message
 		FS_Read(cls.demofile, &cl_message.cursize, 4);
 		cl_message.cursize = LittleLong(cl_message.cursize);
-		if(cl_message.cursize & DEMOMSG_CLIENT_TO_SERVER) // This is a client->server message! Ignore for now!
+		if (cl_message.cursize & DEMOMSG_CLIENT_TO_SERVER) // This is a client->server message! Ignore for now!
 		{
 			// skip over demo packet
 			FS_Seek(cls.demofile, 12 + (cl_message.cursize & (~DEMOMSG_CLIENT_TO_SERVER)), SEEK_CUR);
@@ -256,7 +263,7 @@ void CL_ReadDemoMessage(void)
 		}
 		if (cl_message.cursize > cl_message.maxsize)
 		{
-			CL_DisconnectEx(false, "Demo message (%i) > cl_message.maxsize (%d)", cl_message.cursize, cl_message.maxsize);
+			CL_DisconnectEx(false, "Demo message (%d) > cl_message.maxsize (%d)", cl_message.cursize, cl_message.maxsize);
 			cl_message.cursize = 0;
 			return;
 		}
@@ -317,7 +324,7 @@ void CL_Stop_f(cmd_state_t *cmd)
 	CL_WriteDemoMessage(&buf);
 
 // finish up
-	if(cl_autodemo.integer && (cl_autodemo_delete.integer & 1))
+	if (cl_autodemo.integer && (cl_autodemo_delete.integer & 1))
 	{
 		FS_RemoveOnClose(cls.demofile);
 		Con_Print("Completed and deleted demo\n");
@@ -422,7 +429,7 @@ void CL_PlayDemo(const char *demo)
 
 	cls.protocol = PROTOCOL_QUAKE;
 
-	Con_Printf("Playing demo %s.\n", name);
+	Con_PrintLinef ("Playing demo %s.", name);
 	cls.demofile = f;
 	strlcpy(cls.demoname, name, sizeof(cls.demoname));
 
@@ -471,9 +478,9 @@ static int doublecmp_withoffset(const void *a_, const void *b_)
 {
 	const double *a = (const double *) ((const char *) a_ + doublecmp_offset);
 	const double *b = (const double *) ((const char *) b_ + doublecmp_offset);
-	if(*a > *b)
+	if (*a > *b)
 		return +1;
-	if(*a < *b)
+	if (*a < *b)
 		return -1;
 	return 0;
 }
@@ -502,16 +509,16 @@ static void CL_FinishTimeDemo (void)
 	fpsavg = cls.td_onesecondavgcount ? cls.td_onesecondavgfps / cls.td_onesecondavgcount : 0;
 	fpsmax = cls.td_onesecondmaxfps;
 	// LadyHavoc: timedemo now prints out 7 digits of fraction, and min/avg/max
-	Con_Printf("%i frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%i seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
-	Log_Printf("benchmark.log", "date %s | enginedate %s | demo %s | commandline %s | run %d | result %i frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%i seconds)\n", Sys_TimeString("%Y-%m-%d %H:%M:%S"), buildstring, cls.demoname, cmdline.string, benchmark_runs + 1, frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
+	Con_Printf ("%d frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%d seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
+	Log_Printf("benchmark.log", "date %s | enginedate %s | demo %s | commandline %s | run %d | result %d frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%d seconds)\n", Sys_TimeString("%Y-%m-%d %H:%M:%S"), buildstring, cls.demoname, cmdline.string, benchmark_runs + 1, frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
 	if (Sys_CheckParm("-benchmark"))
 	{
 		++benchmark_runs;
 		i = Sys_CheckParm("-benchmarkruns");
-		if(i && i + 1 < sys.argc)
+		if (i && i + 1 < sys.argc)
 		{
 			static benchmarkhistory_t *history = NULL;
-			if(!history)
+			if (!history)
 				history = (benchmarkhistory_t *)Z_Malloc(sizeof(*history) * atoi(sys.argv[i + 1]));
 
 			history[benchmark_runs - 1].frames = frames;
@@ -521,28 +528,28 @@ static void CL_FinishTimeDemo (void)
 			history[benchmark_runs - 1].fpsavg = fpsavg;
 			history[benchmark_runs - 1].fpsmax = fpsmax;
 
-			if(atoi(sys.argv[i + 1]) > benchmark_runs)
+			if (atoi(sys.argv[i + 1]) > benchmark_runs)
 			{
 				// restart the benchmark
-				Cbuf_AddText(cmd_local, va(vabuf, sizeof(vabuf), "timedemo %s\n", cls.demoname));
+				Cbuf_AddTextLine (cmd_local, va(vabuf, sizeof(vabuf), "timedemo %s", cls.demoname));
 				// cannot execute here
 			}
 			else
 			{
 				// print statistics
 				int first = Sys_CheckParm("-benchmarkruns_skipfirst") ? 1 : 0;
-				if(benchmark_runs > first)
+				if (benchmark_runs > first)
 				{
 #define DO_MIN(f) \
-					for(i = first; i < benchmark_runs; ++i) if((i == first) || (history[i].f < f)) f = history[i].f
+					for(i = first; i < benchmark_runs; ++i) if ((i == first) || (history[i].f < f)) f = history[i].f
 
 #define DO_MAX(f) \
-					for(i = first; i < benchmark_runs; ++i) if((i == first) || (history[i].f > f)) f = history[i].f
+					for(i = first; i < benchmark_runs; ++i) if ((i == first) || (history[i].f > f)) f = history[i].f
 
 #define DO_MED(f) \
 					doublecmp_offset = (char *)&history->f - (char *)history; \
 					qsort(history + first, benchmark_runs - first, sizeof(*history), doublecmp_withoffset); \
-					if((first + benchmark_runs) & 1) \
+					if ((first + benchmark_runs) & 1) \
 						f = history[(first + benchmark_runs - 1) / 2].f; \
 					else \
 						f = (history[(first + benchmark_runs - 2) / 2].f + history[(first + benchmark_runs) / 2].f) / 2
@@ -553,7 +560,7 @@ static void CL_FinishTimeDemo (void)
 					DO_MIN(fpsmin);
 					DO_MIN(fpsavg);
 					DO_MIN(fpsmax);
-					Con_Printf("MIN: %i frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%i seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
+					Con_Printf ("MIN: %d frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%d seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
 
 					DO_MED(frames);
 					DO_MED(time);
@@ -561,7 +568,7 @@ static void CL_FinishTimeDemo (void)
 					DO_MED(fpsmin);
 					DO_MED(fpsavg);
 					DO_MED(fpsmax);
-					Con_Printf("MED: %i frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%i seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
+					Con_Printf ("MED: %d frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%d seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
 
 					DO_MAX(frames);
 					DO_MIN(time);
@@ -569,7 +576,7 @@ static void CL_FinishTimeDemo (void)
 					DO_MAX(fpsmin);
 					DO_MAX(fpsavg);
 					DO_MAX(fpsmax);
-					Con_Printf("MAX: %i frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%i seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
+					Con_Printf ("MAX: %d frames %5.7f seconds %5.7f fps, one-second fps min/avg/max: %.0f %.0f %.0f (%d seconds)\n", frames, time, totalfpsavg, fpsmin, fpsavg, fpsmax, cls.td_onesecondavgcount);
 				}
 				Z_Free(history);
 				history = NULL;
@@ -597,7 +604,7 @@ void CL_TimeDemo_f(cmd_state_t *cmd)
 
 	srand(0); // predictable random sequence for benchmarking
 
-	CL_PlayDemo(Cmd_Argv(cmd, 1));
+	CL_PlayDemo (Cmd_Argv(cmd, 1));
 
 // cls.td_starttime will be grabbed at the second frame of the demo, so
 // all the loading time doesn't get counted
@@ -633,13 +640,21 @@ static void CL_Startdemos_f(cmd_state_t *cmd)
 	if (cls.state == ca_dedicated || Sys_CheckParm("-listen") || Sys_CheckParm("-benchmark") || Sys_CheckParm("-demo") || Sys_CheckParm("-capturedemo"))
 		return;
 
+	if (nostartdemos.value) {
+		// Baker: What this is trying to do is close the menu and the console
+		// and set key_game.  Now .. why are we doing this though?
+//		key_dest = key_game;
+//		menu_state_set_nova (m_none);
+//		Con_CloseConsole_If_Client ();
+		return;
+	}
+
 	c = Cmd_Argc(cmd) - 1;
-	if (c > MAX_DEMOS)
-	{
-		Con_Printf("Max %i demos in demoloop\n", MAX_DEMOS);
+	if (c > MAX_DEMOS) {
+		Con_PrintLinef ("Max %d demos in demoloop", MAX_DEMOS);
 		c = MAX_DEMOS;
 	}
-	Con_DPrintf("%i demo(s) in loop\n", c);
+	Con_DPrintLinef ("%d demo(s) in loop", c);
 
 	for (i=1 ; i<c+1 ; i++)
 		strlcpy (cls.demos[i-1], Cmd_Argv(cmd, i), sizeof (cls.demos[i-1]));
@@ -671,7 +686,7 @@ static void CL_Demos_f(cmd_state_t *cmd)
 		return;
 	if (cls.demonum == -1)
 		cls.demonum = 1;
-	CL_Disconnect();
+	CL_Disconnect ();
 	CL_NextDemo();
 }
 
@@ -713,4 +728,8 @@ void CL_Demo_Init(void)
 	Cvar_RegisterVariable (&cl_autodemo);
 	Cvar_RegisterVariable (&cl_autodemo_nameformat);
 	Cvar_RegisterVariable (&cl_autodemo_delete);
+	Cvar_RegisterVariable (&nostartdemos);
+	
 }
+
+

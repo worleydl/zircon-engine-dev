@@ -371,7 +371,7 @@ static void R_Shadow_SetShadowMode(void)
 		break;
 	}
 
-	if(R_CompileShader_CheckStaticParms())
+	if (R_CompileShader_CheckStaticParms())
 		R_GLSL_Restart_f(cmd_local);
 }
 
@@ -869,12 +869,12 @@ int R_Shadow_CalcTriangleSideMask(const vec3_t p1, const vec3_t p2, const vec3_t
 	float dp1 = p1[0] + p1[1], dn1 = p1[0] - p1[1], ap1 = fabs(dp1), an1 = fabs(dn1),
 		  dp2 = p2[0] + p2[1], dn2 = p2[0] - p2[1], ap2 = fabs(dp2), an2 = fabs(dn2),
 		  dp3 = p3[0] + p3[1], dn3 = p3[0] - p3[1], ap3 = fabs(dp3), an3 = fabs(dn3);
-	if(ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
+	if (ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
 		mask &= (3<<4)
 			| (dp1 >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2))
 			| (dp2 >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2))
 			| (dp3 >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2));
-	if(an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
+	if (an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
 		mask &= (3<<4)
 			| (dn1 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2))
 			| (dn2 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2))			
@@ -883,12 +883,12 @@ int R_Shadow_CalcTriangleSideMask(const vec3_t p1, const vec3_t p2, const vec3_t
 	dp1 = p1[1] + p1[2], dn1 = p1[1] - p1[2], ap1 = fabs(dp1), an1 = fabs(dn1),
 	dp2 = p2[1] + p2[2], dn2 = p2[1] - p2[2], ap2 = fabs(dp2), an2 = fabs(dn2),
 	dp3 = p3[1] + p3[2], dn3 = p3[1] - p3[2], ap3 = fabs(dp3), an3 = fabs(dn3);
-	if(ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
+	if (ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
 		mask &= (3<<0)
 			| (dp1 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4))
 			| (dp2 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4))			
 			| (dp3 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4));
-	if(an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
+	if (an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
 		mask &= (3<<0)
 			| (dn1 >= 0 ? (1<<2)|(2<<4) : (2<<2)|(1<<4))
 			| (dn2 >= 0 ? (1<<2)|(2<<4) : (2<<2)|(1<<4))
@@ -897,12 +897,12 @@ int R_Shadow_CalcTriangleSideMask(const vec3_t p1, const vec3_t p2, const vec3_t
 	dp1 = p1[2] + p1[0], dn1 = p1[2] - p1[0], ap1 = fabs(dp1), an1 = fabs(dn1),
 	dp2 = p2[2] + p2[0], dn2 = p2[2] - p2[0], ap2 = fabs(dp2), an2 = fabs(dn2),
 	dp3 = p3[2] + p3[0], dn3 = p3[2] - p3[0], ap3 = fabs(dp3), an3 = fabs(dn3);
-	if(ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
+	if (ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
 		mask &= (3<<2)
 			| (dp1 >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0))
 			| (dp2 >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0))
 			| (dp3 >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0));
-	if(an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
+	if (an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
 		mask &= (3<<2)
 			| (dn1 >= 0 ? (1<<4)|(2<<0) : (2<<4)|(1<<0))
 			| (dn2 >= 0 ? (1<<4)|(2<<0) : (2<<4)|(1<<0))
@@ -927,33 +927,33 @@ static int R_Shadow_CalcBBoxSideMask(const vec3_t mins, const vec3_t maxs, const
 
 	dp1 = pmax[0] + pmax[1], dn1 = pmax[0] - pmin[1], ap1 = fabs(dp1), an1 = fabs(dn1),
 	dp2 = pmin[0] + pmin[1], dn2 = pmin[0] - pmax[1], ap2 = fabs(dp2), an2 = fabs(dn2);
-	if(ap1 > bias*an1 && ap2 > bias*an2)
+	if (ap1 > bias*an1 && ap2 > bias*an2)
 		mask &= (3<<4)
 			| (dp1 >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2))
 			| (dp2 >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2));
-	if(an1 > bias*ap1 && an2 > bias*ap2)
+	if (an1 > bias*ap1 && an2 > bias*ap2)
 		mask &= (3<<4)
 			| (dn1 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2))
 			| (dn2 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2));
 
 	dp1 = pmax[1] + pmax[2], dn1 = pmax[1] - pmin[2], ap1 = fabs(dp1), an1 = fabs(dn1),
 	dp2 = pmin[1] + pmin[2], dn2 = pmin[1] - pmax[2], ap2 = fabs(dp2), an2 = fabs(dn2);
-	if(ap1 > bias*an1 && ap2 > bias*an2)
+	if (ap1 > bias*an1 && ap2 > bias*an2)
 		mask &= (3<<0)
 			| (dp1 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4))
 			| (dp2 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4));
-	if(an1 > bias*ap1 && an2 > bias*ap2)
+	if (an1 > bias*ap1 && an2 > bias*ap2)
 		mask &= (3<<0)
 			| (dn1 >= 0 ? (1<<2)|(2<<4) : (2<<2)|(1<<4))
 			| (dn2 >= 0 ? (1<<2)|(2<<4) : (2<<2)|(1<<4));
 
 	dp1 = pmax[2] + pmax[0], dn1 = pmax[2] - pmin[0], ap1 = fabs(dp1), an1 = fabs(dn1),
 	dp2 = pmin[2] + pmin[0], dn2 = pmin[2] - pmax[0], ap2 = fabs(dp2), an2 = fabs(dn2);
-	if(ap1 > bias*an1 && ap2 > bias*an2)
+	if (ap1 > bias*an1 && ap2 > bias*an2)
 		mask &= (3<<2)
 			| (dp1 >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0))
 			| (dp2 >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0));
-	if(an1 > bias*ap1 && an2 > bias*ap2)
+	if (an1 > bias*ap1 && an2 > bias*ap2)
 		mask &= (3<<2)
 			| (dn1 >= 0 ? (1<<4)|(2<<0) : (2<<4)|(1<<0))
 			| (dn2 >= 0 ? (1<<4)|(2<<0) : (2<<4)|(1<<0));
@@ -971,12 +971,12 @@ int R_Shadow_CalcSphereSideMask(const vec3_t p, float radius, float bias)
 	float dyzp = p[1] + p[2], dyzn = p[1] - p[2], ayzp = fabs(dyzp), ayzn = fabs(dyzn);
 	float dzxp = p[2] + p[0], dzxn = p[2] - p[0], azxp = fabs(dzxp), azxn = fabs(dzxn);
 	int mask = 0x3F;
-	if(axyp > bias*axyn + radius) mask &= dxyp < 0 ? ~((1<<0)|(1<<2)) : ~((2<<0)|(2<<2));
-	if(axyn > bias*axyp + radius) mask &= dxyn < 0 ? ~((1<<0)|(2<<2)) : ~((2<<0)|(1<<2));
-	if(ayzp > bias*ayzn + radius) mask &= dyzp < 0 ? ~((1<<2)|(1<<4)) : ~((2<<2)|(2<<4));
-	if(ayzn > bias*ayzp + radius) mask &= dyzn < 0 ? ~((1<<2)|(2<<4)) : ~((2<<2)|(1<<4));
-	if(azxp > bias*azxn + radius) mask &= dzxp < 0 ? ~((1<<4)|(1<<0)) : ~((2<<4)|(2<<0));
-	if(azxn > bias*azxp + radius) mask &= dzxn < 0 ? ~((1<<4)|(2<<0)) : ~((2<<4)|(1<<0));
+	if (axyp > bias*axyn + radius) mask &= dxyp < 0 ? ~((1<<0)|(1<<2)) : ~((2<<0)|(2<<2));
+	if (axyn > bias*axyp + radius) mask &= dxyn < 0 ? ~((1<<0)|(2<<2)) : ~((2<<0)|(1<<2));
+	if (ayzp > bias*ayzn + radius) mask &= dyzp < 0 ? ~((1<<2)|(1<<4)) : ~((2<<2)|(2<<4));
+	if (ayzn > bias*ayzp + radius) mask &= dyzn < 0 ? ~((1<<2)|(2<<4)) : ~((2<<2)|(1<<4));
+	if (azxp > bias*azxn + radius) mask &= dzxp < 0 ? ~((1<<4)|(1<<0)) : ~((2<<4)|(2<<0));
+	if (azxn > bias*azxp + radius) mask &= dzxn < 0 ? ~((1<<4)|(2<<0)) : ~((2<<4)|(1<<0));
 	return mask;
 }
 
@@ -996,17 +996,17 @@ static int R_Shadow_CullFrustumSides(rtlight_t *rtlight, float size, float borde
 			continue;
 		Matrix4x4_Transform3x3(&rtlight->matrix_worldtolight, r_refdef.view.frustum[i].normal, n);
 		len = scale*VectorLength2(n);
-		if(n[0]*n[0] > len) sides &= n[0] < 0 ? ~(1<<0) : ~(2 << 0);
-		if(n[1]*n[1] > len) sides &= n[1] < 0 ? ~(1<<2) : ~(2 << 2);
-		if(n[2]*n[2] > len) sides &= n[2] < 0 ? ~(1<<4) : ~(2 << 4);
+		if (n[0]*n[0] > len) sides &= n[0] < 0 ? ~(1<<0) : ~(2 << 0);
+		if (n[1]*n[1] > len) sides &= n[1] < 0 ? ~(1<<2) : ~(2 << 2);
+		if (n[2]*n[2] > len) sides &= n[2] < 0 ? ~(1<<4) : ~(2 << 4);
 	}
 	if (PlaneDiff(o, &r_refdef.view.frustum[4]) >= r_refdef.farclip - r_refdef.nearclip + 0.03125)
 	{
 		Matrix4x4_Transform3x3(&rtlight->matrix_worldtolight, r_refdef.view.frustum[4].normal, n);
 		len = scale*VectorLength2(n);
-		if(n[0]*n[0] > len) sides &= n[0] >= 0 ? ~(1<<0) : ~(2 << 0);
-		if(n[1]*n[1] > len) sides &= n[1] >= 0 ? ~(1<<2) : ~(2 << 2);
-		if(n[2]*n[2] > len) sides &= n[2] >= 0 ? ~(1<<4) : ~(2 << 4);
+		if (n[0]*n[0] > len) sides &= n[0] >= 0 ? ~(1<<0) : ~(2 << 0);
+		if (n[1]*n[1] > len) sides &= n[1] >= 0 ? ~(1<<2) : ~(2 << 2);
+		if (n[2]*n[2] > len) sides &= n[2] >= 0 ? ~(1<<4) : ~(2 << 4);
 	}
 	// this next test usually clips off more sides than the former, but occasionally clips fewer/different ones, so do both and combine results
 	// check if frustum corners/origin cross plane sides
@@ -1027,14 +1027,14 @@ static int R_Shadow_CullFrustumSides(rtlight_t *rtlight, float size, float borde
 		Matrix4x4_Transform(&rtlight->matrix_worldtolight, r_refdef.view.frustumcorner[i], n);
 		VectorSubtract(n, p, n);
 		dp = n[0] + n[1], dn = n[0] - n[1], ap = fabs(dp), an = fabs(dn);
-		if(ap > 0) masks[0] |= dp >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2);
-		if(an > 0) masks[1] |= dn >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2);
+		if (ap > 0) masks[0] |= dp >= 0 ? (1<<0)|(1<<2) : (2<<0)|(2<<2);
+		if (an > 0) masks[1] |= dn >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2);
 		dp = n[1] + n[2], dn = n[1] - n[2], ap = fabs(dp), an = fabs(dn);
-		if(ap > 0) masks[2] |= dp >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4);
-		if(an > 0) masks[3] |= dn >= 0 ? (1<<2)|(2<<4) : (2<<2)|(1<<4);
+		if (ap > 0) masks[2] |= dp >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4);
+		if (an > 0) masks[3] |= dn >= 0 ? (1<<2)|(2<<4) : (2<<2)|(1<<4);
 		dp = n[2] + n[0], dn = n[2] - n[0], ap = fabs(dp), an = fabs(dn);
-		if(ap > 0) masks[4] |= dp >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0);
-		if(an > 0) masks[5] |= dn >= 0 ? (1<<4)|(2<<0) : (2<<4)|(1<<0);
+		if (ap > 0) masks[4] |= dp >= 0 ? (1<<4)|(1<<0) : (2<<4)|(2<<0);
+		if (an > 0) masks[5] |= dn >= 0 ? (1<<4)|(2<<0) : (2<<4)|(1<<0);
 	}
 #else
 	// finite version, assumes corners are a finite distance from origin dependent on far plane
@@ -1082,7 +1082,7 @@ int R_Shadow_ChooseSidesFromBox(int firsttriangle, int numtris, const float *inv
 					Matrix4x4_Transform(worldtolight, v[0], p[0]), Matrix4x4_Transform(worldtolight, v[1], p[1]), Matrix4x4_Transform(worldtolight, v[2], p[2]);
 					mask = R_Shadow_CalcTriangleSideMask(p[0], p[1], p[2], bias);
 					surfacemask |= mask;
-					if(totals)
+					if (totals)
 					{
 						totals[0] += mask&1, totals[1] += (mask>>1)&1, totals[2] += (mask>>2)&1, totals[3] += (mask>>3)&1, totals[4] += (mask>>4)&1, totals[5] += mask>>5;
 						shadowsides[numshadowsides] = mask;
@@ -1101,7 +1101,7 @@ int R_Shadow_ChooseSidesFromBox(int firsttriangle, int numtris, const float *inv
 					Matrix4x4_Transform(worldtolight, v[0], p[0]), Matrix4x4_Transform(worldtolight, v[1], p[1]), Matrix4x4_Transform(worldtolight, v[2], p[2]);
 					mask = R_Shadow_CalcTriangleSideMask(p[0], p[1], p[2], bias);
 					surfacemask |= mask;
-					if(totals)
+					if (totals)
 					{
 						totals[0] += mask&1, totals[1] += (mask>>1)&1, totals[2] += (mask>>2)&1, totals[3] += (mask>>3)&1, totals[4] += (mask>>4)&1, totals[5] += mask>>5;
 						shadowsides[numshadowsides] = mask;
@@ -1126,7 +1126,7 @@ int R_Shadow_ChooseSidesFromBox(int firsttriangle, int numtris, const float *inv
 					Matrix4x4_Transform(worldtolight, v[0], p[0]), Matrix4x4_Transform(worldtolight, v[1], p[1]), Matrix4x4_Transform(worldtolight, v[2], p[2]);
 					mask = R_Shadow_CalcTriangleSideMask(p[0], p[1], p[2], bias);
 					surfacemask |= mask;
-					if(totals)
+					if (totals)
 					{
 						totals[0] += mask&1, totals[1] += (mask>>1)&1, totals[2] += (mask>>2)&1, totals[3] += (mask>>3)&1, totals[4] += (mask>>4)&1, totals[5] += mask>>5;
 						shadowsides[numshadowsides] = mask;
@@ -1146,7 +1146,7 @@ int R_Shadow_ChooseSidesFromBox(int firsttriangle, int numtris, const float *inv
 					Matrix4x4_Transform(worldtolight, v[0], p[0]), Matrix4x4_Transform(worldtolight, v[1], p[1]), Matrix4x4_Transform(worldtolight, v[2], p[2]);
 					mask = R_Shadow_CalcTriangleSideMask(p[0], p[1], p[2], bias);
 					surfacemask |= mask;
-					if(totals)
+					if (totals)
 					{
 						totals[0] += mask&1, totals[1] += (mask>>1)&1, totals[2] += (mask>>2)&1, totals[3] += (mask>>3)&1, totals[4] += (mask>>4)&1, totals[5] += mask>>5;
 						shadowsides[numshadowsides] = mask;
@@ -1880,7 +1880,10 @@ static void R_Shadow_BounceGrid_UpdateSpacing(void)
 	numpixels = r_shadow_bouncegrid_state.pixelsperband*r_shadow_bouncegrid_state.pixelbands;
 	if (r_shadow_bouncegrid_state.numpixels != numpixels)
 	{
-		if (r_shadow_bouncegrid_state.texture) { R_FreeTexture(r_shadow_bouncegrid_state.texture);r_shadow_bouncegrid_state.texture = NULL; }
+		if (r_shadow_bouncegrid_state.texture) { 
+			R_FreeTexture(r_shadow_bouncegrid_state.texture);
+			r_shadow_bouncegrid_state.texture = NULL; 
+		}
 
 		R_Shadow_BounceGrid_FreeHighPixels();
 
@@ -2907,9 +2910,9 @@ qbool R_Shadow_ScissorForBBox(const float *mins, const float *maxs)
 		r_shadow_lightscissor[3] = r_refdef.view.viewport.height;
 		return false;
 	}
-	if(R_ScissorForBBox(mins, maxs, r_shadow_lightscissor))
+	if (R_ScissorForBBox(mins, maxs, r_shadow_lightscissor))
 		return true; // invisible
-	if(r_shadow_lightscissor[0] != r_refdef.view.viewport.x
+	if (r_shadow_lightscissor[0] != r_refdef.view.viewport.x
 	|| r_shadow_lightscissor[1] != r_refdef.view.viewport.y
 	|| r_shadow_lightscissor[2] != r_refdef.view.viewport.width
 	|| r_shadow_lightscissor[3] != r_refdef.view.viewport.height)
@@ -2952,7 +2955,7 @@ void R_Shadow_RenderLighting(int texturenumsurfaces, const msurface_t **textures
 	if (VectorLength2(ambientcolor) + VectorLength2(diffusecolor) + VectorLength2(specularcolor) < (1.0f / 1048576.0f))
 		return;
 	negated = (rsurface.rtlight->currentcolor[0] + rsurface.rtlight->currentcolor[1] + rsurface.rtlight->currentcolor[2] < 0);
-	if(negated)
+	if (negated)
 	{
 		VectorNegate(ambientcolor, ambientcolor);
 		VectorNegate(diffusecolor, diffusecolor);
@@ -2970,10 +2973,10 @@ void R_Shadow_RenderLighting(int texturenumsurfaces, const msurface_t **textures
 		R_Shadow_RenderLighting_Light_GLSL(texturenumsurfaces, texturesurfacelist, ambientcolor, diffusecolor, specularcolor);
 		break;
 	default:
-		Con_Printf("R_Shadow_RenderLighting: unknown r_shadow_rendermode %i\n", r_shadow_rendermode);
+		Con_Printf ("R_Shadow_RenderLighting: unknown r_shadow_rendermode %d\n", r_shadow_rendermode);
 		break;
 	}
-	if(negated)
+	if (negated)
 		GL_BlendEquationSubtract(false);
 }
 
@@ -3103,7 +3106,7 @@ void R_RTLight_Compile(rtlight_t *rtlight)
 				shadowtris++;
 
 	if (developer_extra.integer)
-		Con_DPrintf("static light built: %f %f %f : %f %f %f box, %i light triangles, %i shadow triangles\n", rtlight->cullmins[0], rtlight->cullmins[1], rtlight->cullmins[2], rtlight->cullmaxs[0], rtlight->cullmaxs[1], rtlight->cullmaxs[2], lighttris, shadowtris);
+		Con_DPrintf ("static light built: %f %f %f : %f %f %f box, %d light triangles, %d shadow triangles\n", rtlight->cullmins[0], rtlight->cullmins[1], rtlight->cullmins[2], rtlight->cullmaxs[0], rtlight->cullmaxs[1], rtlight->cullmaxs[2], lighttris, shadowtris);
 }
 
 void R_RTLight_Uncompile(rtlight_t *rtlight)
@@ -3238,7 +3241,7 @@ static void R_Shadow_ComputeShadowCasterCullingPlanes(rtlight_t *rtlight)
 	for (i = 0;i < rtlight->cached_numfrustumplanes;i++)
 	{
 		plane = rtlight->cached_frustumplanes[i];
-		Con_Printf("light %p plane #%i %f %f %f : %f (%f %f %f %f %f)\n", rtlight, i, plane.normal[0], plane.normal[1], plane.normal[2], plane.dist, PlaneDiff(r_refdef.view.frustumcorner[0], &plane), PlaneDiff(r_refdef.view.frustumcorner[1], &plane), PlaneDiff(r_refdef.view.frustumcorner[2], &plane), PlaneDiff(r_refdef.view.frustumcorner[3], &plane), PlaneDiff(rtlight->shadoworigin, &plane));
+		Con_Printf ("light %p plane #%d %f %f %f : %f (%f %f %f %f %f)\n", rtlight, i, plane.normal[0], plane.normal[1], plane.normal[2], plane.dist, PlaneDiff(r_refdef.view.frustumcorner[0], &plane), PlaneDiff(r_refdef.view.frustumcorner[1], &plane), PlaneDiff(r_refdef.view.frustumcorner[2], &plane), PlaneDiff(r_refdef.view.frustumcorner[3], &plane), PlaneDiff(rtlight->shadoworigin, &plane));
 	}
 #endif
 
@@ -3300,7 +3303,7 @@ static void R_Shadow_ComputeShadowCasterCullingPlanes(rtlight_t *rtlight)
 			if (bestdist > dist)
 				bestdist = dist;
 		}
-		Con_Printf("light %p %splane #%i %f %f %f : %f < %f\n", rtlight, rtlight->cached_frustumplanes[j].dist < bestdist + 0.03125 ? "^2" : "^1", j, rtlight->cached_frustumplanes[j].normal[0], rtlight->cached_frustumplanes[j].normal[1], rtlight->cached_frustumplanes[j].normal[2], rtlight->cached_frustumplanes[j].dist, bestdist);
+		Con_Printf ("light %p %splane #%d %f %f %f : %f < %f\n", rtlight, rtlight->cached_frustumplanes[j].dist < bestdist + 0.03125 ? "^2" : "^1", j, rtlight->cached_frustumplanes[j].normal[0], rtlight->cached_frustumplanes[j].normal[1], rtlight->cached_frustumplanes[j].normal[2], rtlight->cached_frustumplanes[j].dist, bestdist);
 		// if the nearest point is near or behind the plane, we want this
 		// plane, otherwise the plane is useless as it won't cull anything
 		if (rtlight->cached_frustumplanes[j].dist < bestdist + 0.03125)
@@ -3439,8 +3442,9 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 	// all at once at the start of a level, not when it stalls gameplay.
 	// (especially important to benchmarks)
 	// compile light
-	if (rtlight->isstatic && !nolight && !rtlight->compiled && r_shadow_realtime_world_compile.integer)
+	if (rtlight->isstatic && !nolight && !rtlight->compiled && r_shadow_realtime_world_compile.integer) {
 		R_RTLight_Compile(rtlight);
+	}
 
 	// load cubemap
 	rtlight->currentcubemap = rtlight->cubemapname[0] ? R_GetCubemap(rtlight->cubemapname) : r_texture_whitecube;
@@ -3573,15 +3577,14 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 			// so now check if it's in a leaf seen by the light
 			if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.BoxTouchingLeafPVS && !r_refdef.scene.worldmodel->brush.BoxTouchingLeafPVS(r_refdef.scene.worldmodel, leafpvs, ent->mins, ent->maxs))
 				continue;
-			if (ent->crflags & RENDER_NOSELFSHADOW)
+			if (Have_Flag (ent->crflags, RENDER_NOSELFSHADOW))
 				lightentities_noselfshadow[numlightentities_noselfshadow++] = ent;
 			else
 				lightentities[numlightentities++] = ent;
 			// since it is lit, it probably also casts a shadow...
 			// about the VectorDistance2 - light emitting entities should not cast their own shadow
 			Matrix4x4_OriginFromMatrix(&ent->matrix, org);
-			if ((ent->crflags & RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1)
-			{
+			if (Have_Flag(ent->crflags, RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1) {
 				// note: exterior models without the RENDER_NOSELFSHADOW
 				// flag still create a RENDER_NOSELFSHADOW shadow but
 				// are lit normally, this means that they are
@@ -3594,8 +3597,7 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 					shadowentities[numshadowentities++] = ent;
 			}
 		}
-		else if (ent->crflags & RENDER_SHADOW)
-		{
+		else if (Have_Flag (ent->crflags, RENDER_SHADOW)) {
 			// this entity is not receiving light, but may still need to
 			// cast a shadow...
 			// TODO: check if the surfaces in the model can cast shadow
@@ -3604,8 +3606,7 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 				continue;
 			// about the VectorDistance2 - light emitting entities should not cast their own shadow
 			Matrix4x4_OriginFromMatrix(&ent->matrix, org);
-			if ((ent->crflags & RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1)
-			{
+			if (Have_Flag(ent->crflags, RENDER_SHADOW) && model->DrawShadowMap && VectorDistance2(org, rtlight->shadoworigin) > 0.1) {
 				if (ent->crflags & (RENDER_NOSELFSHADOW | RENDER_EXTERIORMODEL))
 					shadowentities_noselfshadow[numshadowentities_noselfshadow++] = ent;
 				else
@@ -3679,8 +3680,7 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 		rtlight->cached_surfacelist = surfacelist;
 	}
 
-	if (R_Shadow_ShadowMappingEnabled())
-	{
+	if (R_Shadow_ShadowMappingEnabled()) {
 		// figure out the shadowmapping parameters for this light
 		vec3_t nearestpoint;
 		vec_t distance;
@@ -3801,7 +3801,7 @@ static void R_Shadow_DrawLightShadowMaps(rtlight_t *rtlight)
 	// there is no need to render shadows for sides that have no receivers...
 	castermask &= receivermask;
 
-	//Con_Printf("distance %f lodlinear %i size %i\n", distance, lodlinear, size);
+	//Con_Printf ("distance %f lodlinear %d size %d\n", distance, lodlinear, size);
 
 	// render shadow casters into shadowmaps for this light
 	for (side = 0; side < 6; side++)
@@ -3893,7 +3893,7 @@ static void R_Shadow_DrawLight(rtlight_t *rtlight)
 		matrix4x4_t radiustolight = rtlight->matrix_worldtolight;
 		Matrix4x4_Abs(&radiustolight);
 
-		//Con_Printf("distance %f lodlinear %i size %i\n", distance, lodlinear, size);
+		//Con_Printf ("distance %f lodlinear %d size %d\n", distance, lodlinear, size);
 
 		// render lighting using the depth texture as shadowmap
 		// draw lighting in the unmasked areas
@@ -4525,7 +4525,7 @@ static void R_DrawCorona(rtlight_t *rtlight, float cscale, float scale)
 	{
 		float vertex3f[12];
 		qbool negated = (color[0] + color[1] + color[2] < 0);
-		if(negated)
+		if (negated)
 		{
 			VectorNegate(color, color);
 			GL_BlendEquationSubtract(true);
@@ -4533,7 +4533,7 @@ static void R_DrawCorona(rtlight_t *rtlight, float cscale, float scale)
 		R_CalcSprite_Vertex3f(vertex3f, rtlight->shadoworigin, r_refdef.view.right, r_refdef.view.up, scale, -scale, -scale, scale);
 		RSurf_ActiveCustomEntity(&identitymatrix, &identitymatrix, RENDER_NODEPTHTEST, 0, color[0], color[1], color[2], 1, 4, vertex3f, spritetexcoord2f, NULL, NULL, NULL, NULL, 2, polygonelement3i, polygonelement3s, false, false);
 		R_DrawCustomSurface(r_shadow_lightcorona, &identitymatrix, MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_FULLBRIGHT | MATERIALFLAG_NOCULLFACE | MATERIALFLAG_NODEPTHTEST | occlude, 0, 4, 0, 2, false, false, false);
-		if(negated)
+		if (negated)
 			GL_BlendEquationSubtract(false);
 	}
 }
@@ -4588,7 +4588,8 @@ void R_Shadow_DrawCoronas(void)
 		}
 #endif
 		break;
-	}
+	} // switch
+
 	for (lightindex = 0;lightindex < range;lightindex++)
 	{
 		light = (dlight_t *) Mem_ExpandableArray_RecordAtIndex(&r_shadow_worldlightsarray, lightindex);
@@ -4843,19 +4844,16 @@ void R_Shadow_LoadWorldLights(void)
 	int n, a, style, shadow, flags;
 	char tempchar, *lightsstring, *s, *t, name[MAX_QPATH], cubemapname[MAX_QPATH];
 	float origin[3], radius, color[3], angles[3], corona, coronasizescale, ambientscale, diffusescale, specularscale;
-	if (cl.worldmodel == NULL)
-	{
-		Con_Print("No map loaded.\n");
+	if (cl.worldmodel == NULL) {
+		Con_PrintLinef ("No map loaded.");
 		return;
 	}
 	dpsnprintf(name, sizeof(name), "%s.rtlights", cl.worldnamenoextension);
 	lightsstring = (char *)FS_LoadFile(name, tempmempool, false, NULL);
-	if (lightsstring)
-	{
+	if (lightsstring) {
 		s = lightsstring;
 		n = 0;
-		while (*s)
-		{
+		while (*s) {
 			/*
 			t = s;
 			shadow = true;
@@ -4893,11 +4891,20 @@ void R_Shadow_LoadWorldLights(void)
 #if MAX_QPATH != 128
 #error update this code if MAX_QPATH changes
 #endif
-			a = sscanf(t, "%f %f %f %f %f %f %f %d %127s %f %f %f %f %f %f %f %f %i", &origin[0], &origin[1], &origin[2], &radius, &color[0], &color[1], &color[2], &style, cubemapname
+			a = sscanf(t, "%f %f %f %f %f %f %f %d %127s %f %f %f %f %f %f %f %f %d", &origin[0], &origin[1], &origin[2], &radius, &color[0], &color[1], &color[2], &style, cubemapname
 #if _MSC_VER >= 1400
 , (unsigned int)sizeof(cubemapname)
 #endif
 , &corona, &angles[0], &angles[1], &angles[2], &coronasizescale, &ambientscale, &diffusescale, &specularscale, &flags);
+			// Baker r9063:  Quake Combat+ has some lights with negative blue in RGB
+			// in previous DarkPlaces, this seems to act like a value of 0
+			// in DarkPlaces it acts like a bright blue
+			// After looking for an obvious difference which I didn't see
+			// This should work ...
+			if (color[0] < 0) color[0] = 0;
+			if (color[1] < 0) color[1] = 0;
+			if (color[2] < 0) color[2] = 0;
+			
 			*s = tempchar;
 			if (a < 18)
 				flags = LIGHTFLAG_REALTIMEMODE;
@@ -4913,7 +4920,7 @@ void R_Shadow_LoadWorldLights(void)
 				VectorClear(angles);
 			if (a < 10)
 				corona = 0;
-			if (a < 9 || !strcmp(cubemapname, "\"\""))
+			if (a < 9 || String_Does_Match(cubemapname, "\"\""))
 				cubemapname[0] = 0;
 			// remove quotes on cubemapname
 			if (cubemapname[0] == '"' && cubemapname[strlen(cubemapname) - 1] == '"')
@@ -4925,7 +4932,7 @@ void R_Shadow_LoadWorldLights(void)
 			}
 			if (a < 8)
 			{
-				Con_Printf("found %d parameters on line %i, should be 8 or more parameters (origin[0] origin[1] origin[2] radius color[0] color[1] color[2] style \"cubemapname\" corona angles[0] angles[1] angles[2] coronasizescale ambientscale diffusescale specularscale flags)\n", a, n + 1);
+				Con_PrintLinef ("found %d parameters on line %d, should be 8 or more parameters (origin[0] origin[1] origin[2] radius color[0] color[1] color[2] style \"cubemapname\" corona angles[0] angles[1] angles[2] coronasizescale ambientscale diffusescale specularscale flags)", a, n + 1);
 				break;
 			}
 			R_Shadow_UpdateWorldLight(R_Shadow_NewWorldLight(), origin, angles, color, radius, corona, style, shadow, cubemapname, coronasizescale, ambientscale, diffusescale, specularscale, flags);
@@ -4936,7 +4943,7 @@ void R_Shadow_LoadWorldLights(void)
 			n++;
 		}
 		if (*s)
-			Con_Printf("invalid rtlights file \"%s\"\n", name);
+			Con_PrintLinef ("invalid rtlights file " QUOTED_S, name);
 		Mem_Free(lightsstring);
 	}
 }
@@ -4967,7 +4974,7 @@ void R_Shadow_SaveWorldLights(void)
 		if (!light)
 			continue;
 		if (light->coronasizescale != 0.25f || light->ambientscale != 0 || light->diffusescale != 1 || light->specularscale != 1 || light->flags != LIGHTFLAG_REALTIMEMODE)
-			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d \"%s\" %f %f %f %f %f %f %f %f %i\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2], light->coronasizescale, light->ambientscale, light->diffusescale, light->specularscale, light->flags);
+			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d \"%s\" %f %f %f %f %f %f %f %f %d\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2], light->coronasizescale, light->ambientscale, light->diffusescale, light->specularscale, light->flags);
 		else if (light->cubemapname[0] || light->corona || light->angles[0] || light->angles[1] || light->angles[2])
 			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d \"%s\" %f %f %f %f\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2]);
 		else
@@ -5025,7 +5032,7 @@ void R_Shadow_LoadLightsFile(void)
 			*s = tempchar;
 			if (a < 14)
 			{
-				Con_Printf("invalid lights file, found %d parameters on line %i, should be 14 parameters (origin[0] origin[1] origin[2] falloff light[0] light[1] light[2] subtract spotdir[0] spotdir[1] spotdir[2] spotcone distancebias style)\n", a, n + 1);
+				Con_Printf ("invalid lights file, found %d parameters on line %d, should be 14 parameters (origin[0] origin[1] origin[2] falloff light[0] light[1] light[2] subtract spotdir[0] spotdir[1] spotdir[2] spotcone distancebias style)\n", a, n + 1);
 				break;
 			}
 			radius = sqrt(DotProduct(color, color) / (falloff * falloff * 8192.0f * 8192.0f));
@@ -5039,7 +5046,7 @@ void R_Shadow_LoadLightsFile(void)
 			n++;
 		}
 		if (*s)
-			Con_Printf("invalid lights file \"%s\"\n", name);
+			Con_Printf ("invalid lights file \"%s\"\n", name);
 		Mem_Free(lightsstring);
 	}
 }
@@ -5109,7 +5116,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 			strlcpy(value, com_token, sizeof(value));
 
 			// now that we have the key pair worked out...
-			if (!strcmp("light", key))
+			if (String_Does_Match("light", key))
 			{
 				n = sscanf(value, "%f %f %f %f", &vec[0], &vec[1], &vec[2], &vec[3]);
 				if (n == 1)
@@ -5129,24 +5136,24 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 					light[3] = vec[3];
 				}
 			}
-			else if (!strcmp("delay", key))
+			else if (String_Does_Match("delay", key))
 				type = atoi(value);
-			else if (!strcmp("origin", key))
+			else if (String_Does_Match("origin", key))
 				sscanf(value, "%f %f %f", &origin[0], &origin[1], &origin[2]);
-			else if (!strcmp("angle", key))
+			else if (String_Does_Match("angle", key))
 				angles[0] = 0, angles[1] = atof(value), angles[2] = 0;
-			else if (!strcmp("angles", key))
+			else if (String_Does_Match("angles", key))
 				sscanf(value, "%f %f %f", &angles[0], &angles[1], &angles[2]);
-			else if (!strcmp("color", key))
+			else if (String_Does_Match("color", key))
 				sscanf(value, "%f %f %f", &color[0], &color[1], &color[2]);
-			else if (!strcmp("wait", key))
+			else if (String_Does_Match("wait", key))
 				fadescale = atof(value);
-			else if (!strcmp("classname", key))
+			else if (String_Does_Match("classname", key))
 			{
 				if (!strncmp(value, "light", 5))
 				{
 					islight = true;
-					if (!strcmp(value, "light_fluoro"))
+					if (String_Does_Match(value, "light_fluoro"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5155,7 +5162,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 						overridecolor[1] = 1;
 						overridecolor[2] = 1;
 					}
-					if (!strcmp(value, "light_fluorospark"))
+					if (String_Does_Match(value, "light_fluorospark"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5164,7 +5171,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 						overridecolor[1] = 1;
 						overridecolor[2] = 1;
 					}
-					if (!strcmp(value, "light_globe"))
+					if (String_Does_Match(value, "light_globe"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5173,7 +5180,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 						overridecolor[1] = 0.8;
 						overridecolor[2] = 0.4;
 					}
-					if (!strcmp(value, "light_flame_large_yellow"))
+					if (String_Does_Match(value, "light_flame_large_yellow"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5182,7 +5189,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 						overridecolor[1] = 0.5;
 						overridecolor[2] = 0.1;
 					}
-					if (!strcmp(value, "light_flame_small_yellow"))
+					if (String_Does_Match(value, "light_flame_small_yellow"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5191,7 +5198,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 						overridecolor[1] = 0.5;
 						overridecolor[2] = 0.1;
 					}
-					if (!strcmp(value, "light_torch_small_white"))
+					if (String_Does_Match(value, "light_torch_small_white"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5200,7 +5207,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 						overridecolor[1] = 0.5;
 						overridecolor[2] = 0.1;
 					}
-					if (!strcmp(value, "light_torch_small_walltorch"))
+					if (String_Does_Match(value, "light_torch_small_walltorch"))
 					{
 						originhack[0] = 0;
 						originhack[1] = 0;
@@ -5211,19 +5218,19 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 					}
 				}
 			}
-			else if (!strcmp("style", key))
+			else if (String_Does_Match("style", key))
 				style = atoi(value);
-			else if (!strcmp("skin", key))
+			else if (String_Does_Match("skin", key))
 				skin = (int)atof(value);
-			else if (!strcmp("pflags", key))
+			else if (String_Does_Match("pflags", key))
 				pflags = (int)atof(value);
-			//else if (!strcmp("effects", key))
+			//else if (String_Does_Match("effects", key))
 			//	effects = (int)atof(value);
 			else if (cl.worldmodel->type == mod_brushq3)
 			{
-				if (!strcmp("scale", key))
+				if (String_Does_Match("scale", key))
 					lightscale = atof(value);
-				if (!strcmp("fade", key))
+				if (String_Does_Match("fade", key))
 					fadescale = atof(value);
 			}
 		}
@@ -5265,7 +5272,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 		}
 		VectorAdd(origin, originhack, origin);
 		if (radius >= 1)
-			R_Shadow_UpdateWorldLight(R_Shadow_NewWorldLight(), origin, angles, color, radius, (pflags & PFLAGS_CORONA) != 0, style, (pflags & PFLAGS_NOSHADOW) == 0, skin >= 16 ? va(vabuf, sizeof(vabuf), "cubemaps/%i", skin) : NULL, 0.25, 0, 1, 1, LIGHTFLAG_REALTIMEMODE);
+			R_Shadow_UpdateWorldLight(R_Shadow_NewWorldLight(), origin, angles, color, radius, (pflags & PFLAGS_CORONA) != 0, style, (pflags & PFLAGS_NOSHADOW) == 0, skin >= 16 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", skin) : NULL, 0.25, 0, 1, 1, LIGHTFLAG_REALTIMEMODE);
 	}
 	if (entfiledata)
 		Mem_Free(entfiledata);
@@ -5403,152 +5410,152 @@ static void R_Shadow_EditLights_Edit_f(cmd_state_t *cmd)
 	flags = r_shadow_selectedlight->flags;
 	normalmode = (flags & LIGHTFLAG_NORMALMODE) != 0;
 	realtimemode = (flags & LIGHTFLAG_REALTIMEMODE) != 0;
-	if (!strcmp(Cmd_Argv(cmd, 1), "origin"))
+	if (String_Does_Match(Cmd_Argv(cmd, 1), "origin"))
 	{
 		if (Cmd_Argc(cmd) != 5)
 		{
-			Con_Printf("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[0] = atof(Cmd_Argv(cmd, 2));
 		origin[1] = atof(Cmd_Argv(cmd, 3));
 		origin[2] = atof(Cmd_Argv(cmd, 4));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "originscale"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "originscale"))
 	{
 		if (Cmd_Argc(cmd) != 5)
 		{
-			Con_Printf("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[0] *= atof(Cmd_Argv(cmd, 2));
 		origin[1] *= atof(Cmd_Argv(cmd, 3));
 		origin[2] *= atof(Cmd_Argv(cmd, 4));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "originx"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "originx"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[0] = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "originy"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "originy"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[1] = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "originz"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "originz"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[2] = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "move"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "move"))
 	{
 		if (Cmd_Argc(cmd) != 5)
 		{
-			Con_Printf("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[0] += atof(Cmd_Argv(cmd, 2));
 		origin[1] += atof(Cmd_Argv(cmd, 3));
 		origin[2] += atof(Cmd_Argv(cmd, 4));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "movex"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "movex"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[0] += atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "movey"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "movey"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[1] += atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "movez"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "movez"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		origin[2] += atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "angles"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "angles"))
 	{
 		if (Cmd_Argc(cmd) != 5)
 		{
-			Con_Printf("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s x y z\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		angles[0] = atof(Cmd_Argv(cmd, 2));
 		angles[1] = atof(Cmd_Argv(cmd, 3));
 		angles[2] = atof(Cmd_Argv(cmd, 4));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "anglesx"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "anglesx"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		angles[0] = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "anglesy"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "anglesy"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		angles[1] = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "anglesz"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "anglesz"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		angles[2] = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "color"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "color"))
 	{
 		if (Cmd_Argc(cmd) != 5)
 		{
-			Con_Printf("usage: r_editlights_edit %s red green blue\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s red green blue\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		color[0] = atof(Cmd_Argv(cmd, 2));
 		color[1] = atof(Cmd_Argv(cmd, 3));
 		color[2] = atof(Cmd_Argv(cmd, 4));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "radius"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "radius"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		radius = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "colorscale"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "colorscale"))
 	{
 		if (Cmd_Argc(cmd) == 3)
 		{
@@ -5561,7 +5568,7 @@ static void R_Shadow_EditLights_Edit_f(cmd_state_t *cmd)
 		{
 			if (Cmd_Argc(cmd) != 5)
 			{
-				Con_Printf("usage: r_editlights_edit %s red green blue  (OR grey instead of red green blue)\n", Cmd_Argv(cmd, 1));
+				Con_Printf ("usage: r_editlights_edit %s red green blue  (OR grey instead of red green blue)\n", Cmd_Argv(cmd, 1));
 				return;
 			}
 			color[0] *= atof(Cmd_Argv(cmd, 2));
@@ -5569,29 +5576,29 @@ static void R_Shadow_EditLights_Edit_f(cmd_state_t *cmd)
 			color[2] *= atof(Cmd_Argv(cmd, 4));
 		}
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "radiusscale") || !strcmp(Cmd_Argv(cmd, 1), "sizescale"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "radiusscale") || String_Does_Match(Cmd_Argv(cmd, 1), "sizescale"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		radius *= atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "style"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "style"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		style = atoi(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "cubemap"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "cubemap"))
 	{
 		if (Cmd_Argc(cmd) > 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		if (Cmd_Argc(cmd) == 3)
@@ -5599,74 +5606,74 @@ static void R_Shadow_EditLights_Edit_f(cmd_state_t *cmd)
 		else
 			cubemapname[0] = 0;
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "shadows"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "shadows"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		shadows = Cmd_Argv(cmd, 2)[0] == 'y' || Cmd_Argv(cmd, 2)[0] == 'Y' || Cmd_Argv(cmd, 2)[0] == 't' || atoi(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "corona"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "corona"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		corona = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "coronasize"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "coronasize"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		coronasizescale = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "ambient"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "ambient"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		ambientscale = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "diffuse"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "diffuse"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		diffusescale = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "specular"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "specular"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		specularscale = atof(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "normalmode"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "normalmode"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		normalmode = Cmd_Argv(cmd, 2)[0] == 'y' || Cmd_Argv(cmd, 2)[0] == 'Y' || Cmd_Argv(cmd, 2)[0] == 't' || atoi(Cmd_Argv(cmd, 2));
 	}
-	else if (!strcmp(Cmd_Argv(cmd, 1), "realtimemode"))
+	else if (String_Does_Match(Cmd_Argv(cmd, 1), "realtimemode"))
 	{
 		if (Cmd_Argc(cmd) != 3)
 		{
-			Con_Printf("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("usage: r_editlights_edit %s value\n", Cmd_Argv(cmd, 1));
 			return;
 		}
 		realtimemode = Cmd_Argv(cmd, 2)[0] == 'y' || Cmd_Argv(cmd, 2)[0] == 'Y' || Cmd_Argv(cmd, 2)[0] == 't' || atoi(Cmd_Argv(cmd, 2));
@@ -5675,20 +5682,20 @@ static void R_Shadow_EditLights_Edit_f(cmd_state_t *cmd)
 	{
 		Con_Print("usage: r_editlights_edit [property] [value]\n");
 		Con_Print("Selected light's properties:\n");
-		Con_Printf("Origin       : %f %f %f\n", r_shadow_selectedlight->origin[0], r_shadow_selectedlight->origin[1], r_shadow_selectedlight->origin[2]);
-		Con_Printf("Angles       : %f %f %f\n", r_shadow_selectedlight->angles[0], r_shadow_selectedlight->angles[1], r_shadow_selectedlight->angles[2]);
-		Con_Printf("Color        : %f %f %f\n", r_shadow_selectedlight->color[0], r_shadow_selectedlight->color[1], r_shadow_selectedlight->color[2]);
-		Con_Printf("Radius       : %f\n", r_shadow_selectedlight->radius);
-		Con_Printf("Corona       : %f\n", r_shadow_selectedlight->corona);
-		Con_Printf("Style        : %i\n", r_shadow_selectedlight->style);
-		Con_Printf("Shadows      : %s\n", r_shadow_selectedlight->shadow ? "yes" : "no");
-		Con_Printf("Cubemap      : %s\n", r_shadow_selectedlight->cubemapname);
-		Con_Printf("CoronaSize   : %f\n", r_shadow_selectedlight->coronasizescale);
-		Con_Printf("Ambient      : %f\n", r_shadow_selectedlight->ambientscale);
-		Con_Printf("Diffuse      : %f\n", r_shadow_selectedlight->diffusescale);
-		Con_Printf("Specular     : %f\n", r_shadow_selectedlight->specularscale);
-		Con_Printf("NormalMode   : %s\n", (r_shadow_selectedlight->flags & LIGHTFLAG_NORMALMODE) ? "yes" : "no");
-		Con_Printf("RealTimeMode : %s\n", (r_shadow_selectedlight->flags & LIGHTFLAG_REALTIMEMODE) ? "yes" : "no");
+		Con_Printf ("Origin       : %f %f %f\n", r_shadow_selectedlight->origin[0], r_shadow_selectedlight->origin[1], r_shadow_selectedlight->origin[2]);
+		Con_Printf ("Angles       : %f %f %f\n", r_shadow_selectedlight->angles[0], r_shadow_selectedlight->angles[1], r_shadow_selectedlight->angles[2]);
+		Con_Printf ("Color        : %f %f %f\n", r_shadow_selectedlight->color[0], r_shadow_selectedlight->color[1], r_shadow_selectedlight->color[2]);
+		Con_Printf ("Radius       : %f\n", r_shadow_selectedlight->radius);
+		Con_Printf ("Corona       : %f\n", r_shadow_selectedlight->corona);
+		Con_Printf ("Style        : %d\n", r_shadow_selectedlight->style);
+		Con_Printf ("Shadows      : %s\n", r_shadow_selectedlight->shadow ? "yes" : "no");
+		Con_Printf ("Cubemap      : %s\n", r_shadow_selectedlight->cubemapname);
+		Con_Printf ("CoronaSize   : %f\n", r_shadow_selectedlight->coronasizescale);
+		Con_Printf ("Ambient      : %f\n", r_shadow_selectedlight->ambientscale);
+		Con_Printf ("Diffuse      : %f\n", r_shadow_selectedlight->diffusescale);
+		Con_Printf ("Specular     : %f\n", r_shadow_selectedlight->specularscale);
+		Con_Printf ("NormalMode   : %s\n", (r_shadow_selectedlight->flags & LIGHTFLAG_NORMALMODE) ? "yes" : "no");
+		Con_Printf ("RealTimeMode : %s\n", (r_shadow_selectedlight->flags & LIGHTFLAG_REALTIMEMODE) ? "yes" : "no");
 		return;
 	}
 	flags = (normalmode ? LIGHTFLAG_NORMALMODE : 0) | (realtimemode ? LIGHTFLAG_REALTIMEMODE : 0);
@@ -5758,9 +5765,9 @@ void R_Shadow_EditLights_DrawSelectedLightProperties(void)
 	// draw properties on screen
 	if (!r_editlights_drawproperties.integer)
 		return;
-	x = vid_conwidth.value - 320;
+	x = vid_conwidth.value - 8 * 31.25; // Baker: Adjusted to show 31 characters with a little margin
 	y = 5;
-	DrawQ_Pic(x-5, y-5, NULL, 250, 243, 0, 0, 0, 0.75, 0);
+	DrawQ_Pic (x-5, y-5, NULL, 250, 243, 0, 0, 0, 0.75, 0);
 	lightnumber = -1;
 	lightcount = 0;
 	range = Mem_ExpandableArray_IndexRange(&r_shadow_worldlightsarray); // checked
@@ -5774,17 +5781,19 @@ void R_Shadow_EditLights_DrawSelectedLightProperties(void)
 		lightcount++;
 	}
 	dpsnprintf(temp, sizeof(temp), "Cursor origin: %.0f %.0f %.0f", r_editlights_cursorlocation[0], r_editlights_cursorlocation[1], r_editlights_cursorlocation[2]); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, false, FONT_DEFAULT);y += 8;
-	dpsnprintf(temp, sizeof(temp), "Total lights : %i active (%i total)", lightcount, (int)Mem_ExpandableArray_IndexRange(&r_shadow_worldlightsarray)); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, false, FONT_DEFAULT);y += 8;
+	dpsnprintf(temp, sizeof(temp), "Total lights : %d active (%d total)", lightcount, (int)Mem_ExpandableArray_IndexRange(&r_shadow_worldlightsarray)); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, false, FONT_DEFAULT);y += 8;
 	y += 8;
 	if (r_shadow_selectedlight == NULL)
 		return;
-	dpsnprintf(temp, sizeof(temp), "Light #%i properties:", lightnumber);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
+	// Baker r9064: fix display and made colors print 2 digits after the decimal so it stays in the box.
+	// Colors printing like 0.015 vs. 0.02 keeps the colors printing within the specified region. 
+	dpsnprintf(temp, sizeof(temp), "Light #%d properties:", lightnumber);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Origin       : %.0f %.0f %.0f\n", r_shadow_selectedlight->origin[0], r_shadow_selectedlight->origin[1], r_shadow_selectedlight->origin[2]);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Angles       : %.0f %.0f %.0f\n", r_shadow_selectedlight->angles[0], r_shadow_selectedlight->angles[1], r_shadow_selectedlight->angles[2]);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Color        : %.2f %.2f %.2f\n", r_shadow_selectedlight->color[0], r_shadow_selectedlight->color[1], r_shadow_selectedlight->color[2]);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Radius       : %.0f\n", r_shadow_selectedlight->radius);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Corona       : %.0f\n", r_shadow_selectedlight->corona);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
-	dpsnprintf(temp, sizeof(temp), "Style        : %i\n", r_shadow_selectedlight->style);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
+	dpsnprintf(temp, sizeof(temp), "Style        : %d\n", r_shadow_selectedlight->style);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Shadows      : %s\n", r_shadow_selectedlight->shadow ? "yes" : "no");DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Cubemap      : %s\n", r_shadow_selectedlight->cubemapname);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "CoronaSize   : %.2f\n", r_shadow_selectedlight->coronasizescale);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
@@ -5795,15 +5804,15 @@ void R_Shadow_EditLights_DrawSelectedLightProperties(void)
 	dpsnprintf(temp, sizeof(temp), "RealTimeMode : %s\n", (r_shadow_selectedlight->flags & LIGHTFLAG_REALTIMEMODE) ? "yes" : "no");DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	y += 8;
 	dpsnprintf(temp, sizeof(temp), "Render stats\n"); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "Current color: %.3f %.3f %.3f\n", r_shadow_selectedlight->rtlight.currentcolor[0], r_shadow_selectedlight->rtlight.currentcolor[1], r_shadow_selectedlight->rtlight.currentcolor[2]); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "Shadow size  : %ix%ix6\n", r_shadow_selectedlight->rtlight.shadowmapatlassidesize, r_shadow_selectedlight->rtlight.shadowmapatlassidesize); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "World surfs  : %i\n", r_shadow_selectedlight->rtlight.cached_numsurfaces); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "Shadow ents  : %i + %i noself\n", r_shadow_selectedlight->rtlight.cached_numshadowentities, r_shadow_selectedlight->rtlight.cached_numshadowentities_noselfshadow); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "Lit ents     : %i + %i noself\n", r_shadow_selectedlight->rtlight.cached_numlightentities, r_shadow_selectedlight->rtlight.cached_numlightentities_noselfshadow); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "Current color: %.2f %.2f %.2f\n", r_shadow_selectedlight->rtlight.currentcolor[0], r_shadow_selectedlight->rtlight.currentcolor[1], r_shadow_selectedlight->rtlight.currentcolor[2]); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "Shadow size  : %dx%dx6\n", r_shadow_selectedlight->rtlight.shadowmapatlassidesize, r_shadow_selectedlight->rtlight.shadowmapatlassidesize); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "World surfs  : %d\n", r_shadow_selectedlight->rtlight.cached_numsurfaces); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "Shadow ents  : %d + %d noself\n", r_shadow_selectedlight->rtlight.cached_numshadowentities, r_shadow_selectedlight->rtlight.cached_numshadowentities_noselfshadow); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "Lit ents     : %d + %d noself\n", r_shadow_selectedlight->rtlight.cached_numlightentities, r_shadow_selectedlight->rtlight.cached_numlightentities_noselfshadow); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
 	dpsnprintf(temp, sizeof(temp), "BG photons   : %.3f\n", r_shadow_selectedlight->rtlight.bouncegrid_photons); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
 	dpsnprintf(temp, sizeof(temp), "BG radius    : %.0f\n", r_shadow_selectedlight->rtlight.bouncegrid_effectiveradius); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "BG color     : %.3f %.3f %.3f\n", r_shadow_selectedlight->rtlight.bouncegrid_photoncolor[0], r_shadow_selectedlight->rtlight.bouncegrid_photoncolor[1], r_shadow_selectedlight->rtlight.bouncegrid_photoncolor[2]); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
-	dpsnprintf(temp, sizeof(temp), "BG stats     : %i traces %i hits\n", r_shadow_selectedlight->rtlight.bouncegrid_traces, r_shadow_selectedlight->rtlight.bouncegrid_hits); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "BG color     : %.2f %.2f %.2f\n", r_shadow_selectedlight->rtlight.bouncegrid_photoncolor[0], r_shadow_selectedlight->rtlight.bouncegrid_photoncolor[1], r_shadow_selectedlight->rtlight.bouncegrid_photoncolor[2]); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
+	dpsnprintf(temp, sizeof(temp), "BG stats     : %d traces %d hits\n", r_shadow_selectedlight->rtlight.bouncegrid_traces, r_shadow_selectedlight->rtlight.bouncegrid_hits); DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT); y += 8;
 }
 
 static void R_Shadow_EditLights_ToggleShadow_f(cmd_state_t *cmd)
@@ -5996,12 +6005,15 @@ static void R_Shadow_EditLights_Init(void)
 	Cvar_RegisterVariable(&r_editlights_current_specular);
 	Cvar_RegisterVariable(&r_editlights_current_normalmode);
 	Cvar_RegisterVariable(&r_editlights_current_realtimemode);
+
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_help", R_Shadow_EditLights_Help_f, "prints documentation on console commands and variables in rtlight editing system");
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_clear", R_Shadow_EditLights_Clear_f, "removes all world lights (let there be darkness!)");
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_reload", R_Shadow_EditLights_Reload_f, "reloads rtlights file (or imports from .lights file or .ent file or the map itself)");
+
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_save", R_Shadow_EditLights_Save_f, "save .rtlights file for current level");
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_spawn", R_Shadow_EditLights_Spawn_f, "creates a light with default properties (let there be light!)");
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_edit", R_Shadow_EditLights_Edit_f, "changes a property on the selected light");
+
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_editall", R_Shadow_EditLights_EditAll_f, "changes a property on ALL lights at once (tip: use radiusscale and colorscale to alter these properties)");
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_remove", R_Shadow_EditLights_Remove_f, "remove selected light");
 	Cmd_AddCommand(CF_CLIENT, "r_editlights_toggleshadow", R_Shadow_EditLights_ToggleShadow_f, "toggle on/off the shadow option on the selected light");
@@ -6152,3 +6164,5 @@ void R_CompleteLightPoint(float *ambient, float *diffuse, float *lightdir, const
 		ambient[q] = sa[q] + -0.333f * diffuse[q] + ambientintensity;
 	}
 }
+
+// mark 5

@@ -127,7 +127,7 @@ cvar_t r_shadows_throwdirection = {CF_CLIENT | CF_ARCHIVE, "r_shadows_throwdirec
 cvar_t r_shadows_drawafterrtlighting = {CF_CLIENT | CF_ARCHIVE, "r_shadows_drawafterrtlighting", "0", "draw fake shadows AFTER realtime lightning is drawn. May be useful for simulating fast sunlight on large outdoor maps with only one noshadow rtlight. The price is less realistic appearance of dynamic light shadows."};
 cvar_t r_shadows_castfrombmodels = {CF_CLIENT | CF_ARCHIVE, "r_shadows_castfrombmodels", "0", "do cast shadows from bmodels"};
 cvar_t r_shadows_focus = {CF_CLIENT | CF_ARCHIVE, "r_shadows_focus", "0 0 0", "offset the shadowed area focus"};
-cvar_t r_shadows_shadowmapscale = {CF_CLIENT | CF_ARCHIVE, "r_shadows_shadowmapscale", "0.25", "higher values increase shadowmap quality at a cost of area covered (multiply global shadowmap precision) for fake shadows. Needs shadowmapping ON."};
+cvar_t r_shadows_shadowmapscale = {CF_CLIENT | CF_ARCHIVE, "r_shadows_shadowmapscale", "0.25", "higher values increase shadowmap quality at a cost of area covered (multiply global shadowmap precision) for fake shadows. Needs shadowmapping ON."}; // Baker: Mirrored default to Zircon classic from DarkPlaces Beta, it was 1.0 before
 cvar_t r_shadows_shadowmapbias = {CF_CLIENT | CF_ARCHIVE, "r_shadows_shadowmapbias", "-1", "sets shadowmap bias for fake shadows. -1 sets the value of r_shadow_shadowmapping_bias. Needs shadowmapping ON."};
 cvar_t r_q1bsp_skymasking = {CF_CLIENT, "r_q1bsp_skymasking", "1", "allows sky polygons in quake1 maps to obscure other geometry"};
 cvar_t r_polygonoffset_submodel_factor = {CF_CLIENT, "r_polygonoffset_submodel_factor", "0", "biases depth values of world submodels such as doors, to prevent z-fighting artifacts in Quake maps"};
@@ -144,14 +144,6 @@ cvar_t r_transparent_sortarraysize = {CF_CLIENT | CF_ARCHIVE, "r_transparent_sor
 cvar_t r_celshading = {CF_CLIENT | CF_ARCHIVE, "r_celshading", "0", "cartoon-style light shading (OpenGL 2.x only)"}; // FIXME remove OpenGL 2.x only once implemented for DX9
 cvar_t r_celoutlines = {CF_CLIENT | CF_ARCHIVE, "r_celoutlines", "0", "cartoon-style outlines (requires r_shadow_deferred)"};
 
-cvar_t gl_fogenable = {CF_CLIENT, "gl_fogenable", "0", "nehahra fog enable (for Nehahra compatibility only)"};
-cvar_t gl_fogdensity = {CF_CLIENT, "gl_fogdensity", "0.25", "nehahra fog density (recommend values below 0.1) (for Nehahra compatibility only)"};
-cvar_t gl_fogred = {CF_CLIENT, "gl_fogred","0.3", "nehahra fog color red value (for Nehahra compatibility only)"};
-cvar_t gl_foggreen = {CF_CLIENT, "gl_foggreen","0.3", "nehahra fog color green value (for Nehahra compatibility only)"};
-cvar_t gl_fogblue = {CF_CLIENT, "gl_fogblue","0.3", "nehahra fog color blue value (for Nehahra compatibility only)"};
-cvar_t gl_fogstart = {CF_CLIENT, "gl_fogstart", "0", "nehahra fog start distance (for Nehahra compatibility only)"};
-cvar_t gl_fogend = {CF_CLIENT, "gl_fogend","0", "nehahra fog end distance (for Nehahra compatibility only)"};
-cvar_t gl_skyclip = {CF_CLIENT, "gl_skyclip", "4608", "nehahra farclip distance - the real fog end (for Nehahra compatibility only)"};
 
 cvar_t r_texture_dds_load = {CF_CLIENT | CF_ARCHIVE, "r_texture_dds_load", "0", "load compressed dds/filename.dds texture instead of filename.tga, if the file exists (requires driver support)"};
 cvar_t r_texture_dds_save = {CF_CLIENT | CF_ARCHIVE, "r_texture_dds_save", "0", "save compressed dds/filename.dds texture when filename.tga is loaded, so that it can be loaded instead next time"};
@@ -248,7 +240,7 @@ cvar_t r_glsl_saturation_redcompensate = {CF_CLIENT | CF_ARCHIVE, "r_glsl_satura
 
 cvar_t r_glsl_vertextextureblend_usebothalphas = {CF_CLIENT | CF_ARCHIVE, "r_glsl_vertextextureblend_usebothalphas", "0", "use both alpha layers on vertex blended surfaces, each alpha layer sets amount of 'blend leak' on another layer, requires mod_q3shader_force_terrain_alphaflag on."};
 
-// FIXME: This cvar would grow to a ridiculous size after several launches and clean exits when used during surface sorting.
+// FIXME: This cvar would grow to a ridiculous size after several launches and clean exits when used during surface sorting. Baker: SEPUS
 cvar_t r_framedatasize = {CF_CLIENT | CF_ARCHIVE, "r_framedatasize", "0.5", "size of renderer data cache used during one frame (for skeletal animation caching, light processing, etc)"};
 cvar_t r_buffermegs[R_BUFFERDATA_COUNT] =
 {
@@ -257,6 +249,19 @@ cvar_t r_buffermegs[R_BUFFERDATA_COUNT] =
 	{CF_CLIENT | CF_ARCHIVE, "r_buffermegs_index32", "1", "index buffer size for one frame (32bit indices)"},
 	{CF_CLIENT | CF_ARCHIVE, "r_buffermegs_uniform", "0.25", "uniform buffer size for one frame"},
 };
+
+// NEHAHRA COMPAT SECTION
+cvar_t gl_fogenable = {CF_CLIENT, "gl_fogenable", "0", "nehahra fog enable (for Nehahra compatibility only)"};
+cvar_t gl_fogdensity = {CF_CLIENT, "gl_fogdensity", "0.25", "nehahra fog density (recommend values below 0.1) (for Nehahra compatibility only)"};
+cvar_t gl_fogred = {CF_CLIENT, "gl_fogred","0.3", "nehahra fog color red value (for Nehahra compatibility only)"};
+cvar_t gl_foggreen = {CF_CLIENT, "gl_foggreen","0.3", "nehahra fog color green value (for Nehahra compatibility only)"};
+cvar_t gl_fogblue = {CF_CLIENT, "gl_fogblue","0.3", "nehahra fog color blue value (for Nehahra compatibility only)"};
+cvar_t gl_fogstart = {CF_CLIENT, "gl_fogstart", "0", "nehahra fog start distance (for Nehahra compatibility only)"};
+cvar_t gl_fogend = { CF_CLIENT, "gl_fogend","0", "nehahra fog end distance (for Nehahra compatibility only)" };
+cvar_t r_waterripple = { CF_CLIENT, "r_waterripple","0", "nehahra water ripple (for Nehahra compatibility only)" };
+cvar_t r_oldsky = { CF_CLIENT, "r_oldsky","0", "nehahra oldsky (for Nehahra compatibility only)" };
+cvar_t gl_skyclip = {CF_CLIENT, "gl_skyclip", "4608", "nehahra farclip distance - the real fog end (for Nehahra compatibility only)"};
+
 
 cvar_t r_q1bsp_lightmap_updates_enabled = {CF_CLIENT | CF_ARCHIVE, "r_q1bsp_lightmap_updates_enabled", "1", "allow lightmaps to be updated on Q1BSP maps (don't turn this off except for debugging)"};
 cvar_t r_q1bsp_lightmap_updates_combine = {CF_CLIENT | CF_ARCHIVE, "r_q1bsp_lightmap_updates_combine", "2", "combine lightmap texture updates to make fewer glTexSubImage2D calls, modes: 0 = immediately upload lightmaps (may be thousands of small 3x3 updates), 1 = combine to one call, 2 = combine to one full texture update (glTexImage2D) which tells the driver it does not need to lock the resource (faster on most drivers)"};
@@ -365,6 +370,7 @@ void FOG_clear(void)
 	r_refdef.fog_green = 0;
 	r_refdef.fog_blue = 0;
 	r_refdef.fog_alpha = 1;
+	r_refdef.fog_density0 = 0; // Baker r1201
 	r_refdef.fog_start = 0;
 	r_refdef.fog_end = 16384;
 	r_refdef.fog_height = 1<<30;
@@ -488,18 +494,18 @@ static void R_BuildFogTexture(void)
 	for (x = 0;x < FOGMASKTABLEWIDTH;x++)
 	{
 		d = (x * r - r_refdef.fogmasktable_start);
-		if(developer_extra.integer)
-			Con_DPrintf("%f ", d);
+		if (developer_extra.integer)
+			Con_DPrintf ("%f ", d);
 		d = max(0, d);
 		if (r_fog_exp2.integer)
 			alpha = exp(-r_refdef.fogmasktable_density * r_refdef.fogmasktable_density * 0.0001 * d * d);
 		else
 			alpha = exp(-r_refdef.fogmasktable_density * 0.004 * d);
-		if(developer_extra.integer)
-			Con_DPrintf(" : %f ", alpha);
+		if (developer_extra.integer)
+			Con_DPrintf (" : %f ", alpha);
 		alpha = 1 - (1 - alpha) * r_refdef.fogmasktable_alpha;
-		if(developer_extra.integer)
-			Con_DPrintf(" = %f\n", alpha);
+		if (developer_extra.integer)
+			Con_DPrintf (" = %f\n", alpha);
 		r_refdef.fogmasktable[x] = bound(0, alpha, 1);
 	}
 
@@ -608,7 +614,7 @@ static const char *builtinshaderstrings[] =
 typedef struct shaderpermutationinfo_s
 {
 	const char *pretext;
-	const char *name;
+	const char *sxname;
 }
 shaderpermutationinfo_t;
 
@@ -618,7 +624,7 @@ typedef struct shadermodeinfo_s
 	const char *extension;
 	const char **builtinshaderstrings;
 	const char *pretext;
-	const char *name;
+	const char *smname;
 	char *filename;
 	char *builtinstring;
 	int builtincrc;
@@ -663,8 +669,7 @@ shaderpermutationinfo_t shaderpermutationinfo[SHADERPERMUTATION_COUNT] =
 };
 
 // NOTE: MUST MATCH ORDER OF SHADERMODE_* ENUMS!
-shadermodeinfo_t shadermodeinfo[SHADERLANGUAGE_COUNT][SHADERMODE_COUNT] =
-{
+shadermodeinfo_t shadermodeinfo[SHADERLANGUAGE_COUNT][SHADERMODE_COUNT] = {
 	// SHADERLANGUAGE_GLSL
 	{
 		{"combined", "glsl", builtinshaderstrings, "#define MODE_GENERIC\n", " generic"},
@@ -850,27 +855,30 @@ enum
 	SHADERSTATICPARM_CELSHADING = 11, ///< celshading (alternative diffuse and specular math)
 	SHADERSTATICPARM_CELOUTLINES = 12, ///< celoutline (depth buffer analysis to produce outlines)
 	SHADERSTATICPARM_FXAA = 13, ///< fast approximate anti aliasing
-	SHADERSTATICPARM_COLORFRINGE = 14 ///< colorfringe (chromatic aberration)
+	SHADERSTATICPARM_COLORFRINGE = 14, ///< colorfringe (chromatic aberration)
+	SHADERSTATICPARM_R_WATERWARP_2 = 15, ///< waterwarp2 Baker r0082: r_waterwarp 2
 };
-#define SHADERSTATICPARMS_COUNT 15
+#define SHADERSTATICPARMS_COUNT_16 16
 
-static const char *shaderstaticparmstrings_list[SHADERSTATICPARMS_COUNT];
+static const char *shaderstaticparmstrings_list[SHADERSTATICPARMS_COUNT_16];
 static int shaderstaticparms_count = 0;
 
-static unsigned int r_compileshader_staticparms[(SHADERSTATICPARMS_COUNT + 0x1F) >> 5] = {0};
+static unsigned int r_compileshader_staticparms[(SHADERSTATICPARMS_COUNT_16 + 0x1F) >> 5] = {0};
 #define R_COMPILESHADER_STATICPARM_ENABLE(p) r_compileshader_staticparms[(p) >> 5] |= (1 << ((p) & 0x1F))
 
 extern qbool r_shadow_shadowmapsampler;
 extern int r_shadow_shadowmappcf;
 qbool R_CompileShader_CheckStaticParms(void)
 {
-	static int r_compileshader_staticparms_save[(SHADERSTATICPARMS_COUNT + 0x1F) >> 5];
+	static int r_compileshader_staticparms_save[(SHADERSTATICPARMS_COUNT_16 + 0x1F) >> 5];
 	memcpy(r_compileshader_staticparms_save, r_compileshader_staticparms, sizeof(r_compileshader_staticparms));
 	memset(r_compileshader_staticparms, 0, sizeof(r_compileshader_staticparms));
 
 	// detect all
 	if (r_glsl_saturation_redcompensate.integer)
 		R_COMPILESHADER_STATICPARM_ENABLE(SHADERSTATICPARM_SATURATION_REDCOMPENSATE);
+	if (r_refdef.waterwarp2) // Baker r0082: r_waterwarp 2
+		R_COMPILESHADER_STATICPARM_ENABLE(SHADERSTATICPARM_R_WATERWARP_2); // alters r_compileshader_staticparms
 	if (r_glsl_vertextextureblend_usebothalphas.integer)
 		R_COMPILESHADER_STATICPARM_ENABLE(SHADERSTATICPARM_VERTEXTEXTUREBLEND_USEBOTHALPHAS);
 	if (r_shadow_glossexact.integer)
@@ -908,7 +916,7 @@ qbool R_CompileShader_CheckStaticParms(void)
 }
 
 #define R_COMPILESHADER_STATICPARM_EMIT(p, n) \
-	if(r_compileshader_staticparms[(p) >> 5] & (1 << ((p) & 0x1F))) \
+	if (r_compileshader_staticparms[(p) >> 5] & (1 << ((p) & 0x1F))) \
 		shaderstaticparmstrings_list[shaderstaticparms_count++] = "#define " n "\n"; \
 	else \
 		shaderstaticparmstrings_list[shaderstaticparms_count++] = "\n"
@@ -932,6 +940,7 @@ static void R_CompileShader_AddStaticParms(unsigned int mode, uint64_t permutati
 	R_COMPILESHADER_STATICPARM_EMIT(SHADERSTATICPARM_CELOUTLINES, "USECELOUTLINES");
 	R_COMPILESHADER_STATICPARM_EMIT(SHADERSTATICPARM_FXAA, "USEFXAA");
 	R_COMPILESHADER_STATICPARM_EMIT(SHADERSTATICPARM_COLORFRINGE, "USECOLORFRINGE");
+	R_COMPILESHADER_STATICPARM_EMIT(SHADERSTATICPARM_R_WATERWARP_2, "R_WATERWARP_2"); // Baker r0082: r_waterwarp 2
 }
 
 /// information about each possible shader permutation
@@ -951,7 +960,7 @@ static r_glsl_permutation_t *R_GLSL_FindPermutation(unsigned int mode, uint64_t 
 		if (p->mode == mode && p->permutation == permutation)
 		{
 			//if (hashdepth > 10)
-			//	Con_Printf("R_GLSL_FindPermutation: Warning: %i:%i has hashdepth %i\n", mode, permutation, hashdepth);
+			//	Con_Printf ("R_GLSL_FindPermutation: Warning: %d:%d has hashdepth %d\n", mode, permutation, hashdepth);
 			return p;
 		}
 		//hashdepth++;
@@ -962,7 +971,7 @@ static r_glsl_permutation_t *R_GLSL_FindPermutation(unsigned int mode, uint64_t 
 	p->hashnext = r_glsl_permutationhash[mode][hashindex];
 	r_glsl_permutationhash[mode][hashindex] = p;
 	//if (hashdepth > 10)
-	//	Con_Printf("R_GLSL_FindPermutation: Warning: %i:%i has hashdepth %i\n", mode, permutation, hashdepth);
+	//	Con_Printf ("R_GLSL_FindPermutation: Warning: %d:%d has hashdepth %d\n", mode, permutation, hashdepth);
 	return p;
 }
 
@@ -1001,7 +1010,7 @@ static void R_InitShaderModeInfo(void)
 			modeinfo = &shadermodeinfo[language][i];
 			modeinfo->builtinstring = R_ShaderStrCat(modeinfo->builtinshaderstrings);
 			modeinfo->builtincrc = CRC_Block((const unsigned char *)modeinfo->builtinstring, strlen(modeinfo->builtinstring));
-			dpsnprintf(filename, sizeof(filename), "%s/%s_crc%i.%s", modeinfo->extension, modeinfo->sourcebasename, modeinfo->builtincrc, modeinfo->extension);
+			dpsnprintf(filename, sizeof(filename), "%s/%s_crc%d.%s", modeinfo->extension, modeinfo->sourcebasename, modeinfo->builtincrc, modeinfo->extension);
 			modeinfo->filename = Mem_strdup(r_main_mempool, filename);
 		}
 	}
@@ -1020,7 +1029,7 @@ static char *ShaderModeInfo_GetShaderText(shadermodeinfo_t *modeinfo, qbool prin
 	if (shaderstring)
 	{
 		if (printfromdisknotice)
-			Con_DPrintf("Loading shaders from file %s...\n", modeinfo->filename);
+			Con_DPrintLinef ("Loading shaders from file %s...", modeinfo->filename);
 		return shaderstring;
 	}
 	// fall back to builtinstring
@@ -1038,9 +1047,9 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 	int vertstrings_count = 0;
 	int geomstrings_count = 0;
 	int fragstrings_count = 0;
-	const char *vertstrings_list[32+5+SHADERSTATICPARMS_COUNT+1];
-	const char *geomstrings_list[32+5+SHADERSTATICPARMS_COUNT+1];
-	const char *fragstrings_list[32+5+SHADERSTATICPARMS_COUNT+1];
+	const char *vertstrings_list[32+5+SHADERSTATICPARMS_COUNT_16+1];
+	const char *geomstrings_list[32+5+SHADERSTATICPARMS_COUNT_16+1];
+	const char *fragstrings_list[32+5+SHADERSTATICPARMS_COUNT_16+1];
 
 	if (p->compiled)
 		return;
@@ -1053,7 +1062,7 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 	strlcat(permutationname, modeinfo->filename, sizeof(permutationname));
 
 	// we need 140 for r_glsl_skeletal (GL_ARB_uniform_buffer_object)
-	if(vid.support.glshaderversion >= 140)
+	if (vid.support.glshaderversion >= 140)
 	{
 		vertstrings_list[vertstrings_count++] = "#version 140\n";
 		geomstrings_list[geomstrings_count++] = "#version 140\n";
@@ -1063,7 +1072,7 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 		fragstrings_list[fragstrings_count++] = "#define GLSL140\n";
 	}
 	// if we can do #version 130, we should (this improves quality of offset/reliefmapping thanks to textureGrad)
-	else if(vid.support.glshaderversion >= 130)
+	else if (vid.support.glshaderversion >= 130)
 	{
 		vertstrings_list[vertstrings_count++] = "#version 130\n";
 		geomstrings_list[geomstrings_count++] = "#version 130\n";
@@ -1073,7 +1082,7 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 		fragstrings_list[fragstrings_count++] = "#define GLSL130\n";
 	}
 	// if we can do #version 120, we should (this adds the invariant keyword)
-	else if(vid.support.glshaderversion >= 120)
+	else if (vid.support.glshaderversion >= 120)
 	{
 		vertstrings_list[vertstrings_count++] = "#version 120\n";
 		geomstrings_list[geomstrings_count++] = "#version 120\n";
@@ -1104,7 +1113,7 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 	vertstrings_list[vertstrings_count++] = modeinfo->pretext;
 	geomstrings_list[geomstrings_count++] = modeinfo->pretext;
 	fragstrings_list[fragstrings_count++] = modeinfo->pretext;
-	strlcat(permutationname, modeinfo->name, sizeof(permutationname));
+	strlcat(permutationname, modeinfo->smname, sizeof(permutationname));
 
 	// now add all the permutation pretexts
 	for (i = 0;i < SHADERPERMUTATION_COUNT;i++)
@@ -1114,7 +1123,7 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 			vertstrings_list[vertstrings_count++] = shaderpermutationinfo[i].pretext;
 			geomstrings_list[geomstrings_count++] = shaderpermutationinfo[i].pretext;
 			fragstrings_list[fragstrings_count++] = shaderpermutationinfo[i].pretext;
-			strlcat(permutationname, shaderpermutationinfo[i].name, sizeof(permutationname));
+			strlcat(permutationname, shaderpermutationinfo[i].sxname, sizeof(permutationname));
 		}
 		else
 		{
@@ -1163,14 +1172,14 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 			GLenum uniformtype = 0;
 			memset(uniformname, 0, sizeof(uniformname));
 			qglGetProgramiv(p->program, GL_ACTIVE_UNIFORMS, &numactiveuniforms);
-			Con_Printf("Shader has %i uniforms\n", numactiveuniforms);
+			Con_Printf ("Shader has %d uniforms\n", numactiveuniforms);
 			for (activeuniformindex = 0;activeuniformindex < numactiveuniforms;activeuniformindex++)
 			{
 				qglGetActiveUniform(p->program, activeuniformindex, sizeof(uniformname) - 1, &uniformnamelength, &uniformsize, &uniformtype, uniformname);
-				Con_Printf("Uniform %i name \"%s\" size %i type %i\n", (int)activeuniformindex, uniformname, (int)uniformsize, (int)uniformtype);
+				Con_Printf ("Uniform %d name \"%s\" size %d type %d\n", (int)activeuniformindex, uniformname, (int)uniformsize, (int)uniformtype);
 			}
 		}
-#endif
+#endif // 0
 
 		p->loc_Texture_First              = qglGetUniformLocation(p->program, "Texture_First");
 		p->loc_Texture_Second             = qglGetUniformLocation(p->program, "Texture_Second");
@@ -1339,10 +1348,10 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 #endif
 		// we're done compiling and setting up the shader, at least until it is used
 		CHECKGLERROR
-		Con_DPrintf("^5GLSL shader %s compiled (%i textures).\n", permutationname, sampler);
+		Con_DPrintf ("^5GLSL shader %s compiled (%d textures).\n", permutationname, sampler);
 	}
 	else
-		Con_Printf("^1GLSL shader %s failed!  some features may not work properly.\n", permutationname);
+		Con_Printf ("^1GLSL shader %s failed!  some features may not work properly.\n", permutationname);
 
 	// free the strings
 	if (sourcestring)
@@ -1359,7 +1368,11 @@ static void R_SetupShader_SetPermutationGLSL(unsigned int mode, uint64_t permuta
 		{
 			if (!r_glsl_permutation->compiled)
 			{
-				Con_DPrintf("Compiling shader mode %u permutation %" PRIx64 "\n", mode, permutation);
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	#pragma message ("Defining PRIx64") 
+	#define PRIx64 "%I64d"
+#endif
+				Con_DPrintf ("Compiling shader mode %u permutation %" PRIx64 "\n", mode, permutation);
 				R_GLSL_CompilePermutation(perm, mode, permutation);
 			}
 			if (!r_glsl_permutation->program)
@@ -1381,7 +1394,7 @@ static void R_SetupShader_SetPermutationGLSL(unsigned int mode, uint64_t permuta
 				}
 				if (i >= SHADERPERMUTATION_COUNT)
 				{
-					//Con_Printf("Could not find a working OpenGL 2.0 shader for permutation %s %s\n", shadermodeinfo[mode].filename, shadermodeinfo[mode].pretext);
+					//Con_Printf ("Could not find a working OpenGL 2.0 shader for permutation %s %s\n", shadermodeinfo[mode].filename, shadermodeinfo[mode].pretext);
 					r_glsl_permutation = R_GLSL_FindPermutation(mode, permutation);
 					qglUseProgram(0);CHECKGLERROR
 					return; // no bit left to clear, entire mode is broken
@@ -1436,7 +1449,7 @@ static void R_GLSL_DumpShader_f(cmd_state_t *cmd)
 		{
 			// don't dump the same file multiple times (most or all shaders come from the same file)
 			for (dupe = mode - 1;dupe >= 0;dupe--)
-				if (!strcmp(modeinfo[mode].filename, modeinfo[dupe].filename))
+				if (String_Does_Match(modeinfo[mode].filename, modeinfo[dupe].filename))
 					break;
 			if (dupe >= 0)
 				continue;
@@ -1455,10 +1468,10 @@ static void R_GLSL_DumpShader_f(cmd_state_t *cmd)
 				FS_Print(file, "*/\n");
 				FS_Print(file, text);
 				FS_Close(file);
-				Con_Printf("%s written\n", modeinfo[mode].filename);
+				Con_Printf ("%s written\n", modeinfo[mode].filename);
 			}
 			else
-				Con_Printf(CON_ERROR "failed to write to %s\n", modeinfo[mode].filename);
+				Con_Printf (CON_ERROR "failed to write to %s\n", modeinfo[mode].filename);
 		}
 	}
 }
@@ -1540,27 +1553,27 @@ static int R_BlendFuncFlags(int src, int dst)
 	// these checks are the output of fogeval.pl
 
 	r |= BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_DST_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
-	if(src == GL_DST_ALPHA && dst == GL_ONE_MINUS_DST_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_DST_COLOR && dst == GL_ONE_MINUS_SRC_ALPHA) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_DST_COLOR && dst == GL_ONE_MINUS_SRC_COLOR) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_DST_COLOR && dst == GL_SRC_ALPHA) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_DST_COLOR && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_DST_COLOR && dst == GL_ZERO) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_ONE && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
-	if(src == GL_ONE && dst == GL_ONE_MINUS_SRC_ALPHA) r |= BLENDFUNC_ALLOWS_FOG_HACKALPHA;
-	if(src == GL_ONE && dst == GL_ZERO) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_ONE_MINUS_DST_ALPHA && dst == GL_DST_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_ONE_MINUS_DST_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
-	if(src == GL_ONE_MINUS_DST_COLOR && dst == GL_SRC_COLOR) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_ONE_MINUS_SRC_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
-	if(src == GL_ONE_MINUS_SRC_ALPHA && dst == GL_SRC_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_ONE_MINUS_SRC_ALPHA && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_ONE_MINUS_SRC_COLOR && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
-	if(src == GL_SRC_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
-	if(src == GL_SRC_ALPHA && dst == GL_ONE_MINUS_SRC_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_ZERO && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG;
-	if(src == GL_ZERO && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_DST_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
+	if (src == GL_DST_ALPHA && dst == GL_ONE_MINUS_DST_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_DST_COLOR && dst == GL_ONE_MINUS_SRC_ALPHA) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_DST_COLOR && dst == GL_ONE_MINUS_SRC_COLOR) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_DST_COLOR && dst == GL_SRC_ALPHA) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_DST_COLOR && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_DST_COLOR && dst == GL_ZERO) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_ONE && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
+	if (src == GL_ONE && dst == GL_ONE_MINUS_SRC_ALPHA) r |= BLENDFUNC_ALLOWS_FOG_HACKALPHA;
+	if (src == GL_ONE && dst == GL_ZERO) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_ONE_MINUS_DST_ALPHA && dst == GL_DST_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_ONE_MINUS_DST_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
+	if (src == GL_ONE_MINUS_DST_COLOR && dst == GL_SRC_COLOR) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_ONE_MINUS_SRC_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
+	if (src == GL_ONE_MINUS_SRC_ALPHA && dst == GL_SRC_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_ONE_MINUS_SRC_ALPHA && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_ONE_MINUS_SRC_COLOR && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
+	if (src == GL_SRC_ALPHA && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG_HACK0;
+	if (src == GL_SRC_ALPHA && dst == GL_ONE_MINUS_SRC_ALPHA) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_ZERO && dst == GL_ONE) r |= BLENDFUNC_ALLOWS_FOG;
+	if (src == GL_ZERO && dst == GL_SRC_COLOR) r &= ~BLENDFUNC_ALLOWS_COLORMOD;
 
 	return r;
 }
@@ -1586,6 +1599,22 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 		permutation |= SHADERPERMUTATION_OCCLUDE;
 	if (t->r_water_waterscroll[0] && t->r_water_waterscroll[1])
 		permutation |= SHADERPERMUTATION_NORMALMAPSCROLLBLEND; // todo: make generic
+
+	// Baker r0083: r_waterdeform
+#if 1
+	#define lavamix (MATERIALFLAG_WATERSCROLL | MATERIALFLAG_LIGHTBOTHSIDES | MATERIALFLAG_NOSHADOW) // tele!
+	#define watemix (MATERIALFLAG_WATERSCROLL | MATERIALFLAG_LIGHTBOTHSIDES | MATERIALFLAG_NOSHADOW | MATERIALFLAG_WATERALPHA /* | MATERIALFLAG_WATERSHADER*/)
+	
+	if (t->name[0] == '*' && Have_Flag (t->currentmaterialflags, lavamix)) {
+		if (Have_Flag_Strict_Bool (t->currentmaterialflags, watemix) ) {
+			if (r_waterdeform.integer) permutation |= SHADERPERMUTATION_SATURATION; // without SHADERPERMUTATION_POSTPROCESSING set!
+		} else {
+			// larva
+			if (r_waterdeform.integer > 1) permutation |= SHADERPERMUTATION_SATURATION; // without SHADERPERMUTATION_POSTPROCESSING set!
+		}
+	} // lavamix
+#endif
+
 	if (rsurfacepass == RSURFPASS_BACKGROUND)
 	{
 		// distorted background
@@ -1594,7 +1623,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 			mode = SHADERMODE_WATER;
 			if (t->currentmaterialflags & MATERIALFLAG_ALPHAGEN_VERTEX)
 				permutation |= SHADERPERMUTATION_ALPHAGEN_VERTEX;
-			if((r_wateralpha.value < 1) && (t->currentmaterialflags & MATERIALFLAG_WATERALPHA))
+			if ((r_wateralpha.value < 1) && (t->currentmaterialflags & MATERIALFLAG_WATERALPHA))
 			{
 				// this is the right thing to do for wateralpha
 				GL_BlendFunc(GL_ONE, GL_ZERO);
@@ -1677,7 +1706,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 		if (r_shadow_usingshadowmap2d)
 		{
 			permutation |= SHADERPERMUTATION_SHADOWMAP2D;
-			if(r_shadow_shadowmapvsdct)
+			if (r_shadow_shadowmapvsdct)
 				permutation |= SHADERPERMUTATION_SHADOWMAPVSDCT;
 
 			if (r_shadow_shadowmap2ddepthbuffer)
@@ -1902,9 +1931,9 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 				GL_AlphaToCoverage(false);
 		}
 	}
-	if(!(blendfuncflags & BLENDFUNC_ALLOWS_ANYFOG))
+	if (!(blendfuncflags & BLENDFUNC_ALLOWS_ANYFOG))
 		permutation &= ~(SHADERPERMUTATION_FOGHEIGHTTEXTURE | SHADERPERMUTATION_FOGOUTSIDE | SHADERPERMUTATION_FOGINSIDE);
-	if(blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACKALPHA && !ui)
+	if (blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACKALPHA && !ui)
 		permutation |= SHADERPERMUTATION_FOGALPHAHACK;
 	switch(vid.renderpath)
 	{
@@ -1968,7 +1997,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 			// additive passes are only darkened by fog, not tinted
 			if (r_glsl_permutation->loc_FogColor >= 0 && !ui)
 			{
-				if(blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACK0)
+				if (blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACK0)
 					qglUniform3f(r_glsl_permutation->loc_FogColor, 0, 0, 0);
 				else
 					qglUniform3f(r_glsl_permutation->loc_FogColor, r_refdef.fogcolor[0], r_refdef.fogcolor[1], r_refdef.fogcolor[2]);
@@ -2225,7 +2254,7 @@ skinframe_t *R_SkinFrame_FindNextByName( skinframe_t *last, const char *name ) {
 
 	Image_StripImageExtension(name, basename, sizeof(basename));
 
-	if( last == NULL ) {
+	if ( last == NULL ) {
 		int hashindex;
 		hashindex = CRC_Block((unsigned char *)basename, strlen(basename)) & (SKINFRAME_HASH - 1);
 		item = r_skinframe.hash[hashindex];
@@ -2235,7 +2264,7 @@ skinframe_t *R_SkinFrame_FindNextByName( skinframe_t *last, const char *name ) {
 
 	// linearly search through the hash bucket
 	for( ; item ; item = item->next ) {
-		if( !strcmp( item->basename, basename ) ) {
+		if ( String_Does_Match( item->basename, basename ) ) {
 			return item;
 		}
 	}
@@ -2253,7 +2282,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 
 	hashindex = CRC_Block((unsigned char *)basename, strlen(basename)) & (SKINFRAME_HASH - 1);
 	for (item = r_skinframe.hash[hashindex];item;item = item->next)
-		if (!strcmp(item->basename, basename) &&
+		if (String_Does_Match(item->basename, basename) &&
 			item->textureflags == compareflags &&
 			item->comparewidth == comparewidth &&
 			item->compareheight == compareheight &&
@@ -2296,7 +2325,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 			w = 0; \
 			for(comp = 0; comp < 3; ++comp) \
 				w += getpixel; \
-			if(w) /* ignore perfectly black pixels because that is better for model skins */ \
+			if (w) /* ignore perfectly black pixels because that is better for model skins */ \
 			{ \
 				++wsum; \
 				/* comp = 3; -- not needed, comp is always 3 when we get here */ \
@@ -2308,7 +2337,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 			/* comp = 3; -- not needed, comp is always 3 when we get here */ \
 			avgcolor[4] += getpixel; \
 		} \
-		if(avgcolor[3] == 0) /* no pixels seen? even worse */ \
+		if (avgcolor[3] == 0) /* no pixels seen? even worse */ \
 			avgcolor[3] = 1; \
 		skinframe->avgcolor[0] = avgcolor[2] / (255.0 * avgcolor[3]); \
 		skinframe->avgcolor[1] = avgcolor[1] / (255.0 * avgcolor[3]); \
@@ -2368,7 +2397,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	// FIXME handle miplevel
 
 	if (developer_loading.integer)
-		Con_Printf("loading skin \"%s\"\n", name);
+		Con_Printf ("loading skin \"%s\"\n", name);
 
 	// we've got some pixels to store, so really allocate this new texture now
 	if (!skinframe)
@@ -2394,7 +2423,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 		VectorCopy(ddsavgcolor, skinframe->avgcolor);
 		if (r_loadfog && skinframe->hasalpha)
 			skinframe->fog = R_LoadTextureDDSFile(r_main_texturepool, va(vabuf, sizeof(vabuf), "dds/%s_mask.dds", skinframe->basename), false, textureflags | TEXF_ALPHA, NULL, NULL, miplevel, true);
-		//Con_Printf("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
+		//Con_Printf ("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
 	}
 	else
 	{
@@ -2428,7 +2457,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 		}
 		R_SKINFRAME_LOAD_AVERAGE_COLORS(basepixels_width * basepixels_height, basepixels[4 * pix + comp]);
 #ifndef USE_GLES2
-		//Con_Printf("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
+		//Con_Printf ("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
 		if (r_savedds && skinframe->base)
 			R_SaveTextureDDSFile(skinframe->base, va(vabuf, sizeof(vabuf), "dds/%s.dds", skinframe->basename), r_texture_dds_save.integer < 2, skinframe->hasalpha);
 		if (r_savedds && skinframe->fog)
@@ -2591,7 +2620,7 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 		return NULL;
 
 	if (developer_loading.integer)
-		Con_Printf("loading 32bit skin \"%s\"\n", name);
+		Con_Printf ("loading 32bit skin \"%s\"\n", name);
 
 	if (r_loadnormalmap && r_shadow_bumpscale_basetexture.value > 0)
 	{
@@ -2625,7 +2654,7 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 	}
 
 	R_SKINFRAME_LOAD_AVERAGE_COLORS(width * height, skindata[4 * pix + comp]);
-	//Con_Printf("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
+	//Con_Printf ("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
 
 	return skinframe;
 }
@@ -2662,7 +2691,7 @@ skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, i
 		return NULL;
 
 	if (developer_loading.integer)
-		Con_Printf("loading quake skin \"%s\"\n", name);
+		Con_Printf ("loading quake skin \"%s\"\n", name);
 
 	// we actually don't upload anything until the first use, because mdl skins frequently go unused, and are almost never used in both modes (colormapped and non-colormapped)
 	skinframe->qpixels = (unsigned char *)Mem_Alloc(r_main_mempool, width*height); // FIXME LEAK
@@ -2685,7 +2714,7 @@ skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, i
 	skinframe->qgenerateglow = loadglowtexture && (featuresmask & PALETTEFEATURE_GLOW);
 
 	R_SKINFRAME_LOAD_AVERAGE_COLORS(width * height, ((unsigned char *)palette_bgra_complete)[skindata[pix]*4 + comp]);
-	//Con_Printf("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
+	//Con_Printf ("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
 
 	return skinframe;
 }
@@ -2795,7 +2824,7 @@ skinframe_t *R_SkinFrame_LoadInternal8bit(const char *name, int textureflags, co
 		return NULL;
 
 	if (developer_loading.integer)
-		Con_Printf("loading embedded 8bit image \"%s\"\n", name);
+		Con_Printf ("loading embedded 8bit image \"%s\"\n", name);
 
 	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, TEXTYPE_PALETTE, textureflags, -1, palette);
 	if ((textureflags & TEXF_ALPHA) && alphapalette)
@@ -2813,7 +2842,7 @@ skinframe_t *R_SkinFrame_LoadInternal8bit(const char *name, int textureflags, co
 	}
 
 	R_SKINFRAME_LOAD_AVERAGE_COLORS(width * height, ((unsigned char *)palette)[skindata[pix]*4 + comp]);
-	//Con_Printf("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
+	//Con_Printf ("Texture %s has average colors %f %f %f alpha %f\n", name, skinframe->avgcolor[0], skinframe->avgcolor[1], skinframe->avgcolor[2], skinframe->avgcolor[3]);
 
 	return skinframe;
 }
@@ -2879,7 +2908,7 @@ skinframe_t *R_SkinFrame_LoadInternalUsingTexture(const char *name, int texturef
 	if (!tex)
 		return NULL;
 	if (developer_loading.integer)
-		Con_Printf("loading 32bit skin \"%s\"\n", name);
+		Con_Printf ("loading 32bit skin \"%s\"\n", name);
 	skinframe->base = skinframe->merged = tex;
 	Vector4Set(skinframe->avgcolor, 1, 1, 1, 1); // bogus placeholder
 	return skinframe;
@@ -2966,7 +2995,7 @@ static rtexture_t *R_LoadCubemap(const char *basename)
 						Image_CopyMux(cubemappixels+i*cubemapsize*cubemapsize*4, image_buffer, cubemapsize, cubemapsize, suffix[j][i].flipx, suffix[j][i].flipy, suffix[j][i].flipdiagonal, 4, 4, componentorder);
 				}
 				else
-					Con_Printf("Cubemap image \"%s\" (%ix%i) is not square, OpenGL requires square cubemaps.\n", name, image_width, image_height);
+					Con_Printf ("Cubemap image \"%s\" (%dx%d) is not square, OpenGL requires square cubemaps.\n", name, image_width, image_height);
 				// free the image
 				Mem_Free(image_buffer);
 			}
@@ -2976,20 +3005,20 @@ static rtexture_t *R_LoadCubemap(const char *basename)
 	if (cubemappixels)
 	{
 		if (developer_loading.integer)
-			Con_Printf("loading cubemap \"%s\"\n", basename);
+			Con_Printf ("loading cubemap \"%s\"\n", basename);
 
 		cubemaptexture = R_LoadTextureCubeMap(r_main_texturepool, basename, cubemapsize, cubemappixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, (gl_texturecompression_lightcubemaps.integer && gl_texturecompression.integer ? TEXF_COMPRESS : 0) | forcefilter | TEXF_CLAMP, -1, NULL);
 		Mem_Free(cubemappixels);
 	}
 	else
 	{
-		Con_DPrintf("failed to load cubemap \"%s\"\n", basename);
+		Con_DPrintf ("failed to load cubemap \"%s\"\n", basename);
 		if (developer_loading.integer)
 		{
-			Con_Printf("(tried tried images ");
+			Con_Printf ("(tried tried images ");
 			for (j = 0;j < 3;j++)
 				for (i = 0;i < 6;i++)
-					Con_Printf("%s\"%s%s.tga\"", j + i > 0 ? ", " : "", basename, suffix[j][i].suffix);
+					Con_Printf ("%s\"%s%s.tga\"", j + i > 0 ? ", " : "", basename, suffix[j][i].suffix);
 			Con_Print(" and was unable to find any of them).\n");
 		}
 	}
@@ -3001,7 +3030,7 @@ rtexture_t *R_GetCubemap(const char *basename)
 	int i;
 	for (i = 0;i < r_texture_numcubemaps;i++)
 		if (r_texture_cubemaps[i] != NULL)
-			if (!strcasecmp(r_texture_cubemaps[i]->basename, basename))
+			if (String_Does_Match_Caseless(r_texture_cubemaps[i]->basename, basename))
 				return r_texture_cubemaps[i]->texture ? r_texture_cubemaps[i]->texture : r_texture_whitecube;
 	if (i >= MAX_CUBEMAPS || !r_main_mempool)
 		return r_texture_whitecube;
@@ -3144,7 +3173,7 @@ static void gl_main_start(void)
 	// For Steelstorm Android
 	// FIXME CACHE the program and reload
 	// FIXME see possible combinations for SS:BR android
-	Con_DPrintf("Compiling most used shaders for SS:BR android... START\n");
+	Con_DPrintf ("Compiling most used shaders for SS:BR android... START\n");
 	R_SetupShader_SetPermutationGLSL(0, 12);
 	R_SetupShader_SetPermutationGLSL(0, 13);
 	R_SetupShader_SetPermutationGLSL(0, 8388621);
@@ -3158,7 +3187,7 @@ static void gl_main_start(void)
 	R_SetupShader_SetPermutationGLSL(11, 2049);
 	R_SetupShader_SetPermutationGLSL(11, 8193);
 	R_SetupShader_SetPermutationGLSL(11, 10241);
-	Con_DPrintf("Compiling most used shaders for SS:BR android... END\n");
+	Con_DPrintf ("Compiling most used shaders for SS:BR android... END\n");
 #endif
 }
 
@@ -3246,6 +3275,11 @@ static void gl_main_newmap(void)
 	R_BufferData_Reset();
 }
 
+void Nehahra_StopMod_f(cmd_state_t* cmd)
+{
+	// Nothing, just stops a print
+}
+
 void GL_Main_Init(void)
 {
 	int i;
@@ -3265,6 +3299,11 @@ void GL_Main_Init(void)
 		Cvar_RegisterVariable (&gl_fogstart);
 		Cvar_RegisterVariable (&gl_fogend);
 		Cvar_RegisterVariable (&gl_skyclip);
+		Cvar_RegisterVariable(&r_waterripple);
+		Cvar_RegisterVariable(&r_oldsky);
+
+		Cmd_AddCommand(CF_CLIENT, "stopmod", Nehahra_StopMod_f, "nehahra stopmod (for Nehahra compatibility only)");
+
 	}
 	Cvar_RegisterVariable(&r_motionblur);
 	Cvar_RegisterVariable(&r_damageblur);
@@ -3483,7 +3522,7 @@ static qbool _R_CullBox(const vec3_t mins, const vec3_t maxs, int numplanes, con
 		return false;
 	for (i = 0;i < numplanes;i++)
 	{
-		if(i == ignore)
+		if (i == ignore)
 			continue;
 		p = planes + i;
 		R_GetCornerOfBox(corner, mins, maxs, p->signbits);
@@ -3757,7 +3796,7 @@ r_meshbuffer_t *R_BufferData_Store(size_t datasize, const void *data, r_bufferda
 
 	// if the resize did not give us enough memory, fail
 	if (!r_bufferdata_buffer[r_bufferdata_cycle][type] || r_bufferdata_buffer[r_bufferdata_cycle][type]->current + padsize > r_bufferdata_buffer[r_bufferdata_cycle][type]->size)
-		Sys_Error("R_BufferData_Store: failed to create a new buffer of sufficient size\n");
+		Sys_Error ("R_BufferData_Store: failed to create a new buffer of sufficient size\n");
 
 	mem = r_bufferdata_buffer[r_bufferdata_cycle][type];
 	offset = (int)mem->current;
@@ -4090,17 +4129,17 @@ static void R_View_UpdateEntityVisible (void)
 static int R_DrawBrushModelsSky (void)
 {
 	int i, sky;
-	entity_render_t *ent;
+	entity_render_t *rent;
 
 	sky = false;
 	for (i = 0;i < r_refdef.scene.numentities;i++)
 	{
 		if (!r_refdef.viewcache.entityvisible[i])
 			continue;
-		ent = r_refdef.scene.entities[i];
-		if (!ent->model || !ent->model->DrawSky)
+		rent = r_refdef.scene.entities[i];
+		if (!rent->model || !rent->model->DrawSky)
 			continue;
-		ent->model->DrawSky(ent);
+		rent->model->DrawSky(rent);
 		sky = true;
 	}
 	return sky;
@@ -4110,19 +4149,19 @@ static void R_DrawNoModel(entity_render_t *ent);
 static void R_DrawModels(void)
 {
 	int i;
-	entity_render_t *ent;
+	entity_render_t *rent;
 
 	for (i = 0;i < r_refdef.scene.numentities;i++)
 	{
 		if (!r_refdef.viewcache.entityvisible[i])
 			continue;
-		ent = r_refdef.scene.entities[i];
+		rent = r_refdef.scene.entities[i];
 		r_refdef.stats[r_stat_entities]++;
 
-		if (ent->model && ent->model->Draw != NULL)
-			ent->model->Draw(ent);
+		if (rent->model && rent->model->Draw != NULL)
+			rent->model->Draw(rent);
 		else
-			R_DrawNoModel(ent);
+			R_DrawNoModel(rent);
 	}
 }
 
@@ -4223,9 +4262,9 @@ static void R_View_SetFrustum(const int *scissor)
 	int i;
 	double fpx = +1, fnx = -1, fpy = +1, fny = -1;
 	vec3_t forward, left, up, origin, v;
-	if(r_lockvisibility.integer)
+	if (r_lockvisibility.integer)
 		return;
-	if(scissor)
+	if (scissor)
 	{
 		// flipped x coordinates (because x points left here)
 		fpx =  1.0 - 2.0 * (scissor[0]              - r_refdef.view.viewport.x) / (double) (r_refdef.view.viewport.width);
@@ -4251,7 +4290,7 @@ static void R_View_SetFrustum(const int *scissor)
 	r_refdef.view.frustum[3].normal[0] = 0 + 0;
 	r_refdef.view.frustum[3].normal[1] = 0 + 1.0 / r_refdef.view.frustum_y;
 	r_refdef.view.frustum[3].normal[2] = -1 + 0;
-#endif
+#endif // 0
 
 #if 0
 	zNear = r_refdef.nearclip;
@@ -4264,7 +4303,7 @@ static void R_View_SetFrustum(const int *scissor)
 	r_refdef.view.frustum[5].normal[1] = 0 + 0;
 	r_refdef.view.frustum[5].normal[2] = -1 + -nudge;
 	r_refdef.view.frustum[5].dist = 0 + -2 * zNear * nudge;
-#endif
+#endif // 0
 
 
 
@@ -4298,7 +4337,7 @@ static void R_View_SetFrustum(const int *scissor)
 	r_refdef.view.frustum[5].normal[1] = m[7] + m[6];
 	r_refdef.view.frustum[5].normal[2] = m[11] + m[10];
 	r_refdef.view.frustum[5].dist = m[15] + m[14];
-#endif
+#endif // 0
 
 	if (r_refdef.view.useperspective)
 	{
@@ -4318,7 +4357,7 @@ static void R_View_SetFrustum(const int *scissor)
 		// in a REFLECTED view, forward cross left == down
 		// so our cross products above need to be adjusted for a left handed coordinate system
 		CrossProduct(forward, left, v);
-		if(DotProduct(v, up) < 0)
+		if (DotProduct(v, up) < 0)
 		{
 			VectorNegate(r_refdef.view.frustum[0].normal, r_refdef.view.frustum[0].normal);
 			VectorNegate(r_refdef.view.frustum[1].normal, r_refdef.view.frustum[1].normal);
@@ -4623,13 +4662,13 @@ r_rendertarget_t *R_RenderTarget_Get(int texturewidth, int textureheight, textyp
 		r->depthisrenderbuffer = depthisrenderbuffer;
 		for (j = 0; j < 4; j++)
 			if (r->colortextype[j])
-				r->colortexture[j] = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "rendertarget%i_%i_type%i", i, j, (int)r->colortextype[j]), r->texturewidth, r->textureheight, NULL, r->colortextype[j], TEXF_RENDERTARGET | TEXF_FORCELINEAR | TEXF_CLAMP, -1, NULL);
+				r->colortexture[j] = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "rendertarget%d_%d_type%d", i, j, (int)r->colortextype[j]), r->texturewidth, r->textureheight, NULL, r->colortextype[j], TEXF_RENDERTARGET | TEXF_FORCELINEAR | TEXF_CLAMP, -1, NULL);
 		if (r->depthtextype)
 		{
 			if (r->depthisrenderbuffer)
-				r->depthtexture = R_LoadTextureRenderBuffer(r_main_texturepool, va(vabuf, sizeof(vabuf), "renderbuffer%i_depth_type%i", i, (int)r->depthtextype), r->texturewidth, r->textureheight, r->depthtextype);
+				r->depthtexture = R_LoadTextureRenderBuffer(r_main_texturepool, va(vabuf, sizeof(vabuf), "renderbuffer%d_depth_type%d", i, (int)r->depthtextype), r->texturewidth, r->textureheight, r->depthtextype);
 			else
-				r->depthtexture = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "rendertarget%i_depth_type%i", i, (int)r->depthtextype), r->texturewidth, r->textureheight, NULL, r->depthtextype, TEXF_RENDERTARGET | TEXF_FORCELINEAR | TEXF_CLAMP, -1, NULL);
+				r->depthtexture = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "rendertarget%d_depth_type%d", i, (int)r->depthtextype), r->texturewidth, r->textureheight, NULL, r->depthtextype, TEXF_RENDERTARGET | TEXF_FORCELINEAR | TEXF_CLAMP, -1, NULL);
 		}
 		r->fbo = R_Mesh_CreateFramebufferObject(r->depthtexture, r->colortexture[0], r->colortexture[1], r->colortexture[2], r->colortexture[3]);
 	}
@@ -4727,7 +4766,7 @@ void R_Water_AddWaterPlane(msurface_t *surface, int entno)
 	bestplanescore = 1048576.0f;
 	for (planeindex = 0, p = r_fb.water.waterplanes;planeindex < r_fb.water.numwaterplanes;planeindex++, p++)
 	{
-		if(p->camera_entity == t->camera_entity)
+		if (p->camera_entity == t->tcamera_entity)
 		{
 			planescore = 1.0f - DotProduct(plane.normal, p->plane.normal) + fabs(plane.dist - p->plane.dist) * 0.001f;
 			if (bestplaneindex < 0 || bestplanescore > planescore)
@@ -4751,7 +4790,7 @@ void R_Water_AddWaterPlane(msurface_t *surface, int entno)
 			// clear materialflags and pvs
 			p->materialflags = 0;
 			p->pvsvalid = false;
-			p->camera_entity = t->camera_entity;
+			p->camera_entity = t->tcamera_entity;
 			VectorCopy(mins, p->mins);
 			VectorCopy(maxs, p->maxs);
 		}
@@ -4774,7 +4813,7 @@ void R_Water_AddWaterPlane(msurface_t *surface, int entno)
 	}
 	// merge this surface's materialflags into the waterplane
 	p->materialflags |= t->currentmaterialflags;
-	if(!(p->materialflags & MATERIALFLAG_CAMERA))
+	if (!(p->materialflags & MATERIALFLAG_CAMERA))
 	{
 		// merge this surface's PVS into the waterplane
 		if (p->materialflags & (MATERIALFLAG_WATERSHADER | MATERIALFLAG_REFRACTION | MATERIALFLAG_REFLECTION) && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.FatPVS
@@ -4853,7 +4892,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			r_refdef.view = myview;
 			Matrix4x4_Reflect(&r_refdef.view.matrix, p->plane.normal[0], p->plane.normal[1], p->plane.normal[2], p->plane.dist, -2);
 			Matrix4x4_OriginFromMatrix(&r_refdef.view.matrix, r_refdef.view.origin);
-			if(r_water_scissormode.integer)
+			if (r_water_scissormode.integer)
 			{
 				R_SetupView(true, rt->fbo, rt->depthtexture, rt->colortexture[0], 0, 0, r_fb.water.waterwidth, r_fb.water.waterheight);
 				if (R_ScissorForBBox(p->mins, p->maxs, myscissor))
@@ -4886,12 +4925,12 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			GL_ScissorTest(false);
 			R_ClearScreen(r_refdef.fogenabled);
 			GL_ScissorTest(true);
-			if(r_water_scissormode.integer & 2)
+			if (r_water_scissormode.integer & 2)
 				R_View_UpdateWithScissor(myscissor);
 			else
 				R_View_Update();
 			R_AnimCache_CacheVisibleEntities();
-			if(r_water_scissormode.integer & 1)
+			if (r_water_scissormode.integer & 1)
 				GL_Scissor(myscissor[0], myscissor[1], myscissor[2], myscissor[3]);
 			R_RenderScene(rt->fbo, rt->depthtexture, rt->colortexture[0], 0, 0, rt->texturewidth, rt->textureheight);
 
@@ -4907,7 +4946,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			if (rt->colortexture[0] == NULL || rt->depthtexture == NULL)
 				goto error;
 			r_refdef.view = myview;
-			if(r_water_scissormode.integer)
+			if (r_water_scissormode.integer)
 			{
 				R_SetupView(true, rt->fbo, rt->depthtexture, rt->colortexture[0], 0, 0, r_fb.water.waterwidth, r_fb.water.waterheight);
 				if (R_ScissorForBBox(p->mins, p->maxs, myscissor))
@@ -4935,13 +4974,13 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			VectorNegate(r_refdef.view.clipplane.normal, r_refdef.view.clipplane.normal);
 			r_refdef.view.clipplane.dist = -r_refdef.view.clipplane.dist;
 
-			if((p->materialflags & MATERIALFLAG_CAMERA) && p->camera_entity)
+			if ((p->materialflags & MATERIALFLAG_CAMERA) && p->camera_entity)
 			{
 				// we need to perform a matrix transform to render the view... so let's get the transformation matrix
 				r_fb.water.hideplayer = false; // we don't want to hide the player model from these ones
 				CL_VM_TransformView(p->camera_entity - MAX_EDICTS, &r_refdef.view.matrix, &r_refdef.view.clipplane, visorigin);
 				R_RenderView_UpdateViewVectors();
-				if(r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.FatPVS)
+				if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.FatPVS)
 				{
 					r_refdef.view.usecustompvs = true;
 					r_refdef.scene.worldmodel->brush.FatPVS(r_refdef.scene.worldmodel, visorigin, 2, r_refdef.viewcache.world_pvsbits, (r_refdef.viewcache.world_numclusters+7)>>3, false);
@@ -4954,12 +4993,12 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			GL_ScissorTest(false);
 			R_ClearScreen(r_refdef.fogenabled);
 			GL_ScissorTest(true);
-			if(r_water_scissormode.integer & 2)
+			if (r_water_scissormode.integer & 2)
 				R_View_UpdateWithScissor(myscissor);
 			else
 				R_View_Update();
 			R_AnimCache_CacheVisibleEntities();
-			if(r_water_scissormode.integer & 1)
+			if (r_water_scissormode.integer & 1)
 				GL_Scissor(myscissor[0], myscissor[1], myscissor[2], myscissor[3]);
 			R_RenderScene(rt->fbo, rt->depthtexture, rt->colortexture[0], 0, 0, rt->texturewidth, rt->textureheight);
 
@@ -4984,7 +5023,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			r_refdef.view.ortho_x = 90; // abused as angle by VM_CL_R_SetView
 			r_refdef.view.ortho_y = 90; // abused as angle by VM_CL_R_SetView
 
-			if(p->camera_entity)
+			if (p->camera_entity)
 			{
 				// we need to perform a matrix transform to render the view... so let's get the transformation matrix
 				CL_VM_TransformView(p->camera_entity - MAX_EDICTS, &r_refdef.view.matrix, &r_refdef.view.clipplane, visorigin);
@@ -4999,7 +5038,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			// also reverse the view matrix
 			Matrix4x4_ConcatScale3(&r_refdef.view.matrix, 1, 1, -1); // this serves to invert texcoords in the result, as the copied texture is mapped the wrong way round
 			R_RenderView_UpdateViewVectors();
-			if(p->camera_entity && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.FatPVS)
+			if (p->camera_entity && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.FatPVS)
 			{
 				r_refdef.view.usecustompvs = true;
 				r_refdef.scene.worldmodel->brush.FatPVS(r_refdef.scene.worldmodel, visorigin, 2, r_refdef.viewcache.world_pvsbits, (r_refdef.viewcache.world_numclusters+7)>>3, false);
@@ -5027,6 +5066,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 		}
 
 	}
+
 	r_fb.water.renderingscene = false;
 	r_refdef.view = originalview;
 	R_ResetViewRendering3D(fbo, depthtexture, colortexture, viewx, viewy, viewwidth, viewheight);
@@ -5037,7 +5077,7 @@ error:
 	r_refdef.view = originalview;
 	r_fb.water.renderingscene = false;
 	Cvar_SetValueQuick(&r_water, 0);
-	Con_Printf("R_Water_ProcessPlanes: Error: texture creation failed!  Turned off r_water.\n");
+	Con_Printf ("R_Water_ProcessPlanes: Error: texture creation failed!  Turned off r_water.\n");
 finish:
 	// lowquality hack, restore cvars
 	if (qualityreduction > 0)
@@ -5074,6 +5114,7 @@ static void R_Bloom_StartFrame(void)
 		if (r_viewfbo.integer == 2) textype = TEXTYPE_COLORBUFFER16F;
 		if (r_viewfbo.integer == 3) textype = TEXTYPE_COLORBUFFER32F;
 		break;
+
 	case RENDERPATH_GLES2:
 		r_fb.usedepthtextures = false;
 		break;
@@ -5103,7 +5144,7 @@ static void R_Bloom_StartFrame(void)
 
 	scale = r_viewscale.value * sqrt(viewscalefpsadjusted);
 	if (vid.samples)
-		scale *= sqrt(vid.samples); // supersampling
+		scale *= sqrt((double)vid.samples); // supersampling
 	scale = bound(0.03125f, scale, 4.0f);
 	screentexturewidth = (int)ceil(r_refdef.view.width * scale);
 	screentextureheight = (int)ceil(r_refdef.view.height * scale);
@@ -5179,6 +5220,7 @@ static void R_Bloom_MakeTexture(void)
 	R_SetupShader_Generic(prev->colortexture[0], false, true, true);
 	R_Mesh_Draw(0, 4, 0, 2, polygonelement3i, NULL, 0, polygonelement3s, NULL, 0);
 	r_refdef.stats[r_stat_bloom_drawpixels] += r_fb.bloomwidth * r_fb.bloomheight;
+
 	// we now have a properly scaled bloom image
 
 	// multiply bloom image by itself as many times as desired to darken it
@@ -5190,7 +5232,7 @@ static void R_Bloom_MakeTexture(void)
 		R_Mesh_SetRenderTargets(cur->fbo, NULL, cur->colortexture[0], NULL, NULL, NULL);
 		x *= 2;
 		r = bound(0, r_bloom_colorexponent.value / x, 1); // always 0.5 to 1
-		if(x <= 2)
+		if (x <= 2)
 			GL_Clear(GL_COLOR_BUFFER_BIT, NULL, 1.0f, 0);
 		GL_BlendFunc(GL_SRC_COLOR, GL_ZERO); // square it
 		GL_Color(1,1,1,1); // no fix factor supported here
@@ -5204,7 +5246,7 @@ static void R_Bloom_MakeTexture(void)
 	range = r_bloom_blur.integer * r_fb.bloomwidth / 320;
 	brighten = r_bloom_brighten.value;
 	brighten = sqrt(brighten);
-	if(range >= 1)
+	if (range >= 1)
 		brighten *= (3 * range) / (2 * range - 1); // compensate for the "dot particle"
 
 	for (dir = 0;dir < 2;dir++)
@@ -5241,7 +5283,7 @@ static void R_Bloom_MakeTexture(void)
 			//r = ((range*range+1)/((float)(x*x+1)))/(range*2+1);
 			//r = brighten/(range*2+1);
 			r = brighten / (range * 2 + 1);
-			if(range >= 1)
+			if (range >= 1)
 				r *= (1 - x*x/(float)((range+1)*(range+1)));
 			if (r <= 0)
 				continue;
@@ -5271,7 +5313,7 @@ static void R_BlendView(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *v
 
 	R_EntityMatrix(&identitymatrix);
 
-	if(r_refdef.view.ismain && !R_Stereo_Active() && (r_motionblur.value > 0 || r_damageblur.value > 0) && r_fb.ghosttexture)
+	if (r_refdef.view.ismain && !R_Stereo_Active() && (r_motionblur.value > 0 || r_damageblur.value > 0) && r_fb.ghosttexture)
 	{
 		// declare variables
 		float blur_factor, blur_mouseaccel, blur_velocity;
@@ -5293,7 +5335,7 @@ static void R_BlendView(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *v
 		// enforce minimum amount of blur 
 		blur_factor = blur_average * (1 - r_motionblur_minblur.value) + r_motionblur_minblur.value;
 
-		//Con_Printf("motionblur: direct factor: %f, averaged factor: %f, velocity: %f, mouse accel: %f \n", blur_factor, blur_average, blur_velocity, blur_mouseaccel);
+		//Con_Printf ("motionblur: direct factor: %f, averaged factor: %f, velocity: %f, mouse accel: %f \n", blur_factor, blur_average, blur_velocity, blur_mouseaccel);
 
 		// calculate values into a standard alpha
 		cl.motionbluralpha = 1 - exp(-
@@ -5395,7 +5437,7 @@ static void R_BlendView(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *v
 		if (r_glsl_permutation->loc_BloomColorSubtract      >= 0) qglUniform4f(r_glsl_permutation->loc_BloomColorSubtract   , r_bloom_colorsubtract.value, r_bloom_colorsubtract.value, r_bloom_colorsubtract.value, 0.0f);
 		if (r_glsl_permutation->loc_ColorFringe             >= 0) qglUniform1f(r_glsl_permutation->loc_ColorFringe, r_colorfringe.value );
 		break;
-	}
+	} // sw
 	R_Mesh_Draw(0, 4, 0, 2, polygonelement3i, NULL, 0, polygonelement3s, NULL, 0);
 	r_refdef.stats[r_stat_bloom_drawpixels] += r_refdef.view.width * r_refdef.view.height;
 }
@@ -5529,9 +5571,9 @@ void R_UpdateVariables(void)
 	case RENDERPATH_GL32:
 		r_gpuskeletal = r_glsl_skeletal.integer && !r_showsurfaces.integer;
 	case RENDERPATH_GLES2:
-		if(!vid_gammatables_trivial)
+		if (!vid_gammatables_trivial)
 		{
-			if(!r_texture_gammaramps || vid_gammatables_serial != r_texture_gammaramps_serial)
+			if (!r_texture_gammaramps || vid_gammatables_serial != r_texture_gammaramps_serial)
 			{
 				// build GLSL gamma texture
 #define RAMPWIDTH 256
@@ -5575,7 +5617,7 @@ R_SelectScene
 ================
 */
 void R_SelectScene( r_refdef_scene_type_t scenetype ) {
-	if( scenetype != r_currentscenetype ) {
+	if ( scenetype != r_currentscenetype ) {
 		// store the old scenetype
 		r_scenes_store[ r_currentscenetype ] = r_refdef.scene;
 		r_currentscenetype = scenetype;
@@ -5592,7 +5634,7 @@ R_GetScenePointer
 r_refdef_scene_t * R_GetScenePointer( r_refdef_scene_type_t scenetype )
 {
 	// of course, we could also add a qbool that provides a lock state and a ReleaseScenePointer function..
-	if( scenetype == r_currentscenetype ) {
+	if ( scenetype == r_currentscenetype ) {
 		return &r_refdef.scene;
 	} else {
 		return &r_scenes_store[ scenetype ];
@@ -5605,17 +5647,17 @@ static int R_SortEntities_Compare(const void *ap, const void *bp)
 	const entity_render_t *b = *(const entity_render_t **)bp;
 
 	// 1. compare model
-	if(a->model < b->model)
+	if (a->model < b->model)
 		return -1;
-	if(a->model > b->model)
+	if (a->model > b->model)
 		return +1;
 
 	// 2. compare skin
 	// TODO possibly calculate the REAL skinnum here first using
 	// skinscenes?
-	if(a->skinnum < b->skinnum)
+	if (a->skinnum < b->skinnum)
 		return -1;
-	if(a->skinnum > b->skinnum)
+	if (a->skinnum > b->skinnum)
 		return +1;
 
 	// everything we compared is equal
@@ -5624,7 +5666,7 @@ static int R_SortEntities_Compare(const void *ap, const void *bp)
 static void R_SortEntities(void)
 {
 	// below or equal 2 ents, sorting never gains anything
-	if(r_refdef.scene.numentities <= 2)
+	if (r_refdef.scene.numentities <= 2)
 		return;
 	// sort
 	qsort(r_refdef.scene.entities, r_refdef.scene.numentities, sizeof(*r_refdef.scene.entities), R_SortEntities_Compare);
@@ -5654,7 +5696,7 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 	r_textureframe++; // used only by R_GetCurrentTexture
 	rsurface.entity = NULL; // used only by R_GetCurrentTexture and RSurf_ActiveModelEntity
 
-	if(R_CompileShader_CheckStaticParms())
+	if (R_CompileShader_CheckStaticParms())
 		R_GLSL_Restart_f(cmd_local);
 
 	if (!r_drawentities.integer)
@@ -5665,7 +5707,7 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 	R_AnimCache_ClearCache();
 
 	/* adjust for stereo display */
-	if(R_Stereo_Active())
+	if (R_Stereo_Active())
 	{
 		Matrix4x4_CreateFromQuakeEntity(&offsetmatrix, 0, r_stereo_separation.value * (0.5f - r_stereo_side), 0, 0, r_stereo_angle.value * (0.5f - r_stereo_side), 0, 1);
 		Matrix4x4_Concat(&r_refdef.view.matrix, &originalmatrix, &offsetmatrix);
@@ -5703,7 +5745,7 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 
 	r_refdef.view.colorscale = r_hdr_scenebrightness.value * r_hdr_irisadaptation_value.value;
 
-	if(vid_sRGB.integer && vid_sRGB_fallback.integer && !vid.sRGB3D)
+	if (vid_sRGB.integer && vid_sRGB_fallback.integer && !vid.sRGB3D)
 		// in sRGB fallback, behave similar to true sRGB: convert this
 		// value from linear to sRGB
 		r_refdef.view.colorscale = Image_sRGBFloatFromLinearFloat(r_refdef.view.colorscale);
@@ -5716,7 +5758,7 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 	R_Bloom_StartFrame();
 
 	// apply bloom brightness offset
-	if(r_fb.rt_bloom)
+	if (r_fb.rt_bloom)
 		r_refdef.view.colorscale *= r_bloom_scenebrightness.value;
 
 	// R_Bloom_StartFrame probably set up an fbo for us to render into, it will be rendered to the window later in R_BlendView
@@ -5818,8 +5860,8 @@ extern cvar_t cl_locs_show;
 static void R_DrawLocs(void);
 static void R_DrawEntityBBoxes(prvm_prog_t *prog);
 static void R_DrawModelDecals(void);
-extern qbool r_shadow_usingdeferredprepass;
 extern int r_shadow_shadowmapatlas_modelshadows_size;
+extern qbool r_shadow_usingdeferredprepass;
 void R_RenderScene(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *viewcolortexture, int viewx, int viewy, int viewwidth, int viewheight)
 {
 	qbool shadowmapping = false;
@@ -5914,6 +5956,7 @@ void R_RenderScene(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *viewco
 
 	if (cl.csqc_vidvars.drawworld && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->Draw)
 	{
+		WARP_X_ (R_Q1BSP_Draw)
 		r_refdef.scene.worldmodel->Draw(r_refdef.scene.worldentity);
 		if (r_timereport_active)
 			R_TimeReport("world");
@@ -6261,8 +6304,8 @@ void R_DrawNoModel(entity_render_t *ent)
 {
 	vec3_t org;
 	Matrix4x4_OriginFromMatrix(&ent->matrix, org);
-	if ((ent->crflags & RENDER_ADDITIVE) || (ent->alpha < 1))
-		R_MeshQueue_AddTransparent((ent->crflags & RENDER_NODEPTHTEST) ? TRANSPARENTSORT_HUD : TRANSPARENTSORT_DISTANCE, org, R_DrawNoModel_TransparentCallback, ent, 0, rsurface.rtlight);
+	if (Have_Flag(ent->crflags, RENDER_ADDITIVE) || (ent->alpha < 1))
+		R_MeshQueue_AddTransparent(Have_Flag(ent->crflags, RENDER_NODEPTHTEST) ? TRANSPARENTSORT_HUD : TRANSPARENTSORT_DISTANCE, org, R_DrawNoModel_TransparentCallback, ent, 0, rsurface.rtlight);
 	else
 		R_DrawNoModel_TransparentCallback(ent, rsurface.rtlight, 0, NULL);
 }
@@ -6413,10 +6456,10 @@ void R_Mesh_AddBrushMeshFromPlanes(rmesh_t *mesh, int numplanes, mplane_t *plane
 
 static qbool R_TestQ3WaveFunc(q3wavefunc_t func, const float *parms)
 {
-	if(parms[0] == 0 && parms[1] == 0)
+	if (parms[0] == 0 && parms[1] == 0)
 		return false;
-	if(func >> Q3WAVEFUNC_USER_SHIFT) // assumes rsurface to be set!
-		if(rsurface.userwavefunc_param[bound(0, (func >> Q3WAVEFUNC_USER_SHIFT) - 1, Q3WAVEFUNC_USER_COUNT - 1)] == 0)
+	if (func >> Q3WAVEFUNC_USER_SHIFT) // assumes rsurface to be set!
+		if (rsurface.userwavefunc_param[bound(0, (func >> Q3WAVEFUNC_USER_SHIFT) - 1, Q3WAVEFUNC_USER_COUNT - 1)] == 0)
 			return false;
 	return true;
 }
@@ -6454,7 +6497,7 @@ static float R_EvaluateQ3WaveFunc(q3wavefunc_t func, const float *parms)
 		break;
 	}
 	f = parms[0] + parms[1] * f;
-	if(func >> Q3WAVEFUNC_USER_SHIFT) // assumes rsurface to be set!
+	if (func >> Q3WAVEFUNC_USER_SHIFT) // assumes rsurface to be set!
 		f *= rsurface.userwavefunc_param[bound(0, (func >> Q3WAVEFUNC_USER_SHIFT) - 1, Q3WAVEFUNC_USER_COUNT - 1)];
 	return (float) f;
 }
@@ -6545,7 +6588,7 @@ static void R_LoadQWSkin(r_qwskincache_t *cache, const char *skinname)
 	strlcpy(cache->name, skinname, sizeof(cache->name));
 	dpsnprintf(name, sizeof(name), "skins/%s.pcx", cache->name);
 	if (developer_loading.integer)
-		Con_Printf("loading %s\n", name);
+		Con_Printf ("loading %s\n", name);
 	skinframe = R_SkinFrame_Find(name, textureflags, 0, 0, 0, false);
 	if (!skinframe || !skinframe->base)
 	{
@@ -6576,10 +6619,10 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	t->update_lastrenderframe = r_textureframe;
 	t->update_lastrenderentity = (void *)ent;
 
-	if(ent->entitynumber >= MAX_EDICTS && ent->entitynumber < 2 * MAX_EDICTS)
-		t->camera_entity = ent->entitynumber;
+	if (ent->entitynumber >= MAX_EDICTS && ent->entitynumber < 2 * MAX_EDICTS)
+		t->tcamera_entity = ent->entitynumber;
 	else
-		t->camera_entity = 0;
+		t->tcamera_entity = 0;
 
 	// switch to an alternate material if this is a q1bsp animated material
 	{
@@ -6636,9 +6679,9 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	t->currentalpha = rsurface.entity->alpha * t->basealpha;
 	if (t->basematerialflags & MATERIALFLAG_WATERALPHA && (model->brush.supportwateralpha || r_water.integer || r_novis.integer || r_trippy.integer))
 		t->currentalpha *= r_wateralpha.value;
-	if(t->basematerialflags & MATERIALFLAG_WATERSHADER && r_fb.water.enabled && !r_refdef.view.isoverlay)
+	if (t->basematerialflags & MATERIALFLAG_WATERSHADER && r_fb.water.enabled && !r_refdef.view.isoverlay)
 		t->currentmaterialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW; // we apply wateralpha later
-	if(!r_fb.water.enabled || r_refdef.view.isoverlay)
+	if (!r_fb.water.enabled || r_refdef.view.isoverlay)
 		t->currentmaterialflags &= ~(MATERIALFLAG_WATERSHADER | MATERIALFLAG_REFRACTION | MATERIALFLAG_REFLECTION | MATERIALFLAG_CAMERA);
 
 	// decide on which type of lighting to use for this surface
@@ -6814,7 +6857,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	}
 
 	if (t->materialshaderpass)
-		for (i = 0, tcmod = t->materialshaderpass->tcmods;i < Q3MAXTCMODS && tcmod->tcmod;i++, tcmod++)
+		for (i = 0, tcmod = t->materialshaderpass->tcmods;i < Q3MAXTCMODS_8 && tcmod->tcmod;i++, tcmod++)
 			R_tcMod_ApplyToMatrix(&t->currenttexmatrix, tcmod, t->currentmaterialflags);
 
 	t->colormapping = VectorLength2(t->render_colormap_pants) + VectorLength2(t->render_colormap_shirt) >= (1.0f / 1048576.0f);
@@ -6834,7 +6877,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	t->reflectmasktexture = t->currentskinframe->reflect;
 	if (t->backgroundshaderpass)
 	{
-		for (i = 0, tcmod = t->backgroundshaderpass->tcmods; i < Q3MAXTCMODS && tcmod->tcmod; i++, tcmod++)
+		for (i = 0, tcmod = t->backgroundshaderpass->tcmods; i < Q3MAXTCMODS_8 && tcmod->tcmod; i++, tcmod++)
 			R_tcMod_ApplyToMatrix(&t->currentbackgroundtexmatrix, tcmod, t->currentmaterialflags);
 		t->backgroundbasetexture = (!t->colormapping && t->backgroundcurrentskinframe->merged) ? t->backgroundcurrentskinframe->merged : t->backgroundcurrentskinframe->base;
 		t->backgroundnmaptexture = t->backgroundcurrentskinframe->nmap;
@@ -6944,7 +6987,7 @@ void RSurf_ActiveModelEntity(const entity_render_t *ent, qbool wantnormals, qboo
 	rsurface.skeleton = ent->skeleton;
 	memcpy(rsurface.userwavefunc_param, ent->userwavefunc_param, sizeof(rsurface.userwavefunc_param));
 	rsurface.ent_skinnum = ent->skinnum;
-	rsurface.ent_qwskin = (ent->entitynumber <= cl.maxclients && ent->entitynumber >= 1 && cls.protocol == PROTOCOL_QUAKEWORLD && cl.scores[ent->entitynumber - 1].qw_skin[0] && !strcmp(ent->model->model_name, "progs/player.mdl")) ? (ent->entitynumber - 1) : -1;
+	rsurface.ent_qwskin = (ent->entitynumber <= cl.maxclients && ent->entitynumber >= 1 && cls.protocol == PROTOCOL_QUAKEWORLD && cl.scores[ent->entitynumber - 1].qw_skin[0] && String_Does_Match(ent->model->model_name, "progs/player.mdl")) ? (ent->entitynumber - 1) : -1;
 	rsurface.ent_flags = ent->crflags;
 	if (r_fullbright_directed.integer && (r_fullbright.integer || !model->lit))
 		rsurface.ent_flags |= RENDER_LIGHT | RENDER_DYNAMICMODELLIGHT;
@@ -7504,7 +7547,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 		dynamicvertex = true;
 	}
 
-	for (deformindex = 0, deform = rsurface.texture->deforms;deformindex < Q3MAXDEFORMS && deform->deform && r_deformvertexes.integer;deformindex++, deform++)
+	for (deformindex = 0, deform = rsurface.texture->deforms;deformindex < Q3MAXDEFORMS_4 && deform->deform && r_deformvertexes.integer;deformindex++, deform++)
 	{
 		switch (deform->deform)
 		{
@@ -7554,7 +7597,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			batchneed |= BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_NORMAL | BATCHNEED_ARRAY_TEXCOORD;
 			break;
 		case Q3DEFORM_WAVE:
-			if(!R_TestQ3WaveFunc(deform->wavefunc, deform->waveparms))
+			if (!R_TestQ3WaveFunc(deform->wavefunc, deform->waveparms))
 				break; // if wavefunc is a nop, ignore this transform
 			if (!dynamicvertex)
 			{
@@ -7578,7 +7621,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			batchneed |= BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_NORMAL | BATCHNEED_ARRAY_TEXCOORD;
 			break;
 		case Q3DEFORM_MOVE:
-			if(!R_TestQ3WaveFunc(deform->wavefunc, deform->waveparms))
+			if (!R_TestQ3WaveFunc(deform->wavefunc, deform->waveparms))
 				break; // if wavefunc is a nop, ignore this transform
 			if (!dynamicvertex)
 			{
@@ -7590,6 +7633,20 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			dynamicvertex = true;
 			batchneed |= BATCHNEED_ARRAY_VERTEX;
 			break;
+#if 1 // Baker r0084: roundwave deformation
+		case Q3DEFORM_ROUNDWAVE:
+			if (!dynamicvertex)
+			{
+				r_refdef.stats[r_stat_batch_dynamic_batches_because_deformvertexes_roundwave] += 1;
+				r_refdef.stats[r_stat_batch_dynamic_surfaces_because_deformvertexes_roundwave] += batchnumsurfaces;
+				r_refdef.stats[r_stat_batch_dynamic_vertices_because_deformvertexes_roundwave] += batchnumvertices;
+				r_refdef.stats[r_stat_batch_dynamic_triangles_because_deformvertexes_roundwave] += batchnumtriangles;
+			}
+			dynamicvertex = true;
+			batchneed |= BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_NORMAL | BATCHNEED_ARRAY_TEXCOORD;
+			//needsupdate |= BATCHNEED_VERTEXMESH_VERTEX | BATCHNEED_VERTEXMESH_NORMAL | BATCHNEED_VERTEXMESH_VECTOR;
+			break;
+#endif
 		}
 	}
 	if (rsurface.texture->materialshaderpass)
@@ -8139,7 +8196,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 	// if vertices are deformed (sprite flares and things in maps, possibly
 	// water waves, bulges and other deformations), modify the copied vertices
 	// in place
-	for (deformindex = 0, deform = rsurface.texture->deforms;deformindex < Q3MAXDEFORMS && deform->deform && r_deformvertexes.integer;deformindex++, deform++)
+	for (deformindex = 0, deform = rsurface.texture->deforms;deformindex < Q3MAXDEFORMS_4 && deform->deform && r_deformvertexes.integer;deformindex++, deform++)
 	{
 		float scale;
 		switch (deform->deform)
@@ -8288,14 +8345,14 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 					}
 				}
 			}
-			if(batchneed & (BATCHNEED_ARRAY_NORMAL | BATCHNEED_ARRAY_VECTOR)) // otherwise these can stay NULL
+			if (batchneed & (BATCHNEED_ARRAY_NORMAL | BATCHNEED_ARRAY_VECTOR)) // otherwise these can stay NULL
 			{
 //				rsurface.batchnormal3f = R_FrameData_Alloc(batchnumvertices * sizeof(float[3]));
 //				rsurface.batchnormal3f_vertexbuffer = NULL;
 //				rsurface.batchnormal3f_bufferoffset = 0;
 				Mod_BuildNormals(rsurface.batchfirstvertex, batchnumvertices, batchnumtriangles, rsurface.batchvertex3f, rsurface.batchelement3i + 3 * rsurface.batchfirsttriangle, rsurface.batchnormal3f, r_smoothnormals_areaweighting.integer != 0);
 			}
-			if(batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
+			if (batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
 			{
 //				rsurface.batchsvector3f = R_FrameData_Alloc(batchnumvertices * sizeof(float[3]));
 //				rsurface.batchsvector3f_vertexbuffer = NULL;
@@ -8321,7 +8378,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 				normal[2] = rsurface.batchnormal3f[j*3+2] + deform->parms[0] * noise4f(196 + vertex[0], vertex[1], vertex[2], rsurface.shadertime * deform->parms[1]);
 				VectorNormalize(normal);
 			}
-			if(batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
+			if (batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
 			{
 //				rsurface.batchsvector3f = R_FrameData_Alloc(batchnumvertices * sizeof(float[3]));
 //				rsurface.batchsvector3f_vertexbuffer = NULL;
@@ -8338,7 +8395,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			waveparms[1] = deform->waveparms[1];
 			waveparms[2] = deform->waveparms[2];
 			waveparms[3] = deform->waveparms[3];
-			if(!R_TestQ3WaveFunc(deform->wavefunc, waveparms))
+			if (!R_TestQ3WaveFunc(deform->wavefunc, waveparms))
 				break; // if wavefunc is a nop, don't make a dynamic vertex array
 			// this is how a divisor of vertex influence on deformation
 			animpos = deform->parms[0] ? 1.0f / deform->parms[0] : 100.0f;
@@ -8361,7 +8418,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			}
 			// if we get here, BATCHNEED_ARRAY_NORMAL is in batchneed, so no need to check
 			Mod_BuildNormals(rsurface.batchfirstvertex, batchnumvertices, batchnumtriangles, rsurface.batchvertex3f, rsurface.batchelement3i + 3 * rsurface.batchfirsttriangle, rsurface.batchnormal3f, r_smoothnormals_areaweighting.integer != 0);
-			if(batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
+			if (batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
 			{
 //				rsurface.batchsvector3f = R_FrameData_Alloc(batchnumvertices * sizeof(float[3]));
 //				rsurface.batchsvector3f_vertexbuffer = NULL;
@@ -8387,7 +8444,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			}
 			// if we get here, BATCHNEED_ARRAY_NORMAL is in batchneed, so no need to check
 			Mod_BuildNormals(rsurface.batchfirstvertex, batchnumvertices, batchnumtriangles, rsurface.batchvertex3f, rsurface.batchelement3i + 3 * rsurface.batchfirsttriangle, rsurface.batchnormal3f, r_smoothnormals_areaweighting.integer != 0);
-			if(batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
+			if (batchneed & BATCHNEED_ARRAY_VECTOR) // otherwise these can stay NULL
 			{
 //				rsurface.batchsvector3f = R_FrameData_Alloc(batchnumvertices * sizeof(float[3]));
 //				rsurface.batchsvector3f_vertexbuffer = NULL;
@@ -8400,7 +8457,7 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			break;
 		case Q3DEFORM_MOVE:
 			// deform vertex array
-			if(!R_TestQ3WaveFunc(deform->wavefunc, deform->waveparms))
+			if (!R_TestQ3WaveFunc(deform->wavefunc, deform->waveparms))
 				break; // if wavefunc is a nop, don't make a dynamic vertex array
 			scale = R_EvaluateQ3WaveFunc(deform->wavefunc, deform->waveparms);
 			VectorScale(deform->parms, scale, waveparms);
@@ -8410,6 +8467,37 @@ void RSurf_PrepareVerticesForBatch(int batchneed, int texturenumsurfaces, const 
 			for (j = 0;j < batchnumvertices;j++)
 				VectorAdd(rsurface.batchvertex3f + 3*j, waveparms, rsurface.batchvertex3f + 3*j);
 			break;
+#if 1 // Baker r0084 roundwave deformation
+		case Q3DEFORM_ROUNDWAVE:
+			// find a center of a surface (entity center plus shader-set offsets)
+			VectorSet(center, deform->parms2[0], deform->parms2[1], deform->parms2[2]);
+			float numwaves = deform->parms[0] / deform->parms[1];
+			float radius = deform->parms[0];
+			float exponent = deform->parms[2];
+			float *vert, *norm;
+			// now deform vertexes
+			for (j = 0;j < batchnumvertices;j++)
+			{
+				vert = rsurface.batchvertex3f + 3*j;
+				// deform vertex array to make water with round waves
+				VectorSubtract(center, vert, v);
+				animpos = (radius - VectorLength(v)) / radius;
+				animpos = max(0, animpos);
+				if (animpos > 0)
+				{
+					waveparms[0] = deform->waveparms[0];
+					waveparms[1] = deform->waveparms[1] * animpos;
+					waveparms[2] = deform->waveparms[2] + pow(animpos, exponent) * numwaves;
+					waveparms[3] = deform->waveparms[3];
+					scale = R_EvaluateQ3WaveFunc(deform->wavefunc, waveparms);
+					norm = rsurface.batchnormal3f + 3*j;
+					VectorMA(vert, scale, norm, vert);
+				}
+				
+			}
+			//rebuildNormals = true;
+			break;
+#endif
 		}
 	}
 
@@ -8516,13 +8604,13 @@ void RSurf_DrawBatch(void)
 				if (c >= rsurface.modelsurfaces[j].num_firstvertex && c < (rsurface.modelsurfaces[j].num_firstvertex + rsurface.modelsurfaces[j].num_vertices))
 				{
 					if (rsurface.modelsurfaces[j].texture != rsurface.texture)
-						Sys_Error("RSurf_DrawBatch: index %i uses different texture (%s) than surface %i which it belongs to (which uses %s)\n", c, rsurface.texture->name, j, rsurface.modelsurfaces[j].texture->name);
+						Sys_Error ("RSurf_DrawBatch: index %d uses different texture (%s) than surface %d which it belongs to (which uses %s)\n", c, rsurface.texture->name, j, rsurface.modelsurfaces[j].texture->name);
 					break;
 				}
 			}
 		}
 	}
-#endif
+#endif // 0
 	if (rsurface.batchmultidraw)
 	{
 		// issue multiple draws rather than copying index data
@@ -8562,14 +8650,14 @@ static int RSurf_FindWaterPlaneForSurface(const msurface_t *surface)
 	bestd = 0;
 	for (planeindex = 0, p = r_fb.water.waterplanes;planeindex < r_fb.water.numwaterplanes;planeindex++, p++)
 	{
-		if(p->camera_entity != rsurface.texture->camera_entity)
+		if (p->camera_entity != rsurface.texture->tcamera_entity)
 			continue;
 		d = 0;
-		if(!prepared)
+		if (!prepared)
 		{
 			RSurf_PrepareVerticesForBatch(BATCHNEED_ARRAY_VERTEX, 1, &surface);
 			prepared = true;
-			if(rsurface.batchnumvertices == 0)
+			if (rsurface.batchnumvertices == 0)
 				break;
 		}
 		for (vertexindex = 0, v = rsurface.batchvertex3f + rsurface.batchfirstvertex * 3;vertexindex < rsurface.batchnumvertices;vertexindex++, v += 3)
@@ -8722,10 +8810,10 @@ static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface
 		for (start = 0;start < texturenumsurfaces;start = end)
 		{
 			startplaneindex = RSurf_FindWaterPlaneForSurface(texturesurfacelist[start]);
-			if(startplaneindex < 0)
+			if (startplaneindex < 0)
 			{
 				// this happens if the plane e.g. got backface culled and thus didn't get a water plane. We can just ignore this.
-				// Con_Printf("No matching water plane for surface with material flags 0x%08x - PLEASE DEBUG THIS\n", rsurface.texture->currentmaterialflags);
+				// Con_Printf ("No matching water plane for surface with material flags 0x%08x - PLEASE DEBUG THIS\n", rsurface.texture->currentmaterialflags);
 				end = start + 1;
 				continue;
 			}
@@ -8994,7 +9082,7 @@ static void R_QueueModelSurfaceList(entity_render_t *ent, int numsurfaces, const
 				;
 			continue;
 		}
-		if(depthonly || prepass)
+		if (depthonly || prepass)
 		{
 			rsurface.lightmaptexture = NULL;
 			rsurface.deluxemaptexture = NULL;
@@ -9373,27 +9461,27 @@ static void R_DecalSystem_SplatEntity(entity_render_t *ent, const vec3_t worldor
 	projectionvector[3][2] = -(localorigin[0]*projectionvector[0][2]+localorigin[1]*projectionvector[1][2]+localorigin[2]*projectionvector[2][2]);
 	Matrix4x4_FromVectors(&projection, projectionvector[0], projectionvector[1], projectionvector[2], projectionvector[3]);
 }
-#endif
+#endif // 0
 
 	dynamic = model->surfmesh.isanimated;
 	surfaces = model->data_surfaces;
 
 	bih = NULL;
 	bih_triangles_count = -1;
-	if(!dynamic)
+	if (!dynamic)
 	{
-		if(model->render_bih.numleafs)
+		if (model->render_bih.numleafs)
 			bih = &model->render_bih;
-		else if(model->collision_bih.numleafs)
+		else if (model->collision_bih.numleafs)
 			bih = &model->collision_bih;
 	}
-	if(bih)
+	if (bih)
 		bih_triangles_count = BIH_GetTriangleListForBox(bih, sizeof(bih_triangles) / sizeof(*bih_triangles), bih_triangles, bih_surfaces, localmins, localmaxs);
-	if(bih_triangles_count == 0)
+	if (bih_triangles_count == 0)
 		return;
-	if(bih_triangles_count > (int) (sizeof(bih_triangles) / sizeof(*bih_triangles))) // hit too many, likely bad anyway
+	if (bih_triangles_count > (int) (sizeof(bih_triangles) / sizeof(*bih_triangles))) // hit too many, likely bad anyway
 		return;
-	if(bih_triangles_count > 0)
+	if (bih_triangles_count > 0)
 	{
 		for (triangleindex = 0; triangleindex < bih_triangles_count; ++triangleindex)
 		{
@@ -9516,8 +9604,7 @@ static void R_DrawModelDecals_FadeEntity(entity_render_t *ent)
 	if (r_showsurfaces.integer)
 		return;
 
-	if (ent->model != decalsystem->model || ent->alpha < 1 || (ent->crflags & RENDER_ADDITIVE))
-	{
+	if (ent->model != decalsystem->model || ent->alpha < 1 || Have_Flag (ent->crflags, RENDER_ADDITIVE)) {
 		R_DecalSystem_Reset(decalsystem);
 		return;
 	}
@@ -9591,8 +9678,7 @@ static void R_DrawModelDecals_Entity(entity_render_t *ent)
 	if (r_showsurfaces.integer)
 		return;
 
-	if (ent->model != decalsystem->model || ent->alpha < 1 || (ent->crflags & RENDER_ADDITIVE))
-	{
+	if (ent->model != decalsystem->model || ent->alpha < 1 || Have_Flag(ent->crflags, RENDER_ADDITIVE)) {
 		R_DecalSystem_Reset(decalsystem);
 		return;
 	}
@@ -9952,8 +10038,8 @@ static void R_DrawDebugModel(void)
 		}
 		rsurface.texture = NULL;
 	}
-# endif
-#endif
+# endif // Baker 0?
+#endif // #ifndef USE_GLES2
 }
 
 int r_maxsurfacelist = 0;
@@ -10114,7 +10200,7 @@ void R_DebugLine(vec3_t start, vec3_t end)
 	y1 = (vid.height - s[0][1]) * vid_conheight.value / vid.height;
 	x2 = s[1][0] * vid_conwidth.value / vid.width;
 	y2 = (vid.height - s[1][1]) * vid_conheight.value / vid.height;
-	//Con_DPrintf("R_DebugLine: %.0f,%.0f to %.0f,%.0f\n", x1, y1, x2, y2);
+	//Con_DPrintf ("R_DebugLine: %.0f,%.0f to %.0f,%.0f\n", x1, y1, x2, y2);
 
 	// add the line to the UI mesh for drawing later
 

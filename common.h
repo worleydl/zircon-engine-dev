@@ -32,10 +32,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /// MSVC has a different name for several standard functions
 #ifdef _WIN32
-# define strcasecmp _stricmp
-# define strncasecmp _strnicmp
+	# define strcasecmp _stricmp
+	# define strncasecmp _strnicmp
 #else
-#include "strings.h"
+	#include "strings.h"
 #endif
 
 // Create our own define for Mac OS X
@@ -47,6 +47,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //============================================================================
 
 #define ContainerOf(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
+
+typedef struct sys_s
+{
+	int argc;
+	const char **argv;
+	int selffd;
+	int outfd;
+	int nicelevel;
+	qbool nicepossible;
+	qbool isnice;
+} sys_t;
+
+extern sys_t sys;
+
+// END SYS
 
 typedef struct sizebuf_s
 {
@@ -224,7 +239,12 @@ char *va(char *buf, size_t buflen, const char *format, ...) DP_FUNC_PRINTF(3);
 #ifndef __cplusplus
 #define DP_STATIC_ASSERT(expr, str) _Static_assert(expr, str)
 #else
-#define DP_STATIC_ASSERT(expr, str) static_assert(expr, str)
+	#if defined(_MSC_VER) && _MSC_VER < 1900
+		#define	DP_STATIC_ASSERT(expr, str)	\
+			typedef int dummy_ ## str[(expr) * 2 - 1]
+	#else
+		#define DP_STATIC_ASSERT(expr, str) static_assert(expr, str)
+	#endif
 #endif
 
 // snprintf and vsnprintf are NOT portable. Use their DP counterparts instead
@@ -336,7 +356,11 @@ char **XPM_DecodeString(const char *in);
 
 size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen);
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+// Baker use ARRAY_COUNT instead (name differece only)
+// A size implies the number of bytes.
+// We do not want the number of bytes of the array, we
+// want a count of the number of elements
+//#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angleval, const vec_t velocityval);
 
@@ -388,7 +412,13 @@ char *String_Replace_Alloc (const char *s, const char *s_find, const char *s_rep
 char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit);
 
 int String_Does_End_With (const char *s, const char *s_suffix);
+
+#if 1
+#define String_Does_Contain(s,s_find) (!!strstr(s,s_find))
+#else
 int String_Does_Contain (const char *s, const char *s_find);
+#endif
+
 int String_Does_Contain_Caseless (const char *s, const char *s_find);
 int String_Does_End_With_Caseless (const char *s, const char *s_suffix);
 int String_Does_Have_Uppercase (const char *s);
@@ -459,4 +489,4 @@ int Time_Seconds (int seconds);
 void Math_Project (vec_t *src3d, vec_t *dest2d);
 void Math_Unproject (vec_t *src2d, vec_t *dest3d);
 
-#endif // COMMON_H
+#endif // ! COMMON_H

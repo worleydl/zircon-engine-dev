@@ -18,10 +18,10 @@ void EntityFrame4_CL_ReadFrame(void)
 	enumber = (unsigned short) MSG_ReadShort(&cl_message);
 	if (developer_networkentities.integer >= 10)
 	{
-		Con_Printf("recv svc_entities num:%i ref:%i database: ref:%i commits:", framenum, referenceframenum, d->referenceframenum);
+		Con_Printf ("recv svc_entities num:%d ref:%d database: ref:%d commits:", framenum, referenceframenum, d->referenceframenum);
 		for (i = 0;i < MAX_ENTITY_HISTORY;i++)
 			if (d->commit[i].numentities)
-				Con_Printf(" %i", d->commit[i].framenum);
+				Con_Printf (" %d", d->commit[i].framenum);
 		Con_Print("\n");
 	}
 	if (!EntityFrame4_AckFrame(d, referenceframenum, false))
@@ -41,7 +41,7 @@ void EntityFrame4_CL_ReadFrame(void)
 	}
 	if (d->currentcommit == NULL)
 	{
-		Con_Printf("EntityFrame4_CL_ReadFrame: error while decoding frame %i: database full, reading but not storing this update\n", framenum);
+		Con_Printf ("EntityFrame4_CL_ReadFrame: error while decoding frame %d: database full, reading but not storing this update\n", framenum);
 		skip = true;
 	}
 	done = false;
@@ -93,20 +93,20 @@ void EntityFrame4_CL_ReadFrame(void)
 				{
 					// simply removed
 					if (developer_networkentities.integer >= 2)
-						Con_Printf("entity %i: remove\n", enumber);
+						Con_Printf ("entity %d: remove\n", enumber);
 					*s = defaultstate;
 				}
 				else
 				{
 					// read the changes
 					if (developer_networkentities.integer >= 2)
-						Con_Printf("entity %i: update\n", enumber);
+						Con_Printf ("entity %d: update\n", enumber);
 					s->active = ACTIVE_NETWORK;
 					EntityState_ReadFields(s, EntityState_ReadExtendBits());
 				}
 			}
 			else if (developer_networkentities.integer >= 4)
-				Con_Printf("entity %i: copy\n", enumber);
+				Con_Printf ("entity %d: copy\n", enumber);
 			// set the cl.entities_active flag
 			cl.entities_active[enumber] = (s->active == ACTIVE_NETWORK);
 			// set the update time
@@ -123,9 +123,9 @@ void EntityFrame4_CL_ReadFrame(void)
 			if (developer_networkentities.integer >= 2 && cl.entities[enumber].state_current.active != cl.entities[enumber].state_previous.active)
 			{
 				if (cl.entities[enumber].state_current.active == ACTIVE_NETWORK)
-					Con_Printf("entity #%i has become active\n", enumber);
+					Con_Printf ("entity #%d has become active\n", enumber);
 				else if (cl.entities[enumber].state_previous.active)
-					Con_Printf("entity #%i has become inactive\n", enumber);
+					Con_Printf ("entity #%d has become inactive\n", enumber);
 			}
 		}
 	}

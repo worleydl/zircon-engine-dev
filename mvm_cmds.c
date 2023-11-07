@@ -94,7 +94,7 @@ static void VM_M_getmousetarget(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNT(0,VM_M_getmousetarget);
 
-	if(in_client_mouse)
+	if (in_client_mouse)
 		PRVM_G_FLOAT(OFS_RETURN) = 2;
 	else
 		PRVM_G_FLOAT(OFS_RETURN) = 1;
@@ -185,13 +185,13 @@ static void VM_M_getresolution(prvm_prog_t *prog)
 
 	fs = ((prog->argc <= 1) || ((int)PRVM_G_FLOAT(OFS_PARM1)));
 
-	if(nr < -1 || nr >= (fs ? video_resolutions_count : video_resolutions_hardcoded_count))
+	if (nr < -1 || nr >= (fs ? video_resolutions_count : video_resolutions_hardcoded_count))
 	{
 		PRVM_G_VECTOR(OFS_RETURN)[0] = 0;
 		PRVM_G_VECTOR(OFS_RETURN)[1] = 0;
 		PRVM_G_VECTOR(OFS_RETURN)[2] = 0;
 	}
-	else if(nr == -1)
+	else if (nr == -1)
 	{
 		vid_mode_t *m = VID_GetDesktopMode();
 		if (m)
@@ -226,11 +226,11 @@ static void VM_M_getgamedirinfo(prvm_prog_t *prog)
 
 	PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
 
-	if(nr >= 0 && nr < fs_all_gamedirs_count)
+	if (nr >= 0 && nr < fs_all_gamedirs_count)
 	{
-		if(item == 0)
+		if (item == 0)
 			PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, fs_all_gamedirs[nr].name );
-		else if(item == 1)
+		else if (item == 1)
 			PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, fs_all_gamedirs[nr].description );
 	}
 }
@@ -288,7 +288,7 @@ static void VM_M_getserverliststat(prvm_prog_t *prog)
 		PRVM_G_FLOAT ( OFS_RETURN ) = serverlist_sortflags;
 		return;
 	default:
-		VM_Warning(prog, "VM_M_getserverliststat: bad type %i!\n", type );
+		VM_Warning(prog, "VM_M_getserverliststat: bad type %d!\n", type );
 	}
 }
 
@@ -326,13 +326,13 @@ static void VM_M_setserverlistmaskstring(prvm_prog_t *prog)
 	str = PRVM_G_STRING( OFS_PARM2 );
 
 	masknr = (int)PRVM_G_FLOAT( OFS_PARM0 );
-	if( masknr >= 0 && masknr < SERVERLIST_ANDMASKCOUNT )
+	if ( masknr >= 0 && masknr < SERVERLIST_ANDMASKCOUNT )
 		mask = &serverlist_andmasks[masknr];
-	else if( masknr >= 512 && masknr - 512 < SERVERLIST_ORMASKCOUNT )
+	else if ( masknr >= 512 && masknr - 512 < SERVERLIST_ORMASKCOUNT )
 		mask = &serverlist_ormasks[masknr - 512 ];
 	else
 	{
-		VM_Warning(prog, "VM_M_setserverlistmaskstring: invalid mask number %i\n", masknr );
+		VM_Warning(prog, "VM_M_setserverlistmaskstring: invalid mask number %d\n", masknr );
 		return;
 	}
 
@@ -361,7 +361,7 @@ static void VM_M_setserverlistmaskstring(prvm_prog_t *prog)
 			strlcpy( mask->info.game, str, sizeof(mask->info.game)  );
 			break;
 		default:
-			VM_Warning(prog, "VM_M_setserverlistmaskstring: Bad field number %i passed!\n", field );
+			VM_Warning(prog, "VM_M_setserverlistmaskstring: Bad field number %d passed!\n", field );
 			return;
 	}
 
@@ -388,13 +388,13 @@ static void VM_M_setserverlistmasknumber(prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT( 4, VM_M_setserverlistmasknumber );
 
 	masknr = (int)PRVM_G_FLOAT( OFS_PARM0 );
-	if( masknr >= 0 && masknr < SERVERLIST_ANDMASKCOUNT )
+	if ( masknr >= 0 && masknr < SERVERLIST_ANDMASKCOUNT )
 		mask = &serverlist_andmasks[masknr];
-	else if( masknr >= 512 && masknr - 512 < SERVERLIST_ORMASKCOUNT )
+	else if ( masknr >= 512 && masknr - 512 < SERVERLIST_ORMASKCOUNT )
 		mask = &serverlist_ormasks[masknr - 512 ];
 	else
 	{
-		VM_Warning(prog, "VM_M_setserverlistmasknumber: invalid mask number %i\n", masknr );
+		VM_Warning(prog, "VM_M_setserverlistmasknumber: invalid mask number %d\n", masknr );
 		return;
 	}
 
@@ -430,7 +430,7 @@ static void VM_M_setserverlistmasknumber(prvm_prog_t *prog)
 			mask->info.isfavorite = number != 0;
 			break;
 		default:
-			VM_Warning(prog, "VM_M_setserverlistmasknumber: Bad field number %i passed!\n", field );
+			VM_Warning(prog, "VM_M_setserverlistmasknumber: Bad field number %d passed!\n", field );
 			return;
 	}
 
@@ -470,13 +470,13 @@ static void VM_M_getserverliststring(prvm_prog_t *prog)
 
 	hostnr = (int)PRVM_G_FLOAT(OFS_PARM1);
 
-	if(hostnr == -1 && serverlist_callbackentry)
+	if (hostnr == -1 && serverlist_callbackentry)
 	{
 		cache = serverlist_callbackentry;
 	}
 	else
 	{
-		if(hostnr < 0 || hostnr >= serverlist_viewcount)
+		if (hostnr < 0 || hostnr >= serverlist_viewcount)
 		{
 			Con_Print("VM_M_getserverliststring: bad hostnr passed!\n");
 			return;
@@ -535,13 +535,13 @@ static void VM_M_getserverlistnumber(prvm_prog_t *prog)
 
 	hostnr = (int)PRVM_G_FLOAT(OFS_PARM1);
 
-	if(hostnr == -1 && serverlist_callbackentry)
+	if (hostnr == -1 && serverlist_callbackentry)
 	{
 		cache = serverlist_callbackentry;
 	}
 	else
 	{
-		if(hostnr < 0 || hostnr >= serverlist_viewcount)
+		if (hostnr < 0 || hostnr >= serverlist_viewcount)
 		{
 			Con_Print("VM_M_getserverliststring: bad hostnr passed!\n");
 			return;
@@ -627,37 +627,37 @@ static void VM_M_getserverlistindexforkey(prvm_prog_t *prog)
 	key = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, key );
 
-	if( !strcmp( key, "cname" ) )
+	if ( String_Does_Match( key, "cname" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_CNAME;
-	else if( !strcmp( key, "ping" ) )
+	else if ( String_Does_Match( key, "ping" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_PING;
-	else if( !strcmp( key, "game" ) )
+	else if ( String_Does_Match( key, "game" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_GAME;
-	else if( !strcmp( key, "mod" ) )
+	else if ( String_Does_Match( key, "mod" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_MOD;
-	else if( !strcmp( key, "map" ) )
+	else if ( String_Does_Match( key, "map" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_MAP;
-	else if( !strcmp( key, "name" ) )
+	else if ( String_Does_Match( key, "name" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NAME;
-	else if( !strcmp( key, "qcstatus" ) )
+	else if ( String_Does_Match( key, "qcstatus" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_QCSTATUS;
-	else if( !strcmp( key, "players" ) )
+	else if ( String_Does_Match( key, "players" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_PLAYERS;
-	else if( !strcmp( key, "maxplayers" ) )
+	else if ( String_Does_Match( key, "maxplayers" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_MAXPLAYERS;
-	else if( !strcmp( key, "numplayers" ) )
+	else if ( String_Does_Match( key, "numplayers" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NUMPLAYERS;
-	else if( !strcmp( key, "numbots" ) )
+	else if ( String_Does_Match( key, "numbots" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NUMBOTS;
-	else if( !strcmp( key, "numhumans" ) )
+	else if ( String_Does_Match( key, "numhumans" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_NUMHUMANS;
-	else if( !strcmp( key, "freeslots" ) )
+	else if ( String_Does_Match( key, "freeslots" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_FREESLOTS;
-	else if( !strcmp( key, "protocol" ) )
+	else if ( String_Does_Match( key, "protocol" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_PROTOCOL;
-	else if( !strcmp( key, "category" ) )
+	else if ( String_Does_Match( key, "category" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_CATEGORY;
-	else if( !strcmp( key, "isfavorite" ) )
+	else if ( String_Does_Match( key, "isfavorite" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = SLIF_ISFAVORITE;
 	else
 		PRVM_G_FLOAT( OFS_RETURN ) = -1;
@@ -697,7 +697,7 @@ static sizebuf_t *VM_M_WriteDest (prvm_prog_t *prog)
 	int		dest;
 	int		destclient;
 
-	if(!sv.active)
+	if (!sv.active)
 		prog->error_cmd("VM_M_WriteDest: game is not server (%s)", prog->name);
 
 	dest = (int)PRVM_G_FLOAT(OFS_PARM1);
@@ -817,7 +817,7 @@ static void VM_M_crypto_getkeyfp(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, keyfp, sizeof(keyfp), NULL, 0, NULL, NULL))
+	if (LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, keyfp, sizeof(keyfp), NULL, 0, NULL, NULL))
 		PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, keyfp );
 	else
 		PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
@@ -833,7 +833,7 @@ static void VM_M_crypto_getidfp(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, idfp, sizeof(idfp), NULL, NULL))
+	if (LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, idfp, sizeof(idfp), NULL, NULL))
 		PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, idfp );
 	else
 		PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
@@ -849,7 +849,7 @@ static void VM_M_crypto_getidstatus(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, NULL, &issigned))
+	if (LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, NULL, &issigned))
 		PRVM_G_FLOAT( OFS_RETURN ) = issigned ? 2 : 1;
 	else
 		PRVM_G_FLOAT( OFS_RETURN ) = 0;
@@ -866,7 +866,7 @@ static void VM_M_crypto_getencryptlevel(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, &aeslevel, NULL))
+	if (LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, &aeslevel, NULL))
 		PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString(prog, aeslevel ? va(vabuf, sizeof(vabuf), "%d AES128", aeslevel) : "0");
 	else
 		PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
@@ -960,7 +960,7 @@ void VM_cin_open(prvm_prog_t *prog)
 	VM_CheckEmptyString(prog,  file );
     VM_CheckEmptyString(prog,  name );
 
-	if( CL_OpenVideo( file, name, MENUOWNER, "" ) )
+	if ( CL_OpenVideo( file, name, MENUOWNER, "" ) )
 		PRVM_G_FLOAT( OFS_RETURN ) = 1;
 	else
 		PRVM_G_FLOAT( OFS_RETURN ) = 0;
@@ -1005,7 +1005,7 @@ void VM_cin_setstate(prvm_prog_t *prog)
 	state = (clvideostate_t)((int)PRVM_G_FLOAT( OFS_PARM1 ));
 
 	video = CL_GetVideoByName( name );
-	if( video && state > CLVIDEO_UNUSED && state < CLVIDEO_STATECOUNT )
+	if ( video && state > CLVIDEO_UNUSED && state < CLVIDEO_STATECOUNT )
 		CL_SetVideoState( video, state );
 }
 
@@ -1027,7 +1027,7 @@ void VM_cin_getstate(prvm_prog_t *prog)
 	VM_CheckEmptyString(prog,  name );
 
 	video = CL_GetVideoByName( name );
-	if( video )
+	if ( video )
 		PRVM_G_FLOAT( OFS_RETURN ) = (int)video->state;
 	else
 		PRVM_G_FLOAT( OFS_RETURN ) = 0;
@@ -1051,7 +1051,7 @@ void VM_cin_restart(prvm_prog_t *prog)
 	VM_CheckEmptyString(prog,  name );
 
 	video = CL_GetVideoByName( name );
-	if( video )
+	if ( video )
 		CL_RestartVideo( video );
 }
 

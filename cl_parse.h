@@ -14,4 +14,4 @@ void CL_Parse_ErrorCleanUp(void);
 void QW_CL_StartUpload(unsigned char *data, int size);
 void CL_KeepaliveMessage(qbool readmessages); // call this during loading of large content
 
-#endif
+#endif // ! CL_PARSE_H

@@ -51,12 +51,12 @@ static void R_TrackSprite(const entity_render_t *ent, vec3_t origin, vec3_t left
 	*edge = 0; // FIXME::should assume edge == 0, which is correct currently
 	for(i = 0; i < 4; ++i)
 	{
-		if(PlaneDiff(origin, &r_refdef.view.frustum[i]) < -EPSILON)
+		if (PlaneDiff(origin, &r_refdef.view.frustum[i]) < -EPSILON)
 			break;
 	}
 
 	// If it wasn't outside a plane, no tracking needed
-	if(i < 4)
+	if (i < 4)
 	{
 		float x, y;    // screen X and Y coordinates
 		float ax, ay;  // absolute coords, used for division
@@ -65,28 +65,28 @@ static void R_TrackSprite(const entity_render_t *ent, vec3_t origin, vec3_t left
 		bCoord[2] *= r_refdef.view.frustum_x;
 		bCoord[1] *= r_refdef.view.frustum_y;
 
-		//Con_Printf("%f %f %f\n", bCoord[0], bCoord[1], bCoord[2]);
+		//Con_Printf ("%f %f %f\n", bCoord[0], bCoord[1], bCoord[2]);
 		
 		ax = fabs(bCoord[1]);
 		ay = fabs(bCoord[2]);
 		// get the greater value and determine the screen edge it's on
-		if(ax < ay)
+		if (ax < ay)
 		{
 			ax = ay;
 			// 180 or 0 degrees
-			if(bCoord[2] < 0.0f)
+			if (bCoord[2] < 0.0f)
 				*edge = SIDE_BOTTOM;
 			else
 				*edge = SIDE_TOP;
 		} else {
-			if(bCoord[1] < 0.0f)
+			if (bCoord[1] < 0.0f)
 				*edge = SIDE_RIGHT;
 			else
 				*edge = SIDE_LEFT;
 		}
 		
 		// umm... 
-		if(ax < MIN_EPSILON) // this was == 0.0f before --blub
+		if (ax < MIN_EPSILON) // this was == 0.0f before --blub
 			ax = MIN_EPSILON;
 		// get the -1 to +1 range
 		x = bCoord[1] / ax;
@@ -122,12 +122,12 @@ static void R_TrackSprite(const entity_render_t *ent, vec3_t origin, vec3_t left
 		VectorMA(origin, distance * r_refdef.view.frustum_x * x * ax, left, origin);
 		VectorMA(origin, distance * r_refdef.view.frustum_y * y * ay, up, origin);
 
-		if(r_track_sprites_flags.integer & TSF_ROTATE_CONTINOUSLY)
+		if (r_track_sprites_flags.integer & TSF_ROTATE_CONTINOUSLY)
 		{
 			// compute the rotation, negate y axis, we're pointing outwards
 			*dir_angle = atan(-y / x) * 180.0f/M_PI;
 			// we need the real, full angle
-			if(x < 0.0f)
+			if (x < 0.0f)
 				*dir_angle += 180.0f;
 		}
 
@@ -143,10 +143,10 @@ static void R_TrackSprite(const entity_render_t *ent, vec3_t origin, vec3_t left
 
 static void R_RotateSprite(const mspriteframe_t *frame, vec3_t origin, vec3_t left, vec3_t up, int edge, float dir_angle)
 {
-	if(!(r_track_sprites_flags.integer & TSF_ROTATE))
+	if (!(r_track_sprites_flags.integer & TSF_ROTATE))
 	{
 		// move down by its size if on top, otherwise it's invisible
-		if(edge == SIDE_TOP)
+		if (edge == SIDE_TOP)
 			VectorMA(origin, -(fabs(frame->up)+fabs(frame->down)), up, origin);
 	} else {
 		static float rotation_angles[5] =
@@ -166,14 +166,14 @@ static void R_RotateSprite(const mspriteframe_t *frame, vec3_t origin, vec3_t le
 		vec2_t dir;
 		float angle;
 
-		if(edge < 1 || edge > 4)
+		if (edge < 1 || edge > 4)
 			return; // this usually means something went wrong somewhere, there's no way to get a wrong edge value currently
 		
 		dir[0] = frame->right + frame->left;
 		dir[1] = frame->down + frame->up;
 
 		// only rotate when the hotspot isn't the center though.
-		if(dir[0] < MIN_EPSILON && dir[1] < MIN_EPSILON)
+		if (dir[0] < MIN_EPSILON && dir[1] < MIN_EPSILON)
 		{
 			return;
 		}
@@ -186,13 +186,13 @@ static void R_RotateSprite(const mspriteframe_t *frame, vec3_t origin, vec3_t le
 		angle = atan(dir[1] / dir[0]) * 180.0f/M_PI;
 
 		// we need the real, full angle
-		if(dir[0] < 0.0f)
+		if (dir[0] < 0.0f)
 			angle += 180.0f;
 
 		// Rotate around rotation_angle - frame_angle
 		// The axis SHOULD equal r_refdef.view.forward, but let's generalize this:
 		CrossProduct(up, left, axis);
-		if(r_track_sprites_flags.integer & TSF_ROTATE_CONTINOUSLY)
+		if (r_track_sprites_flags.integer & TSF_ROTATE_CONTINOUSLY)
 			Matrix4x4_CreateRotate(&rotm, dir_angle - angle, axis[0], axis[1], axis[2]);
 		else
 			Matrix4x4_CreateRotate(&rotm, rotation_angles[edge] - angle, axis[0], axis[1], axis[2]);
@@ -243,7 +243,7 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 		up[2] = ent->scale;
 		break;
 	default:
-		Con_Printf("R_SpriteSetup: unknown sprite type %i\n", model->sprite.sprnum_type);
+		Con_PrintLinef ("R_SpriteSetup: unknown sprite type %d", model->sprite.sprnum_type);
 		// fall through to normal sprite
 	case SPR_VP_PARALLEL:
 		// normal sprite
@@ -258,14 +258,14 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 		// honors scale
 		// honors a global label scaling cvar
 	
-		if(r_fb.water.renderingscene) // labels are considered HUD items, and don't appear in reflections
+		if (r_fb.water.renderingscene) // labels are considered HUD items, and don't appear in reflections
 			return;
 
 		// See the R_TrackSprite definition for a reason for this copying
 		VectorCopy(r_refdef.view.left, left);
 		VectorCopy(r_refdef.view.up, up);
 		// It has to be done before the calculations, because it moves the origin.
-		if(r_track_sprites.integer)
+		if (r_track_sprites.integer)
 			R_TrackSprite(ent, org, left, up, &edge, &dir_angle);
 		
 		scale = 2 * ent->scale * (DotProduct(r_refdef.view.forward, org) - DotProduct(r_refdef.view.forward, r_refdef.view.origin)) * r_labelsprites_scale.value;
@@ -281,19 +281,19 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 		// honors a global label scaling cvar before the rounding
 		// FIXME assumes that 1qu is 1 pixel in the sprite like in SPR32 format. Should not do that, but instead query the source image! This bug only applies to the roundtopixels case, though.
 
-		if(r_fb.water.renderingscene) // labels are considered HUD items, and don't appear in reflections
+		if (r_fb.water.renderingscene) // labels are considered HUD items, and don't appear in reflections
 			return;
 
 		// See the R_TrackSprite definition for a reason for this copying
 		VectorCopy(r_refdef.view.left, left);
 		VectorCopy(r_refdef.view.up, up);
 		// It has to be done before the calculations, because it moves the origin.
-		if(r_track_sprites.integer)
+		if (r_track_sprites.integer)
 			R_TrackSprite(ent, org, left, up, &edge, &dir_angle);
 		
 		scale = 2 * (DotProduct(r_refdef.view.forward, org) - DotProduct(r_refdef.view.forward, r_refdef.view.origin));
 
-		if(r_labelsprites_roundtopixels.integer)
+		if (r_labelsprites_roundtopixels.integer)
 		{
 			hud_vs_screen = max(
 				vid_conwidth.integer / (float) r_refdef.view.width,
@@ -303,16 +303,16 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 			// snap to "good sizes"
 			// 1     for (0.6, 1.41]
 			// 2     for (1.8, 3.33]
-			if(hud_vs_screen <= 0.6)
+			if (hud_vs_screen <= 0.6)
 				hud_vs_screen = 0; // don't, use real HUD pixels
-			else if(hud_vs_screen <= 1.41)
+			else if (hud_vs_screen <= 1.41)
 				hud_vs_screen = 1;
-			else if(hud_vs_screen <= 3.33)
+			else if (hud_vs_screen <= 3.33)
 				hud_vs_screen = 2;
 			else
 				hud_vs_screen = 0; // don't, use real HUD pixels
 
-			if(hud_vs_screen)
+			if (hud_vs_screen)
 			{
 				// use screen pixels
 				VectorScale(left, scale * r_refdef.view.frustum_x / (r_refdef.view.width * hud_vs_screen), left); // 1px
@@ -325,7 +325,7 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 				VectorScale(up, scale * r_refdef.view.frustum_y / vid_conheight.integer * r_labelsprites_scale.value, up); // 1px
 			}
 
-			if(hud_vs_screen == 1)
+			if (hud_vs_screen == 1)
 			{
 				VectorMA(r_refdef.view.origin, scale, r_refdef.view.forward, middle); // center of screen in distance scale
 				dx = 0.5 - fmod(r_refdef.view.width * 0.5 + (DotProduct(org, left) - DotProduct(middle, left)) / DotProduct(left, left) + 0.5, 1.0);
@@ -403,11 +403,11 @@ static void R_Model_Sprite_Draw_TransparentCallback(const entity_render_t *ent, 
 			}
 
 			// SPR_LABEL should not use depth test AT ALL
-			if(model->sprite.sprnum_type == SPR_LABEL || model->sprite.sprnum_type == SPR_LABEL_SCALE)
-				if(texture->currentmaterialflags & MATERIALFLAG_SHORTDEPTHRANGE)
+			if (model->sprite.sprnum_type == SPR_LABEL || model->sprite.sprnum_type == SPR_LABEL_SCALE)
+				if (texture->currentmaterialflags & MATERIALFLAG_SHORTDEPTHRANGE)
 					texture->currentmaterialflags = (texture->currentmaterialflags & ~MATERIALFLAG_SHORTDEPTHRANGE) | MATERIALFLAG_NODEPTHTEST;
 
-			if(edge)
+			if (edge)
 			{
 				// FIXME:: save vectors/origin and re-rotate? necessary if the hotspot can change per frame
 				R_RotateSprite(frame, org, left, up, edge, dir_angle);

@@ -18,4 +18,4 @@ void V_StartPitchDrift(void);
 void V_StopPitchDrift (void);
 void V_StartPitchDrift_f(struct cmd_state_s *cmd);
 
-#endif
+#endif // VIEW_H

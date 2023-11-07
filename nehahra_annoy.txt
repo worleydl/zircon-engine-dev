@@ -1,0 +1,11 @@
+
+Unknown command "r_oldsky"
+Unknown command "gl_fogenable"
+Unknown command "gl_fogdensity"
+Unknown command "gl_fogred"
+Unknown command "gl_foggreen"
+Unknown command "gl_fogblue"
+Unknown command "r_waterripple"
+Unknown command "stopmod"
+
+Fails to do a nehahra demo?

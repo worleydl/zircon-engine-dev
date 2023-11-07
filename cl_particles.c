@@ -328,7 +328,7 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 		{
 			if (!COM_ParseToken_Simple(&text, true, false, true))
 				return;
-			if (!strcmp(com_token, "\n"))
+			if (String_Does_Match(com_token, "\n"))
 				break;
 			if (argc < 16)
 			{
@@ -338,26 +338,26 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 		}
 		if (argc < 1)
 			continue;
-#define checkparms(n) if (argc != (n)) {Con_Printf("%s:%i: error while parsing: %s given %i parameters, should be %i parameters\n", filename, linenumber, argv[0], argc, (n));break;}
+#define checkparms(n) if (argc != (n)) {Con_Printf ("%s:%d: error while parsing: %s given %d parameters, should be %d parameters\n", filename, linenumber, argv[0], argc, (n));break;}
 #define readints(array, n) checkparms(n+1);for (arrayindex = 0;arrayindex < argc - 1;arrayindex++) array[arrayindex] = strtol(argv[1+arrayindex], NULL, 0)
 #define readfloats(array, n) checkparms(n+1);for (arrayindex = 0;arrayindex < argc - 1;arrayindex++) array[arrayindex] = atof(argv[1+arrayindex])
 #define readint(var) checkparms(2);var = strtol(argv[1], NULL, 0)
 #define readfloat(var) checkparms(2);var = atof(argv[1])
 #define readbool(var) checkparms(2);var = strtol(argv[1], NULL, 0) != 0
-		if (!strcmp(argv[0], "effect"))
+		if (String_Does_Match(argv[0], "effect"))
 		{
 			int effectnameindex;
 			checkparms(2);
 			if (numparticleeffectinfo >= MAX_PARTICLEEFFECTINFO)
 			{
-				Con_Printf("%s:%i: too many effects!\n", filename, linenumber);
+				Con_Printf ("%s:%d: too many effects!\n", filename, linenumber);
 				break;
 			}
 			for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME;effectnameindex++)
 			{
 				if (particleeffectname[effectnameindex][0])
 				{
-					if (!strcmp(particleeffectname[effectnameindex], argv[1]))
+					if (String_Does_Match(particleeffectname[effectnameindex], argv[1]))
 						break;
 				}
 				else
@@ -369,17 +369,17 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 			// if we run out of names, abort
 			if (effectnameindex == MAX_PARTICLEEFFECTNAME)
 			{
-				Con_Printf("%s:%i: too many effects!\n", filename, linenumber);
+				Con_Printf ("%s:%d: too many effects!\n", filename, linenumber);
 				break;
 			}
 			for(i = 0; i < numparticleeffectinfo; ++i)
 			{
 				info = particleeffectinfo + i;
-				if(!(info->flags & PARTICLEEFFECT_DEFINED))
-					if(info->effectnameindex == effectnameindex)
+				if (!(info->flags & PARTICLEEFFECT_DEFINED))
+					if (info->effectnameindex == effectnameindex)
 						break;
 			}
-			if(i < numparticleeffectinfo)
+			if (i < numparticleeffectinfo)
 				continue;
 			info = particleeffectinfo + numparticleeffectinfo++;
 			// copy entire info from baseline, then fix up the nameindex
@@ -389,86 +389,86 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 		}
 		else if (info == NULL)
 		{
-			Con_Printf("%s:%i: command %s encountered before effect\n", filename, linenumber, argv[0]);
+			Con_Printf ("%s:%d: command %s encountered before effect\n", filename, linenumber, argv[0]);
 			break;
 		}
 
 		info->flags |= PARTICLEEFFECT_DEFINED;
-		if (!strcmp(argv[0], "countabsolute")) {readfloat(info->countabsolute);}
-		else if (!strcmp(argv[0], "count")) {readfloat(info->countmultiplier);}
-		else if (!strcmp(argv[0], "type"))
+		if (String_Does_Match(argv[0], "countabsolute")) {readfloat(info->countabsolute);}
+		else if (String_Does_Match(argv[0], "count")) {readfloat(info->countmultiplier);}
+		else if (String_Does_Match(argv[0], "type"))
 		{
 			checkparms(2);
-			if (!strcmp(argv[1], "alphastatic")) info->particletype = pt_alphastatic;
-			else if (!strcmp(argv[1], "static")) info->particletype = pt_static;
-			else if (!strcmp(argv[1], "spark")) info->particletype = pt_spark;
-			else if (!strcmp(argv[1], "beam")) info->particletype = pt_beam;
-			else if (!strcmp(argv[1], "rain")) info->particletype = pt_rain;
-			else if (!strcmp(argv[1], "raindecal")) info->particletype = pt_raindecal;
-			else if (!strcmp(argv[1], "snow")) info->particletype = pt_snow;
-			else if (!strcmp(argv[1], "bubble")) info->particletype = pt_bubble;
-			else if (!strcmp(argv[1], "blood")) {info->particletype = pt_blood;info->gravity = 1;}
-			else if (!strcmp(argv[1], "smoke")) info->particletype = pt_smoke;
-			else if (!strcmp(argv[1], "decal")) info->particletype = pt_decal;
-			else if (!strcmp(argv[1], "entityparticle")) info->particletype = pt_entityparticle;
-			else Con_Printf("%s:%i: unrecognized particle type %s\n", filename, linenumber, argv[1]);
+			if (String_Does_Match(argv[1], "alphastatic")) info->particletype = pt_alphastatic;
+			else if (String_Does_Match(argv[1], "static")) info->particletype = pt_static;
+			else if (String_Does_Match(argv[1], "spark")) info->particletype = pt_spark;
+			else if (String_Does_Match(argv[1], "beam")) info->particletype = pt_beam;
+			else if (String_Does_Match(argv[1], "rain")) info->particletype = pt_rain;
+			else if (String_Does_Match(argv[1], "raindecal")) info->particletype = pt_raindecal;
+			else if (String_Does_Match(argv[1], "snow")) info->particletype = pt_snow;
+			else if (String_Does_Match(argv[1], "bubble")) info->particletype = pt_bubble;
+			else if (String_Does_Match(argv[1], "blood")) {info->particletype = pt_blood;info->gravity = 1;}
+			else if (String_Does_Match(argv[1], "smoke")) info->particletype = pt_smoke;
+			else if (String_Does_Match(argv[1], "decal")) info->particletype = pt_decal;
+			else if (String_Does_Match(argv[1], "entityparticle")) info->particletype = pt_entityparticle;
+			else Con_Printf ("%s:%d: unrecognized particle type %s\n", filename, linenumber, argv[1]);
 			info->blendmode = particletype[info->particletype].blendmode;
 			info->orientation = particletype[info->particletype].orientation;
 		}
-		else if (!strcmp(argv[0], "blend"))
+		else if (String_Does_Match(argv[0], "blend"))
 		{
 			checkparms(2);
-			if (!strcmp(argv[1], "alpha")) info->blendmode = PBLEND_ALPHA;
-			else if (!strcmp(argv[1], "add")) info->blendmode = PBLEND_ADD;
-			else if (!strcmp(argv[1], "invmod")) info->blendmode = PBLEND_INVMOD;
-			else Con_Printf("%s:%i: unrecognized blendmode %s\n", filename, linenumber, argv[1]);
+			if (String_Does_Match(argv[1], "alpha")) info->blendmode = PBLEND_ALPHA;
+			else if (String_Does_Match(argv[1], "add")) info->blendmode = PBLEND_ADD;
+			else if (String_Does_Match(argv[1], "invmod")) info->blendmode = PBLEND_INVMOD;
+			else Con_Printf ("%s:%d: unrecognized blendmode %s\n", filename, linenumber, argv[1]);
 		}
-		else if (!strcmp(argv[0], "orientation"))
+		else if (String_Does_Match(argv[0], "orientation"))
 		{
 			checkparms(2);
-			if (!strcmp(argv[1], "billboard")) info->orientation = PARTICLE_BILLBOARD;
-			else if (!strcmp(argv[1], "spark")) info->orientation = PARTICLE_SPARK;
-			else if (!strcmp(argv[1], "oriented")) info->orientation = PARTICLE_ORIENTED_DOUBLESIDED;
-			else if (!strcmp(argv[1], "beam")) info->orientation = PARTICLE_HBEAM;
-			else Con_Printf("%s:%i: unrecognized orientation %s\n", filename, linenumber, argv[1]);
+			if (String_Does_Match(argv[1], "billboard")) info->orientation = PARTICLE_BILLBOARD;
+			else if (String_Does_Match(argv[1], "spark")) info->orientation = PARTICLE_SPARK;
+			else if (String_Does_Match(argv[1], "oriented")) info->orientation = PARTICLE_ORIENTED_DOUBLESIDED;
+			else if (String_Does_Match(argv[1], "beam")) info->orientation = PARTICLE_HBEAM;
+			else Con_Printf ("%s:%d: unrecognized orientation %s\n", filename, linenumber, argv[1]);
 		}
-		else if (!strcmp(argv[0], "color")) {readints(info->color, 2);}
-		else if (!strcmp(argv[0], "tex")) {readints(info->tex, 2);}
-		else if (!strcmp(argv[0], "size")) {readfloats(info->size, 2);}
-		else if (!strcmp(argv[0], "sizeincrease")) {readfloat(info->size[2]);}
-		else if (!strcmp(argv[0], "alpha")) {readfloats(info->alpha, 3);}
-		else if (!strcmp(argv[0], "time")) {readfloats(info->time, 2);}
-		else if (!strcmp(argv[0], "gravity")) {readfloat(info->gravity);}
-		else if (!strcmp(argv[0], "bounce")) {readfloat(info->bounce);}
-		else if (!strcmp(argv[0], "airfriction")) {readfloat(info->airfriction);}
-		else if (!strcmp(argv[0], "liquidfriction")) {readfloat(info->liquidfriction);}
-		else if (!strcmp(argv[0], "originoffset")) {readfloats(info->originoffset, 3);}
-		else if (!strcmp(argv[0], "relativeoriginoffset")) {readfloats(info->relativeoriginoffset, 3);}
-		else if (!strcmp(argv[0], "velocityoffset")) {readfloats(info->velocityoffset, 3);}
-		else if (!strcmp(argv[0], "relativevelocityoffset")) {readfloats(info->relativevelocityoffset, 3);}
-		else if (!strcmp(argv[0], "originjitter")) {readfloats(info->originjitter, 3);}
-		else if (!strcmp(argv[0], "velocityjitter")) {readfloats(info->velocityjitter, 3);}
-		else if (!strcmp(argv[0], "velocitymultiplier")) {readfloat(info->velocitymultiplier);}
-		else if (!strcmp(argv[0], "lightradius")) {readfloat(info->lightradiusstart);}
-		else if (!strcmp(argv[0], "lightradiusfade")) {readfloat(info->lightradiusfade);}
-		else if (!strcmp(argv[0], "lighttime")) {readfloat(info->lighttime);}
-		else if (!strcmp(argv[0], "lightcolor")) {readfloats(info->lightcolor, 3);}
-		else if (!strcmp(argv[0], "lightshadow")) {readbool(info->lightshadow);}
-		else if (!strcmp(argv[0], "lightcubemapnum")) {readint(info->lightcubemapnum);}
-		else if (!strcmp(argv[0], "lightcorona")) {readints(info->lightcorona, 2);}
-		else if (!strcmp(argv[0], "underwater")) {checkparms(1);info->flags |= PARTICLEEFFECT_UNDERWATER;}
-		else if (!strcmp(argv[0], "notunderwater")) {checkparms(1);info->flags |= PARTICLEEFFECT_NOTUNDERWATER;}
-		else if (!strcmp(argv[0], "trailspacing")) {readfloat(info->trailspacing);if (info->trailspacing > 0) info->countmultiplier = 1.0f / info->trailspacing;}
-		else if (!strcmp(argv[0], "stretchfactor")) {readfloat(info->stretchfactor);}
-		else if (!strcmp(argv[0], "staincolor")) {readints(info->staincolor, 2);}
-		else if (!strcmp(argv[0], "stainalpha")) {readfloats(info->stainalpha, 2);}
-		else if (!strcmp(argv[0], "stainsize")) {readfloats(info->stainsize, 2);}
-		else if (!strcmp(argv[0], "staintex")) {readints(info->staintex, 2);}
-		else if (!strcmp(argv[0], "stainless")) {info->staintex[0] = -2; info->staincolor[0] = (unsigned int)-1; info->staincolor[1] = (unsigned int)-1; info->stainalpha[0] = 1; info->stainalpha[1] = 1; info->stainsize[0] = 2; info->stainsize[1] = 2; }
-		else if (!strcmp(argv[0], "rotate")) {readfloats(info->rotate, 4);}
-		else if (!strcmp(argv[0], "forcenearest")) {checkparms(1);info->flags |= PARTICLEEFFECT_FORCENEAREST;}
+		else if (String_Does_Match(argv[0], "color")) {readints(info->color, 2);}
+		else if (String_Does_Match(argv[0], "tex")) {readints(info->tex, 2);}
+		else if (String_Does_Match(argv[0], "size")) {readfloats(info->size, 2);}
+		else if (String_Does_Match(argv[0], "sizeincrease")) {readfloat(info->size[2]);}
+		else if (String_Does_Match(argv[0], "alpha")) {readfloats(info->alpha, 3);}
+		else if (String_Does_Match(argv[0], "time")) {readfloats(info->time, 2);}
+		else if (String_Does_Match(argv[0], "gravity")) {readfloat(info->gravity);}
+		else if (String_Does_Match(argv[0], "bounce")) {readfloat(info->bounce);}
+		else if (String_Does_Match(argv[0], "airfriction")) {readfloat(info->airfriction);}
+		else if (String_Does_Match(argv[0], "liquidfriction")) {readfloat(info->liquidfriction);}
+		else if (String_Does_Match(argv[0], "originoffset")) {readfloats(info->originoffset, 3);}
+		else if (String_Does_Match(argv[0], "relativeoriginoffset")) {readfloats(info->relativeoriginoffset, 3);}
+		else if (String_Does_Match(argv[0], "velocityoffset")) {readfloats(info->velocityoffset, 3);}
+		else if (String_Does_Match(argv[0], "relativevelocityoffset")) {readfloats(info->relativevelocityoffset, 3);}
+		else if (String_Does_Match(argv[0], "originjitter")) {readfloats(info->originjitter, 3);}
+		else if (String_Does_Match(argv[0], "velocityjitter")) {readfloats(info->velocityjitter, 3);}
+		else if (String_Does_Match(argv[0], "velocitymultiplier")) {readfloat(info->velocitymultiplier);}
+		else if (String_Does_Match(argv[0], "lightradius")) {readfloat(info->lightradiusstart);}
+		else if (String_Does_Match(argv[0], "lightradiusfade")) {readfloat(info->lightradiusfade);}
+		else if (String_Does_Match(argv[0], "lighttime")) {readfloat(info->lighttime);}
+		else if (String_Does_Match(argv[0], "lightcolor")) {readfloats(info->lightcolor, 3);}
+		else if (String_Does_Match(argv[0], "lightshadow")) {readbool(info->lightshadow);}
+		else if (String_Does_Match(argv[0], "lightcubemapnum")) {readint(info->lightcubemapnum);}
+		else if (String_Does_Match(argv[0], "lightcorona")) {readints(info->lightcorona, 2);}
+		else if (String_Does_Match(argv[0], "underwater")) {checkparms(1);info->flags |= PARTICLEEFFECT_UNDERWATER;}
+		else if (String_Does_Match(argv[0], "notunderwater")) {checkparms(1);info->flags |= PARTICLEEFFECT_NOTUNDERWATER;}
+		else if (String_Does_Match(argv[0], "trailspacing")) {readfloat(info->trailspacing);if (info->trailspacing > 0) info->countmultiplier = 1.0f / info->trailspacing;}
+		else if (String_Does_Match(argv[0], "stretchfactor")) {readfloat(info->stretchfactor);}
+		else if (String_Does_Match(argv[0], "staincolor")) {readints(info->staincolor, 2);}
+		else if (String_Does_Match(argv[0], "stainalpha")) {readfloats(info->stainalpha, 2);}
+		else if (String_Does_Match(argv[0], "stainsize")) {readfloats(info->stainsize, 2);}
+		else if (String_Does_Match(argv[0], "staintex")) {readints(info->staintex, 2);}
+		else if (String_Does_Match(argv[0], "stainless")) {info->staintex[0] = -2; info->staincolor[0] = (unsigned int)-1; info->staincolor[1] = (unsigned int)-1; info->stainalpha[0] = 1; info->stainalpha[1] = 1; info->stainsize[0] = 2; info->stainsize[1] = 2; }
+		else if (String_Does_Match(argv[0], "rotate")) {readfloats(info->rotate, 4);}
+		else if (String_Does_Match(argv[0], "forcenearest")) {checkparms(1);info->flags |= PARTICLEEFFECT_FORCENEAREST;}
 		else
-			Con_Printf("%s:%i: skipping unknown command %s\n", filename, linenumber, argv[0]);
+			Con_Printf ("%s:%d: skipping unknown command %s\n", filename, linenumber, argv[0]);
 #undef checkparms
 #undef readints
 #undef readfloats
@@ -481,7 +481,7 @@ int CL_ParticleEffectIndexForName(const char *name)
 {
 	int i;
 	for (i = 1;i < MAX_PARTICLEEFFECTNAME && particleeffectname[i][0];i++)
-		if (!strcmp(particleeffectname[i], name))
+		if (String_Does_Match(particleeffectname[i], name))
 			return i;
 	return 0;
 }
@@ -669,10 +669,10 @@ particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, i
 	VectorCopy(sortorigin, part->sortorigin);
 	part->typeindex = ptypeindex;
 	part->blendmode = blendmode;
-	if(orientation == PARTICLE_HBEAM || orientation == PARTICLE_VBEAM)
+	if (orientation == PARTICLE_HBEAM || orientation == PARTICLE_VBEAM)
 	{
 		particletexture_t *tex = &particletexture[ptex];
-		if(tex->t1 == 0 && tex->t2 == 1) // full height of texture?
+		if (tex->t1 == 0 && tex->t2 == 1) // full height of texture?
 			part->orientation = PARTICLE_VBEAM;
 		else
 			part->orientation = PARTICLE_HBEAM;
@@ -693,11 +693,11 @@ particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, i
 	part->alpha = palpha;
 	part->alphafade = palphafade;
 	part->staintexnum = staintex;
-	if(staincolor1 >= 0 && staincolor2 >= 0)
+	if (staincolor1 >= 0 && staincolor2 >= 0)
 	{
 		l2 = (int)lhrandom(0.5, 256.5);
 		l1 = 256 - l2;
-		if(blendmode == PBLEND_INVMOD)
+		if (blendmode == PBLEND_INVMOD)
 		{
 			r = ((((staincolor1 >> 16) & 0xFF) * l1 + ((staincolor2 >> 16) & 0xFF) * l2) * (255 - part->color[0])) / 0x8000; // staincolor 0x808080 keeps color invariant
 			g = ((((staincolor1 >>  8) & 0xFF) * l1 + ((staincolor2 >>  8) & 0xFF) * l2) * (255 - part->color[1])) / 0x8000;
@@ -709,9 +709,9 @@ particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, i
 			g = ((((staincolor1 >>  8) & 0xFF) * l1 + ((staincolor2 >>  8) & 0xFF) * l2) * part->color[1]) / 0x8000;
 			b = ((((staincolor1 >>  0) & 0xFF) * l1 + ((staincolor2 >>  0) & 0xFF) * l2) * part->color[2]) / 0x8000;
 		}
-		if(r > 0xFF) r = 0xFF;
-		if(g > 0xFF) g = 0xFF;
-		if(b > 0xFF) b = 0xFF;
+		if (r > 0xFF) r = 0xFF;
+		if (g > 0xFF) g = 0xFF;
+		if (b > 0xFF) b = 0xFF;
 	}
 	else
 	{
@@ -724,9 +724,9 @@ particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, i
 	part->staincolor[2] = b;
 	part->stainalpha = palpha * stainalpha;
 	part->stainsize = psize * stainsize;
-	if(tint)
+	if (tint)
 	{
-		if(blendmode != PBLEND_INVMOD) // invmod is immune to tinting
+		if (blendmode != PBLEND_INVMOD) // invmod is immune to tinting
 		{
 			part->color[0] *= tint[0];
 			part->color[1] *= tint[1];
@@ -884,8 +884,8 @@ static char *LightCubemapNumToName(char *vabuf, size_t vasize, int lightcubemapn
 		return NULL;
 	// `!` is prepended if the cubemap must be nearest-filtered
 	if (flags & PARTICLEEFFECT_FORCENEAREST)
-		return va(vabuf, vasize, "!cubemaps/%i", lightcubemapnum);
-	return va(vabuf, vasize, "cubemaps/%i", lightcubemapnum);
+		return va(vabuf, vasize, "!cubemaps/%d", lightcubemapnum);
+	return va(vabuf, vasize, "cubemaps/%d", lightcubemapnum);
 }
 
 static void CL_Sparks(const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, float sparkcount);
@@ -1414,7 +1414,7 @@ static void CL_ParticleEffect_Fallback(int effectnameindex, float count, const v
 			ent->persistent.trail_time = len;
 	}
 	else
-		Con_DPrintf("CL_ParticleEffect_Fallback: no fallback found for effect %s\n", particleeffectname[effectnameindex]);
+		Con_DPrintf ("CL_ParticleEffect_Fallback: no fallback found for effect %s\n", particleeffectname[effectnameindex]);
 }
 
 // this is also called on point effects with spawndlight = true and
@@ -1425,7 +1425,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 	char vabuf[1024];
 	if (effectnameindex < 1 || effectnameindex >= MAX_PARTICLEEFFECTNAME || !particleeffectname[effectnameindex][0])
 	{
-		Con_DPrintf("Unknown effect number %i received from server\n", effectnameindex);
+		Con_DPrintf ("Unknown effect number %d received from server\n", effectnameindex);
 		return; // no such effect
 	}
 	if (!cl_particles_quake.integer && particleeffectinfo[0].effectnameindex)
@@ -1456,7 +1456,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 		VectorSubtract(originmaxs, originmins, traildir);
 		traillen = VectorLength(traildir);
 		VectorNormalize(traildir);
-		if(tintmins)
+		if (tintmins)
 		{
 			Vector4Lerp(tintmins, 0.5, tintmaxs, avgtint);
 		}
@@ -1517,7 +1517,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 					tex = (int)lhrandom(info->tex[0], info->tex[1]);
 					tex = min(tex, info->tex[1] - 1);
 				}
-				if(info->staintex[0] < 0)
+				if (info->staintex[0] < 0)
 					staintex = info->staintex[0];
 				else
 				{
@@ -1617,7 +1617,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 							trailpos[1] = lhrandom(originmins[1], originmaxs[1]);
 							trailpos[2] = lhrandom(originmins[2], originmaxs[2]);
 						}
-						if(tintmins)
+						if (tintmins)
 						{
 							tintlerp = lhrandom(0, 1);
 							Vector4Lerp(tintmins, tintlerp, tintmaxs, tint);
@@ -1704,11 +1704,11 @@ void CL_ReadPointFile_f(cmd_state_t *cmd)
 	pointfile = (char *)FS_LoadFile(name, tempmempool, true, NULL);
 	if (!pointfile)
 	{
-		Con_Printf("Could not open %s\n", name);
+		Con_Printf ("Could not open %s\n", name);
 		return;
 	}
 
-	Con_Printf("Reading %s...\n", name);
+	Con_Printf ("Reading %s...\n", name);
 	VectorClear(leakorg);
 	c = 0;
 	s = 0;
@@ -1745,7 +1745,7 @@ void CL_ReadPointFile_f(cmd_state_t *cmd)
 	}
 	Mem_Free(pointfile);
 	VectorCopy(leakorg, vecorg);
-	Con_Printf("%i points read (%i particles spawned)\nLeak at %f %f %f\n", c, s, leakorg[0], leakorg[1], leakorg[2]);
+	Con_Printf ("%d points read (%d particles spawned)\nLeak at %f %f %f\n", c, s, leakorg[0], leakorg[1], leakorg[2]);
 
 	if (c == 0)
 	{
@@ -1964,7 +1964,7 @@ void CL_ParticleRain (const vec3_t mins, const vec3_t maxs, const vec3_t dir, in
 		}
 		break;
 	default:
-		Con_Printf ("CL_ParticleRain: unknown type %i (0 = rain, 1 = snow)\n", type);
+		Con_Printf ("CL_ParticleRain: unknown type %d (0 = rain, 1 = snow)\n", type);
 	}
 }
 
@@ -2024,8 +2024,8 @@ static void setuptex(int texnum, unsigned char *data, unsigned char *particletex
 {
 	int basex, basey, w, h, y;
 	CL_Particle_PixelCoordsForTexnum(texnum, &basex, &basey, &w, &h);
-	if(w != PARTICLETEXTURESIZE || h != PARTICLETEXTURESIZE)
-		Sys_Error("invalid particle texture size for autogenerating");
+	if (w != PARTICLETEXTURESIZE || h != PARTICLETEXTURESIZE)
+		Sys_Error ("invalid particle texture size for autogenerating");
 	for (y = 0;y < PARTICLETEXTURESIZE;y++)
 		memcpy(particletexturedata + ((basey + y) * PARTICLEFONTSIZE + basex) * 4, data + y * PARTICLETEXTURESIZE * 4, PARTICLETEXTURESIZE * 4);
 }
@@ -2337,15 +2337,15 @@ static void R_InitParticleTexture (void)
 
 	// now load an texcoord/texture override file
 	buf = (char *) FS_LoadFile("particles/particlefont.txt", tempmempool, false, &filesize);
-	if(buf)
+	if (buf)
 	{
 		const char *bufptr;
 		bufptr = buf;
 		for(;;)
 		{
-			if(!COM_ParseToken_Simple(&bufptr, true, false, true))
+			if (!COM_ParseToken_Simple(&bufptr, true, false, true))
 				break;
-			if(!strcmp(com_token, "\n"))
+			if (String_Does_Match(com_token, "\n"))
 				continue; // empty line
 			i = atoi(com_token);
 
@@ -2380,12 +2380,12 @@ static void R_InitParticleTexture (void)
 			}
 			if (!texturename[0])
 			{
-				Con_Printf("particles/particlefont.txt: syntax should be texnum x1 y1 x2 y2 texturename or texnum x1 y1 x2 y2 or texnum texturename\n");
+				Con_Printf ("particles/particlefont.txt: syntax should be texnum x1 y1 x2 y2 texturename or texnum x1 y1 x2 y2 or texnum texturename\n");
 				continue;
 			}
 			if (i < 0 || i >= MAX_PARTICLETEXTURES)
 			{
-				Con_Printf("particles/particlefont.txt: texnum %i outside valid range (0 to %i)\n", i, MAX_PARTICLETEXTURES);
+				Con_Printf ("particles/particlefont.txt: texnum %d outside valid range (0 to %d)\n", i, MAX_PARTICLETEXTURES);
 				continue;
 			}
 			sf = R_SkinFrame_LoadExternal(texturename, TEXF_ALPHA | TEXF_FORCELINEAR | TEXF_RGBMULTIPLYBYALPHA, true, true); // note: this loads as sRGB if sRGB is active!
@@ -2489,7 +2489,7 @@ static void R_DrawParticle_TransparentCallback(const entity_render_t *ent, const
 
 		blendmode = (pblend_t)p->blendmode;
 		palpha = p->alpha;
-		if(dofade && p->orientation != PARTICLE_VBEAM && p->orientation != PARTICLE_HBEAM)
+		if (dofade && p->orientation != PARTICLE_VBEAM && p->orientation != PARTICLE_HBEAM)
 			palpha *= min(1, (DotProduct(p->org, r_refdef.view.forward)  - minparticledist_start) / (minparticledist_end - minparticledist_start));
 		alpha = palpha * colormultiplier[3];
 		// ensure alpha multiplier saturates properly
@@ -2639,7 +2639,7 @@ static void R_DrawParticle_TransparentCallback(const entity_render_t *ent, const
 			len = VectorLength(p->vel);
 			VectorNormalize2(p->vel, up);
 			lenfactor = p->stretch * 0.04 * len;
-			if(lenfactor < size * 0.5)
+			if (lenfactor < size * 0.5)
 				lenfactor = size * 0.5;
 			VectorMA(p->org, -lenfactor, up, v);
 			VectorMA(p->org,  lenfactor, up, up2);
@@ -2842,7 +2842,7 @@ void R_DrawParticles (void)
 							// blood - splash on solid
 							if (trace.hitq3surfaceflags & Q3SURFACEFLAG_NOMARKS)
 								goto killparticle;
-							if(p->staintexnum == -1) // staintex < -1 means no stains at all
+							if (p->staintexnum == -1) // staintex < -1 means no stains at all
 							{
 								R_Stain(p->org, 16, 64, 16, 16, (int)(p->alpha * p->size * (1.0f / 80.0f)), 64, 32, 32, (int)(p->alpha * p->size * (1.0f / 80.0f)));
 								if (cl_decals.integer)
@@ -2876,7 +2876,7 @@ void R_DrawParticles (void)
 
 				if (VectorLength2(p->vel) < 0.03)
 				{
-					if(p->orientation == PARTICLE_SPARK) // sparks are virtually invisible if very slow, so rather let them go off
+					if (p->orientation == PARTICLE_SPARK) // sparks are virtually invisible if very slow, so rather let them go off
 						goto killparticle;
 					VectorClear(p->vel);
 				}
@@ -2939,13 +2939,13 @@ void R_DrawParticles (void)
 			R_MeshQueue_AddTransparent(TRANSPARENTSORT_DISTANCE, p->sortorigin, R_DrawParticle_TransparentCallback, NULL, i, NULL);
 			break;
 		default:
-			if(cl_particles_visculling.integer)
+			if (cl_particles_visculling.integer)
 				if (!r_refdef.viewcache.world_novis)
-					if(r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.PointInLeaf)
+					if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.PointInLeaf)
 					{
 						mleaf_t *leaf = r_refdef.scene.worldmodel->brush.PointInLeaf(r_refdef.scene.worldmodel, p->org);
-						if(leaf)
-							if(!CHECKPVSBIT(r_refdef.viewcache.world_pvsbits, leaf->clusterindex))
+						if (leaf)
+							if (!CHECKPVSBIT(r_refdef.viewcache.world_pvsbits, leaf->clusterindex))
 								continue;
 					}
 			// anything else just has to be in front of the viewer and visible at this distance

@@ -25,6 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qtypes.h"
 #include "qdefs.h"
 
+#define USEXMP // Baker:
+
 /* Preprocessor macros to identify platform
     DP_OS_NAME 	- "friendly" name of the OS, for humans to read
     DP_OS_STR	- "identifier" of the OS, more suited for code to use
@@ -137,18 +139,6 @@ qbool Sys_HaveSSE2(void);
 #define Sys_HaveSSE2() false
 #endif
 
-typedef struct sys_s
-{
-	int argc;
-	const char **argv;
-	int selffd;
-	int outfd;
-	int nicelevel;
-	qbool nicepossible;
-	qbool isnice;
-} sys_t;
-
-extern sys_t sys;
 
 extern struct cvar_s sys_usenoclockbutbenchmark;
 
@@ -180,7 +170,7 @@ qbool Sys_LoadSelf(dllhandle_t *handle);
  * \param handle
  * \param fcts
  */
-qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllfunction_t *fcts);
+qbool Sys_LoadDependency (const char **dllnames, dllhandle_t* handle, const dllfunction_t *fcts);
 
 /*! Loads a library.
  * \param name a string of the library filename
@@ -190,7 +180,7 @@ qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllf
 qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle);
 
 void Sys_FreeLibrary (dllhandle_t* handle);
-void* Sys_GetProcAddress (dllhandle_t handle, const char* name);
+void* Sys_GetProcAddress (dllhandle_t handle, const char *name);
 
 int Sys_CheckParm (const char *parm);
 
@@ -210,7 +200,7 @@ void Sys_Error (const char *error, ...) DP_FUNC_PRINTF(1) DP_FUNC_NORETURN;
 
 /// (may) output text to terminal which launched program
 void Sys_PrintToTerminal(const char *text);
-void Sys_PrintfToTerminal(const char *fmt, ...);
+void Sys_PrintfToTerminal (const char *fmt, ...);
 
 /// INFO: This is only called by Host_Shutdown so we dont need testing for recursion
 void Sys_Shutdown (void);

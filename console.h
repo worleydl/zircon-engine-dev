@@ -58,36 +58,35 @@ void Con_MaskPrintf(int mask, const char *fmt, ...) DP_FUNC_PRINTF(2);
 void Con_Print(const char *txt);
 
 /// Prints to all appropriate console targets.
-void Con_Printf(const char *fmt, ...) DP_FUNC_PRINTF(1);
+void Con_Printf (const char *fmt, ...) DP_FUNC_PRINTF(1);
 
-void Con_PrintLinef(const char* fmt, ...) DP_FUNC_PRINTF(1);  // Baker 1009: Jan 19 2022
+void Con_PrintLinef (const char *fmt, ...) DP_FUNC_PRINTF(1);  // Baker 1009: Jan 19 2022
 
-void Con_LogCenterPrint(const char *str); // Baker 8501
+void Con_LogCenterPrint(const char *str); // Baker r1421: centerprint logging to console
+
+void Con_HidenotifyPrintLinef(const char *fmt, ...) DP_FUNC_PRINTF(1); // Baker r1421: centerprint logging to console
 
 /// A Con_Print that only shows up if the "developer" cvar is set.
 void Con_DPrint(const char *msg);
 
 /// A Con_Printf that only shows up if the "developer" cvar is set
-void Con_DPrintf(const char *fmt, ...) DP_FUNC_PRINTF(1);
-void Con_DPrintLinef(const char* fmt, ...) DP_FUNC_PRINTF(1);
+void Con_DPrintf (const char *fmt, ...) DP_FUNC_PRINTF(1);
+void Con_DPrintLinef (const char *fmt, ...) DP_FUNC_PRINTF(1);
 void Con_Clear_f(cmd_state_t *cmd);
-
-void Con_HidenotifyPrintLinef(const char *fmt, ...) DP_FUNC_PRINTF(1); //
 
 void Con_DrawNotify (void);
 
 /// Clear all notify lines.
 void Con_ClearNotify (void);
-void Con_ToggleConsole_f(cmd_state_t *cmd);
-void Con_CloseConsole_If_Client(void);
-
-qbool GetMapList (const char *s, char *completedname, int completednamebufferlength);
+void Con_ToggleConsole (void);
+void Con_CloseConsole_If_Client(void); // // Baker r1003: close console for map/load/etc.
 
 /// wrapper function to attempt to either complete the command line
 /// or to list possible matches grouped by type
 /// (i.e. will display possible variables, aliases, commands
 /// that match what they've typed so far)
 int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console);
+int Con_CompleteCommandLine_Zircon(cmd_state_t *cmd, qbool is_console, qbool is_shifted, qbool is_from_nothing);
 
 /// Generic libs/util/console.c function to display a list
 /// formatted in columns on the console
@@ -106,7 +105,10 @@ void Log_Printf(const char *logfilename, const char *fmt, ...) DP_FUNC_PRINTF(2)
 //@}
 
 #define CON_WARN "^3"
-#define CON_ERROR "^1"
+#define CON_ERROR "^3"
+
+#define CON_BRONZE "^3"
+#define CON_WHITE "^7"
 
 // CON_MASK_PRINT is the default (Con_Print/Con_Printf)
 // CON_MASK_DEVELOPER is used by Con_DPrint/Con_DPrintf
@@ -171,6 +173,52 @@ const char *ConBuffer_GetLine(conbuffer_t *buf, int i);
 extern float console_user_pct;
 void Con_AdjustConsoleHeight(const float delta);
 
+typedef struct {
+	unsigned char *sm_a;
+	unsigned char *smtru_a;
+	unsigned char *smsg_a;
+	unsigned char *sqbsp;
+} maplist_s;
+
+#define MAXMAPLIST_4096 4096
+extern maplist_s m_maplist[MAXMAPLIST_4096];
+extern int m_maplist_count;
+
+// Return value is true if it found any?
+qbool GetMapList (const char *s, char *completedname, int completednamebufferlength, 
+	int is_menu_fill, int is_autocomplete, int is_suppress_print);
+
+typedef struct autocomplete_s {
+	// Baker: names with trailing _a means allocated.
+	// These are freed / set with malloc/free
+
+	//                                          e2 is being autocompleted with cursor in middle of line
+	//                                          e2MX is current autocomplete
+										// ]map e2MX ; deathmatch 1
+										//        __   < -- MX is autocompleted from e2
+	char	*p_text_partial_start;		// At e2 
+	char	*p_text_completion_start;	//        _    start pos of the autocomplete @ the M
+	char	*p_text_beyond_autocomplete;//          _  on the character after the MX 
+	int		is_at_first_arg;
+	int		is_from_nothing;			// Why do we care?
+	int		searchtype;
+	int		search_partial_offset;
+	char	*s_command0_a;				// Previous autocomplete command line "map"
+	char	*s_completion_a;			// If in an autocomplete like above, this would be "e2MX"
+	char	*text_after_autocomplete_a;
+	char	*s_search_partial_a;		// If in an autocomplete like above, this would be "e2" otherwise NULL
+
+// Frame
+	char	*s_match_before_a;			// Alphabetical previous (or NULL if top)
+	char	*s_match_after_a;			// Alpbabetical next (OR NULL if last)
+	char	*s_match_alphatop_a;		// First entry, for wraparound
+	char	*s_match_alphalast_a;		// Last entry, for wraparound
+} autocomplete_t;
+
+extern autocomplete_t _g_autocomplete;
+
+void Partial_Reset (void); // Autocomplete
+void Partial_Reset_Undo_Selection_Reset (void);
 
 #endif // ! CONSOLE_H
 

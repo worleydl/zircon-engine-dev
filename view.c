@@ -148,6 +148,7 @@ float	v_dmg_time, v_dmg_roll, v_dmg_pitch;
 
 int cl_punchangle_applied;
 
+// Baker: mark
 void V_StartPitchDrift (void)
 {
 	if (cl.laststop == cl.time)
@@ -351,22 +352,22 @@ static void V_BonusFlash_f(cmd_state_t *cmd)
 		cl.cshifts[CSHIFT_BONUS].percent = 50;
 		cl.cshifts[CSHIFT_BONUS].alphafade = 100;
 	}
-	else if(Cmd_Argc(cmd) >= 4 && Cmd_Argc(cmd) <= 6)
+	else if (Cmd_Argc(cmd) >= 4 && Cmd_Argc(cmd) <= 6)
 	{
 		cl.cshifts[CSHIFT_BONUS].destcolor[0] = atof(Cmd_Argv(cmd, 1)) * 255;
 		cl.cshifts[CSHIFT_BONUS].destcolor[1] = atof(Cmd_Argv(cmd, 2)) * 255;
 		cl.cshifts[CSHIFT_BONUS].destcolor[2] = atof(Cmd_Argv(cmd, 3)) * 255;
-		if(Cmd_Argc(cmd) >= 5)
+		if (Cmd_Argc(cmd) >= 5)
 			cl.cshifts[CSHIFT_BONUS].percent = atof(Cmd_Argv(cmd, 4)) * 255; // yes, these are HEXADECIMAL percent ;)
 		else
 			cl.cshifts[CSHIFT_BONUS].percent = 50;
-		if(Cmd_Argc(cmd) >= 6)
+		if (Cmd_Argc(cmd) >= 6)
 			cl.cshifts[CSHIFT_BONUS].alphafade = atof(Cmd_Argv(cmd, 5)) * 255;
 		else
 			cl.cshifts[CSHIFT_BONUS].alphafade = 100;
 	}
 	else
-		Con_Printf("usage:\nbf, or bf R G B [A [alphafade]]\n");
+		Con_Printf ("usage:\nbf, or bf R G B [A [alphafade]]\n");
 }
 
 /*
@@ -515,6 +516,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 	matrix4x4_t tmpmatrix;
 	static float viewheightavg;
 	float viewheight;
+
 	trace_t trace;
 
 	// react to clonground state changes (for gun bob)
@@ -546,8 +548,9 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 	if (v_dmg_time > 0)
 		v_dmg_time -= bound(0, smoothtime, 0.1);
 
-	if (cl.intermission)
+	if (cl.intermission) {
 		V_CalcIntermissionRefdef(vieworg, viewangles, entrendermatrix, clstatsviewheight);
+	}
 	else
 	{
 		// smooth stair stepping, but only if clonground and enabled
@@ -651,9 +654,9 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 
 				frametime = (cl.time - cl.calcrefdef_prevtime) * cl.movevars_timescale;
 
-				if(cl_followmodel.integer || cl_leanmodel.integer) {
+				if (cl_followmodel.integer || cl_leanmodel.integer) {
 					// 1. if we teleported, clear the frametime... the lowpass will recover the previous value then
-					if(teleported)
+					if (teleported)
 					{
 						// try to fix the first highpass; result is NOT
 						// perfect! TODO find a better fix
@@ -757,7 +760,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 					// In the old code, this was applied to vieworg BEFORE copying to gunorg,
 					// but this is not viable with the new followmodel code as that would mean
 					// that followmodel would work on the munged-by-bob vieworg and do feedback
-					if(!cl_bobmodel_classic.integer)
+					if (!cl_bobmodel_classic.integer)
 						gunorg[2] += bob;
 				}
 
@@ -782,7 +785,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 						cl.bob2_smooth = 1;
 					else
 					{
-						if(cl.bob2_smooth > 0)
+						if (cl.bob2_smooth > 0)
 							cl.bob2_smooth -= bound(0, cl_bob2smooth.value, 1);
 						else
 							cl.bob2_smooth = 0;
@@ -851,7 +854,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 					vec3_t forward, right, up;
 					AngleVectors (gunangles, forward, right, up);
 
-					if(!cl_bobmodel_classic.integer)
+					if (!cl_bobmodel_classic.integer)
 					{
 						// calculate for swinging gun model
 						// the gun bobs when running on the ground, but doesn't bob when you're in the air.
@@ -1049,6 +1052,7 @@ void V_CalcViewBlend(void)
 	r_refdef.viewblend[3] = 0;
 	r_refdef.frustumscale_x = 1;
 	r_refdef.frustumscale_y = 1;
+	r_refdef.waterwarp2 = 0; // Baker r0082
 
 	if (cls.state == ca_connected && cls.signon == SIGNONS)
 	{
@@ -1059,8 +1063,11 @@ void V_CalcViewBlend(void)
 		supercontents = CL_PointSuperContents(vieworigin);
 		if (supercontents & SUPERCONTENTS_LIQUIDSMASK)
 		{
-			r_refdef.frustumscale_x *= 1 - (((sin(cl.time * 4.7) + 1) * 0.015) * r_waterwarp.value);
-			r_refdef.frustumscale_y *= 1 - (((sin(cl.time * 3.0) + 1) * 0.015) * r_waterwarp.value);
+			// Baker r0082: r_waterwarp 2
+			float warpfac = r_waterwarp.value == 1 ? 1 : 0; // Baker
+			r_refdef.waterwarp2 = r_waterwarp.value >= 2; // Baker
+			r_refdef.frustumscale_x *= 1 - (((sin(cl.time * 4.7) + 1) * 0.015) * warpfac); // Baker
+			r_refdef.frustumscale_y *= 1 - (((sin(cl.time * 3.0) + 1) * 0.015) * warpfac); // Baker
 			if (supercontents & SUPERCONTENTS_LAVA)
 			{
 				cl.cshifts[CSHIFT_CONTENTS].destcolor[0] = 255;
@@ -1171,12 +1178,12 @@ void V_CalcViewBlend(void)
 		else
 			cl.deathfade = 0.0f;
 
-		if(cl.deathfade > 0)
+		if (cl.deathfade > 0)
 		{
 			float a;
 			float deathfadevec[3] = {0.3f, 0.0f, 0.0f};
 			a = r_refdef.viewblend[3] + cl.deathfade - r_refdef.viewblend[3]*cl.deathfade;
-			if(a > 0)
+			if (a > 0)
 				VectorMAM(r_refdef.viewblend[3] * (1 - cl.deathfade) / a, r_refdef.viewblend, cl.deathfade / a, deathfadevec, r_refdef.viewblend);
 			r_refdef.viewblend[3] = a;
 		}

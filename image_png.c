@@ -23,74 +23,84 @@
 
 //LadyHavoc: rewrote most of this.
 
-#include "darkplaces.h"
-#include "image.h"
-# undef snprintf
-# undef vsnprintf
-#include "image_png.h"
+#if defined(_MSC_VER) && _MSC_VER < 1900 // Baker: cutoff?
 
+	#include "quakedef.h"
 
-
-
-/*
-=================================================================
-
-  DLL load & unload
-
-=================================================================
-*/
-
-#undef strcat
-#undef strncat
-#undef strcpy
-#undef strncpy
-
-
-#include "lodepng.h"
-
-unsigned char *PNG_LoadImage_BGRA (const unsigned char *pbytes, int data_size, int *miplevel_unused)
-{
-	byte *lodepng_data = NULL;
-	unsigned uwidth, uheight, lodepng_error, numpels;
-
-	lodepng_error = lodepng_decode32 (&lodepng_data, &uwidth, &uheight, pbytes, (size_t) data_size);
-
-	if (lodepng_error) {
-		return NULL;
-		//log_fatal("error %u: %s", error, lodepng_error_text(error)); return NULL;
-	}
-
-	// Baker: we have some globals here
-	image_width = (int)uwidth;
-	image_height = (int)uheight;
-	numpels = image_width * image_height;
-
-	unsigned char *image_data = NULL;
-
-	image_data = (unsigned char *)Mem_Alloc(tempmempool, numpels * 4);
-
-	if (image_data) {
-		memcpy (image_data, lodepng_data, numpels * 4);
-	}
-
-	free (lodepng_data);
-
-	if (!image_data) {
-		Con_PrintLinef ("PNG_LoadImage : not enough memory");
+	unsigned char *PNG_LoadImage_BGRA (const unsigned char *pbytes, int data_size, int *miplevel_unused)
+	{
 		return NULL;
 	}
 
-	// swizzle RGBA to BGRA
-	unsigned y, c;
-	for (y = 0; y < (unsigned int)(image_width * image_height * 4); y += 4) {
-		c = image_data[y+0];
-		image_data[y+0] = image_data[y+2];
-		image_data[y+2] = c;
+#else
+	#include "darkplaces.h"
+	#include "image.h"
+	# undef snprintf
+	# undef vsnprintf
+	#include "image_png.h"
+	
+	
+	
+	
+	/*
+	=================================================================
+	
+	  DLL load & unload
+	
+	=================================================================
+	*/
+	
+	#undef strcat
+	#undef strncat
+	#undef strcpy
+	#undef strncpy
+	
+	
+	#include "lodepng.h"
+	
+	unsigned char *PNG_LoadImage_BGRA (const unsigned char *pbytes, int data_size, int *miplevel_unused)
+	{
+		byte *lodepng_data = NULL;
+		unsigned uwidth, uheight, lodepng_error, numpels;
+	
+		lodepng_error = lodepng_decode32 (&lodepng_data, &uwidth, &uheight, pbytes, (size_t) data_size);
+	
+		if (lodepng_error) {
+			return NULL;
+			//log_fatal("error %u: %s", error, lodepng_error_text(error)); return NULL;
+		}
+	
+		// Baker: we have some globals here
+		image_width = (int)uwidth;
+		image_height = (int)uheight;
+		numpels = image_width * image_height;
+	
+		unsigned char *image_data = NULL;
+	
+		image_data = (unsigned char *)Mem_Alloc(tempmempool, numpels * 4);
+	
+		if (image_data) {
+			memcpy (image_data, lodepng_data, numpels * 4);
+		}
+	
+		free (lodepng_data);
+	
+		if (!image_data) {
+			Con_PrintLinef ("PNG_LoadImage : not enough memory");
+			return NULL;
+		}
+	
+		// swizzle RGBA to BGRA
+		unsigned y, c;
+		for (y = 0; y < (unsigned int)(image_width * image_height * 4); y += 4) {
+			c = image_data[y+0];
+			image_data[y+0] = image_data[y+2];
+			image_data[y+2] = c;
+		}
+	
+		return image_data;
 	}
-
-	return image_data;
-}
-
+#endif
 
 
 /*

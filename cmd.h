@@ -30,7 +30,7 @@ servers can also send across commands and entire text files can be execed.
 
 The + command line options are also added to the command buffer.
 
-The game starts with a Cbuf_AddText ("exec quake.rc\n"); Cbuf_Execute ();
+The game starts with a Cbuf_AddTextLine ("exec quake.rc"); Cbuf_Execute ();
 
 */
 
@@ -45,18 +45,18 @@ struct cmd_state_s;
 
 // Command flags
 #define CF_NONE 0
-#define CF_CLIENT               (1<<0)  // cvar/command that only the client can change/execute
-#define CF_SERVER               (1<<1)  // cvar/command that only the server can change/execute
-#define CF_CLIENT_FROM_SERVER   (1<<2)  // command that the server is allowed to execute on the client
-#define CF_SERVER_FROM_CLIENT   (1<<3)  // command the client is allowed to execute on the server as a stringcmd
-#define CF_CHEAT                (1<<4)  // command or cvar that gives an unfair advantage over other players and is blocked unless sv_cheats is 1
-#define CF_ARCHIVE              (1<<5)  // cvar should have its set value saved to config.cfg and persist across sessions
-#define CF_READONLY             (1<<6)  // cvar cannot be changed from the console or the command buffer
-#define CF_NOTIFY               (1<<7)  // cvar should trigger a chat notification to all connected clients when changed
-#define CF_SERVERINFO           (1<<8)  // command or cvar relevant to serverinfo string handling
-#define CF_USERINFO             (1<<9)  // command or cvar used to communicate userinfo to the server
-#define CF_PERSISTENT           (1<<10) // cvar must not be reset on gametype switch (such as scr_screenshot_name, which otherwise isn't set to the mod name properly)
-#define CF_PRIVATE              (1<<11) // cvar should not be $ expanded or sent to the server under any circumstances (rcon_password, etc)
+#define CF_CLIENT               (1<<0)  // 1	cvar/command that only the client can change/execute
+#define CF_SERVER               (1<<1)  // 2	cvar/command that only the server can change/execute
+#define CF_CLIENT_FROM_SERVER   (1<<2)  // 4	command that the server is allowed to execute on the client
+#define CF_SERVER_FROM_CLIENT   (1<<3)  // 8	command the client is allowed to execute on the server as a stringcmd
+#define CF_CHEAT                (1<<4)  // 16	command or cvar that gives an unfair advantage over other players and is blocked unless sv_cheats is 1
+#define CF_ARCHIVE              (1<<5)  // 32	cvar should have its set value saved to config.cfg and persist across sessions
+#define CF_READONLY             (1<<6)  // 64	cvar cannot be changed from the console or the command buffer
+#define CF_NOTIFY               (1<<7)  // 128	cvar should trigger a chat notification to all connected clients when changed
+#define CF_SERVERINFO           (1<<8)  // 256	command or cvar relevant to serverinfo string handling
+#define CF_USERINFO             (1<<9)  // 512	command or cvar used to communicate userinfo to the server
+#define CF_PERSISTENT           (1<<10) // 1024	cvar must not be reset on gametype switch (such as scr_screenshot_name, which otherwise isn't set to the mod name properly)
+#define CF_PRIVATE              (1<<11) // 2048	cvar should not be $ expanded or sent to the server under any circumstances (rcon_password, etc)
  
 // Baker r1003: close console for map/load/etc.
 // some commands are intended to close the console like "map", "changelevel", "kill", "load" <a save game>, "connect", "reconnect"
@@ -134,7 +134,7 @@ typedef struct cmd_state_s
 
 	int argc;
 	const char *cmdline;
-	const char *argv[MAX_ARGS];
+	const char *argv[MAX_ARGS_80];
 	const char *null_string;
 	const char *args;
 	cmd_source_t source;
@@ -190,6 +190,8 @@ void Cbuf_Unlock(cmd_buf_t *cbuf);
  * the text is added to the end of the command buffer.
  */
 void Cbuf_AddText (cmd_state_t *cmd, const char *text);
+void Cbuf_AddTextLine(cmd_state_t* cmd, const char *text);
+
 
 /*! when a command wants to issue other commands immediately, the text is
  * inserted at the beginning of the buffer, before any remaining unexecuted
@@ -237,21 +239,21 @@ qbool Cmd_Exists (cmd_state_t *cmd, const char *cmd_name);
 
 /// attempts to match a partial command for automatic command line completion
 /// returns NULL if nothing fits
-const char *Cmd_CompleteCommand (cmd_state_t *cmd, const char *partial);
+const char *Cmd_CompleteCommand (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-int Cmd_CompleteAliasCountPossible (cmd_state_t *cmd, const char *partial);
+int Cmd_CompleteAliasCountPossible (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-const char **Cmd_CompleteAliasBuildList (cmd_state_t *cmd, const char *partial);
+const char **Cmd_CompleteAliasBuildList (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-int Cmd_CompleteCountPossible (cmd_state_t *cmd, const char *partial);
+int Cmd_CompleteCountPossible (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-const char **Cmd_CompleteBuildList (cmd_state_t *cmd, const char *partial);
+const char **Cmd_CompleteBuildList (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-void Cmd_CompleteCommandPrint (cmd_state_t *cmd, const char *partial);
+void Cmd_CompleteCommandPrint (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-const char *Cmd_CompleteAlias (cmd_state_t *cmd, const char *partial);
+const char *Cmd_CompleteAlias (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
-void Cmd_CompleteAliasPrint (cmd_state_t *cmd, const char *partial);
+void Cmd_CompleteAliasPrint (cmd_state_t *cmd, const char *partial, int is_from_nothing);
 
 // Enhanced console completion by Fett erich@heintz.com
 
@@ -288,5 +290,5 @@ void Cmd_ClearCSQCCommands (cmd_state_t *cmd);
 
 void Cmd_NoOperation_f(cmd_state_t *cmd);
 
-#endif
+#endif // ! CMD_H
 

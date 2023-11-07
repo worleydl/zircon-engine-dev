@@ -63,7 +63,7 @@ void VID_Finish (void)
 
 void VID_Init(void)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	InitSig(); // trap evil signals
 #endif
 }

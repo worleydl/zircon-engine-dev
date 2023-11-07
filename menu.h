@@ -1,3 +1,5 @@
+// menu.h
+
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
 
@@ -29,14 +31,13 @@ enum m_state_e {
 	m_main,
 	m_demo,
 	m_singleplayer,
-	m_transfusion_episode,
-	m_transfusion_skill,
 	m_load,
 	m_save,
 	m_multiplayer,
 	m_setup,
-	m_options,
-	m_video,
+	m_options_nova,
+	m_options_classic,
+	m_video_classic,
 	m_keys,
 	m_help,
 	m_credits,
@@ -48,7 +49,9 @@ enum m_state_e {
 	m_options_graphics,
 	m_options_colorcontrol,
 	m_reset,
-	m_modlist
+	m_modlist,
+	m_video_nova,
+	m_maps,
 };
 
 extern enum m_state_e m_state;
@@ -103,5 +106,10 @@ extern int video_resolutions_count;
 extern video_resolution_t video_resolutions_hardcoded[];
 extern int video_resolutions_hardcoded_count;
 
-#endif // MENU_H
+// netconn.c @ "Connection accepted" sets menu state
+void menu_state_set_nova(int ee); // Baker: allows nostartdemos to exit menu?
+
+extern qbool menu_is_csqc;
+
+#endif // ! MENU_H
 

@@ -56,7 +56,7 @@ static void S_SoftClipPaintBuffer(portable_sampleframe_t *painted_ptr, int nbfra
 {
 	int i;
 
-	if((snd_softclip.integer == 1 && width <= 2) || snd_softclip.integer > 1)
+	if ((snd_softclip.integer == 1 && width <= 2) || snd_softclip.integer > 1)
 	{
 		portable_sampleframe_t *p = painted_ptr;
 
@@ -69,7 +69,7 @@ static void S_SoftClipPaintBuffer(portable_sampleframe_t *painted_ptr, int nbfra
 		// let's do a simple limiter instead, seems to sound better
 		static float maxvol = 0;
 		maxvol = max(1.0f, maxvol * (1.0f - nbframes / (0.4f * snd_renderbuffer->format.speed)));
-#define SOFTCLIP(x) if(fabs(x)>maxvol) maxvol=fabs(x); (x) /= maxvol;
+#define SOFTCLIP(x) if (fabs(x)>maxvol) maxvol=fabs(x); (x) /= maxvol;
 
 		if (nchannels == 8)  // 7.1 surround
 		{
@@ -385,7 +385,7 @@ void S_MixToBuffer(void *stream, unsigned int bufferframes)
 			// check total volume level, because we can skip some code on silent sounds but other code must still run (position updates mainly)
 			maxvol = 0;
 			for (i = 0;i < SND_LISTENERS;i++)
-				if(vol[i] > maxvol)
+				if (vol[i] > maxvol)
 					maxvol = vol[i];
 			switch(snd_renderbuffer->format.width)
 			{

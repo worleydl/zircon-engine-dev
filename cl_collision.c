@@ -70,7 +70,7 @@ float CL_SelectTraceLine(const vec3_t start, const vec3_t end, vec3_t impact, ve
 	}
 	maxfrac = bound(0, maxfrac, 1);
 	//maxrealfrac = bound(0, maxrealfrac, 1);
-	//if (maxfrac < 0 || maxfrac > 1) Con_Printf("fraction out of bounds %f %s:%d\n", maxfrac, __FILE__, __LINE__);
+	//if (maxfrac < 0 || maxfrac > 1) Con_Printf ("fraction out of bounds %f %s:%d\n", maxfrac, __FILE__, __LINE__);
 	if (impact)
 		VectorLerp(start, maxfrac, end, impact);
 	return maxfrac;
@@ -85,7 +85,7 @@ void CL_FindNonSolidLocation(const vec3_t in, vec3_t out, vec_t radius)
 
 model_t *CL_GetModelByIndex(int modelindex)
 {
-	if(!modelindex)
+	if (!modelindex)
 		return NULL;
 	if (modelindex < 0)
 	{
@@ -95,7 +95,7 @@ model_t *CL_GetModelByIndex(int modelindex)
 	}
 	else
 	{
-		if(modelindex < MAX_MODELS)
+		if (modelindex < MAX_MODELS)
 			return cl.model_precache[modelindex];
 	}
 	return NULL;
@@ -132,7 +132,7 @@ void CL_LinkEdict(prvm_edict_t *ent)
 			model = CL_GetModelByIndex( 0 );
 		}
 
-		if( model != NULL ) {
+		if ( model != NULL ) {
 			if (!model->TraceBox)
 				Con_DPrintLinef ("edict %d: SOLID_BSP with non-collidable model", PRVM_NUM_FOR_EDICT(ent));
 
@@ -235,7 +235,7 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	VectorClear(clipmins2);
 	VectorClear(clipmaxs2);
 #if COLLISIONPARANOID >= 3
-	Con_Printf("move(%f %f %f)", clipstart[0], clipstart[1], clipstart[2]);
+	Con_Printf ("move(%f %f %f)", clipstart[0], clipstart[1], clipstart[2]);
 #endif
 
 	// clip to world
@@ -303,10 +303,10 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 		vec3_t origin, entmins, entmaxs;
 		matrix4x4_t entmatrix, entinversematrix;
 
-		if(IS_OLDNEXUIZ_DERIVED(gamemode))
+		if (IS_OLDNEXUIZ_DERIVED(gamemode))
 		{
 			// don't hit network players, if we are a nonsolid player
-			if(cl.scores[cl.playerentity-1].frags == -666 || cl.scores[cl.playerentity-1].frags == -616)
+			if (cl.scores[cl.playerentity-1].frags == -666 || cl.scores[cl.playerentity-1].frags == -616)
 				goto skipnetworkplayers;
 		}
 
@@ -324,10 +324,10 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 			if (!cl.scores[i-1].name[0])
 				continue;
 
-			if(IS_OLDNEXUIZ_DERIVED(gamemode))
+			if (IS_OLDNEXUIZ_DERIVED(gamemode))
 			{
 				// don't hit spectators or nonsolid players
-				if(cl.scores[i-1].frags == -666 || cl.scores[i-1].frags == -616)
+				if (cl.scores[i-1].frags == -666 || cl.scores[i-1].frags == -616)
 					continue;
 			}
 
@@ -359,7 +359,7 @@ skipnetworkplayers:
 		if (numtouchedicts > MAX_EDICTS)
 		{
 			// this never happens
-			Con_Printf("CL_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 			numtouchedicts = MAX_EDICTS;
 		}
 	}
@@ -459,7 +459,7 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	VectorClear(clipmins2);
 	VectorClear(clipmaxs2);
 #if COLLISIONPARANOID >= 3
-	Con_Printf("move(%f %f %f,%f %f %f)", clipstart[0], clipstart[1], clipstart[2], clipend[0], clipend[1], clipend[2]);
+	Con_Printf ("move(%f %f %f,%f %f %f)", clipstart[0], clipstart[1], clipstart[2], clipend[0], clipend[1], clipend[2]);
 #endif
 
 	// clip to world
@@ -527,10 +527,10 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 		vec3_t origin, entmins, entmaxs;
 		matrix4x4_t entmatrix, entinversematrix;
 
-		if(IS_OLDNEXUIZ_DERIVED(gamemode))
+		if (IS_OLDNEXUIZ_DERIVED(gamemode))
 		{
 			// don't hit network players, if we are a nonsolid player
-			if(cl.scores[cl.playerentity-1].frags == -666 || cl.scores[cl.playerentity-1].frags == -616)
+			if (cl.scores[cl.playerentity-1].frags == -666 || cl.scores[cl.playerentity-1].frags == -616)
 				goto skipnetworkplayers;
 		}
 
@@ -548,10 +548,10 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 			if (!cl.scores[i-1].name[0])
 				continue;
 
-			if(IS_OLDNEXUIZ_DERIVED(gamemode))
+			if (IS_OLDNEXUIZ_DERIVED(gamemode))
 			{
 				// don't hit spectators or nonsolid players
-				if(cl.scores[i-1].frags == -666 || cl.scores[i-1].frags == -616)
+				if (cl.scores[i-1].frags == -666 || cl.scores[i-1].frags == -616)
 					continue;
 			}
 
@@ -583,7 +583,7 @@ skipnetworkplayers:
 		if (numtouchedicts > MAX_EDICTS)
 		{
 			// this never happens
-			Con_Printf("CL_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 			numtouchedicts = MAX_EDICTS;
 		}
 	}
@@ -699,7 +699,7 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	VectorCopy(mins, clipmins2);
 	VectorCopy(maxs, clipmaxs2);
 #if COLLISIONPARANOID >= 3
-	Con_Printf("move(%f %f %f,%f %f %f)", clipstart[0], clipstart[1], clipstart[2], clipend[0], clipend[1], clipend[2]);
+	Con_Printf ("move(%f %f %f,%f %f %f)", clipstart[0], clipstart[1], clipstart[2], clipend[0], clipend[1], clipend[2]);
 #endif
 
 	// clip to world
@@ -778,10 +778,10 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 		vec3_t origin, entmins, entmaxs;
 		matrix4x4_t entmatrix, entinversematrix;
 
-		if(IS_OLDNEXUIZ_DERIVED(gamemode))
+		if (IS_OLDNEXUIZ_DERIVED(gamemode))
 		{
 			// don't hit network players, if we are a nonsolid player
-			if(cl.scores[cl.playerentity-1].frags == -666 || cl.scores[cl.playerentity-1].frags == -616)
+			if (cl.scores[cl.playerentity-1].frags == -666 || cl.scores[cl.playerentity-1].frags == -616)
 				goto skipnetworkplayers;
 		}
 
@@ -799,10 +799,10 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 			if (!cl.scores[i-1].name[0])
 				continue;
 
-			if(IS_OLDNEXUIZ_DERIVED(gamemode))
+			if (IS_OLDNEXUIZ_DERIVED(gamemode))
 			{
 				// don't hit spectators or nonsolid players
-				if(cl.scores[i-1].frags == -666 || cl.scores[i-1].frags == -616)
+				if (cl.scores[i-1].frags == -666 || cl.scores[i-1].frags == -616)
 					continue;
 			}
 
@@ -834,7 +834,7 @@ skipnetworkplayers:
 		if (numtouchedicts > MAX_EDICTS)
 		{
 			// this never happens
-			Con_Printf("CL_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 			numtouchedicts = MAX_EDICTS;
 		}
 	}
@@ -921,7 +921,7 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 	VectorCopy(start, clipstart);
 	VectorCopy(end, clipend);
 #if COLLISIONPARANOID >= 3
-	Con_Printf("move(%f %f %f,%f %f %f)", clipstart[0], clipstart[1], clipstart[2], clipend[0], clipend[1], clipend[2]);
+	Con_Printf ("move(%f %f %f,%f %f %f)", clipstart[0], clipstart[1], clipstart[2], clipend[0], clipend[1], clipend[2]);
 #endif
 
 	// clip to world
@@ -964,7 +964,7 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 		if (numtouchedicts > MAX_EDICTS)
 		{
 			// this never happens
-			Con_Printf("CL_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 			numtouchedicts = MAX_EDICTS;
 		}
 	}

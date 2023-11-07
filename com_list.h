@@ -1,3 +1,5 @@
+// com_list.h - generic doubly linked list interface, adapted from Linux list.h
+
 /*
 Copyright (C) 2020-2021 David Knapp (Cloudwalk)
 
@@ -17,8 +19,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-
-// com_list.h - generic doubly linked list interface, adapted from Linux list.h
 
 #ifndef LIST_H
 #define LIST_H
@@ -316,7 +316,7 @@ static inline void List_Swap(llist_t *node1, llist_t *node2)
 	llist_t *pos = node2->prev;
 	List_Delete_Init(node2);
 	List_Replace(node1, node2);
-	if(pos == node1)
+	if (pos == node1)
 		pos = node2;
 	List_Add(node1, pos);
 }
@@ -399,7 +399,7 @@ static inline void __List_Splice(const llist_t *list, llist_t *prev, llist_t *ne
  */
 static inline void List_Splice(const llist_t *list, llist_t *head)
 {
-	if(!List_Is_Empty(list))
+	if (!List_Is_Empty(list))
 		__List_Splice(list, head, head->next);
 }
 

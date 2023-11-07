@@ -392,7 +392,7 @@ struct jpeg_compress_struct
 
 struct jpeg_destination_mgr
 {
-	unsigned char* next_output_byte;
+	unsigned char *next_output_byte;
 	size_t free_in_buffer;
 
 	void (*init_destination) (j_compress_ptr cinfo);
@@ -423,13 +423,13 @@ static void (*qjpeg_finish_compress) (j_compress_ptr cinfo);
 static jboolean (*qjpeg_finish_decompress) (j_decompress_ptr cinfo);
 static jboolean (*qjpeg_resync_to_restart) (j_decompress_ptr cinfo, int desired);
 static int (*qjpeg_read_header) (j_decompress_ptr cinfo, jboolean require_image);
-static JDIMENSION (*qjpeg_read_scanlines) (j_decompress_ptr cinfo, unsigned char** scanlines, JDIMENSION max_lines);
+static JDIMENSION (*qjpeg_read_scanlines) (j_decompress_ptr cinfo, unsigned char **scanlines, JDIMENSION max_lines);
 static void (*qjpeg_set_defaults) (j_compress_ptr cinfo);
 static void (*qjpeg_set_quality) (j_compress_ptr cinfo, int quality, jboolean force_baseline);
 static jboolean (*qjpeg_start_compress) (j_compress_ptr cinfo, jboolean write_all_tables);
 static jboolean (*qjpeg_start_decompress) (j_decompress_ptr cinfo);
 static struct jpeg_error_mgr* (*qjpeg_std_error) (struct jpeg_error_mgr *err);
-static JDIMENSION (*qjpeg_write_scanlines) (j_compress_ptr cinfo, unsigned char** scanlines, JDIMENSION num_lines);
+static JDIMENSION (*qjpeg_write_scanlines) (j_compress_ptr cinfo, unsigned char **scanlines, JDIMENSION num_lines);
 static void (*qjpeg_simple_progression) (j_compress_ptr cinfo);
 
 static dllfunction_t jpegfuncs[] =
@@ -468,7 +468,7 @@ typedef struct
 	struct jpeg_destination_mgr pub;
 
 	qfile_t* outfile;
-	unsigned char* buffer;
+	unsigned char *buffer;
 	size_t bufsize; // used if outfile is NULL
 } my_destination_mgr;
 typedef my_destination_mgr* my_dest_ptr;
@@ -494,7 +494,7 @@ qbool JPEG_OpenLibrary (void)
 #ifdef LINK_TO_LIBJPEG
 	return true;
 #else
-	const char* dllnames [] =
+	const char *dllnames [] =
 	{
 #if defined(_WIN32)
 		"libjpeg.dll",
@@ -518,7 +518,7 @@ qbool JPEG_OpenLibrary (void)
 
 #ifdef __ANDROID__
 	// loading the native Android libjpeg.so causes crashes
-	Con_Printf("Not opening libjpeg.so dynamically on Android - use LINK_TO_LIBJPEG instead if it is needed.\n");
+	Con_Printf ("Not opening libjpeg.so dynamically on Android - use LINK_TO_LIBJPEG instead if it is needed.\n");
 	return false;
 #endif
 
@@ -603,7 +603,7 @@ JPEG_LoadImage
 Load a JPEG image into a BGRA buffer
 ====================
 */
-unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *miplevel)
+unsigned char *JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *miplevel)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
@@ -615,12 +615,12 @@ unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *m
 	if (!jpeg_dll)
 		return NULL;
 
-	if(miplevel && r_texture_jpeg_fastpicmip.integer)
+	if (miplevel && r_texture_jpeg_fastpicmip.integer)
 		submip = bound(0, *miplevel, 3);
 
 	cinfo.err = qjpeg_std_error (&jerr);
 	qjpeg_create_decompress (&cinfo);
-	if(setjmp(error_in_jpeg))
+	if (setjmp(error_in_jpeg))
 		goto error_caught;
 	cinfo.err = qjpeg_std_error (&jerr);
 	cinfo.err->error_exit = JPEG_ErrorExit;
@@ -635,7 +635,7 @@ unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *m
 
 	if (image_width > 32768 || image_height > 32768 || image_width <= 0 || image_height <= 0)
 	{
-		Con_Printf("JPEG_LoadImage: invalid image size %ix%i\n", image_width, image_height);
+		Con_Printf ("JPEG_LoadImage: invalid image size %dx%d\n", image_width, image_height);
 		return NULL;
 	}
 
@@ -648,7 +648,7 @@ unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *m
 		if (scanline)
 			Mem_Free (scanline);
 
-		Con_Printf("JPEG_LoadImage: not enough memory for %i by %i image\n", image_width, image_height);
+		Con_Printf ("JPEG_LoadImage: not enough memory for %d by %d image\n", image_width, image_height);
 		qjpeg_finish_decompress (&cinfo);
 		qjpeg_destroy_decompress (&cinfo);
 		return NULL;
@@ -698,15 +698,15 @@ unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *m
 	qjpeg_finish_decompress (&cinfo);
 	qjpeg_destroy_decompress (&cinfo);
 
-	if(miplevel)
+	if (miplevel)
 		*miplevel -= submip;
 
 	return image_buffer;
 
 error_caught:
-	if(scanline)
+	if (scanline)
 		Mem_Free (scanline);
-	if(image_buffer)
+	if (image_buffer)
 		Mem_Free (image_buffer);
 	qjpeg_destroy_decompress (&cinfo);
 	return NULL;
@@ -835,7 +835,7 @@ qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, un
 	if (!file)
 		return false;
 
-	if(setjmp(error_in_jpeg))
+	if (setjmp(error_in_jpeg))
 		goto error_caught;
 	cinfo.err = qjpeg_std_error (&jerr);
 	cinfo.err->error_exit = JPEG_ErrorExit;
@@ -922,7 +922,7 @@ static size_t JPEG_try_SaveImage_to_Buffer (struct jpeg_compress_struct *cinfo, 
 
 	qjpeg_finish_compress (cinfo);
 
-	if(jpeg_toolarge)
+	if (jpeg_toolarge)
 		return 0;
 
 	return ((my_dest_ptr) cinfo->dest)->bufsize;
@@ -944,7 +944,7 @@ size_t JPEG_SaveImage_to_Buffer (char *jpegbuf, size_t jpegsize, int width, int 
 		return false;
 	}
 
-	if(setjmp(error_in_jpeg))
+	if (setjmp(error_in_jpeg))
 		goto error_caught;
 	cinfo.err = qjpeg_std_error (&jerr);
 	cinfo.err->error_exit = JPEG_ErrorExit;
@@ -964,7 +964,7 @@ size_t JPEG_SaveImage_to_Buffer (char *jpegbuf, size_t jpegsize, int width, int 
 
 		for(i = 0; i <= 100; ++i)
 		{
-			Con_Printf("! %d %d %d %d\n", width, height, i, (int) JPEG_try_SaveImage_to_Buffer(&cinfo, buf, sizeof(buf), i, width, height, img));
+			Con_Printf ("! %d %d %d %d\n", width, height, i, (int) JPEG_try_SaveImage_to_Buffer(&cinfo, buf, sizeof(buf), i, width, height, img));
 		}
 
 		Mem_Free(img);
@@ -980,14 +980,14 @@ size_t JPEG_SaveImage_to_Buffer (char *jpegbuf, size_t jpegsize, int width, int 
 	while(!(result = JPEG_try_SaveImage_to_Buffer(&cinfo, jpegbuf, jpegsize, quality, width, height, data)))
 	{
 		--quality;
-		if(quality < 0)
+		if (quality < 0)
 		{
-			Con_Printf("couldn't write image at all, probably too big\n");
+			Con_Printf ("couldn't write image at all, probably too big\n");
 			return 0;
 		}
 	}
 	qjpeg_destroy_compress (&cinfo);
-	Con_DPrintf("JPEG_SaveImage_to_Buffer: guessed quality/size %d/%d, actually got %d/%d\n", quality_guess, (int)jpegsize, quality, (int)result);
+	Con_DPrintf ("JPEG_SaveImage_to_Buffer: guessed quality/size %d/%d, actually got %d/%d\n", quality_guess, (int)jpegsize, quality, (int)result);
 
 	return result;
 
@@ -1015,7 +1015,7 @@ static void CompressedImageCache_Add(const char *imagename, size_t maxsize, void
 	int hashindex = CRC_Block((unsigned char *) hashkey, strlen(hashkey)) % COMPRESSEDIMAGECACHE_SIZE;
 	CompressedImageCacheItem *i;
 
-	if(strlen(imagename) >= MAX_QPATH)
+	if (strlen(imagename) >= MAX_QPATH)
 		return; // can't add this
 
 	i = (CompressedImageCacheItem*) Z_Malloc(sizeof(CompressedImageCacheItem));
@@ -1036,8 +1036,8 @@ static CompressedImageCacheItem *CompressedImageCache_Find(const char *imagename
 
 	while(i)
 	{
-		if(i->maxsize == maxsize)
-			if(!strcmp(i->imagename, imagename))
+		if (i->maxsize == maxsize)
+			if (String_Does_Match(i->imagename, imagename))
 				return i;
 		i = i->next;
 	}
@@ -1062,7 +1062,7 @@ qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *
 	}
 
 	i = CompressedImageCache_Find(imagename, maxsize);
-	if(i)
+	if (i)
 	{
 		*size = i->compressed_size;
 		*buf = i->compressed;
@@ -1071,15 +1071,15 @@ qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *
 
 	// load the image
 	imagedata = loadimagepixelsbgra(imagename, true, false, false, NULL);
-	if(!imagedata)
+	if (!imagedata)
 		return false;
 
 	// find an appropriate size for somewhat okay compression
-	if(maxsize <= 768)
+	if (maxsize <= 768)
 		maxPixelCount = 32 * 32;
-	else if(maxsize <= 1024)
+	else if (maxsize <= 1024)
 		maxPixelCount = 64 * 64;
-	else if(maxsize <= 4096)
+	else if (maxsize <= 4096)
 		maxPixelCount = 128 * 128;
 	else
 		maxPixelCount = 256 * 256;
@@ -1101,11 +1101,11 @@ qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *
 	*size = JPEG_SaveImage_to_Buffer((char *) *buf, maxsize, image_width, image_height, newimagedata);
 	Mem_Free(newimagedata);
 
-	if(!*size)
+	if (!*size)
 	{
 		Z_Free(*buf);
 		*buf = NULL;
-		Con_Printf("could not compress image %s to %d bytes\n", imagename, (int)maxsize);
+		Con_Printf ("could not compress image %s to %d bytes\n", imagename, (int)maxsize);
 		// return false;
 		// also cache failures!
 	}

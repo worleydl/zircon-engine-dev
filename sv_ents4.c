@@ -37,10 +37,10 @@ qbool EntityFrame4_WriteFrame(sizebuf_t *msg, int maxsize, entityframe4_database
 	MSG_WriteLong(msg, d->currentcommit->framenum);
 	if (developer_networkentities.integer >= 10)
 	{
-		Con_Printf("send svc_entities num:%i ref:%i (database: ref:%i commits:", d->currentcommit->framenum, d->referenceframenum, d->referenceframenum);
+		Con_Printf ("send svc_entities num:%d ref:%d (database: ref:%d commits:", d->currentcommit->framenum, d->referenceframenum, d->referenceframenum); // Baker: AS-IS
 		for (i = 0;i < MAX_ENTITY_HISTORY;i++)
 			if (d->commit[i].numentities)
-				Con_Printf(" %i", d->commit[i].framenum);
+				Con_Printf (" %d", d->commit[i].framenum); // Baker: AS-IS
 		Con_Print(")\n");
 	}
 	if (d->currententitynumber >= prog->max_edicts)

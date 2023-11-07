@@ -256,7 +256,7 @@ static void jam_decodeframe(unsigned char *inbuf, unsigned char *outbuf, unsigne
 		srcptr += 4;
 		for(i=0; i<32 && bytesleft > 0; i++,mark=mark>>1)
 		{
-			if(mark & 1)
+			if (mark & 1)
 			{
 				*destptr = *srcptr;
 				destptr ++;
@@ -268,7 +268,7 @@ static void jam_decodeframe(unsigned char *inbuf, unsigned char *outbuf, unsigne
 			{
 				bits = srcptr[0] + 256*srcptr[1];
 				rep = (bits >> 11) + 3;
-				if(frametype == 1)
+				if (frametype == 1)
 				{
 					backoffs = 0x821 - (bits & 0x7ff);
 					back = destptr - backoffs;
@@ -304,21 +304,21 @@ readframe:
 	// read frame header
 	if (!FS_Read(s->file, &frameHead, 16))
 	{
-		Con_Printf("JamDecoder: unexpected EOF on frame %i\n", s->framenum);
+		Con_Printf("JamDecoder: unexpected EOF on frame %d\n", s->framenum);
 		return 1;
 	}
 	compsize = LittleLong(*(frameHead + 8)) - 16;
 	outsize = LittleLong(*(frameHead + 12));
 	if (compsize > s->framesize || outsize > s->framesize)
 	{
-		Con_Printf("JamDecoder: got bogus header on frame %i\n", s->framenum);
+		Con_Printf("JamDecoder: got bogus header on frame %d\n", s->framenum);
 		return 1;
 	}
 
 	// read frame contents
 	if (!FS_Read(s->file, s->frame_compressed, compsize))
 	{
-		Con_Printf("JamDecoder: unexpected EOF on frame %i\n", s->framenum);
+		Con_Printf("JamDecoder: unexpected EOF on frame %d\n", s->framenum);
 		return 1;
 	}
 
@@ -357,7 +357,7 @@ readframe:
 		SwsContext *scale_context = SwScale_GetCachedContext(NULL, s->framewidth, s->frameheight, PIX_FMT_BGRA, s->info_imagewidth, s->info_imageheight, PIX_FMT_BGRA, libavcodec_scalers[max(0, min(LIBAVCODEC_SCALERS, cl_video_libavcodec_scaler.integer))], NULL, NULL, NULL); 
 		if (!scale_context)
 		{
-			Con_Printf("JamDecoder: LibAvcodec: error creating scale context frame %i\n", s->framenum);
+			Con_Printf("JamDecoder: LibAvcodec: error creating scale context frame %d\n", s->framenum);
 			return 1;
 		}
 		if (!SwScale_Scale(scale_context, s->frame_output->data, s->frame_output->linesize, 0, s->frameheight, s->frame_output_scale->data, s->frame_output_scale->linesize))

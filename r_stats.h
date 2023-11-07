@@ -120,6 +120,10 @@ typedef enum r_stat_e
 	r_stat_batch_dynamic_surfaces_because_deformvertexes_move,
 	r_stat_batch_dynamic_vertices_because_deformvertexes_move,
 	r_stat_batch_dynamic_triangles_because_deformvertexes_move,
+	r_stat_batch_dynamic_batches_because_deformvertexes_roundwave, // Baker r0084: roundwave
+	r_stat_batch_dynamic_surfaces_because_deformvertexes_roundwave, // Baker r0084: roundwave
+	r_stat_batch_dynamic_vertices_because_deformvertexes_roundwave, // Baker r0084: roundwave
+	r_stat_batch_dynamic_triangles_because_deformvertexes_roundwave, // Baker r0084: roundwave
 	r_stat_batch_dynamic_batches_because_tcgen_lightmap,
 	r_stat_batch_dynamic_surfaces_because_tcgen_lightmap,
 	r_stat_batch_dynamic_vertices_because_tcgen_lightmap,
@@ -165,8 +169,7 @@ typedef enum r_stat_e
 	r_stat_batch_entitycustom_vertices,
 	r_stat_batch_entitycustom_triangles,
 	r_stat_count // size of array
-}
-r_stat_t;
+} r_stat_t;
 
 extern cvar_t r_speeds_graph;
 extern cvar_t r_speeds_graph_filter[8];
@@ -183,4 +186,4 @@ void R_TimeReport(const char *name);
 void R_TimeReport_BeginFrame(void);
 void R_TimeReport_EndFrame(void);
 
-#endif
+#endif  // ! R_STATS_H

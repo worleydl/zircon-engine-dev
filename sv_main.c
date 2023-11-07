@@ -100,6 +100,7 @@ cvar_t sv_echobprint = {CF_SERVER | CF_ARCHIVE, "sv_echobprint", "1", "prints ga
 cvar_t sv_edgefriction = {CF_SERVER, "edgefriction", "1", "how much you slow down when nearing a ledge you might fall off, multiplier of sv_friction (Quake used 2, QuakeWorld used 1 due to a bug in physics code)"};
 cvar_t sv_entpatch = {CF_SERVER, "sv_entpatch", "1", "enables loading of .ent files to override entities in the bsp (for example Threewave CTF server pack contains .ent patch files enabling play of CTF on id1 maps)"};
 cvar_t sv_freezenonclients = {CF_SERVER | CF_NOTIFY, "sv_freezenonclients", "0", "freezes time, except for players, allowing you to walk around and take screenshots of explosions"};
+
 cvar_t sv_friction = {CF_SERVER | CF_NOTIFY, "sv_friction","4", "how fast you slow down"};
 cvar_t sv_gameplayfix_blowupfallenzombies = {CF_SERVER, "sv_gameplayfix_blowupfallenzombies", "1", "causes findradius to detect SOLID_NOT entities such as zombies and corpses on the floor, allowing splash damage to apply to them"};
 cvar_t sv_gameplayfix_consistentplayerprethink = {CF_SERVER, "sv_gameplayfix_consistentplayerprethink", "0", "improves fairness in multiplayer by running all PlayerPreThink functions (which fire weapons) before performing physics, then running all PlayerPostThink functions"};
@@ -177,6 +178,7 @@ cvar_t saved1 = {CF_SERVER | CF_ARCHIVE, "saved1", "0", "unused cvar in quake th
 cvar_t saved2 = {CF_SERVER | CF_ARCHIVE, "saved2", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
 cvar_t saved3 = {CF_SERVER | CF_ARCHIVE, "saved3", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
 cvar_t saved4 = {CF_SERVER | CF_ARCHIVE, "saved4", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
+
 cvar_t savedgamecfg = {CF_SERVER | CF_ARCHIVE, "savedgamecfg", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
 cvar_t scratch1 = {CF_SERVER, "scratch1", "0", "unused cvar in quake, can be used by mods"};
 cvar_t scratch2 = {CF_SERVER,"scratch2", "0", "unused cvar in quake, can be used by mods"};
@@ -432,7 +434,7 @@ prvm_required_field_t sv_reqglobals[] =
 
 static void Host_Timescale_c(cvar_t *var)
 {
-	if(var->value < 0.00001 && var->value != 0)
+	if (var->value < 0.00001 && var->value != 0)
 		Cvar_SetValueQuick(var, 0);
 }
 
@@ -532,11 +534,11 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&pr_checkextension);
 	Cvar_RegisterVariable (&samelevel);
 	Cvar_RegisterVariable (&skill);
-	Cvar_RegisterVariable (&campaign);
+	
 	Cvar_RegisterVariable (&host_timescale);
 	Cvar_RegisterCallback (&host_timescale, Host_Timescale_c);
-	Cvar_RegisterVirtual (&host_timescale, "slowmo");
-	Cvar_RegisterVirtual (&host_timescale, "timescale");
+	//Cvar_RegisterVirtual (&host_timescale, "slowmo");
+	//Cvar_RegisterVirtual (&host_timescale, "timescale");
 	Cvar_RegisterVariable (&sv_accelerate);
 	Cvar_RegisterVariable (&sv_aim);
 	Cvar_RegisterVariable (&sv_airaccel_qw);
@@ -662,6 +664,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&saved2);
 	Cvar_RegisterVariable (&saved3);
 	Cvar_RegisterVariable (&saved4);
+
 	Cvar_RegisterVariable (&savedgamecfg);
 	Cvar_RegisterVariable (&scratch1);
 	Cvar_RegisterVariable (&scratch2);
@@ -669,6 +672,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&scratch4);
 	Cvar_RegisterVariable (&temp1);
 
+	Cvar_RegisterVariable (&campaign);
 	// LadyHavoc: Nehahra uses these to pass data around cutscene demos
 	Cvar_RegisterVariable (&nehx00);
 	Cvar_RegisterVariable (&nehx01);
@@ -714,9 +718,8 @@ void SV_Init (void)
 static void SV_SaveEntFile_f(cmd_state_t *cmd)
 {
 	char vabuf[1024];
-	if (!sv.active || !sv.worldmodel)
-	{
-		Con_Print("Not running a server\n");
+	if (!sv.active || !sv.worldmodel) {
+		Con_PrintLinef ("Not running a server");
 		return;
 	}
 	FS_WriteFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), sv.worldmodel->brush.entities, (fs_offset_t)strlen(sv.worldmodel->brush.entities));
@@ -796,11 +799,11 @@ void SV_SendServerinfo (client_t *client)
 
 	SZ_Clear (&client->netconnection->message);
 	MSG_WriteByte (&client->netconnection->message, svc_print);
-	dpsnprintf (message, sizeof (message), "\nServer: %s build %s (progs %i crc)\n", gamename, buildstring, prog->filecrc);
+	dpsnprintf (message, sizeof (message), "\nServer: %s build %s (progs %d crc)\n", gamename, buildstring, prog->filecrc);
 	MSG_WriteString (&client->netconnection->message,message);
 
 	SV_StopDemoRecording(client); // to split up demos into different files
-	if(sv_autodemo_perclient.integer)
+	if (sv_autodemo_perclient.integer)
 	{
 		char demofile[MAX_OSPATH];
 		char ipaddress[MAX_QPATH];
@@ -809,7 +812,7 @@ void SV_SendServerinfo (client_t *client)
 		// start a new demo file
 		LHNETADDRESS_ToString(&(client->netconnection->peeraddress), ipaddress, sizeof(ipaddress), true);
 		for(j = 0; ipaddress[j]; ++j)
-			if(!isalnum(ipaddress[j]))
+			if (!isalnum(ipaddress[j]))
 				ipaddress[j] = '-';
 		dpsnprintf (demofile, sizeof(demofile), "%s_%s_%d_%s.dem", Sys_TimeString (sv_autodemo_perclient_nameformat.string), sv.worldbasename, PRVM_NUM_FOR_EDICT(client->edict), ipaddress);
 
@@ -819,15 +822,15 @@ void SV_SendServerinfo (client_t *client)
 	//[515]: init csprogs according to version of svprogs, check the crc, etc.
 	if (sv.csqc_progname[0])
 	{
-		Con_DPrintf("sending csqc info to client (\"%s\" with size %i and crc %i)\n", sv.csqc_progname, sv.csqc_progsize, sv.csqc_progcrc);
+		Con_DPrintf ("sending csqc info to client (\"%s\" with size %d and crc %d)\n", sv.csqc_progname, sv.csqc_progsize, sv.csqc_progcrc);
 		MSG_WriteByte (&client->netconnection->message, svc_stufftext);
 		MSG_WriteString (&client->netconnection->message, va(vabuf, sizeof(vabuf), "csqc_progname %s\n", sv.csqc_progname));
 		MSG_WriteByte (&client->netconnection->message, svc_stufftext);
-		MSG_WriteString (&client->netconnection->message, va(vabuf, sizeof(vabuf), "csqc_progsize %i\n", sv.csqc_progsize));
+		MSG_WriteString (&client->netconnection->message, va(vabuf, sizeof(vabuf), "csqc_progsize %d\n", sv.csqc_progsize));
 		MSG_WriteByte (&client->netconnection->message, svc_stufftext);
-		MSG_WriteString (&client->netconnection->message, va(vabuf, sizeof(vabuf), "csqc_progcrc %i\n", sv.csqc_progcrc));
+		MSG_WriteString (&client->netconnection->message, va(vabuf, sizeof(vabuf), "csqc_progcrc %d\n", sv.csqc_progcrc));
 
-		if(client->sv_demo_file != NULL)
+		if (client->sv_demo_file != NULL)
 		{
 			int k;
 			static char buf[NET_MAXMESSAGE];
@@ -908,6 +911,7 @@ void SV_SendServerinfo (client_t *client)
 	client->movesequence = 0;
 	client->movement_highestsequence_seen = 0;
 	memset(&client->movement_count, 0, sizeof(client->movement_count));
+
 	client->ping = 0;
 
 	// allow the client some time to send his keepalives, even if map loading took ages
@@ -943,11 +947,11 @@ void SV_ConnectClient (int clientnum, netconn_t *netconnection)
 	client->active = true;
 	client->netconnection = netconnection;
 
-	Con_DPrintf("Client %s connected\n", client->netconnection ? client->netconnection->address : "botclient");
+	Con_DPrintf ("Client %s connected\n", client->netconnection ? client->netconnection->address : "botclient");
 
-	if(client->netconnection && client->netconnection->crypto.authenticated)
+	if (client->netconnection && client->netconnection->crypto.authenticated)
 	{
-		Con_Printf("%s connection to %s has been established: client is %s@%s%.*s, I am %.*s@%s%.*s\n",
+		Con_Printf ("%s connection to %s has been established: client is %s@%s%.*s, I am %.*s@%s%.*s\n",
 				client->netconnection->crypto.use_aes ? "Encrypted" : "Authenticated",
 				client->netconnection->address,
 				client->netconnection->crypto.client_idfp[0] ? client->netconnection->crypto.client_idfp : "-",
@@ -1012,19 +1016,19 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 	va_list argptr;
 	char reason[512] = "";
 
-	Con_Printf("Client \"%s\" dropped", host_client->name);
+	Con_Printf ("Client \"%s\" dropped", host_client->name);
 
-	if(fmt)
+	if (fmt)
 	{
 		va_start(argptr, fmt);
 		dpvsnprintf(reason, sizeof(reason), fmt, argptr);
 		va_end(argptr);
 
-		Con_Printf(" (%s)\n", reason);
+		Con_Printf (" (%s)\n", reason);
 	}
 	else
 	{
-		Con_Printf(" \n");
+		Con_Printf (" \n");
 	}
 
 	SV_StopDemoRecording(host_client);
@@ -1044,9 +1048,9 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 			buf.data = bufdata;
 			buf.maxsize = sizeof(bufdata);
 			MSG_WriteByte(&buf, svc_disconnect);
-			if(fmt)
+			if (fmt)
 			{
-				if(sv.protocol == PROTOCOL_DARKPLACES8)
+				if (sv.protocol == PROTOCOL_DARKPLACES8)
 					MSG_WriteString(&buf, reason);
 				else
 					SV_ClientPrintf("%s\n", reason);
@@ -1059,7 +1063,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 
 	// call qc ClientDisconnect function
 	// LadyHavoc: don't call QC if server is dead (avoids recursive
-	// Host_Error in some mods when they run out of edicts)
+	// Host_Error_Line in some mods when they run out of edicts)
 	if (host_client->clientconnectcalled && sv.active && host_client->edict)
 	{
 		// call the prog function for removing a client
@@ -1078,15 +1082,15 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 		NetConn_Close(host_client->netconnection);
 		host_client->netconnection = NULL;
 	}
-	if(fmt)
-		SV_BroadcastPrintf("\003^3%s left the game (%s)\n", host_client->name, reason);
+	if (fmt)
+		SV_BroadcastPrintf("\003^3%s left the game (%s)" NEWLINE, host_client->name, reason);
 	else
-		SV_BroadcastPrintf("\003^3%s left the game\n", host_client->name);
+		SV_BroadcastPrintf("\003^3%s left the game"  NEWLINE, host_client->name);
 
 	// if a download is active, close it
 	if (host_client->download_file)
 	{
-		Con_DPrintf("Download of %s aborted when %s dropped\n", host_client->download_name, host_client->name);
+		Con_DPrintf ("Download of %s aborted when %s dropped\n", host_client->download_name, host_client->name);
 		FS_Close(host_client->download_file);
 		host_client->download_file = NULL;
 		host_client->download_name[0] = 0;
@@ -1139,7 +1143,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 				break;
 		if (i == svs.maxclients)
 		{
-			Con_Printf("Loaded game, everyone rejoined - unpausing\n");
+			Con_Printf ("Loaded game, everyone rejoined - unpausing\n");
 			sv.paused = sv.loadgame = false; // we're basically done with loading now
 		}
 	}
@@ -1186,7 +1190,7 @@ static void Download_CheckExtensions(cmd_state_t *cmd)
 	
 	for(i = 2; i < argc; ++i)
 	{
-		if(!strcmp(Cmd_Argv(cmd, i), "deflate"))
+		if (String_Does_Match(Cmd_Argv(cmd, i), "deflate"))
 		{
 			host_client->download_deflate = true;
 			break;
@@ -1215,7 +1219,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	if (host_client->download_file)
 	{
 		// at this point we'll assume the previous download should be aborted
-		Con_DPrintf("Download of %s aborted by %s starting a new download\n", host_client->download_name, host_client->name);
+		Con_DPrintf ("Download of %s aborted by %s starting a new download\n", host_client->download_name, host_client->name);
 		SV_ClientCommands("\nstopdownload\n");
 
 		// close the file and reset variables
@@ -1242,25 +1246,24 @@ static void SV_Download_f(cmd_state_t *cmd)
 
 	// host_client is asking to download a specified file
 	if (developer_extra.integer)
-		Con_DPrintf("Download request for %s by %s\n", host_client->download_name, host_client->name);
+		Con_DPrintLinef ("Download request for %s by %s", host_client->download_name, host_client->name);
 
-	if(is_csqc)
-	{
+	if (is_csqc) {
 		char extensions[MAX_QPATH]; // make sure this can hold all extensions
 		extensions[0] = '\0';
 		
-		if(host_client->download_deflate)
-			strlcat(extensions, " deflate", sizeof(extensions));
+		if (host_client->download_deflate)
+			c_strlcat(extensions, " deflate");
 		
-		Con_DPrintf("Downloading %s to %s\n", host_client->download_name, host_client->name);
+		Con_DPrintLinef ("Downloading %s to %s", host_client->download_name, host_client->name);
 
-		if(host_client->download_deflate && svs.csqc_progdata_deflated)
+		if (host_client->download_deflate && svs.csqc_progdata_deflated)
 			host_client->download_file = FS_FileFromData(svs.csqc_progdata_deflated, svs.csqc_progsize_deflated, true);
 		else
 			host_client->download_file = FS_FileFromData(svs.csqc_progdata, sv.csqc_progsize, true);
 		
 		// no, no space is needed between %s and %s :P
-		SV_ClientCommands("\ncl_downloadbegin %i %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
+		SV_ClientCommands(NEWLINE "cl_downloadbegin %d %s%s" NEWLINE, (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
 
 		host_client->download_expectedposition = 0;
 		host_client->download_started = false;
@@ -1270,37 +1273,38 @@ static void SV_Download_f(cmd_state_t *cmd)
 
 	if (!FS_FileExists(host_client->download_name))
 	{
-		SV_ClientPrintf("Download rejected: server does not have the file \"%s\"\nYou may need to separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		SV_ClientPrintf("Download rejected: server does not have the file " QUOTED_S NEWLINE "You may need to separately download or purchase the data archives for this game/mod to get this file" NEWLINE, host_client->download_name);
+		SV_ClientCommands(NEWLINE "stopdownload" NEWLINE);
 		return;
 	}
 
 	// check if the user is trying to download part of registered Quake(r)
 	whichpack = FS_WhichPack(host_client->download_name);
 	whichpack2 = FS_WhichPack("gfx/pop.lmp");
-	if ((whichpack && whichpack2 && !strcasecmp(whichpack, whichpack2)) || FS_IsRegisteredQuakePack(host_client->download_name))
+	if ((whichpack && whichpack2 && String_Does_Match_Caseless(whichpack, whichpack2)) 
+		|| FS_IsRegisteredQuakePack(host_client->download_name))
 	{
-		SV_ClientPrintf("Download rejected: file \"%s\" is part of registered Quake(r)\nYou must purchase Quake(r) from id Software or a retailer to get this file\nPlease go to http://www.idsoftware.com/games/quake/quake/index.php?game_section=buy\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		SV_ClientPrintf("Download rejected: file " QUOTED_S " is part of registered Quake(r)" NEWLINE 
+						"You must purchase Quake(r) from id Software or a retailer to get this file" NEWLINE, 
+						host_client->download_name);
+		SV_ClientCommands(NEWLINE "stopdownload" NEWLINE);
 		return;
 	}
 
 	// check if the server has forbidden archive downloads entirely
-	if (!sv_allowdownloads_inarchive.integer)
-	{
+	if (!sv_allowdownloads_inarchive.integer) {
 		whichpack = FS_WhichPack(host_client->download_name);
-		if (whichpack)
-		{
-			SV_ClientPrintf("Download rejected: file \"%s\" is in an archive (\"%s\")\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name, whichpack);
-			SV_ClientCommands("\nstopdownload\n");
+		if (whichpack) {
+			SV_ClientPrintf("Download rejected: file " QUOTED_S " is in an archive (" QUOTED_S ")" NEWLINE 
+"You must separately download or purchase the data archives for this game/mod to get this file" NEWLINE,
+ host_client->download_name, whichpack);
+			SV_ClientCommands(NEWLINE "stopdownload" NEWLINE);
 			return;
 		}
 	}
 
-	if (!sv_allowdownloads_config.integer)
-	{
-		if (!strcasecmp(extension, "cfg"))
-		{
+	if (!sv_allowdownloads_config.integer) {
+		if (String_Does_Match_Caseless(extension, "cfg")) {
 			SV_ClientPrintf("Download rejected: file \"%s\" is a .cfg file which is forbidden for security reasons\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
 			SV_ClientCommands("\nstopdownload\n");
 			return;
@@ -1319,7 +1323,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 
 	if (!sv_allowdownloads_archive.integer)
 	{
-		if (!strcasecmp(extension, "pak") || !strcasecmp(extension, "pk3") || !strcasecmp(extension, "dpk"))
+		if (String_Does_Match_Caseless(extension, "pak") || String_Does_Match_Caseless(extension, "pk3") || String_Does_Match_Caseless(extension, "dpk"))
 		{
 			SV_ClientPrintf("Download rejected: file \"%s\" is an archive\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
 			SV_ClientCommands("\nstopdownload\n");
@@ -1353,7 +1357,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		return;
 	}
 
-	Con_DPrintf("Downloading %s to %s\n", host_client->download_name, host_client->name);
+	Con_DPrintf ("Downloading %s to %s\n", host_client->download_name, host_client->name);
 
 	/*
 	 * we can only do this if we would actually deflate on the fly
@@ -1362,14 +1366,14 @@ static void SV_Download_f(cmd_state_t *cmd)
 		char extensions[MAX_QPATH]; // make sure this can hold all extensions
 		extensions[0] = '\0';
 		
-		if(host_client->download_deflate)
+		if (host_client->download_deflate)
 			strlcat(extensions, " deflate", sizeof(extensions));
 
 		// no, no space is needed between %s and %s :P
-		SV_ClientCommands("\ncl_downloadbegin %i %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
+		SV_ClientCommands("\ncl_downloadbegin %d %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
 	}
 	*/
-	SV_ClientCommands("\ncl_downloadbegin %i %s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name);
+	SV_ClientCommands("\ncl_downloadbegin %d %s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name);
 
 	host_client->download_expectedposition = 0;
 	host_client->download_started = false;
@@ -1414,11 +1418,11 @@ int SV_ModelIndex(const char *s, int precachemode)
 			{
 				if (sv.state != ss_loading && (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5))
 				{
-					Con_Printf("SV_ModelIndex(\"%s\"): precache_model can only be done in spawn functions\n", filename);
+					Con_Printf ("SV_ModelIndex(\"%s\"): precache_model can only be done in spawn functions\n", filename);
 					return 0;
 				}
 				if (precachemode == 1)
-					Con_Printf("SV_ModelIndex(\"%s\"): not precached (fix your code), precaching anyway\n", filename);
+					Con_Printf ("SV_ModelIndex(\"%s\"): not precached (fix your code), precaching anyway\n", filename);
 				strlcpy(sv.model_precache[i], filename, sizeof(sv.model_precache[i]));
 				if (sv.state == ss_loading)
 				{
@@ -1443,13 +1447,13 @@ int SV_ModelIndex(const char *s, int precachemode)
 				}
 				return i;
 			}
-			Con_Printf("SV_ModelIndex(\"%s\"): not precached\n", filename);
+			Con_Printf ("SV_ModelIndex(\"%s\"): not precached\n", filename);
 			return 0;
 		}
-		if (!strcmp(sv.model_precache[i], filename))
+		if (String_Does_Match(sv.model_precache[i], filename))
 			return i;
 	}
-	Con_Printf("SV_ModelIndex(\"%s\"): i (%i) == MAX_MODELS (%i)\n", filename, i, MAX_MODELS);
+	Con_Printf ("SV_ModelIndex(\"%s\"): i (%d) == MAX_MODELS (%d)\n", filename, i, MAX_MODELS);
 	return 0;
 }
 
@@ -1477,11 +1481,11 @@ int SV_SoundIndex(const char *s, int precachemode)
 			{
 				if (sv.state != ss_loading && (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5))
 				{
-					Con_Printf("SV_SoundIndex(\"%s\"): precache_sound can only be done in spawn functions\n", filename);
+					Con_Printf ("SV_SoundIndex(\"%s\"): precache_sound can only be done in spawn functions\n", filename);
 					return 0;
 				}
 				if (precachemode == 1)
-					Con_Printf("SV_SoundIndex(\"%s\"): not precached (fix your code), precaching anyway\n", filename);
+					Con_Printf ("SV_SoundIndex(\"%s\"): not precached (fix your code), precaching anyway\n", filename);
 				strlcpy(sv.sound_precache[i], filename, sizeof(sv.sound_precache[i]));
 				if (sv.state != ss_loading)
 				{
@@ -1491,13 +1495,13 @@ int SV_SoundIndex(const char *s, int precachemode)
 				}
 				return i;
 			}
-			Con_Printf("SV_SoundIndex(\"%s\"): not precached\n", filename);
+			Con_Printf ("SV_SoundIndex(\"%s\"): not precached\n", filename);
 			return 0;
 		}
-		if (!strcmp(sv.sound_precache[i], filename))
+		if (String_Does_Match(sv.sound_precache[i], filename))
 			return i;
 	}
-	Con_Printf("SV_SoundIndex(\"%s\"): i (%i) == MAX_SOUNDS (%i)\n", filename, i, MAX_SOUNDS);
+	Con_Printf ("SV_SoundIndex(\"%s\"): i (%d) == MAX_SOUNDS (%d)\n", filename, i, MAX_SOUNDS);
 	return 0;
 }
 
@@ -1543,7 +1547,7 @@ int SV_ParticleEffectIndex(const char *name)
 				argc = 0;
 				for (;;)
 				{
-					if (!COM_ParseToken_Simple(&text, true, false, true) || !strcmp(com_token, "\n"))
+					if (!COM_ParseToken_Simple(&text, true, false, true) || String_Does_Match(com_token, "\n"))
 						break;
 					if (argc < 16)
 					{
@@ -1555,7 +1559,7 @@ int SV_ParticleEffectIndex(const char *name)
 					break; // if the loop exited and it's not a \n, it's EOF
 				if (argc < 1)
 					continue;
-				if (!strcmp(argv[0], "effect"))
+				if (String_Does_Match(argv[0], "effect"))
 				{
 					if (argc == 2)
 					{
@@ -1563,7 +1567,7 @@ int SV_ParticleEffectIndex(const char *name)
 						{
 							if (sv.particleeffectname[effectnameindex][0])
 							{
-								if (!strcmp(sv.particleeffectname[effectnameindex], argv[1]))
+								if (String_Does_Match(sv.particleeffectname[effectnameindex], argv[1]))
 									break;
 							}
 							else
@@ -1575,7 +1579,7 @@ int SV_ParticleEffectIndex(const char *name)
 						// if we run out of names, abort
 						if (effectnameindex == MAX_PARTICLEEFFECTNAME)
 						{
-							Con_Printf("%s:%i: too many effects!\n", filename, linenumber);
+							Con_Printf ("%s:%d: too many effects!\n", filename, linenumber);
 							break;
 						}
 					}
@@ -1586,7 +1590,7 @@ int SV_ParticleEffectIndex(const char *name)
 	}
 	// search for the name
 	for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME && sv.particleeffectname[effectnameindex][0];effectnameindex++)
-		if (!strcmp(sv.particleeffectname[effectnameindex], name))
+		if (String_Does_Match(sv.particleeffectname[effectnameindex], name))
 			return effectnameindex;
 	// return 0 if we couldn't find it
 	return 0;
@@ -1701,11 +1705,11 @@ static void SV_Prepare_CSQC(void)
 {
 	fs_offset_t progsize;
 
-	if(svs.csqc_progdata)
+	if (svs.csqc_progdata)
 	{
-		Con_DPrintf("Unloading old CSQC data.\n");
+		Con_DPrintf ("Unloading old CSQC data.\n");
 		Mem_Free(svs.csqc_progdata);
-		if(svs.csqc_progdata_deflated)
+		if (svs.csqc_progdata_deflated)
 			Mem_Free(svs.csqc_progdata_deflated);
 	}
 
@@ -1715,26 +1719,26 @@ static void SV_Prepare_CSQC(void)
 	sv.csqc_progname[0] = 0;
 	svs.csqc_progdata = FS_LoadFile(csqc_progname.string, sv_mempool, false, &progsize);
 
-	if(progsize > 0)
+	if (progsize > 0)
 	{
 		size_t deflated_size;
 
 		sv.csqc_progsize = (int)progsize;
 		sv.csqc_progcrc = CRC_Block(svs.csqc_progdata, progsize);
 		strlcpy(sv.csqc_progname, csqc_progname.string, sizeof(sv.csqc_progname));
-		Con_DPrintf("server detected csqc progs file \"%s\" with size %i and crc %i\n", sv.csqc_progname, sv.csqc_progsize, sv.csqc_progcrc);
+		Con_DPrintf ("server detected csqc progs file \"%s\" with size %d and crc %d\n", sv.csqc_progname, sv.csqc_progsize, sv.csqc_progcrc);
 
 		Con_DPrint("Compressing csprogs.dat\n");
 		//unsigned char *FS_Deflate(const unsigned char *data, size_t size, size_t *deflated_size, int level, mempool_t *mempool);
 		svs.csqc_progdata_deflated = FS_Deflate(svs.csqc_progdata, progsize, &deflated_size, -1, sv_mempool);
 		svs.csqc_progsize_deflated = (int)deflated_size;
-		if(svs.csqc_progdata_deflated)
+		if (svs.csqc_progdata_deflated)
 		{
-			Con_DPrintf("Deflated: %g%%\n", 100.0 - 100.0 * (deflated_size / (float)progsize));
-			Con_DPrintf("Uncompressed: %u\nCompressed:   %u\n", (unsigned)sv.csqc_progsize, (unsigned)svs.csqc_progsize_deflated);
+			Con_DPrintf ("Deflated: %g%%\n", 100.0 - 100.0 * (deflated_size / (float)progsize));
+			Con_DPrintf ("Uncompressed: %u\nCompressed:   %u\n", (unsigned)sv.csqc_progsize, (unsigned)svs.csqc_progsize_deflated);
 		}
 		else
-			Con_DPrintf("Cannot compress - need zlib for this. Using uncompressed progs only.\n");
+			Con_DPrintf ("Cannot compress - need zlib for this. Using uncompressed progs only.\n");
 	}
 }
 
@@ -1791,7 +1795,7 @@ void SV_SpawnServer (const char *map)
 	char modelname[sizeof(sv.worldname)];
 	char vabuf[1024];
 
-	Con_Printf("SpawnServer: %s\n", map);
+	Con_DPrintLinef ("SpawnServer: %s", map);
 
 	dpsnprintf (modelname, sizeof(modelname), "maps/%s.bsp", map);
 
@@ -1800,14 +1804,14 @@ void SV_SpawnServer (const char *map)
 		dpsnprintf (modelname, sizeof(modelname), "maps/%s", map);
 		if (!FS_FileExists(modelname))
 		{
-			Con_Printf("SpawnServer: no map file named %s\n", modelname);
+			Con_Printf ("SpawnServer: no map file named %s\n", modelname);
 			return;
 		}
 	}
 
 //	SV_LockThreadMutex();
 
-	if(!host_isclient.integer)
+	if (!host_isclient.integer)
 		Sys_MakeProcessNice();
 	else
 	{
@@ -1815,10 +1819,10 @@ void SV_SpawnServer (const char *map)
 		S_StopAllSounds();
 	}
 
-	if(sv.active)
+	if (sv.active)
 	{
 		World_End(&sv.world);
-		if(PRVM_serverfunction(SV_Shutdown))
+		if (PRVM_serverfunction(SV_Shutdown))
 		{
 			func_t s = PRVM_serverfunction(SV_Shutdown);
 			PRVM_serverglobalfloat(time) = sv.time;
@@ -1833,9 +1837,9 @@ void SV_SpawnServer (const char *map)
 	worldmodel = Mod_ForName(modelname, false, developer.integer > 0, NULL);
 	if (!worldmodel || !worldmodel->TraceBox)
 	{
-		Con_Printf("Couldn't load map %s\n", modelname);
+		Con_Printf ("Couldn't load map %s\n", modelname);
 
-		if(!host_isclient.integer)
+		if (!host_isclient.integer)
 			Sys_MakeProcessMean();
 
 //		SV_UnlockThreadMutex();
@@ -1886,7 +1890,7 @@ void SV_SpawnServer (const char *map)
 		Cvar_SetValueQuick(&deathmatch, 0);
 		Cvar_SetValueQuick(&campaign, 0);
 	}
-	else if(!deathmatch.integer)
+	else if (!deathmatch.integer)
 		Cvar_SetValueQuick(&campaign, 1);
 	else
 		Cvar_SetValueQuick(&campaign, 0);
@@ -1911,10 +1915,10 @@ void SV_SpawnServer (const char *map)
 	Cvar_SetValueQuick(&sv_mapformat_is_quake2, worldmodel->brush.isq2bsp);
 	Cvar_SetValueQuick(&sv_mapformat_is_quake3, worldmodel->brush.isq3bsp);
 
-	if(*sv_random_seed.string)
+	if (*sv_random_seed.string)
 	{
 		srand(sv_random_seed.integer);
-		Con_Printf(CON_WARN "NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.\n", sv_random_seed.integer);
+		Con_Printf (CON_WARN "NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.\n", sv_random_seed.integer);
 	}
 
 	SV_VM_Setup();
@@ -1936,7 +1940,7 @@ void SV_SpawnServer (const char *map)
 	{
 		char buffer[1024];
 		Protocol_Names(buffer, sizeof(buffer));
-		Con_Printf(CON_ERROR "Unknown sv_protocolname \"%s\", valid values are:\n%s\n", sv_protocolname.string, buffer);
+		Con_PrintLinef (CON_ERROR "Unknown sv_protocolname " QUOTED_S ", valid values are:" NEWLINE "%s", sv_protocolname.string, buffer);
 		sv.protocol = PROTOCOL_QUAKE;
 	}
 
@@ -1980,13 +1984,12 @@ void SV_SpawnServer (const char *map)
 
 	strlcpy(sv.model_precache[0], "", sizeof(sv.model_precache[0]));
 	strlcpy(sv.model_precache[1], sv.worldname, sizeof(sv.model_precache[1]));
-	for (i = 1;i < sv.worldmodel->brush.numsubmodels && i+1 < MAX_MODELS;i++)
-	{
-		dpsnprintf(sv.model_precache[i+1], sizeof(sv.model_precache[i+1]), "*%i", i);
+	for (i = 1;i < sv.worldmodel->brush.numsubmodels && i+1 < MAX_MODELS;i++) {
+		dpsnprintf(sv.model_precache[i+1], sizeof(sv.model_precache[i+1]), "*%d", i);
 		sv.models[i+1] = Mod_ForName (sv.model_precache[i+1], false, false, sv.worldname);
 	}
-	if(i < sv.worldmodel->brush.numsubmodels)
-		Con_Printf("Too many submodels (MAX_MODELS is %i)\n", MAX_MODELS);
+	if (i < sv.worldmodel->brush.numsubmodels)
+		Con_PrintLinef ("Too many submodels (MAX_MODELS is %d)", MAX_MODELS);
 
 //
 // load the rest of the entities
@@ -2018,8 +2021,7 @@ void SV_SpawnServer (const char *map)
 	// their thinks don't run during startup (before PutClientInServer)
 	// we also need to set up the client entities now
 	// and we need to set the ->edict pointers to point into the progs edicts
-	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
-	{
+	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++) {
 		host_client->begun = false;
 		host_client->edict = PRVM_EDICT_NUM(i + 1);
 		PRVM_ED_ClearEdict(prog, host_client->edict);
@@ -2028,7 +2030,7 @@ void SV_SpawnServer (const char *map)
 	// load replacement entity file if found
 	if (sv_entpatch.integer && (entities = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), tempmempool, true, NULL)))
 	{
-		Con_Printf("Loaded %s.ent\n", sv.worldnamenoextension);
+		Con_PrintLinef ("Loaded %s.ent", sv.worldnamenoextension);
 		PRVM_ED_LoadFromFile(prog, entities);
 		Mem_Free(entities);
 	}
@@ -2045,8 +2047,7 @@ void SV_SpawnServer (const char *map)
 
 // run two frames to allow everything to settle
 	sv.time = 1.0001;
-	for (i = 0;i < sv_init_frame_count.integer;i++)
-	{
+	for (i = 0;i < sv_init_frame_count.integer;i++) {
 		sv.frametime = 0.1;
 		SV_Physics ();
 	}
@@ -2054,7 +2055,7 @@ void SV_SpawnServer (const char *map)
 	// Once all init frames have been run, we consider svqc code fully initialized.
 	prog->inittime = host.realtime;
 
-	if(!host_isclient.integer)
+	if (!host_isclient.integer)
 		Mod_PurgeUnused();
 
 // create a baseline for more efficient communications
@@ -2064,15 +2065,13 @@ void SV_SpawnServer (const char *map)
 	sv.state = ss_active; // LadyHavoc: workaround for svc_precache bug
 
 // send serverinfo to all connected clients, and set up botclients coming back from a level change
-	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
-	{
+	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++) {
 		host_client->clientconnectcalled = false; // do NOT call ClientDisconnect if he drops before ClientConnect!
 		if (!host_client->active)
 			continue;
 		if (host_client->netconnection)
 			SV_SendServerinfo(host_client);
-		else
-		{
+		else {
 			int j;
 			// if client is a botclient coming from a level change, we need to
 			// set up client info that normally requires networking
@@ -2088,17 +2087,17 @@ void SV_SpawnServer (const char *map)
 			prog->ExecuteProgram(prog, PRVM_serverfunction(ClientConnect), "QC function ClientConnect is missing");
 			prog->ExecuteProgram(prog, PRVM_serverfunction(PutClientInServer), "QC function PutClientInServer is missing");
 			host_client->begun = true;
-		}
-	}
+		} // if
+	} // for host_client
 
 	// update the map title cvar
 	strlcpy(sv.worldmessage, PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)), sizeof(sv.worldmessage)); // map title (not related to filename)
 	Cvar_SetQuick(&sv_worldmessage, sv.worldmessage);
 
-	Con_Printf("Server spawned.\n");
+	Con_DPrintLinef ("Server spawned.");
 	NetConn_Heartbeat (2);
 
-	if(!host_isclient.integer)
+	if (!host_isclient.integer)
 		Sys_MakeProcessMean();
 
 //	SV_UnlockThreadMutex();
@@ -2121,16 +2120,16 @@ void SV_Shutdown(void)
 	if (!sv.active)
 		goto end;
 
-	Con_DPrintf("SV_Shutdown\n");
+	Con_DPrintf ("SV_Shutdown\n");
 
 	NetConn_Heartbeat(2);
 	NetConn_Heartbeat(2);
 
 // make sure all the clients know we're disconnecting
 	World_End(&sv.world);
-	if(prog->loaded)
+	if (prog->loaded)
 	{
-		if(PRVM_serverfunction(SV_Shutdown))
+		if (PRVM_serverfunction(SV_Shutdown))
 		{
 			func_t s = PRVM_serverfunction(SV_Shutdown);
 			PRVM_serverglobalfloat(time) = sv.time;
@@ -2195,7 +2194,7 @@ static void SVVM_init_edict(prvm_prog_t *prog, prvm_edict_t *e)
 		PRVM_serveredictstring(e, playermodel) = PRVM_SetEngineString(prog, svs.clients[num].playermodel);
 		PRVM_serveredictstring(e, playerskin) = PRVM_SetEngineString(prog, svs.clients[num].playerskin);
 		// Assign netaddress (IP Address, etc)
-		if(svs.clients[num].netconnection != NULL)
+		if (svs.clients[num].netconnection != NULL)
 		{
 			// Acquire Readable Address
 			LHNETADDRESS_ToString(&svs.clients[num].netconnection->peeraddress, svs.clients[num].netaddress, sizeof(svs.clients[num].netaddress), false);
@@ -2203,24 +2202,24 @@ static void SVVM_init_edict(prvm_prog_t *prog, prvm_edict_t *e)
 		}
 		else
 			PRVM_serveredictstring(e, netaddress) = PRVM_SetEngineString(prog, "null/botclient");
-		if(svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_idfp[0])
+		if (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_idfp[0])
 			PRVM_serveredictstring(e, crypto_idfp) = PRVM_SetEngineString(prog, svs.clients[num].netconnection->crypto.client_idfp);
 		else
 			PRVM_serveredictstring(e, crypto_idfp) = 0;
 		PRVM_serveredictfloat(e, crypto_idfp_signed) = (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_issigned);
-		if(svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_keyfp[0])
+		if (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_keyfp[0])
 			PRVM_serveredictstring(e, crypto_keyfp) = PRVM_SetEngineString(prog, svs.clients[num].netconnection->crypto.client_keyfp);
 		else
 			PRVM_serveredictstring(e, crypto_keyfp) = 0;
-		if(svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.server_keyfp[0])
+		if (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.server_keyfp[0])
 			PRVM_serveredictstring(e, crypto_mykeyfp) = PRVM_SetEngineString(prog, svs.clients[num].netconnection->crypto.server_keyfp);
 		else
 			PRVM_serveredictstring(e, crypto_mykeyfp) = 0;
-		if(svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.use_aes)
+		if (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.use_aes)
 			PRVM_serveredictstring(e, crypto_encryptmethod) = PRVM_SetEngineString(prog, "AES128");
 		else
 			PRVM_serveredictstring(e, crypto_encryptmethod) = 0;
-		if(svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated)
+		if (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated)
 			PRVM_serveredictstring(e, crypto_signmethod) = PRVM_SetEngineString(prog, "HMAC-SHA256");
 		else
 			PRVM_serveredictstring(e, crypto_signmethod) = 0;
@@ -2278,11 +2277,11 @@ static void SVVM_count_edicts(prvm_prog_t *prog)
 			step++;
 	}
 
-	Con_Printf("num_edicts:%3i\n", prog->num_edicts);
-	Con_Printf("active    :%3i\n", active);
-	Con_Printf("view      :%3i\n", models);
-	Con_Printf("touch     :%3i\n", solid);
-	Con_Printf("step      :%3i\n", step);
+	Con_Printf ("num_edicts:%3i\n", prog->num_edicts);
+	Con_Printf ("active    :%3i\n", active);
+	Con_Printf ("view      :%3i\n", models);
+	Con_Printf ("touch     :%3i\n", solid);
+	Con_Printf ("step      :%3i\n", step);
 }
 
 static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
@@ -2310,7 +2309,7 @@ static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 static void SV_VM_Setup(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	PRVM_Prog_Init(prog, cmd_local);
+	PRVM_Prog_Init (prog, cmd_local);
 
 	// allocate the mempools
 	// TODO: move the magic numbers/constants into #defines [9/13/2006 Black]
@@ -2343,7 +2342,7 @@ static void SV_VM_Setup(void)
 	prog->load_edict            = SVVM_load_edict;
 	prog->init_cmd              = SVVM_init_cmd;
 	prog->reset_cmd             = SVVM_reset_cmd;
-	prog->error_cmd             = Host_Error;
+	prog->error_cmd             = Host_Error_Line;
 	prog->ExecuteProgram        = SVVM_ExecuteProgram;
 
 	PRVM_Prog_Load(prog, sv_progs.string, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
@@ -2487,7 +2486,7 @@ static void SV_VM_Setup(void)
 //		PRVM_ED_FindGlobalOffset_FromStruct(globalvars_t, SetChangeParms);
 	}
 	else
-		Con_DPrintf("%s: %s system vars have been modified (CRC %i != engine %i), will not load in other engines\n", prog->name, sv_progs.string, prog->progs_crc, PROGHEADER_CRC);
+		Con_DPrintLinef ("%s: %s system vars have been modified (CRC %d != engine %d), will not load in other engines", prog->name, sv_progs.string, prog->progs_crc, PROGHEADER_CRC);
 
 	// OP_STATE is always supported on server because we add fields/globals for it
 	prog->flag |= PRVM_OP_STATE;
@@ -2552,12 +2551,12 @@ double SV_Frame(double time)
 			}
 		}
 
-		if(sv.perf_acc_realtime > 5)
+		if (sv.perf_acc_realtime > 5)
 		{
 			sv.perf_cpuload = 1 - sv.perf_acc_sleeptime / sv.perf_acc_realtime;
 			sv.perf_lost = sv.perf_acc_lost / sv.perf_acc_realtime;
 
-			if(sv.perf_acc_offset_samples > 0)
+			if (sv.perf_acc_offset_samples > 0)
 			{
 				sv.perf_offset_max = sv.perf_acc_offset_max;
 				sv.perf_offset_avg = sv.perf_acc_offset / sv.perf_acc_offset_samples;
@@ -2590,7 +2589,7 @@ double SV_Frame(double time)
 	 * run the frame. Everything that happens before this
 	 * point will happen even if we're sleeping this frame.
 	 */
-	if((sv_timer += time) < 0)
+	if ((sv_timer += time) < 0)
 		return sv_timer;
 
 	// limit the frametime steps to no more than 100ms each
@@ -2629,12 +2628,12 @@ double SV_Frame(double time)
 			aborttime = Sys_DirtyTime() + 0.1;
 		}
 
-		if(host_timescale.value > 0 && host_timescale.value < 1)
+		if (host_timescale.value > 0 && host_timescale.value < 1)
 			advancetime = min(advancetime, 0.1 / host_timescale.value);
 		else
 			advancetime = min(advancetime, 0.1);
 
-		if(advancetime > 0)
+		if (advancetime > 0)
 		{
 			offset = Sys_DirtyTime() - host.dirtytime;
 			if (offset < 0 || offset >= 1800)
@@ -2645,7 +2644,7 @@ double SV_Frame(double time)
 			sv.perf_acc_offset += offset;
 			sv.perf_acc_offset_squared += offset * offset;
 			
-			if(sv.perf_acc_offset_max < offset)
+			if (sv.perf_acc_offset_max < offset)
 				sv.perf_acc_offset_max = offset;
 		}
 
@@ -2718,7 +2717,7 @@ static int SV_ThreadFunc(void *voiddata)
 	sv_realtime = Sys_DirtyTime();
 	while (!svs.threadstop)
 	{
-		// FIXME: we need to handle Host_Error in the server thread somehow
+		// FIXME: we need to handle Host_Error_Line in the server thread somehow
 //		if (setjmp(sv_abortframe))
 //			continue;			// something bad happened in the server game
 
@@ -2738,28 +2737,28 @@ static int SV_ThreadFunc(void *voiddata)
 		playing = false;
 		if (sv.active)
 			for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
-				if(host_client->begun)
-					if(host_client->netconnection)
+				if (host_client->begun)
+					if (host_client->netconnection)
 						playing = true;
-		if(sv.time < 10)
+		if (sv.time < 10)
 		{
 			// don't accumulate time for the first 10 seconds of a match
 			// so things can settle
 			sv.perf_acc_realtime = sv.perf_acc_sleeptime = sv.perf_acc_lost = sv.perf_acc_offset = sv.perf_acc_offset_squared = sv.perf_acc_offset_max = sv.perf_acc_offset_samples = 0;
 		}
-		else if(sv.perf_acc_realtime > 5)
+		else if (sv.perf_acc_realtime > 5)
 		{
 			sv.perf_cpuload = 1 - sv.perf_acc_sleeptime / sv.perf_acc_realtime;
 			sv.perf_lost = sv.perf_acc_lost / sv.perf_acc_realtime;
-			if(sv.perf_acc_offset_samples > 0)
+			if (sv.perf_acc_offset_samples > 0)
 			{
 				sv.perf_offset_max = sv.perf_acc_offset_max;
 				sv.perf_offset_avg = sv.perf_acc_offset / sv.perf_acc_offset_samples;
 				sv.perf_offset_sdev = sqrt(sv.perf_acc_offset_squared / sv.perf_acc_offset_samples - sv.perf_offset_avg * sv.perf_offset_avg);
 			}
-			if(sv.perf_lost > 0 && developer_extra.integer)
-				if(playing)
-					Con_DPrintf("Server can't keep up: %s\n", SV_TimingReport(vabuf, sizeof(vabuf)));
+			if (sv.perf_lost > 0 && developer_extra.integer)
+				if (playing)
+					Con_DPrintf ("Server can't keep up: %s\n", SV_TimingReport(vabuf, sizeof(vabuf)));
 			sv.perf_acc_realtime = sv.perf_acc_sleeptime = sv.perf_acc_lost = sv.perf_acc_offset = sv.perf_acc_offset_squared = sv.perf_acc_offset_max = sv.perf_acc_offset_samples = 0;
 		}
 
@@ -2780,7 +2779,7 @@ static int SV_ThreadFunc(void *voiddata)
 				wait = min(wait, 1000000.0);
 			else
 				wait = min(wait, host_maxwait.value * 1000.0);
-			if(wait < 1)
+			if (wait < 1)
 				wait = 1; // because we cast to int
 			time0 = Sys_DirtyTime();
 			Sys_Sleep((int)wait);
@@ -2800,13 +2799,13 @@ static int SV_ThreadFunc(void *voiddata)
 			else
 				advancetime = sys_ticrate.value;
 
-			if(advancetime > 0)
+			if (advancetime > 0)
 			{
 				offset = sv_timer + (Sys_DirtyTime() - sv_realtime); // LadyHavoc: FIXME: I don't understand this line
 				++sv.perf_acc_offset_samples;
 				sv.perf_acc_offset += offset;
 				sv.perf_acc_offset_squared += offset * offset;
-				if(sv.perf_acc_offset_max < offset)
+				if (sv.perf_acc_offset_max < offset)
 					sv.perf_acc_offset_max = offset;
 			}
 

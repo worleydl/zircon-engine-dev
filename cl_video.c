@@ -41,7 +41,7 @@ static clvideo_t *FindUnusedVid( void )
 {
 	int i;
 	for( i = 1 ; i < MAXCLVIDEOS ; i++ )
-		if( cl_videos[ i ].state == CLVIDEO_UNUSED )
+		if ( cl_videos[ i ].state == CLVIDEO_UNUSED )
 			return &cl_videos[ i ];
 	return NULL;
 }
@@ -64,7 +64,7 @@ static qbool OpenStream( clvideo_t * video )
 	if (video->stream)
 		return true;
 
-	Con_Printf(CON_ERROR "unable to open \"%s\", error: %s\n", video->filename, errorstring);
+	Con_PrintLinef (CON_ERROR "unable to open video file " QUOTED_S ", error: %s", video->filename, errorstring);
 	return false;
 }
 
@@ -106,12 +106,12 @@ static void SuspendVideo( clvideo_t * video )
 
 static qbool WakeVideo( clvideo_t * video )
 {
-	if( !video->suspended )
+	if ( !video->suspended )
 		return true;
 	video->suspended = false;
 
-	if( video->state == CLVIDEO_FIRSTFRAME )
-		if( !OpenStream( video ) ) {
+	if ( video->state == CLVIDEO_FIRSTFRAME )
+		if ( !OpenStream( video ) ) {
 			video->state = CLVIDEO_UNUSED;
 			return false;
 		}
@@ -153,7 +153,7 @@ static void LoadSubtitles( clvideo_t *video, const char *subtitlesfile )
 	}
 	if (!subtitle_text)
 	{
-		Con_DPrintf( "LoadSubtitles: can't open subtitle file '%s'!\n", subtitlesfile );
+		Con_DPrintf ( "LoadSubtitles: can't open subtitle file '%s'!\n", subtitlesfile );
 		return;
 	}
 
@@ -178,7 +178,7 @@ static void LoadSubtitles( clvideo_t *video, const char *subtitlesfile )
 		// check limits
 		if (video->subtitles == CLVIDEO_MAX_SUBTITLES)
 		{
-			Con_Printf(CON_WARN "WARNING: CLVIDEO_MAX_SUBTITLES = %i reached when reading subtitles from '%s'\n", CLVIDEO_MAX_SUBTITLES, subtitlesfile);
+			Con_Printf (CON_WARN "WARNING: CLVIDEO_MAX_SUBTITLES = %d reached when reading subtitles from '%s'\n", CLVIDEO_MAX_SUBTITLES, subtitlesfile);
 			break;	
 		}
 		// add a sub
@@ -206,9 +206,9 @@ static void LoadSubtitles( clvideo_t *video, const char *subtitlesfile )
 	Z_Free( subtitle_text );
 	video->subtitles = numsubs;
 /*
-	Con_Printf( "video->subtitles: %i\n", video->subtitles );
+	Con_Printf ( "video->subtitles: %d\n", video->subtitles );
 	for (numsubs = 0; numsubs < video->subtitles; numsubs++)
-		Con_Printf( "  %03.2f %03.2f : %s\n", video->subtitle_start[numsubs], video->subtitle_end[numsubs], video->subtitle_text[numsubs] );
+		Con_Printf ( "  %03.2f %03.2f : %s\n", video->subtitle_start[numsubs], video->subtitle_end[numsubs], video->subtitle_text[numsubs] );
 */
 }
 
@@ -217,11 +217,11 @@ static clvideo_t* OpenVideo( clvideo_t *video, const char *filename, const char 
 	strlcpy(video->filename, filename, sizeof(video->filename));
 	dpsnprintf(video->name, sizeof(video->name), CLVIDEOPREFIX "%s", name);
 	video->ownertag = owner;
-	if( strncmp( name, CLVIDEOPREFIX, sizeof( CLVIDEOPREFIX ) - 1 ) )
+	if ( strncmp( name, CLVIDEOPREFIX, sizeof( CLVIDEOPREFIX ) - 1 ) )
 		return NULL;
 	video->cachepic = Draw_CachePic_Flags(name, CACHEPICFLAG_NOTPERSISTENT | CACHEPICFLAG_QUIET);
 
-	if( !OpenStream( video ) )
+	if ( !OpenStream( video ) )
 		return NULL;
 
 	video->state = CLVIDEO_FIRSTFRAME;
@@ -246,14 +246,14 @@ clvideo_t* CL_OpenVideo( const char *filename, const char *name, int owner, cons
 {
 	clvideo_t *video;
 	// sanity check
-	if( !name || !*name || strncmp( name, CLVIDEOPREFIX, sizeof( CLVIDEOPREFIX ) - 1 ) != 0 ) {
-		Con_DPrintf( "CL_OpenVideo: Bad video texture name '%s'!\n", name );
+	if ( !name || !*name || strncmp( name, CLVIDEOPREFIX, sizeof( CLVIDEOPREFIX ) - 1 ) != 0 ) {
+		Con_DPrintf ( "CL_OpenVideo: Bad video texture name '%s'!\n", name );
 		return NULL;
 	}
 
 	video = FindUnusedVid();
-	if( !video ) {
-		Con_Printf(CON_ERROR "CL_OpenVideo: unable to open video \"%s\" - video limit reached\n", filename );
+	if ( !video ) {
+		Con_PrintLinef (CON_ERROR "CL_OpenVideo: unable to open video " QUOTED_S " - video limit reached", filename );
 		return NULL;
 	}
 	video = OpenVideo( video, filename, name, owner, subtitlesfile );
@@ -268,11 +268,11 @@ static clvideo_t* CL_GetVideoBySlot( int slot )
 {
 	clvideo_t *video = &cl_videos[ slot ];
 
-	if( video->suspended )
+	if ( video->suspended )
 	{
-		if( !WakeVideo( video ) )
+		if ( !WakeVideo( video ) )
 			return NULL;
-		else if( video->state == CLVIDEO_RESETONWAKEUP )
+		else if ( video->state == CLVIDEO_RESETONWAKEUP )
 			video->framenum = -1;
 	}
 
@@ -286,10 +286,10 @@ clvideo_t *CL_GetVideoByName( const char *name )
 	int i;
 
 	for( i = 0 ; i < cl_num_videos ; i++ )
-		if( cl_videos[ i ].state != CLVIDEO_UNUSED
+		if ( cl_videos[ i ].state != CLVIDEO_UNUSED
 			&&	String_Does_Match( cl_videos[ i ].name , name ) )
 			break;
-	if( i != cl_num_videos )
+	if ( i != cl_num_videos )
 		return CL_GetVideoBySlot( i );
 	else
 		return NULL;
@@ -434,11 +434,11 @@ static float CL_DrawVideo_WordWidthFunc(void *passthrough, const char *w, size_t
 {
 	cl_video_subtitle_info_t *si = (cl_video_subtitle_info_t *) passthrough;
 
-	if(w == NULL)
+	if (w == NULL)
 		return si->fontsize * si->font->maxwidth;
-	if(maxWidth >= 0)
+	if (maxWidth >= 0)
 		return DrawQ_TextWidth_UntilWidth(w, length, si->fontsize, si->fontsize, false, si->font, -maxWidth); // -maxWidth: we want at least one char
-	else if(maxWidth == -1)
+	else if (maxWidth == -1)
 		return DrawQ_TextWidth(w, *length, si->fontsize, si->fontsize, false, si->font);
 	else
 		return 0;
@@ -579,10 +579,10 @@ void CL_VideoStart(char *filename, const char *subtitlesfile)
 {
 	CL_StartVideo();
 
-	if( cl_videos->state != CLVIDEO_UNUSED )
+	if ( cl_videos->state != CLVIDEO_UNUSED )
 		CL_CloseVideo( cl_videos );
 	// already contains video/
-	if( !OpenVideo( cl_videos, filename, filename, 0, subtitlesfile ) )
+	if ( !OpenVideo( cl_videos, filename, filename, 0, subtitlesfile ) )
 		return;
 	// expand the active range to include the new entry
 	cl_num_videos = max(cl_num_videos, 1);
@@ -596,8 +596,8 @@ void CL_VideoStart(char *filename, const char *subtitlesfile)
 void CL_Video_KeyEvent( int key, int ascii, qbool down ) 
 {
 	// only react to up events, to allow the user to delay the abortion point if it suddenly becomes interesting..
-	if( !down ) {
-		if( key == K_ESCAPE || key == K_ENTER || key == K_SPACE ) {
+	if ( !down ) {
+		if ( key == K_ESCAPE || key == K_ENTER || key == K_SPACE ) {
 			CL_VideoStop();
 		}
 	}
@@ -653,7 +653,7 @@ static void cl_video_start( void )
 	cl_videotexturepool = R_AllocTexturePool();
 
 	for( video = cl_videos, i = 0 ; i < cl_num_videos ; i++, video++ )
-		if( video->state != CLVIDEO_UNUSED && !video->suspended )
+		if ( video->state != CLVIDEO_UNUSED && !video->suspended )
 			LinkVideoTexture( video );
 }
 
@@ -663,7 +663,7 @@ static void cl_video_shutdown( void )
 	clvideo_t *video;
 
 	for( video = cl_videos, i = 0 ; i < cl_num_videos ; i++, video++ )
-		if( video->state != CLVIDEO_UNUSED && !video->suspended )
+		if ( video->state != CLVIDEO_UNUSED && !video->suspended )
 			SuspendVideo( video );
 	R_FreeTexturePool( &cl_videotexturepool );
 }

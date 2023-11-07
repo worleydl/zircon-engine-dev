@@ -88,7 +88,7 @@ typedef struct  FT_Bitmap_
 	int             rows;
 	int             width;
 	int             pitch;
-	unsigned char*  buffer;
+	unsigned char * buffer;
 	short           num_grays;
 	char            pixel_mode;
 	char            palette_mode;
@@ -101,7 +101,7 @@ typedef struct  FT_Outline_
 	short       n_points;        /* number of points in the glyph      */
 
 	FT_Vector*  points;          /* the outline's points               */
-	char*       tags;            /* the points flags                   */
+	char *      tags;            /* the points flags                   */
 	short*      contours;        /* the contour end points             */
 
 	int         flags;           /* outline masks                      */

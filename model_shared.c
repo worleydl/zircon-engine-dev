@@ -105,7 +105,6 @@ static void mod_start(void)
 	SCR_PopLoadingScreen(false);
 }
 
-
 int is_game_switch; // Baker r9003: Clear models/sounds on gamedir change
 static void mod_shutdown(void)
 {
@@ -130,6 +129,7 @@ static void mod_shutdown(void)
 	if (is_game_switch) {
 		Mod_PurgeUnused (); // Baker .. loadmodel: stuff from prior gamedir persisted			
 		S_PurgeUnused();
+		is_game_switch = false; // Baker r9062: This is where.
 	} else {
 		// Could be ALT-TAB or vid restart
 	}
@@ -149,7 +149,7 @@ static void mod_newmap(void)
 			for (j = 0;j < mod->num_textures && mod->data_textures;j++)
 			{
 				// note that materialshaderpass and backgroundshaderpass point to shaderpasses[] and so do the pre/post shader ranges, so this catches all of them...
-				for (l = 0; l < Q3SHADER_MAXLAYERS; l++)
+				for (l = 0; l < Q3SHADER_MAXLAYERS_8; l++)
 					if (mod->data_textures[j].shaderpasses[l])
 						for (k = 0; k < mod->data_textures[j].shaderpasses[l]->numframes; k++)
 							R_SkinFrame_MarkUsed(mod->data_textures[j].shaderpasses[l]->skinframes[k]);
@@ -231,7 +231,7 @@ void Mod_UnloadModel (model_t *mod)
 	model_t *parentmodel;
 
 	if (developer_loading.integer)
-		Con_Printf("unloading model %s\n", mod->model_name);
+		Con_PrintLinef ("unloading model %s", mod->model_name);
 
 	strlcpy(name, mod->model_name, sizeof(name));
 	parentmodel = mod->brush.parentmodel;
@@ -295,15 +295,15 @@ static int Mod_FrameGroupify_ParseGroups(const char *buf, mod_framegroupify_pars
 		COM_ParseToken_Simple(&bufptr, true, false, true);
 		if (!bufptr)
 			break; // end of file
-		if (!strcmp(com_token, "\n"))
+		if (String_Does_Match(com_token, "\n"))
 			continue; // empty line
 		start = atoi(com_token);
 
 		// REQUIRED: fetch length
 		COM_ParseToken_Simple(&bufptr, true, false, true);
-		if (!bufptr || !strcmp(com_token, "\n"))
+		if (!bufptr || String_Does_Match(com_token, "\n"))
 		{
-			Con_Printf("framegroups file: missing number of frames\n");
+			Con_Printf ("framegroups file: missing number of frames\n");
 			continue;
 		}
 		len = atoi(com_token);
@@ -339,9 +339,9 @@ static int Mod_FrameGroupify_ParseGroups(const char *buf, mod_framegroupify_pars
 		while (bufptr && strcmp(com_token, "\n"))
 			COM_ParseToken_Simple(&bufptr, true, false, true);
 
-		//Con_Printf("data: %d %d %d %f %d (%s)\n", i, start, len, fps, loop, name);
+		//Con_Printf ("data: %d %d %d %f %d (%s)\n", i, start, len, fps, loop, name);
 
-		if(cb)
+		if (cb)
 			cb(i, start, len, fps, loop, (name[0] ? name : NULL), pass);
 		++i;
 	}
@@ -353,7 +353,7 @@ static void Mod_FrameGroupify_ParseGroups_Store (unsigned int i, int start, int 
 {
 	model_t *mod = (model_t *) pass;
 	animscene_t *anim = &mod->animscenes[i];
-	if(name)
+	if (name)
 		strlcpy(anim->name, name, sizeof(anim[i].name));
 	else
 		dpsnprintf(anim->name, sizeof(anim[i].name), "groupified_%d_anim", i);
@@ -361,7 +361,7 @@ static void Mod_FrameGroupify_ParseGroups_Store (unsigned int i, int start, int 
 	anim->framecount = bound(1, len, mod->num_poses - anim->firstframe);
 	anim->framerate = max(1, fps);
 	anim->loop = !!loop;
-	//Con_Printf("frame group %d is %d %d %f %d\n", i, start, len, fps, loop);
+	//Con_Printf ("frame group %d is %d %d %f %d\n", i, start, len, fps, loop);
 }
 
 static void Mod_FrameGroupify(model_t *mod, const char *buf)
@@ -370,9 +370,9 @@ static void Mod_FrameGroupify(model_t *mod, const char *buf)
 
 	// 0. count
 	cnt = Mod_FrameGroupify_ParseGroups(buf, NULL, NULL);
-	if(!cnt)
+	if (!cnt)
 	{
-		Con_Printf("no scene found in framegroups file, aborting\n");
+		Con_Printf ("no scene found in framegroups file, aborting\n");
 		return;
 	}
 	mod->numframes = cnt;
@@ -398,7 +398,7 @@ static void Mod_FindPotentialDeforms(model_t *mod)
 			mod->wantnormals = true;
 		if (texture->materialshaderpass && texture->materialshaderpass->tcgen.tcgen == Q3TCGEN_ENVIRONMENT)
 			mod->wantnormals = true;
-		for (j = 0;j < Q3MAXDEFORMS;j++)
+		for (j = 0;j < Q3MAXDEFORMS_4;j++)
 		{
 			if (texture->deforms[j].deform == Q3DEFORM_AUTOSPRITE)
 			{
@@ -431,16 +431,15 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	if (mod->model_name[0] == '*') // submodel
 		return mod;
 	
-	if (!strcmp(mod->model_name, "null"))
-	{
-		if(mod->loaded)
+	if (String_Does_Match(mod->model_name, "null")) {
+		if (mod->loaded)
 			return mod;
 
 		if (mod->loaded || mod->mempool)
 			Mod_UnloadModel(mod);
 
 		if (developer_loading.integer)
-			Con_Printf("loading model %s\n", mod->model_name);
+			Con_PrintLinef ("loading model %s", mod->model_name);
 
 		mod->used = true;
 		mod->crc = (unsigned int)-1;
@@ -463,7 +462,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 		mod->loaded = true;
 
 		return mod;
-	}
+	} // if
 
 	crc = 0;
 	buf = NULL;
@@ -471,13 +470,11 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	// even if the model is loaded it still may need reloading...
 
 	// if it is not loaded or checkdisk is true we need to calculate the crc
-	if (!mod->loaded || checkdisk)
-	{
+	if (!mod->loaded || checkdisk) {
 		if (checkdisk && mod->loaded)
-			Con_DPrintf("checking model %s\n", mod->model_name);
+			Con_DPrintLinef ("checking model %s", mod->model_name);
 		buf = FS_LoadFile (mod->model_name, tempmempool, false, &filesize);
-		if (buf)
-		{
+		if (buf) {
 			crc = CRC_Block((unsigned char *)buf, filesize);
 			// we need to reload the model if the crc does not match
 			if (mod->crc != crc)
@@ -486,15 +483,14 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	}
 
 	// if the model is already loaded and checks passed, just return
-	if (mod->loaded)
-	{
+	if (mod->loaded) {
 		if (buf)
 			Mem_Free(buf);
 		return mod;
 	}
 
 	if (developer_loading.integer)
-		Con_Printf("loading model %s\n", mod->model_name);
+		Con_PrintLinef ("loading model %s", mod->model_name);
 	
 	SCR_PushLoadingScreen(mod->model_name, 1);
 
@@ -520,17 +516,16 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	VectorSet(mod->rotatedmins, -mod->radius, -mod->radius, -mod->radius);
 	VectorSet(mod->rotatedmaxs, mod->radius, mod->radius, mod->radius);
 
-	if (!q3shaders_mem)
-	{
+	if (!q3shaders_mem) {
 		// load q3 shaders for the first time, or after a level change
 		Mod_LoadQ3Shaders();
 	}
 
-	if (buf)
-	{
+	if (buf) {
 		int i;
 		const char *ext = FS_FileExtension(mod->model_name);
 		char *bufend = (char *)buf + filesize;
+
 		// all models use memory, so allocate a memory pool
 		mod->mempool = Mem_AllocPool(mod->model_name, 0, NULL);
 
@@ -541,7 +536,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 		for (i = 0; loader[i].Load; i++)
 		{
 			// Headerless formats can just load based on extension. Otherwise match the magic string.
-			if((loader[i].extension && !strcasecmp(ext, loader[i].extension) && !loader[i].header) ||
+			if ((loader[i].extension && String_Does_Match_Caseless(ext, loader[i].extension) && !loader[i].header) ||
 			   (loader[i].header && !memcmp(buf, loader[i].header, loader[i].headersize)))
 			{
 				// Matched. Load it.
@@ -551,7 +546,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 				Mod_FindPotentialDeforms(mod);
 
 				buf = FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.framegroups", mod->model_name), tempmempool, false, &filesize);
-				if(buf)
+				if (buf)
 				{
 					Mod_FrameGroupify(mod, (const char *)buf);
 					Mem_Free(buf);
@@ -562,12 +557,19 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 				break;
 			}
 		}
-		if(!loader[i].Load)
-			Con_Printf(CON_ERROR "Mod_LoadModel: model \"%s\" is of unknown/unsupported type\n", mod->model_name);
+		if (!loader[i].Load)
+			Con_PrintLinef (CON_ERROR "Mod_LoadModel: model " QUOTED_S " is of unknown/unsupported type", mod->model_name);
 	}
-	else if (crash)
-		// LadyHavoc: Sys_Error was *ANNOYING*
-		Con_Printf (CON_ERROR "Mod_LoadModel: %s not found\n", mod->model_name);
+	else if (crash) {
+		
+		if (String_Does_Match(mod->model_name, "progs/beam.mdl")) {
+			// Baker r1461: beam.mdl quit printing this thing nothing uses ...
+			Con_DPrintLinef (CON_ERROR "Mod_LoadModel: %s not found", mod->model_name);
+		} else {
+			// LadyHavoc: Sys_Error was *ANNOYING*
+			Con_PrintLinef (CON_ERROR "Mod_LoadModel: %s not found", mod->model_name);
+		}
+	}
 
 	// no fatal errors occurred, so this model is ready to use.
 	mod->loaded = true;
@@ -582,9 +584,10 @@ void Mod_ClearUsed(void)
 	int i;
 	int nummodels = (int)Mem_ExpandableArray_IndexRange(&models);
 	model_t *mod;
-	for (i = 0;i < nummodels;i++)
+	for (i = 0; i < nummodels; i++) {
 		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0])
 			mod->used = false;
+	}
 }
 
 void Mod_PurgeUnused(void)
@@ -592,14 +595,12 @@ void Mod_PurgeUnused(void)
 	int i;
 	int nummodels = (int)Mem_ExpandableArray_IndexRange(&models);
 	model_t *mod;
-	for (i = 0;i < nummodels;i++)
-	{
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && !mod->used)
-		{
+	for (i = 0;i < nummodels; i++) {
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && !mod->used) {
 			Mod_UnloadModel(mod);
 			Mem_ExpandableArray_FreeRecord(&models, mod);
-		}
-	}
+		} // if
+	} // for
 }
 
 /*
@@ -620,17 +621,15 @@ model_t *Mod_FindName(const char *name, const char *parentname)
 	nummodels = (int)Mem_ExpandableArray_IndexRange(&models);
 
 	if (!name[0])
-		Host_Error ("Mod_ForName: empty name");
+		Host_Error_Line ("Mod_ForName: empty name");
 
 	// search the currently loaded models
-	for (i = 0;i < nummodels;i++)
-	{
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && !strcmp(mod->model_name, name) && ((!mod->brush.parentmodel && !parentname[0]) || (mod->brush.parentmodel && parentname[0] && !strcmp(mod->brush.parentmodel->model_name, parentname))))
-		{
+	for (i = 0; i < nummodels; i++) {
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && String_Does_Match(mod->model_name, name) && ((!mod->brush.parentmodel && !parentname[0]) || (mod->brush.parentmodel && parentname[0] && String_Does_Match(mod->brush.parentmodel->model_name, parentname)))) {
 			mod->used = true;
 			return mod;
 		}
-	}
+	} // for
 
 	// no match found, create a new one
 	mod = (model_t *) Mem_ExpandableArray_AllocRecord(&models);
@@ -658,7 +657,7 @@ model_t *Mod_ForName(const char *name, qbool crash, qbool checkdisk, const char 
 	model_t *model;
 
 	// FIXME: So we don't crash if a server is started early.
-	if(!vid_opened)
+	if (!vid_opened)
 		CL_StartVideo();
 
 	model = Mod_FindName(name, parentname);
@@ -682,16 +681,17 @@ void Mod_Reload(void)
 
 	SCR_PushLoadingScreen("Reloading models", 1.0);
 	count = 0;
-	for (i = 0;i < nummodels;i++)
+	for (i = 0; i < nummodels; i++) {
 		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*' && mod->used)
 			++count;
-	for (i = 0;i < nummodels;i++)
-		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*' && mod->used)
-		{
+	}
+	for (i = 0;i < nummodels;i++) {
+		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*' && mod->used) {
 			SCR_PushLoadingScreen(mod->model_name, 1.0 / count);
 			Mod_LoadModel(mod, true, true);
 			SCR_PopLoadingScreen(false);
-		}
+		} // if
+	} // for i
 	SCR_PopLoadingScreen(false);
 }
 
@@ -711,15 +711,14 @@ static void Mod_Print_f(cmd_state_t *cmd)
 	int nummodels = (int)Mem_ExpandableArray_IndexRange(&models);
 	model_t *mod;
 
-	Con_Print("Loaded models:\n");
-	for (i = 0;i < nummodels;i++)
-	{
+	Con_PrintLinef ("Loaded models:");
+	for (i = 0; i < nummodels; i++) {
 		if ((mod = (model_t *) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->model_name[0] && mod->model_name[0] != '*')
 		{
 			if (mod->brush.numsubmodels)
-				Con_Printf("%4iK %s (%i submodels)\n", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->model_name, mod->brush.numsubmodels);
+				Con_PrintLinef ("%4iK %s (%d submodels)", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->model_name, mod->brush.numsubmodels);
 			else
-				Con_Printf("%4iK %s\n", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->model_name);
+				Con_PrintLinef ("%4iK %s", mod->mempool ? (int)((mod->mempool->totalsize + 1023) / 1024) : 0, mod->model_name);
 		}
 	}
 }
@@ -793,10 +792,10 @@ qbool Mod_ValidateElements(int *element3i, unsigned short *element3s, int numtri
 	}
 	if (invalidintcount || invalidshortcount || invalidmismatchcount)
 	{
-		Con_Printf("Mod_ValidateElements(%i, %i, %i, %p, %p) called at %s:%d", numelements, first, last, (void *)element3i, (void *)element3s, filename, fileline);
-		Con_Printf(", %i elements are invalid in element3i (example: element3i[%i] == %i)", invalidintcount, invalidintexample, element3i ? element3i[invalidintexample] : 0);
-		Con_Printf(", %i elements are invalid in element3s (example: element3s[%i] == %i)", invalidshortcount, invalidshortexample, element3s ? element3s[invalidshortexample] : 0);
-		Con_Printf(", %i elements mismatch between element3i and element3s (example: element3s[%i] is %i and element3i[%i] is %i)", invalidmismatchcount, invalidmismatchexample, element3s ? element3s[invalidmismatchexample] : 0, invalidmismatchexample, element3i ? element3i[invalidmismatchexample] : 0);
+		Con_Printf ("Mod_ValidateElements(%d, %d, %d, %p, %p) called at %s:%d", numelements, first, last, (void *)element3i, (void *)element3s, filename, fileline);
+		Con_Printf (", %d elements are invalid in element3i (example: element3i[%d] == %d)", invalidintcount, invalidintexample, element3i ? element3i[invalidintexample] : 0);
+		Con_Printf (", %d elements are invalid in element3s (example: element3s[%d] == %d)", invalidshortcount, invalidshortexample, element3s ? element3s[invalidshortexample] : 0);
+		Con_Printf (", %d elements mismatch between element3i and element3s (example: element3s[%d] is %d and element3i[%d] is %d)", invalidmismatchcount, invalidmismatchexample, element3s ? element3s[invalidmismatchexample] : 0, invalidmismatchexample, element3i ? element3i[invalidmismatchexample] : 0);
 		Con_Print(".  Please debug the engine code - these elements have been modified to not crash, but nothing more.\n");
 
 		// edit the elements to make them safer, as the driver will crash otherwise
@@ -1218,7 +1217,7 @@ void Mod_CreateCollisionMesh(model_t *mod)
 	for (k = mod->submodelsurfaces_start;k < mod->submodelsurfaces_end;k++)
 	{
 		surface = mod->data_surfaces + k;
-		if (!strcmp(surface->texture->name, "collision") || !strcmp(surface->texture->name, "collisionconvex")) // found collision mesh
+		if (String_Does_Match(surface->texture->name, "collision") || String_Does_Match(surface->texture->name, "collisionconvex")) // found collision mesh
 		{
 			usesinglecollisionmesh = true;
 			numcollisionmeshtriangles = surface->num_triangles;
@@ -1396,17 +1395,17 @@ static int Mod_LoadQ3Shaders_EnumerateWaveFunc(const char *s)
 		offset = bound(0, s[4] - '0', 9);
 		offset = (offset + 1) << Q3WAVEFUNC_USER_SHIFT;
 		s += 4;
-		if(*s)
+		if (*s)
 			++s;
 	}
-	if (!strcasecmp(s, "sin"))             return offset | Q3WAVEFUNC_SIN;
-	if (!strcasecmp(s, "square"))          return offset | Q3WAVEFUNC_SQUARE;
-	if (!strcasecmp(s, "triangle"))        return offset | Q3WAVEFUNC_TRIANGLE;
-	if (!strcasecmp(s, "sawtooth"))        return offset | Q3WAVEFUNC_SAWTOOTH;
-	if (!strcasecmp(s, "inversesawtooth")) return offset | Q3WAVEFUNC_INVERSESAWTOOTH;
-	if (!strcasecmp(s, "noise"))           return offset | Q3WAVEFUNC_NOISE;
-	if (!strcasecmp(s, "none"))            return offset | Q3WAVEFUNC_NONE;
-	Con_DPrintf("Mod_LoadQ3Shaders: unknown wavefunc %s\n", s);
+	if (String_Does_Match_Caseless(s, "sin"))             return offset | Q3WAVEFUNC_SIN;
+	if (String_Does_Match_Caseless(s, "square"))          return offset | Q3WAVEFUNC_SQUARE;
+	if (String_Does_Match_Caseless(s, "triangle"))        return offset | Q3WAVEFUNC_TRIANGLE;
+	if (String_Does_Match_Caseless(s, "sawtooth"))        return offset | Q3WAVEFUNC_SAWTOOTH;
+	if (String_Does_Match_Caseless(s, "inversesawtooth")) return offset | Q3WAVEFUNC_INVERSESAWTOOTH;
+	if (String_Does_Match_Caseless(s, "noise"))           return offset | Q3WAVEFUNC_NOISE;
+	if (String_Does_Match_Caseless(s, "none"))            return offset | Q3WAVEFUNC_NONE;
+	Con_DPrintf ("Mod_LoadQ3Shaders: unknown wavefunc %s\n", s);
 	return offset | Q3WAVEFUNC_NONE;
 }
 
@@ -1425,12 +1424,12 @@ static void Q3Shader_AddToHash (shader_t* shader)
 		if (strcasecmp (entry->shader.name, shader->name) == 0)
 		{
 			// redeclaration
-			if(shader->dpshaderkill)
+			if (shader->dpshaderkill)
 			{
 				// killed shader is a redeclarion? we can safely ignore it
 				return;
 			}
-			else if(entry->shader.dpshaderkill)
+			else if (entry->shader.dpshaderkill)
 			{
 				// replace the old shader!
 				// this will skip the entry allocating part
@@ -1443,10 +1442,10 @@ static void Q3Shader_AddToHash (shader_t* shader)
 				start = (unsigned char *) (&shader->Q3SHADERINFO_COMPARE_START);
 				end = ((unsigned char *) (&shader->Q3SHADERINFO_COMPARE_END)) + sizeof(shader->Q3SHADERINFO_COMPARE_END);
 				start2 = (unsigned char *) (&entry->shader.Q3SHADERINFO_COMPARE_START);
-				if(memcmp(start, start2, end - start))
-					Con_DPrintf("Shader '%s' already defined, ignoring mismatching redeclaration\n", shader->name);
+				if (memcmp(start, start2, end - start))
+					Con_DPrintf ("Shader '%s' already defined, ignoring mismatching redeclaration\n", shader->name);
 				else
-					Con_DPrintf("Shader '%s' already defined\n", shader->name);
+					Con_DPrintf ("Shader '%s' already defined\n", shader->name);
 				return;
 			}
 		}
@@ -1483,7 +1482,7 @@ void Mod_LoadQ3Shaders(void)
 	shader_t shader;
 	q3shaderinfo_layer_t *layer;
 	int numparameters;
-	char parameter[TEXTURE_MAXFRAMES + 4][Q3PATHLENGTH];
+	char parameter[TEXTURE_MAXFRAMES_64 + 4][Q3PATHLENGTH_64];
 	char *custsurfaceparmnames[256]; // VorteX: q3map2 has 64 but well, someone will need more
 	unsigned long custsurfaceflags[256]; 
 	int numcustsurfaceflags;
@@ -1497,32 +1496,32 @@ void Mod_LoadQ3Shaders(void)
 	Mem_ExpandableArray_NewArray (&q3shader_data->hash_entries,
 		q3shaders_mem, sizeof (q3shader_hash_entry_t), 256);
 	Mem_ExpandableArray_NewArray (&q3shader_data->char_ptrs,
-		q3shaders_mem, sizeof (char**), 256);
+		q3shaders_mem, sizeof (char **), 256);
 
 	// parse custinfoparms.txt
 	numcustsurfaceflags = 0;
 	if ((text = f = (char *)FS_LoadFile("scripts/custinfoparms.txt", tempmempool, false, NULL)) != NULL)
 	{
 		if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-			Con_DPrintf("scripts/custinfoparms.txt: contentflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
+			Con_DPrintf ("scripts/custinfoparms.txt: contentflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
 		else
 		{
 			while (COM_ParseToken_QuakeC(&text, false))
-				if (!strcasecmp(com_token, "}"))
+				if (String_Does_Match_Caseless(com_token, "}"))
 					break;
 			// custom surfaceflags section
 			if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-				Con_DPrintf("scripts/custinfoparms.txt: surfaceflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
+				Con_DPrintf ("scripts/custinfoparms.txt: surfaceflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
 			else
 			{
 				while(COM_ParseToken_QuakeC(&text, false))
 				{
-					if (!strcasecmp(com_token, "}"))
+					if (String_Does_Match_Caseless(com_token, "}"))
 						break;	
 					// register surfaceflag
 					if (numcustsurfaceflags >= 256)
 					{
-						Con_Printf("scripts/custinfoparms.txt: surfaceflags section parsing error - max 256 surfaceflags exceeded\n");
+						Con_Printf ("scripts/custinfoparms.txt: surfaceflags section parsing error - max 256 surfaceflags exceeded\n");
 						break;
 					}
 					// name
@@ -1542,16 +1541,14 @@ void Mod_LoadQ3Shaders(void)
 	}
 
 	// parse shaders
-	search = FS_Search("scripts/*.shader", true, false, NULL);
+	search = FS_Search("scripts/*.shader", fs_caseless_true, fs_quiet_FALSE, fs_pakfile_null);
 	if (!search)
 		return;
-	for (fileindex = 0;fileindex < search->numfilenames;fileindex++)
-	{
+	for (fileindex = 0;fileindex < search->numfilenames;fileindex++) {
 		text = f = (char *)FS_LoadFile(search->filenames[fileindex], tempmempool, false, NULL);
 		if (!f)
 			continue;
-		while (COM_ParseToken_QuakeC(&text, false))
-		{
+		while (COM_ParseToken_QuakeC(&text, false)) {
 			memset (&shader, 0, sizeof(shader));
 			shader.name[0] = 0;
 			shader.surfaceparms = 0;
@@ -1591,24 +1588,18 @@ void Mod_LoadQ3Shaders(void)
 			// JUST GREP FOR "specularscalemod = 1".
 
 			strlcpy(shader.name, com_token, sizeof(shader.name));
-			if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-			{
-				Con_DPrintf("%s parsing error - expected \"{\", found \"%s\"\n", search->filenames[fileindex], com_token);
+			if (!COM_ParseToken_QuakeC(&text, false) || String_Does_Not_Match(com_token, "{")) {
+				Con_DPrintLinef ("%s parsing error - expected \"{\", found " QUOTED_S, search->filenames[fileindex], com_token);
 				break;
 			}
-			while (COM_ParseToken_QuakeC(&text, false))
-			{
-				if (!strcasecmp(com_token, "}"))
+			while (COM_ParseToken_QuakeC(&text, false)) {
+				if (String_Does_Match_Caseless(com_token, "}"))
 					break;
-				if (!strcasecmp(com_token, "{"))
-				{
+				if (String_Does_Match_Caseless(com_token, "{")) {
 					static q3shaderinfo_layer_t dummy;
-					if (shader.numlayers < Q3SHADER_MAXLAYERS)
-					{
+					if (shader.numlayers < Q3SHADER_MAXLAYERS_8) {
 						layer = shader.layers + shader.numlayers++;
-					}
-					else
-					{
+					} else {
 						// parse and process it anyway, just don't store it (so a map $lightmap or such stuff still is found)
 						memset(&dummy, 0, sizeof(dummy));
 						layer = &dummy;
@@ -1618,175 +1609,137 @@ void Mod_LoadQ3Shaders(void)
 					layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
 					layer->blendfunc[0] = GL_ONE;
 					layer->blendfunc[1] = GL_ZERO;
-					while (COM_ParseToken_QuakeC(&text, false))
-					{
-						if (!strcasecmp(com_token, "}"))
+					while (COM_ParseToken_QuakeC(&text, false)) {
+						if (String_Does_Match_Caseless(com_token, "}"))
 							break;
-						if (!strcasecmp(com_token, "\n"))
+						if (String_Does_Match_Caseless(com_token, NEWLINE))
 							continue;
 						numparameters = 0;
-						for (j = 0;strcasecmp(com_token, "\n") && strcasecmp(com_token, "}");j++)
-						{
-							if (j < TEXTURE_MAXFRAMES + 4)
-							{
+						for (j = 0; String_Does_Not_Match(com_token, NEWLINE) && String_Does_Not_Match(com_token, "}");j++) {
+							if (j < TEXTURE_MAXFRAMES_64 + 4) {
 								// remap dp_water to dpwater, dp_reflect to dpreflect, etc.
-								if(j == 0 && !strncasecmp(com_token, "dp_", 3))
-									dpsnprintf(parameter[j], sizeof(parameter[j]), "dp%s", &com_token[3]);
-								else
-									strlcpy(parameter[j], com_token, sizeof(parameter[j]));
+								if (j == 0 && String_Does_Start_With_Caseless(com_token, "dp_")) dpsnprintf(parameter[j], sizeof(parameter[j]), "dp%s", &com_token[3]);
+								else strlcpy(parameter[j], com_token, sizeof(parameter[j]));
+
 								numparameters = j + 1;
 							}
 							if (!COM_ParseToken_QuakeC(&text, true))
 								break;
-						}
-						//for (j = numparameters;j < TEXTURE_MAXFRAMES + 4;j++)
+						} // j
+						//for (j = numparameters;j < TEXTURE_MAXFRAMES_64 + 4;j++)
 						//	parameter[j][0] = 0;
-						if (developer_insane.integer)
-						{
-							Con_DPrintf("%s %i: ", shader.name, shader.numlayers - 1);
+						if (developer_insane.integer) {
+							Con_DPrintf ("%s %d: ", shader.name, shader.numlayers - 1);
 							for (j = 0;j < numparameters;j++)
-								Con_DPrintf(" %s", parameter[j]);
+								Con_DPrintf (" %s", parameter[j]);
 							Con_DPrint("\n");
 						}
-						if (numparameters >= 2 && !strcasecmp(parameter[0], "blendfunc"))
-						{
-							if (numparameters == 2)
-							{
-								if (!strcasecmp(parameter[1], "add"))
-								{
+						if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "blendfunc")) {
+							if (numparameters == 2) {
+								if (String_Does_Match_Caseless(parameter[1], "add")) {
 									layer->blendfunc[0] = GL_ONE;
 									layer->blendfunc[1] = GL_ONE;
-								}
-								else if (!strcasecmp(parameter[1], "addalpha"))
-								{
+								} else if (String_Does_Match_Caseless(parameter[1], "addalpha")) {
 									layer->blendfunc[0] = GL_SRC_ALPHA;
 									layer->blendfunc[1] = GL_ONE;
-								}
-								else if (!strcasecmp(parameter[1], "filter"))
-								{
+								} else if (String_Does_Match_Caseless(parameter[1], "filter")) {
 									layer->blendfunc[0] = GL_DST_COLOR;
 									layer->blendfunc[1] = GL_ZERO;
-								}
-								else if (!strcasecmp(parameter[1], "blend"))
-								{
+								} else if (String_Does_Match_Caseless(parameter[1], "blend")) {
 									layer->blendfunc[0] = GL_SRC_ALPHA;
 									layer->blendfunc[1] = GL_ONE_MINUS_SRC_ALPHA;
 								}
-							}
-							else if (numparameters == 3)
-							{
+							} else if (numparameters == 3) {
 								int k;
-								for (k = 0;k < 2;k++)
-								{
-									if (!strcasecmp(parameter[k+1], "GL_ONE"))
-										layer->blendfunc[k] = GL_ONE;
-									else if (!strcasecmp(parameter[k+1], "GL_ZERO"))
-										layer->blendfunc[k] = GL_ZERO;
-									else if (!strcasecmp(parameter[k+1], "GL_SRC_COLOR"))
-										layer->blendfunc[k] = GL_SRC_COLOR;
-									else if (!strcasecmp(parameter[k+1], "GL_SRC_ALPHA"))
-										layer->blendfunc[k] = GL_SRC_ALPHA;
-									else if (!strcasecmp(parameter[k+1], "GL_DST_COLOR"))
-										layer->blendfunc[k] = GL_DST_COLOR;
-									else if (!strcasecmp(parameter[k+1], "GL_DST_ALPHA"))
-										layer->blendfunc[k] = GL_DST_ALPHA;
-									else if (!strcasecmp(parameter[k+1], "GL_ONE_MINUS_SRC_COLOR"))
-										layer->blendfunc[k] = GL_ONE_MINUS_SRC_COLOR;
-									else if (!strcasecmp(parameter[k+1], "GL_ONE_MINUS_SRC_ALPHA"))
-										layer->blendfunc[k] = GL_ONE_MINUS_SRC_ALPHA;
-									else if (!strcasecmp(parameter[k+1], "GL_ONE_MINUS_DST_COLOR"))
-										layer->blendfunc[k] = GL_ONE_MINUS_DST_COLOR;
-									else if (!strcasecmp(parameter[k+1], "GL_ONE_MINUS_DST_ALPHA"))
-										layer->blendfunc[k] = GL_ONE_MINUS_DST_ALPHA;
-									else
-										layer->blendfunc[k] = GL_ONE; // default in case of parsing error
-								}
-							}
-						}
-						if (numparameters >= 2 && !strcasecmp(parameter[0], "alphafunc"))
+								for (k = 0;k < 2;k++) {
+									if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE")) layer->blendfunc[k] = GL_ONE;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ZERO")) layer->blendfunc[k] = GL_ZERO;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_SRC_COLOR")) layer->blendfunc[k] = GL_SRC_COLOR;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_SRC_ALPHA")) layer->blendfunc[k] = GL_SRC_ALPHA;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_DST_COLOR")) layer->blendfunc[k] = GL_DST_COLOR;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_DST_ALPHA")) layer->blendfunc[k] = GL_DST_ALPHA;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_SRC_COLOR")) layer->blendfunc[k] = GL_ONE_MINUS_SRC_COLOR;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_SRC_ALPHA")) layer->blendfunc[k] = GL_ONE_MINUS_SRC_ALPHA;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_DST_COLOR")) layer->blendfunc[k] = GL_ONE_MINUS_DST_COLOR;
+									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_DST_ALPHA")) layer->blendfunc[k] = GL_ONE_MINUS_DST_ALPHA;
+									else layer->blendfunc[k] = GL_ONE; // default in case of parsing error
+								} // k
+							} // if
+						} // if
+						if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "alphafunc"))
 							layer->alphatest = true;
-						if (numparameters >= 2 && (!strcasecmp(parameter[0], "map") || !strcasecmp(parameter[0], "clampmap")))
-						{
-							if (!strcasecmp(parameter[0], "clampmap"))
+						if (numparameters >= 2 && (String_Does_Match_Caseless(parameter[0], "map") || String_Does_Match_Caseless(parameter[0], "clampmap"))) {
+							if (String_Does_Match_Caseless(parameter[0], "clampmap"))
 								layer->clampmap = true;
 							layer->numframes = 1;
 							layer->framerate = 1;
-							layer->texturename = (char**)Mem_ExpandableArray_AllocRecord (
-								&q3shader_data->char_ptrs);
+							layer->texturename = (char **)Mem_ExpandableArray_AllocRecord (&q3shader_data->char_ptrs);
 							layer->texturename[0] = Mem_strdup (q3shaders_mem, parameter[1]);
-							if (!strcasecmp(parameter[1], "$lightmap"))
+							if (String_Does_Match_Caseless(parameter[1], "$lightmap"))
 								shader.lighting = true;
-						}
-						else if (numparameters >= 3 && (!strcasecmp(parameter[0], "animmap") || !strcasecmp(parameter[0], "animclampmap")))
-						{
+						} else if (numparameters >= 3 && (String_Does_Match_Caseless(parameter[0], "animmap") || String_Does_Match_Caseless(parameter[0], "animclampmap"))) {
 							int i;
-							layer->numframes = min(numparameters - 2, TEXTURE_MAXFRAMES);
+							layer->numframes = min(numparameters - 2, TEXTURE_MAXFRAMES_64);
 							layer->framerate = atof(parameter[1]);
 							layer->texturename = (char **) Mem_Alloc (q3shaders_mem, sizeof (char*) * layer->numframes);
 							for (i = 0;i < layer->numframes;i++)
 								layer->texturename[i] = Mem_strdup (q3shaders_mem, parameter[i + 2]);
-						}
-						else if (numparameters >= 2 && !strcasecmp(parameter[0], "rgbgen"))
-						{
+						} else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "rgbgen")) {
 							int i;
-							for (i = 0;i < numparameters - 2 && i < Q3RGBGEN_MAXPARMS;i++)
+							for (i = 0;i < numparameters - 2 && i < Q3RGBGEN_MAXPARMS_3;i++)
 								layer->rgbgen.parms[i] = atof(parameter[i+2]);
-							     if (!strcasecmp(parameter[1], "identity"))         layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITY;
-							else if (!strcasecmp(parameter[1], "const"))            layer->rgbgen.rgbgen = Q3RGBGEN_CONST;
-							else if (!strcasecmp(parameter[1], "entity"))           layer->rgbgen.rgbgen = Q3RGBGEN_ENTITY;
-							else if (!strcasecmp(parameter[1], "exactvertex"))      layer->rgbgen.rgbgen = Q3RGBGEN_EXACTVERTEX;
-							else if (!strcasecmp(parameter[1], "identitylighting")) layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITYLIGHTING;
-							else if (!strcasecmp(parameter[1], "lightingdiffuse"))  layer->rgbgen.rgbgen = Q3RGBGEN_LIGHTINGDIFFUSE;
-							else if (!strcasecmp(parameter[1], "oneminusentity"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSENTITY;
-							else if (!strcasecmp(parameter[1], "oneminusvertex"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSVERTEX;
-							else if (!strcasecmp(parameter[1], "vertex"))           layer->rgbgen.rgbgen = Q3RGBGEN_VERTEX;
-							else if (!strcasecmp(parameter[1], "wave"))
-							{
+							     if (String_Does_Match_Caseless(parameter[1], "identity"))         layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITY;
+							else if (String_Does_Match_Caseless(parameter[1], "const"))            layer->rgbgen.rgbgen = Q3RGBGEN_CONST;
+							else if (String_Does_Match_Caseless(parameter[1], "entity"))           layer->rgbgen.rgbgen = Q3RGBGEN_ENTITY;
+							else if (String_Does_Match_Caseless(parameter[1], "exactvertex"))      layer->rgbgen.rgbgen = Q3RGBGEN_EXACTVERTEX;
+							else if (String_Does_Match_Caseless(parameter[1], "identitylighting")) layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITYLIGHTING;
+							else if (String_Does_Match_Caseless(parameter[1], "lightingdiffuse"))  layer->rgbgen.rgbgen = Q3RGBGEN_LIGHTINGDIFFUSE;
+							else if (String_Does_Match_Caseless(parameter[1], "oneminusentity"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSENTITY;
+							else if (String_Does_Match_Caseless(parameter[1], "oneminusvertex"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSVERTEX;
+							else if (String_Does_Match_Caseless(parameter[1], "vertex"))           layer->rgbgen.rgbgen = Q3RGBGEN_VERTEX;
+							else if (String_Does_Match_Caseless(parameter[1], "wave")) {
 								layer->rgbgen.rgbgen = Q3RGBGEN_WAVE;
 								layer->rgbgen.wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[2]);
-								for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS;i++)
+								for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS_4;i++)
 									layer->rgbgen.waveparms[i] = atof(parameter[i+3]);
 							}
-							else Con_DPrintf("%s parsing warning: unknown rgbgen %s\n", search->filenames[fileindex], parameter[1]);
+							else Con_DPrintf ("%s parsing warning: unknown rgbgen %s\n", search->filenames[fileindex], parameter[1]);
 						}
-						else if (numparameters >= 2 && !strcasecmp(parameter[0], "alphagen"))
-						{
+						else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "alphagen")) {
 							int i;
-							for (i = 0;i < numparameters - 2 && i < Q3ALPHAGEN_MAXPARMS;i++)
+							for (i = 0;i < numparameters - 2 && i < Q3ALPHAGEN_MAXPARMS_1; i++) {
 								layer->alphagen.parms[i] = atof(parameter[i+2]);
-							     if (!strcasecmp(parameter[1], "identity"))         layer->alphagen.alphagen = Q3ALPHAGEN_IDENTITY;
-							else if (!strcasecmp(parameter[1], "const"))            layer->alphagen.alphagen = Q3ALPHAGEN_CONST;
-							else if (!strcasecmp(parameter[1], "entity"))           layer->alphagen.alphagen = Q3ALPHAGEN_ENTITY;
-							else if (!strcasecmp(parameter[1], "lightingspecular")) layer->alphagen.alphagen = Q3ALPHAGEN_LIGHTINGSPECULAR;
-							else if (!strcasecmp(parameter[1], "oneminusentity"))   layer->alphagen.alphagen = Q3ALPHAGEN_ONEMINUSENTITY;
-							else if (!strcasecmp(parameter[1], "oneminusvertex"))   layer->alphagen.alphagen = Q3ALPHAGEN_ONEMINUSVERTEX;
-							else if (!strcasecmp(parameter[1], "portal"))           layer->alphagen.alphagen = Q3ALPHAGEN_PORTAL;
-							else if (!strcasecmp(parameter[1], "vertex"))           layer->alphagen.alphagen = Q3ALPHAGEN_VERTEX;
-							else if (!strcasecmp(parameter[1], "wave"))
-							{
+							}
+							     if (String_Does_Match_Caseless(parameter[1], "identity"))         layer->alphagen.alphagen = Q3ALPHAGEN_IDENTITY;
+							else if (String_Does_Match_Caseless(parameter[1], "const"))            layer->alphagen.alphagen = Q3ALPHAGEN_CONST;
+							else if (String_Does_Match_Caseless(parameter[1], "entity"))           layer->alphagen.alphagen = Q3ALPHAGEN_ENTITY;
+							else if (String_Does_Match_Caseless(parameter[1], "lightingspecular")) layer->alphagen.alphagen = Q3ALPHAGEN_LIGHTINGSPECULAR;
+							else if (String_Does_Match_Caseless(parameter[1], "oneminusentity"))   layer->alphagen.alphagen = Q3ALPHAGEN_ONEMINUSENTITY;
+							else if (String_Does_Match_Caseless(parameter[1], "oneminusvertex"))   layer->alphagen.alphagen = Q3ALPHAGEN_ONEMINUSVERTEX;
+							else if (String_Does_Match_Caseless(parameter[1], "portal"))           layer->alphagen.alphagen = Q3ALPHAGEN_PORTAL;
+							else if (String_Does_Match_Caseless(parameter[1], "vertex"))           layer->alphagen.alphagen = Q3ALPHAGEN_VERTEX;
+							else if (String_Does_Match_Caseless(parameter[1], "wave")) {
 								layer->alphagen.alphagen = Q3ALPHAGEN_WAVE;
 								layer->alphagen.wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[2]);
-								for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS;i++)
+								for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS_4;i++)
 									layer->alphagen.waveparms[i] = atof(parameter[i+3]);
 							}
-							else Con_DPrintf("%s parsing warning: unknown alphagen %s\n", search->filenames[fileindex], parameter[1]);
+							else Con_DPrintf ("%s parsing warning: unknown alphagen %s\n", search->filenames[fileindex], parameter[1]);
 						}
-						else if (numparameters >= 2 && (!strcasecmp(parameter[0], "texgen") || !strcasecmp(parameter[0], "tcgen")))
-						{
+						else if (numparameters >= 2 && (String_Does_Match_Caseless(parameter[0], "texgen") || String_Does_Match_Caseless(parameter[0], "tcgen"))) {
 							int i;
 							// observed values: tcgen environment
 							// no other values have been observed in real shaders
-							for (i = 0;i < numparameters - 2 && i < Q3TCGEN_MAXPARMS;i++)
+							for (i = 0;i < numparameters - 2 && i < Q3TCGEN_MAXPARMS_6;i++)
 								layer->tcgen.parms[i] = atof(parameter[i+2]);
-							     if (!strcasecmp(parameter[1], "base"))        layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
-							else if (!strcasecmp(parameter[1], "texture"))     layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
-							else if (!strcasecmp(parameter[1], "environment")) layer->tcgen.tcgen = Q3TCGEN_ENVIRONMENT;
-							else if (!strcasecmp(parameter[1], "lightmap"))    layer->tcgen.tcgen = Q3TCGEN_LIGHTMAP;
-							else if (!strcasecmp(parameter[1], "vector"))      layer->tcgen.tcgen = Q3TCGEN_VECTOR;
-							else Con_DPrintf("%s parsing warning: unknown tcgen mode %s\n", search->filenames[fileindex], parameter[1]);
+							     if (String_Does_Match_Caseless(parameter[1], "base"))        layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
+							else if (String_Does_Match_Caseless(parameter[1], "texture"))     layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
+							else if (String_Does_Match_Caseless(parameter[1], "environment")) layer->tcgen.tcgen = Q3TCGEN_ENVIRONMENT;
+							else if (String_Does_Match_Caseless(parameter[1], "lightmap"))    layer->tcgen.tcgen = Q3TCGEN_LIGHTMAP;
+							else if (String_Does_Match_Caseless(parameter[1], "vector"))      layer->tcgen.tcgen = Q3TCGEN_VECTOR;
+							else Con_DPrintf ("%s parsing warning: unknown tcgen mode %s\n", search->filenames[fileindex], parameter[1]);
 						}
-						else if (numparameters >= 2 && !strcasecmp(parameter[0], "tcmod"))
-						{
+						else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "tcmod")) {
 							int i, tcmodindex;
 							// observed values:
 							// tcmod rotate #
@@ -1798,79 +1751,74 @@ void Mod_LoadQ3Shaders(void)
 							// tcmod turb # # # #
 							// tcmod turb sin # # # #  (this is bogus)
 							// no other values have been observed in real shaders
-							for (tcmodindex = 0;tcmodindex < Q3MAXTCMODS;tcmodindex++)
+							for (tcmodindex = 0;tcmodindex < Q3MAXTCMODS_8;tcmodindex++)
 								if (!layer->tcmods[tcmodindex].tcmod)
 									break;
-							if (tcmodindex < Q3MAXTCMODS)
-							{
-								for (i = 0;i < numparameters - 2 && i < Q3TCMOD_MAXPARMS;i++)
+							if (tcmodindex < Q3MAXTCMODS_8) {
+								for (i = 0;i < numparameters - 2 && i < Q3TCMOD_MAXPARMS_6;i++)
 									layer->tcmods[tcmodindex].parms[i] = atof(parameter[i+2]);
-									 if (!strcasecmp(parameter[1], "entitytranslate")) layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ENTITYTRANSLATE;
-								else if (!strcasecmp(parameter[1], "rotate"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ROTATE;
-								else if (!strcasecmp(parameter[1], "scale"))           layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCALE;
-								else if (!strcasecmp(parameter[1], "scroll"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCROLL;
-								else if (!strcasecmp(parameter[1], "page"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_PAGE;
-								else if (!strcasecmp(parameter[1], "stretch"))
+
+									 if (String_Does_Match_Caseless(parameter[1], "entitytranslate")) layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ENTITYTRANSLATE;
+								else if (String_Does_Match_Caseless(parameter[1], "rotate"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ROTATE;
+								else if (String_Does_Match_Caseless(parameter[1], "scale"))           layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCALE;
+#pragma message ("TCMod scale issue with Quake Combat+")
+#pragma message ("Get your battery of Zircon Galaxy test maps ... like reflecto water etc onto this computer")
+								else if (String_Does_Match_Caseless(parameter[1], "scroll"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCROLL;
+								else if (String_Does_Match_Caseless(parameter[1], "page"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_PAGE;
+								else if (String_Does_Match_Caseless(parameter[1], "stretch"))
 								{
 									layer->tcmods[tcmodindex].tcmod = Q3TCMOD_STRETCH;
 									layer->tcmods[tcmodindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[2]);
-									for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS;i++)
+									for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS_4;i++)
 										layer->tcmods[tcmodindex].waveparms[i] = atof(parameter[i+3]);
 								}
-								else if (!strcasecmp(parameter[1], "transform"))       layer->tcmods[tcmodindex].tcmod = Q3TCMOD_TRANSFORM;
-								else if (!strcasecmp(parameter[1], "turb"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_TURBULENT;
-								else Con_DPrintf("%s parsing warning: unknown tcmod mode %s\n", search->filenames[fileindex], parameter[1]);
+								else if (String_Does_Match_Caseless(parameter[1], "transform"))       layer->tcmods[tcmodindex].tcmod = Q3TCMOD_TRANSFORM;
+								else if (String_Does_Match_Caseless(parameter[1], "turb"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_TURBULENT;
+								else Con_DPrintf ("%s parsing warning: unknown tcmod mode %s\n", search->filenames[fileindex], parameter[1]);
 							}
 							else
-								Con_DPrintf("%s parsing warning: too many tcmods on one layer\n", search->filenames[fileindex]);
+								Con_DPrintf ("%s parsing warning: too many tcmods on one layer\n", search->filenames[fileindex]);
 						}
 						// break out a level if it was a closing brace (not using the character here to not confuse vim)
-						if (!strcasecmp(com_token, "}"))
+						if (String_Does_Match_Caseless(com_token, "}"))
 							break;
 					}
 					if (layer->rgbgen.rgbgen == Q3RGBGEN_LIGHTINGDIFFUSE || layer->rgbgen.rgbgen == Q3RGBGEN_VERTEX)
 						shader.lighting = true;
-					if (layer->alphagen.alphagen == Q3ALPHAGEN_VERTEX)
-					{
-						if (layer == shader.layers + 0)
-						{
+					if (layer->alphagen.alphagen == Q3ALPHAGEN_VERTEX) {
+						if (layer == shader.layers + 0) {
 							// vertex controlled transparency
 							shader.vertexalpha = true;
-						}
-						else
-						{
+						} else {
 							// multilayer terrain shader or similar
 							shader.textureblendalpha = true;
 							if (mod_q3shader_force_terrain_alphaflag.integer)
 								shader.layers[0].dptexflags |= TEXF_ALPHA;
 						}
-					}
+					} // if
 
-					if(mod_q3shader_force_addalpha.integer)
-					{
+					if (mod_q3shader_force_addalpha.integer) {
 						// for a long while, DP treated GL_ONE GL_ONE as GL_SRC_ALPHA GL_ONE
 						// this cvar brings back this behaviour
-						if(layer->blendfunc[0] == GL_ONE && layer->blendfunc[1] == GL_ONE)
+						if (layer->blendfunc[0] == GL_ONE && layer->blendfunc[1] == GL_ONE)
 							layer->blendfunc[0] = GL_SRC_ALPHA;
 					}
 					
 					layer->dptexflags = 0;
 					if (layer->alphatest)
 						layer->dptexflags |= TEXF_ALPHA;
-					switch(layer->blendfunc[0])
-					{
+					switch(layer->blendfunc[0]) {
 						case GL_SRC_ALPHA:
 						case GL_ONE_MINUS_SRC_ALPHA:
 							layer->dptexflags |= TEXF_ALPHA;
 							break;
-					}
-					switch(layer->blendfunc[1])
-					{
+					} // sw
+					switch(layer->blendfunc[1]) {
 						case GL_SRC_ALPHA:
 						case GL_ONE_MINUS_SRC_ALPHA:
 							layer->dptexflags |= TEXF_ALPHA;
 							break;
-					}
+					} // sw
 					if (!(shader.surfaceparms & Q3SURFACEPARM_NOMIPMAPS))
 						layer->dptexflags |= TEXF_MIPMAP;
 					if (!(shader.textureflags & Q3TEXTUREFLAG_NOPICMIP))
@@ -1880,12 +1828,11 @@ void Mod_LoadQ3Shaders(void)
 					continue;
 				}
 				numparameters = 0;
-				for (j = 0;strcasecmp(com_token, "\n") && strcasecmp(com_token, "}");j++)
-				{
-					if (j < TEXTURE_MAXFRAMES + 4)
+				for (j = 0;strcasecmp(com_token, "\n") && strcasecmp(com_token, "}");j++) {
+					if (j < TEXTURE_MAXFRAMES_64 + 4)
 					{
 						// remap dp_water to dpwater, dp_reflect to dpreflect, etc.
-						if(j == 0 && !strncasecmp(com_token, "dp_", 3))
+						if (j == 0 && !strncasecmp(com_token, "dp_", 3))
 							dpsnprintf(parameter[j], sizeof(parameter[j]), "dp%s", &com_token[3]);
 						else
 							strlcpy(parameter[j], com_token, sizeof(parameter[j]));
@@ -1894,231 +1841,156 @@ void Mod_LoadQ3Shaders(void)
 					if (!COM_ParseToken_QuakeC(&text, true))
 						break;
 				}
-				//for (j = numparameters;j < TEXTURE_MAXFRAMES + 4;j++)
+				//for (j = numparameters;j < TEXTURE_MAXFRAMES_64 + 4;j++)
 				//	parameter[j][0] = 0;
-				if (fileindex == 0 && !strcasecmp(com_token, "}"))
+				if (fileindex == 0 && String_Does_Match_Caseless(com_token, "}"))
 					break;
-				if (developer_insane.integer)
-				{
-					Con_DPrintf("%s: ", shader.name);
+				if (developer_insane.integer) {
+					Con_DPrintf ("%s: ", shader.name);
 					for (j = 0;j < numparameters;j++)
-						Con_DPrintf(" %s", parameter[j]);
+						Con_DPrintf (" %s", parameter[j]);
 					Con_DPrint("\n");
 				}
 				if (numparameters < 1)
 					continue;
-				if (!strcasecmp(parameter[0], "surfaceparm") && numparameters >= 2)
+				if (String_Does_Match_Caseless(parameter[0], "surfaceparm") && numparameters >= 2)
 				{
-					if (!strcasecmp(parameter[1], "alphashadow"))
+					if (String_Does_Match_Caseless(parameter[1], "alphashadow"))
 						shader.surfaceparms |= Q3SURFACEPARM_ALPHASHADOW;
-					else if (!strcasecmp(parameter[1], "areaportal"))
+					else if (String_Does_Match_Caseless(parameter[1], "areaportal"))
 						shader.surfaceparms |= Q3SURFACEPARM_AREAPORTAL;
-					else if (!strcasecmp(parameter[1], "botclip"))
+					else if (String_Does_Match_Caseless(parameter[1], "botclip"))
 						shader.surfaceparms |= Q3SURFACEPARM_BOTCLIP;
-					else if (!strcasecmp(parameter[1], "clusterportal"))
-						shader.surfaceparms |= Q3SURFACEPARM_CLUSTERPORTAL;
-					else if (!strcasecmp(parameter[1], "detail"))
-						shader.surfaceparms |= Q3SURFACEPARM_DETAIL;
-					else if (!strcasecmp(parameter[1], "donotenter"))
-						shader.surfaceparms |= Q3SURFACEPARM_DONOTENTER;
-					else if (!strcasecmp(parameter[1], "dust"))
-						shader.surfaceparms |= Q3SURFACEPARM_DUST;
-					else if (!strcasecmp(parameter[1], "hint"))
-						shader.surfaceparms |= Q3SURFACEPARM_HINT;
-					else if (!strcasecmp(parameter[1], "fog"))
-						shader.surfaceparms |= Q3SURFACEPARM_FOG;
-					else if (!strcasecmp(parameter[1], "lava"))
-						shader.surfaceparms |= Q3SURFACEPARM_LAVA;
-					else if (!strcasecmp(parameter[1], "lightfilter"))
-						shader.surfaceparms |= Q3SURFACEPARM_LIGHTFILTER;
-					else if (!strcasecmp(parameter[1], "lightgrid"))
-						shader.surfaceparms |= Q3SURFACEPARM_LIGHTGRID;
-					else if (!strcasecmp(parameter[1], "metalsteps"))
-						shader.surfaceparms |= Q3SURFACEPARM_METALSTEPS;
-					else if (!strcasecmp(parameter[1], "nodamage"))
-						shader.surfaceparms |= Q3SURFACEPARM_NODAMAGE;
-					else if (!strcasecmp(parameter[1], "nodlight"))
-						shader.surfaceparms |= Q3SURFACEPARM_NODLIGHT;
-					else if (!strcasecmp(parameter[1], "nodraw"))
-						shader.surfaceparms |= Q3SURFACEPARM_NODRAW;
-					else if (!strcasecmp(parameter[1], "nodrop"))
-						shader.surfaceparms |= Q3SURFACEPARM_NODROP;
-					else if (!strcasecmp(parameter[1], "noimpact"))
-						shader.surfaceparms |= Q3SURFACEPARM_NOIMPACT;
-					else if (!strcasecmp(parameter[1], "nolightmap"))
-						shader.surfaceparms |= Q3SURFACEPARM_NOLIGHTMAP;
-					else if (!strcasecmp(parameter[1], "nomarks"))
-						shader.surfaceparms |= Q3SURFACEPARM_NOMARKS;
-					else if (!strcasecmp(parameter[1], "nomipmaps"))
-						shader.surfaceparms |= Q3SURFACEPARM_NOMIPMAPS;
-					else if (!strcasecmp(parameter[1], "nonsolid"))
-						shader.surfaceparms |= Q3SURFACEPARM_NONSOLID;
-					else if (!strcasecmp(parameter[1], "origin"))
-						shader.surfaceparms |= Q3SURFACEPARM_ORIGIN;
-					else if (!strcasecmp(parameter[1], "playerclip"))
-						shader.surfaceparms |= Q3SURFACEPARM_PLAYERCLIP;
-					else if (!strcasecmp(parameter[1], "sky"))
-						shader.surfaceparms |= Q3SURFACEPARM_SKY;
-					else if (!strcasecmp(parameter[1], "slick"))
-						shader.surfaceparms |= Q3SURFACEPARM_SLICK;
-					else if (!strcasecmp(parameter[1], "slime"))
-						shader.surfaceparms |= Q3SURFACEPARM_SLIME;
-					else if (!strcasecmp(parameter[1], "structural"))
-						shader.surfaceparms |= Q3SURFACEPARM_STRUCTURAL;
-					else if (!strcasecmp(parameter[1], "trans"))
-						shader.surfaceparms |= Q3SURFACEPARM_TRANS;
-					else if (!strcasecmp(parameter[1], "water"))
-						shader.surfaceparms |= Q3SURFACEPARM_WATER;
-					else if (!strcasecmp(parameter[1], "pointlight"))
-						shader.surfaceparms |= Q3SURFACEPARM_POINTLIGHT;
-					else if (!strcasecmp(parameter[1], "antiportal"))
-						shader.surfaceparms |= Q3SURFACEPARM_ANTIPORTAL;
-					else if (!strcasecmp(parameter[1], "skip"))
+					else if (String_Does_Match_Caseless(parameter[1], "clusterportal")) shader.surfaceparms |= Q3SURFACEPARM_CLUSTERPORTAL;
+					else if (String_Does_Match_Caseless(parameter[1], "detail")) shader.surfaceparms |= Q3SURFACEPARM_DETAIL;
+					else if (String_Does_Match_Caseless(parameter[1], "donotenter")) shader.surfaceparms |= Q3SURFACEPARM_DONOTENTER;
+					else if (String_Does_Match_Caseless(parameter[1], "dust")) shader.surfaceparms |= Q3SURFACEPARM_DUST;
+					else if (String_Does_Match_Caseless(parameter[1], "hint")) shader.surfaceparms |= Q3SURFACEPARM_HINT;
+					else if (String_Does_Match_Caseless(parameter[1], "fog")) shader.surfaceparms |= Q3SURFACEPARM_FOG;
+					else if (String_Does_Match_Caseless(parameter[1], "lava")) shader.surfaceparms |= Q3SURFACEPARM_LAVA;
+					else if (String_Does_Match_Caseless(parameter[1], "lightfilter")) shader.surfaceparms |= Q3SURFACEPARM_LIGHTFILTER;
+					else if (String_Does_Match_Caseless(parameter[1], "lightgrid")) shader.surfaceparms |= Q3SURFACEPARM_LIGHTGRID;
+					else if (String_Does_Match_Caseless(parameter[1], "metalsteps")) shader.surfaceparms |= Q3SURFACEPARM_METALSTEPS;
+					else if (String_Does_Match_Caseless(parameter[1], "nodamage")) shader.surfaceparms |= Q3SURFACEPARM_NODAMAGE;
+					else if (String_Does_Match_Caseless(parameter[1], "nodlight")) shader.surfaceparms |= Q3SURFACEPARM_NODLIGHT;
+					else if (String_Does_Match_Caseless(parameter[1], "nodraw")) shader.surfaceparms |= Q3SURFACEPARM_NODRAW;
+					else if (String_Does_Match_Caseless(parameter[1], "nodrop")) shader.surfaceparms |= Q3SURFACEPARM_NODROP;
+					else if (String_Does_Match_Caseless(parameter[1], "noimpact")) shader.surfaceparms |= Q3SURFACEPARM_NOIMPACT;
+					else if (String_Does_Match_Caseless(parameter[1], "nolightmap")) shader.surfaceparms |= Q3SURFACEPARM_NOLIGHTMAP;
+					else if (String_Does_Match_Caseless(parameter[1], "nomarks")) shader.surfaceparms |= Q3SURFACEPARM_NOMARKS;
+					else if (String_Does_Match_Caseless(parameter[1], "nomipmaps")) shader.surfaceparms |= Q3SURFACEPARM_NOMIPMAPS;
+					else if (String_Does_Match_Caseless(parameter[1], "nonsolid")) shader.surfaceparms |= Q3SURFACEPARM_NONSOLID;
+					else if (String_Does_Match_Caseless(parameter[1], "origin")) shader.surfaceparms |= Q3SURFACEPARM_ORIGIN;
+					else if (String_Does_Match_Caseless(parameter[1], "playerclip")) shader.surfaceparms |= Q3SURFACEPARM_PLAYERCLIP;
+					else if (String_Does_Match_Caseless(parameter[1], "sky")) shader.surfaceparms |= Q3SURFACEPARM_SKY;
+					else if (String_Does_Match_Caseless(parameter[1], "slick")) shader.surfaceparms |= Q3SURFACEPARM_SLICK;
+					else if (String_Does_Match_Caseless(parameter[1], "slime")) shader.surfaceparms |= Q3SURFACEPARM_SLIME;
+					else if (String_Does_Match_Caseless(parameter[1], "structural")) shader.surfaceparms |= Q3SURFACEPARM_STRUCTURAL;
+					else if (String_Does_Match_Caseless(parameter[1], "trans")) shader.surfaceparms |= Q3SURFACEPARM_TRANS;
+					else if (String_Does_Match_Caseless(parameter[1], "water")) shader.surfaceparms |= Q3SURFACEPARM_WATER;
+					else if (String_Does_Match_Caseless(parameter[1], "pointlight")) shader.surfaceparms |= Q3SURFACEPARM_POINTLIGHT;
+					else if (String_Does_Match_Caseless(parameter[1], "antiportal")) shader.surfaceparms |= Q3SURFACEPARM_ANTIPORTAL;
+					else if (String_Does_Match_Caseless(parameter[1], "skip"))
 						; // shader.surfaceparms |= Q3SURFACEPARM_SKIP; FIXME we don't have enough #defines for this any more, and the engine doesn't need this one anyway
 					else
 					{
 						// try custom surfaceparms
-						for (j = 0; j < numcustsurfaceflags; j++)
-						{
-							if (!strcasecmp(custsurfaceparmnames[j], parameter[1]))
-							{
+						for (j = 0; j < numcustsurfaceflags; j++) {
+							if (String_Does_Match_Caseless(custsurfaceparmnames[j], parameter[1])) {
 								shader.surfaceflags |= custsurfaceflags[j];
 								break;
 							}
 						}
 						// failed all
 						if (j == numcustsurfaceflags)
-							Con_DPrintf("%s parsing warning: unknown surfaceparm \"%s\"\n", search->filenames[fileindex], parameter[1]);
+							Con_DPrintf ("%s parsing warning: unknown surfaceparm \"%s\"\n", search->filenames[fileindex], parameter[1]);
 					}
-				}
-				else if (!strcasecmp(parameter[0], "dpshadow"))
-					shader.dpshadow = true;
-				else if (!strcasecmp(parameter[0], "dpnoshadow"))
-					shader.dpnoshadow = true;
-				else if (!strcasecmp(parameter[0], "dpnortlight"))
-					shader.dpnortlight = true;
-				else if (!strcasecmp(parameter[0], "dpreflectcube"))
-					strlcpy(shader.dpreflectcube, parameter[1], sizeof(shader.dpreflectcube));
-				else if (!strcasecmp(parameter[0], "dpmeshcollisions"))
-					shader.dpmeshcollisions = true;
+				} // surfaceparm
+				else if (String_Does_Match_Caseless(parameter[0], "dpshadow")) shader.dpshadow = true;
+				else if (String_Does_Match_Caseless(parameter[0], "dpnoshadow")) shader.dpnoshadow = true;
+				else if (String_Does_Match_Caseless(parameter[0], "dpnortlight")) shader.dpnortlight = true;
+				else if (String_Does_Match_Caseless(parameter[0], "dpreflectcube")) strlcpy(shader.dpreflectcube, parameter[1], sizeof(shader.dpreflectcube));
+				else if (String_Does_Match_Caseless(parameter[0], "dpmeshcollisions")) shader.dpmeshcollisions = true;
 				// this sets dpshaderkill to true if dpshaderkillifcvarzero was used, and to false if dpnoshaderkillifcvarzero was used
-				else if (((dpshaderkill = !strcasecmp(parameter[0], "dpshaderkillifcvarzero")) || !strcasecmp(parameter[0], "dpnoshaderkillifcvarzero")) && numparameters >= 2)
-				{
+				else if (((dpshaderkill = String_Does_Match_Caseless(parameter[0], "dpshaderkillifcvarzero")) || String_Does_Match_Caseless(parameter[0], "dpnoshaderkillifcvarzero")) && numparameters >= 2) {
 					if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) == 0.0f)
 						shader.dpshaderkill = dpshaderkill;
 				}
 				// this sets dpshaderkill to true if dpshaderkillifcvar was used, and to false if dpnoshaderkillifcvar was used
-				else if (((dpshaderkill = !strcasecmp(parameter[0], "dpshaderkillifcvar")) || !strcasecmp(parameter[0], "dpnoshaderkillifcvar")) && numparameters >= 2)
-				{
+				else if (((dpshaderkill = String_Does_Match_Caseless(parameter[0], "dpshaderkillifcvar")) || String_Does_Match_Caseless(parameter[0], "dpnoshaderkillifcvar")) && numparameters >= 2) {
 					const char *op = NULL;
 					if (numparameters >= 3)
 						op = parameter[2];
-					if(!op)
-					{
+					if (!op) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) != 0.0f)
 							shader.dpshaderkill = dpshaderkill;
-					}
-					else if (numparameters >= 4 && !strcmp(op, "=="))
-					{
+					} else if (numparameters >= 4 && String_Does_Match(op, "==")) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) == atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
-					}
-					else if (numparameters >= 4 && !strcmp(op, "!="))
-					{
+					} else if (numparameters >= 4 && String_Does_Match(op, "!=")) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) != atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
-					}
-					else if (numparameters >= 4 && !strcmp(op, ">"))
-					{
+					} else if (numparameters >= 4 && String_Does_Match(op, ">")) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) > atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
-					}
-					else if (numparameters >= 4 && !strcmp(op, "<"))
-					{
+					} else if (numparameters >= 4 && String_Does_Match(op, "<")) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) < atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
-					}
-					else if (numparameters >= 4 && !strcmp(op, ">="))
-					{
+					} else if (numparameters >= 4 && String_Does_Match(op, ">=")) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) >= atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
-					}
-					else if (numparameters >= 4 && !strcmp(op, "<="))
-					{
+					} else if (numparameters >= 4 && String_Does_Match(op, "<=")) {
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) <= atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
+					} else {
+						Con_DPrintf ("%s parsing warning: unknown dpshaderkillifcvar op \"%s\", or not enough arguments\n", search->filenames[fileindex], op);
 					}
-					else
-					{
-						Con_DPrintf("%s parsing warning: unknown dpshaderkillifcvar op \"%s\", or not enough arguments\n", search->filenames[fileindex], op);
-					}
-				}
-				else if (!strcasecmp(parameter[0], "sky") && numparameters >= 2)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "sky") && numparameters >= 2) {
 					// some q3 skies don't have the sky parm set
 					shader.surfaceparms |= Q3SURFACEPARM_SKY;
 					strlcpy(shader.skyboxname, parameter[1], sizeof(shader.skyboxname));
-				}
-				else if (!strcasecmp(parameter[0], "skyparms") && numparameters >= 2)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "skyparms") && numparameters >= 2) {
 					// some q3 skies don't have the sky parm set
 					shader.surfaceparms |= Q3SURFACEPARM_SKY;
 					if (!atoi(parameter[1]) && strcasecmp(parameter[1], "-"))
 						strlcpy(shader.skyboxname, parameter[1], sizeof(shader.skyboxname));
-				}
-				else if (!strcasecmp(parameter[0], "cull") && numparameters >= 2)
-				{
-					if (!strcasecmp(parameter[1], "disable") || !strcasecmp(parameter[1], "none") || !strcasecmp(parameter[1], "twosided"))
+				} else if (String_Does_Match_Caseless(parameter[0], "cull") && numparameters >= 2) {
+					if (String_Does_Match_Caseless(parameter[1], "disable") || String_Does_Match_Caseless(parameter[1], "none") || String_Does_Match_Caseless(parameter[1], "twosided"))
 						shader.textureflags |= Q3TEXTUREFLAG_TWOSIDED;
-				}
-				else if (!strcasecmp(parameter[0], "nomipmaps"))
-					shader.surfaceparms |= Q3SURFACEPARM_NOMIPMAPS;
-				else if (!strcasecmp(parameter[0], "nopicmip"))
-					shader.textureflags |= Q3TEXTUREFLAG_NOPICMIP;
-				else if (!strcasecmp(parameter[0], "polygonoffset"))
+				} else if (String_Does_Match_Caseless(parameter[0], "nomipmaps")) shader.surfaceparms |= Q3SURFACEPARM_NOMIPMAPS;
+				else if (String_Does_Match_Caseless(parameter[0], "nopicmip")) shader.textureflags |= Q3TEXTUREFLAG_NOPICMIP;
+				else if (String_Does_Match_Caseless(parameter[0], "polygonoffset")) shader.textureflags |= Q3TEXTUREFLAG_POLYGONOFFSET;
+				else if (String_Does_Match_Caseless(parameter[0], "dppolygonoffset")) {
 					shader.textureflags |= Q3TEXTUREFLAG_POLYGONOFFSET;
-				else if (!strcasecmp(parameter[0], "dppolygonoffset"))
-				{
-					shader.textureflags |= Q3TEXTUREFLAG_POLYGONOFFSET;
-					if(numparameters >= 2)
+					if (numparameters >= 2)
 					{
 						shader.biaspolygonfactor = atof(parameter[1]);
-						if(numparameters >= 3)
+						if (numparameters >= 3)
 							shader.biaspolygonoffset = atof(parameter[2]);
 						else
 							shader.biaspolygonoffset = 0;
 					}
-				}
-				else if (!strcasecmp(parameter[0], "dptransparentsort") && numparameters >= 2)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dptransparentsort") && numparameters >= 2) {
 					shader.textureflags |= Q3TEXTUREFLAG_TRANSPARENTSORT;
-					if (!strcasecmp(parameter[1], "sky"))
+					if (String_Does_Match_Caseless(parameter[1], "sky"))
 						shader.transparentsort = TRANSPARENTSORT_SKY;
-					else if (!strcasecmp(parameter[1], "distance"))
+					else if (String_Does_Match_Caseless(parameter[1], "distance"))
 						shader.transparentsort = TRANSPARENTSORT_DISTANCE;
-					else if (!strcasecmp(parameter[1], "hud"))
+					else if (String_Does_Match_Caseless(parameter[1], "hud"))
 						shader.transparentsort = TRANSPARENTSORT_HUD;
 					else
-						Con_DPrintf("%s parsing warning: unknown dptransparentsort category \"%s\", or not enough arguments\n", search->filenames[fileindex], parameter[1]);
-				}
-				else if (!strcasecmp(parameter[0], "dprefract") && numparameters >= 5)
-				{
+						Con_DPrintf ("%s parsing warning: unknown dptransparentsort category \"%s\", or not enough arguments\n", search->filenames[fileindex], parameter[1]);
+				} else if (String_Does_Match_Caseless(parameter[0], "dprefract") && numparameters >= 5) {
 					shader.textureflags |= Q3TEXTUREFLAG_REFRACTION;
 					shader.refractfactor = atof(parameter[1]);
 					Vector4Set(shader.refractcolor4f, atof(parameter[2]), atof(parameter[3]), atof(parameter[4]), 1);
-				}
-				else if (!strcasecmp(parameter[0], "dpreflect") && numparameters >= 6)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dpreflect") && numparameters >= 6) {
 					shader.textureflags |= Q3TEXTUREFLAG_REFLECTION;
 					shader.reflectfactor = atof(parameter[1]);
 					Vector4Set(shader.reflectcolor4f, atof(parameter[2]), atof(parameter[3]), atof(parameter[4]), atof(parameter[5]));
-				}
-				else if (!strcasecmp(parameter[0], "dpcamera"))
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dpcamera")) {
 					shader.textureflags |= Q3TEXTUREFLAG_CAMERA;
-				}
-				else if (!strcasecmp(parameter[0], "dpwater") && numparameters >= 12)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dpwater") && numparameters >= 12) {
 					shader.textureflags |= Q3TEXTUREFLAG_WATERSHADER;
 					shader.reflectmin = atof(parameter[1]);
 					shader.reflectmax = atof(parameter[2]);
@@ -2127,99 +1999,90 @@ void Mod_LoadQ3Shaders(void)
 					Vector4Set(shader.refractcolor4f, atof(parameter[5]), atof(parameter[6]), atof(parameter[7]), 1);
 					Vector4Set(shader.reflectcolor4f, atof(parameter[8]), atof(parameter[9]), atof(parameter[10]), 1);
 					shader.r_water_wateralpha = atof(parameter[11]);
-				}
-				else if (!strcasecmp(parameter[0], "dpwaterscroll") && numparameters >= 3)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dpwaterscroll") && numparameters >= 3) {
 					shader.r_water_waterscroll[0] = 1/atof(parameter[1]);
 					shader.r_water_waterscroll[1] = 1/atof(parameter[2]);
-				}
-				else if (!strcasecmp(parameter[0], "dpglossintensitymod") && numparameters >= 2)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dpglossintensitymod") && numparameters >= 2) {
 					shader.specularscalemod = atof(parameter[1]);
-				}
-				else if (!strcasecmp(parameter[0], "dpglossexponentmod") && numparameters >= 2)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dpglossexponentmod") && numparameters >= 2) {
 					shader.specularpowermod = atof(parameter[1]);
-				}
-				else if (!strcasecmp(parameter[0], "dprtlightambient") && numparameters >= 2)
-				{
+				} else if (String_Does_Match_Caseless(parameter[0], "dprtlightambient") && numparameters >= 2) {
 					shader.rtlightambient = atof(parameter[1]);
-				}
-				else if (!strcasecmp(parameter[0], "dpoffsetmapping") && numparameters >= 2)
-				{
-					if (!strcasecmp(parameter[1], "disable") || !strcasecmp(parameter[1], "none") || !strcasecmp(parameter[1], "off"))
-						shader.offsetmapping = OFFSETMAPPING_OFF;
-					else if (!strcasecmp(parameter[1], "default") || !strcasecmp(parameter[1], "normal"))
-						shader.offsetmapping = OFFSETMAPPING_DEFAULT;
-					else if (!strcasecmp(parameter[1], "linear"))
-						shader.offsetmapping = OFFSETMAPPING_LINEAR;
-					else if (!strcasecmp(parameter[1], "relief"))
-						shader.offsetmapping = OFFSETMAPPING_RELIEF;
+				} else if (String_Does_Match_Caseless(parameter[0], "dpoffsetmapping") && numparameters >= 2) {
+					if (String_Does_Match_Caseless(parameter[1], "disable") || String_Does_Match_Caseless(parameter[1], "none") || String_Does_Match_Caseless(parameter[1], "off")) shader.offsetmapping = OFFSETMAPPING_OFF;
+					else if (String_Does_Match_Caseless(parameter[1], "default") || String_Does_Match_Caseless(parameter[1], "normal")) shader.offsetmapping = OFFSETMAPPING_DEFAULT;
+					else if (String_Does_Match_Caseless(parameter[1], "linear")) shader.offsetmapping = OFFSETMAPPING_LINEAR;
+					else if (String_Does_Match_Caseless(parameter[1], "relief")) shader.offsetmapping = OFFSETMAPPING_RELIEF;
 					if (numparameters >= 3)
 						shader.offsetscale = atof(parameter[2]);
-					if (numparameters >= 5)
-					{
-						if(!strcasecmp(parameter[3], "bias"))
-							shader.offsetbias = atof(parameter[4]);
-						else if(!strcasecmp(parameter[3], "match"))
-							shader.offsetbias = 1.0f - atof(parameter[4]);
-						else if(!strcasecmp(parameter[3], "match8"))
-							shader.offsetbias = 1.0f - atof(parameter[4]) / 255.0f;
-						else if(!strcasecmp(parameter[3], "match16"))
-							shader.offsetbias = 1.0f - atof(parameter[4]) / 65535.0f;
-					}
+					if (numparameters >= 5) {
+						if (String_Does_Match_Caseless(parameter[3], "bias")) shader.offsetbias = atof(parameter[4]);
+						else if (String_Does_Match_Caseless(parameter[3], "match")) shader.offsetbias = 1.0f - atof(parameter[4]);
+						else if (String_Does_Match_Caseless(parameter[3], "match8")) shader.offsetbias = 1.0f - atof(parameter[4]) / 255.0f;
+						else if (String_Does_Match_Caseless(parameter[3], "match16")) shader.offsetbias = 1.0f - atof(parameter[4]) / 65535.0f;
+					} // numparameters >= 5
 				}
-				else if (!strcasecmp(parameter[0], "deformvertexes") && numparameters >= 2)
-				{
+				else if (String_Does_Match_Caseless(parameter[0], "deformvertexes") && numparameters >= 2) {
 					int i, deformindex;
-					for (deformindex = 0;deformindex < Q3MAXDEFORMS;deformindex++)
+					for (deformindex = 0;deformindex < Q3MAXDEFORMS_4;deformindex++)
 						if (!shader.deforms[deformindex].deform)
 							break;
-					if (deformindex < Q3MAXDEFORMS)
-					{
-						for (i = 0;i < numparameters - 2 && i < Q3DEFORM_MAXPARMS;i++)
+					if (deformindex < Q3MAXDEFORMS_4) {
+						for (i = 0;i < numparameters - 2 && i < Q3DEFORM_MAXPARMS_3;i++)
 							shader.deforms[deformindex].parms[i] = atof(parameter[i+2]);
-						     if (!strcasecmp(parameter[1], "projectionshadow")) shader.deforms[deformindex].deform = Q3DEFORM_PROJECTIONSHADOW;
-						else if (!strcasecmp(parameter[1], "autosprite"      )) shader.deforms[deformindex].deform = Q3DEFORM_AUTOSPRITE;
-						else if (!strcasecmp(parameter[1], "autosprite2"     )) shader.deforms[deformindex].deform = Q3DEFORM_AUTOSPRITE2;
-						else if (!strcasecmp(parameter[1], "text0"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT0;
-						else if (!strcasecmp(parameter[1], "text1"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT1;
-						else if (!strcasecmp(parameter[1], "text2"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT2;
-						else if (!strcasecmp(parameter[1], "text3"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT3;
-						else if (!strcasecmp(parameter[1], "text4"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT4;
-						else if (!strcasecmp(parameter[1], "text5"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT5;
-						else if (!strcasecmp(parameter[1], "text6"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT6;
-						else if (!strcasecmp(parameter[1], "text7"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT7;
-						else if (!strcasecmp(parameter[1], "bulge"           )) shader.deforms[deformindex].deform = Q3DEFORM_BULGE;
-						else if (!strcasecmp(parameter[1], "normal"          )) shader.deforms[deformindex].deform = Q3DEFORM_NORMAL;
-						else if (!strcasecmp(parameter[1], "wave"            ))
+						     if (String_Does_Match_Caseless(parameter[1], "projectionshadow")) shader.deforms[deformindex].deform = Q3DEFORM_PROJECTIONSHADOW;
+						else if (String_Does_Match_Caseless(parameter[1], "autosprite"      )) shader.deforms[deformindex].deform = Q3DEFORM_AUTOSPRITE;
+						else if (String_Does_Match_Caseless(parameter[1], "autosprite2"     )) shader.deforms[deformindex].deform = Q3DEFORM_AUTOSPRITE2;
+						else if (String_Does_Match_Caseless(parameter[1], "text0"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT0;
+						else if (String_Does_Match_Caseless(parameter[1], "text1"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT1;
+						else if (String_Does_Match_Caseless(parameter[1], "text2"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT2;
+						else if (String_Does_Match_Caseless(parameter[1], "text3"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT3;
+						else if (String_Does_Match_Caseless(parameter[1], "text4"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT4;
+						else if (String_Does_Match_Caseless(parameter[1], "text5"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT5;
+						else if (String_Does_Match_Caseless(parameter[1], "text6"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT6;
+						else if (String_Does_Match_Caseless(parameter[1], "text7"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT7;
+						else if (String_Does_Match_Caseless(parameter[1], "bulge"           )) shader.deforms[deformindex].deform = Q3DEFORM_BULGE;
+						else if (String_Does_Match_Caseless(parameter[1], "normal"          )) shader.deforms[deformindex].deform = Q3DEFORM_NORMAL;
+						else if (String_Does_Match_Caseless(parameter[1], "wave"            ))
 						{
 							shader.deforms[deformindex].deform = Q3DEFORM_WAVE;
 							shader.deforms[deformindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[3]);
-							for (i = 0;i < numparameters - 4 && i < Q3WAVEPARMS;i++)
+							for (i = 0;i < numparameters - 4 && i < Q3WAVEPARMS_4;i++)
 								shader.deforms[deformindex].waveparms[i] = atof(parameter[i+4]);
 						}
-						else if (!strcasecmp(parameter[1], "move"            ))
+						else if (String_Does_Match_Caseless(parameter[1], "move"))
 						{
 							shader.deforms[deformindex].deform = Q3DEFORM_MOVE;
 							shader.deforms[deformindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[5]);
-							for (i = 0;i < numparameters - 6 && i < Q3WAVEPARMS;i++)
+							for (i = 0;i < numparameters - 6 && i < Q3WAVEPARMS_4;i++)
 								shader.deforms[deformindex].waveparms[i] = atof(parameter[i+6]);
 						}
+#if 1 // Baker r0084: roundwave deformation
+						else if (String_Does_Match_Caseless(parameter[1], "roundwave"))
+						{
+							shader.deforms[deformindex].deform = Q3DEFORM_ROUNDWAVE;
+							shader.deforms[deformindex].parms2[0] = atof(parameter[5]); // offsetx
+							shader.deforms[deformindex].parms2[1] = atof(parameter[6]); // offsety
+							shader.deforms[deformindex].parms2[2] = atof(parameter[7]); // offsetz
+							shader.deforms[deformindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[8]);
+							for (i = 0;i < numparameters - 9 && i < Q3WAVEPARMS_4;i++)
+								shader.deforms[deformindex].waveparms[i] = atof(parameter[i+9]);
+						}
+#endif
 					}
 				}
-			}
+			} // while
 			// hide this shader if a cvar said it should be killed
 			if (shader.dpshaderkill)
 				shader.numlayers = 0;
 			// fix up multiple reflection types
-			if(shader.textureflags & Q3TEXTUREFLAG_WATERSHADER)
+			if (shader.textureflags & Q3TEXTUREFLAG_WATERSHADER)
 				shader.textureflags &= ~(Q3TEXTUREFLAG_REFRACTION | Q3TEXTUREFLAG_REFLECTION | Q3TEXTUREFLAG_CAMERA);
 
 			Q3Shader_AddToHash (&shader);
-		}
+		} // while token
 		Mem_Free(f);
-	}
+	} // for
 	FS_FreeSearch(search);
 	// free custinfoparm values
 	for (j = 0; j < numcustsurfaceflags; j++)
@@ -2232,14 +2095,14 @@ shader_t *Mod_LookupQ3Shader(const char *name)
 	q3shader_hash_entry_t* entry;
 	if (!q3shaders_mem)
 		Mod_LoadQ3Shaders();
+
 	hash = CRC_Block_CaseInsensitive ((const unsigned char *)name, strlen (name));
 	entry = q3shader_data->hash + (hash % Q3SHADER_HASH_SIZE);
-	while (entry != NULL)
-	{
-		if (strcasecmp (entry->shader.name, name) == 0)
+	while (entry != NULL) {
+		if (String_Does_Start_With_Caseless (entry->shader.name, name))
 			return &entry->shader;
 		entry = entry->chain;
-	}
+	} // while
 	return NULL;
 }
 
@@ -2270,7 +2133,7 @@ texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(mempool_t *mempool, 
 	shaderpass->rgbgen = layer->rgbgen;
 	shaderpass->alphagen = layer->alphagen;
 	shaderpass->tcgen = layer->tcgen;
-	for (j = 0; j < Q3MAXTCMODS && layer->tcmods[j].tcmod != Q3TCMOD_NONE; j++)
+	for (j = 0; j < Q3MAXTCMODS_8 && layer->tcmods[j].tcmod != Q3TCMOD_NONE; j++)
 		shaderpass->tcmods[j] = layer->tcmods[j];
 	for (j = 0; j < layer->numframes; j++)
 		shaderpass->skinframes[j] = R_SkinFrame_LoadExternal(layer->texturename[j], texflags, false, true);
@@ -2290,14 +2153,14 @@ qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, tex
 
 	// allow disabling of picmip or compression by defaulttexflags
 	texflagsmask = ~0;
-	if(!(defaulttexflags & TEXF_PICMIP))
+	if (!(defaulttexflags & TEXF_PICMIP))
 		texflagsmask &= ~TEXF_PICMIP;
-	if(!(defaulttexflags & TEXF_COMPRESS))
+	if (!(defaulttexflags & TEXF_COMPRESS))
 		texflagsmask &= ~TEXF_COMPRESS;
 	texflagsor = 0;
-	if(defaulttexflags & TEXF_ISWORLD)
+	if (defaulttexflags & TEXF_ISWORLD)
 		texflagsor |= TEXF_ISWORLD;
-	if(defaulttexflags & TEXF_ISSPRITE)
+	if (defaulttexflags & TEXF_ISSPRITE)
 		texflagsor |= TEXF_ISSPRITE;
 	// unless later loaded from the shader
 	texture->offsetmapping = (mod_noshader_default_offsetmapping.value) ? OFFSETMAPPING_DEFAULT : OFFSETMAPPING_OFF;
@@ -2313,7 +2176,7 @@ qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, tex
 	if (shader)
 	{
 		if (developer_loading.integer)
-			Con_Printf("%s: loaded shader for %s\n", modelname, name);
+			Con_PrintLinef ("%s: loaded shader for %s", modelname, name);
 
 		if (shader->surfaceparms & Q3SURFACEPARM_SKY)
 		{
@@ -2404,7 +2267,7 @@ nothing                GL_ZERO GL_ONE
 			int shaderpassindex = 0;
 			for (i = 0; i < shader->numlayers; i++)
 			{
-				if (shader->layers[i].texturename != NULL && !strcasecmp(shader->layers[i].texturename[0], "$lightmap"))
+				if (shader->layers[i].texturename != NULL && String_Does_Match_Caseless(shader->layers[i].texturename[0], "$lightmap"))
 					lightmaplayer = i;
 				if (shader->layers[i].rgbgen.rgbgen == Q3RGBGEN_VERTEX)
 					rgbgenvertexlayer = i;
@@ -2591,26 +2454,26 @@ nothing                GL_ZERO GL_ONE
 		if (shader->dpmeshcollisions)
 			texture->basematerialflags |= MATERIALFLAG_MESHCOLLISIONS;
 		if (shader->dpshaderkill && developer_extra.integer)
-			Con_DPrintf("^1%s:^7 killing shader ^3\"%s\" because of cvar\n", modelname, name);
+			Con_DPrintLinef ("^1%s:^7 killing shader ^3" QUOTED_S " because of cvar", modelname, name);
 	}
-	else if (!strcmp(texture->name, "noshader") || !texture->name[0])
+	else if (String_Does_Match(texture->name, "noshader") || !texture->name[0])
 	{
 		if (developer_extra.integer)
-			Con_DPrintf("^1%s:^7 using fallback noshader material for ^3\"%s\"\n", modelname, name);
+			Con_DPrintLinef ("^1%s:^7 using fallback noshader material for ^3" QUOTED_S, modelname, name);
 		texture->basematerialflags = defaultmaterialflags;
 		texture->supercontents = SUPERCONTENTS_SOLID | SUPERCONTENTS_OPAQUE;
 	}
-	else if (!strcmp(texture->name, "common/nodraw") || !strcmp(texture->name, "textures/common/nodraw"))
+	else if (String_Does_Match(texture->name, "common/nodraw") || String_Does_Match(texture->name, "textures/common/nodraw"))
 	{
 		if (developer_extra.integer)
-			Con_DPrintf("^1%s:^7 using fallback nodraw material for ^3\"%s\"\n", modelname, name);
+			Con_DPrintLinef ("^1%s:^7 using fallback nodraw material for ^3" QUOTED_S, modelname, name);
 		texture->basematerialflags = MATERIALFLAG_NODRAW | MATERIALFLAG_NOSHADOW;
 		texture->supercontents = SUPERCONTENTS_SOLID;
 	}
 	else
 	{
 		if (developer_extra.integer)
-			Con_DPrintf("^1%s:^7 No shader found for texture ^3\"%s\"\n", modelname, texture->name);
+			Con_DPrintLinef ("^1%s:^7 No shader found for texture ^3" QUOTED_S, modelname, texture->name);
 		if (texture->surfaceflags & Q3SURFACEFLAG_NODRAW)
 		{
 			texture->basematerialflags = MATERIALFLAG_NODRAW | MATERIALFLAG_NOSHADOW;
@@ -2626,7 +2489,7 @@ nothing                GL_ZERO GL_ONE
 			texture->basematerialflags = defaultmaterialflags;
 			texture->supercontents = SUPERCONTENTS_SOLID | SUPERCONTENTS_OPAQUE;
 		}
-		if(cls.state == ca_dedicated)
+		if (cls.state == ca_dedicated)
 		{
 			texture->materialshaderpass = NULL;
 			success = false;
@@ -2645,7 +2508,7 @@ nothing                GL_ZERO GL_ONE
 			else
 				success = false;
 			if (!success && warnmissing)
-				Con_Printf("^1%s:^7 could not load texture ^3\"%s\"\n", modelname, texture->name);
+				Con_Printf ("^1%s:^7 could not load texture ^3\"%s\"\n", modelname, texture->name);
 		}
 	}
 	// init the animation variables
@@ -2663,7 +2526,7 @@ nothing                GL_ZERO GL_ONE
 void Mod_LoadCustomMaterial(mempool_t *mempool, texture_t *texture, const char *name, int supercontents, int materialflags, skinframe_t *skinframe)
 {
 	if (!(materialflags & (MATERIALFLAG_WALL | MATERIALFLAG_SKY)))
-		Con_DPrintf("^1Custom texture ^3\"%s\" does not have MATERIALFLAG_WALL set\n", texture->name);
+		Con_DPrintf ("^1Custom texture ^3\"%s\" does not have MATERIALFLAG_WALL set\n", texture->name);
 
 	strlcpy(texture->name, name, sizeof(texture->name));
 	texture->basealpha = 1.0f;
@@ -2681,7 +2544,7 @@ void Mod_LoadCustomMaterial(mempool_t *mempool, texture_t *texture, const char *
 	// JUST GREP FOR "specularscalemod = 1".
 
 	if (developer_extra.integer)
-		Con_DPrintf("^1Custom texture ^3\"%s\"\n", texture->name);
+		Con_DPrintf ("^1Custom texture ^3\"%s\"\n", texture->name);
 	if (skinframe)
 		texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(mempool, skinframe);
 
@@ -2738,8 +2601,7 @@ tag_weapon,
 tag_torso,
 */
 	memset(word, 0, sizeof(word));
-	for (i = 0;i < 256 && (data = text = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s_%i.skin", loadmodel->model_name, i), tempmempool, true, NULL));i++)
-	{
+	for (i = 0;i < 256 && (data = text = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s_%d.skin", loadmodel->model_name, i), tempmempool, true, NULL));i++) {
 		// If it's the first file we parse
 		if (skinfile == NULL)
 		{
@@ -2758,7 +2620,7 @@ tag_torso,
 			// parse line
 			if (!COM_ParseToken_QuakeC(&data, true))
 				break;
-			if (!strcmp(com_token, "\n"))
+			if (String_Does_Match(com_token, "\n"))
 				continue;
 			words = 0;
 			wordsoverflow = false;
@@ -2769,19 +2631,18 @@ tag_torso,
 				else
 					wordsoverflow = true;
 			}
-			while (COM_ParseToken_QuakeC(&data, true) && strcmp(com_token, "\n"));
-			if (wordsoverflow)
-			{
-				Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: line with too many statements, skipping\n", loadmodel->model_name, i, line);
+			while (COM_ParseToken_QuakeC(&data, true) && String_Does_Not_Match(com_token, NEWLINE));
+			if (wordsoverflow) {
+				Con_PrintLinef ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: line with too many statements, skipping", loadmodel->model_name, i, line);
 				continue;
 			}
 			// words is always >= 1
-			if (!strcmp(word[0], "replace"))
+			if (String_Does_Match(word[0], "replace"))
 			{
 				if (words == 3)
 				{
 					if (developer_loading.integer)
-						Con_Printf("Mod_LoadSkinFiles: parsed mesh \"%s\" shader replacement \"%s\"\n", word[1], word[2]);
+						Con_Printf ("Mod_LoadSkinFiles: parsed mesh \"%s\" shader replacement \"%s\"\n", word[1], word[2]);
 					skinfileitem = (skinfileitem_t *)Mem_Alloc(loadmodel->mempool, sizeof(skinfileitem_t));
 					skinfileitem->next = skinfile->items;
 					skinfile->items = skinfileitem;
@@ -2789,18 +2650,18 @@ tag_torso,
 					strlcpy (skinfileitem->replacement, word[2], sizeof (skinfileitem->replacement));
 				}
 				else
-					Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: wrong number of parameters to command \"%s\", see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->model_name, i, line, word[0]);
+					Con_PrintLinef ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: wrong number of parameters to command \"%s\", see documentation in DP_GFX_SKINFILES extension in dpextensions.qc", loadmodel->model_name, i, line, word[0]);
 			}
 			else if (words >= 2 && !strncmp(word[0], "tag_", 4))
 			{
 				// tag name, like "tag_weapon,"
 				// not used for anything (not even in Quake3)
 			}
-			else if (words >= 2 && !strcmp(word[1], ","))
+			else if (words >= 2 && String_Does_Match(word[1], ","))
 			{
 				// mesh shader name, like "U_RArm,models/players/Legoman/BikerA1.tga"
 				if (developer_loading.integer)
-					Con_Printf("Mod_LoadSkinFiles: parsed mesh \"%s\" shader replacement \"%s\"\n", word[0], word[2]);
+					Con_Printf ("Mod_LoadSkinFiles: parsed mesh \"%s\" shader replacement \"%s\"\n", word[0], word[2]);
 				skinfileitem = (skinfileitem_t *)Mem_Alloc(loadmodel->mempool, sizeof(skinfileitem_t));
 				skinfileitem->next = skinfile->items;
 				skinfile->items = skinfileitem;
@@ -2808,7 +2669,7 @@ tag_torso,
 				strlcpy (skinfileitem->replacement, word[2], sizeof (skinfileitem->replacement));
 			}
 			else
-				Con_Printf("Mod_LoadSkinFiles: parsing error in file \"%s_%i.skin\" on line #%i: does not look like tag or mesh specification, or replace command, see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->model_name, i, line);
+				Con_Printf ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: does not look like tag or mesh specification, or replace command, see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->model_name, i, line);
 		}
 		Mem_Free(text);
 	}
@@ -2949,7 +2810,7 @@ void Mod_MakeSortedSurfaces(model_t *mod)
 	int j, k;
 	Mod_MakeSortedSurfaces_qsortsurface_t *info;
 
-	if(cls.state == ca_dedicated)
+	if (cls.state == ca_dedicated)
 		return;
 
 	info = (Mod_MakeSortedSurfaces_qsortsurface_t*)Mem_Alloc(loadmodel->mempool, mod->num_surfaces * sizeof(*info));
@@ -2973,7 +2834,7 @@ void Mod_MakeSortedSurfaces(model_t *mod)
 
 void Mod_BuildVBOs(void)
 {
-	if(cls.state == ca_dedicated)
+	if (cls.state == ca_dedicated)
 		return;
 
 	if (!loadmodel->surfmesh.num_vertices)
@@ -2986,7 +2847,7 @@ void Mod_BuildVBOs(void)
 		{
 			if (loadmodel->surfmesh.data_element3s[i] != loadmodel->surfmesh.data_element3i[i])
 			{
-				Con_Printf("Mod_BuildVBOs: element %u is incorrect (%u should be %u)\n", i, loadmodel->surfmesh.data_element3s[i], loadmodel->surfmesh.data_element3i[i]);
+				Con_Printf ("Mod_BuildVBOs: element %u is incorrect (%u should be %u)\n", i, loadmodel->surfmesh.data_element3s[i], loadmodel->surfmesh.data_element3i[i]);
 				loadmodel->surfmesh.data_element3s[i] = loadmodel->surfmesh.data_element3i[i];
 			}
 		}
@@ -3067,7 +2928,7 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 		countfaces += surface->num_triangles;
 		texname = (surface->texture && surface->texture->name[0]) ? surface->texture->name : "default";
 		for (textureindex = 0;textureindex < counttextures;textureindex++)
-			if (!strcmp(texturenames + textureindex * MAX_QPATH, texname))
+			if (String_Does_Match(texturenames + textureindex * MAX_QPATH, texname))
 				break;
 		if (textureindex < counttextures)
 			continue; // already wrote this material entry
@@ -3093,7 +2954,7 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 
 	// construct the obj file
 	outbufferpos = 0;
-	l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "# model exported from %s by darkplaces engine\n# %i vertices, %i faces, %i surfaces\nmtllib %s\n", originalfilename, countvertices, countfaces, countsurfaces, mtlfilename);
+	l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "# model exported from %s by darkplaces engine\n# %d vertices, %d faces, %d surfaces\nmtllib %s\n", originalfilename, countvertices, countfaces, countsurfaces, mtlfilename);
 	if (l > 0)
 		outbufferpos += l;
 
@@ -3107,7 +2968,7 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 			memcpy(outbuffer, oldbuffer, outbufferpos);
 			Z_Free(oldbuffer);
 		}
-		if(mod_obj_orientation.integer)
+		if (mod_obj_orientation.integer)
 			l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "v %f %f %f\nvn %f %f %f\nvt %f %f\n", v[0], v[2], v[1], vn[0], vn[2], vn[1], vt[0], 1-vt[1]);
 		else
 			l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "v %f %f %f\nvn %f %f %f\nvt %f %f\n", v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1-vt[1]);
@@ -3117,7 +2978,7 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 
 	for (submodelindex = 0;submodelindex < max(1, model->brush.numsubmodels);submodelindex++)
 	{
-		l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "o %i\n", submodelindex);
+		l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "o %d\n", submodelindex);
 		if (l > 0)
 			outbufferpos += l;
 		submodel = model->brush.numsubmodels ? model->brush.submodels[submodelindex] : model;
@@ -3140,10 +3001,10 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 				a = e[0]+1;
 				b = e[1]+1;
 				c = e[2]+1;
-				if(mod_obj_orientation.integer)
-					l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "f %i/%i/%i %i/%i/%i %i/%i/%i\n", a,a,a,b,b,b,c,c,c);
+				if (mod_obj_orientation.integer)
+					l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "f %d/%d/%d %d/%d/%d %d/%d/%d\n", a,a,a,b,b,b,c,c,c);
 				else
-					l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "f %i/%i/%i %i/%i/%i %i/%i/%i\n", a,a,a,c,c,c,b,b,b);
+					l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "f %d/%d/%d %d/%d/%d %d/%d/%d\n", a,a,a,c,c,c,b,b,b);
 				if (l > 0)
 					outbufferpos += l;
 			}
@@ -3158,7 +3019,7 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 	Z_Free(texturenames);
 
 	// print some stats
-	Con_Printf("Wrote %s (%i bytes, %i vertices, %i faces, %i surfaces with %i distinct textures)\n", filename, (int)outbufferpos, countvertices, countfaces, countsurfaces, counttextures);
+	Con_Printf ("Wrote %s (%d bytes, %d vertices, %d faces, %d surfaces with %d distinct textures)\n", filename, (int)outbufferpos, countvertices, countfaces, countsurfaces, counttextures);
 }
 
 static void Mod_Decompile_SMD(model_t *model, const char *filename, int firstpose, int numposes, qbool writetriangles)
@@ -3199,7 +3060,7 @@ static void Mod_Decompile_SMD(model_t *model, const char *filename, int firstpos
 	for (poseindex = 0;poseindex < numposes;poseindex++)
 	{
 		countframes++;
-		l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "time %i\n", poseindex);
+		l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "time %d\n", poseindex);
 		if (l > 0)
 			outbufferpos += l;
 		for (transformindex = 0;transformindex < model->num_bones;transformindex++)
@@ -3297,9 +3158,9 @@ static void Mod_Decompile_SMD(model_t *model, const char *filename, int firstpos
 						const blendweights_t *w = model->surfmesh.data_blendweights + b - model->num_bones;
 						const unsigned char *wi = w->index;
 						const unsigned char *wf = w->influence;
-					    if (wf[3]) l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f 4 %i %f %i %f %i %f %i %f\n", wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1], wi[0], wf[0]/255.0f, wi[1], wf[1]/255.0f, wi[2], wf[2]/255.0f, wi[3], wf[3]/255.0f);
-						else if (wf[2]) l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f 3 %i %f %i %f %i %f\n"      , wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1], wi[0], wf[0]/255.0f, wi[1], wf[1]/255.0f, wi[2], wf[2]/255.0f);
-						else if (wf[1]) l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f 2 %i %f %i %f\n"            , wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1], wi[0], wf[0]/255.0f, wi[1], wf[1]/255.0f);
+					    if (wf[3]) l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f 4 %d %f %d %f %d %f %d %f\n", wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1], wi[0], wf[0]/255.0f, wi[1], wf[1]/255.0f, wi[2], wf[2]/255.0f, wi[3], wf[3]/255.0f);
+						else if (wf[2]) l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f 3 %d %f %d %f %d %f\n"      , wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1], wi[0], wf[0]/255.0f, wi[1], wf[1]/255.0f, wi[2], wf[2]/255.0f);
+						else if (wf[1]) l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f 2 %d %f %d %f\n"            , wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1], wi[0], wf[0]/255.0f, wi[1], wf[1]/255.0f);
 						else            l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i %f %f %f %f %f %f %f %f\n"                          , wi[0], v[0], v[1], v[2], vn[0], vn[1], vn[2], vt[0], 1 - vt[1]);
 					}
 					if (l > 0)
@@ -3315,7 +3176,7 @@ static void Mod_Decompile_SMD(model_t *model, const char *filename, int firstpos
 	FS_WriteFile(filename, outbuffer, outbufferpos);
 	Z_Free(outbuffer);
 
-	Con_Printf("Wrote %s (%i bytes, %i nodes, %i frames, %i triangles)\n", filename, (int)outbufferpos, countnodes, countframes, counttriangles);
+	Con_PrintLinef ("Wrote %s (%d bytes, %d nodes, %d frames, %d triangles)", filename, (int)outbufferpos, countnodes, countframes, counttriangles);
 }
 
 /*
@@ -3363,11 +3224,11 @@ static void Mod_Decompile_f(cmd_state_t *cmd)
 		// if we're decompiling a submodel, be sure to give it a proper name based on its parent
 		FS_StripExtension(cl.model_name[1], outname, sizeof(outname));
 		dpsnprintf(basename, sizeof(basename), "%s/%s", outname, mod->model_name);
+		dpreplacechar (basename, '*', '_'); // Baker r7061: Model decompile, windows will not allow * in a file name
 		outname[0] = 0;
 	}
-	if (!mod->surfmesh.num_triangles)
-	{
-		Con_Print("Empty model (or sprite)\n");
+	if (!mod->surfmesh.num_triangles) {
+		Con_PrintLinef ("Empty model (or sprite)");
 		return;
 	}
 
@@ -3403,9 +3264,9 @@ static void Mod_Decompile_f(cmd_state_t *cmd)
 				// individual frame
 				// check for additional frames with same name
 				for (l = 0, k = (int)strlen(animname);animname[l];l++)
-					if(animname[l] < '0' || animname[l] > '9')
+					if (animname[l] < '0' || animname[l] > '9')
 						k = l + 1;
-				if(k > 0 && animname[k-1] == '_')
+				if (k > 0 && animname[k-1] == '_')
 					--k;
 				animname[k] = 0;
 				count = mod->num_poses - first;
@@ -3413,9 +3274,9 @@ static void Mod_Decompile_f(cmd_state_t *cmd)
 				{
 					strlcpy(animname2, mod->animscenes[j].name, sizeof(animname2));
 					for (l = 0, k = (int)strlen(animname2);animname2[l];l++)
-						if(animname2[l] < '0' || animname2[l] > '9')
+						if (animname2[l] < '0' || animname2[l] > '9')
 							k = l + 1;
-					if(k > 0 && animname[k-1] == '_')
+					if (k > 0 && animname[k-1] == '_')
 						--k;
 					animname2[k] = 0;
 					if (strcmp(animname2, animname) || mod->animscenes[j].framecount > 1)
@@ -4278,7 +4139,7 @@ static void Mod_GenerateLightmaps_CreateLightmaps(model_t *model)
 				samplecenter[axis1] = (t2f[0]*lm_texturesize-triangle->lmoffset[0])*lmiscale[0] + triangle->lmbase[0];
 				samplecenter[axis2] = (t2f[1]*lm_texturesize-triangle->lmoffset[1])*lmiscale[1] + triangle->lmbase[1];
 				samplecenter[axis] = samplecenter[axis1]*slopex + samplecenter[axis2]*slopey + slopebase;
-				Con_Printf("%f:%f %f:%f %f:%f = %f %f\n", triangle->vertex[j][axis1], samplecenter[axis1], triangle->vertex[j][axis2], samplecenter[axis2], triangle->vertex[j][axis], samplecenter[axis], t2f[0], t2f[1]);
+				Con_Printf ("%f:%f %f:%f %f:%f = %f %f\n", triangle->vertex[j][axis1], samplecenter[axis1], triangle->vertex[j][axis2], samplecenter[axis2], triangle->vertex[j][axis], samplecenter[axis], t2f[0], t2f[1]);
 #endif
 			}
 
@@ -4349,8 +4210,8 @@ static void Mod_GenerateLightmaps_CreateLightmaps(model_t *model)
 
 	for (lightmapindex = 0;lightmapindex < model->brushq3.num_mergedlightmaps;lightmapindex++)
 	{
-		model->brushq3.data_lightmaps[lightmapindex] = R_LoadTexture2D(model->texturepool, va(vabuf, sizeof(vabuf), "lightmap%i", lightmapindex), lm_texturesize, lm_texturesize, lightmappixels + lightmapindex * lm_texturesize * lm_texturesize * 4, TEXTYPE_BGRA, TEXF_FORCELINEAR, -1, NULL);
-		model->brushq3.data_deluxemaps[lightmapindex] = R_LoadTexture2D(model->texturepool, va(vabuf, sizeof(vabuf), "deluxemap%i", lightmapindex), lm_texturesize, lm_texturesize, deluxemappixels + lightmapindex * lm_texturesize * lm_texturesize * 4, TEXTYPE_BGRA, TEXF_FORCELINEAR, -1, NULL);
+		model->brushq3.data_lightmaps[lightmapindex] = R_LoadTexture2D(model->texturepool, va(vabuf, sizeof(vabuf), "lightmap%d", lightmapindex), lm_texturesize, lm_texturesize, lightmappixels + lightmapindex * lm_texturesize * lm_texturesize * 4, TEXTYPE_BGRA, TEXF_FORCELINEAR, -1, NULL);
+		model->brushq3.data_deluxemaps[lightmapindex] = R_LoadTexture2D(model->texturepool, va(vabuf, sizeof(vabuf), "deluxemap%d", lightmapindex), lm_texturesize, lm_texturesize, deluxemappixels + lightmapindex * lm_texturesize * lm_texturesize * 4, TEXTYPE_BGRA, TEXF_FORCELINEAR, -1, NULL);
 	}
 
 	if (lightmappixels)
@@ -4425,7 +4286,7 @@ static void Mod_GenerateLightmaps(model_t *model)
 	Mod_GenerateLightmaps_UnweldTriangles(model);
 	Mod_GenerateLightmaps_CreateTriangleInformation(model);
 	Mod_GenerateLightmaps_CreateLights(model);
-	if(!mod_q3bsp_nolightmaps.integer)
+	if (!mod_q3bsp_nolightmaps.integer)
 		Mod_GenerateLightmaps_CreateLightmaps(model);
 	Mod_GenerateLightmaps_UpdateVertexColors(model);
 	Mod_GenerateLightmaps_UpdateLightGrid(model);
@@ -4439,12 +4300,12 @@ static void Mod_GenerateLightmaps_f(cmd_state_t *cmd)
 {
 	if (Cmd_Argc(cmd) != 1)
 	{
-		Con_Printf("usage: mod_generatelightmaps\n");
+		Con_Printf ("usage: mod_generatelightmaps\n");
 		return;
 	}
 	if (!cl.worldmodel)
 	{
-		Con_Printf("no worldmodel loaded\n");
+		Con_Printf ("no worldmodel loaded\n");
 		return;
 	}
 	Mod_GenerateLightmaps(cl.worldmodel);
@@ -4488,7 +4349,7 @@ texture_t *Mod_Mesh_GetTexture(model_t *mod, const char *name, int defaultdrawfl
 	texture_t *t;
 	int drawflag = defaultdrawflags & DRAWFLAG_MASK;
 	for (i = 0, t = mod->data_textures; i < mod->num_textures; i++, t++)
-		if (!strcmp(t->name, name) && t->mesh_drawflag == drawflag && t->mesh_defaulttexflags == defaulttexflags && t->mesh_defaultmaterialflags == defaultmaterialflags)
+		if (String_Does_Match(t->name, name) && t->mesh_drawflag == drawflag && t->mesh_defaulttexflags == defaulttexflags && t->mesh_defaultmaterialflags == defaultmaterialflags)
 			return t;
 	if (mod->max_textures <= mod->num_textures)
 	{
@@ -4758,7 +4619,7 @@ void Mod_Mesh_Validate(model_t *mod)
 			if (e[j] < first || e[j] >= end)
 			{
 				if (!warned)
-					Con_DPrintf("Mod_Mesh_Validate: detected corrupt surface - debug me!\n");
+					Con_DPrintf ("Mod_Mesh_Validate: detected corrupt surface - debug me!\n");
 				warned = true;
 				e[j] = first;
 			}
@@ -4787,7 +4648,7 @@ void Mod_Mesh_Finalize(model_t *mod)
 		Mod_Mesh_Validate(mod);
 	Mod_Mesh_ComputeBounds(mod);
 	Mod_Mesh_MakeSortedSurfaces(mod);
-	if(!r_refdef.draw2dstage)
+	if (!r_refdef.draw2dstage)
 		Mod_BuildTextureVectorsFromNormals(0, mod->surfmesh.num_vertices, mod->surfmesh.num_triangles, mod->surfmesh.data_vertex3f, mod->surfmesh.data_texcoordtexture2f, mod->surfmesh.data_normal3f, mod->surfmesh.data_element3i, mod->surfmesh.data_svector3f, mod->surfmesh.data_tvector3f, true);
 	Mod_Mesh_UploadDynamicBuffers(mod);
 }

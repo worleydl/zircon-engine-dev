@@ -371,7 +371,7 @@ int i;
 				OPC->vector[2] = tempfloat * OPA->vector[2];
 				DISPATCH_OPCODE();
 			HANDLE_OPCODE(OP_DIV_F):
-				if( OPB->_float != 0.0f )
+				if ( OPB->_float != 0.0f )
 				{
 					OPC->_float = OPA->_float / OPB->_float;
 				}
@@ -428,7 +428,7 @@ int i;
 				OPC->_float = (OPA->vector[0] == OPB->vector[0]) && (OPA->vector[1] == OPB->vector[1]) && (OPA->vector[2] == OPB->vector[2]);
 				DISPATCH_OPCODE();
 			HANDLE_OPCODE(OP_EQ_S):
-				OPC->_float = !strcmp(PRVM_GetString(prog, OPA->string),PRVM_GetString(prog, OPB->string));
+				OPC->_float = String_Does_Match(PRVM_GetString(prog, OPA->string),PRVM_GetString(prog, OPB->string));
 				DISPATCH_OPCODE();
 			HANDLE_OPCODE(OP_EQ_E):
 				OPC->_float = OPA->_int == OPB->_int;
@@ -464,7 +464,7 @@ int i;
 				// against a certain sort of repeated migration to earlier
 				// points in the scan that could otherwise result in the string
 				// being freed for being unused
-				if(prvm_garbagecollection_enable.integer)
+				if (prvm_garbagecollection_enable.integer)
 					PRVM_GetString(prog, OPA->_int);
 				OPB->_int = OPA->_int;
 				DISPATCH_OPCODE();
@@ -483,13 +483,13 @@ int i;
 					if ((prvm_uint_t)OPB->_int >= cached_entityfieldsarea)
 					{
 						PRE_ERROR();
-						prog->error_cmd("%s attempted to write to an out of bounds edict (%i)", prog->name, (int)OPB->_int);
+						prog->error_cmd("%s attempted to write to an out of bounds edict (%d)", prog->name, (int)OPB->_int);
 						goto cleanup;
 					}
 					if ((prvm_uint_t)OPB->_int < cached_entityfields && !cached_allowworldwrites)
 					{
 						PRE_ERROR();
-						VM_Warning(prog, "Attempted assignment to NULL entity field .%s (%i) in %s\n", PRVM_GetString(prog, PRVM_ED_FieldAtOfs(prog, OPB->_int)->s_name), (int)OPB->_int, prog->name);
+						VM_Warning(prog, "Attempted assignment to NULL entity field .%s (%d) in %s\n", PRVM_GetString(prog, PRVM_ED_FieldAtOfs(prog, OPB->_int)->s_name), (int)OPB->_int, prog->name);
 					}
 				}
 				ptr = (prvm_eval_t *)(cached_edictsfields + OPB->_int);
@@ -501,20 +501,20 @@ int i;
 					if ((prvm_uint_t)OPB->_int >= cached_entityfieldsarea)
 					{
 						PRE_ERROR();
-						prog->error_cmd("%s attempted to write to an out of bounds edict (%i)", prog->name, (int)OPB->_int);
+						prog->error_cmd("%s attempted to write to an out of bounds edict (%d)", prog->name, (int)OPB->_int);
 						goto cleanup;
 					}
 					if ((prvm_uint_t)OPB->_int < cached_entityfields && !cached_allowworldwrites)
 					{
 						PRE_ERROR();
-						VM_Warning(prog, "Attempted assignment to NULL entity field .%s (%i) in %s\n", PRVM_GetString(prog, PRVM_ED_FieldAtOfs(prog, OPB->_int)->s_name), (int)OPB->_int, prog->name);
+						VM_Warning(prog, "Attempted assignment to NULL entity field .%s (%d) in %s\n", PRVM_GetString(prog, PRVM_ED_FieldAtOfs(prog, OPB->_int)->s_name), (int)OPB->_int, prog->name);
 					}
 				}
 				// refresh the garbage collection on the string - this guards
 				// against a certain sort of repeated migration to earlier
 				// points in the scan that could otherwise result in the string
 				// being freed for being unused
-				if(prvm_garbagecollection_enable.integer)
+				if (prvm_garbagecollection_enable.integer)
 					PRVM_GetString(prog, OPA->_int);
 				ptr = (prvm_eval_t *)(cached_edictsfields + OPB->_int);
 				ptr->_int = OPA->_int;
@@ -525,13 +525,13 @@ int i;
 					if ((prvm_uint_t)OPB->_int > cached_entityfieldsarea_3)
 					{
 						PRE_ERROR();
-						prog->error_cmd("%s attempted to write to an out of bounds edict (%i)", prog->name, (int)OPB->_int);
+						prog->error_cmd("%s attempted to write to an out of bounds edict (%d)", prog->name, (int)OPB->_int);
 						goto cleanup;
 					}
 					if ((prvm_uint_t)OPB->_int < cached_entityfields && !cached_allowworldwrites)
 					{
 						PRE_ERROR();
-						VM_Warning(prog, "Attempted assignment to NULL entity field .%s (%i) in %s\n", PRVM_GetString(prog, PRVM_ED_FieldAtOfs(prog, OPB->_int)->s_name), (int)OPB->_int, prog->name);
+						VM_Warning(prog, "Attempted assignment to NULL entity field .%s (%d) in %s\n", PRVM_GetString(prog, PRVM_ED_FieldAtOfs(prog, OPB->_int)->s_name), (int)OPB->_int, prog->name);
 					}
 				}
 				ptr = (prvm_eval_t *)(cached_edictsfields + OPB->_int);
@@ -550,7 +550,7 @@ int i;
 				if ((prvm_uint_t)OPB->_int >= cached_entityfields)
 				{
 					PRE_ERROR();
-					prog->error_cmd("%s attempted to address an invalid field (%i) in an edict", prog->name, (int)OPB->_int);
+					prog->error_cmd("%s attempted to address an invalid field (%d) in an edict", prog->name, (int)OPB->_int);
 					goto cleanup;
 				}
 #if 0
@@ -577,7 +577,7 @@ int i;
 				if ((prvm_uint_t)OPB->_int >= cached_entityfields)
 				{
 					PRE_ERROR();
-					prog->error_cmd("%s attempted to read an invalid field in an edict (%i)", prog->name, (int)OPB->_int);
+					prog->error_cmd("%s attempted to read an invalid field in an edict (%d)", prog->name, (int)OPB->_int);
 					goto cleanup;
 				}
 				ed = PRVM_PROG_TO_EDICT(OPA->edict);
@@ -593,7 +593,7 @@ int i;
 				if ((prvm_uint_t)OPB->_int >= cached_entityfields)
 				{
 					PRE_ERROR();
-					prog->error_cmd("%s attempted to read an invalid field in an edict (%i)", prog->name, (int)OPB->_int);
+					prog->error_cmd("%s attempted to read an invalid field in an edict (%d)", prog->name, (int)OPB->_int);
 					goto cleanup;
 				}
 				ed = PRVM_PROG_TO_EDICT(OPA->edict);
@@ -602,7 +602,7 @@ int i;
 				// against a certain sort of repeated migration to earlier
 				// points in the scan that could otherwise result in the string
 				// being freed for being unused
-				if(prvm_garbagecollection_enable.integer)
+				if (prvm_garbagecollection_enable.integer)
 					PRVM_GetString(prog, OPC->_int);
 				DISPATCH_OPCODE();
 
@@ -616,7 +616,7 @@ int i;
 				if ((prvm_uint_t)OPB->_int > cached_entityfields_3)
 				{
 					PRE_ERROR();
-					prog->error_cmd("%s attempted to read an invalid field in an edict (%i)", prog->name, (int)OPB->_int);
+					prog->error_cmd("%s attempted to read an invalid field in an edict (%d)", prog->name, (int)OPB->_int);
 					goto cleanup;
 				}
 				ed = PRVM_PROG_TO_EDICT(OPA->edict);
@@ -629,9 +629,9 @@ int i;
 		//==================
 
 			HANDLE_OPCODE(OP_IFNOT):
-				//spike FIXME -- dp redefined IFNOT[_I] as IFNOT_F, which breaks if(0x80000000)
+				//spike FIXME -- dp redefined IFNOT[_I] as IFNOT_F, which breaks if (0x80000000)
 				//spike FIXME -- you should add separate IFNOT_I/IFNOT_F opcodes and remap IFNOT_I to ITNOT_F in v6 progs for compat.
-				if(!FLOAT_IS_TRUE_FOR_INT(OPA->_int))
+				if (!FLOAT_IS_TRUE_FOR_INT(OPA->_int))
 				// TODO add an "int-if", and change this one to OPA->_float
 				// although mostly unneeded, thanks to the only float being false being 0x0 and 0x80000000 (negative zero)
 				// and entity, string, field values can never have that value
@@ -651,7 +651,7 @@ int i;
 
 			HANDLE_OPCODE(OP_IF):
 				//spike FIXME -- dp redefined IF[_I] as IF_F
-				if(FLOAT_IS_TRUE_FOR_INT(OPA->_int))
+				if (FLOAT_IS_TRUE_FOR_INT(OPA->_int))
 				// TODO add an "int-if", and change this one, as well as the FLOAT_IS_TRUE_FOR_INT usages, to OPA->_float
 				// although mostly unneeded, thanks to the only float being false being 0x0 and 0x80000000 (negative zero)
 				// and entity, string, field values can never have that value
@@ -705,7 +705,7 @@ int i;
 					prog->error_cmd("NULL function in %s", prog->name);
 				}
 
-				if(!OPA->function || OPA->function < 0 || OPA->function >= prog->numfunctions)
+				if (!OPA->function || OPA->function < 0 || OPA->function >= prog->numfunctions)
 				{
 					PRE_ERROR();
 					prog->error_cmd("%s attempted CALL outside the program", prog->name);
@@ -748,7 +748,7 @@ int i;
 							goto chooseexecprogram;
 					}
 					else
-						prog->error_cmd("No such builtin #%i in %s. This program is corrupt or incompatible with DarkPlaces (or this version of it)", builtinnumber, prog->name);
+						prog->error_cmd("No such builtin #%d in %s. This program is corrupt or incompatible with DarkPlaces (or this version of it)", builtinnumber, prog->name);
 				}
 				else
 					st = cached_statements + PRVM_EnterFunction(prog, enterfunc);
@@ -776,7 +776,7 @@ int i;
 				DISPATCH_OPCODE();
 
 			HANDLE_OPCODE(OP_STATE):
-				if(cached_flag & PRVM_OP_STATE)
+				if (cached_flag & PRVM_OP_STATE)
 				{
 					ed = PRVM_PROG_TO_EDICT(PRVM_gameglobaledict(self));
 					PRVM_gameedictfloat(ed,nextthink) = PRVM_gameglobalfloat(time) + 0.1;
@@ -1050,7 +1050,7 @@ int i;
 #if !USE_COMPUTED_GOTOS
 			default:
 				PRE_ERROR();
-				prog->error_cmd("Bad opcode %i in %s. This program is corrupt or incompatible with DarkPlaces (or this version of it)", st->op, prog->name);
+				prog->error_cmd("Bad opcode %d in %s. This program is corrupt or incompatible with DarkPlaces (or this version of it)", st->op, prog->name);
 				goto cleanup;
 			}
 #if PRVMSLOWINTERPRETER

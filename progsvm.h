@@ -205,13 +205,13 @@ extern prvm_eval_t prvm_badvalue;
 #define PRVM_menufunction(funcname)           (prog->funcoffsets.funcname)
 
 #if 1
-#define PRVM_EDICTFIELDVALUE(ed, fieldoffset)    ((fieldoffset) < 0 ? Con_Printf("Invalid fieldoffset at %s:%i\n", __FILE__, __LINE__), &prvm_badvalue : (prvm_eval_t *)((ed)->fields.fp + (fieldoffset)))
+#define PRVM_EDICTFIELDVALUE(ed, fieldoffset)    ((fieldoffset) < 0 ? Con_Printf ("Invalid fieldoffset at %s:%d\n", __FILE__, __LINE__), &prvm_badvalue : (prvm_eval_t *)((ed)->fields.fp + (fieldoffset)))
 #define PRVM_EDICTFIELDFLOAT(ed, fieldoffset)    (PRVM_EDICTFIELDVALUE(ed, fieldoffset)->_float)
 #define PRVM_EDICTFIELDVECTOR(ed, fieldoffset)   (PRVM_EDICTFIELDVALUE(ed, fieldoffset)->vector)
 #define PRVM_EDICTFIELDSTRING(ed, fieldoffset)   (PRVM_EDICTFIELDVALUE(ed, fieldoffset)->string)
 #define PRVM_EDICTFIELDEDICT(ed, fieldoffset)    (PRVM_EDICTFIELDVALUE(ed, fieldoffset)->edict)
 #define PRVM_EDICTFIELDFUNCTION(ed, fieldoffset) (PRVM_EDICTFIELDVALUE(ed, fieldoffset)->function)
-#define PRVM_GLOBALFIELDVALUE(fieldoffset)       ((fieldoffset) < 0 ? Con_Printf("Invalid fieldoffset at %s:%i\n", __FILE__, __LINE__), &prvm_badvalue : (prvm_eval_t *)(prog->globals.fp + (fieldoffset)))
+#define PRVM_GLOBALFIELDVALUE(fieldoffset)       ((fieldoffset) < 0 ? Con_Printf ("Invalid fieldoffset at %s:%d\n", __FILE__, __LINE__), &prvm_badvalue : (prvm_eval_t *)(prog->globals.fp + (fieldoffset)))
 #define PRVM_GLOBALFIELDFLOAT(fieldoffset)       (PRVM_GLOBALFIELDVALUE(fieldoffset)->_float)
 #define PRVM_GLOBALFIELDVECTOR(fieldoffset)      (PRVM_GLOBALFIELDVALUE(fieldoffset)->vector)
 #define PRVM_GLOBALFIELDSTRING(fieldoffset)      (PRVM_GLOBALFIELDVALUE(fieldoffset)->string)
@@ -938,4 +938,4 @@ void VM_RemoveEdictSkeleton(prvm_prog_t *prog, prvm_edict_t *ed);
 
 void PRVM_ExplicitCoverageEvent(prvm_prog_t *prog, mfunction_t *func, int statement);
 
-#endif
+#endif // ! PROGSVM_H

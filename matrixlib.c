@@ -1503,7 +1503,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 	origin[0] = m->m[3][0];
 	origin[1] = m->m[3][1];
 	origin[2] = m->m[3][2];
-	if(trace > 0)
+	if (trace > 0)
 	{
 		float r = sqrt(1.0f + trace), inv = 0.5f / r;
 		quat[0] = (m->m[1][2] - m->m[2][1]) * inv;
@@ -1511,7 +1511,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 		quat[2] = (m->m[0][1] - m->m[1][0]) * inv;
 		quat[3] = 0.5f * r;
 	}
-	else if(m->m[0][0] > m->m[1][1] && m->m[0][0] > m->m[2][2])
+	else if (m->m[0][0] > m->m[1][1] && m->m[0][0] > m->m[2][2])
 	{
 		float r = sqrt(1.0f + m->m[0][0] - m->m[1][1] - m->m[2][2]), inv = 0.5f / r;
 		quat[0] = 0.5f * r;
@@ -1519,7 +1519,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 		quat[2] = (m->m[2][0] + m->m[0][2]) * inv;
 		quat[3] = (m->m[1][2] - m->m[2][1]) * inv;
 	}
-	else if(m->m[1][1] > m->m[2][2])
+	else if (m->m[1][1] > m->m[2][2])
 	{
 		float r = sqrt(1.0f + m->m[1][1] - m->m[0][0] - m->m[2][2]), inv = 0.5f / r;
 		quat[0] = (m->m[0][1] + m->m[1][0]) * inv;
@@ -1540,7 +1540,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 	origin[0] = m->m[0][3];
 	origin[1] = m->m[1][3];
 	origin[2] = m->m[2][3];
-	if(trace > 0)
+	if (trace > 0)
 	{
 		float r = sqrt(1.0f + trace), inv = 0.5f / r;
 		quat[0] = (m->m[2][1] - m->m[1][2]) * inv;
@@ -1548,7 +1548,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 		quat[2] = (m->m[1][0] - m->m[0][1]) * inv;
 		quat[3] = 0.5f * r;
 	}
-	else if(m->m[0][0] > m->m[1][1] && m->m[0][0] > m->m[2][2])
+	else if (m->m[0][0] > m->m[1][1] && m->m[0][0] > m->m[2][2])
 	{
 		float r = sqrt(1.0f + m->m[0][0] - m->m[1][1] - m->m[2][2]), inv = 0.5f / r;
 		quat[0] = 0.5f * r;
@@ -1556,7 +1556,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 		quat[2] = (m->m[0][2] + m->m[2][0]) * inv;
 		quat[3] = (m->m[2][1] - m->m[1][2]) * inv;
 	}
-	else if(m->m[1][1] > m->m[2][2])
+	else if (m->m[1][1] > m->m[2][2])
 	{
 		float r = sqrt(1.0f + m->m[1][1] - m->m[0][0] - m->m[2][2]), inv = 0.5f / r;
 		quat[0] = (m->m[1][0] + m->m[0][1]) * inv;

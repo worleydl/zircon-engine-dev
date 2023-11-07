@@ -57,7 +57,7 @@ static void VM_CL_setorigin (prvm_prog_t *prog)
 	}
 	org = PRVM_G_VECTOR(OFS_PARM1);
 	VectorCopy (org, PRVM_clientedictvector(e, origin));
-	if(e->priv.required->mark == PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN)
+	if (e->priv.required->mark == PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN)
 		e->priv.required->mark = PRVM_EDICT_MARK_SETORIGIN_CAUGHT;
 	CL_LinkEdict(e);
 }
@@ -102,10 +102,8 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 
 	m = PRVM_G_STRING(OFS_PARM1);
 	mod = NULL;
-	for (i = 0;i < MAX_MODELS && cl.csqc_model_precache[i];i++)
-	{
-		if (!strcmp(cl.csqc_model_precache[i]->model_name, m))
-		{
+	for (i = 0; i < MAX_MODELS && cl.csqc_model_precache[i]; i++) {
+		if (String_Does_Match(cl.csqc_model_precache[i]->model_name, m)) {
 			mod = cl.csqc_model_precache[i];
 			PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->model_name);
 			PRVM_clientedictfloat(e, modelindex) = -(i+1);
@@ -113,12 +111,11 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 		}
 	}
 
-	if( !mod ) {
+	if ( !mod ) {
 		for (i = 0;i < MAX_MODELS;i++)
 		{
 			mod = cl.model_precache[i];
-			if (mod && !strcmp(mod->model_name, m))
-			{
+			if (mod && String_Does_Match(mod->model_name, m)) {
 				PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->model_name);
 				PRVM_clientedictfloat(e, modelindex) = i;
 				break;
@@ -126,7 +123,7 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 		}
 	}
 
-	if( mod ) {
+	if ( mod ) {
 		// TODO: check if this breaks needed consistency and maybe add a cvar for it too?? [1/10/2008 Black]
 		// LadyHavoc: erm you broke it by commenting this out - setmodel must do setsize or else the qc can't find out the model size, and ssqc does this by necessity, consistency.
 		SetMinMaxSize (prog, e, mod->normalmins, mod->normalmaxs);
@@ -297,7 +294,7 @@ static void VM_CL_traceline (prvm_prog_t *prog)
 	ent = PRVM_G_EDICT(OFS_PARM3);
 
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
-		prog->error_cmd("%s: NAN errors detected in traceline('%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
+		prog->error_cmd("%s: NAN errors detected in traceline('%f %f %f', '%f %f %f', %d, entity %d)\n", prog->name, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
 	trace = CL_TraceLine(v1, v2, move, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtracelinelength.value, CL_HitNetworkBrushModels(move), CL_HitNetworkPlayers(move), &svent, true, false);
 
@@ -337,7 +334,7 @@ static void VM_CL_tracebox (prvm_prog_t *prog)
 	ent = PRVM_G_EDICT(OFS_PARM5);
 
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
-		prog->error_cmd("%s: NAN errors detected in tracebox('%f %f %f', '%f %f %f', '%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], m1[0], m1[1], m1[2], m2[0], m2[1], m2[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
+		prog->error_cmd("%s: NAN errors detected in tracebox('%f %f %f', '%f %f %f', '%f %f %f', '%f %f %f', %d, entity %d)\n", prog->name, v1[0], v1[1], v1[2], m1[0], m1[1], m1[2], m2[0], m2[1], m2[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
 	trace = CL_TraceBox(v1, m1, m2, v2, move, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtraceboxlength.value, CL_HitNetworkBrushModels(move), CL_HitNetworkPlayers(move), &svent, true);
 
@@ -425,22 +422,17 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT(1, VM_CL_precache_model);
 
 	name = PRVM_G_STRING(OFS_PARM0);
-	for (i = 0;i < MAX_MODELS && cl.csqc_model_precache[i];i++)
-	{
-		if(!strcmp(cl.csqc_model_precache[i]->model_name, name))
-		{
+	for (i = 0;i < MAX_MODELS && cl.csqc_model_precache[i];i++) {
+		if (String_Does_Match(cl.csqc_model_precache[i]->model_name, name)) {
 			PRVM_G_FLOAT(OFS_RETURN) = -(i+1);
 			return;
 		}
 	}
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 	m = Mod_ForName(name, false, false, name[0] == '*' ? cl.model_name[1] : NULL);
-	if(m && m->loaded)
-	{
-		for (i = 0;i < MAX_MODELS;i++)
-		{
-			if (!cl.csqc_model_precache[i])
-			{
+	if (m && m->loaded) {
+		for (i = 0;i < MAX_MODELS;i++) {
+			if (!cl.csqc_model_precache[i]) {
 				cl.csqc_model_precache[i] = (model_t*)m;
 				PRVM_G_FLOAT(OFS_RETURN) = -(i+1);
 				return;
@@ -464,11 +456,11 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_findradius);
 
-	if(prog->argc == 3)
+	if (prog->argc == 3)
 		chainfield = PRVM_G_INT(OFS_PARM2);
 	else
 		chainfield = prog->fieldoffsets.chain;
-	if(chainfield < 0)
+	if (chainfield < 0)
 		prog->error_cmd("VM_CL_findradius: %s doesnt have the specified chain field !", prog->name);
 
 	chain = (prvm_edict_t *)prog->edicts;
@@ -487,7 +479,7 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 	if (numtouchedicts > MAX_EDICTS)
 	{
 		// this never happens	//[515]: for what then ?
-		Con_Printf("CSQC_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+		Con_Printf ("CSQC_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 		numtouchedicts = MAX_EDICTS;
 	}
 	for (i = 0;i < numtouchedicts;i++)
@@ -530,11 +522,11 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_findbox);
 
-	if(prog->argc == 3)
+	if (prog->argc == 3)
 		chainfield = PRVM_G_INT(OFS_PARM2);
 	else
 		chainfield = prog->fieldoffsets.chain;
-	if(chainfield < 0)
+	if (chainfield < 0)
 		prog->error_cmd("VM_CL_findbox: %s doesnt have the specified chain field !", prog->name);
 
 	chain = (prvm_edict_t *)prog->edicts;
@@ -543,7 +535,7 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 	if (numtouchedicts > MAX_EDICTS)
 	{
 		// this never happens	//[515]: for what then ?
-		Con_Printf("World_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+		Con_Printf ("World_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 		numtouchedicts = MAX_EDICTS;
 	}
 	for (i = 0; i < numtouchedicts; ++i)
@@ -558,6 +550,7 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 // #34 float() droptofloor
 static void VM_CL_droptofloor (prvm_prog_t *prog)
 {
+#pragma message ("Baker revert VM_CL_droptofloor")
 	prvm_edict_t		*ent;
 	vec3_t				start, end, mins, maxs;
 	trace_t				trace;
@@ -568,13 +561,12 @@ static void VM_CL_droptofloor (prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 
 	ent = PRVM_PROG_TO_EDICT(PRVM_clientglobaledict(self));
-	if (ent == prog->edicts)
-	{
+
+	if (ent == prog->edicts) {
 		VM_Warning(prog, "droptofloor: can not modify world entity\n");
 		return;
 	}
-	if (ent->free)
-	{
+	if (ent->free) {
 		VM_Warning(prog, "droptofloor: can not modify free entity\n");
 		return;
 	}
@@ -721,12 +713,12 @@ static void VM_CL_particle (prvm_prog_t *prog)
 // #74 void(vector pos, string samp, float vol, float atten) ambientsound
 static void VM_CL_ambientsound (prvm_prog_t *prog)
 {
-	vec3_t f;
-	sfx_t	*s;
+	vec3_t pos;
+	sfx_t	*sample;
 	VM_SAFEPARMCOUNT(4, VM_CL_ambientsound);
-	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), f);
-	s = S_FindName(PRVM_G_STRING(OFS_PARM1));
-	S_StaticSound (s, f, PRVM_G_FLOAT(OFS_PARM2), PRVM_G_FLOAT(OFS_PARM3)*64);
+	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
+	sample = S_FindName(PRVM_G_STRING(OFS_PARM1));
+	S_StaticSound (sample, pos, PRVM_G_FLOAT(OFS_PARM2), PRVM_G_FLOAT(OFS_PARM3)*64);
 }
 
 // #92 vector(vector org[, float lpflag]) getlight (DP_QC_GETLIGHT)
@@ -802,16 +794,16 @@ static void VM_CL_R_AddEntities (prvm_prog_t *prog)
 		// so we can easily check if CSQC entity #edictnum is currently drawn
 		cl.csqcrenderentities[i].entitynumber = 0;
 		ed = &prog->edicts[i];
-		if(ed->free)
+		if (ed->free)
 			continue;
 		CSQC_Think(ed);
-		if(ed->free)
+		if (ed->free)
 			continue;
 		// note that for RF_USEAXIS entities, Predraw sets v_forward/v_right/v_up globals that are read by CSQC_AddRenderEdict
 		CSQC_Predraw(ed);
-		if(ed->free)
+		if (ed->free)
 			continue;
-		if(!((int)PRVM_clientedictfloat(ed, drawmask) & drawmask))
+		if (!((int)PRVM_clientedictfloat(ed, drawmask) & drawmask))
 			continue;
 		CSQC_AddRenderEdict(ed, i);
 	}
@@ -973,7 +965,7 @@ static void VM_CL_R_SetView (prvm_prog_t *prog)
 			break;
 		default:
 			PRVM_G_FLOAT(OFS_RETURN) = 0;
-			VM_Warning(prog, "VM_CL_R_GetView : unknown parm %i\n", c);
+			VM_Warning(prog, "VM_CL_R_GetView : unknown parm %d\n", c);
 			return;
 		}
 		return;
@@ -1126,7 +1118,7 @@ static void VM_CL_R_SetView (prvm_prog_t *prog)
 		break;
 	default:
 		PRVM_G_FLOAT(OFS_RETURN) = 0;
-		VM_Warning(prog, "VM_CL_R_SetView : unknown parm %i\n", c);
+		VM_Warning(prog, "VM_CL_R_SetView : unknown parm %d\n", c);
 		return;
 	}
 	PRVM_G_FLOAT(OFS_RETURN) = 1;
@@ -1164,7 +1156,7 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 		style = (int)PRVM_G_FLOAT(OFS_PARM3);
 		if (style >= MAX_LIGHTSTYLES)
 		{
-			Con_DPrintf("VM_CL_R_AddDynamicLight: out of bounds lightstyle index %i\n", style);
+			Con_DPrintf ("VM_CL_R_AddDynamicLight: out of bounds lightstyle index %d\n", style);
 			style = -1;
 		}
 	}
@@ -1201,7 +1193,7 @@ static void VM_CL_unproject (prvm_prog_t *prog)
 		f[2],
 		(-1.0 + 2.0 * (f[0] / vid_conwidth.integer)) * f[2] * -r_refdef.view.frustum_x,
 		(-1.0 + 2.0 * (f[1] / vid_conheight.integer)) * f[2] * -r_refdef.view.frustum_y);
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 		temp[1] = -temp[1];
 	Matrix4x4_Transform(&r_refdef.view.matrix, temp, result);
 	VectorCopy(result, PRVM_G_VECTOR(OFS_RETURN));
@@ -1218,7 +1210,7 @@ static void VM_CL_project (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), f);
 	Matrix4x4_Invert_Full(&m, &r_refdef.view.matrix);
 	Matrix4x4_Transform(&m, f, v);
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 		v[1] = -v[1];
 	VectorSet(PRVM_G_VECTOR(OFS_RETURN),
 		vid_conwidth.integer * (0.5*(1.0+v[1]/v[0]/-r_refdef.view.frustum_x)),
@@ -1288,7 +1280,7 @@ string	precache_pic(string pic)
 void VM_precache_pic(prvm_prog_t *prog)
 {
 	const char	*s;
-	int flags = CACHEPICFLAG_FAILONMISSING;
+	int flags = CACHEPICFLAG_FAILONMISSING_256;
 
 	VM_SAFEPARMCOUNTRANGE(1, 2, VM_precache_pic);
 
@@ -1296,18 +1288,18 @@ void VM_precache_pic(prvm_prog_t *prog)
 	PRVM_G_INT(OFS_RETURN) = PRVM_G_INT(OFS_PARM0);
 	VM_CheckEmptyString(prog, s);
 
-	if(prog->argc >= 2)
+	if (prog->argc >= 2)
 	{
 		int f = PRVM_G_FLOAT(OFS_PARM1);
-		if(f & PRECACHE_PIC_NOTPERSISTENT)
+		if (f & PRECACHE_PIC_NOTPERSISTENT)
 			flags |= CACHEPICFLAG_NOTPERSISTENT;
-		//if(f & PRECACHE_PIC_NOCLAMP)
+		//if (f & PRECACHE_PIC_NOCLAMP)
 		//	flags |= CACHEPICFLAG_NOCLAMP;
-		if(f & PRECACHE_PIC_MIPMAP)
+		if (f & PRECACHE_PIC_MIPMAP)
 			flags |= CACHEPICFLAG_MIPMAP;
 	}
 
-	if( !Draw_IsPicLoaded(Draw_CachePic_Flags(s, flags | CACHEPICFLAG_QUIET)) )
+	if ( !Draw_IsPicLoaded(Draw_CachePic_Flags(s, flags | CACHEPICFLAG_QUIET)) )
 		PRVM_G_INT(OFS_RETURN) = OFS_NULL;
 }
 
@@ -1335,7 +1327,7 @@ static void getdrawfontscale(prvm_prog_t *prog, float *sx, float *sy)
 	vec3_t v;
 	*sx = *sy = 1;
 	VectorCopy(PRVM_drawglobalvector(drawfontscale), v);
-	if(VectorLength2(v) > 0)
+	if (VectorLength2(v) > 0)
 	{
 		*sx = v[0];
 		*sy = v[1];
@@ -1345,7 +1337,7 @@ static void getdrawfontscale(prvm_prog_t *prog, float *sx, float *sy)
 static dp_font_t *getdrawfont(prvm_prog_t *prog)
 {
 	int f = (int) PRVM_drawglobalfloat(drawfont);
-	if(f < 0 || f >= dp_fonts.maxsize)
+	if (f < 0 || f >= dp_fonts.maxsize)
 		return FONT_DEFAULT;
 	return &dp_fonts.f[f];
 }
@@ -1369,7 +1361,7 @@ void VM_drawcharacter(prvm_prog_t *prog)
 	prog->polygonbegin_guess2d = true;
 
 	character = (char) PRVM_G_FLOAT(OFS_PARM1);
-	if(character == 0)
+	if (character == 0)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -1;
 		VM_Warning(prog, "VM_drawcharacter: %s passed null character !\n",prog->name);
@@ -1381,17 +1373,17 @@ void VM_drawcharacter(prvm_prog_t *prog)
 	rgb = PRVM_G_VECTOR(OFS_PARM3);
 	flag = (int)PRVM_G_FLOAT(OFS_PARM5);
 
-	if(flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawcharacter: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawcharacter: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(pos[2] || scale[2])
+	if (pos[2] || scale[2])
 		VM_Warning(prog, "VM_drawcharacter: z value%c from %s discarded\n",(pos[2] && scale[2]) ? 's' : 0,((pos[2] && scale[2]) ? "pos and scale" : (pos[2] ? "pos" : "scale")));
 
-	if(!scale[0] || !scale[1])
+	if (!scale[0] || !scale[1])
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -3;
 		VM_Warning(prog, "VM_drawcharacter: scale %s is null !\n", (scale[0] == 0) ? ((scale[1] == 0) ? "x and y" : "x") : "y");
@@ -1428,21 +1420,21 @@ void VM_drawstring(prvm_prog_t *prog)
 	if (prog->argc >= 6)
 		flag = (int)PRVM_G_FLOAT(OFS_PARM5);
 
-	if(flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawstring: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawstring: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(!scale[0] || !scale[1])
+	if (!scale[0] || !scale[1])
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -3;
 		VM_Warning(prog, "VM_drawstring: scale %s is null !\n", (scale[0] == 0) ? ((scale[1] == 0) ? "x and y" : "x") : "y");
 		return;
 	}
 
-	if(pos[2] || scale[2])
+	if (pos[2] || scale[2])
 		VM_Warning(prog, "VM_drawstring: z value%s from %s discarded\n",(pos[2] && scale[2]) ? "s" : " ",((pos[2] && scale[2]) ? "pos and scale" : (pos[2] ? "pos" : "scale")));
 
 	getdrawfontscale(prog, &sx, &sy);
@@ -1494,21 +1486,21 @@ void VM_drawcolorcodedstring(prvm_prog_t *prog)
 		flag = (int)PRVM_G_FLOAT(OFS_PARM4);
 	}
 
-	if(flag < DRAWFLAG_NORMAL || flag >= DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >= DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawcolorcodedstring: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawcolorcodedstring: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(!scale[0] || !scale[1])
+	if (!scale[0] || !scale[1])
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -3;
 		VM_Warning(prog, "VM_drawcolorcodedstring: scale %s is null !\n", (scale[0] == 0) ? ((scale[1] == 0) ? "x and y" : "x") : "y");
 		return;
 	}
 
-	if(pos[2] || scale[2])
+	if (pos[2] || scale[2])
 		VM_Warning(prog, "VM_drawcolorcodedstring: z value%s from %s discarded\n",(pos[2] && scale[2]) ? "s" : " ",((pos[2] && scale[2]) ? "pos and scale" : (pos[2] ? "pos" : "scale")));
 
 	getdrawfontscale(prog, &sx, &sy);
@@ -1536,7 +1528,7 @@ void VM_stringwidth(prvm_prog_t *prog)
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_stringwidth);
 
 	getdrawfontscale(prog, &sx, &sy);
-	if(prog->argc == 3)
+	if (prog->argc == 3)
 	{
 		Vector2Copy(PRVM_G_VECTOR(OFS_PARM2), szv);
 		mult = 1;
@@ -1547,7 +1539,7 @@ void VM_stringwidth(prvm_prog_t *prog)
 		Vector2Set(szv, 8, 8);
 		mult = 0.125;
 		// to make sure snapping is turned off, ALWAYS use a nontrivial scale in this case
-		if(sx >= 0.9 && sx <= 1.1)
+		if (sx >= 0.9 && sx <= 1.1)
 		{
 			mult *= 2;
 			sx /= 2;
@@ -1560,7 +1552,7 @@ void VM_stringwidth(prvm_prog_t *prog)
 
 	PRVM_G_FLOAT(OFS_RETURN) = DrawQ_TextWidth_UntilWidth_TrackColors_Scale(string, &maxlen, szv[0], szv[1], sx, sy, NULL, !colors, getdrawfont(prog), 1000000000) * mult;
 /*
-	if(prog->argc == 3)
+	if (prog->argc == 3)
 	{
 		mult = sz = PRVM_G_FLOAT(OFS_PARM2);
 	}
@@ -1590,7 +1582,7 @@ static float getdrawfontnum(const char *fontname)
 	int i;
 
 	for(i = 0; i < dp_fonts.maxsize; ++i)
-		if(!strcmp(dp_fonts.f[i].title, fontname))
+		if (String_Does_Match(dp_fonts.f[i].title, fontname))
 			return i;
 	return -1;
 }
@@ -1656,14 +1648,14 @@ void VM_loadfont(prvm_prog_t *prog)
 	// first font is handled "normally"
 	c = strchr(filelist, ':');
 	cm = strchr(filelist, ',');
-	if(c && (!cm || c < cm))
+	if (c && (!cm || c < cm))
 		f->req_face = atoi(c+1);
 	else
 	{
 		f->req_face = 0;
 		c = cm;
 	}
-	if(!c || (c - filelist) > MAX_QPATH)
+	if (!c || (c - filelist) > MAX_QPATH)
 		strlcpy(mainfont, filelist, sizeof(mainfont));
 	else
 	{
@@ -1675,21 +1667,21 @@ void VM_loadfont(prvm_prog_t *prog)
 	for(i = 0; i < MAX_FONT_FALLBACKS; ++i)
 	{
 		c = strchr(filelist, ',');
-		if(!c)
+		if (!c)
 			break;
 		filelist = c + 1;
-		if(!*filelist)
+		if (!*filelist)
 			break;
 		c = strchr(filelist, ':');
 		cm = strchr(filelist, ',');
-		if(c && (!cm || c < cm))
+		if (c && (!cm || c < cm))
 			f->fallback_faces[i] = atoi(c+1);
 		else
 		{
 			f->fallback_faces[i] = 0; // f->req_face; could make it stick to the default-font's face index
 			c = cm;
 		}
-		if(!c || (c-filelist) > MAX_QPATH)
+		if (!c || (c-filelist) > MAX_QPATH)
 		{
 			strlcpy(f->fallbacks[i], filelist, sizeof(mainfont));
 		}
@@ -1717,7 +1709,7 @@ void VM_loadfont(prvm_prog_t *prog)
 		// check overflow
 		if (numsizes == MAX_FONT_SIZES)
 		{
-			VM_Warning(prog, "VM_loadfont: MAX_FONT_SIZES = %i exceeded", MAX_FONT_SIZES);
+			VM_Warning(prog, "VM_loadfont: MAX_FONT_SIZES = %d exceeded", MAX_FONT_SIZES);
 			break;
 		}
 		f->req_sizes[numsizes] = sz;
@@ -1765,7 +1757,7 @@ void VM_drawpic(prvm_prog_t *prog)
 	VM_CheckEmptyString(prog, picname);
 
 	// is pic cached ? no function yet for that
-	if(!1)
+	if (!1)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -4;
 		VM_Warning(prog, "VM_drawpic: %s: %s not cached !\n", prog->name, picname);
@@ -1778,14 +1770,14 @@ void VM_drawpic(prvm_prog_t *prog)
 	if (prog->argc >= 6)
 		flag = (int) PRVM_G_FLOAT(OFS_PARM5);
 
-	if(flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawpic: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawpic: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(pos[2] || size[2])
+	if (pos[2] || size[2])
 		VM_Warning(prog, "VM_drawpic: z value%s from %s discarded\n",(pos[2] && size[2]) ? "s" : " ",((pos[2] && size[2]) ? "pos and size" : (pos[2] ? "pos" : "size")));
 
 	DrawQ_Pic(pos[0], pos[1], Draw_CachePic_Flags (picname, CACHEPICFLAG_NOTPERSISTENT), size[0], size[1], rgb[0], rgb[1], rgb[2], PRVM_G_FLOAT(OFS_PARM4), flag);
@@ -1813,7 +1805,7 @@ void VM_drawrotpic(prvm_prog_t *prog)
 	VM_CheckEmptyString(prog, picname);
 
 	// is pic cached ? no function yet for that
-	if(!1)
+	if (!1)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -4;
 		VM_Warning(prog, "VM_drawrotpic: %s: %s not cached !\n", prog->name, picname);
@@ -1826,14 +1818,14 @@ void VM_drawrotpic(prvm_prog_t *prog)
 	rgb = PRVM_G_VECTOR(OFS_PARM5);
 	flag = (int) PRVM_G_FLOAT(OFS_PARM7);
 
-	if(flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawrotpic: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawrotpic: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(pos[2] || size[2] || org[2])
+	if (pos[2] || size[2] || org[2])
 		VM_Warning(prog, "VM_drawrotpic: z value from pos/size/org discarded\n");
 
 	DrawQ_RotPic(pos[0], pos[1], Draw_CachePic_Flags(picname, CACHEPICFLAG_NOTPERSISTENT), size[0], size[1], org[0], org[1], PRVM_G_FLOAT(OFS_PARM4), rgb[0], rgb[1], rgb[2], PRVM_G_FLOAT(OFS_PARM6), flag);
@@ -1862,7 +1854,7 @@ void VM_drawsubpic(prvm_prog_t *prog)
 	VM_CheckEmptyString(prog, picname);
 
 	// is pic cached ? no function yet for that
-	if(!1)
+	if (!1)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -4;
 		VM_Warning(prog, "VM_drawsubpic: %s: %s not cached !\n", prog->name, picname);
@@ -1877,14 +1869,14 @@ void VM_drawsubpic(prvm_prog_t *prog)
 	alpha = PRVM_G_FLOAT(OFS_PARM6);
 	flag = (int) PRVM_G_FLOAT(OFS_PARM7);
 
-	if(flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawsubpic: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawsubpic: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(pos[2] || size[2])
+	if (pos[2] || size[2])
 		VM_Warning(prog, "VM_drawsubpic: z value%s from %s discarded\n",(pos[2] && size[2]) ? "s" : " ",((pos[2] && size[2]) ? "pos and size" : (pos[2] ? "pos" : "size")));
 
 	DrawQ_SuperPic(pos[0], pos[1], Draw_CachePic_Flags (picname, CACHEPICFLAG_NOTPERSISTENT),
@@ -1919,14 +1911,14 @@ void VM_drawfill(prvm_prog_t *prog)
 	rgb = PRVM_G_VECTOR(OFS_PARM2);
 	flag = (int) PRVM_G_FLOAT(OFS_PARM4);
 
-	if(flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawfill: %s: wrong DRAWFLAG %i !\n",prog->name,flag);
+		VM_Warning(prog, "VM_drawfill: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
 		return;
 	}
 
-	if(pos[2] || size[2])
+	if (pos[2] || size[2])
 		VM_Warning(prog, "VM_drawfill: z value%s from %s discarded\n",(pos[2] && size[2]) ? "s" : " ",((pos[2] && size[2]) ? "pos and size" : (pos[2] ? "pos" : "size")));
 
 	DrawQ_Fill(pos[0], pos[1], size[0], size[1], rgb[0], rgb[1], rgb[2], PRVM_G_FLOAT(OFS_PARM3), flag);
@@ -2015,7 +2007,7 @@ static void VM_CL_getstatf (prvm_prog_t *prog)
 	}dat;
 	VM_SAFEPARMCOUNT(1, VM_CL_getstatf);
 	i = (int)PRVM_G_FLOAT(OFS_PARM0);
-	if(i < 0 || i >= MAX_CL_STATS)
+	if (i < 0 || i >= MAX_CL_STATS)
 	{
 		VM_Warning(prog, "VM_CL_getstatf: index>=MAX_CL_STATS or index<0\n");
 		return;
@@ -2047,7 +2039,7 @@ static void VM_CL_getstati (prvm_prog_t *prog)
 		bitcount = 32;
 	}
 
-	if(index < 0 || index >= MAX_CL_STATS)
+	if (index < 0 || index >= MAX_CL_STATS)
 	{
 		VM_Warning(prog, "VM_CL_getstati: index>=MAX_CL_STATS or index<0\n");
 		return;
@@ -2065,13 +2057,13 @@ static void VM_CL_getstats (prvm_prog_t *prog)
 	char t[17];
 	VM_SAFEPARMCOUNT(1, VM_CL_getstats);
 	i = (int)PRVM_G_FLOAT(OFS_PARM0);
-	if(i < 0 || i > MAX_CL_STATS-4)
+	if (i < 0 || i > MAX_CL_STATS-4)
 	{
 		PRVM_G_INT(OFS_RETURN) = OFS_NULL;
 		VM_Warning(prog, "VM_CL_getstats: index>MAX_CL_STATS-4 or index<0\n");
 		return;
 	}
-	strlcpy(t, (char*)&cl.stats[i], sizeof(t));
+	c_strlcpy(t, (char*)&cl.stats[i]);
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, t);
 }
 
@@ -2191,7 +2183,7 @@ static void VM_CL_boxparticles (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM4), dir_from   );
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM5), dir_to     );
 	count = PRVM_G_FLOAT(OFS_PARM6);
-	if(prog->argc >= 8)
+	if (prog->argc >= 8)
 		flags = PRVM_G_FLOAT(OFS_PARM7);
 	else
 		flags = 0;
@@ -2201,21 +2193,21 @@ static void VM_CL_boxparticles (prvm_prog_t *prog)
 	fade = 1;
 	istrail = false;
 
-	if(flags & 1) // read alpha
+	if (flags & 1) // read alpha
 	{
 		tintmins[3] = PRVM_clientglobalfloat(particles_alphamin);
 		tintmaxs[3] = PRVM_clientglobalfloat(particles_alphamax);
 	}
-	if(flags & 2) // read color
+	if (flags & 2) // read color
 	{
 		VectorCopy(PRVM_clientglobalvector(particles_colormin), tintmins);
 		VectorCopy(PRVM_clientglobalvector(particles_colormax), tintmaxs);
 	}
-	if(flags & 4) // read fade
+	if (flags & 4) // read fade
 	{
 		fade = PRVM_clientglobalfloat(particles_fade);
 	}
-	if(flags & 128) // draw as trail
+	if (flags & 128) // draw as trail
 	{
 		istrail = true;
 	}
@@ -2230,8 +2222,7 @@ static void VM_CL_boxparticles (prvm_prog_t *prog)
 static void VM_CL_setpause(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNT(1, VM_CL_setpause);
-	if(cl.islocalgame)
-	{
+	if (cl.islocalgame) {
 		if ((int)PRVM_G_FLOAT(OFS_PARM0) != 0)
 			host.paused = true;
 		else
@@ -2250,14 +2241,25 @@ static void VM_CL_setcursormode (prvm_prog_t *prog)
 //#344 vector() getmousepos (DP_CSQC)
 static void VM_CL_getmousepos(prvm_prog_t *prog)
 {
+	extern cvar_t csqc_full_width_height;
 	VM_SAFEPARMCOUNT(0,VM_CL_getmousepos);
 
-	if (key_consoleactive || key_dest != key_game)
+	if (key_consoleactive || key_dest != key_game) {
+		 // SSX (3) we do nothing!  Yay!
 		VectorSet(PRVM_G_VECTOR(OFS_RETURN), 0, 0, 0);
-	else if (cl.csqc_wantsmousemove)
+	} else if (cl.csqc_wantsmousemove) {
+		if (csqc_full_width_height.value) {
+			VectorSet(PRVM_G_VECTOR(OFS_RETURN), in_windowmouse_x, in_windowmouse_y, 0);
+		} else {
 		VectorSet(PRVM_G_VECTOR(OFS_RETURN), in_windowmouse_x * vid_conwidth.integer / vid.width, in_windowmouse_y * vid_conheight.integer / vid.height, 0);
-	else
+		} // !csqc_full_width_height.value
+	} else { // no csqc want mouse move
+		if (csqc_full_width_height.value) {
+			VectorSet(PRVM_G_VECTOR(OFS_RETURN), in_mouse_x, in_mouse_y, 0);
+		} else {
 		VectorSet(PRVM_G_VECTOR(OFS_RETURN), in_mouse_x * vid_conwidth.integer / vid.width, in_mouse_y * vid_conheight.integer / vid.height, 0);
+		} // !csqc_full_width_height.value
+	} // if
 }
 
 //#345 float(float framenum) getinputstate (EXT_CSQC)
@@ -2278,7 +2280,7 @@ static void VM_CL_getinputstate (prvm_prog_t *prog)
 			PRVM_clientglobalvector(input_movevalues)[2] = cl.movecmd[i].upmove;
 			PRVM_clientglobalfloat(input_timelength) = cl.movecmd[i].frametime;
 			// this probably shouldn't be here
-			if(cl.movecmd[i].crouch)
+			if (cl.movecmd[i].crouch)
 			{
 				VectorCopy(cl.playercrouchmins, PRVM_clientglobalvector(pmove_mins));
 				VectorCopy(cl.playercrouchmaxs, PRVM_clientglobalvector(pmove_maxs));
@@ -2315,7 +2317,7 @@ static void VM_CL_runplayerphysics (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNTRANGE(0, 1, VM_CL_runplayerphysics);
 
 	ent = (prog->argc == 1 ? PRVM_G_EDICT(OFS_PARM0) : prog->edicts);
-	if(ent == prog->edicts)
+	if (ent == prog->edicts)
 	{
 		// deprecated use
 		s.self = NULL;
@@ -2351,7 +2353,7 @@ static void VM_CL_runplayerphysics (prvm_prog_t *prog)
 
 	CL_ClientMovement_PlayerMove_Frame(&s);
 
-	if(ent == prog->edicts)
+	if (ent == prog->edicts)
 	{
 		// deprecated use
 		VectorCopy(s.origin, PRVM_clientglobalvector(pmove_org));
@@ -2387,41 +2389,41 @@ static void VM_CL_getplayerkey (prvm_prog_t *prog)
 
 	if (i < 0)
 		i = Sbar_GetSortedPlayerIndex(-1-i);
-	if(i < 0 || i >= cl.maxclients)
+	if (i < 0 || i >= cl.maxclients)
 		return;
 
 	t[0] = 0;
 
-	if(!strcasecmp(c, "name"))
+	if (String_Does_Match_Caseless(c, "name"))
 		strlcpy(t, cl.scores[i].name, sizeof(t));
 	else
-		if(!strcasecmp(c, "frags"))
-			dpsnprintf(t, sizeof(t), "%i", cl.scores[i].frags);
+		if (String_Does_Match_Caseless(c, "frags"))
+			dpsnprintf(t, sizeof(t), "%d", cl.scores[i].frags);
 	else
-		if(!strcasecmp(c, "ping"))
-			dpsnprintf(t, sizeof(t), "%i", cl.scores[i].qw_ping);
+		if (String_Does_Match_Caseless(c, "ping"))
+			dpsnprintf(t, sizeof(t), "%d", cl.scores[i].qw_ping);
 	else
-		if(!strcasecmp(c, "pl"))
-			dpsnprintf(t, sizeof(t), "%i", cl.scores[i].qw_packetloss);
+		if (String_Does_Match_Caseless(c, "pl"))
+			dpsnprintf(t, sizeof(t), "%d", cl.scores[i].qw_packetloss);
 	else
-		if(!strcasecmp(c, "movementloss"))
-			dpsnprintf(t, sizeof(t), "%i", cl.scores[i].qw_movementloss);
+		if (String_Does_Match_Caseless(c, "movementloss"))
+			dpsnprintf(t, sizeof(t), "%d", cl.scores[i].qw_movementloss);
 	else
-		if(!strcasecmp(c, "entertime"))
+		if (String_Does_Match_Caseless(c, "entertime"))
 			dpsnprintf(t, sizeof(t), "%f", cl.scores[i].qw_entertime);
 	else
-		if(!strcasecmp(c, "colors"))
-			dpsnprintf(t, sizeof(t), "%i", cl.scores[i].colors);
+		if (String_Does_Match_Caseless(c, "colors"))
+			dpsnprintf(t, sizeof(t), "%d", cl.scores[i].colors);
 	else
-		if(!strcasecmp(c, "topcolor"))
-			dpsnprintf(t, sizeof(t), "%i", cl.scores[i].colors & 0xf0);
+		if (String_Does_Match_Caseless(c, "topcolor"))
+			dpsnprintf(t, sizeof(t), "%d", cl.scores[i].colors & 0xf0);
 	else
-		if(!strcasecmp(c, "bottomcolor"))
-			dpsnprintf(t, sizeof(t), "%i", (cl.scores[i].colors &15)<<4);
+		if (String_Does_Match_Caseless(c, "bottomcolor"))
+			dpsnprintf(t, sizeof(t), "%d", (cl.scores[i].colors &15)<<4);
 	else
-		if(!strcasecmp(c, "viewentity"))
-			dpsnprintf(t, sizeof(t), "%i", i+1);
-	if(!t[0])
+		if (String_Does_Match_Caseless(c, "viewentity"))
+			dpsnprintf(t, sizeof(t), "%d", i+1);
+	if (!t[0])
 		return;
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, t);
 }
@@ -2522,9 +2524,9 @@ static void VM_CL_ReadPicture (prvm_prog_t *prog)
 	// if yes, it is used and the data is discarded
 	// if not, the (low quality) data is used to build a new texture, whose name will get returned
 
-	pic = Draw_CachePic_Flags(name, CACHEPICFLAG_NOTPERSISTENT | CACHEPICFLAG_FAILONMISSING);
+	pic = Draw_CachePic_Flags(name, CACHEPICFLAG_NOTPERSISTENT | CACHEPICFLAG_FAILONMISSING_256);
 
-	if(size)
+	if (size)
 	{
 		if (Draw_IsPicLoaded(pic) && !cl_readpicture_force.integer)
 		{
@@ -2613,7 +2615,7 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 			Matrix4x4_CreateFromQuakeEntity(&staticent->render.matrix, PRVM_clientedictvector(ent, origin)[0], PRVM_clientedictvector(ent, origin)[1], PRVM_clientedictvector(ent, origin)[2], PRVM_clientedictvector(ent, angles)[0], PRVM_clientedictvector(ent, angles)[1], PRVM_clientedictvector(ent, angles)[2], staticent->render.scale);
 
 		// either fullbright or lit
-		if(!r_fullbright.integer && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) { // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
+		if (!r_fullbright.integer && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) { // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
 		
 			if (!(staticent->render.effects & EF_FULLBRIGHT))
 				staticent->render.crflags |= RENDER_LIGHT;
@@ -2632,7 +2634,7 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 		CL_UpdateRenderEntity(&staticent->render);
 	}
 	else
-		Con_Printf("Too many static entities");
+		Con_Printf ("Too many static entities");
 
 // throw the entity away now
 	PRVM_ED_Free(prog, ent);
@@ -2691,10 +2693,10 @@ static void VM_CL_effect (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), org);
 
 	model = Mod_FindName(PRVM_G_STRING(OFS_PARM1), NULL);
-	if(model->loaded)
+	if (model->loaded)
 		CL_Effect(org, model, (int)PRVM_G_FLOAT(OFS_PARM2), (int)PRVM_G_FLOAT(OFS_PARM3), PRVM_G_FLOAT(OFS_PARM4));
 	else
-		Con_Printf(CON_ERROR "VM_CL_effect: Could not load model '%s'\n", PRVM_G_STRING(OFS_PARM1));
+		Con_PrintLinef (CON_ERROR "VM_CL_effect: Could not load model " QUOTED_S, PRVM_G_STRING(OFS_PARM1));
 }
 
 // #405 void(vector org, vector velocity, float howmany) te_blood (DP_TE_BLOOD)
@@ -2800,7 +2802,7 @@ static void VM_CL_te_gunshotquad (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_GUNSHOTQUAD, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	if(cl_sound_ric_gunshot.integer >= 2)
+	if (cl_sound_ric_gunshot.integer >= 2)
 	{
 		if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
 		else
@@ -2899,7 +2901,7 @@ static void VM_CL_te_gunshot (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_GUNSHOT, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	if(cl_sound_ric_gunshot.integer == 1 || cl_sound_ric_gunshot.integer == 3)
+	if (cl_sound_ric_gunshot.integer == 1 || cl_sound_ric_gunshot.integer == 3)
 	{
 		if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
 		else
@@ -3141,14 +3143,13 @@ static void VM_CL_setattachment (prvm_prog_t *prog)
 	{
 		modelindex = (int)PRVM_clientedictfloat(tagentity, modelindex);
 		model = CL_GetModelByIndex(modelindex);
-		if (model)
-		{
+		if (model) {
 			tagindex = Mod_Alias_GetTagIndexForName(model, (int)PRVM_clientedictfloat(tagentity, skin), tagname);
 			if (tagindex == 0)
-				Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i (model \"%s\") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
+				Con_DPrintLinef ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d (model \"%s\") but could not find it", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
 		}
 		else
-			Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i but it has no model\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
+			Con_DPrintLinef ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d but it has no model", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
 	}
 
 	PRVM_clientedictedict(e, tag_entity) = PRVM_EDICT_TO_PROG(tagentity);
@@ -3182,7 +3183,7 @@ static int CL_GetExtendedTagInfo (prvm_prog_t *prog, prvm_edict_t *e, int tagind
 	{
 		r = Mod_Alias_GetExtendedTagInfoForIndex(model, (int)PRVM_clientedictfloat(e, skin), e->priv.server->frameblend, &e->priv.server->skeleton, tagindex - 1, parentindex, tagname, tag_localmatrix);
 
-		if(!r) // success?
+		if (!r) // success?
 			*parentindex += 1;
 
 		return r;
@@ -3208,7 +3209,7 @@ void CL_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out,
 	if (!scale)
 		scale = 1.0f;
 
-	if(viewmatrix)
+	if (viewmatrix)
 		*out = r_refdef.view.matrix;
 	else if ((int)PRVM_clientedictfloat(ent, renderflags) & RF_USEAXIS)
 	{
@@ -3271,19 +3272,19 @@ int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int
 		return 2;
 
 	model = CL_GetModelFromEdict(ent);
-	if(!model)
+	if (!model)
 		return 3;
 
 	tagmatrix = identitymatrix;
 	attachloop = 0;
 	for(;;)
 	{
-		if(attachloop >= 256)
+		if (attachloop >= 256)
 			return 5;
 		// apply transformation by child's tagindex on parent entity and then
 		// by parent entity itself
 		ret = CL_GetEntityLocalTagMatrix(prog, ent, tagindex - 1, &attachmatrix);
-		if(ret && attachloop == 0)
+		if (ret && attachloop == 0)
 			return ret;
 		CL_GetEntityMatrix(prog, ent, &entitymatrix, false);
 		Matrix4x4_Concat(&tagmatrix, &attachmatrix, out);
@@ -3356,24 +3357,24 @@ static void VM_CL_gettagindex (prvm_prog_t *prog)
 	tag_name = PRVM_G_STRING(OFS_PARM1);
 	if (ent == prog->edicts)
 	{
-		VM_Warning(prog, "VM_CL_gettagindex(entity #%i): can't affect world entity\n", PRVM_NUM_FOR_EDICT(ent));
+		VM_Warning(prog, "VM_CL_gettagindex(entity #%d): can't affect world entity\n", PRVM_NUM_FOR_EDICT(ent));
 		return;
 	}
 	if (ent->free)
 	{
-		VM_Warning(prog, "VM_CL_gettagindex(entity #%i): can't affect free entity\n", PRVM_NUM_FOR_EDICT(ent));
+		VM_Warning(prog, "VM_CL_gettagindex(entity #%d): can't affect free entity\n", PRVM_NUM_FOR_EDICT(ent));
 		return;
 	}
 
 	tag_index = 0;
 	if (!CL_GetModelFromEdict(ent))
-		Con_DPrintf("VM_CL_gettagindex(entity #%i): null or non-precached model\n", PRVM_NUM_FOR_EDICT(ent));
+		Con_DPrintf ("VM_CL_gettagindex(entity #%d): null or non-precached model\n", PRVM_NUM_FOR_EDICT(ent));
 	else
 	{
 		tag_index = CL_GetTagIndex(prog, ent, tag_name);
 		if (tag_index == 0)
-			if(developer_extra.integer)
-				Con_DPrintf("VM_CL_gettagindex(entity #%i): tag \"%s\" not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
+			if (developer_extra.integer)
+				Con_DPrintf ("VM_CL_gettagindex(entity #%d): tag \"%s\" not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
 	}
 	PRVM_G_FLOAT(OFS_RETURN) = tag_index;
 }
@@ -3424,13 +3425,13 @@ static void VM_CL_gettaginfo (prvm_prog_t *prog)
 			VM_Warning(prog, "gettagindex: can't affect free entity\n");
 			break;
 		case 3:
-			Con_DPrintf("CL_GetTagMatrix(entity #%i): null or non-precached model\n", PRVM_NUM_FOR_EDICT(e));
+			Con_DPrintf ("CL_GetTagMatrix(entity #%d): null or non-precached model\n", PRVM_NUM_FOR_EDICT(e));
 			break;
 		case 4:
-			Con_DPrintf("CL_GetTagMatrix(entity #%i): model has no tag with requested index %i\n", PRVM_NUM_FOR_EDICT(e), tagindex);
+			Con_DPrintf ("CL_GetTagMatrix(entity #%d): model has no tag with requested index %d\n", PRVM_NUM_FOR_EDICT(e), tagindex);
 			break;
 		case 5:
-			Con_DPrintf("CL_GetTagMatrix(entity #%i): runaway loop at attachment chain\n", PRVM_NUM_FOR_EDICT(e));
+			Con_DPrintf ("CL_GetTagMatrix(entity #%d): runaway loop at attachment chain\n", PRVM_NUM_FOR_EDICT(e));
 			break;
 	}
 }
@@ -3645,13 +3646,13 @@ static void VM_CL_ParticleTheme (prvm_prog_t *prog)
 	themenum = (int)PRVM_G_FLOAT(OFS_PARM0);
 	if (themenum < 0 || themenum >= vmpartspawner.max_themes)
 	{
-		VM_Warning(prog, "VM_CL_ParticleTheme: bad theme number %i\n", themenum);
+		VM_Warning(prog, "VM_CL_ParticleTheme: bad theme number %d\n", themenum);
 		VM_CL_ParticleThemeToGlobals(&vmpartspawner.themes[0], prog);
 		return;
 	}
 	if (vmpartspawner.themes[themenum].initialized == false)
 	{
-		VM_Warning(prog, "VM_CL_ParticleTheme: theme #%i not exists\n", themenum);
+		VM_Warning(prog, "VM_CL_ParticleTheme: theme #%d not exists\n", themenum);
 		VM_CL_ParticleThemeToGlobals(&vmpartspawner.themes[0], prog);
 		return;
 	}
@@ -3695,7 +3696,7 @@ static void VM_CL_ParticleThemeSave (prvm_prog_t *prog)
 	themenum = (int)PRVM_G_FLOAT(OFS_PARM0);
 	if (themenum < 0 || themenum >= vmpartspawner.max_themes)
 	{
-		VM_Warning(prog, "VM_CL_ParticleThemeSave: bad theme number %i\n", themenum);
+		VM_Warning(prog, "VM_CL_ParticleThemeSave: bad theme number %d\n", themenum);
 		return;
 	}
 	vmpartspawner.themes[themenum].initialized = true;
@@ -3717,12 +3718,12 @@ static void VM_CL_ParticleThemeFree (prvm_prog_t *prog)
 	// check parms
 	if (themenum <= 0 || themenum >= vmpartspawner.max_themes)
 	{
-		VM_Warning(prog, "VM_CL_ParticleThemeFree: bad theme number %i\n", themenum);
+		VM_Warning(prog, "VM_CL_ParticleThemeFree: bad theme number %d\n", themenum);
 		return;
 	}
 	if (vmpartspawner.themes[themenum].initialized == false)
 	{
-		VM_Warning(prog, "VM_CL_ParticleThemeFree: theme #%i already freed\n", themenum);
+		VM_Warning(prog, "VM_CL_ParticleThemeFree: theme #%d already freed\n", themenum);
 		VM_CL_ParticleThemeToGlobals(&vmpartspawner.themes[0], prog);
 		return;
 	}
@@ -3801,7 +3802,7 @@ static void VM_CL_SpawnParticle (prvm_prog_t *prog)
 		themenum = (int)PRVM_G_FLOAT(OFS_PARM2);
 		if (themenum <= 0 || themenum >= vmpartspawner.max_themes)
 		{
-			VM_Warning(prog, "VM_CL_SpawnParticle: bad theme number %i\n", themenum);
+			VM_Warning(prog, "VM_CL_SpawnParticle: bad theme number %d\n", themenum);
 			PRVM_G_FLOAT(OFS_RETURN) = 0;
 			return;
 		}
@@ -3911,7 +3912,7 @@ static void VM_CL_SpawnParticleDelayed (prvm_prog_t *prog)
 		themenum = (int)PRVM_G_FLOAT(OFS_PARM4);
 		if (themenum <= 0 || themenum >= vmpartspawner.max_themes)
 		{
-			VM_Warning(prog, "VM_CL_SpawnParticleDelayed: bad theme number %i\n", themenum);
+			VM_Warning(prog, "VM_CL_SpawnParticleDelayed: bad theme number %d\n", themenum);
 			PRVM_G_FLOAT(OFS_RETURN) = 0;
 			return;
 		}
@@ -4066,7 +4067,7 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT(0, VM_CL_R_RenderScene);
 
 	// update the views
-	if(ismain)
+	if (ismain)
 	{
 		// set the main view
 		csqc_main_r_refdef_view = r_refdef.view;
@@ -4525,7 +4526,7 @@ static void VM_CL_checkpvs (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), viewpos);
 	viewee = PRVM_G_EDICT(OFS_PARM1);
 
-	if(viewee->free)
+	if (viewee->free)
 	{
 		VM_Warning(prog, "checkpvs: can not check free entity\n");
 		PRVM_G_FLOAT(OFS_RETURN) = 4;
@@ -4536,14 +4537,14 @@ static void VM_CL_checkpvs (prvm_prog_t *prog)
 	VectorAdd(PRVM_serveredictvector(viewee, origin), PRVM_serveredictvector(viewee, maxs), ma);
 
 #if 1
-	if(!cl.worldmodel || !cl.worldmodel->brush.GetPVS || !cl.worldmodel->brush.BoxTouchingPVS)
+	if (!cl.worldmodel || !cl.worldmodel->brush.GetPVS || !cl.worldmodel->brush.BoxTouchingPVS)
 	{
 		// no PVS support on this worldmodel... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 3;
 		return;
 	}
 	pvs = cl.worldmodel->brush.GetPVS(cl.worldmodel, viewpos);
-	if(!pvs)
+	if (!pvs)
 	{
 		// viewpos isn't in any PVS... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 2;
@@ -4552,14 +4553,14 @@ static void VM_CL_checkpvs (prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = cl.worldmodel->brush.BoxTouchingPVS(cl.worldmodel, pvs, mi, ma);
 #else
 	// using fat PVS like FTEQW does (slow)
-	if(!cl.worldmodel || !cl.worldmodel->brush.FatPVS || !cl.worldmodel->brush.BoxTouchingPVS)
+	if (!cl.worldmodel || !cl.worldmodel->brush.FatPVS || !cl.worldmodel->brush.BoxTouchingPVS)
 	{
 		// no PVS support on this worldmodel... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 3;
 		return;
 	}
 	fatpvsbytes = cl.worldmodel->brush.FatPVS(cl.worldmodel, viewpos, 8, fatpvs, sizeof(fatpvs), false);
-	if(!fatpvsbytes)
+	if (!fatpvsbytes)
 	{
 		// viewpos isn't in any PVS... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 2;
@@ -4854,7 +4855,7 @@ static void VM_CL_frameforname(prvm_prog_t *prog)
 		return;
 	for (i = 0;i < model->numframes;i++)
 	{
-		if (!strcasecmp(model->animscenes[i].name, name))
+		if (String_Does_Match_Caseless(model->animscenes[i].name, name))
 		{
 			PRVM_G_FLOAT(OFS_RETURN) = i;
 			break;
@@ -5497,7 +5498,7 @@ VM_argv_start_index,					// #515 float(float idx) argv_start_index = #515; (DP_Q
 VM_argv_end_index,						// #516 float(float idx) argv_end_index = #516; (DP_QC_TOKENIZE_CONSOLE)
 VM_buf_cvarlist,						// #517 void(float buf, string prefix, string antiprefix) buf_cvarlist = #517; (DP_QC_STRINGBUFFERS_CVARLIST)
 VM_cvar_description,					// #518 float(string name) cvar_description = #518; (DP_QC_CVAR_DESCRIPTION)
-VM_gettime,						// #519 float(float timer) gettime = #519; (DP_QC_GETTIME)
+VM_gettime,						// #519 float(float timer) gettime = #519; (DP_QC_GETTIME) // Baker: GETTIME_FRAMESTART or host.realtime or ...
 VM_keynumtostring,				// #520 string keynumtostring(float keynum)
 VM_findkeysforcommand,			// #521 string findkeysforcommand(string command[, float bindmap])
 VM_CL_InitParticleSpawner,		// #522 void(float max_themes) initparticlespawner (DP_CSQC_SPAWNPARTICLE)
@@ -5510,7 +5511,7 @@ VM_CL_SpawnParticleDelayed,		// #528 float(vector org, vector vel, float delay, 
 VM_loadfromdata,				// #529
 VM_loadfromfile,				// #530
 VM_CL_setpause,					// #531 float(float ispaused) setpause = #531 (DP_CSQC_SETPAUSE)
-VM_log,							// #532
+VM_log,							// #532 // Baker: logarithm
 VM_getsoundtime,				// #533 float(entity e, float channel) getsoundtime = #533; (DP_SND_GETSOUNDTIME)
 VM_soundlength,					// #534 float(string sample) soundlength = #534; (DP_SND_GETSOUNDTIME)
 VM_buf_loadfile,                // #535 float(string filename, float bufhandle) buf_loadfile (DP_QC_STRINGBUFFERS_EXT_WIP)
@@ -5602,7 +5603,7 @@ NULL,							// #620
 NULL,							// #621
 NULL,							// #622
 NULL,							// #623
-VM_CL_getextresponse,			// #624 string getextresponse(void)
+VM_CL_getextresponse,			// #624 string getextresponse(void) // Baker: Part of FTE_CSQC_SERVERBROWSER
 NULL,							// #625
 NULL,							// #626
 VM_sprintf,                     // #627 string sprintf(string format, ...)

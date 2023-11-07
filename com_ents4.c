@@ -107,9 +107,9 @@ int EntityFrame4_AckFrame(entityframe4_database_t *d, int framenum, int servermo
 							if (commit->entity[j].active != s->active)
 							{
 								if (commit->entity[j].active == ACTIVE_NETWORK)
-									Con_Printf("commit entity %i has become active (modelindex %i)\n", commit->entity[j].number, commit->entity[j].modelindex);
+									Con_Printf ("commit entity %d has become active (modelindex %d)\n", commit->entity[j].number, commit->entity[j].modelindex);
 								else
-									Con_Printf("commit entity %i has become inactive (modelindex %i)\n", commit->entity[j].number, commit->entity[j].modelindex);
+									Con_Printf ("commit entity %d has become inactive (modelindex %d)\n", commit->entity[j].number, commit->entity[j].modelindex);
 							}
 							*s = commit->entity[j];
 						}
@@ -124,10 +124,10 @@ int EntityFrame4_AckFrame(entityframe4_database_t *d, int framenum, int servermo
 	}
 	if (developer_networkentities.integer >= 1)
 	{
-		Con_Printf("ack ref:%i database updated to: ref:%i commits:", framenum, d->referenceframenum);
+		Con_Printf ("ack ref:%d database updated to: ref:%d commits:", framenum, d->referenceframenum);
 		for (i = 0;i < MAX_ENTITY_HISTORY;i++)
 			if (d->commit[i].numentities)
-				Con_Printf(" %i", d->commit[i].framenum);
+				Con_Printf (" %d", d->commit[i].framenum);
 		Con_Print("\n");
 	}
 	return found;

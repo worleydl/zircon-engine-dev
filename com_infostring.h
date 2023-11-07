@@ -1,3 +1,6 @@
+#ifndef INFOSTRING_H
+#define INFOSTRING_H
+
 /*
 Copyright (C) 2006-2021 DarkPlaces contributors
 
@@ -18,9 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifndef INFOSTRING_H
-#define INFOSTRING_H
-
 #include "qtypes.h"
 #include <stdlib.h>
 
@@ -28,4 +28,4 @@ char *InfoString_GetValue(const char *buffer, const char *key, char *value, size
 void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, const char *value);
 void InfoString_Print(char *buffer);
 
-#endif
+#endif // !INFOSTRING_H

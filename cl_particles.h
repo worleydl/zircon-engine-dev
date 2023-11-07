@@ -164,4 +164,4 @@ void CL_EntityParticles (const struct entity_s *ent);
 void CL_ParticleExplosion (const vec3_t org);
 void CL_ParticleExplosion2 (const vec3_t org, int colorStart, int colorLength);
 
-#endif
+#endif // ! CL_PARTICLES_H

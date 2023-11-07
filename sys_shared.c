@@ -92,16 +92,16 @@ DLL MANAGEMENT
 static qbool Sys_LoadDependencyFunctions(dllhandle_t dllhandle, const dllfunction_t *fcts, qbool complain, qbool has_next)
 {
 	const dllfunction_t *func;
-	if(dllhandle)
+	if (dllhandle)
 	{
 		for (func = fcts; func && func->name != NULL; func++)
 			if (!(*func->funcvariable = (void *) Sys_GetProcAddress (dllhandle, func->name)))
 			{
-				if(complain)
+				if (complain)
 				{
 					Con_DPrintf (" - missing function \"%s\" - broken library!", func->name);
-					if(has_next)
-						Con_DPrintf("\nContinuing with");
+					if (has_next)
+						Con_DPrintf ("\nContinuing with");
 				}
 				goto notfound;
 			}
@@ -114,6 +114,7 @@ static qbool Sys_LoadDependencyFunctions(dllhandle_t dllhandle, const dllfunctio
 	return false;
 }
 
+// Baker: Not seeing this called in code
 qbool Sys_LoadSelf(dllhandle_t *handle)
 {
 	dllhandle_t dllhandle = 0;
@@ -129,7 +130,7 @@ qbool Sys_LoadSelf(dllhandle_t *handle)
 	return true;
 }
 
-qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllfunction_t *fcts)
+qbool Sys_LoadDependency (const char **dllnames, dllhandle_t* handle, const dllfunction_t *fcts)
 {
 #ifdef SUPPORTDLL
 	const dllfunction_t *func;
@@ -142,7 +143,7 @@ qbool Sys_LoadDependency (const char** dllnames, dllhandle_t* handle, const dllf
 #ifndef _WIN32
 #ifdef PREFER_PRELOAD
 	dllhandle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
-	if(Sys_LoadDependencyFunctions(dllhandle, fcts, false, false))
+	if (Sys_LoadDependencyFunctions(dllhandle, fcts, false, false))
 	{
 		Con_DPrintf ("All of %s's functions were already linked in! Not loading dynamically...\n", dllnames[0]);
 		*handle = dllhandle;
@@ -160,9 +161,8 @@ notfound:
 
 	// Try every possible name
 	Con_DPrintf ("Trying to load library...");
-	for (i = 0; dllnames[i] != NULL; i++)
-	{
-		Con_DPrintf (" \"%s\"", dllnames[i]);
+	for (i = 0; dllnames[i] != NULL; i++) {
+		Con_DPrintf (" " QUOTED_S, dllnames[i]);
 #ifdef _WIN32
 # ifndef DONT_USE_SETDLLDIRECTORY
 #  ifdef _WIN64
@@ -172,19 +172,17 @@ notfound:
 #  endif
 # endif
 #endif
-		if(Sys_LoadLibrary(dllnames[i], &dllhandle))
-		{
+		if (Sys_LoadLibrary(dllnames[i], &dllhandle)) {
 			if (Sys_LoadDependencyFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(sys.argv[0], '/'))))
 				break;
 			else
 				Sys_FreeLibrary (&dllhandle);
-		}
-	}
+		} // if
+	} // for dllnames
 
 	// see if the names can be loaded relative to the executable path
 	// (this is for Mac OSX which does not check next to the executable)
-	if (!dllhandle && strrchr(sys.argv[0], '/'))
-	{
+	if (!dllhandle && strrchr(sys.argv[0], '/')) {
 		char path[MAX_OSPATH];
 		strlcpy(path, sys.argv[0], sizeof(path));
 		strrchr(path, '/')[1] = 0;
@@ -192,7 +190,7 @@ notfound:
 			char temp[MAX_OSPATH];
 			strlcpy(temp, path, sizeof(temp));
 			strlcat(temp, dllnames[i], sizeof(temp));
-			Con_DPrintf (" \"%s\"", temp);
+			Con_DPrintf (" " QUOTED_S, temp);
 
 			if (Sys_LoadLibrary(temp, &dllhandle)) {
 				if (Sys_LoadDependencyFunctions(dllhandle, fcts, true, (dllnames[i+1] != NULL) || (strrchr(sys.argv[0], '/'))))
@@ -206,12 +204,12 @@ notfound:
 	// No DLL found
 	if (! dllhandle)
 	{
-		Con_DPrintf(" - failed.\n");
+		Con_DPrintLinef (" - failed.");
 		return false;
 	}
 
-	Con_DPrintf(" - loaded.\n");
-	Con_Printf("Loaded library \"%s\"\n", dllnames[i]);
+	Con_DPrintLinef (" - loaded.");
+	Con_DPrintLinef  ("Loaded library " QUOTED_S, dllnames[i]);
 
 	*handle = dllhandle;
 	return true;
@@ -224,7 +222,7 @@ qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle)
 {
 	dllhandle_t dllhandle = 0;
 
-	if(handle == NULL)
+	if (handle == NULL)
 		return false;
 
 #ifdef SUPPORTDLL
@@ -234,7 +232,7 @@ qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle)
 	dllhandle = dlopen (name, RTLD_LAZY | RTLD_GLOBAL);
 # endif
 #endif
-	if(!dllhandle)
+	if (!dllhandle)
 		return false;
 
 	*handle = dllhandle;
@@ -257,7 +255,7 @@ void Sys_FreeLibrary (dllhandle_t* handle)
 #endif
 }
 
-void* Sys_GetProcAddress (dllhandle_t handle, const char* name)
+void* Sys_GetProcAddress (dllhandle_t handle, const char *name)
 {
 #ifdef SUPPORTDLL
 #ifdef _WIN32
@@ -324,14 +322,13 @@ where the given parameter apears, or 0 if not present
 */
 int Sys_CheckParm (const char *parm)
 {
-	int i;
+	int j;
 
-	for (i=1 ; i<sys.argc ; i++)
-	{
-		if (!sys.argv[i])
+	for (j = 1 ; j < sys.argc ; j++) {
+		if (!sys.argv[j])
 			continue;               // NEXTSTEP sometimes clears appkit vars.
-		if (!strcmp (parm,sys.argv[i]))
-			return i;
+		if (String_Does_Match (parm, sys.argv[j]))
+			return j;
 	}
 
 	return 0;
@@ -343,7 +340,7 @@ void Sys_Init_Commands (void)
 	Cvar_RegisterVariable(&sys_usenoclockbutbenchmark);
 	Cvar_RegisterVariable(&sys_libdir);
 #if HAVE_TIMEGETTIME || HAVE_QUERYPERFORMANCECOUNTER || HAVE_CLOCKGETTIME || HAVE_GETTIMEOFDAY
-	if(sys_supportsdlgetticks)
+	if (sys_supportsdlgetticks)
 	{
 		Cvar_RegisterVariable(&sys_usesdlgetticks);
 		Cvar_RegisterVariable(&sys_usesdldelay);
@@ -362,12 +359,12 @@ double Sys_DirtyTime(void)
 	// first all the OPTIONAL timers
 
 	// benchmark timer (fake clock)
-	if(sys_usenoclockbutbenchmark.integer)
+	if (sys_usenoclockbutbenchmark.integer)
 	{
 		double old_benchmark_time = benchmark_time;
 		benchmark_time += 1;
-		if(benchmark_time == old_benchmark_time)
-			Sys_Error("sys_usenoclockbutbenchmark cannot run any longer, sorry");
+		if (benchmark_time == old_benchmark_time)
+			Sys_Error ("sys_usenoclockbutbenchmark cannot run any longer, sorry");
 		return benchmark_time * 0.000001;
 	}
 #if HAVE_QUERYPERFORMANCECOUNTER
@@ -395,7 +392,7 @@ double Sys_DirtyTime(void)
 		}
 		else
 		{
-			Con_Printf("No hardware timer available\n");
+			Con_Printf ("No hardware timer available\n");
 			// fall back to other clock sources
 			Cvar_SetValueQuick(&sys_usequeryperformancecounter, false);
 		}
@@ -418,7 +415,7 @@ double Sys_DirtyTime(void)
 #endif
 
 	// now all the FALLBACK timers
-	if(sys_supportsdlgetticks && sys_usesdlgetticks.integer)
+	if (sys_supportsdlgetticks && sys_usesdlgetticks.integer)
 		return (double) Sys_SDL_GetTicks() / 1000.0;
 #if HAVE_GETTIMEOFDAY
 	{
@@ -448,7 +445,7 @@ double Sys_DirtyTime(void)
 	}
 #else
 	// fallback for using the SDL timer if no other timer is available
-	// this calls Sys_Error() if not linking against SDL
+	// this calls Sys_Error () if not linking against SDL
 	return (double) Sys_SDL_GetTicks() / 1000.0;
 #endif
 }
@@ -456,22 +453,22 @@ double Sys_DirtyTime(void)
 void Sys_Sleep(int microseconds)
 {
 	double t = 0;
-	if(sys_usenoclockbutbenchmark.integer)
+	if (sys_usenoclockbutbenchmark.integer)
 	{
-		if(microseconds)
+		if (microseconds)
 		{
 			double old_benchmark_time = benchmark_time;
 			benchmark_time += microseconds;
-			if(benchmark_time == old_benchmark_time)
-				Sys_Error("sys_usenoclockbutbenchmark cannot run any longer, sorry");
+			if (benchmark_time == old_benchmark_time)
+				Sys_Error ("sys_usenoclockbutbenchmark cannot run any longer, sorry");
 		}
 		return;
 	}
-	if(sys_debugsleep.integer)
+	if (sys_debugsleep.integer)
 	{
 		t = Sys_DirtyTime();
 	}
-	if(sys_supportsdlgetticks && sys_usesdldelay.integer)
+	if (sys_supportsdlgetticks && sys_usesdldelay.integer)
 	{
 		Sys_SDL_Delay(microseconds / 1000);
 	}
@@ -499,14 +496,14 @@ void Sys_Sleep(int microseconds)
 		Sys_SDL_Delay(microseconds / 1000);
 	}
 #endif
-	if(sys_debugsleep.integer)
+	if (sys_debugsleep.integer)
 	{
 		t = Sys_DirtyTime() - t;
-		Sys_PrintfToTerminal("%d %d # debugsleep\n", microseconds, (unsigned int)(t * 1000000));
+		Sys_PrintfToTerminal ("%d %d # debugsleep\n", microseconds, (unsigned int)(t * 1000000));
 	}
 }
 
-void Sys_PrintfToTerminal(const char *fmt, ...)
+void Sys_PrintfToTerminal (const char *fmt, ...)
 {
 	va_list argptr;
 	char msg[MAX_INPUTLINE];
@@ -523,19 +520,19 @@ static const char *Sys_FindInPATH(const char *name, char namesep, const char *PA
 {
 	const char *p = PATH;
 	const char *q;
-	if(p && name)
+	if (p && name)
 	{
 		while((q = strchr(p, ':')))
 		{
 			dpsnprintf(buf, bufsize, "%.*s%c%s", (int)(q-p), p, namesep, name);
-			if(FS_SysFileExists(buf))
+			if (FS_SysFileExists(buf))
 				return buf;
 			p = q + 1;
 		}
-		if(!q) // none found - try the last item
+		if (!q) // none found - try the last item
 		{
 			dpsnprintf(buf, bufsize, "%s%c%s", p, namesep, name);
-			if(FS_SysFileExists(buf))
+			if (FS_SysFileExists(buf))
 				return buf;
 		}
 	}
@@ -560,12 +557,12 @@ static const char *Sys_FindExecutableName(void)
 #elif defined(__linux__)
 	n = readlink("/proc/self/exe", exenamebuf, sizeof(exenamebuf)-1);
 #endif
-	if(n > 0 && (size_t)(n) < sizeof(exenamebuf))
+	if (n > 0 && (size_t)(n) < sizeof(exenamebuf))
 	{
 		exenamebuf[n] = 0;
 		return exenamebuf;
 	}
-	if(strchr(sys.argv[0], '/'))
+	if (strchr(sys.argv[0], '/'))
 		return sys.argv[0]; // possibly a relative path
 	else
 		return Sys_FindInPATH(sys.argv[0], '/', getenv("PATH"), ':', exenamebuf, sizeof(exenamebuf));
@@ -574,7 +571,7 @@ static const char *Sys_FindExecutableName(void)
 
 void Sys_ProvideSelfFD(void)
 {
-	if(sys.selffd != -1)
+	if (sys.selffd != -1)
 		return;
 	sys.selffd = FS_SysOpenFD(Sys_FindExecutableName(), "rb", false);
 }
@@ -615,15 +612,15 @@ static int CPUID_Features(void)
 qbool Sys_HaveSSE(void)
 {
 	// COMMANDLINEOPTION: SSE: -nosse disables SSE support and detection
-	if(Sys_CheckParm("-nosse"))
+	if (Sys_CheckParm("-nosse"))
 		return false;
 #ifdef SSE_PRESENT
 	return true;
 #else
 	// COMMANDLINEOPTION: SSE: -forcesse enables SSE support and disables detection
-	if(Sys_CheckParm("-forcesse") || Sys_CheckParm("-forcesse2"))
+	if (Sys_CheckParm("-forcesse") || Sys_CheckParm("-forcesse2"))
 		return true;
-	if(CPUID_Features() & (1 << 25))
+	if (CPUID_Features() & (1 << 25))
 		return true;
 	return false;
 #endif
@@ -632,15 +629,15 @@ qbool Sys_HaveSSE(void)
 qbool Sys_HaveSSE2(void)
 {
 	// COMMANDLINEOPTION: SSE2: -nosse2 disables SSE2 support and detection
-	if(Sys_CheckParm("-nosse") || Sys_CheckParm("-nosse2"))
+	if (Sys_CheckParm("-nosse") || Sys_CheckParm("-nosse2"))
 		return false;
 #ifdef SSE2_PRESENT
 	return true;
 #else
 	// COMMANDLINEOPTION: SSE2: -forcesse2 enables SSE2 support and disables detection
-	if(Sys_CheckParm("-forcesse2"))
+	if (Sys_CheckParm("-forcesse2"))
 		return true;
-	if((CPUID_Features() & (3 << 25)) == (3 << 25)) // SSE is 1<<25, SSE2 is 1<<26
+	if ((CPUID_Features() & (3 << 25)) == (3 << 25)) // SSE is 1<<25, SSE2 is 1<<26
 		return true;
 	return false;
 #endif
@@ -656,23 +653,23 @@ void Sys_InitProcessNice (void)
 {
 	struct rlimit lim;
 	sys.nicepossible = false;
-	if(Sys_CheckParm("-nonice"))
+	if (Sys_CheckParm("-nonice"))
 		return;
 	errno = 0;
 	sys.nicelevel = getpriority(PRIO_PROCESS, 0);
-	if(errno)
+	if (errno)
 	{
-		Con_Printf("Kernel does not support reading process priority - cannot use niceness\n");
+		Con_Printf ("Kernel does not support reading process priority - cannot use niceness\n");
 		return;
 	}
-	if(getrlimit(RLIMIT_NICE, &lim))
+	if (getrlimit(RLIMIT_NICE, &lim))
 	{
-		Con_Printf("Kernel does not support lowering nice level again - cannot use niceness\n");
+		Con_Printf ("Kernel does not support lowering nice level again - cannot use niceness\n");
 		return;
 	}
-	if(lim.rlim_cur != RLIM_INFINITY && sys.nicelevel < (int) (20 - lim.rlim_cur))
+	if (lim.rlim_cur != RLIM_INFINITY && sys.nicelevel < (int) (20 - lim.rlim_cur))
 	{
-		Con_Printf("Current nice level is below the soft limit - cannot use niceness\n");
+		Con_Printf ("Current nice level is below the soft limit - cannot use niceness\n");
 		return;
 	}
 	sys.nicepossible = true;
@@ -680,24 +677,24 @@ void Sys_InitProcessNice (void)
 }
 void Sys_MakeProcessNice (void)
 {
-	if(!sys.nicepossible)
+	if (!sys.nicepossible)
 		return;
-	if(sys.isnice)
+	if (sys.isnice)
 		return;
-	Con_DPrintf("Process is becoming 'nice'...\n");
-	if(setpriority(PRIO_PROCESS, 0, 19))
-		Con_Printf(CON_ERROR "Failed to raise nice level to %d\n", 19);
+	Con_DPrintf ("Process is becoming 'nice'...\n");
+	if (setpriority(PRIO_PROCESS, 0, 19))
+		Con_PrintLinef (CON_ERROR "Failed to raise nice level to %d", 19);
 	sys.isnice = true;
 }
 void Sys_MakeProcessMean (void)
 {
-	if(!sys.nicepossible)
+	if (!sys.nicepossible)
 		return;
-	if(!sys.isnice)
+	if (!sys.isnice)
 		return;
-	Con_DPrintf("Process is becoming 'mean'...\n");
-	if(setpriority(PRIO_PROCESS, 0, sys.nicelevel))
-		Con_Printf(CON_ERROR "Failed to lower nice level to %d\n", sys.nicelevel);
+	Con_DPrintLinef ("Process is becoming 'mean'...");
+	if (setpriority(PRIO_PROCESS, 0, sys.nicelevel))
+		Con_PrintLinef (CON_ERROR "Failed to lower nice level to %d", sys.nicelevel);
 	sys.isnice = false;
 }
 #else

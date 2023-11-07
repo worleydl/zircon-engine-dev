@@ -39,6 +39,7 @@ cvar_t cl_playerskin = {CF_CLIENT | CF_SERVER | CF_USERINFO | CF_ARCHIVE, "playe
 
 char com_token[MAX_INPUTLINE];
 
+sys_t sys;
 //===========================================================================
 
 void SZ_Clear (sizebuf_t *buf)
@@ -53,10 +54,10 @@ unsigned char *SZ_GetSpace (sizebuf_t *buf, int length)
 	if (buf->cursize + length > buf->maxsize)
 	{
 		if (!buf->allowoverflow)
-			Host_Error ("SZ_GetSpace: overflow without allowoverflow set");
+			Host_Error_Line ("SZ_GetSpace: overflow without allowoverflow set");
 
 		if (length > buf->maxsize)
-			Host_Error ("SZ_GetSpace: %i is > full buffer size", length);
+			Host_Error_Line ("SZ_GetSpace: %d is > full buffer size", length);
 
 		buf->overflowed = true;
 		Con_Print("SZ_GetSpace: overflow\n");
@@ -233,12 +234,12 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 				}
 				out_inner:
 				spaceUsedForWord = wordWidth(passthroughCW, cursor, &wordLen, maxWidth - continuationWidth); // this may have reduced wordLen when it won't fit - but this is GOOD. TODO fix words that do fit in a non-continuation line
-				if(wordLen < 1) // cannot happen according to current spec of wordWidth
+				if (wordLen < 1) // cannot happen according to current spec of wordWidth
 				{
 					wordLen = 1;
 					spaceUsedForWord = maxWidth + 1; // too high, forces it in a line of itself
 				}
-				if(spaceUsedInLine + spaceUsedForWord <= maxWidth || cursor == startOfLine)
+				if (spaceUsedInLine + spaceUsedForWord <= maxWidth || cursor == startOfLine)
 				{
 					// we can simply append it
 					cursor += wordLen;
@@ -275,7 +276,7 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 	minReserve = charWidth(passthroughCW, 0);
 	minReserve += charWidth(passthroughCW, ' ');
 
-	if(maxWidth < continuationWidth + minReserve)
+	if (maxWidth < continuationWidth + minReserve)
 		maxWidth = continuationWidth + minReserve;
 
 	charWidth(passthroughCW, 0);
@@ -285,39 +286,39 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 		char c = *p;
 		float w = charWidth(passthroughCW, c);
 
-		if(!currentWord)
+		if (!currentWord)
 		{
 			currentWord = p;
 			currentWordSpace = 0;
 		}
 
-		if(!currentLine)
+		if (!currentLine)
 		{
 			currentLine = p;
 			spaceUsedInLine = isContinuation ? continuationWidth : 0;
 			currentLineEnd = 0;
 		}
 
-		if(c == ' ')
+		if (c == ' ')
 		{
 			// 1. I can add the word AND a space - then just append it.
-			if(spaceUsedInLine + currentWordSpace + w <= maxWidth)
+			if (spaceUsedInLine + currentWordSpace + w <= maxWidth)
 			{
 				currentLineEnd = p; // note: space not included here
 				currentLineFinalWhitespace = w;
 				spaceUsedInLine += currentWordSpace + w;
 			}
 			// 2. I can just add the word - then append it, output current line and go to next one.
-			else if(spaceUsedInLine + currentWordSpace <= maxWidth)
+			else if (spaceUsedInLine + currentWordSpace <= maxWidth)
 			{
 				result += processLine(passthroughPL, currentLine, p - currentLine, spaceUsedInLine + currentWordSpace, isContinuation);
 				currentLine = 0;
 				isContinuation = true;
 			}
 			// 3. Otherwise, output current line and go to next one, where I can add the word.
-			else if(continuationWidth + currentWordSpace + w <= maxWidth)
+			else if (continuationWidth + currentWordSpace + w <= maxWidth)
 			{
-				if(currentLineEnd)
+				if (currentLineEnd)
 					result += processLine(passthroughPL, currentLine, currentLineEnd - currentLine, spaceUsedInLine - currentLineFinalWhitespace, isContinuation);
 				currentLine = currentWord;
 				spaceUsedInLine = continuationWidth + currentWordSpace + w;
@@ -328,7 +329,7 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 			// 4. We can't even do that? Then output both current and next word as new lines.
 			else
 			{
-				if(currentLineEnd)
+				if (currentLineEnd)
 				{
 					result += processLine(passthroughPL, currentLine, currentLineEnd - currentLine, spaceUsedInLine - currentLineFinalWhitespace, isContinuation);
 					isContinuation = true;
@@ -339,17 +340,17 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 			}
 			currentWord = 0;
 		}
-		else if(c == '\n')
+		else if (c == '\n')
 		{
 			// 1. I can add the word - then do it.
-			if(spaceUsedInLine + currentWordSpace <= maxWidth)
+			if (spaceUsedInLine + currentWordSpace <= maxWidth)
 			{
 				result += processLine(passthroughPL, currentLine, p - currentLine, spaceUsedInLine + currentWordSpace, isContinuation);
 			}
 			// 2. Otherwise, output current line, next one and make tabula rasa.
 			else
 			{
-				if(currentLineEnd)
+				if (currentLineEnd)
 				{
 					processLine(passthroughPL, currentLine, currentLineEnd - currentLine, spaceUsedInLine - currentLineFinalWhitespace, isContinuation);
 					isContinuation = true;
@@ -363,7 +364,7 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 		else
 		{
 			currentWordSpace += w;
-			if(
+			if (
 				spaceUsedInLine + currentWordSpace > maxWidth // can't join this line...
 				&&
 				continuationWidth + currentWordSpace > maxWidth // can't join any other line...
@@ -371,14 +372,14 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 			{
 				// this word cannot join ANY line...
 				// so output the current line...
-				if(currentLineEnd)
+				if (currentLineEnd)
 				{
 					result += processLine(passthroughPL, currentLine, currentLineEnd - currentLine, spaceUsedInLine - currentLineFinalWhitespace, isContinuation);
 					isContinuation = true;
 				}
 
 				// then this word's beginning...
-				if(isContinuation)
+				if (isContinuation)
 				{
 					// it may not fit, but we know we have to split it into maxWidth - continuationWidth pieces
 					float pieceWidth = maxWidth - continuationWidth;
@@ -390,7 +391,7 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 					while(pos <= p)
 					{
 						float w = charWidth(passthroughCW, *pos);
-						if(currentWordSpace + w > pieceWidth) // this piece won't fit any more
+						if (currentWordSpace + w > pieceWidth) // this piece won't fit any more
 						{
 							// print everything until it
 							result += processLine(passthroughPL, currentWord, pos - currentWord, currentWordSpace, true);
@@ -426,20 +427,20 @@ int COM_Wordwrap(const char *string, size_t length, float continuationWidth, flo
 		}
 	}
 
-	if(!currentWord)
+	if (!currentWord)
 	{
 		currentWord = p;
 		currentWordSpace = 0;
 	}
 
-	if(currentLine) // Same procedure as \n
+	if (currentLine) // Same procedure as \n
 	{
 		// Can I append the current word?
-		if(spaceUsedInLine + currentWordSpace <= maxWidth)
+		if (spaceUsedInLine + currentWordSpace <= maxWidth)
 			result += processLine(passthroughPL, currentLine, p - currentLine, spaceUsedInLine + currentWordSpace, isContinuation);
 		else
 		{
-			if(currentLineEnd)
+			if (currentLineEnd)
 			{
 				result += processLine(passthroughPL, currentLine, currentLineEnd - currentLine, spaceUsedInLine - currentLineFinalWhitespace, isContinuation);
 				isContinuation = true;
@@ -869,7 +870,7 @@ Com_CalcRoll
 Used by view and sv_user
 ===============
 */
-float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angleval, const vec_t velocityval)
+float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, /*rollangle*/ const vec_t angleval, /*rollspeed*/ const vec_t velocityval)
 {
 	vec3_t	forward, right, up;
 	float	sign;
@@ -910,8 +911,7 @@ void COM_Init_Commands (void)
 
 	// reconstitute the command line for the cmdline externally visible cvar
 	n = 0;
-	for (j = 0;(j < MAX_NUM_ARGVS) && (j < sys.argc);j++)
-	{
+	for (j = 0; (j < MAX_NUM_ARGVS) && (j < sys.argc); j++) {
 		i = 0;
 		if (strstr(sys.argv[j], " "))
 		{
@@ -1143,7 +1143,7 @@ void COM_ToLowerString (const char *in, char *out, size_t size_out)
 	if (size_out == 0)
 		return;
 
-	if(utf8_enable.integer)
+	if (utf8_enable.integer)
 	{
 		*out = 0;
 		while(*in && size_out > 1)
@@ -1152,7 +1152,7 @@ void COM_ToLowerString (const char *in, char *out, size_t size_out)
 			Uchar ch = u8_getchar_utf8_enabled(in, &in);
 			ch = u8_tolower(ch);
 			n = u8_fromchar(ch, out, size_out);
-			if(n <= 0)
+			if (n <= 0)
 				break;
 			out += n;
 			size_out -= n;
@@ -1176,7 +1176,7 @@ void COM_ToUpperString (const char *in, char *out, size_t size_out)
 	if (size_out == 0)
 		return;
 
-	if(utf8_enable.integer)
+	if (utf8_enable.integer)
 	{
 		*out = 0;
 		while(*in && size_out > 1)
@@ -1185,7 +1185,7 @@ void COM_ToUpperString (const char *in, char *out, size_t size_out)
 			Uchar ch = u8_getchar_utf8_enabled(in, &in);
 			ch = u8_toupper(ch);
 			n = u8_fromchar(ch, out, size_out);
-			if(n <= 0)
+			if (n <= 0)
 				break;
 			out += n;
 			size_out -= n;
@@ -1303,7 +1303,7 @@ COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid)
 		switch((s == end) ? 0 : *s)
 		{
 			case 0:
-				if(valid)
+				if (valid)
 					*valid = true;
 				return len;
 			case STRING_COLOR_TAG:
@@ -1323,7 +1323,7 @@ COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid)
 						break;
 					case 0: // ends with unfinished color code!
 						++len;
-						if(valid)
+						if (valid)
 							*valid = false;
 						return len;
 					case STRING_COLOR_TAG: // escaped ^
@@ -1370,9 +1370,9 @@ all characters until the zero terminator.
 qbool
 COM_StringDecolorize(const char *in, size_t size_in, char *out, size_t size_out, qbool escape_carets)
 {
-#define APPEND(ch) do { if(--size_out) { *out++ = (ch); } else { *out++ = 0; return false; } } while(0)
+#define APPEND(ch) do { if (--size_out) { *out++ = (ch); } else { *out++ = 0; return false; } } while(0)
 	const char *end = size_in ? (in + size_in) : NULL;
-	if(size_out < 1)
+	if (size_out < 1)
 		return false;
 	for(;;)
 	{
@@ -1394,21 +1394,21 @@ COM_StringDecolorize(const char *in, size_t size_in, char *out, size_t size_out,
 							break;
 						}
 						APPEND(STRING_COLOR_TAG);
-						if(escape_carets)
+						if (escape_carets)
 							APPEND(STRING_COLOR_TAG);
 						APPEND(STRING_COLOR_RGB_TAG_CHAR);
 						break;
 					case 0: // ends with unfinished color code!
 						APPEND(STRING_COLOR_TAG);
 						// finish the code by appending another caret when escaping
-						if(escape_carets)
+						if (escape_carets)
 							APPEND(STRING_COLOR_TAG);
 						*out++ = 0;
 						return true;
 					case STRING_COLOR_TAG: // escaped ^
 						APPEND(STRING_COLOR_TAG);
 						// append a ^ twice when escaping
-						if(escape_carets)
+						if (escape_carets)
 							APPEND(STRING_COLOR_TAG);
 						break;
 					case '0': case '1': case '2': case '3': case '4':
@@ -1525,7 +1525,7 @@ void FindFraction(double val, int *num, int *denom, int denomMax)
 	{
 		int inum = (int) floor(0.5 + val * i);
 		double diff = fabs(val - inum / (double)i);
-		if(diff < bestdiff)
+		if (diff < bestdiff)
 		{
 			bestdiff = diff;
 			*num = inum;
@@ -1549,13 +1549,13 @@ char **XPM_DecodeString(const char *in)
 	{
 		tokens[line] = lines[line];
 		strlcpy(lines[line++], com_token, sizeof(lines[0]));
-		if(!COM_ParseToken_QuakeC(&in, false))
+		if (!COM_ParseToken_QuakeC(&in, false))
 			return NULL;
-		if(!strcmp(com_token, "}"))
+		if (String_Does_Match(com_token, "}"))
 			break;
-		if(strcmp(com_token, ","))
+		if (strcmp(com_token, ","))
 			return NULL;
-		if(line >= sizeof(tokens) / sizeof(tokens[0]))
+		if (line >= sizeof(tokens) / sizeof(tokens[0]))
 			return NULL;
 	}
 
@@ -1583,7 +1583,7 @@ size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen)
 	size_t blocks, i;
 	// expand the out-buffer
 	blocks = (buflen + 2) / 3;
-	if(blocks*4 > outbuflen)
+	if (blocks*4 > outbuflen)
 		return 0;
 	for(i = blocks; i > 0; )
 	{

@@ -121,7 +121,11 @@ const char *vm_sv_extensions[] = {
 "DP_QC_LOG",
 "DP_QC_MINMAXBOUND",
 "DP_QC_MULTIPLETEMPSTRINGS",
+#if 111 // Baker r0061: Classic DarkPlaces physics
+
+#else
 "DP_QC_NUDGEOUTOFSOLID",
+#endif
 "DP_QC_NUM_FOR_EDICT",
 "DP_QC_RANDOMVEC",
 "DP_QC_SINCOSSQRTPOW",
@@ -262,7 +266,7 @@ static void VM_SV_setorigin(prvm_prog_t *prog)
 		return;
 	}
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM1), PRVM_serveredictvector(e, origin));
-	if(e->priv.required->mark == PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN)
+	if (e->priv.required->mark == PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN)
 		e->priv.required->mark = PRVM_EDICT_MARK_SETORIGIN_CAUGHT;
 	SV_LinkEdict(e);
 }
@@ -490,7 +494,7 @@ static void VM_SV_ambientsound(prvm_prog_t *prog)
 	if (soundnum >= 256)
 		large = true;
 
-	if(sv.protocol == PROTOCOL_NEHAHRABJP)
+	if (sv.protocol == PROTOCOL_NEHAHRABJP)
 		large = false;
 
 	// add an svc_spawnambient command to the level signon packet
@@ -546,7 +550,7 @@ static void VM_SV_sound(prvm_prog_t *prog)
 	nvolume = (int)(PRVM_G_FLOAT(OFS_PARM3) * 255);
 	if (prog->argc < 5)
 	{
-		Con_DPrintf("VM_SV_sound: given only 4 parameters, expected 5, assuming attenuation = ATTN_NORMAL\n");
+		Con_DPrintf ("VM_SV_sound: given only 4 parameters, expected 5, assuming attenuation = ATTN_NORMAL\n");
 		attenuation = 1;
 	}
 	else
@@ -559,7 +563,7 @@ static void VM_SV_sound(prvm_prog_t *prog)
 	if (prog->argc < 7)
 	{
 		flags = 0;
-		if(channel >= 8 && channel <= 15) // weird QW feature
+		if (channel >= 8 && channel <= 15) // weird QW feature
 		{
 			flags |= CHANNELFLAG_RELIABLE;
 			channel -= 8;
@@ -663,7 +667,7 @@ static void VM_SV_traceline(prvm_prog_t *prog)
 	ent = PRVM_G_EDICT(OFS_PARM3);
 
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
-		prog->error_cmd("%s: NAN errors detected in traceline('%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
+		prog->error_cmd("%s: NAN errors detected in traceline('%f %f %f', '%f %f %f', %d, entity %d)\n", prog->name, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
 	trace = SV_TraceLine(v1, v2, move, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtracelinelength.value);
 
@@ -702,7 +706,7 @@ static void VM_SV_tracebox(prvm_prog_t *prog)
 	ent = PRVM_G_EDICT(OFS_PARM5);
 
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
-		prog->error_cmd("%s: NAN errors detected in tracebox('%f %f %f', '%f %f %f', '%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], m1[0], m1[1], m1[2], m2[0], m2[1], m2[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
+		prog->error_cmd("%s: NAN errors detected in tracebox('%f %f %f', '%f %f %f', '%f %f %f', '%f %f %f', %d, entity %d)\n", prog->name, v1[0], v1[1], v1[2], m1[0], m1[1], m1[2], m2[0], m2[1], m2[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
 	trace = SV_TraceBox(v1, m1, m2, v2, move, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtraceboxlength.value);
 
@@ -903,7 +907,7 @@ static void VM_SV_checkpvs(prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), viewpos);
 	viewee = PRVM_G_EDICT(OFS_PARM1);
 
-	if(viewee->free)
+	if (viewee->free)
 	{
 		VM_Warning(prog, "checkpvs: can not check free entity\n");
 		PRVM_G_FLOAT(OFS_RETURN) = 4;
@@ -911,14 +915,14 @@ static void VM_SV_checkpvs(prvm_prog_t *prog)
 	}
 
 #if 1
-	if(!sv.worldmodel || !sv.worldmodel->brush.GetPVS || !sv.worldmodel->brush.BoxTouchingPVS)
+	if (!sv.worldmodel || !sv.worldmodel->brush.GetPVS || !sv.worldmodel->brush.BoxTouchingPVS)
 	{
 		// no PVS support on this worldmodel... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 3;
 		return;
 	}
 	pvs = sv.worldmodel->brush.GetPVS(sv.worldmodel, viewpos);
-	if(!pvs)
+	if (!pvs)
 	{
 		// viewpos isn't in any PVS... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 2;
@@ -929,14 +933,14 @@ static void VM_SV_checkpvs(prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = sv.worldmodel->brush.BoxTouchingPVS(sv.worldmodel, pvs, absmin, absmax);
 #else
 	// using fat PVS like FTEQW does (slow)
-	if(!sv.worldmodel || !sv.worldmodel->brush.FatPVS || !sv.worldmodel->brush.BoxTouchingPVS)
+	if (!sv.worldmodel || !sv.worldmodel->brush.FatPVS || !sv.worldmodel->brush.BoxTouchingPVS)
 	{
 		// no PVS support on this worldmodel... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 3;
 		return;
 	}
 	fatpvsbytes = sv.worldmodel->brush.FatPVS(sv.worldmodel, viewpos, 8, fatpvs, sizeof(fatpvs), false);
-	if(!fatpvsbytes)
+	if (!fatpvsbytes)
 	{
 		// viewpos isn't in any PVS... darn
 		PRVM_G_FLOAT(OFS_RETURN) = 2;
@@ -1002,7 +1006,7 @@ static void VM_SV_findradius(prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_SV_findradius);
 
-	if(prog->argc == 3)
+	if (prog->argc == 3)
 		chainfield = PRVM_G_INT(OFS_PARM2);
 	else
 		chainfield = prog->fieldoffsets.chain;
@@ -1025,7 +1029,7 @@ static void VM_SV_findradius(prvm_prog_t *prog)
 	if (numtouchedicts > MAX_EDICTS)
 	{
 		// this never happens
-		Con_Printf("SV_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 		numtouchedicts = MAX_EDICTS;
 	}
 	for (i = 0;i < numtouchedicts;i++)
@@ -1076,7 +1080,7 @@ static void VM_SV_findbox(prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_SV_findbox);
 
-	if(prog->argc == 3)
+	if (prog->argc == 3)
 		chainfield = PRVM_G_INT(OFS_PARM2);
 	else
 		chainfield = prog->fieldoffsets.chain;
@@ -1089,7 +1093,7 @@ static void VM_SV_findbox(prvm_prog_t *prog)
 	if (numtouchedicts > MAX_EDICTS)
 	{
 		// this never happens
-		Con_Printf("SV_EntitiesInBox returned %i edicts, max was %i\n", numtouchedicts, MAX_EDICTS);
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
 		numtouchedicts = MAX_EDICTS;
 	}
 	for (i = 0; i < numtouchedicts; ++i)
@@ -1179,6 +1183,92 @@ VM_SV_droptofloor
 void() droptofloor
 ===============
 */
+#if 111 // Baker r0061: Classic DarkPlaces physics
+
+static void VM_SV_droptofloor(prvm_prog_t *prog)
+{
+	prvm_edict_t		*ent;
+	vec3_t		end, entorigin, entmins, entmaxs;
+	trace_t		trace;
+
+	VM_SAFEPARMCOUNTRANGE(0, 2, VM_SV_droptofloor); // allow 2 parameters because the id1 defs.qc had an incorrect prototype
+
+	// assume failure if it returns early
+	PRVM_G_FLOAT(OFS_RETURN) = 0;
+
+	ent = PRVM_PROG_TO_EDICT(PRVM_serverglobaledict(self));
+	if (ent == prog->edicts)
+	{
+		VM_Warning(prog, "droptofloor: can not modify world entity\n");
+		return;
+	}
+	if (ent->free)
+	{
+		VM_Warning(prog, "droptofloor: can not modify free entity\n");
+		return;
+	}
+
+	VectorCopy (PRVM_serveredictvector(ent, origin), end);
+	if (sv.worldmodel->brush.isq3bsp)
+		end[2] -= 4096;
+	else if (sv.worldmodel->brush.isq2bsp)
+		end[2] -= 128;
+	else
+		end[2] -= 256; // Quake, QuakeWorld
+
+	if (sv_gameplayfix_droptofloorstartsolid_nudgetocorrect.integer)
+		SV_NudgeOutOfSolid(ent);
+
+	VectorCopy(PRVM_serveredictvector(ent, origin), entorigin);
+	VectorCopy(PRVM_serveredictvector(ent, mins), entmins);
+	VectorCopy(PRVM_serveredictvector(ent, maxs), entmaxs);
+	trace = SV_TraceBox(entorigin, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+	if (trace.startsolid && sv_gameplayfix_droptofloorstartsolid.integer)
+	{
+		vec3_t offset, org;
+		VectorSet(offset, 0.5f * (PRVM_serveredictvector(ent, mins)[0] + PRVM_serveredictvector(ent, maxs)[0]), 0.5f * (PRVM_serveredictvector(ent, mins)[1] + PRVM_serveredictvector(ent, maxs)[1]), PRVM_serveredictvector(ent, mins)[2]);
+		VectorAdd(PRVM_serveredictvector(ent, origin), offset, org);
+		trace = SV_TraceLine(org, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+		VectorSubtract(trace.endpos, offset, trace.endpos);
+		if (trace.startsolid)
+		{
+			Con_DPrintf ("droptofloor at %f %f %f - COULD NOT FIX BADLY PLACED ENTITY\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2]);
+			SV_LinkEdict(ent);
+			PRVM_serveredictfloat(ent, flags) = (int)PRVM_serveredictfloat(ent, flags) | FL_ONGROUND;
+			PRVM_serveredictedict(ent, groundentity) = 0;
+			PRVM_G_FLOAT(OFS_RETURN) = 1;
+		}
+		else if (trace.fraction < 1)
+		{
+			Con_DPrintf ("droptofloor at %f %f %f - FIXED BADLY PLACED ENTITY\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2]);
+			VectorCopy (trace.endpos, PRVM_serveredictvector(ent, origin));
+			if (sv_gameplayfix_droptofloorstartsolid_nudgetocorrect.integer)
+				SV_NudgeOutOfSolid(ent);
+			SV_LinkEdict(ent);
+			PRVM_serveredictfloat(ent, flags) = (int)PRVM_serveredictfloat(ent, flags) | FL_ONGROUND;
+			PRVM_serveredictedict(ent, groundentity) = PRVM_EDICT_TO_PROG(trace.ent);
+			PRVM_G_FLOAT(OFS_RETURN) = 1;
+			// if support is destroyed, keep suspended (gross hack for floating items in various maps)
+			ent->priv.server->suspendedinairflag = true;
+		}
+	}
+	else
+	{
+		if (!trace.allsolid && trace.fraction < 1)
+		{
+			VectorCopy (trace.endpos, PRVM_serveredictvector(ent, origin));
+
+			SV_LinkEdict(ent);
+			PRVM_serveredictfloat(ent, flags) = (int)PRVM_serveredictfloat(ent, flags) | FL_ONGROUND;
+			PRVM_serveredictedict(ent, groundentity) = PRVM_EDICT_TO_PROG(trace.ent);
+			PRVM_G_FLOAT(OFS_RETURN) = 1;
+			// if support is destroyed, keep suspended (gross hack for floating items in various maps)
+			ent->priv.server->suspendedinairflag = true;
+		}
+	}
+}
+
+#else
 inline static qbool droptofloor_bsp_failcond(trace_t *trace)
 {
 	if (sv.worldmodel->brush.isq3bsp || sv.worldmodel->brush.isq2bsp)
@@ -1275,6 +1365,7 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 	// if support is destroyed, keep suspended (gross hack for floating items in various maps)
 	ent->priv.server->suspendedinairflag = true;
 }
+#endif
 
 /*
 ===============
@@ -1295,8 +1386,8 @@ static void VM_SV_lightstyle(prvm_prog_t *prog)
 	style = (int)PRVM_G_FLOAT(OFS_PARM0);
 	val = PRVM_G_STRING(OFS_PARM1);
 
-	if( (unsigned) style >= MAX_LIGHTSTYLES ) {
-		prog->error_cmd( "PF_lightstyle: style: %i >= 64", style );
+	if ( (unsigned) style >= MAX_LIGHTSTYLES ) {
+		prog->error_cmd( "PF_lightstyle: style: %d >= 64", style );
 	}
 
 // change the string in sv
@@ -1573,11 +1664,11 @@ static void VM_SV_WritePicture(prvm_prog_t *prog)
 
 	imgname = PRVM_G_STRING(OFS_PARM1);
 	size = (size_t) PRVM_G_FLOAT(OFS_PARM2);
-	if(size > 65535)
+	if (size > 65535)
 		size = 65535;
 
 	MSG_WriteString(WriteDest(prog), imgname);
-	if(Image_Compress(imgname, size, &buf, &size))
+	if (Image_Compress(imgname, size, &buf, &size))
 	{
 		// actual picture
 		MSG_WriteShort(WriteDest(prog), (int)size);
@@ -1733,7 +1824,7 @@ void VM_SV_UpdateCustomStats (client_t *client, prvm_edict_t *ent, sizebuf_t *ms
 
 	for(i=MIN_VM_STAT; i<=vm_customstats_last ;i++)
 	{
-		if(!vm_customstats[i].type)
+		if (!vm_customstats[i].type)
 			continue;
 		switch(vm_customstats[i].type)
 		{
@@ -1788,39 +1879,39 @@ static void VM_SV_AddStat(prvm_prog_t *prog)
 	case 8:
 		break;
 	default:
-		VM_Warning(prog, "PF_SV_AddStat: unrecognized type %i - supported types are 1 (string up to 16 bytes, takes 4 stat slots), 2 (truncate to int32), 8 (send as float)", type);
+		VM_Warning(prog, "PF_SV_AddStat: unrecognized type %d - supported types are 1 (string up to 16 bytes, takes 4 stat slots), 2 (truncate to int32), 8 (send as float)", type);
 		return;
 	}
 
 	if (i < 0)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) may not be less than %i\n", i, MIN_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) may not be less than %d\n", i, MIN_VM_STAT);
 		return;
 	}
 
 	if (i >= MAX_CL_STATS)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) >= MAX_CL_STATS (%i), not supported by protocol, and AddStat beyond MAX_VM_STAT (%i) conflicts with engine MOVEVARS\n", i, MAX_CL_STATS, MAX_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_CL_STATS (%d), not supported by protocol, and AddStat beyond MAX_VM_STAT (%d) conflicts with engine MOVEVARS\n", i, MAX_CL_STATS, MAX_VM_STAT);
 		return;
 	}
 
 	if (i > (MAX_CL_STATS - 4) && type == 1)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) > (MAX_CL_STATS (%i) - 4) with string type won't fit in the protocol, and AddStat beyond MAX_VM_STAT conflicts with engine MOVEVARS\n", i, MAX_CL_STATS);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) > (MAX_CL_STATS (%d) - 4) with string type won't fit in the protocol, and AddStat beyond MAX_VM_STAT conflicts with engine MOVEVARS\n", i, MAX_CL_STATS);
 		return;
 	}
 
 	// these are hazardous to override but sort of allowed if one wants to be adventurous...  and enjoys warnings.
 	if (i < MIN_VM_STAT)
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) < MIN_VM_STAT (%i) may conflict with engine stats - allowed, but this may break things\n", i, MIN_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) < MIN_VM_STAT (%d) may conflict with engine stats - allowed, but this may break things\n", i, MIN_VM_STAT);
 	else if (i >= MAX_VM_STAT && !sv_gameplayfix_customstats.integer)
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) >= MAX_VM_STAT (%i) conflicts with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_VM_STAT (%d) conflicts with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
 	else if (i > (MAX_VM_STAT - 4) && type == 1 && !sv_gameplayfix_customstats.integer)
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) >= MAX_VM_STAT (%i) - 4 with string type won't fit within MAX_VM_STAT, thus conflicting with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_VM_STAT (%d) - 4 with string type won't fit within MAX_VM_STAT, thus conflicting with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
 
 	vm_customstats[i].type		= type;
 	vm_customstats[i].fieldoffset	= off;
-	if(vm_customstats_last < i)
+	if (vm_customstats_last < i)
 		vm_customstats_last = i;
 }
 
@@ -2470,10 +2561,10 @@ static void VM_SV_setattachment(prvm_prog_t *prog)
 		{
 			tagindex = Mod_Alias_GetTagIndexForName(model, (int)PRVM_serveredictfloat(tagentity, skin), tagname);
 			if (tagindex == 0)
-				Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i (model \"%s\") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
+				Con_DPrintf ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d (model \"%s\") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
 		}
 		else
-			Con_DPrintf("setattachment(edict %i, edict %i, string \"%s\"): tried to find tag named \"%s\" on entity %i but it has no model\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
+			Con_DPrintf ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d but it has no model\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
 	}
 
 	PRVM_serveredictedict(e, tag_entity) = PRVM_EDICT_TO_PROG(tagentity);
@@ -2507,7 +2598,7 @@ static int SV_GetExtendedTagInfo (prvm_prog_t *prog, prvm_edict_t *e, int tagind
 	{
 		r = Mod_Alias_GetExtendedTagInfoForIndex(model, (int)PRVM_serveredictfloat(e, skin), e->priv.server->frameblend, &e->priv.server->skeleton, tagindex - 1, parentindex, tagname, tag_localmatrix);
 
-		if(!r) // success?
+		if (!r) // success?
 			*parentindex += 1;
 
 		return r;
@@ -2632,24 +2723,24 @@ static void VM_SV_gettagindex(prvm_prog_t *prog)
 
 	if (ent == prog->edicts)
 	{
-		VM_Warning(prog, "VM_SV_gettagindex(entity #%i): can't affect world entity\n", PRVM_NUM_FOR_EDICT(ent));
+		VM_Warning(prog, "VM_SV_gettagindex(entity #%d): can't affect world entity\n", PRVM_NUM_FOR_EDICT(ent));
 		return;
 	}
 	if (ent->free)
 	{
-		VM_Warning(prog, "VM_SV_gettagindex(entity #%i): can't affect free entity\n", PRVM_NUM_FOR_EDICT(ent));
+		VM_Warning(prog, "VM_SV_gettagindex(entity #%d): can't affect free entity\n", PRVM_NUM_FOR_EDICT(ent));
 		return;
 	}
 
 	tag_index = 0;
 	if (!SV_GetModelFromEdict(ent))
-		Con_DPrintf("VM_SV_gettagindex(entity #%i): null or non-precached model\n", PRVM_NUM_FOR_EDICT(ent));
+		Con_DPrintf ("VM_SV_gettagindex(entity #%d): null or non-precached model\n", PRVM_NUM_FOR_EDICT(ent));
 	else
 	{
 		tag_index = SV_GetTagIndex(prog, ent, tag_name);
 		if (tag_index == 0)
-			if(developer_extra.integer)
-				Con_DPrintf("VM_SV_gettagindex(entity #%i): tag \"%s\" not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
+			if (developer_extra.integer)
+				Con_DPrintf ("VM_SV_gettagindex(entity #%d): tag \"%s\" not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
 	}
 	PRVM_G_FLOAT(OFS_RETURN) = tag_index;
 }
@@ -2701,13 +2792,13 @@ static void VM_SV_gettaginfo(prvm_prog_t *prog)
 			VM_Warning(prog, "gettagindex: can't affect free entity\n");
 			break;
 		case 3:
-			Con_DPrintf("SV_GetTagMatrix(entity #%i): null or non-precached model\n", PRVM_NUM_FOR_EDICT(e));
+			Con_DPrintf ("SV_GetTagMatrix(entity #%d): null or non-precached model\n", PRVM_NUM_FOR_EDICT(e));
 			break;
 		case 4:
-			Con_DPrintf("SV_GetTagMatrix(entity #%i): model has no tag with requested index %i\n", PRVM_NUM_FOR_EDICT(e), tagindex);
+			Con_DPrintf ("SV_GetTagMatrix(entity #%d): model has no tag with requested index %d\n", PRVM_NUM_FOR_EDICT(e), tagindex);
 			break;
 		case 5:
-			Con_DPrintf("SV_GetTagMatrix(entity #%i): runaway loop at attachment chain\n", PRVM_NUM_FOR_EDICT(e));
+			Con_DPrintf ("SV_GetTagMatrix(entity #%d): runaway loop at attachment chain\n", PRVM_NUM_FOR_EDICT(e));
 			break;
 	}
 }
@@ -3240,7 +3331,7 @@ static void VM_SV_frameforname(prvm_prog_t *prog)
 		return;
 	for (i = 0;i < model->numframes;i++)
 	{
-		if (!strcasecmp(model->animscenes[i].name, name))
+		if (String_Does_Match_Caseless(model->animscenes[i].name, name))
 		{
 			PRVM_G_FLOAT(OFS_RETURN) = i;
 			break;
@@ -3379,7 +3470,7 @@ VM_fclose,						// #111 void(float fhandle) fclose (FRIK_FILE)
 VM_fgets,						// #112 string(float fhandle) fgets (FRIK_FILE)
 VM_fputs,						// #113 void(float fhandle, string s) fputs (FRIK_FILE)
 VM_strlen,						// #114 float(string s) strlen (FRIK_FILE)
-VM_strcat,						// #115 string(string s, string...) strcat (FRIK_FILE)
+VM_strcat,						// #115 string(string s1, string...) strcat (FRIK_FILE)
 VM_substring,					// #116 string(string s, float start, float length) substring (FRIK_FILE)
 VM_stov,						// #117 vector(string) stov (FRIK_FILE)
 VM_strzone,						// #118 string(string s) strzone (FRIK_FILE)
@@ -3834,7 +3925,12 @@ NULL,							// #563
 NULL,							// #564
 NULL,							// #565
 VM_SV_findbox,					// #566 entity(vector mins, vector maxs) findbox = #566; (DP_QC_FINDBOX)
+#if 111 // Baker r0061: Classic DarkPlaces physics
+
+NULL,							// #567
+#else
 VM_nudgeoutofsolid,				// #567 float(entity ent) nudgeoutofsolid = #567; (DP_QC_NUDGEOUTOFSOLID)
+#endif
 NULL,							// #568
 NULL,							// #569
 NULL,							// #570
@@ -3924,7 +4020,7 @@ void SVVM_reset_cmd(prvm_prog_t *prog)
 {
 	World_End(&sv.world);
 
-	if(prog->loaded && PRVM_serverfunction(SV_Shutdown))
+	if (prog->loaded && PRVM_serverfunction(SV_Shutdown))
 	{
 		func_t s = PRVM_serverfunction(SV_Shutdown);
 		PRVM_serverglobalfloat(time) = sv.time;

@@ -72,7 +72,7 @@ int String_Count_First_Word_Length (const char *s)
     return first_space - s;
 }
 
-
+#if 0 // Baker: favor macro over this
 #undef String_Does_Contain
 // Short: Returns 1 if string contains string, otherwise returns 0
 // Notes: For reference only, function has no advantage over strstr.
@@ -83,6 +83,7 @@ int String_Does_Contain (const char *s, const char *s_find)
 
 	return 0;
 }
+#endif
 
 int String_Does_Contain_Caseless (const char *s, const char *s_find)
 {

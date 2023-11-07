@@ -201,16 +201,16 @@ typedef struct client_s
 	/// requested rate in bytes per second
 	int rate;
 
-	/// temporarily exceed rate by this amount of bytes
+	// temporarily exceed rate by this amount of bytes
 	int rate_burstsize;
 
-	/// realtime this client connected
+	// realtime this client connected
 	double connecttime;
 
-	/// keepalive messages must be sent periodically during signon
+	// keepalive messages must be sent periodically during signon
 	double keepalivetime;
 
-	/// communications handle
+	// communications handle
 	netconn_t *netconnection;
 
 	unsigned int movesequence;
@@ -236,7 +236,7 @@ typedef struct client_s
 	prvm_vec_t spawn_parms[NUM_SPAWN_PARMS];
 
 	// properties that are sent across the network only when changed
-	char name[MAX_SCOREBOARDNAME], old_name[MAX_SCOREBOARDNAME];
+	char name[MAX_SCOREBOARDNAME_128], old_name[MAX_SCOREBOARDNAME_128];
 	int colors, old_colors;
 	int frags, old_frags;
 	char playermodel[MAX_QPATH], old_model[MAX_QPATH];
@@ -570,6 +570,12 @@ void SV_LinkEdict_TouchAreaGrid_Call(prvm_edict_t *touch, prvm_edict_t *ent); //
  * returns true if it found a better place
  */
 qbool SV_UnstickEntity (prvm_edict_t *ent);
+#if 111 // Baker r0061: Classic DarkPlaces physics
+/*! move an entity that is stuck out of the surface it is stuck in (can move large amounts)
+ * returns true if it found a better place
+ */
+qbool SV_NudgeOutOfSolid(prvm_edict_t *ent);
+#endif
 
 /// calculates hitsupercontentsmask for a generic qc entity
 int SV_GenericHitSuperContentsMask(const prvm_edict_t *edict);
@@ -628,4 +634,4 @@ void SV_Begin_f(cmd_state_t *cmd);
 
 qbool SV_VM_ConsoleCommand (const char *text);
 
-#endif
+#endif // ! SERVER_H

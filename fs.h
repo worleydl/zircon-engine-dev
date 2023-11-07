@@ -67,17 +67,17 @@ qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_di
 const char *FS_WhichPack(const char *filename);
 void FS_CreatePath (char *path);
 int FS_SysOpenFD(const char *filepath, const char *mode, qbool nonblocking); // uses absolute path
-qfile_t* FS_SysOpen (const char* filepath, const char* mode, qbool nonblocking); // uses absolute path
-qfile_t* FS_OpenRealFile (const char* filepath, const char* mode, qbool quiet);
-qfile_t* FS_OpenVirtualFile (const char* filepath, qbool quiet);
+qfile_t* FS_SysOpen (const char *filepath, const char *mode, qbool nonblocking); // uses absolute path
+qfile_t* FS_OpenRealFile (const char *filepath, const char *mode, qbool quiet);
+qfile_t* FS_OpenVirtualFile (const char *filepath, qbool quiet);
 qfile_t* FS_FileFromData (const unsigned char *data, const size_t size, qbool quiet);
 int FS_Close (qfile_t* file);
 void FS_RemoveOnClose(qfile_t* file);
 fs_offset_t FS_Write (qfile_t* file, const void* data, size_t datasize);
 fs_offset_t FS_Read (qfile_t* file, void* buffer, size_t buffersize);
 int FS_Print(qfile_t* file, const char *msg);
-int FS_Printf(qfile_t* file, const char* format, ...) DP_FUNC_PRINTF(2);
-int FS_VPrintf(qfile_t* file, const char* format, va_list ap);
+int FS_Printf(qfile_t* file, const char *format, ...) DP_FUNC_PRINTF(2);
+int FS_VPrintf(qfile_t* file, const char *format, va_list ap);
 int FS_Getc (qfile_t* file);
 int FS_UnGetc (qfile_t* file, unsigned char c);
 int FS_Seek (qfile_t* file, fs_offset_t offset, int whence);

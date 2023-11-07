@@ -41,10 +41,10 @@ void Protocol_Names(char *buffer, size_t buffersize);
 	int entityprofiling_startsize = msg->cursize
 
 #define ENTITYSIZEPROFILING_END(msg, num, flags) \
-	if(developer_networkentities.integer >= 2) \
+	if (developer_networkentities.integer >= 2) \
 	{ \
 		prvm_edict_t *edict = prog->edicts + num; \
-		Con_Printf("sent entity update of size %u for %d classname %s flags %d\n", (msg->cursize - entityprofiling_startsize), num, PRVM_serveredictstring(edict, classname) ? PRVM_GetString(prog, PRVM_serveredictstring(edict, classname)) : "(no classname)", flags); \
+		Con_Printf ("sent entity update of size %u for %d classname %s flags %d\n", (msg->cursize - entityprofiling_startsize), num, PRVM_serveredictstring(edict, classname) ? PRVM_GetString(prog, PRVM_serveredictstring(edict, classname)) : "(no classname)", flags); \
 	}
 
 // CSQC entity scope values. Bitflags!

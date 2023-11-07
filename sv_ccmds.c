@@ -73,7 +73,7 @@ static void SV_Map_f(cmd_state_t *cmd)
 	//if (gamemode == GAME_DELUXEQUAKE)
 	//	Cvar_Set(&cvars_all, "warpmark", "");
 
-	if(host.hook.Disconnect)
+	if (host.hook.Disconnect)
 		host.hook.Disconnect(false, NULL);
 
 	SV_Shutdown();
@@ -90,14 +90,14 @@ static void SV_Map_f(cmd_state_t *cmd)
 		svs.clients = (client_t *)Mem_Alloc(sv_mempool, sizeof(client_t) * svs.maxclients);
 	}
 
-	if(host.hook.ToggleMenu)
+	if (host.hook.ToggleMenu)
 		host.hook.ToggleMenu();
 
 	svs.serverflags = 0;			// haven't completed an episode yet
 	strlcpy(level, Cmd_Argv(cmd, 1), sizeof(level));
 	SV_SpawnServer(level);
 
-	if(sv.active && host.hook.ConnectLocal != NULL)
+	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
 }
 
@@ -112,28 +112,26 @@ static void SV_Changelevel_f(cmd_state_t *cmd)
 {
 	char level[MAX_QPATH];
 
-	if (Cmd_Argc(cmd) != 2)
-	{
-		Con_Print("changelevel <levelname> : continue game on a new level\n");
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("changelevel <levelname> : continue game on a new level");
 		return;
 	}
 
-	if (!sv.active)
-	{
-		Con_Printf("You must be running a server to changelevel. Use 'map %s' instead\n", Cmd_Argv(cmd, 1));
+	if (!sv.active) {
+		Con_PrintLinef ("You must be running a server to changelevel. Use 'map %s' instead", Cmd_Argv(cmd, 1));
 		return;
 	}
 
 	Con_CloseConsole_If_Client(); // Baker r1003: close console for map/load/etc.
 
-	if(host.hook.ToggleMenu)
+	if (host.hook.ToggleMenu)
 		host.hook.ToggleMenu();
 
 	SV_SaveSpawnparms ();
 	strlcpy(level, Cmd_Argv(cmd, 1), sizeof(level));
 	SV_SpawnServer(level);
 	
-	if(sv.active && host.hook.ConnectLocal != NULL)
+	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
 }
 
@@ -148,26 +146,25 @@ static void SV_Restart_f(cmd_state_t *cmd)
 {
 	char mapname[MAX_QPATH];
 
-	if (Cmd_Argc(cmd) != 1)
-	{
-		Con_Print("restart : restart current level\n");
+	if (Cmd_Argc(cmd) != 1) {
+		Con_PrintLinef ("restart : restart current level");
 		return;
 	}
-	if (!sv.active)
-	{
-		Con_Print("Only the server may restart\n");
+
+	if (!sv.active) {
+		Con_PrintLinef ("Only the server may restart");
 		return;
 	}
 
 	Con_CloseConsole_If_Client(); // Baker r1003: close console for map/load/etc.
 
-	if(host.hook.ToggleMenu)
+	if (host.hook.ToggleMenu)
 		host.hook.ToggleMenu();
 
 	strlcpy(mapname, sv.name, sizeof(mapname));
 	SV_SpawnServer(mapname);
 	
-	if(sv.active && host.hook.ConnectLocal != NULL)
+	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
 }
 
@@ -250,8 +247,7 @@ static void SV_Give_f(cmd_state_t *cmd)
 	t = Cmd_Argv(cmd, 1);
 	v = atoi (Cmd_Argv(cmd, 2));
 
-	switch (t[0])
-	{
+	switch (t[0]) {
 	case '0':
 	case '1':
 	case '2':
@@ -293,40 +289,32 @@ static void SV_Give_f(cmd_state_t *cmd)
 		PRVM_serveredictfloat(host_client->edict, ammo_shells) = v;
 		break;
 	case 'n':
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			PRVM_serveredictfloat(host_client->edict, ammo_nails1) = v;
 			if (PRVM_serveredictfloat(host_client->edict, weapon) <= IT_LIGHTNING)
 				PRVM_serveredictfloat(host_client->edict, ammo_nails) = v;
-		}
-		else
-		{
+		} else {
 			PRVM_serveredictfloat(host_client->edict, ammo_nails) = v;
 		}
 		break;
 	case 'l':
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			PRVM_serveredictfloat(host_client->edict, ammo_lava_nails) = v;
 			if (PRVM_serveredictfloat(host_client->edict, weapon) > IT_LIGHTNING)
 				PRVM_serveredictfloat(host_client->edict, ammo_nails) = v;
 		}
 		break;
 	case 'r':
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			PRVM_serveredictfloat(host_client->edict, ammo_rockets1) = v;
 			if (PRVM_serveredictfloat(host_client->edict, weapon) <= IT_LIGHTNING)
 				PRVM_serveredictfloat(host_client->edict, ammo_rockets) = v;
-		}
-		else
-		{
+		} else {
 			PRVM_serveredictfloat(host_client->edict, ammo_rockets) = v;
 		}
 		break;
 	case 'm':
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			PRVM_serveredictfloat(host_client->edict, ammo_multi_rockets) = v;
 			if (PRVM_serveredictfloat(host_client->edict, weapon) > IT_LIGHTNING)
 				PRVM_serveredictfloat(host_client->edict, ammo_rockets) = v;
@@ -336,20 +324,16 @@ static void SV_Give_f(cmd_state_t *cmd)
 		PRVM_serveredictfloat(host_client->edict, health) = v;
 		break;
 	case 'c':
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			PRVM_serveredictfloat(host_client->edict, ammo_cells1) = v;
 			if (PRVM_serveredictfloat(host_client->edict, weapon) <= IT_LIGHTNING)
 				PRVM_serveredictfloat(host_client->edict, ammo_cells) = v;
-		}
-		else
-		{
+		} else {
 			PRVM_serveredictfloat(host_client->edict, ammo_cells) = v;
 		}
 		break;
 	case 'p':
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			PRVM_serveredictfloat(host_client->edict, ammo_plasma) = v;
 			if (PRVM_serveredictfloat(host_client->edict, weapon) > IT_LIGHTNING)
 				PRVM_serveredictfloat(host_client->edict, ammo_cells) = v;
@@ -369,13 +353,10 @@ static void SV_Fly_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
 
-	if (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_FLY)
-	{
+	if (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_FLY) {
 		PRVM_serveredictfloat(host_client->edict, movetype) = MOVETYPE_FLY;
 		SV_ClientPrint("flymode ON\n");
-	}
-	else
-	{
+	} else {
 		PRVM_serveredictfloat(host_client->edict, movetype) = MOVETYPE_WALK;
 		SV_ClientPrint("flymode OFF\n");
 	}
@@ -435,7 +416,7 @@ static void SV_Pause_f(cmd_state_t *cmd)
 	sv.paused ^= 1;
 	if (cmd->source != src_local)
 		SV_BroadcastPrintf("%s %spaused the game\n", host_client->name, sv.paused ? "" : "un");
-	else if(*(sv_adminnick.string))
+	else if (*(sv_adminnick.string))
 		SV_BroadcastPrintf("%s %spaused the game\n", sv_adminnick.string, sv.paused ? "" : "un");
 	else
 		SV_BroadcastPrintf("%s %spaused the game\n", hostname.string, sv.paused ? "" : "un");
@@ -479,7 +460,7 @@ static void SV_Say(cmd_state_t *cmd, qbool teamonly)
 		dpsnprintf (text, sizeof(text), "\001%s: %s", host_client->name, p1);
 	else if (!fromServer && teamonly)
 		dpsnprintf (text, sizeof(text), "\001(%s): %s", host_client->name, p1);
-	else if(*(sv_adminnick.string))
+	else if (*(sv_adminnick.string))
 		dpsnprintf (text, sizeof(text), "\001<%s> %s", sv_adminnick.string, p1);
 	else
 		dpsnprintf (text, sizeof(text), "\001<%s> %s", hostname.string, p1);
@@ -500,7 +481,7 @@ static void SV_Say(cmd_state_t *cmd, qbool teamonly)
 			SV_ClientPrint(text);
 	host_client = save;
 
-	if(!host_isclient.integer)
+	if (!host_isclient.integer)
 		Con_Print(&text[1]);
 }
 
@@ -534,7 +515,7 @@ static void SV_Tell_f(cmd_state_t *cmd)
 	// note this uses the chat prefix \001
 	if (!fromServer)
 		dpsnprintf (text, sizeof(text), "\001%s tells you: ", host_client->name);
-	else if(*(sv_adminnick.string))
+	else if (*(sv_adminnick.string))
 		dpsnprintf (text, sizeof(text), "\001<%s tells you> ", sv_adminnick.string);
 	else
 		dpsnprintf (text, sizeof(text), "\001<%s tells you> ", hostname.string);
@@ -544,7 +525,7 @@ static void SV_Tell_f(cmd_state_t *cmd)
 	// remove the target name
 	while (p1 < p2 && *p1 == ' ')
 		p1++;
-	if(*p1 == '#')
+	if (*p1 == '#')
 	{
 		++p1;
 		while (p1 < p2 && *p1 == ' ')
@@ -556,14 +537,14 @@ static void SV_Tell_f(cmd_state_t *cmd)
 		}
 		--playernumber;
 	}
-	else if(*p1 == '"')
+	else if (*p1 == '"')
 	{
 		++p1;
 		playername_start = p1;
 		while (p1 < p2 && *p1 != '"')
 			p1++;
 		playername_length = p1 - playername_start;
-		if(p1 < p2)
+		if (p1 < p2)
 			p1++;
 	}
 	else
@@ -575,11 +556,11 @@ static void SV_Tell_f(cmd_state_t *cmd)
 	}
 	while (p1 < p2 && *p1 == ' ')
 		p1++;
-	if(playername_start)
+	if (playername_start)
 	{
 		// set playernumber to the right client
 		char namebuf[128];
-		if(playername_length >= sizeof(namebuf))
+		if (playername_length >= sizeof(namebuf))
 		{
 			if (fromServer)
 				Con_Print("Host_Tell: too long player name/ID\n");
@@ -597,7 +578,7 @@ static void SV_Tell_f(cmd_state_t *cmd)
 				break;
 		}
 	}
-	if(playernumber < 0 || playernumber >= svs.maxclients || !(svs.clients[playernumber].active))
+	if (playernumber < 0 || playernumber >= svs.maxclients || !(svs.clients[playernumber].active))
 	{
 		if (fromServer)
 			Con_Print("Host_Tell: invalid player name/ID\n");
@@ -621,7 +602,7 @@ static void SV_Tell_f(cmd_state_t *cmd)
 	}
 	while (p2 > p1 && (p2[-1] == '\n' || p2[-1] == '\r'))
 		p2--;
-	if(p1 == p2)
+	if (p1 == p2)
 		return; // empty say
 	for (j = (int)strlen(text);j < (int)(sizeof(text) - 2) && p1 < p2;)
 		text[j++] = *p1++;
@@ -711,7 +692,7 @@ static void SV_Pings_f(cmd_state_t *cmd)
 		else
 		{
 			// write the string into the packet as multiple unterminated strings to avoid needing a local buffer
-			if(movementloss)
+			if (movementloss)
 				dpsnprintf(temp, sizeof(temp), " %d %d,%d", ping, packetloss, movementloss);
 			else
 				dpsnprintf(temp, sizeof(temp), " %d %d", ping, packetloss);
@@ -760,10 +741,10 @@ static void SV_Status_f(cmd_state_t *cmd)
 			players++;
 	print ("host:     %s\n", Cvar_VariableString (&cvars_all, "hostname", CF_SERVER));
 	print ("version:  %s build %s (gamename %s)\n", gamename, buildstring, gamenetworkfiltername);
-	print ("protocol: %i (%s)\n", Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol));
+	print ("protocol: %d (%s)\n", Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol));
 	print ("map:      %s\n", sv.name);
 	print ("timing:   %s\n", SV_TimingReport(vabuf, sizeof(vabuf)));
-	print ("players:  %i active (%i max)\n\n", players, svs.maxclients);
+	print ("players:  %d active (%d max)\n\n", players, svs.maxclients);
 
 	if (in == 1)
 		print ("^2IP                                             %%pl ping  time   frags  no   name\n");
@@ -777,12 +758,10 @@ static void SV_Status_f(cmd_state_t *cmd)
 
 		++k;
 
-		if (in == 0 || in == 1)
-		{
+		if (in == 0 || in == 1) {
 			seconds = (int)(host.realtime - client->connecttime);
 			minutes = seconds / 60;
-			if (minutes)
-			{
+			if (minutes) {
 				seconds -= (minutes * 60);
 				hours = minutes / 60;
 				if (hours)
@@ -800,27 +779,25 @@ static void SV_Status_f(cmd_state_t *cmd)
 			ping = bound(0, (int)floor(client->ping*1000+0.5), 9999);
 		}
 
-		if(sv_status_privacy.integer && cmd->source != src_local && LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) != LHNETADDRESSTYPE_LOOP)
+		if (sv_status_privacy.integer && cmd->source != src_local && LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) != LHNETADDRESSTYPE_LOOP)
 			strlcpy(ip, client->netconnection ? "hidden" : "botclient", 48);
 		else
 			strlcpy(ip, (client->netconnection && *client->netconnection->address) ? client->netconnection->address : "botclient", 48);
 
 		frags = client->frags;
 
-		if(sv_status_show_qcstatus.integer)
-		{
+		if (sv_status_show_qcstatus.integer) {
 			prvm_edict_t *ed = PRVM_EDICT_NUM(i + 1);
 			const char *str = PRVM_GetString(prog, PRVM_serveredictstring(ed, clientstatus));
-			if(str && *str)
-			{
+			if (str && *str) {
 				char *p;
 				const char *q;
 				p = qcstatus;
 				for(q = str; *q && p != qcstatus + sizeof(qcstatus) - 1; ++q)
-					if(*q != '\\' && *q != '"' && !ISWHITESPACE(*q))
+					if (*q != '\\' && *q != '"' && !ISWHITESPACE(*q))
 						*p++ = *q;
 				*p = 0;
-				if(*qcstatus)
+				if (*qcstatus)
 					frags = atoi(qcstatus);
 			}
 		}
@@ -909,7 +886,7 @@ static void SV_Name_f(cmd_state_t *cmd)
 			host_client->name[j++] = host_client->name[i];
 	host_client->name[j] = 0;
 
-	if(host_client->name[0] == 1 || host_client->name[0] == 2)
+	if (host_client->name[0] == 1 || host_client->name[0] == 2)
 	// may interfere with chat area, and will needlessly beep; so let's add a ^7
 	{
 		memmove(host_client->name + 2, host_client->name, sizeof(host_client->name) - 2);
@@ -919,22 +896,22 @@ static void SV_Name_f(cmd_state_t *cmd)
 	}
 
 	u8_COM_StringLengthNoColors(host_client->name, 0, &valid_colors);
-	if(!valid_colors) // NOTE: this also proves the string is not empty, as "" is a valid colored string
+	if (!valid_colors) // NOTE: this also proves the string is not empty, as "" is a valid colored string
 	{
 		size_t l;
 		l = strlen(host_client->name);
-		if(l < sizeof(host_client->name) - 1)
+		if (l < sizeof(host_client->name) - 1)
 		{
 			// duplicate the color tag to escape it
 			host_client->name[i] = STRING_COLOR_TAG;
 			host_client->name[i+1] = 0;
-			//Con_DPrintf("abuse detected, adding another trailing color tag\n");
+			//Con_DPrintf ("abuse detected, adding another trailing color tag\n");
 		}
 		else
 		{
 			// remove the last character to fix the color code
 			host_client->name[l-1] = 0;
-			//Con_DPrintf("abuse detected, removing a trailing color tag\n");
+			//Con_DPrintf ("abuse detected, removing a trailing color tag\n");
 		}
 	}
 
@@ -1080,7 +1057,7 @@ static void SV_Kick_f(cmd_state_t *cmd)
 	{
 		if (cmd->source == src_local)
 		{
-			if(!host_isclient.integer)
+			if (!host_isclient.integer)
 				who = "Console";
 			else
 				who = cl_name.string;
@@ -1123,7 +1100,7 @@ static void SV_MaxPlayers_f(cmd_state_t *cmd)
 
 	if (Cmd_Argc(cmd) != 2)
 	{
-		Con_Printf("\"maxplayers\" is \"%u\"\n", svs.maxclients_next);
+		Con_Printf ("\"maxplayers\" is \"%u\"\n", svs.maxclients_next);
 		return;
 	}
 
@@ -1135,7 +1112,7 @@ static void SV_MaxPlayers_f(cmd_state_t *cmd)
 
 	n = atoi(Cmd_Argv(cmd, 1));
 	n = bound(1, n, MAX_SCOREBOARD);
-	Con_Printf("\"maxplayers\" set to \"%u\"\n", n);
+	Con_Printf ("\"maxplayers\" set to \"%u\"\n", n);
 
 	svs.maxclients_next = n;
 	if (n == 1)
@@ -1274,7 +1251,7 @@ static prvm_edict_t	*FindViewthing(prvm_prog_t *prog)
 	for (i=0 ; i<prog->num_edicts ; i++)
 	{
 		e = PRVM_EDICT_NUM(i);
-		if (!strcmp (PRVM_GetString(prog, PRVM_serveredictstring(e, classname)), "viewthing"))
+		if (String_Does_Match (PRVM_GetString(prog, PRVM_serveredictstring(e, classname)), "viewthing"))
 			return e;
 	}
 	Con_Print("No viewthing on map\n");
@@ -1305,7 +1282,7 @@ static void SV_Viewmodel_f(cmd_state_t *cmd)
 			cl.model_precache[(int)PRVM_serveredictfloat(e, modelindex)] = m;
 		}
 		else
-			Con_Printf("viewmodel: can't load %s\n", Cmd_Argv(cmd, 1));
+			Con_Printf ("viewmodel: can't load %s\n", Cmd_Argv(cmd, 1));
 	}
 }
 
@@ -1340,9 +1317,9 @@ static void SV_Viewframe_f(cmd_state_t *cmd)
 static void PrintFrameName (model_t *m, int frame)
 {
 	if (m->animscenes)
-		Con_Printf("frame %i: %s\n", frame, m->animscenes[frame].name);
+		Con_Printf ("frame %d: %s\n", frame, m->animscenes[frame].name);
 	else
-		Con_Printf("frame %i\n", frame);
+		Con_Printf ("frame %d\n", frame);
 }
 
 /*
@@ -1405,21 +1382,21 @@ static void SV_SendCvar_f(cmd_state_t *cmd)
 	const char *cvarname;
 	client_t *old;
 	
-	if(Cmd_Argc(cmd) != 2)
+	if (Cmd_Argc(cmd) != 2)
 		return;
 
-	if(!sv.active)// || !PRVM_serverfunction(SV_ParseClientCommand))
+	if (!sv.active)// || !PRVM_serverfunction(SV_ParseClientCommand))
 		return;
 
 	cvarname = Cmd_Argv(cmd, 1);
 
 	old = host_client;
-	if(host_isclient.integer)
+	if (host_isclient.integer)
 		i = 1;
 	else
 		i = 0;
 	for(;i<svs.maxclients;i++)
-		if(svs.clients[i].active && svs.clients[i].netconnection)
+		if (svs.clients[i].active && svs.clients[i].netconnection)
 		{
 			host_client = &svs.clients[i];
 			SV_ClientCommands("sendcvar %s\n", cvarname);
@@ -1437,7 +1414,7 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 
 	void (*print)(const char *, ...) = (cmd->source == src_client ? SV_ClientPrintf : Con_Printf);
 
-	if(!Cmd_Argc(cmd))
+	if (!Cmd_Argc(cmd))
 		return;
 
 	ed = PRVM_ED_Alloc(SVVM_prog);
@@ -1445,7 +1422,7 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 	PRVM_ED_ParseEpair(prog, ed, PRVM_ED_FindField(prog, "classname"), Cmd_Argv(cmd, 1), false);
 
 	// Spawn where the player is aiming. We need a view matrix first.
-	if(cmd->source == src_client)
+	if (cmd->source == src_client)
 	{
 		vec3_t org, temp, dest;
 		matrix4x4_t view;
@@ -1475,7 +1452,7 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 	// Allow more than one key/value pair by cycling between expecting either one.
 	for(i = 2; i < Cmd_Argc(cmd); i += 2)
 	{
-		if(!(key = PRVM_ED_FindField(prog, Cmd_Argv(cmd, i))))
+		if (!(key = PRVM_ED_FindField(prog, Cmd_Argv(cmd, i))))
 		{
 			print("Key %s not found!\n", Cmd_Argv(cmd, i));
 			PRVM_ED_Free(prog, ed);
@@ -1486,14 +1463,14 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 		 * This is mostly for dedicated server console, but if the
 		 * player gave a custom origin, we can ignore the traceline.
 		 */
-		if(!strcmp(Cmd_Argv(cmd, i), "origin"))
+		if (String_Does_Match(Cmd_Argv(cmd, i), "origin"))
 			haveorigin = true;
 
 		if (i + 1 < Cmd_Argc(cmd))
 			PRVM_ED_ParseEpair(prog, ed, key, Cmd_Argv(cmd, i+1), false);
 	}
 
-	if(!haveorigin)
+	if (!haveorigin)
 	{
 		print("Missing origin\n");
 		PRVM_ED_Free(prog, ed);
@@ -1503,11 +1480,11 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 	// Spawn it
 	PRVM_ED_CallPrespawnFunction(prog, ed);
 	
-	if(!PRVM_ED_CallSpawnFunction(prog, ed, NULL, NULL))
+	if (!PRVM_ED_CallSpawnFunction(prog, ed, NULL, NULL))
 	{
 		print("Could not spawn a \"%s\". No such entity or it has no spawn function\n", Cmd_Argv(cmd, 1));
-		if(cmd->source == src_client)
-			Con_Printf("%s tried to spawn a \"%s\"\n", host_client->name, Cmd_Argv(cmd, 1));
+		if (cmd->source == src_client)
+			Con_Printf ("%s tried to spawn a \"%s\"\n", host_client->name, Cmd_Argv(cmd, 1));
 		// CallSpawnFunction already freed the edict for us.
 		return;
 	}
@@ -1517,8 +1494,8 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 	// Make it appear in the world
 	SV_LinkEdict(ed);
 
-	if(cmd->source == src_client)
-		Con_Printf("%s spawned a \"%s\"\n", host_client->name, Cmd_Argv(cmd, 1));
+	if (cmd->source == src_client)
+		Con_Printf ("%s spawned a \"%s\"\n", host_client->name, Cmd_Argv(cmd, 1));
 }
 
 static void SV_Ent_Remove_f(cmd_state_t *cmd)
@@ -1528,21 +1505,21 @@ static void SV_Ent_Remove_f(cmd_state_t *cmd)
 	int i, ednum = 0;
 	void (*print)(const char *, ...) = (cmd->source == src_client ? SV_ClientPrintf : Con_Printf);
 
-	if(!Cmd_Argc(cmd))
+	if (!Cmd_Argc(cmd))
 		return;
 
 	// Allow specifying edict by number
-	if(Cmd_Argc(cmd) > 1 && Cmd_Argv(cmd, 1))
+	if (Cmd_Argc(cmd) > 1 && Cmd_Argv(cmd, 1))
 	{
 		ednum = atoi(Cmd_Argv(cmd, 1));
-		if(!ednum)
+		if (!ednum)
 		{
 			print("Cannot remove the world\n");
 			return;
 		}
 	}
 	// Or trace a line if it's a client who didn't specify one.
-	else if(cmd->source == src_client)
+	else if (cmd->source == src_client)
 	{
 		vec3_t org, temp, dest;
 		matrix4x4_t view;
@@ -1556,9 +1533,9 @@ static void SV_Ent_Remove_f(cmd_state_t *cmd)
 
 		trace = SV_TraceLine(org, dest, MOVE_NORMAL, NULL, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY, 0, 0, collision_extendmovelength.value);
 		
-		if(trace.ent)
+		if (trace.ent)
 			ednum = (int)PRVM_EDICT_TO_PROG(trace.ent);
-		if(!trace.ent || !ednum)
+		if (!trace.ent || !ednum)
 			// Don't remove the world, but don't annoy players with a print if they miss
 			return;
 	}
@@ -1571,16 +1548,16 @@ static void SV_Ent_Remove_f(cmd_state_t *cmd)
 
 	ed = PRVM_EDICT_NUM(ednum);
 
-	if(ed)
+	if (ed)
 	{
 		// Skip players
 		for (i = 0; i < svs.maxclients; i++)
 		{
-			if(ed == svs.clients[i].edict)
+			if (ed == svs.clients[i].edict)
 				return;
 		}
 
-		if(!ed->free)
+		if (!ed->free)
 		{
 			print("Removed a \"%s\"\n", PRVM_GetString(prog, PRVM_serveredictstring(ed, classname)));
 			PRVM_ED_ClearEdict(prog, ed);
@@ -1604,9 +1581,9 @@ static void SV_Ent_Remove_All_f(cmd_state_t *cmd)
 
 	for (i = 0, rmcount = 0, ed = PRVM_EDICT_NUM(i); i < prog->num_edicts; i++, ed = PRVM_NEXT_EDICT(ed))
 	{
-		if(!ed->free && !strcmp(PRVM_GetString(prog, PRVM_serveredictstring(ed, classname)), Cmd_Argv(cmd, 1)))
+		if (!ed->free && String_Does_Match(PRVM_GetString(prog, PRVM_serveredictstring(ed, classname)), Cmd_Argv(cmd, 1)))
 		{
-			if(!i)
+			if (!i)
 			{
 				print("Cannot remove the world\n");
 				return;
@@ -1617,10 +1594,10 @@ static void SV_Ent_Remove_All_f(cmd_state_t *cmd)
 		}
 	}
 
-	if(!rmcount)
+	if (!rmcount)
 		print("No \"%s\" found\n", Cmd_Argv(cmd, 1));
 	else
-		print("Removed %i of \"%s\"\n", rmcount, Cmd_Argv(cmd, 1));
+		print("Removed %d of \"%s\"\n", rmcount, Cmd_Argv(cmd, 1));
 }
 
 void SV_InitOperatorCommands(void)

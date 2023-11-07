@@ -86,8 +86,8 @@ Uchar u8_tolower(Uchar ch);
 #define WTF8CHECKS 1  // check for extra sanity in conversion steps
 typedef wchar_t wchar;
 
-int towtf8(const wchar* wstr, int wlen, char* cstr, int maxclen);
-int fromwtf8(const char* cstr, int clen, wchar* wstr, int maxwlen);
+int towtf8(const wchar* wstr, int wlen, char *cstr, int maxclen);
+int fromwtf8(const char *cstr, int clen, wchar* wstr, int maxwlen);
 
 #endif // _WIN32
 

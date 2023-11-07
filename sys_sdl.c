@@ -18,7 +18,11 @@
 // Include this BEFORE darkplaces.h because it breaks wrapping
 // _Static_assert. Cloudwalk has no idea how or why so don't ask.
 
-#include <SDL.h>
+#if defined(_MSC_VER) && _MSC_VER < 1900
+	#include <SDL2/SDL.h>
+#else
+	#include <SDL.h>
+#endif
 
 #include "darkplaces.h"
 
@@ -31,7 +35,6 @@
 
 #endif //  _WIN32
 
-sys_t sys;
 
 // =======================================================================
 // General routines
@@ -64,23 +67,42 @@ void Sys_Error (const char *error, ...)
 	dpvsnprintf (string, sizeof (string), error, argptr);
 	va_end (argptr);
 
-	Con_Printf(CON_ERROR "Engine Error: %s\n", string);
+	Con_PrintLinef (CON_ERROR "Engine Error: %s", string);
 	
-	if(!nocrashdialog)
+	if (!nocrashdialog)
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", string, NULL);
 
 	//Host_Shutdown ();
 	exit (1);
 }
 
+// Baker: This will actually print to the debug console in Visual Studio
+
+#ifdef _WIN32
+	#ifdef _DEBUG
+	void Sys_PrintToTerminal2(const char *text)
+	{
+	//	DWORD dummy;
+		extern HANDLE houtput;
+
+		OutputDebugString(text);
+		OutputDebugString("\n");
+	//	if ((houtput != 0) && (houtput != INVALID_HANDLE_VALUE))
+	//		WriteFile(houtput, text, (DWORD) strlen(text), &dummy, NULL);
+	}
+	#endif
+#endif
+
 void Sys_PrintToTerminal(const char *text)
 {
+
+
 #ifdef __ANDROID__
 	#define CORE_ANDROID_LOG_TAG "CoreMain"
 	__android_log_print(ANDROID_LOG_INFO, CORE_ANDROID_LOG_TAG, "%s", text);
 #else
 	// !__ANDROID__
-	if(sys.outfd < 0)
+	if (sys.outfd < 0)
 		return;
 
 	#ifndef _WIN32
@@ -97,7 +119,7 @@ void Sys_PrintToTerminal(const char *text)
 		while(*text)
 		{
 			fs_offset_t written = (fs_offset_t)write(sys.outfd, text, (int)strlen(text));
-			if(written <= 0)
+			if (written <= 0)
 				break; // sorry, I cannot do anything about this error - without an output
 			text += written;
 		}
@@ -206,7 +228,7 @@ int main (int argc, char *argv[])
     
 #ifdef CORE_XCODE // MACOSX
 	// This is to make zircon_command_line.txt work for a Mac .app
-    if (strstr(sys_argv[0], ".app/") && strstr(sys_argv[0], "/Xcode/") == NULL) {
+    if (strstr(sys.argv[0], ".app/") && strstr(sys.argv[0], "/Xcode/") == NULL) {
         char *split;
         strlcpy(fs_basedir, com_argv[0], sizeof(fs_basedir));
         split = strstr(fs_basedir, ".app/");
@@ -259,13 +281,13 @@ int main (int argc, char *argv[])
 	Sys_ProvideSelfFD();
 
 	// COMMANDLINEOPTION: -nocrashdialog disables "Engine Error" crash dialog boxes
-	if(!Sys_CheckParm("-nocrashdialog"))
+	if (!Sys_CheckParm("-nocrashdialog"))
 		nocrashdialog = false;
 	// COMMANDLINEOPTION: sdl: -noterminal disables console output on stdout
-	if(Sys_CheckParm("-noterminal"))
+	if (Sys_CheckParm("-noterminal"))
 		sys.outfd = -1;
 	// COMMANDLINEOPTION: sdl: -stderr moves console output to stderr
-	else if(Sys_CheckParm("-stderr"))
+	else if (Sys_CheckParm("-stderr"))
 		sys.outfd = 2;
 	else
 		sys.outfd = 1;

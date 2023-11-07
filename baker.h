@@ -7,6 +7,8 @@
 #define WARP_X_(...)						// For warp without including code  see also: SPECIAL_POS___
 #define WARP_X_CALLERS_(...)	// For warp without including code  see also: SPECIAL_POS___
 
+#define NULLFIX2		NULL		// Marking kludge fixes "NULLFIX, "
+
 WARP_X_ (dpsnprintf)
 WARP_X_ (Partial_Reset String_Does_Have_Uppercase)
 WARP_X_ (String_Does_Have_Uppercase)
@@ -63,6 +65,7 @@ typedef struct _crect_t_s {
 #define RGBA_4							4				// Used to indicate a 4 x is bytes per pixel
 #define RGB_3							3				// Used to indicate a 3 x is bytes per pixel 
 
+#define NULL_CHAR_0						0
 #define SPACE_CHAR_32					32
 #define TAB_CHAR_9						9
 #define NEWLINE_CHAR_10					10				// '\n'		//#define NEWLINE_CHAR_10				10
@@ -85,8 +88,13 @@ typedef struct _crect_t_s {
 #define Have_Flag_Strict_Bool(x,flag)			(  ((x) & (flag) ) == (flag) )
 #define No_Have_Flag(x,flag)					!((x) & (flag))
 
-#define	Smallest(a, b)							(((a) < (b)) ? (a) : (b))
-#define	Largest(a, b)							(((a) > (b)) ? (a) : (b))
+#if 1 // Reason: complex formulas evaluated only once
+	#define	Smallest(a, b)						min(a, b)
+	#define	Largest(a, b)						max(a, b)
+#else
+	#define	Smallest(a, b)						(((a) < (b)) ? (a) : (b))
+	#define	Largest(a, b)						(((a) > (b)) ? (a) : (b))
+#endif
 
 #define in_range( _lo, _v, _hi )				( (_lo) <= (_v) && (_v) <= (_hi) )
 #define in_range_beyond(_start, _v, _beyond )	( (_start) <= (_v) && (_v) < (_beyond) )
@@ -166,8 +174,8 @@ typedef struct _crect_t_s {
 
 #define STRINGIFY(x)					#x		
 
-#define freenull3_(x)					if (x) { free (x); x = NULL; }
-#define setstr(x,y)						freenull3_ (x) x = strdup(y);
+#define freenull_(x)					if (x) { free (x); x = NULL; }
+#define setstr(x,y)						freenull_ (x) x = strdup(y);
 
 #ifndef c_strlcpy
 	#define c_strlcpy(_dest, _source) \
@@ -198,47 +206,35 @@ SBUF___ const char *Sys_Getcwd_SBuf (void);
 //  AUTOCOMPLETION: Baker
 ///////////////////////////////////////////////////////////////////////////////
 
-extern char *spartial_a;
-extern char *spartial_curcmd_a;
-
-extern char *spartial_start_pos;
-extern char *spartial_beyond_pos;
-extern char *spartial_beyond2_pos;
-
-extern char *spartial_best_before_a;	// For 2nd hit SHIFT TAB
-extern char *spartial_best_after_a;		// For 2nd hit TAB
-extern char *spartial_alphatop_a;
-extern char *spartial_alphalast_a;
-
 #define SPARTIAL_EVAL_ \
 		if (1) {\
-			int cmpres0 = spartial_alphatop_a ? strcasecmp(sxy, spartial_alphatop_a) : -1;\
+			int cmpres0 = _g_autocomplete.s_match_alphatop_a ? strcasecmp(sxy, _g_autocomplete.s_match_alphatop_a) : -1;\
 			if (cmpres0 < 0) {				\
-				setstr (spartial_alphatop_a, sxy);\
+				setstr (_g_autocomplete.s_match_alphatop_a, sxy);\
 			}\
 		}\
-		if (spartial_curcmd_a) {\
-			int cmpres0 = strcasecmp(sxy, spartial_curcmd_a);\
+		if (_g_autocomplete.s_completion_a) {\
+			int cmpres0 = strcasecmp(sxy, _g_autocomplete.s_completion_a);\
 			if (cmpres0 < 0) {\
-				int cmpres1 = spartial_best_before_a ? strcasecmp(sxy, spartial_best_before_a) : 0; \
+				int cmpres1 = _g_autocomplete.s_match_before_a ? strcasecmp(sxy, _g_autocomplete.s_match_before_a) : 0; \
 				if (cmpres1 == 0 || cmpres1 > 0) {\
-					setstr (spartial_best_before_a, sxy);\
+					setstr (_g_autocomplete.s_match_before_a, sxy);\
 				}				\
 			}\
 		} \
-		if (spartial_curcmd_a) {\
-			int cmpres0 = strcasecmp(sxy, spartial_curcmd_a); \
+		if (_g_autocomplete.s_completion_a) {\
+			int cmpres0 = strcasecmp(sxy, _g_autocomplete.s_completion_a); \
 			if (cmpres0 > 0) {\
-				int cmpres1 = spartial_best_after_a ? strcasecmp(sxy, spartial_best_after_a) : 0; \
+				int cmpres1 = _g_autocomplete.s_match_after_a ? strcasecmp(sxy, _g_autocomplete.s_match_after_a) : 0; \
 				if (cmpres1 == 0 || cmpres1 < 0) {\
-					setstr (spartial_best_after_a, sxy);\
+					setstr (_g_autocomplete.s_match_after_a, sxy);\
 				}\
 			}\
 		} \
 		if (1) {\
-			int cmpres0 = spartial_alphalast_a ? strcasecmp(sxy, spartial_alphalast_a) : 1;\
+			int cmpres0 = _g_autocomplete.s_match_alphalast_a ? strcasecmp(sxy, _g_autocomplete.s_match_alphalast_a) : 1;\
 			if (cmpres0 > 0) {\
-				setstr (spartial_alphalast_a, sxy);\
+				setstr (_g_autocomplete.s_match_alphalast_a, sxy);\
 			}\
 		} // Ender
 

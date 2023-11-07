@@ -257,7 +257,7 @@ static cvar_t snd_identicalsoundrandomization_tics = {CF_CLIENT, "snd_identicals
 
 // Ambient sounds
 static sfx_t* ambient_sfxs [2] = { NULL, NULL };
-static const char* ambient_names [2] = { "sound/ambience/water1.wav", "sound/ambience/wind2.wav" };
+static const char *ambient_names [2] = { "sound/ambience/water1.wav", "sound/ambience/wind2.wav" };
 
 
 // ====================================================================
@@ -345,7 +345,7 @@ static void S_SoundList_f(cmd_state_t *cmd)
 		else
 			Con_Printf ("    (  unknown  ) unloaded : %s\n", sfx->name);
 	}
-	Con_Printf("Total resident: %i\n", total);
+	Con_Printf ("Total resident: %d\n", total);
 }
 
 
@@ -357,16 +357,16 @@ static void S_SoundInfo_f(cmd_state_t *cmd)
 		return;
 	}
 
-	Con_Printf("%5d speakers\n", snd_renderbuffer->format.channels);
-	Con_Printf("%5d frames\n", snd_renderbuffer->maxframes);
-	Con_Printf("%5d samplebits\n", snd_renderbuffer->format.width * 8);
-	Con_Printf("%5d speed\n", snd_renderbuffer->format.speed);
-	Con_Printf("%5u total_channels\n", total_channels);
+	Con_Printf ("%5d speakers\n", snd_renderbuffer->format.channels);
+	Con_Printf ("%5d frames\n", snd_renderbuffer->maxframes);
+	Con_Printf ("%5d samplebits\n", snd_renderbuffer->format.width * 8);
+	Con_Printf ("%5d speed\n", snd_renderbuffer->format.speed);
+	Con_Printf ("%5u total_channels\n", total_channels);
 }
 
 static void S_PauseSound_f(cmd_state_t *cmd)
 {
-	if( Cmd_Argc(cmd) != 2 ) {
+	if ( Cmd_Argc(cmd) != 2 ) {
 		Con_Print("pausesound <pause>\n");
 		return;
 	}
@@ -403,7 +403,7 @@ static void S_SetChannelLayout (void)
 			break;
 	if (i >= SND_SPEAKERLAYOUTS)
 	{
-		Con_Printf("S_SetChannelLayout: can't find the speaker layout for %hu channels. Defaulting to mono output\n",
+		Con_Printf ("S_SetChannelLayout: can't find the speaker layout for %hu channels. Defaulting to mono output\n",
 				   snd_renderbuffer->format.channels);
 		i = SND_SPEAKERLAYOUTS - 1;
 	}
@@ -462,7 +462,7 @@ static void S_SetChannelLayout (void)
 			SWAP_LISTENERS(listeners[3], listeners[5], swaplistener);
 		}
 
-		Con_Printf("S_SetChannelLayout: using %s speaker layout for 3D sound\n",
+		Con_Printf ("S_SetChannelLayout: using %s speaker layout for 3D sound\n",
 				   (layout == SND_CHANNELLAYOUT_ALSA) ? "ALSA" : "standard");
 	}
 
@@ -476,7 +476,7 @@ void S_Startup (void)
 {
 	snd_format_t chosen_fmt;
 	static snd_format_t prev_render_format = {0, 0, 0};
-	char* env;
+	char *env;
 #if _MSC_VER >= 1400
 	size_t envlen;
 #endif
@@ -564,7 +564,7 @@ void S_Startup (void)
 	{
 		if (chosen_fmt.speed != prev_render_format.speed)
 		{
-			Con_Printf("S_Startup: sound speed has changed! This is NOT supported yet. Falling back to previous speed (%u Hz)\n",
+			Con_Printf ("S_Startup: sound speed has changed! This is NOT supported yet. Falling back to previous speed (%u Hz)\n",
 					   prev_render_format.speed);
 			chosen_fmt.speed = prev_render_format.speed;
 		}
@@ -606,7 +606,8 @@ void S_Startup (void)
 	// create the sound buffer used for sumitting the samples to the plaform-dependent module
 	if (!simsound)
 	{
-		Con_Printf("S_Startup: initializing sound output format: %dHz, %d bit, %d channels...\n",
+		if (vid.restart_count < 2) // Baker r1481: Reduce ALT-ENTER video restart spam
+		Con_PrintLinef ("S_Startup: initializing sound output format: %dHz, %d bit, %d channels...",
 					chosen_fmt.speed,
 					chosen_fmt.width,
 					chosen_fmt.channels);
@@ -625,7 +626,8 @@ void S_Startup (void)
 	}
 
 	memcpy(&prev_render_format, &snd_renderbuffer->format, sizeof(prev_render_format));
-	Con_Printf("Sound format: %dHz, %d channels, %d bits per sample\n",
+	if (vid.restart_count < 2) // Baker r1481: Reduce ALT-ENTER video restart spam
+		Con_PrintLinef ("Sound format: %dHz, %d channels, %d bits per sample",
 			   chosen_fmt.speed, chosen_fmt.channels, chosen_fmt.width * 8);
 
 	// Update the cvars
@@ -650,7 +652,7 @@ void S_Startup (void)
 		// some modules write directly to a shared (DMA) buffer
 		extrasoundtime = oldpaintedtime + snd_renderbuffer->maxframes - 1;
 		extrasoundtime -= extrasoundtime % snd_renderbuffer->maxframes;
-		Con_DPrintf("S_Startup: extra sound time = %u\n", extrasoundtime); // Baker
+		Con_DPrintf ("S_Startup: extra sound time = %u\n", extrasoundtime); // Baker
 
 		soundtime = extrasoundtime;
 	}
@@ -686,9 +688,9 @@ static void S_Restart_f(cmd_state_t *cmd)
 {
 	// NOTE: we can't free all sounds if we are running a map (this frees sfx_t that are still referenced by precaches)
 	// So, refuse to do this if we are connected.
-	if(cls.state == ca_connected)
+	if (cls.state == ca_connected)
 	{
-		Con_Printf("snd_restart would wreak havoc if you do that while connected!\n");
+		Con_Printf ("snd_restart would wreak havoc if you do that while connected!\n");
 		return;
 	}
 
@@ -862,9 +864,9 @@ void S_UnloadAllSounds_f(cmd_state_t *cmd)
 
 	// NOTE: we can't free all sounds if we are running a map (this frees sfx_t that are still referenced by precaches)
 	// So, refuse to do this if we are connected.
-	if(cls.state == ca_connected)
+	if (cls.state == ca_connected)
 	{
-		Con_Printf("snd_unloadallsounds would wreak havoc if you do that while connected!\n");
+		Con_Printf ("snd_unloadallsounds would wreak havoc if you do that while connected!\n");
 		return;
 	}
 
@@ -894,7 +896,7 @@ sfx_t *S_FindName (const char *name)
 	if (!snd_initialized.integer)
 		return NULL;
 
-	if(String_Does_Match(name, changevolume_sfx.name))
+	if (String_Does_Match(name, changevolume_sfx.name))
 		return &changevolume_sfx;
 
 	if (strlen (name) >= sizeof (sfx->name))
@@ -906,7 +908,7 @@ sfx_t *S_FindName (const char *name)
 	// Look for this sound in the list of known sfx
 	// TODO: hash table search?
 	for (sfx = known_sfx; sfx != NULL; sfx = sfx->next)
-		if(String_Does_Match (sfx->name, name))
+		if (String_Does_Match (sfx->name, name))
 			return sfx;
 
 	// check for # in the beginning, try lookup by soundindex
@@ -971,7 +973,7 @@ void S_FreeSfx (sfx_t *sfx, qbool force)
 	{
 		if (channels[i].sfx == sfx)
 		{
-			Con_Printf("S_FreeSfx: stopping channel %i for sfx \"%s\"\n", i, sfx->name);
+			Con_Printf ("S_FreeSfx: stopping channel %d for sfx \"%s\"\n", i, sfx->name);
 			S_StopChannel (i, true, false);
 		}
 	}
@@ -1218,7 +1220,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	{
 		if (ch->entnum >= MAX_EDICTS)
 		{
-			//Con_Printf("-- entnum %i origin %f %f %f neworigin %f %f %f\n", ch->entnum, ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
+			//Con_Printf ("-- entnum %d origin %f %f %f neworigin %f %f %f\n", ch->entnum, ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 
 			if (ch->entnum > MAX_EDICTS)
 				if (!CL_VM_GetEntitySoundOrigin(ch->entnum, ch->origin))
@@ -1227,7 +1229,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 		else if (cl.entities[ch->entnum].state_current.active)
 		{
 			model_t *model;
-			//Con_Printf("-- entnum %i origin %f %f %f neworigin %f %f %f\n", ch->entnum, ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
+			//Con_Printf ("-- entnum %d origin %f %f %f neworigin %f %f %f\n", ch->entnum, ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 			model = CL_GetModelByIndex(cl.entities[ch->entnum].state_current.modelindex);
 			if (model && model->soundfromcenter)
 				VectorMAM(0.5f, cl.entities[ch->entnum].render.mins, 0.5f, cl.entities[ch->entnum].render.maxs, ch->origin);
@@ -1236,7 +1238,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 		}
 		else if (cl.csqc_server2csqcentitynumber[ch->entnum])
 		{
-			//Con_Printf("-- entnum %i (client %i) origin %f %f %f neworigin %f %f %f\n", ch->entnum, cl.csqc_server2csqcentitynumber[ch->entnum], ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
+			//Con_Printf ("-- entnum %d (client %d) origin %f %f %f neworigin %f %f %f\n", ch->entnum, cl.csqc_server2csqcentitynumber[ch->entnum], ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 
 			if (!CL_VM_GetEntitySoundOrigin(cl.csqc_server2csqcentitynumber[ch->entnum] + MAX_EDICTS, ch->origin))
 				ch->entnum = MAX_EDICTS; // entity was removed, disown sound
@@ -1251,10 +1253,10 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	// Adjust volume of static sounds
 	if (isstatic)
 		mastervol *= snd_staticvolume.value;
-	else if(!(ch->flags & CHANNELFLAG_FULLVOLUME)) // same as SND_PaintChannel uses
+	else if (!(ch->flags & CHANNELFLAG_FULLVOLUME)) // same as SND_PaintChannel uses
 	{
 		// old legacy separated cvars
-		if(ch->entnum >= MAX_EDICTS)
+		if (ch->entnum >= MAX_EDICTS)
 		{
 			switch(ch->entchannel)
 			{
@@ -1269,7 +1271,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 				default:                                           break;
 			}
 		}
-		else if(ch->entnum == 0)
+		else if (ch->entnum == 0)
 		{
 			switch(ch->entchannel)
 			{
@@ -1284,7 +1286,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 				default:                                            break;
 			}
 		}
-		else if(ch->entnum > 0 && ch->entnum <= cl.maxclients)
+		else if (ch->entnum > 0 && ch->entnum <= cl.maxclients)
 		{
 			switch(ch->entchannel)
 			{
@@ -1325,7 +1327,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 			case 5:  mastervol *= snd_channel5volume.value; break;
 			case 6:  mastervol *= snd_channel6volume.value; break;
 			case 7:  mastervol *= snd_channel7volume.value; break;
-			default: mastervol *= Cvar_VariableValueOr(&cvars_all, va(vabuf, sizeof(vabuf), "snd_channel%dvolume", CHAN_ENGINE2CVAR(ch->entchannel)), 1.0, ~0); break;
+			default: mastervol *= Cvar_VariableValueOr(&cvars_all, va(vabuf, sizeof(vabuf), "snd_channel%dvolume", CHAN_ENGINE2CVAR(ch->entchannel)), 1.0, ALL_FLAGS_ANTIZERO); break;
 		}
 	}
 
@@ -1333,7 +1335,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	if (!(ch->flags & CHANNELFLAG_FULLVOLUME))
 		mastervol *= volume.value;
 
-	if(snd_maxchannelvolume.value > 0)
+	if (snd_maxchannelvolume.value > 0)
 	{
 		// clamp HERE to allow to go at most 10dB past mastervolume (before clamping), when mastervolume < -10dB (so relative volumes don't get too messy)
 		mastervol = bound(0.0f, mastervol, 10.0f * snd_maxchannelvolume.value);
@@ -1343,21 +1345,21 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	mastervol *= mastervolume.value;
 
 	// add in ReplayGain very late; prevent clipping when close
-	if(sfx)
-	if(sfx->volume_peak > 0)
+	if (sfx)
+	if (sfx->volume_peak > 0)
 	{
 		// Replaygain support
-		// Con_DPrintf("Setting volume on ReplayGain-enabled track... %f -> ", fvol);
+		// Con_DPrintf ("Setting volume on ReplayGain-enabled track... %f -> ", fvol);
 		mastervol *= sfx->volume_mult;
-		if(snd_maxchannelvolume.value > 0)
+		if (snd_maxchannelvolume.value > 0)
 		{
-			if(mastervol * sfx->volume_peak > snd_maxchannelvolume.value)
+			if (mastervol * sfx->volume_peak > snd_maxchannelvolume.value)
 				mastervol = snd_maxchannelvolume.value / sfx->volume_peak;
 		}
-		// Con_DPrintf("%f\n", fvol);
+		// Con_DPrintf ("%f\n", fvol);
 	}
 
-	if(snd_maxchannelvolume.value > 0)
+	if (snd_maxchannelvolume.value > 0)
 	{
 		// clamp HERE to keep relative volumes of the channels correct
 		mastervol = min(mastervol, snd_maxchannelvolume.value);
@@ -1403,20 +1405,20 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 			qbool occluded = false;
 			if (snd_spatialization_occlusion.integer)
 			{
-				if(snd_spatialization_occlusion.integer & 1)
-					if(listener_pvs && cl.worldmodel)
+				if (snd_spatialization_occlusion.integer & 1)
+					if (listener_pvs && cl.worldmodel)
 					{
 						int cluster = cl.worldmodel->brush.PointInLeaf(cl.worldmodel, ch->origin)->clusterindex;
-						if(cluster >= 0 && cluster < 8 * listener_pvsbytes && !CHECKPVSBIT(listener_pvs, cluster))
+						if (cluster >= 0 && cluster < 8 * listener_pvsbytes && !CHECKPVSBIT(listener_pvs, cluster))
 							occluded = true;
 					}
 
-				if(snd_spatialization_occlusion.integer & 2)
-					if(!occluded)
-						if(cl.worldmodel && cl.worldmodel->brush.TraceLineOfSight && !cl.worldmodel->brush.TraceLineOfSight(cl.worldmodel, listener_origin, ch->origin, ch->origin, ch->origin))
+				if (snd_spatialization_occlusion.integer & 2)
+					if (!occluded)
+						if (cl.worldmodel && cl.worldmodel->brush.TraceLineOfSight && !cl.worldmodel->brush.TraceLineOfSight(cl.worldmodel, listener_origin, ch->origin, ch->origin, ch->origin))
 							occluded = true;
 			}
-			if(occluded)
+			if (occluded)
 				intensity *= 0.5f;
 
 			ch->prologic_invert = 1;
@@ -1432,7 +1434,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 					switch(spatialmethod)
 					{
 						case SPATIAL_LOG:
-							if(dist == 0)
+							if (dist == 0)
 								f = spatialmin + spatialdiff * (spatialfactor < 0); // avoid log(0), but do the right thing
 							else
 								f = spatialmin + spatialdiff * bound(0, (log(dist) - spatialoffset) * spatialfactor, 1);
@@ -1487,7 +1489,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 					switch(spatialmethod)
 					{
 						case SPATIAL_LOG:
-							if(dist == 0)
+							if (dist == 0)
 								f = spatialmin + spatialdiff * (spatialfactor < 0); // avoid log(0), but do the right thing
 							else
 								f = spatialmin + spatialdiff * bound(0, (log(dist) - spatialoffset) * spatialfactor, 1);
@@ -1531,18 +1533,18 @@ static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int
 {
 	if (!sfx)
 	{
-		Con_Printf("S_PlaySfxOnChannel called with NULL??\n");
+		Con_Printf ("S_PlaySfxOnChannel called with NULL??\n");
 		return;
 	}
 
 	if ((sfx->loopstart < sfx->total_length) || (flags & CHANNELFLAG_FORCELOOP))
 	{
-		if(!snd_startloopingsounds.integer)
+		if (!snd_startloopingsounds.integer)
 			return;
 	}
 	else
 	{
-		if(!snd_startnonloopingsounds.integer)
+		if (!snd_startnonloopingsounds.integer)
 			return;
 	}
 
@@ -1551,7 +1553,7 @@ static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int
 	if (target_chan->sfx)
 	{
 		int channelindex = (int)(target_chan - channels);
-		Con_Printf("S_PlaySfxOnChannel(%s): channel %i already in use??  Clearing.\n", sfx->name, channelindex);
+		Con_Printf ("S_PlaySfxOnChannel(%s): channel %d already in use??  Clearing.\n", sfx->name, channelindex);
 		S_StopChannel (channelindex, true, false);
 	}
 	// We MUST set sfx LAST because otherwise we could crash a threaded mixer
@@ -1567,7 +1569,7 @@ static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int
 	if (isstatic)
 	{
 		if (sfx->loopstart >= sfx->total_length && (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEWORLD))
-			Con_DPrintf("Quake compatibility warning: Static sound \"%s\" is not looped\n", sfx->name);
+			Con_DPrintf ("Quake compatibility warning: Static sound \"%s\" is not looped\n", sfx->name);
 		target_chan->distfade = attenuation / (64.0f * snd_soundradius.value);
 	}
 	else
@@ -1592,7 +1594,7 @@ int S_StartSound_StartPosition_Flags (int entnum, int entchannel, sfx_t *sfx, ve
 	if (snd_renderbuffer == NULL || sfx == NULL || nosound.integer)
 		return -1;
 
-	if(sfx == &changevolume_sfx)
+	if (sfx == &changevolume_sfx)
 	{
 		if (!IS_CHAN_SINGLE(entchannel))
 			return -1;
@@ -1604,7 +1606,7 @@ int S_StartSound_StartPosition_Flags (int entnum, int entchannel, sfx_t *sfx, ve
 				S_SetChannelVolume(ch_idx, fvol);
 				S_SetChannelSpeed(ch_idx, fspeed);
 				for(i = 1; i > 0 && (i <= flags || i <= (int) channels[ch_idx].flags); i <<= 1)
-					if((flags ^ channels[ch_idx].flags) & i)
+					if ((flags ^ channels[ch_idx].flags) & i)
 						S_SetChannelFlag(ch_idx, i, (flags & i) != 0);
 				ch->distfade = attenuation / snd_soundradius.value;
 				SND_Spatialize(ch, false);
@@ -1639,7 +1641,7 @@ int S_StartSound_StartPosition_Flags (int entnum, int entchannel, sfx_t *sfx, ve
 				float maxtics = snd_identicalsoundrandomization_tics.value;
 				float maxticsdelta = ((cls.state == ca_connected) ? (maxtics * (cl.mtime[0] - cl.mtime[1])) : 0);
 				float maxdelta = 0;
-				if(maxticsdelta == 0 || fabs(maxticsdelta) > fabs(maxtime))
+				if (maxticsdelta == 0 || fabs(maxticsdelta) > fabs(maxtime))
 					maxdelta = maxtime;
 				else
 					maxdelta = fabs(maxticsdelta) * ((maxtime > 0) ? 1 : -1);
@@ -1797,7 +1799,7 @@ float S_GetChannelPosition (unsigned int ch_ind)
 
 	s = ch->position / sfx->format.speed;
 	/*
-	if(!snd_usethreadedmixing)
+	if (!snd_usethreadedmixing)
 		s += _snd_mixahead.value;
 	*/
 	return (float)s;
@@ -1924,7 +1926,7 @@ static void S_PaintAndSubmit (void)
 		newsoundtime = (unsigned int)((double)cl.mtime[0] * (double)snd_renderbuffer->format.speed);
 	}
 #ifdef CONFIG_VIDEO_CAPTURE
-	else if (cls.capturevideo.soundrate && !cls.capturevideo.realtime) // SUPER NASTY HACK to record non-realtime sound
+	else if (cls.capturevideo.soundrate && !cls.capturevideo.is_realtime) // SUPER NASTY HACK to record non-realtime sound
 	{
 		usesoundtimehack = 2;
 		newsoundtime = (unsigned int)((double)cls.capturevideo.frame * (double)snd_renderbuffer->format.speed / (double)cls.capturevideo.framerate);
@@ -1990,14 +1992,14 @@ static void S_PaintAndSubmit (void)
 
 			extrasoundtime += additionaltime;
 			newsoundtime += additionaltime;
-			Con_DPrintf("S_PaintAndSubmit: new extra sound time = %u\n",
+			Con_DPrintf ("S_PaintAndSubmit: new extra sound time = %u\n",
 						extrasoundtime);
 		}
 		else if (!soundtimehack)
 #else
 		if (!soundtimehack)
 #endif
-			Con_Printf("S_PaintAndSubmit: WARNING: newsoundtime < soundtime (%u < %u)\n",
+			Con_Printf ("S_PaintAndSubmit: WARNING: newsoundtime < soundtime (%u < %u)\n",
 					   newsoundtime, soundtime);
 	}
 	soundtime = newsoundtime;
@@ -2084,11 +2086,11 @@ void S_Update(const matrix4x4_t *listenermatrix)
 		spatialmin = snd_spatialization_min.value;
 		spatialdiff = snd_spatialization_max.value - spatialmin;
 
-		if(snd_spatialization_control.value)
+		if (snd_spatialization_control.value)
 		{
 			spatialpower = snd_spatialization_power.value;
 
-			if(spatialpower == 0)
+			if (spatialpower == 0)
 			{
 				spatialmethod = SPATIAL_LOG;
 				mindist_trans = log(max(1, snd_spatialization_min_radius.value));
@@ -2101,7 +2103,7 @@ void S_Update(const matrix4x4_t *listenermatrix)
 				maxdist_trans = pow(snd_spatialization_max_radius.value, spatialpower);
 			}
 
-			if(mindist_trans - maxdist_trans == 0)
+			if (mindist_trans - maxdist_trans == 0)
 			{
 				spatialmethod = SPATIAL_THRESH;
 				mindist_trans = snd_spatialization_min_radius.value;
@@ -2126,9 +2128,9 @@ void S_Update(const matrix4x4_t *listenermatrix)
 	Matrix4x4_OriginFromMatrix(listenermatrix, listener_origin);
 	if (cl.worldmodel && cl.worldmodel->brush.FatPVS && cl.worldmodel->brush.num_pvsclusterbytes && cl.worldmodel->brush.PointInLeaf)
 	{
-		if(cl.worldmodel->brush.num_pvsclusterbytes != listener_pvsbytes)
+		if (cl.worldmodel->brush.num_pvsclusterbytes != listener_pvsbytes)
 		{
-			if(listener_pvs)
+			if (listener_pvs)
 				Mem_Free(listener_pvs);
 			listener_pvsbytes = cl.worldmodel->brush.num_pvsclusterbytes;
 			listener_pvs = (unsigned char *) Mem_Alloc(snd_mempool, listener_pvsbytes);
@@ -2137,7 +2139,7 @@ void S_Update(const matrix4x4_t *listenermatrix)
 	}
 	else
 	{
-		if(listener_pvs)
+		if (listener_pvs)
 		{
 			Mem_Free(listener_pvs);
 			listener_pvs = NULL;
@@ -2226,7 +2228,7 @@ void S_Update(const matrix4x4_t *listenermatrix)
 
 	// debugging output
 	if (snd_show.integer)
-		Con_Printf("----(%u)----\n", cls.soundstats.mixedsounds);
+		Con_Printf ("----(%u)----\n", cls.soundstats.mixedsounds);
 
 	S_PaintAndSubmit();
 }
@@ -2250,7 +2252,7 @@ qbool S_LocalSoundEx (const char *sound, int chan, float fvol)
 	sfx = S_PrecacheSound (sound, true, false);
 	if (!sfx)
 	{
-		Con_Printf("S_LocalSound: can't precache %s\n", sound);
+		Con_Printf ("S_LocalSound: can't precache %s\n", sound);
 		return false;
 	}
 

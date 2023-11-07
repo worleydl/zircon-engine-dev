@@ -211,22 +211,22 @@ static void IN_BestWeapon_Register(const char *name, int impulse, int weaponbit,
 {
 	int i;
 	for(i = 0; i < IN_BESTWEAPON_MAX && in_bestweapon_info[i].impulse; ++i)
-		if(in_bestweapon_info[i].impulse == impulse)
+		if (in_bestweapon_info[i].impulse == impulse)
 			break;
-	if(i >= IN_BESTWEAPON_MAX)
+	if (i >= IN_BESTWEAPON_MAX)
 	{
-		Con_Printf("no slot left for weapon definition; increase IN_BESTWEAPON_MAX\n");
+		Con_Printf ("no slot left for weapon definition; increase IN_BESTWEAPON_MAX\n");
 		return; // sorry
 	}
 	strlcpy(in_bestweapon_info[i].name, name, sizeof(in_bestweapon_info[i].name));
 	in_bestweapon_info[i].impulse = impulse;
-	if(weaponbit != -1)
+	if (weaponbit != -1)
 		in_bestweapon_info[i].weaponbit = weaponbit;
-	if(activeweaponcode != -1)
+	if (activeweaponcode != -1)
 		in_bestweapon_info[i].activeweaponcode = activeweaponcode;
-	if(ammostat != -1)
+	if (ammostat != -1)
 		in_bestweapon_info[i].ammostat = ammostat;
-	if(ammomin != -1)
+	if (ammomin != -1)
 		in_bestweapon_info[i].ammomin = ammomin;
 }
 
@@ -250,7 +250,7 @@ void IN_BestWeapon_ResetData (void)
 
 static void IN_BestWeapon_Register_f(cmd_state_t *cmd)
 {
-	if(Cmd_Argc(cmd) == 7)
+	if (Cmd_Argc(cmd) == 7)
 	{
 		IN_BestWeapon_Register(
 			Cmd_Argv(cmd, 1),
@@ -261,17 +261,17 @@ static void IN_BestWeapon_Register_f(cmd_state_t *cmd)
 			atoi(Cmd_Argv(cmd, 6))
 		);
 	}
-	else if(Cmd_Argc(cmd) == 2 && !strcmp(Cmd_Argv(cmd, 1), "clear"))
+	else if (Cmd_Argc(cmd) == 2 && String_Does_Match(Cmd_Argv(cmd, 1), "clear"))
 	{
 		memset(in_bestweapon_info, 0, sizeof(in_bestweapon_info));
 	}
-	else if(Cmd_Argc(cmd) == 2 && !strcmp(Cmd_Argv(cmd, 1), "quake"))
+	else if (Cmd_Argc(cmd) == 2 && String_Does_Match(Cmd_Argv(cmd, 1), "quake"))
 	{
 		IN_BestWeapon_ResetData();
 	}
 	else
 	{
-		Con_Printf("Usage: %s weaponshortname impulse itemcode activeweaponcode ammostat ammomin; %s clear; %s quake\n", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0));
+		Con_Printf ("Usage: %s weaponshortname impulse itemcode activeweaponcode ammostat ammomin; %s clear; %s quake\n", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0));
 	}
 }
 
@@ -281,7 +281,7 @@ static void IN_BestWeapon_f(cmd_state_t *cmd)
 	const char *t;
 	if (Cmd_Argc(cmd) < 2)
 	{
-		Con_Printf("bestweapon requires 1 or more parameters\n");
+		Con_Printf ("bestweapon requires 1 or more parameters\n");
 		return;
 	}
 	for (i = 1;i < Cmd_Argc(cmd);i++)
@@ -290,7 +290,7 @@ static void IN_BestWeapon_f(cmd_state_t *cmd)
 		// figure out which weapon this character refers to
 		for (n = 0;n < IN_BESTWEAPON_MAX && in_bestweapon_info[n].impulse;n++)
 		{
-			if (!strcmp(in_bestweapon_info[n].name, t))
+			if (String_Does_Match(in_bestweapon_info[n].name, t))
 			{
 				// we found out what weapon this character refers to
 				// check if the inventory contains the weapon and enough ammo
@@ -495,7 +495,7 @@ void CL_Input (void)
 	// clamp before the move to prevent starting with bad angles
 	CL_AdjustAngles ();
 
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 		cl.viewangles[YAW] = -cl.viewangles[YAW];
 
 	// reset some of the command fields
@@ -555,13 +555,13 @@ void CL_Input (void)
 	}
 
 	// apply m_accelerate if it is on
-	if(m_accelerate.value > 0)
+	if (m_accelerate.value > 0)
 	{
 		float mouse_deltadist = sqrtf(in_mouse_x * in_mouse_x + in_mouse_y * in_mouse_y);
 		float speed = mouse_deltadist / cl.realframetime;
 		static float averagespeed = 0;
 		float f, mi, ma;
-		if(m_accelerate_filter.value > 0)
+		if (m_accelerate_filter.value > 0)
 			f = bound(0, cl.realframetime / m_accelerate_filter.value, 1);
 		else
 			f = 1;
@@ -577,11 +577,11 @@ void CL_Input (void)
 			mi = max(1, m_accelerate_minspeed.value);
 			ma = max(m_accelerate_minspeed.value + 1, m_accelerate_maxspeed.value);
 
-			if(averagespeed <= mi)
+			if (averagespeed <= mi)
 			{
 				f = 1;
 			}
-			else if(averagespeed >= ma)
+			else if (averagespeed >= ma)
 			{
 				f = m_accelerate.value;
 			}
@@ -590,6 +590,7 @@ void CL_Input (void)
 				f = averagespeed;
 				f = (f - mi) / (ma - mi) * (m_accelerate.value - 1) + 1;
 			}
+
 			in_mouse_x *= f;
 			in_mouse_y *= f;
 		}
@@ -715,7 +716,7 @@ void CL_Input (void)
 		cl.cmd.cursor_screen[1] = in_windowmouse_y * 2.0 / vid.height - 1.0;
 	}
 
-	if(v_flipped.integer)
+	if (v_flipped.integer)
 	{
 		cl.viewangles[YAW] = -cl.viewangles[YAW];
 		cl.cmd.sidemove = -cl.cmd.sidemove;
@@ -724,34 +725,34 @@ void CL_Input (void)
 	// clamp after the move to prevent rendering with bad angles
 	CL_AdjustAngles ();
 
-	if(cl_movecliptokeyboard.integer)
+	if (cl_movecliptokeyboard.integer)
 	{
 		vec_t f = 1;
 		if (in_speed.state & 1)
 			f *= cl_movespeedkey.value;
-		if(cl_movecliptokeyboard.integer == 2)
+		if (cl_movecliptokeyboard.integer == 2)
 		{
 			// digital direction, analog amount
 			vec_t wishvel_x, wishvel_y;
 			wishvel_x = fabs(cl.cmd.forwardmove);
 			wishvel_y = fabs(cl.cmd.sidemove);
-			if(wishvel_x != 0 && wishvel_y != 0 && wishvel_x != wishvel_y)
+			if (wishvel_x != 0 && wishvel_y != 0 && wishvel_x != wishvel_y)
 			{
 				vec_t wishspeed = sqrt(wishvel_x * wishvel_x + wishvel_y * wishvel_y);
-				if(wishvel_x >= 2 * wishvel_y)
+				if (wishvel_x >= 2 * wishvel_y)
 				{
 					// pure X motion
-					if(cl.cmd.forwardmove > 0)
+					if (cl.cmd.forwardmove > 0)
 						cl.cmd.forwardmove = wishspeed;
 					else
 						cl.cmd.forwardmove = -wishspeed;
 					cl.cmd.sidemove = 0;
 				}
-				else if(wishvel_y >= 2 * wishvel_x)
+				else if (wishvel_y >= 2 * wishvel_x)
 				{
 					// pure Y motion
 					cl.cmd.forwardmove = 0;
-					if(cl.cmd.sidemove > 0)
+					if (cl.cmd.sidemove > 0)
 						cl.cmd.sidemove = wishspeed;
 					else
 						cl.cmd.sidemove = -wishspeed;
@@ -759,29 +760,29 @@ void CL_Input (void)
 				else
 				{
 					// diagonal
-					if(cl.cmd.forwardmove > 0)
+					if (cl.cmd.forwardmove > 0)
 						cl.cmd.forwardmove = 0.70710678118654752440 * wishspeed;
 					else
 						cl.cmd.forwardmove = -0.70710678118654752440 * wishspeed;
-					if(cl.cmd.sidemove > 0)
+					if (cl.cmd.sidemove > 0)
 						cl.cmd.sidemove = 0.70710678118654752440 * wishspeed;
 					else
 						cl.cmd.sidemove = -0.70710678118654752440 * wishspeed;
 				}
 			}
 		}
-		else if(cl_movecliptokeyboard.integer)
+		else if (cl_movecliptokeyboard.integer)
 		{
 			// digital direction, digital amount
-			if(cl.cmd.sidemove >= cl_sidespeed.value * f * 0.5)
+			if (cl.cmd.sidemove >= cl_sidespeed.value * f * 0.5)
 				cl.cmd.sidemove = cl_sidespeed.value * f;
-			else if(cl.cmd.sidemove <= -cl_sidespeed.value * f * 0.5)
+			else if (cl.cmd.sidemove <= -cl_sidespeed.value * f * 0.5)
 				cl.cmd.sidemove = -cl_sidespeed.value * f;
 			else
 				cl.cmd.sidemove = 0;
-			if(cl.cmd.forwardmove >= cl_forwardspeed.value * f * 0.5)
+			if (cl.cmd.forwardmove >= cl_forwardspeed.value * f * 0.5)
 				cl.cmd.forwardmove = cl_forwardspeed.value * f;
-			else if(cl.cmd.forwardmove <= -cl_backspeed.value * f * 0.5)
+			else if (cl.cmd.forwardmove <= -cl_backspeed.value * f * 0.5)
 				cl.cmd.forwardmove = -cl_backspeed.value * f;
 			else
 				cl.cmd.forwardmove = 0;
@@ -924,13 +925,13 @@ static void CL_ClientMovement_UpdateStatus(cl_clientmovement_state_t *s)
 	VectorSet(origin1, s->origin[0], s->origin[1], s->origin[2] + 1);
 	VectorSet(origin2, s->origin[0], s->origin[1], s->origin[2] - 1); // -2 causes clientside doublejump bug at above 150fps, raising that to 300fps :)
 	trace = CL_TraceBox(origin1, s->mins, s->maxs, origin2, MOVE_NORMAL, s->self, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY | SUPERCONTENTS_PLAYERCLIP, 0, 0, collision_extendmovelength.value, true, true, NULL, true);
-	if(trace.fraction < 1 && trace.plane.normal[2] > 0.7)
+	if (trace.fraction < 1 && trace.plane.normal[2] > 0.7)
 	{
 		s->onground = true;
 
 		// this code actually "predicts" an impact; so let's clip velocity first
 		f = DotProduct(s->velocity, trace.plane.normal);
-		if(f < 0) // only if moving downwards actually
+		if (f < 0) // only if moving downwards actually
 			VectorMA(s->velocity, -f, trace.plane.normal, s->velocity);
 	}
 	else
@@ -989,7 +990,7 @@ static void CL_ClientMovement_Move(cl_clientmovement_state_t *s)
 				VectorCopy(trace2.endpos, currentorigin2);
 				VectorSet(neworigin2, trace2.endpos[0], trace2.endpos[1], s->origin[2]);
 				trace3 = CL_TraceBox(currentorigin2, s->mins, s->maxs, neworigin2, MOVE_NORMAL, s->self, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY | SUPERCONTENTS_PLAYERCLIP, 0, 0, collision_extendmovelength.value, true, true, NULL, true);
-				//Con_Printf("%f %f %f %f : %f %f %f %f : %f %f %f %f\n", trace.fraction, trace.endpos[0], trace.endpos[1], trace.endpos[2], trace2.fraction, trace2.endpos[0], trace2.endpos[1], trace2.endpos[2], trace3.fraction, trace3.endpos[0], trace3.endpos[1], trace3.endpos[2]);
+				//Con_Printf ("%f %f %f %f : %f %f %f %f : %f %f %f %f\n", trace.fraction, trace.endpos[0], trace.endpos[1], trace.endpos[2], trace2.fraction, trace2.endpos[0], trace2.endpos[1], trace2.endpos[2], trace3.fraction, trace3.endpos[0], trace3.endpos[1], trace3.endpos[2]);
 				// accept the new trace if it made some progress
 				if (fabs(trace3.endpos[0] - trace.endpos[0]) >= 0.03125 || fabs(trace3.endpos[1] - trace.endpos[1]) >= 0.03125)
 				{
@@ -1010,7 +1011,7 @@ static void CL_ClientMovement_Move(cl_clientmovement_state_t *s)
 		// this is only really needed for nogravityonground combined with gravityunaffectedbyticrate
 		// <LadyHavoc> I'm pretty sure I commented it out solely because it seemed redundant
 		// this got commented out in a change that supposedly makes the code match QW better
-		// so if this is broken, maybe put it in an if(cls.protocol != PROTOCOL_QUAKEWORLD) block
+		// so if this is broken, maybe put it in an if (cls.protocol != PROTOCOL_QUAKEWORLD) block
 		if (trace.plane.normal[2] > 0.7)
 			s->onground = true;
 
@@ -1118,29 +1119,29 @@ static void CL_ClientMovement_Physics_Swim(cl_clientmovement_state_t *s)
 
 static vec_t CL_IsMoveInDirection(vec_t forward, vec_t side, vec_t angle)
 {
-	if(forward == 0 && side == 0)
+	if (forward == 0 && side == 0)
 		return 0; // avoid division by zero
 	angle -= RAD2DEG(atan2(side, forward));
 	angle = (ANGLEMOD(angle + 180) - 180) / 45;
-	if(angle >  1)
+	if (angle >  1)
 		return 0;
-	if(angle < -1)
+	if (angle < -1)
 		return 0;
 	return 1 - fabs(angle);
 }
 
 static vec_t CL_GeomLerp(vec_t a, vec_t lerp, vec_t b)
 {
-	if(a == 0)
+	if (a == 0)
 	{
-		if(lerp < 1)
+		if (lerp < 1)
 			return 0;
 		else
 			return b;
 	}
-	if(b == 0)
+	if (b == 0)
 	{
-		if(lerp > 0)
+		if (lerp > 0)
 			return 0;
 		else
 			return a;
@@ -1154,12 +1155,12 @@ static void CL_ClientMovement_Physics_CPM_PM_Aircontrol(cl_clientmovement_state_
 
 #if 0
 	// this doesn't play well with analog input
-	if(s->cmd.forwardmove == 0 || s->cmd.sidemove != 0)
+	if (s->cmd.forwardmove == 0 || s->cmd.sidemove != 0)
 		return;
 	k = 32;
 #else
 	k = 32 * (2 * CL_IsMoveInDirection(s->cmd.forwardmove, s->cmd.sidemove, 0) - 1);
-	if(k <= 0)
+	if (k <= 0)
 		return;
 #endif
 
@@ -1171,7 +1172,7 @@ static void CL_ClientMovement_Physics_CPM_PM_Aircontrol(cl_clientmovement_state_
 
 	dot = DotProduct(s->velocity, wishdir);
 
-	if(dot > 0) { // we can't change direction while slowing down
+	if (dot > 0) { // we can't change direction while slowing down
 		k *= pow(dot, cl.movevars_aircontrol_power)*s->cmd.frametime;
 		speed = max(0, speed - cl.movevars_aircontrol_penalty * sqrt(max(0, 1 - dot*dot)) * k/32);
 		k *= cl.movevars_aircontrol;
@@ -1202,17 +1203,17 @@ static void CL_ClientMovement_Physics_PM_Accelerate(cl_clientmovement_state_t *s
 	vec_t vel_xy_backward, vel_xy_forward;
 	vec_t speedclamp;
 
-	if(stretchfactor > 0)
+	if (stretchfactor > 0)
 		speedclamp = stretchfactor;
-	else if(accelqw < 0)
+	else if (accelqw < 0)
 		speedclamp = 1;
 	else
 		speedclamp = -1; // no clamping
 
-	if(accelqw < 0)
+	if (accelqw < 0)
 		accelqw = -accelqw;
 
-	if(cl.moveflags & MOVEFLAG_Q2AIRACCELERATE)
+	if (cl.moveflags & MOVEFLAG_Q2AIRACCELERATE)
 		wishspeed0 = wishspeed; // don't need to emulate this Q1 bug
 
 	vel_straight = DotProduct(s->velocity, wishdir);
@@ -1223,16 +1224,16 @@ static void CL_ClientMovement_Physics_PM_Accelerate(cl_clientmovement_state_t *s
 	step = accel * s->cmd.frametime * wishspeed0;
 
 	vel_xy_current  = VectorLength(vel_xy);
-	if(speedlimit > 0)
+	if (speedlimit > 0)
 		accelqw = CL_ClientMovement_Physics_AdjustAirAccelQW(accelqw, (speedlimit - bound(wishspeed, vel_xy_current, speedlimit)) / max(1, speedlimit - wishspeed));
 	vel_xy_forward  = vel_xy_current + bound(0, wishspeed - vel_xy_current, step) * accelqw + step * (1 - accelqw);
 	vel_xy_backward = vel_xy_current - bound(0, wishspeed + vel_xy_current, step) * accelqw - step * (1 - accelqw);
-	if(vel_xy_backward < 0)
+	if (vel_xy_backward < 0)
 		vel_xy_backward = 0; // not that it REALLY occurs that this would cause wrong behaviour afterwards
 
 	vel_straight    = vel_straight   + bound(0, wishspeed - vel_straight,   step) * accelqw + step * (1 - accelqw);
 
-	if(sidefric < 0 && VectorLength2(vel_perpend))
+	if (sidefric < 0 && VectorLength2(vel_perpend))
 		// negative: only apply so much sideways friction to stay below the speed you could get by "braking"
 	{
 		vec_t f, fmin;
@@ -1243,7 +1244,7 @@ static void CL_ClientMovement_Physics_PM_Accelerate(cl_clientmovement_state_t *s
 		// vel_xy_backward*vel_xy_backward > vel_straight*vel_straight + vel_perpend*vel_perpend
 		// vel_xy_backward*vel_xy_backward > vel_xy * vel_xy
 		// obviously, this cannot be
-		if(fmin <= 0)
+		if (fmin <= 0)
 			VectorScale(vel_perpend, f, vel_perpend);
 		else
 		{
@@ -1256,14 +1257,14 @@ static void CL_ClientMovement_Physics_PM_Accelerate(cl_clientmovement_state_t *s
 
 	VectorMA(vel_perpend, vel_straight, wishdir, s->velocity);
 
-	if(speedclamp >= 0)
+	if (speedclamp >= 0)
 	{
 		vec_t vel_xy_preclamp;
 		vel_xy_preclamp = VectorLength(s->velocity);
-		if(vel_xy_preclamp > 0) // prevent division by zero
+		if (vel_xy_preclamp > 0) // prevent division by zero
 		{
 			vel_xy_current += (vel_xy_forward - vel_xy_current) * speedclamp;
-			if(vel_xy_current < vel_xy_preclamp)
+			if (vel_xy_current < vel_xy_preclamp)
 				VectorScale(s->velocity, (vel_xy_current / vel_xy_preclamp), s->velocity);
 		}
 	}
@@ -1283,23 +1284,23 @@ static void CL_ClientMovement_Physics_PM_AirAccelerate(cl_clientmovement_state_t
     float turnaccel = cl.movevars_warsowbunny_turnaccel;
     float backtosideratio = cl.movevars_warsowbunny_backtosideratio;
 
-    if( !wishspeed )
+    if ( !wishspeed )
         return;
 
     VectorCopy( s->velocity, curvel );
     curvel[2] = 0;
     curspeed = VectorLength( curvel );
 
-    if( wishspeed > curspeed * 1.01f )
+    if ( wishspeed > curspeed * 1.01f )
     {
         float faccelspeed = curspeed + airforwardaccel * cl.movevars_maxairspeed * s->cmd.frametime;
-        if( faccelspeed < wishspeed )
+        if ( faccelspeed < wishspeed )
             wishspeed = faccelspeed;
     }
     else
     {
         float f = ( bunnytopspeed - curspeed ) / ( bunnytopspeed - cl.movevars_maxairspeed );
-        if( f < 0 )
+        if ( f < 0 )
             f = 0;
         wishspeed = max( curspeed, cl.movevars_maxairspeed ) + bunnyaccel * f * cl.movevars_maxairspeed * s->cmd.frametime;
     }
@@ -1308,14 +1309,14 @@ static void CL_ClientMovement_Physics_PM_AirAccelerate(cl_clientmovement_state_t
     addspeed = VectorNormalizeLength( acceldir );
 
     accelspeed = turnaccel * cl.movevars_maxairspeed /* wishspeed */ * s->cmd.frametime;
-    if( accelspeed > addspeed )
+    if ( accelspeed > addspeed )
         accelspeed = addspeed;
 
-    if( backtosideratio < 1.0f )
+    if ( backtosideratio < 1.0f )
     {
         VectorNormalize2( curvel, curdir );
         dot = DotProduct( acceldir, curdir );
-        if( dot < 0 )
+        if ( dot < 0 )
             VectorMA( acceldir, -( 1.0f - backtosideratio ) * dot, curdir, acceldir );
     }
 
@@ -1406,9 +1407,9 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 			VectorMA(s->velocity, accelspeed, wishdir, s->velocity);
 		}
 		gravity = cl.movevars_gravity * cl.movevars_entgravity * s->cmd.frametime;
-		if(!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND))
+		if (!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND))
 		{
-			if(cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
+			if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
 				s->velocity[2] -= gravity * 0.5f;
 			else
 				s->velocity[2] -= gravity;
@@ -1417,9 +1418,9 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 			s->velocity[2] = 0;
 		if (VectorLength2(s->velocity))
 			CL_ClientMovement_Move(s);
-		if(!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND) || !s->onground)
+		if (!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND) || !s->onground)
 		{
-			if(cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
+			if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
 				s->velocity[2] -= gravity * 0.5f;
 		}
 	}
@@ -1442,7 +1443,7 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 			wishspeed2 = wishspeed;
 
 			// CPM: air control
-			if(cl.movevars_airstopaccelerate != 0)
+			if (cl.movevars_airstopaccelerate != 0)
 			{
 				vec3_t curdir;
 				curdir[0] = s->velocity[0];
@@ -1452,34 +1453,34 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 				accel = accel + (cl.movevars_airstopaccelerate - accel) * max(0, -DotProduct(curdir, wishdir));
 			}
 			strafity = CL_IsMoveInDirection(s->cmd.forwardmove, s->cmd.sidemove, -90) + CL_IsMoveInDirection(s->cmd.forwardmove, s->cmd.sidemove, +90); // if one is nonzero, other is always zero
-			if(cl.movevars_maxairstrafespeed)
+			if (cl.movevars_maxairstrafespeed)
 				wishspeed = min(wishspeed, CL_GeomLerp(cl.movevars_maxairspeed, strafity, cl.movevars_maxairstrafespeed));
-			if(cl.movevars_airstrafeaccelerate)
+			if (cl.movevars_airstrafeaccelerate)
 				accel = CL_GeomLerp(cl.movevars_airaccelerate, strafity, cl.movevars_airstrafeaccelerate);
-			if(cl.movevars_airstrafeaccel_qw)
+			if (cl.movevars_airstrafeaccel_qw)
 				accelqw =
 					(((strafity > 0.5 ? cl.movevars_airstrafeaccel_qw : cl.movevars_airaccel_qw) >= 0) ? +1 : -1)
 					*
 					(1 - CL_GeomLerp(1 - fabs(cl.movevars_airaccel_qw), strafity, 1 - fabs(cl.movevars_airstrafeaccel_qw)));
 			// !CPM
 
-			if(cl.movevars_warsowbunny_turnaccel && accelerating && s->cmd.sidemove == 0 && s->cmd.forwardmove != 0)
+			if (cl.movevars_warsowbunny_turnaccel && accelerating && s->cmd.sidemove == 0 && s->cmd.forwardmove != 0)
 				CL_ClientMovement_Physics_PM_AirAccelerate(s, wishdir, wishspeed2);
 			else
 				CL_ClientMovement_Physics_PM_Accelerate(s, wishdir, wishspeed, wishspeed0, accel, accelqw, cl.movevars_airaccel_qw_stretchfactor, cl.movevars_airaccel_sideways_friction / cl.movevars_maxairspeed, cl.movevars_airspeedlimit_nonqw);
 
-			if(cl.movevars_aircontrol)
+			if (cl.movevars_aircontrol)
 				CL_ClientMovement_Physics_CPM_PM_Aircontrol(s, wishdir, wishspeed2);
 		}
 		gravity = cl.movevars_gravity * cl.movevars_entgravity * s->cmd.frametime;
-		if(cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
+		if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
 			s->velocity[2] -= gravity * 0.5f;
 		else
 			s->velocity[2] -= gravity;
 		CL_ClientMovement_Move(s);
-		if(!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND) || !s->onground)
+		if (!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND) || !s->onground)
 		{
-			if(cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
+			if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
 				s->velocity[2] -= gravity * 0.5f;
 		}
 	}
@@ -1487,7 +1488,7 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 
 static void CL_ClientMovement_PlayerMove(cl_clientmovement_state_t *s)
 {
-	//Con_Printf(" %f", frametime);
+	//Con_Printf (" %f", frametime);
 	if (!s->cmd.jump)
 		s->cmd.canjump = true;
 	s->waterjumptime -= s->cmd.frametime;
@@ -1580,21 +1581,21 @@ void CL_UpdateMoveVars(void)
 		cl.movevars_airspeedlimit_nonqw = 0;
 	}
 
-	if(!(cl.moveflags & MOVEFLAG_VALID))
+	if (!(cl.moveflags & MOVEFLAG_VALID))
 	{
-		if(gamemode == GAME_NEXUIZ)  // Legacy hack to work with old servers of Nexuiz.
+		if (gamemode == GAME_NEXUIZ)  // Legacy hack to work with old servers of Nexuiz.
 			cl.moveflags = MOVEFLAG_Q2AIRACCELERATE;
 	}
 
-	if(cl.movevars_aircontrol_power <= 0)
+	if (cl.movevars_aircontrol_power <= 0)
 		cl.movevars_aircontrol_power = 2; // CPMA default
 }
 
 void CL_ClientMovement_PlayerMove_Frame(cl_clientmovement_state_t *s)
 {
 	// if a move is more than 50ms, do it as two moves (matching qwsv)
-	//Con_Printf("%i ", s.cmd.msec);
-	if(s->cmd.frametime > 0.0005)
+	//Con_Printf ("%d ", s.cmd.msec);
+	if (s->cmd.frametime > 0.0005)
 	{
 		if (s->cmd.frametime > 0.05)
 		{
@@ -1630,17 +1631,17 @@ void CL_ClientMovement_Replay(void)
 	VectorCopy(cl.entities[cl.playerentity].state_current.origin, s.origin);
 	VectorCopy(cl.mvelocity[0], s.velocity);
 	s.crouched = true; // will be updated on first move
-	//Con_Printf("movement replay starting org %f %f %f vel %f %f %f\n", s.origin[0], s.origin[1], s.origin[2], s.velocity[0], s.velocity[1], s.velocity[2]);
+	//Con_Printf ("movement replay starting org %f %f %f vel %f %f %f\n", s.origin[0], s.origin[1], s.origin[2], s.velocity[0], s.velocity[1], s.velocity[2]);
 
 	totalmovemsec = 0;
 	for (i = 0;i < CL_MAX_USERCMDS;i++)
 		if (cl.movecmd[i].sequence > cls.servermovesequence)
 			totalmovemsec += cl.movecmd[i].msec;
 	cl.movement_predicted = totalmovemsec >= cl_movement_minping.value && cls.servermovesequence && (cl_movement.integer && !cls.demoplayback && cls.signon == SIGNONS && cl.stats[STAT_HEALTH] > 0 && !cl.intermission);
-	//Con_Printf("%i = %.0f >= %.0f && %u && (%i && %i && %i == %i && %i > 0 && %i\n", cl.movement_predicted, totalmovemsec, cl_movement_minping.value, cls.servermovesequence, cl_movement.integer, !cls.demoplayback, cls.signon, SIGNONS, cl.stats[STAT_HEALTH], !cl.intermission);
+	//Con_Printf ("%d = %.0f >= %.0f && %u && (%d && %d && %d == %d && %d > 0 && %d\n", cl.movement_predicted, totalmovemsec, cl_movement_minping.value, cls.servermovesequence, cl_movement.integer, !cls.demoplayback, cls.signon, SIGNONS, cl.stats[STAT_HEALTH], !cl.intermission);
 	if (cl.movement_predicted)
 	{
-		//Con_Printf("%ims\n", cl.movecmd[0].msec);
+		//Con_Printf ("%dms\n", cl.movecmd[0].msec);
 
 		// replay the input queue to predict current location
 		// note: this relies on the fact there's always one queue item at the end
@@ -1660,7 +1661,7 @@ void CL_ClientMovement_Replay(void)
 
 			cl.movecmd[i].canjump = s.cmd.canjump;
 		}
-		//Con_Printf("\n");
+		//Con_Printf ("\n");
 		CL_ClientMovement_UpdateStatus(&s);
 	}
 	else
@@ -1744,7 +1745,7 @@ static void QW_MSG_WriteDeltaUsercmd(sizebuf_t *buf, usercmd_t *from, usercmd_t 
 void CL_NewFrameReceived(int num)
 {
 	if (developer_networkentities.integer >= 10)
-		Con_Printf("recv: svc_entities %i\n", num);
+		Con_Printf ("recv: svc_entities %d\n", num);
 	cl.latestframenums[cl.latestframenumsposition] = num;
 	cl.latestsendnums[cl.latestframenumsposition] = cl.cmd.sequence;
 	cl.latestframenumsposition = (cl.latestframenumsposition + 1) % LATESTFRAMENUMS;
@@ -1825,7 +1826,7 @@ void CL_SendMove(void)
 	if (in_button16.state  & 3) bits |= 262144;
 	// button bits 19-31 unused currently
 	// rotate/zoom view serverside if PRYDON_CLIENTCURSOR cursor is at edge of screen
-	if(cl_prydoncursor.integer > 0)
+	if (cl_prydoncursor.integer > 0)
 	{
 		if (cl.cmd.cursor_screen[0] <= -1) bits |= 8;
 		if (cl.cmd.cursor_screen[0] >=  1) bits |= 16;
@@ -1908,7 +1909,7 @@ void CL_SendMove(void)
 	// (otherwise it is only for prediction)
 
 	// do not send 0ms packets because they mess up physics
-	if(cl.cmd.msec == 0 && cl.time > cl.oldtime && (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS)) {
+	if (cl.cmd.msec == 0 && cl.time > cl.oldtime && (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS)) {
 		return;
 	}
 
@@ -2140,7 +2141,7 @@ void CL_SendMove(void)
 			if (cl.latestsendnums[j] >= oldsequence)
 			{
 				if (developer_networkentities.integer >= 10)
-					Con_Printf("send clc_ackframe %i\n", cl.latestframenums[j]);
+					Con_Printf ("send clc_ackframe %d\n", cl.latestframenums[j]);
 				MSG_WriteByte(&buf, clc_ackframe);
 				MSG_WriteLong(&buf, cl.latestframenums[j]);
 			}

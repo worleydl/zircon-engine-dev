@@ -39,14 +39,14 @@ typedef struct gamemode_info_s
 {
 	gamemode_t mode; // this gamemode
 	gamemode_t group; // different games with same group can switch automatically when gamedirs change
-	const char* prog_name; // not null
-	const char* cmdline; // not null
-	const char* gamename; // not null
+	const char *prog_name; // not null
+	const char *cmdline; // not null "-hipnotic"
+	const char *gamename; // not null
 	const char*	gamenetworkfiltername; // not null
-	const char* gamedirname1; // not null
-	const char* gamedirname2; // null
-	const char* gamescreenshotname; // not nul
-	const char* gameuserdirname; // not null
+	const char *gamedirname1; // not null
+	const char *gamedirname2; // null
+	const char *gamescreenshotname; // not nul
+	const char *gameuserdirname; // not null
 } gamemode_info_t;
 
 static const gamemode_info_t gamemode_info [GAME_COUNT] =
@@ -136,7 +136,7 @@ void COM_ChangeGameTypeForGameDirs(void)
 	{
 		for (i = 0;i < (int)(sizeof (gamemode_info) / sizeof (gamemode_info[0]));i++)
 		{
-			if (gamemode_info[i].group == com_startupgamegroup && (gamemode_info[i].gamedirname2 && gamemode_info[i].gamedirname2[0]) && !strcasecmp(fs_gamedirs[0], gamemode_info[i].gamedirname2))
+			if (gamemode_info[i].group == com_startupgamegroup && (gamemode_info[i].gamedirname2 && gamemode_info[i].gamedirname2[0]) && String_Does_Match_Caseless(fs_gamedirs[0], gamemode_info[i].gamedirname2))
 			{
 				index = i;
 				break;
@@ -157,38 +157,40 @@ static void COM_SetGameType(int index)
 	gamemode = gamemode_info[index].mode;
 	gamename = gamemode_info[index].gamename;
 	gamenetworkfiltername = gamemode_info[index].gamenetworkfiltername;
+
 	gamedirname1 = gamemode_info[index].gamedirname1;
 	gamedirname2 = gamemode_info[index].gamedirname2;
+
 	gamescreenshotname = gamemode_info[index].gamescreenshotname;
 	gameuserdirname = gamemode_info[index].gameuserdirname;
 
 	if (gamemode == com_startupgamemode)
 	{
-		if((t = Sys_CheckParm("-customgamename")) && t + 1 < sys.argc)
+		if ((t = Sys_CheckParm("-customgamename")) && t + 1 < sys.argc)
 			gamename = gamenetworkfiltername = sys.argv[t+1];
-		if((t = Sys_CheckParm("-customgamenetworkfiltername")) && t + 1 < sys.argc)
+		if ((t = Sys_CheckParm("-customgamenetworkfiltername")) && t + 1 < sys.argc)
 			gamenetworkfiltername = sys.argv[t+1];
-		if((t = Sys_CheckParm("-customgamedirname1")) && t + 1 < sys.argc)
+		if ((t = Sys_CheckParm("-customgamedirname1")) && t + 1 < sys.argc)
 			gamedirname1 = sys.argv[t+1];
-		if((t = Sys_CheckParm("-customgamedirname2")) && t + 1 < sys.argc)
+		if ((t = Sys_CheckParm("-customgamedirname2")) && t + 1 < sys.argc)
 			gamedirname2 = *sys.argv[t+1] ? sys.argv[t+1] : NULL;
-		if((t = Sys_CheckParm("-customgamescreenshotname")) && t + 1 < sys.argc)
+		if ((t = Sys_CheckParm("-customgamescreenshotname")) && t + 1 < sys.argc)
 			gamescreenshotname = sys.argv[t+1];
-		if((t = Sys_CheckParm("-customgameuserdirname")) && t + 1 < sys.argc)
+		if ((t = Sys_CheckParm("-customgameuserdirname")) && t + 1 < sys.argc)
 			gameuserdirname = sys.argv[t+1];
 	}
 
 	if (gamedirname2 && gamedirname2[0])
-		Con_Printf("Game is %s using base gamedirs %s %s", gamename, gamedirname1, gamedirname2);
+		Con_Printf ("Game is %s using base gamedirs %s %s", gamename, gamedirname1, gamedirname2);
 	else
-		Con_Printf("Game is %s using base gamedir %s", gamename, gamedirname1);
+		Con_Printf ("Game is %s using base gamedir %s", gamename, gamedirname1);
 	for (i = 0;i < fs_numgamedirs;i++)
 	{
 		if (i == 0)
-			Con_Printf(", with mod gamedirs");
-		Con_Printf(" %s", fs_gamedirs[i]);
+			Con_Printf (", with mod gamedirs");
+		Con_Printf (" %s", fs_gamedirs[i]);
 	}
-	Con_Printf("\n");
+	Con_Printf ("\n");
 
 	if (strchr(gamenetworkfiltername, ' '))
 	{
@@ -202,5 +204,5 @@ static void COM_SetGameType(int index)
 		gamenetworkfiltername = gamenetworkfilternamebuffer;
 	}
 
-	Con_Printf("gamename for server filtering: %s\n", gamenetworkfiltername);
+	Con_Printf ("gamename for server filtering: %s\n", gamenetworkfiltername);
 }

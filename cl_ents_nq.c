@@ -22,9 +22,9 @@ void EntityFrameQuake_ReadEntity(int bits)
 		num = MSG_ReadByte(&cl_message);
 
 	if (num >= MAX_EDICTS)
-		Host_Error("EntityFrameQuake_ReadEntity: entity number (%i) >= MAX_EDICTS (%i)", num, MAX_EDICTS);
+		Host_Error_Line ("EntityFrameQuake_ReadEntity: entity number (%d) >= MAX_EDICTS (%d)", num, MAX_EDICTS);
 	if (num < 1)
-		Host_Error("EntityFrameQuake_ReadEntity: invalid entity number (%i)", num);
+		Host_Error_Line ("EntityFrameQuake_ReadEntity: invalid entity number (%d)", num);
 
 	if (cl.num_entities <= num)
 	{
@@ -111,7 +111,7 @@ void EntityFrameQuake_ReadEntity(int bits)
 	}
 
 	if (cl_message.badread)
-		Host_Error("EntityFrameQuake_ReadEntity: read error");
+		Host_Error_Line ("EntityFrameQuake_ReadEntity: read error");
 }
 
 void EntityFrameQuake_ISeeDeadEntities(void)

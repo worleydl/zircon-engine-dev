@@ -54,7 +54,7 @@ void CL_ForwardToServer (const char *s)
 	char temp[128];
 	if (cls.state != ca_connected)
 	{
-		Con_Printf("Can't \"%s\", not connected\n", s);
+		Con_Printf ("Can't \"%s\", not connected\n", s);
 		return;
 	}
 
@@ -71,8 +71,7 @@ void CL_ForwardToServer (const char *s)
 	if ((!strncmp(s, "say ", 4) || !strncmp(s, "say_team ", 9)) && cl_locs_enable.integer)
 	{
 		// say/say_team commands can replace % character codes with status info
-		while (*s)
-		{
+		while (*s) {
 			if (*s == '%' && s[1])
 			{
 				// handle proquake message macros
@@ -83,16 +82,16 @@ void CL_ForwardToServer (const char *s)
 					CL_Locs_FindLocationName(temp, sizeof(temp), cl.movement_origin);
 					break;
 				case 'h': // current health
-					dpsnprintf(temp, sizeof(temp), "%i", cl.stats[STAT_HEALTH]);
+					dpsnprintf(temp, sizeof(temp), "%d", cl.stats[STAT_HEALTH]);
 					break;
 				case 'a': // current armor
-					dpsnprintf(temp, sizeof(temp), "%i", cl.stats[STAT_ARMOR]);
+					dpsnprintf(temp, sizeof(temp), "%d", cl.stats[STAT_ARMOR]);
 					break;
 				case 'x': // current rockets
-					dpsnprintf(temp, sizeof(temp), "%i", cl.stats[STAT_ROCKETS]);
+					dpsnprintf(temp, sizeof(temp), "%d", cl.stats[STAT_ROCKETS]);
 					break;
 				case 'c': // current cells
-					dpsnprintf(temp, sizeof(temp), "%i", cl.stats[STAT_CELLS]);
+					dpsnprintf(temp, sizeof(temp), "%d", cl.stats[STAT_CELLS]);
 					break;
 				// silly proquake macros
 				case 'd': // loc at last death
@@ -174,7 +173,7 @@ void CL_ForwardToServer_f (cmd_state_t *cmd)
 	const char *s;
 	char vabuf[MAX_INPUTLINE];
 	size_t i;
-	if (!strcasecmp(Cmd_Argv(cmd, 0), "cmd"))
+	if (String_Does_Match_Caseless(Cmd_Argv(cmd, 0), "cmd"))
 	{
 		// we want to strip off "cmd", so just send the args
 		s = Cmd_Argc(cmd) > 1 ? Cmd_Args(cmd) : "";
@@ -183,7 +182,7 @@ void CL_ForwardToServer_f (cmd_state_t *cmd)
 	{
 		// we need to keep the command name, so send Cmd_Argv(cmd, 0), a space and then Cmd_Args(cmd)
 		i = dpsnprintf(vabuf, sizeof(vabuf), "%s", Cmd_Argv(cmd, 0));
-		if(Cmd_Argc(cmd) > 1)
+		if (Cmd_Argc(cmd) > 1)
 			// (i + 1) accounts for the added space
 			dpsnprintf(&vabuf[i], sizeof(vabuf) - (i + 1), " %s", Cmd_Args(cmd));
 		s = vabuf;
@@ -200,7 +199,7 @@ static void CL_SendCvar_f(cmd_state_t *cmd)
 	const char *cvarname;
 	char vabuf[1024];
 
-	if(Cmd_Argc(cmd) != 2)
+	if (Cmd_Argc(cmd) != 2)
 		return;
 	cvarname = Cmd_Argv(cmd, 1);
 	if (cls.state == ca_connected)
@@ -208,7 +207,7 @@ static void CL_SendCvar_f(cmd_state_t *cmd)
 		c = Cvar_FindVar(&cvars_all, cvarname, CF_CLIENT | CF_SERVER);
 		// LadyHavoc: if there is no such cvar or if it is private, send a
 		// reply indicating that it has no value
-		if(!c || (c->flags & CF_PRIVATE))
+		if (!c || (c->flags & CF_PRIVATE))
 			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "sentcvar %s", cvarname));
 		else
 			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "sentcvar %s \"%s\"", c->name, c->string));
@@ -229,15 +228,15 @@ static void CL_Name_f(cmd_state_t *cmd)
 
 	if (Cmd_Argc(cmd) == 1)
 	{
-		Con_Printf("name: \"%s^7\"\n", cl_name.string);
+		Con_Printf ("name: \"%s^7\"\n", cl_name.string);
 		return;
 	}
 
 	// in the single-arg case any enclosing quotes shall be stripped
 	newNameSource = (char *)(Cmd_Argc(cmd) == 2 ? Cmd_Argv(cmd, 1) : Cmd_Args(cmd));
 
-	if (strlen(newNameSource) >= MAX_SCOREBOARDNAME) // may as well truncate before networking
-		newNameSource[MAX_SCOREBOARDNAME - 1] = '\0'; // this is fine (cbuf stores length)
+	if (strlen(newNameSource) >= MAX_SCOREBOARDNAME_128) // may as well truncate before networking
+		newNameSource[MAX_SCOREBOARDNAME_128 - 1] = '\0'; // this is fine (cbuf stores length)
 
 	Cvar_SetQuick(&cl_name, newNameSource);
 }
@@ -247,6 +246,7 @@ static void CL_Name_f(cmd_state_t *cmd)
 CL_Color_f
 ==================
 */
+#pragma message ("DP bug: Player setup screen color change does not work")
 cvar_t cl_color = {CF_CLIENT | CF_ARCHIVE, "_cl_color", "0", "internal storage cvar for current player colors (changed by color command)"};
 
 // HACK: Ignore the callbacks so this two-to-three way synchronization doesn't cause an infinite loop.
@@ -257,14 +257,15 @@ static void CL_Color_c(cvar_t *var)
 
 	callback_save = cl_topcolor.callback;
 	cl_topcolor.callback = NULL;
-	Cvar_SetQuick(&cl_topcolor, va(vabuf, sizeof(vabuf), "%i", ((var->integer >> 4) & 15)));
+	Cvar_SetQuick(&cl_topcolor, va(vabuf, sizeof(vabuf), "%d", ((var->integer >> 4) & 15)));
 	cl_topcolor.callback = callback_save;
 
 	callback_save = cl_bottomcolor.callback;
 	cl_bottomcolor.callback = NULL;
-	Cvar_SetQuick(&cl_bottomcolor, va(vabuf, sizeof(vabuf), "%i", (var->integer & 15)));
+	Cvar_SetQuick(&cl_bottomcolor, va(vabuf, sizeof(vabuf), "%d", (var->integer & 15)));
 	cl_bottomcolor.callback = callback_save;
 }
+
 
 static void CL_Topcolor_c(cvar_t *var)
 {
@@ -273,7 +274,7 @@ static void CL_Topcolor_c(cvar_t *var)
 
 	callback_save = cl_color.callback;
 	cl_color.callback = NULL;
-	Cvar_SetQuick(&cl_color, va(vabuf, sizeof(vabuf), "%i", var->integer*16 + cl_bottomcolor.integer));
+	Cvar_SetQuick(&cl_color, va(vabuf, sizeof(vabuf), "%d", var->integer*16 + cl_bottomcolor.integer));
 	cl_color.callback = callback_save;
 }
 
@@ -284,7 +285,7 @@ static void CL_Bottomcolor_c(cvar_t *var)
 
 	callback_save = cl_color.callback;
 	cl_color.callback = NULL;
-	Cvar_SetQuick(&cl_color, va(vabuf, sizeof(vabuf), "%i", cl_topcolor.integer*16 + var->integer));
+	Cvar_SetQuick(&cl_color, va(vabuf, sizeof(vabuf), "%d", cl_topcolor.integer*16 + var->integer));
 	cl_color.callback = callback_save;
 }
 
@@ -296,7 +297,7 @@ static void CL_Color_f(cmd_state_t *cmd)
 	{
 		if (cmd->source == src_local)
 		{
-			Con_Printf("\"color\" is \"%i %i\"\n", cl_topcolor.integer, cl_bottomcolor.integer);
+			Con_Printf ("\"color\" is \"%d %d\"\n", cl_topcolor.integer, cl_bottomcolor.integer);
 			Con_Print("color <0-15> [0-15]\n");
 		}
 		return;
@@ -363,7 +364,7 @@ static void CL_User_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 	{
 		if (!cl.scores[i].name[0])
 			continue;
-		if (cl.scores[i].qw_userid == uid || !strcasecmp(cl.scores[i].name, Cmd_Argv(cmd, 1)))
+		if (cl.scores[i].qw_userid == uid || String_Does_Match_Caseless(cl.scores[i].name, Cmd_Argv(cmd, 1)))
 		{
 			InfoString_Print(cl.scores[i].qw_userinfo);
 			return;
@@ -396,7 +397,7 @@ static void CL_Users_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 		}
 	}
 
-	Con_Printf ("%i total users\n", c);
+	Con_Printf ("%d total users\n", c);
 }
 
 /*
@@ -489,7 +490,7 @@ static void CL_PQRcon_f(cmd_state_t *cmd)
 
 	if (Cmd_Argc(cmd) == 1)
 	{
-		Con_Printf("%s: Usage: %s command\n", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0));
+		Con_Printf ("%s: Usage: %s command\n", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0));
 		return;
 	}
 
@@ -547,7 +548,7 @@ static void CL_Rcon_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 
 	if (Cmd_Argc(cmd) == 1)
 	{
-		Con_Printf("%s: Usage: %s command\n", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0));
+		Con_Printf ("%s: Usage: %s command\n", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 0));
 		return;
 	}
 
@@ -575,35 +576,35 @@ static void CL_Rcon_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 	if (mysocket && Cmd_Args(cmd)[0])
 	{
 		// simply put together the rcon packet and send it
-		if(Cmd_Argv(cmd, 0)[0] == 's' || rcon_secure.integer > 1)
+		if (Cmd_Argv(cmd, 0)[0] == 's' || rcon_secure.integer > 1)
 		{
-			if(cls.rcon_commands[cls.rcon_ringpos][0])
+			if (cls.rcon_commands[cls.rcon_ringpos][0])
 			{
 				char s[128];
 				LHNETADDRESS_ToString(&cls.rcon_addresses[cls.rcon_ringpos], s, sizeof(s), true);
-				Con_Printf("rcon to %s (for command %s) failed: too many buffered commands (possibly increase MAX_RCONS)\n", s, cls.rcon_commands[cls.rcon_ringpos]);
+				Con_Printf ("rcon to %s (for command %s) failed: too many buffered commands (possibly increase MAX_RCONS)\n", s, cls.rcon_commands[cls.rcon_ringpos]);
 				cls.rcon_commands[cls.rcon_ringpos][0] = 0;
 				--cls.rcon_trying;
 			}
 			for (i = 0;i < MAX_RCONS;i++)
-				if(cls.rcon_commands[i][0])
+				if (cls.rcon_commands[i][0])
 					if (!LHNETADDRESS_Compare(&cls.rcon_address, &cls.rcon_addresses[i]))
 						break;
 			++cls.rcon_trying;
-			if(i >= MAX_RCONS)
+			if (i >= MAX_RCONS)
 				NetConn_WriteString(mysocket, "\377\377\377\377getchallenge", &cls.rcon_address); // otherwise we'll request the challenge later
 			strlcpy(cls.rcon_commands[cls.rcon_ringpos], Cmd_Args(cmd), sizeof(cls.rcon_commands[cls.rcon_ringpos]));
 			cls.rcon_addresses[cls.rcon_ringpos] = cls.rcon_address;
 			cls.rcon_timeout[cls.rcon_ringpos] = host.realtime + rcon_secure_challengetimeout.value;
 			cls.rcon_ringpos = (cls.rcon_ringpos + 1) % MAX_RCONS;
 		}
-		else if(rcon_secure.integer > 0)
+		else if (rcon_secure.integer > 0)
 		{
 			char buf[1500];
 			char argbuf[1500];
 			dpsnprintf(argbuf, sizeof(argbuf), "%ld.%06d %s", (long) time(NULL), (int) (rand() % 1000000), Cmd_Args(cmd));
 			memcpy(buf, "\377\377\377\377srcon HMAC-MD4 TIME ", 24);
-			if(HMAC_MDFOUR_16BYTES((unsigned char *) (buf + 24), (unsigned char *) argbuf, (int)strlen(argbuf), (unsigned char *) rcon_password.string, n))
+			if (HMAC_MDFOUR_16BYTES((unsigned char *) (buf + 24), (unsigned char *) argbuf, (int)strlen(argbuf), (unsigned char *) rcon_password.string, n))
 			{
 				buf[40] = ' ';
 				strlcpy(buf + 41, argbuf, sizeof(buf) - 41);
@@ -730,7 +731,7 @@ static void CL_PingPLReport_f(cmd_state_t *cmd)
 	{
 		cl.scores[i].qw_ping = atoi(Cmd_Argv(cmd, 1+i*2));
 		cl.scores[i].qw_packetloss = strtol(Cmd_Argv(cmd, 1+i*2+1), &errbyte, 0);
-		if(errbyte && *errbyte == ',')
+		if (errbyte && *errbyte == ',')
 			cl.scores[i].qw_movementloss = atoi(errbyte + 1);
 		else
 			cl.scores[i].qw_movementloss = 0;
