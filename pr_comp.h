@@ -415,7 +415,10 @@ typedef struct mstatement_s
 mstatement_t;
 
 // Header - 64 bytes
-#define	PROG_VERSION_6	6
+#define	PROG_VERSION_6		6
+#define	PROG_VERSION_FTE_7	7
+
+
 typedef struct dprograms_s
 {
 	int32_t	version;		// Version (usually 6)

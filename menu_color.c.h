@@ -1,6 +1,5 @@
 // menu_color.c.h - 100%
 
-#define		frame_cursor	m_optcursor
 #define 	local_count		OPTIONS_COLORCONTROL_ITEMS
 #define		local_cursor	options_colorcontrol_cursor
 #define 	visiblerows 	m_color_visiblerows
@@ -93,11 +92,11 @@ static void M_Options_ColorControl_Draw (void)
 	float c[3];
 	cachepic_t	*p0, *dither;
 
-	PPX_Start(local_cursor, frame_cursor); // PPX FRAME
-
-	dither = Draw_CachePic_Flags ("gfx/colorcontrol/ditherpattern", CACHEPICFLAG_NOCLAMP);
 
 	M_Background(320, 256, q_darken_true);
+	PPX_Start (local_cursor);
+
+	dither = Draw_CachePic_Flags ("gfx/colorcontrol/ditherpattern", CACHEPICFLAG_NOCLAMP);
 
 	M_DrawPic(16, 4, "gfx/qplaque", NO_HOTSPOTS_0, NA0, NA0);
 	p0 = Draw_CachePic ("gfx/p_option");
@@ -167,18 +166,25 @@ static void M_Options_ColorControl_Draw (void)
 	PPX_DrawSel_End ();
 }
 
-
 static void M_Options_ColorControl_Key(cmd_state_t *cmd, int k, int ascii)
 {
 	switch (k) {
-	case K_MOUSE2: if (Hotspots_DidHit_Slider()) { local_cursor = hotspotx_hover; goto leftus; } // PPX Key2 fall thru
+	case K_MOUSE2: 
+		if (Hotspots_DidHit_Slider()) { 
+			local_cursor = hotspotx_hover; 
+			goto leftus; 
+		}
+		// fall thru
+
 	case K_ESCAPE:
 		M_Menu_Options_Classic_f(cmd);
 		break;
 
 	case K_MOUSE1:						
 		if (!Hotspots_DidHit () ) { return;	}
-		local_cursor = hotspotx_hover; // PPX Key2 fall thru
+		local_cursor = hotspotx_hover;
+		// fall thru
+
 	case K_ENTER:
 		m_entersound = true;
 		switch (local_cursor) {
@@ -225,13 +231,13 @@ static void M_Options_ColorControl_Key(cmd_state_t *cmd, int k, int ascii)
 
 	case K_PGDN:
 		local_cursor += visiblerows / 2;
-		if (local_cursor >= local_count) 
+		if (local_cursor > local_count - 1) 
 			local_cursor = local_count - 1;
 		break;
 
 	case K_MWHEELDOWN:
 		local_cursor += visiblerows / 4;
-		if (local_cursor >= local_count) 
+		if (local_cursor > local_count - 1) 
 			local_cursor = local_count - 1;
 		break;
 
@@ -250,12 +256,16 @@ static void M_Options_ColorControl_Key(cmd_state_t *cmd, int k, int ascii)
 		break;
 
 leftus:
-	case K_LEFTARROW:M_Menu_Options_ColorControl_AdjustSliders (-1); break;
-	case K_RIGHTARROW: M_Menu_Options_ColorControl_AdjustSliders (1); break;
+	case K_LEFTARROW:
+		M_Menu_Options_ColorControl_AdjustSliders (-1);
+		break;
+
+	case K_RIGHTARROW: 
+		M_Menu_Options_ColorControl_AdjustSliders (1);
+		break;
 	} // sw
 }
 
-#undef frame_cursor
 #undef local_count
 #undef local_cursor
 #undef visiblerows

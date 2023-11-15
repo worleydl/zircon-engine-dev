@@ -125,7 +125,7 @@ Print something to the center of the screen using SCR_Centerprint
 */
 static void Cmd_Centerprint_f (cmd_state_t *cmd)
 {
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 	unsigned int i, c, p;
 	c = Cmd_Argc(cmd);
 	if (c >= 2)
@@ -345,7 +345,7 @@ void Cbuf_InsertText (cmd_state_t *cmd, const char *text)
 	Cbuf_Lock(cbuf);
 
 	if (cbuf->size + l >= cbuf->maxsize)
-		Con_Print("Cbuf_InsertText: overflow\n");
+		Con_PrintLinef ("Cbuf_InsertText: overflow");
 	else
 	{
 		// bones_was_here assertion: when prepending to the buffer it never makes sense to leave node(s) in the `pending` state,
@@ -398,7 +398,7 @@ static qbool Cmd_PreprocessString(cmd_state_t *cmd, const char *intext, char *ou
 void Cbuf_Execute (cmd_buf_t *cbuf)
 {
 	cmd_input_t *current;
-	char preprocessed[MAX_INPUTLINE];
+	char preprocessed[MAX_INPUTLINE_16384];
 	char *firstchar;
 	unsigned int i = 0;
 
@@ -521,7 +521,7 @@ static void Cmd_StuffCmds_f (cmd_state_t *cmd)
 {
 	int		i, j, l;
 	// this is for all commandline options combined (and is bounds checked)
-	char	build[MAX_INPUTLINE];
+	char	build[MAX_INPUTLINE_16384];
 
 	if (Cmd_Argc (cmd) != 1)
 	{
@@ -584,7 +584,7 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 			return; // don't execute config.cfg
 	}
 
-	f = (char *)FS_LoadFile (filename, tempmempool, false, NULL);
+	f = (char *)FS_LoadFile (filename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	if (!f)
 	{
 		Con_PrintLinef ("couldn't exec %s", filename);
@@ -610,14 +610,14 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 		{
 		case GAME_NORMAL:
 			Cbuf_InsertText(cmd, "\n"
-"gl_texturemode gl_linear_mipmap_linear\n" // [Zircon]
+"gl_texturemode gl_linear_mipmap_linear\n" // Baker r9066 ..[Zircon]
 "sv_gameplayfix_blowupfallenzombies 0\n"
 "sv_gameplayfix_findradiusdistancetobox 0\n"
 "sv_gameplayfix_grenadebouncedownslopes 0\n"
 "sv_gameplayfix_slidemoveprojectiles 0\n"
 "sv_gameplayfix_upwardvelocityclearsongroundflag 0\n"
 "sv_gameplayfix_setmodelrealbox 0\n"
-"sv_gameplayfix_droptofloorstartsolid 1\n" // Baker
+"sv_gameplayfix_droptofloorstartsolid 1\n" // Baker r9065: physics correction probably
 "sv_gameplayfix_droptofloorstartsolid_nudgetocorrect 0\n"
 "sv_gameplayfix_noairborncorpse 0\n"
 "sv_gameplayfix_noairborncorpse_allowsuspendeditems 0\n"
@@ -850,7 +850,7 @@ static void Cmd_Exec_f (cmd_state_t *cmd)
 		return;
 	}
 
-	s = FS_Search(Cmd_Argv(cmd, 1), fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+	s = FS_Search(Cmd_Argv(cmd, 1), fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 	if (!s || !s->numfilenames)
 	{
 		Con_Printf ("couldn't exec %s\n",Cmd_Argv(cmd, 1));
@@ -1061,7 +1061,7 @@ Creates a new command that executes a command string (possibly ; seperated)
 static void Cmd_Alias_f (cmd_state_t *cmd)
 {
 	cmd_alias_t	*a;
-	char		line[MAX_INPUTLINE];
+	char		line[MAX_INPUTLINE_16384];
 	int			i, c;
 	const char		*s;
 	size_t		alloclen;
@@ -1306,16 +1306,16 @@ fail:
 
 static const char *Cmd_GetCvarValue(cmd_state_t *cmd, const char *var, size_t varlen, cmd_alias_t *alias)
 {
-	static char varname[MAX_INPUTLINE]; // cmd_mutex
-	static char varval[MAX_INPUTLINE]; // cmd_mutex
+	static char varname[MAX_INPUTLINE_16384]; // cmd_mutex
+	static char varval[MAX_INPUTLINE_16384]; // cmd_mutex
 	const char *varstr = NULL;
 	char *varfunc;
 	qbool required = false;
 	qbool optional = false;
 	static char asis[] = "asis"; // just to suppress const char warnings
 
-	if (varlen >= MAX_INPUTLINE)
-		varlen = MAX_INPUTLINE - 1;
+	if (varlen >= MAX_INPUTLINE_16384)
+		varlen = MAX_INPUTLINE_16384 - 1;
 	memcpy(varname, var, varlen);
 	varname[varlen] = 0;
 	varfunc = strchr(varname, ' ');
@@ -1551,8 +1551,8 @@ Called for aliases and fills in the alias into the cbuffer
 */
 static void Cmd_ExecuteAlias (cmd_state_t *cmd, cmd_alias_t *alias)
 {
-	static char buffer[ MAX_INPUTLINE ]; // cmd_mutex
-	static char buffer2[ MAX_INPUTLINE ]; // cmd_mutex
+	static char buffer[ MAX_INPUTLINE_16384 ]; // cmd_mutex
+	static char buffer2[ MAX_INPUTLINE_16384 ]; // cmd_mutex
 	qbool ret = Cmd_PreprocessString( cmd, alias->value, buffer, sizeof(buffer) - 2, alias );
 	if (!ret)
 		return;
@@ -1982,16 +1982,18 @@ int Cmd_CompleteCountPossible (cmd_state_t *cmd, const char *partial, int is_fro
 	for (func = cmd->userdefined->qc_functions; func; func = func->next) {
 		if (String_Does_Start_With_Caseless (func->name, partial)) {
 			const char *sxy = func->name;
+			
+			SPARTIAL_EVAL_
+
 			h++; // qualified
-			SPARTIAL_EVAL_				
 		} // qualified
 	} // for
 	
 	for (func = cmd->engine_functions; func; func = func->next) {
 		if (String_Does_Start_With_Caseless(func->name, partial)) {
 			const char *sxy = func->name;
+			SPARTIAL_EVAL_
 			h++; // qualified
-			SPARTIAL_EVAL_				
 		} // qualified
 	} // for
 	
@@ -2224,7 +2226,7 @@ qbool Cmd_SV_Callback(cmd_state_t *cmd, cmd_function_t *func, const char *text, 
 	else if (src == src_client)
 	{
 		if ((func->flags & CF_CHEAT) && !sv_cheats.integer)
-			SV_ClientPrintf("No cheats allowed. The server must have sv_cheats set to 1\n");
+			SV_ClientPrintf ("No cheats allowed. The server must have sv_cheats set to 1" NEWLINE);
 		else
 			func->function(cmd);
 		return true;
@@ -2521,7 +2523,7 @@ void Cmd_Init(void)
 
 	// Baker r3173: inc, dec, cvar_reset commands
 	Cmd_AddCommand(CF_SHARED | CF_CLIENT_FROM_SERVER, "toggle", Cmd_Toggle_f, "toggles a console variable's values (use for more info)");
-	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "inc", Cmd_Inc_f, "Increases value of cvar by 1 or provided amount [Zircon]");
-	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "dec", Cmd_Dec_f, "Decreases value of cvar by 1 or provided amount [Zircon]");
-	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "cvar_reset", Cvar_Reset_f, "lists all console variables beginning with the specified prefix or matching the specified wildcard pattern");
+	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "inc", Cmd_Inc_f, "Increases value of cvar by 1 or provided amount [Zircon]"); // Baker r1246: inc, dec
+	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "dec", Cmd_Dec_f, "Decreases value of cvar by 1 or provided amount [Zircon]"); // Baker r1246: inc, dec
+	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "cvar_reset", Cvar_Reset_f, "lists all console variables beginning with the specified prefix or matching the specified wildcard pattern"); // Baker r3173: cvar_reset
 }

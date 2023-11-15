@@ -998,7 +998,7 @@ error_caught:
 
 typedef struct CompressedImageCacheItem
 {
-	char imagename[MAX_QPATH];
+	char imagename[MAX_QPATH_128];
 	size_t maxsize;
 	void *compressed;
 	size_t compressed_size;
@@ -1015,7 +1015,7 @@ static void CompressedImageCache_Add(const char *imagename, size_t maxsize, void
 	int hashindex = CRC_Block((unsigned char *) hashkey, strlen(hashkey)) % COMPRESSEDIMAGECACHE_SIZE;
 	CompressedImageCacheItem *i;
 
-	if (strlen(imagename) >= MAX_QPATH)
+	if (strlen(imagename) >= MAX_QPATH_128)
 		return; // can't add this
 
 	i = (CompressedImageCacheItem*) Z_Malloc(sizeof(CompressedImageCacheItem));

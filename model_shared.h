@@ -79,7 +79,7 @@ typedef struct r_meshbuffer_s
 	qbool isuniformbuffer;
 	qbool isdynamic;
 	qbool isindex16;
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 }
 r_meshbuffer_t;
 
@@ -432,7 +432,7 @@ struct skeleton_s;
 typedef struct model_s
 {
 	// name and path of model, for example "progs/player.mdl"
-	char			model_name[MAX_QPATH];
+	char			model_name[MAX_QPATH_128];
 	// model needs to be loaded if this is false
 	qbool		loaded;
 	// set if the model is used in current map, models which are not, are purged
@@ -575,6 +575,8 @@ typedef struct modloader_s
 // texture fullbrights
 extern struct cvar_s r_fullbrights;
 
+extern struct cvar_s external_lits; // Baker r1247
+
 extern struct cvar_s mod_noshader_default_offsetmapping;
 extern struct cvar_s mod_q3shader_default_offsetmapping;
 extern struct cvar_s mod_q3shader_default_offsetmapping_scale;
@@ -646,8 +648,8 @@ extern struct cvar_s r_mipnormalmaps;
 typedef struct skinfileitem_s
 {
 	struct skinfileitem_s *next;
-	char name[MAX_QPATH];
-	char replacement[MAX_QPATH];
+	char name[MAX_QPATH_128];
+	char replacement[MAX_QPATH_128];
 }
 skinfileitem_t;
 

@@ -71,8 +71,8 @@ sizebuf_t cl_message;
 sizebuf_t sv_message;
 static unsigned char cl_message_buf[NET_MAXMESSAGE];
 static unsigned char sv_message_buf[NET_MAXMESSAGE];
-char cl_readstring[MAX_INPUTLINE];
-char sv_readstring[MAX_INPUTLINE];
+char cl_readstring[MAX_INPUTLINE_16384];
+char sv_readstring[MAX_INPUTLINE_16384];
 
 cvar_t net_test = {CF_CLIENT | CF_SERVER, "net_test", "0", "internal development use only, leave it alone (usually does nothing anyway)"};
 cvar_t net_usesizelimit = {CF_SERVER, "net_usesizelimit", "2", "use packet size limiting (0: never, 1: in non-CSQC mode, 2: always)"};
@@ -1554,7 +1554,7 @@ static void NetConn_ConnectionEstablished(lhnetsocket_t *mysocket, lhnetaddress_
 #endif
 	cls.demonum = -1;			// not in the demo loop now
 	cls.state = ca_connected;
-	cls.signon = 0;				// need all the signon messages before playing
+	cls.signon = SIGNON_ZERO;	// ALL TYPES - need all the signon messages before playing
 	cls.protocol = initialprotocol;
 	// reset move sequence numbering on this new connection
 	cls.servermovesequence = 0;
@@ -1801,7 +1801,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 	char senddata[NET_HEADERSIZE+NET_MAXMESSAGE+CRYPTO_HEADERSIZE];
 	size_t sendlength;
 #ifdef CONFIG_MENU
-	char infostringvalue[MAX_INPUTLINE];
+	char infostringvalue[MAX_INPUTLINE_16384];
 	char ipstring[32];
 	const char *s;
 #endif
@@ -2807,7 +2807,7 @@ static qbool plaintext_matching(lhnetaddress_t *peeraddress, const char *passwor
 static const char *RCon_Authenticate(lhnetaddress_t *peeraddress, const char *password, const char *s, const char *endpos, rcon_matchfunc_t comparator, const char *cs, int cslen)
 {
 	const char *text, *userpass_start, *userpass_end, *userpass_startpass;
-	static char buf[MAX_INPUTLINE];
+	static char buf[MAX_INPUTLINE_16384];
 	qbool hasquotes;
 	qbool restricted = false;
 	qbool have_usernames = false;
@@ -2949,7 +2949,7 @@ static int NetConn_ServerParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 	qbool islocal = (LHNETADDRESS_GetAddressType(peeraddress) == LHNETADDRESSTYPE_LOOP);
 	char senddata[NET_HEADERSIZE+NET_MAXMESSAGE+CRYPTO_HEADERSIZE];
 	size_t sendlength, response_len;
-	char infostringvalue[MAX_INPUTLINE];
+	char infostringvalue[MAX_INPUTLINE_16384];
 
 	if (!sv.active)
 		return false;

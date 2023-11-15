@@ -1,0 +1,353 @@
+// zircon_dpbeta_changes.txt - October 14 2023, November 12 2023
+
+Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
+cut/copy/paste in console and enhancements mostly focusing on user-interface.
+
+// Zircon Major Features
+
+0000. Mouse driven menu
+0001. ALT-ENTER support to switch from fullscreen to windowed mode.
+0002. Key setup streamlined order, elimination of "???" for unbound keys.
+0003. Thin console cursor, no cursor overwrite mode.
+0004. Ctrl + Up, Ctrl + Down adjust size the console like JoeQuake.
+0005. Crisp 2D autoscale based on 360 pixels of height (720 height is 2x magnification) with user customization possible.
+0006. LodePNG used for PNG loading.
+0007. Full auto-completion including SHIFT-TAB support and CTRL-SPACE autocomplete from nothing.
+      Autcomplete is context sensitive and even autocompletes skybox names.
+0008. Cut, copy, paste, select text and undo (CTRL-Z undo, SHIFT-CTRL-Z for redo) in the console.
+
+	  (* does not support color codes or UTF-8 at this time and will disable selecting text automatically
+	  while those characters are present.)
+
+0009. Will attempt to use -data directory if id1 folder not found and no -game specified.
+
+0061. DarkPlaces 2014 physics. Reverting to what I hope is traditional DarkPlaces 2014 engine physics which is what mods targeting DarkPlaces
+      from 2014 for traditional DarkPlaces physics.  New DarkPlaces physics had immediate issue with Quake Combat+ on E1M1 (a soldier falls 
+      through floor) and some Alkaline map printing droptofloor issues (one would naturally assume that
+      in Quakespasm does not do this).  DarkPlaces 2014 physics do have issues with classic Quake occasionally, a great 
+      example is E4M7 zombies above water after killing the zombies below water in the start of the map, but this does allow Zircon
+      DarkPlaces Beta to correctly play mods made for DarkPlaces like Quake Combat+.
+0070. "record" a demo at any time.  This feature is AFAIK not legitimately possible in DarkPlaces, some evil
+      some evil occurs to make it happen.
+0071. Maps menu (replaces Main->Help and Ordering) (pk3 containing menu replacements elements available in zip)
+0072. Maps menu selected maps are added to console history for recall/reload with uparrow.
+0073. Maps menu shows current map
+0074. Maps menu is reentrant (selecting a map and then entering the menu will return you to the map menu
+      with the most recently selected map still selected).
+0081. Quake Remaster status bar option (sbar_quake 2) and original Quake status bar option (sbar_quake 1).
+0082. r_waterwarp 2 twisty underwater effect.
+0083. r_waterdeform 1 WinQuake-like water/slime deformation.  r_waterdeform 2, lava and teleporters too.
+0084. BloodOmnicide DarkPlaces "roundwave" and "bulge" shader deformation support
+0085. FitzQuake noclipping (sv_altnoclipmove 1 defaults on).
+0086. OBJ maps are first class citizens for "maps" and maps menu (which replaces help/ordering).
+      Kleskby makes maps in obj in Blender and DarkPlaces Beta supports them.
+      You can also turn a model (like start.bsp) into obj with DarkPlaces "modeldecompile" command like
+      "modeldecompile maps/start.bsp".  
+      "modeldecompile" has autocomplete listing Q1 models.
+0087. Fence texture model support for Q1 .mdl. (xmas jam 2020 shades map trees was test case)
+0088. Status bar some portions reworked, particularly with +showscores held.
+0089. Intel Graphics cards that report "No errors." on shader compile no longer spam console as if shader compile error occurred.
+0090. "freezeall" command to stop "time" except for the player.  This toggles a cvar with a long name that already exists.
+      And we reset sv_freezenonclients on new map (SV_SpawnServer) so it doesn't do strange stuff and removed the CF_NOTIFY so
+      using this isn't spamming the console.
+0091. Effects level in menu that allows easy setting of effects level (modelled after Xonotic's effects levels)
+0092. "con_closeontoggleconsole 4" -- exact Quake behavior of tilde key where it NEVER emits to console under any circumstance.
+      If you are used to Quake behavior it is highly annoying if the console is forced and you press tilde from habit
+      but the console cannot be closed and get a surprise "backquote" character typed in the console.
+      (Why do we call this the tilde key, but backquote is the unshifted?)
+      
+	  If you enjoy typing backquotes in the console, try con_closeontoggleconsole 0 to 3.
+	  
+	  "con_closeontoggleconsole 0" is the DarkPlaces default.
+	  
+0093. r_editlights_select_index, for use by r_editlights.  Allows selecting a specific light by the light #.
+      Can make the creation and editing of rtlights files more convenient. r_editlights_edit parameters
+      auto-complete as well.
+      
+0100. MAJOR MAP LOAD SPEEDUP FOR LARGE MAPS.  Mod_BSP_MakePortals only performed for Q1 and Q3 maps without vis data or when "r_novis 1".  Faster map load times by
+      not generating data that will not be used for a map with vis data, which is most maps.
+      This significantly reduces load times for large maps.  Set "mod_bsp_portalize 2" to force.
+0101. csqc_enable cvar, defaults 1.  Ability to turn off csqc.  Requires map restart.
+	  Any Quake single player mod that can run on vanilla Quakespasm, this is likely fine.
+	  Other situations, it may work or may totally break the mod (Quake Combat+, for instance).
+0102. Sound specification retry with lower specs on sound initialization failure (adapted from snd_main.c in classic DarkPlaces).      
+	  Quake_Rivarez_Ed_v1.0.1 tends to cause this scenario, asking for 8 sound channels.
+0103. Server browser more legible, more conservative, easier to read
+0104. All sv_allowdownloads (that seem helpful) default on [more testing needed].  
+	  Hardcoded disallow of "registered Quake paks" has been removed, this checked pop.lmp
+	  which might exist in any total conversion mod.
+	  
+	  (the open source X-Men Ravages of Apocalypse has a pop.lmp, for instance).
+0105. Uses Classic DarkPlaces lightning gun bolt.
+0106. tool_inspector - examine entities visually in-game
+0107. Optional separation of csqc rendering and the rendering of 2D elements (console, menu, etc.)
+
+	  This only occurs with	csqc_full_width_height 1.  vid_conwidth/vid_height are set as indicated for each phase.
+	  
+	  csqc can get the entire vid_width, vid_height and the menu can use a separate scaled canvas.
+
+0108. Slow loading mods automatically get a progress bar.  Grace period 1.5 seconds.
+      The effective result is that normal use of Quake never displays a progress bar.
+      However, if for some reason loading is slow (huge textures, tons of models, some other reason)
+      the 1.5 second mark is hit and the progress bar shows. 
+      
+      This is to avoid the feel of "nothing is happening" while largely never showing a progress bar
+      by default.
+      
+// Single player compatibility with Quake
+
+1001. Standard Quake file paths for loading/saving on Windows and Mac (-nohome, Linux we will do DarkPlaces way).
+1002. Standard Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.  DarkPlaces beta differs from Quake and old DarkPlaces (div0-stable)
+1003. Standard Quake behavior for "map", "kill", etc. which close the console in Quake.  Full list: map, load <game>, restart, changelevel, connect, reconnect, kill.
+1004. Standard Quake appearance of bronzed characters (not yellow).
+1081. Standard Quake appearance of status bar as an option (status bar backtile option)
+1082. Standard Quake appearance of status bar/scoreboard, displaying total secrets, total monsters even if zero 
+1083. "edict" and "edicts" (also "csedict" and "csedicts") commands.  
+      "edict" and "edicts" are commands in standard Quake.
+
+// Single player compatibility with Quakespasm (FitzQuake 0.85) norms
+
+1201. "r_skyfog"    fog that looks like FitzQuake/Quakespasm which is defaulting fog alpha to 0.5 (r_skyfog value) if fog is not specified in map fogkey
+1202. "map"         command with no params says map name.  This is a behavior in Quakespasm and most modern Quake engines have this feature.
+1203. "game"        console command, same behavior as gamedir.
+1210. shot1sid shotgun shells texture fix, in most Quake engines since 2000 (look at shotgun shells on DM3 bridge)
+1211. 64-bit lightmap fix from Quakespasm
+1241. Max save games in save game menu to 20 mirroring other engines.
+1242. "sky"			Same as loadsky, this is the expected command and QuakeC that was not tested against DarkPlaces
+	  will almost certainly use "sky" to change the skybox in a Quake single player release.
+1243. "writeconfig" alias for "saveconfig"
+1244. FitzQuake explicit cheat commands and give armor (god, noclip, fly, notarget) 
+		"god 1" // Turn on god mode
+		"god 0" // Turn off god mode
+1245. FitzQuake give armor "give a 200"
+1246. FitzQuake "inc", "dec" commands "inc x 5" or "dec x"
+1247. "external_lits" cvar to allow option of not loading of colored light data.
+
+1301. Disconnect automatically when "game" / "gamedir" used if not disconnected.
+
+// Single player convenience
+
+1401. sv_cheats defaults 1.
+1402. Reset menu cursors on gamedir change
+1403. log_file_stripcolors defaults 1 for more readable console .log file.
+1411. "saveconfig" takes an argument so "saveconfig mine" is possible.
+1412. animated texture warning is now a developer print, this occurs quake start.bsp
+      Texture +0slipbot is animated (leading +) but has only one frame
+1413. Disabled Windows keys.
+1414. Automatic unload of "fte csqc-lite" csprogs.dat allowing convenient play of these mods (see alk1.2.zip @ Quaddicted)
+      This is an alternate CSQC that FTE/Quakespasm Spiked supports.
+1421. FitzQuake centerprint logging ("This hallway selects EASY skill" prints to console, some maps have important centerprint messages)
+1451. Less spam of clutter to console.
+1461. Eliminated message for missing beam.mdl, this is a virtually non-existent model no other engine precaches or warns about.
+      And any mod that actually uses it should precache it in QuakeC.  It is for TE_BEAM, a grappling hook effect.
+1462. Progress bar maxfps to 10 from 20 mirroring DarkPlaces classic.  The less this is on-screen, the faster content loads.
+1471. "maps" command only lists playable maps (info_player_start, info_player_deathmatch found).   This may not be compatible with
+      Xonotic / Quake3 /  mods that do not use those entity types.  Additionally, a md3 content replacement healthbox with a .bsp
+      extension is known to evade this filter and get printed (due to not falling into a BSP type).
+1481. Reduced message "spam" for ALT-ENTER and other frequent situations
+1482. ALT-ENTER with vid_desktopfullscreen (the default) uses 75% width/height for windowed mode automatically.
+1483. vid_resizable defaults 1.
+1484. -nehahra creates r_waterripple, r_oldsky, stopmod to prevent seeing missing cvar/command messages during play.
+1485. Write history file on gamedir change during session.  DarkPlaces saves history file to current gamedir and
+      this closes a "missing history" loophole.
+1486. History lines are always trimmed of trailing spaces, back-to-back same lines are not recorded to history.
+1487. Crosshair settings added to classic menu.
+1488. "r_viewmodel_ring_alpha 0.4" available to make gun translucent during invisibility 
+	  instead of entirely hiding it.  Works well with gl_polyblend 0 (which eliminates invisibility screen darkening effect).
+1489. "r_viewmodel_offset 5" available to make gun offset to side.
+1490. "r_minlight 3.5" option -- minimum lighting allowed on models, purpose is to make monsters/players
+      more visible in poorly lit areas for more enjoyable play.  
+      
+      Unlike DarkPlaces, this defaults to 0.5 which means monsters in total darkness are slightly lit.
+      
+      To disable this, do "r_minlight 0"
+
+// New commands / cvars
+
+3101. "copy" copies console to clipboard, "copy ents" copies map entities to clipboard.
+3102. "folder" command -- opens gamedir folder in file explorer.  "folder maps" would open the maps folder.
+3103. "pwd" command - prints current directory ("pwd" is a Unix command that shows current directory) 
+3171. "pos" command - prints current position, copies it to clipboard.
+3172. "nostartdemos" cvar - set to 1 and they do not start.
+3173. "cvar_reset"
+
+// Performance
+
+5001. Laptop friendly default cl_maxfps 144 (not 0 unlimited).  Laptops have 90% of personal computer marketshare.
+      Laptops have a battery and laptops have small cooling fans.  Rendering at 800 fps for no particular reason is
+      is not nice to a laptop battery and it is not nice to a laptop cooling fan.
+
+5002. cl_prydoncursor_notrace defaults 1 (off).  This does not need to run every frame.  I know of no mod aside from Prydon Gate that uses it.
+
+// Developer
+
+7001. freetype.dll that is friendly with Visual Studio 2022 and does not cause exception with ntdll.dll
+7002. Baker.h - tons of functions (file system, string, matrix, etc.)
+7003. csqc_full_width_height 1 will set vid_conwidth/vid_conheight to entire client area (like vid.width/vid.height) during csqc phase and then change it back
+7004. cvar if (cvar(csqc_full_width_height_available)) is a way for csqc to check for this.  Todo: check extension instead?
+7061. "modeldecompile" commmand (writes a model as .obj) converts * (asterisk) to _ (underscore) for sub-models so that they
+      can be written to file on Windows which will not allow asterisks in a filename.
+7062. textures/particles/lightning -> particles/lightning .. this is a change but all particle gfx live in particles folder 
+      and it is silly to have 1 file related to particles living in a weird place as the only member of its folder.
+7063. r_listmaptextures [optional partial to find] like "r_listmaptextures water"
+7081. showtex 1 displays only texture information, showtex 2 displays texture information and entity
+7082. showpos and showangles cvars.
+7083. showfps -1 shows fps in top right corner of screen where most other engines display frames per second
+7084. prvm_sv_gamecommands, prvm_sv_progfields, prvm_cl_gamecommands, prvm_cl_progfields, prvm_menu_gamecommands
+		These assist autocompletion with gamecommand extension.
+
+		Strike prvm_menu_gamecommands, there is no CF_MENU and I'm not testing against menu qc
+		at this time anyway ... future TODO
+		
+7101.  "edicts" with classname, targetname filter ability
+			> edicts targetname t18  ... prints edicts with targetname containing "t18"
+			> edicts info_player	 ... prints edicts with classname containing "info_player"
+			 
+7102.	"Failed to load sound" has been changed from a Con_Print (prints to console) to a DPrint
+		(prints to console if "developer 1") for identical behavior to DarkPlaces classic.
+		Mods may use a null.wav for a sound that they don't want or as a placeholder, and mods
+		that did this had the expectation it wouldn't print to console. 			 
+
+7103.	Autocomplete support "sv_cmd" and "cl_cmd" console commands (this is DarkPlaces 
+		"gamecommand" extension).  The QuakeC can set prvm_cl_gamecommands or prvm_sv_gamecommands
+		to a space delimited list like "sv_cmd volcano rain snow", the engine will offer 
+		rain, snow, volcano as autocompletes for sv_cmd.
+
+7104.	r_editlights_dlight_bake - combined with a QuakeC tool, this assists in relocating
+        Quake 3 dynamic lights generation to a rtlights file in the expected location.
+		
+7105.	"jack_scripts" -- a tool to make a copy of Q3 shaders with things that J.A.C.K. map editor 
+		doesn't understand.
+        The J.A.C.K. map editor has "blocking" warning messages, so if there are hundreds of warnings
+        saying it does not recognize shader command "dpoffset" or such, it can delay startup by a fraction
+        of a second times 500, which can total a minute or 2 and is very annoying.
+        The output is the "_jack_scripts" folder.
+        It also updates scripts/shaderlist.txt
+        		
+// Zircon
+
+8001. "zircon_command_line.txt" support.  If file exists in .exe folder it contains command line params like "-game travail +map start -condebug" and if engine is started with no command line parameters, these are used
+8002. Zircon console name - including build name
+8003. Zircon changes the progress bar color default from blue to gray.
+8011. Removed progs/v_nail2.mdl from r_nolerp list to mirror Zircon
+8012. Removed deathmatch mini-overlay
+8013. r_nearest_2d and r_nearest_conchars default 1.  r_nearest_conchars cvar updates texture in real-time.
+8081. Demo playback does not capture mouse cursor.
+8082. scr_loadingscreen_barheight defaults 0 (previous value was 8), added it as a menu setting.
+      (The loading bar reduces the immersion into the game for me.  It looks great for Quake 3 style.)
+8083. showfps only displays a framerate if fully connected cls.signon == SIGNONS_4
+8084. crosshair color defaults to gray (previously red)
+8085. "scr_clock" ProQuake looking clock option 0/1, shows level time in status bar
+8086. showfps never displays in red
+8087. Cvars that DarkPlaces Beta prefixed with cl_ while maintaining aliases (showtex, etc.) have had their cl_ form removed to
+      reduce cvar and that it seems unlikely there is someone who likes to type more to access a previously existing cvar especially if the alias exists.
+      The namespace of cvars beginning with cl_ is already heavily populated.
+8088. Removal of the new "timescale" alias, a cvar alias for host_timescale.
+      There is no need for aliases for an uncommonly used cvar that already a standardized name.
+      host_timescale is the name by used other Quake engines and the Valve source engine.
+8089. sbar_scorerank and sbar_gametime game time removed.
+8090. sbar_showprotocol (defaults 1) shows server protocol discretely if +showscores active and playing connected to a server.
+8191. Server to client communication of single player skill level (nightmare, easy) in a way that is ignored by DarkPlaces or regular Quake clients.
+8192. "cl_maxconsole_menu_fps" (defaults 72)  when not hosting a multiplayer game, frame rate is throttled when 
+		in the console or menu.  DarkPlaces already throttles when not the active window, this closes a loophole
+		where another situation where runaway frames per second can occur with no benefit to the user.
+8193. cl_rate default increased to 9 999 999, reduce time waiting for models/maps to download.
+
+// DarkPlaces Bug Fixes
+
+9001. viewzoom CL default fix.  Avoids zoom effect on the start of every Quake map by reseting cl viewzoom field.
+9002. DarkPlaces Beta gamedir switch crash bug-fix.  This has a few different pieces.  Rewrote hash unlinking code.
+      In total, 3 or 4 separate areas were gamedir change affected cvars negatively were addressed.
+      I believe that it is entirely fixed in full now, but I am going to keep an eye on this.
+
+9003. Clear models/sounds as stale on gamedir change, they aren't valid any more -- avoid errors/issues with wrong content and stale data
+9004. Fire Key release on ALT-TAB or minimize (if holding +forward and then ALT-TAB at same time, you will walk forward forever in current dpbeta on Windows)
+9005. Quakespasm's Windows DPI awareness trick, fixes menu placement and other 2D elements when Windows scaling is not set to 100% but a higher value like 125% or 150%
+9006. Kleskby ALT-TAB fix for certain international keyboards. (I'm not sure it belongs in CL_UpdateScreen though ... the important part is that it works ...)
+9007. Maps of type .obj did not have loadmodel->lit set.  It is true that .obj does not have lighting, but should act as if it does
+      so that DarkPlaces dynamic lighting or other methods can light the map.
+9008. Q3 lightstyle support for world (Hemebond pointed this out on DarkPlaces Github), adapting what 
+      classic DarkPlaces does to the DarkPlaces Beta rendering scheme.
+9011. DarkPlaces Beta was only loading the first q1bsp sky.  Successive map changes, a q1bsp sky was always ignored so as a result E1M1 would have a purple start map sky instead of a blue sky.
+9012. More ALT-TAB key release hardening and made in_releaseall clear kbutton structs.
+9061. DarkPlaces Beta gamedir switch crash had 2 more factors.  Resolved.  Also rewrote the hash unlink code (although it does not zfree the hash, should it?  DarkPlaces Beta doesn't.)
+9062. Clear models/sounds was partially ineffective due to new DarkPlaces Beta different order of events, fixed.
+9063. (FIXED, BUT POSSIBLY NOT THE RIGHT FIX).  Quake Combat+ map E1M2 bridge, DarkPlaces Beta shows blue light and DarkPlaces classic does not.  The .rtlights file
+      has negative rgb values for some colors (3.540270 -0.000000 -2.528764).  Zircon DarkPlaces Beta clamps the RGB values on
+      read to a minimum of 0.  However, this cures only the effects of a yet identified difference, the root cause has not
+      yet been identified.
+9064. Fixed -> Real-time light editor display unaligned and the end of color data spanned beyond the box.
+9065. cmd.c -> Baker r9065: a theoretical physics correction (probably.  I know of no way to mass test to prove or disprove)
+        .. sv_gameplayfix_droptofloorstartsolid 1 for Quake instead of sv_gameplayfix_droptofloorstartsolid 0.  Testing various versions of DarkPlaces, this change was introduced
+        in 2012 at some point, if I recall (I investigated this thoroughly at the time comparing source codes of DarkPlaces 
+        of making this change in Zircon classic).  I used a map "cdestroy" which had always played ok in DarkPlaces which
+        has rotweilers outside the first door.  At some point, these rotweilers no longer dropped to floor correctly.  I identified the
+        first version where this occurred and the change that occurred.  I have so far seen no counter-indications and have
+        seen incorrect behavior that this has resolved on multiple maps.
+9066. gl_texturemode is reset on gamedir change.  Quake 1.5 causes a problem setting this to something else (nearest?) making
+      the console conchars all jagged.  gl_texturemode is not a cvar, therefore it does reset on gamedir change, this is done manually in cmd.c.
+      I would file this as a mild bug since gamedir change is supposed to reset everything.
+9067.  (IMPLEMENTED BUT DISABLED, HOPEFULLY NOT NECESSARY) This bug seems to be a non-issue in DarkPlaces Beta for reasons I have not yet identified.
+	   DarkPlaces supports the server precaching models and sounds after start of a map.  However, on loadgame 
+       single player client, entities using these precached models only get the "standard QuakeC" precache list.
+
+		(NON-ISSUE) ?  DarkPlaces Beta handles many things differently including network.  It is possible that
+		DarkPlaces closed a loophole somewhere in the order of events, messages or in the precache process.
+		This bug is hard to produce in DarkPlaces 2014 and I can't cause it in DarkPlaces Beta at all so far.
+		(TODO: Examine DarkPlaces Beta and find out what changed.  My best guess: DarkPlaces fixed the issue
+		client-side, which is the correct fix.)
+
+9068u. FIXED. DarkPlaces Beta often gets keys stuck.  Key_Event in DarkPlaces Beta used Cbuf_InsertText
+       instead of Cbuf_AddText ... reversing the order of queued key events resulting in key releases
+       occuring before key presses, causing keys to be permanently stuck sometimes.
+
+Unfixed or Unverified Bugs ...
+
+9070u. Lightmaps don't render for the first frame or 2 (sometimes).  I suspect the first couple of frames
+       that they haven't uploaded yet.
+
+9072u. UNINVESTIGATED SO FAR: I saw Linux print segfault on shutdown.  Does it still happen?  
+
+
+9073u. NOT FIXED YET, BUT MITIGATED.  Quake Combat+ map E1M2 start, the shader for *water1 contains tcMod scale 0.05 0.05 which according to 
+       Q3 Shader reference should decrease the size of the texture, making it repeat.  Instead, of shrinking the texture, it
+       enlarges it (the opposite).  There are other tcmods in the mix tcMod stretch sin 1 .001 .05 .2 and tcMod scroll 0.016 0.01
+       and it is not clear why this occurs and although this is behavior difference between DarkPlaces Beta and DarkPlaces classic,
+       it is not known if this is a bug or if DarkPlaces Beta is correctly applying the shader.
+
+       The shader text is:
+
+*water1
+	surfaceparm water
+	surfaceparm nomarks
+	surfaceparm trans
+	deformvertexes wave 10 sin 1 1 .1 .6
+	{
+		blendfunc blend
+		tcMod stretch sin 1 .001 .05 .2
+		tcMod scale 0.05 0.05
+		tcMod scroll 0.016 0.01
+		animmap 18 textures/causticBr/FWATER01.png textures/causticBr/FWATER02.png textures/causticBr/FWATER03.png textures/causticBr/FWATER04.png textures/causticBr/FWATER05.png textures/causticBr/FWATER06.png textures/causticBr/FWATER07.png textures/causticBr/FWATER08.png textures/causticBr/FWATER09.png textures/causticBr/FWATER10.png textures/causticBr/FWATER11.png textures/causticBr/FWATER12.png textures/causticBr/FWATER13.png textures/causticBr/FWATER14.png textures/causticBr/FWATER15.png textures/causticBr/FWATER16.png textures/causticBr/FWATER17.png textures/causticBr/FWATER18.png textures/causticBr/FWATER19.png textures/causticBr/FWATER20.png textures/causticBr/FWATER21.png textures/causticBr/FWATER22.png textures/causticBr/FWATER23.png textures/causticBr/FWATER24.png textures/causticBr/FWATER25.png textures/causticBr/FWATER26.png textures/causticBr/FWATER27.png textures/causticBr/FWATER28.png textures/causticBr/FWATER29.png textures/causticBr/FWATER30.png textures/causticBr/FWATER31.png textures/causticBr/FWATER32.png textures/causticBr/FWATER33.png textures/causticBr/FWATER34.png textures/causticBr/FWATER35.png
+	}
+
+    Q3 Shader Reference
+
+    tcMod scale <sScale> <tScale>
+    Resizes (enlarges or shrinks) the texture coordinates bymultiplying them against the given factors of <sScale> and <tScale).
+    The values "s" and "t"conform to the "x" and "y" values (respectively) as they are found in the original texture TGA. 
+    The values for sScale and tScale are NOT normalized. This means that a value greater than 1.0 will increase the size of 
+    thetexture. A positive value less than one will reduce the texture to a fraction of its size and 
+    cause it to repeat within the same area as the original texture (Note: see clampTexCoords for ways to control this).; 
+
+
+// Other
+
+9501. vid_ignore_taskbar defaults to 1.
+      The centering that occurs with taking taskbar into consideration is not center of screen.
+      The off-center "center of the screen" window felt weird.
+
+9511. Fixed vid_sdl.h so Windows get a titlebar icon consistently.  Sometimes it was there, sometimes not.
+
+
+
+

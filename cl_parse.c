@@ -337,7 +337,7 @@ void CL_KeepaliveMessage (qbool readmessages)
 	}
 
 	// no need if server is local and definitely not if this is a demo
-	if (sv.active || !cls.netcon || cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon >= SIGNONS)
+	if (sv.active || !cls.netcon || cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon >= SIGNONS_4)
 	{
 		recursive = thisrecursive;
 		return;
@@ -377,7 +377,7 @@ void CL_ParseEntityLump(char *entdata)
 {
 	qbool loadedsky = false;
 	const char *data;
-	char key[128], value[MAX_INPUTLINE];
+	char key[128], value[MAX_INPUTLINE_16384];
 	FOG_clear(); // LadyHavoc: no fog until set
 	// LadyHavoc: default to the map's sky (q3 shader parsing sets this)
 	R_SetSkyBox(cl.worldmodel->brush.skybox);
@@ -509,9 +509,15 @@ static void CL_SetupWorldModel(void)
 	}
 	else
 	{
+		// Baker r7084 - gamecommand clear cl
+		cvar_t prvm_cl_gamecommands;
+		cvar_t prvm_cl_progfields;
 		Cvar_SetQuick(&cl_worldmessage, cl.worldmessage);
 		Cvar_SetQuick(&cl_worldnamenoextension, "");
 		Cvar_SetQuick(&cl_worldbasename, "");
+		Cvar_SetQuick(&prvm_cl_gamecommands, ""); // newmap
+		Cvar_SetQuick(&prvm_cl_progfields, ""); // newmap
+		
 		World_SetSize(&cl.world, "", defaultmins, defaultmaxs, prog);
 	}
 	World_Start(&cl.world);
@@ -630,10 +636,9 @@ static void QW_CL_RequestNextDownload(void)
 			QW_CL_ProcessUserInfo(j);
 
 		// if we're still in signon stages, request the next one
-		if (cls.signon != SIGNONS)
-		{
-			cls.signon = SIGNONS-1;
-			// we'll go to SIGNONS when the first entity update is received
+		if (cls.signon != SIGNONS_4) {
+			cls.signon = SIGNON_3; // QUAKEWORLD -- SIGNONS_4 - 1;
+			// we'll go to SIGNONS_4 when the first entity update is received
 			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "begin %d", cl.qw_servercount));
 		}
@@ -849,8 +854,8 @@ static void QW_CL_ParseModelList(void)
 		nummodels++;
 		if (nummodels==MAX_MODELS)
 			Host_Error_Line ("Server sent too many model precaches");
-		if (strlen(str) >= MAX_QPATH)
-			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
+		if (strlen(str) >= MAX_QPATH_128)
+			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
 		strlcpy(cl.model_name[nummodels], str, sizeof (cl.model_name[nummodels]));
 	}
 
@@ -862,7 +867,7 @@ static void QW_CL_ParseModelList(void)
 		return;
 	}
 
-	cls.signon = 2;
+	cls.signon = SIGNON_2; // QUAKEWORLD
 	cls.qw_downloadnumber = 0;
 	cls.qw_downloadtype = dl_model;
 	QW_CL_RequestNextDownload();
@@ -884,8 +889,8 @@ static void QW_CL_ParseSoundList(void)
 		numsounds++;
 		if (numsounds==MAX_SOUNDS)
 			Host_Error_Line ("Server sent too many sound precaches");
-		if (strlen(str) >= MAX_QPATH)
-			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
+		if (strlen(str) >= MAX_QPATH_128)
+			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
 		strlcpy(cl.sound_name[numsounds], str, sizeof (cl.sound_name[numsounds]));
 	}
 
@@ -898,7 +903,7 @@ static void QW_CL_ParseSoundList(void)
 		return;
 	}
 
-	cls.signon = 2;
+	cls.signon = SIGNON_2; // QUAKEWORLD
 	cls.qw_downloadnumber = 0;
 	cls.qw_downloadtype = dl_sound;
 	QW_CL_RequestNextDownload();
@@ -918,8 +923,8 @@ static void QW_CL_Changing_f(cmd_state_t *cmd)
 
 	S_StopAllSounds();
 	cl.intermission = 0;
-	cls.signon = 1;	// not active anymore, but not disconnected
-	Con_Printf ("\nChanging map...\n");
+	cls.signon = SIGNON_1;  // QUAKEWORLD -- not active anymore, but not disconnected
+	Con_PrintLinef (NEWLINE "Changing map...");
 }
 
 void QW_CL_NextUpload_f(cmd_state_t *cmd)
@@ -1342,7 +1347,7 @@ static void CL_BeginDownloads(qbool aborteddownload)
 
 		for (;cl.downloadsound_current < cl.loadsound_total;cl.downloadsound_current++)
 		{
-			char soundname[MAX_QPATH];
+			char soundname[MAX_QPATH_128];
 			if (aborteddownload)
 			{
 				aborteddownload = false;
@@ -1438,7 +1443,7 @@ static void CL_StopDownload(int size, int crc)
 				if ((int)existingsize != size || existingcrc != crc)
 				{
 					// we have a mismatching file, pick another name for it
-					char name[MAX_QPATH*2];
+					char name[MAX_QPATH_128*2];
 					dpsnprintf(name, sizeof(name), "dlcache/%s.%d.%d", cls.qw_downloadname, size, crc);
 					if (!FS_FileExists(name))
 					{
@@ -1627,7 +1632,7 @@ static void CL_SignonReply (void)
 
 	switch (cls.signon)
 	{
-	case 1:
+	case SIGNON_1:
 		if (cls.netcon)
 		{
 			// send player info before we begin downloads
@@ -1646,7 +1651,7 @@ static void CL_SignonReply (void)
 			CL_BeginDownloads(false);
 		break;
 
-	case 2:
+	case SIGNON_2:
 		if (cls.netcon)
 		{
 			// LadyHavoc: quake sent the player info here but due to downloads
@@ -1659,7 +1664,7 @@ static void CL_SignonReply (void)
 		}
 		break;
 
-	case 3:
+	case SIGNON_3:
 		if (cls.netcon)
 		{
 			MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
@@ -1667,7 +1672,7 @@ static void CL_SignonReply (void)
 		}
 		break;
 
-	case 4:
+	case SIGNONS_4:
 		// after the level has been loaded, we shouldn't need the shaders, and
 		// if they are needed again they will be automatically loaded...
 		// we also don't need the unused models or sounds from the last level
@@ -1698,7 +1703,7 @@ static void CL_ParseServerInfo (void)
 	// if we start loading a level and a video is still playing, stop it
 	CL_VideoStop();
 
-	Con_DPrint("Serverinfo packet received.\n");
+	Con_DPrintLinef ("Serverinfo packet received.");
 	Collision_Cache_Reset(true);
 
 	// if server is active, we already began a loading plaque
@@ -1736,13 +1741,15 @@ static void CL_ParseServerInfo (void)
 	if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback && gamemode == GAME_NEHAHRA)
 		protocol = PROTOCOL_NEHAHRAMOVIE;
 	cls.protocol = protocol;
+
+	// Baker: For reasons unclear, this happens late in single player and early with demos
+	// or at least it seems to.
 	Con_DPrintLinef ("Server protocol is %s", Protocol_NameForEnum(cls.protocol));
 
 	cl.num_entities = 1;
 
-	if (protocol == PROTOCOL_QUAKEWORLD)
-	{
-		char gamedir[1][MAX_QPATH];
+	if (protocol == PROTOCOL_QUAKEWORLD) {
+		char gamedir[1][MAX_QPATH_128];
 
 		cl.qw_servercount = MSG_ReadLong(&cl_message);
 
@@ -1809,7 +1816,7 @@ static void CL_ParseServerInfo (void)
 		cl.loadfinished = false;
 
 		cls.state = ca_connected;
-		cls.signon = 1;
+		cls.signon = SIGNON_1; // QUAKEWORLD
 
 		// note: on QW protocol we can't set up the gameworld until after
 		// downloads finish...
@@ -1865,8 +1872,8 @@ static void CL_ParseServerInfo (void)
 				break;
 			if (nummodels==MAX_MODELS)
 				Host_Error_Line ("Server sent too many model precaches");
-			if (strlen(str) >= MAX_QPATH)
-				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
+			if (strlen(str) >= MAX_QPATH_128)
+				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
 			c_strlcpy (cl.model_name[nummodels], str);
 		}
 		// parse sound precache list
@@ -1877,8 +1884,8 @@ static void CL_ParseServerInfo (void)
 				break;
 			if (numsounds==MAX_SOUNDS)
 				Host_Error_Line ("Server sent too many sound precaches");
-			if (strlen(str) >= MAX_QPATH)
-				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH - 1);
+			if (strlen(str) >= MAX_QPATH_128)
+				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
 			c_strlcpy (cl.sound_name[numsounds], str);
 		}
 
@@ -3083,14 +3090,14 @@ static void CL_IPLog_Load(void)
 	char *text, *textend;
 	unsigned char *filedata;
 	fs_offset_t filesize;
-	char line[MAX_INPUTLINE];
-	char address[MAX_INPUTLINE];
+	char line[MAX_INPUTLINE_16384];
+	char address[MAX_INPUTLINE_16384];
 	cl_iplog_loaded = true;
 	// TODO: this ought to open the one in the userpath version of the base
 	// gamedir, not the current gamedir
 // not necessary for mobile
 #ifndef DP_MOBILETOUCH
-	filedata = FS_LoadFile(cl_iplog_name.string, tempmempool, true, &filesize);
+	filedata = FS_LoadFile(cl_iplog_name.string, tempmempool, fs_quiet_true, &filesize);
 #else
 	filedata = NULL;
 #endif
@@ -3170,7 +3177,7 @@ static qbool CL_ExaminePrintString(const char *text)
 {
 	int len;
 	const char *t;
-	char temp[MAX_INPUTLINE];
+	char temp[MAX_INPUTLINE_16384];
 	if (String_Does_Match(text, "Client ping times:\n")) {
 		cl.parsingtextmode = CL_PARSETEXTMODE_PING;
 		// hide ping reports in demos
@@ -3305,7 +3312,7 @@ static void CL_NetworkTimeReceived(double newtime)
 {
 	cl.mtime[1] = cl.mtime[0];
 	cl.mtime[0] = newtime;
-	if (cl_nolerp.integer || cls.timedemo || cl.mtime[1] == cl.mtime[0] || cls.signon < SIGNONS)
+	if (cl_nolerp.integer || cls.timedemo || cl.mtime[1] == cl.mtime[0] || cls.signon < SIGNONS_4)
 		cl.time = cl.mtime[1] = newtime;
 	else if (cls.demoplayback)
 	{
@@ -3437,6 +3444,73 @@ static void CL_NetworkTimeReceived(double newtime)
 
 #define SHOWNET(x) if (cl_shownet.integer==2)Con_PrintLinef ("%3i:%s(%d)", cl_message.readcount-1, x, cmd);
 
+/*
+==================
+CL_ParseLocalSound - for 2021 rerelease
+==================
+*/
+void CL_ParseLocalSound(void) // AURA 1.0
+{
+	int field_mask, sound_num;
+
+	field_mask = MSG_ReadByte(&cl_message);
+
+	sound_num = (field_mask & SND_LARGESOUND) ? 
+		(unsigned short) MSG_ReadShort(&cl_message) :
+		MSG_ReadByte(&cl_message);
+
+	if (sound_num >= MAX_SOUNDS) {
+		Con_PrintLinef ("CL_ParseLocalSound: sound_num (%d) >= MAX_SOUNDS (%d)", sound_num, MAX_SOUNDS);
+		return;
+	}
+
+	S_LocalSound (cl.sound_precache[sound_num]->name);
+}
+
+// hint skill 1
+// hint game quake3_quake1
+// hint qex 1
+// We know there is a hint.  str is the text after the hint
+void CL_ParseHint (const char *str)
+{
+	char		textbuf[64];
+	char		*scursor;
+	const char	*scmd_arg0 = textbuf;
+
+	c_strlcpy (textbuf, str);
+
+	// Kill newlines ...
+	scursor = textbuf;
+	while (*scursor) {
+		if (*scursor == NEWLINE_CHAR_10)
+			*scursor = 0;
+		scursor ++;
+	}
+
+	// find arg
+	scursor = textbuf;
+	while (*scursor > SPACE_CHAR_32)
+		scursor++;
+
+	// hint skill 1
+	// hint game quake3_quake1
+	// hint qex 1
+	if (scursor[0] == SPACE_CHAR_32 && scursor[1] > SPACE_CHAR_32) {
+		// Found arg2
+		scursor[0] = 0; // null after cmd
+		const char	*scmd_arg1 = &scursor[1];
+
+		     if (String_Does_Match (scmd_arg0, "skill"))	{ cl.skill_level_p1 = atoi(scmd_arg1) + 1;	}
+		else if (String_Does_Match (scmd_arg0, "qex"))		{ cl.is_qex = atoi(scmd_arg1);				} // AURA 1.1
+		else if (String_Does_Match (scmd_arg0, "game"))		{ /* todo */ }
+		else
+			return;
+
+		Con_DPrintLinef ("Game hint: " QUOTED_S " to " QUOTED_S, scmd_arg0, scmd_arg1);
+	}
+}
+
+// Baker r8191
 /*
 =====================
 CL_ParseServerMessage
@@ -3790,9 +3864,8 @@ void CL_ParseServerMessage(void)
 			case qw_svc_packetentities:
 				EntityFrameQW_CL_ReadFrame(false);
 				// first update is the final signon stage
-				if (cls.signon == SIGNONS - 1)
-				{
-					cls.signon = SIGNONS;
+				if (cls.signon == SIGNONS_4 - 1) {
+					cls.signon = SIGNONS_4; // QUAKEWORLD
 					CL_SignonReply ();
 				}
 				break;
@@ -3800,9 +3873,8 @@ void CL_ParseServerMessage(void)
 			case qw_svc_deltapacketentities:
 				EntityFrameQW_CL_ReadFrame(true);
 				// first update is the final signon stage
-				if (cls.signon == SIGNONS - 1)
-				{
-					cls.signon = SIGNONS;
+				if (cls.signon == SIGNONS_4 - 1) {
+					cls.signon = SIGNONS_4; // QUAKEWORLD
 					CL_SignonReply ();
 				}
 				break;
@@ -3866,9 +3938,9 @@ void CL_ParseServerMessage(void)
 				str = "entity";
 				cmdlogname[cmdindex] = str;
 				SHOWNET("fast update");
-				if (cls.signon == SIGNONS - 1) {
+				if (cls.signon == SIGNONS_4 - 1) {
 					// first update is the final signon stage
-					cls.signon = SIGNONS;
+					cls.signon = SIGNONS_4; // NORMAL QUAKE
 					CL_SignonReply ();
 				}
 				EntityFrameQuake_ReadEntity (cmd&127);
@@ -3911,7 +3983,7 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_nop:
-				if (cls.signon < SIGNONS)
+				if (cls.signon < SIGNONS_4)
 					Con_Print("<-- server to client keepalive\n");
 				break;
 
@@ -3943,12 +4015,22 @@ void CL_ParseServerMessage(void)
 
 			case svc_print:
 				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(str)) // look for anything interesting like player IP addresses or ping reports
+
+				if (cl.is_qex && str[0] == '$') { // AURA 1.2
+					str = LOC_GetString (str);
+					CSQC_AddPrintText (str);	//[515]: csqc
+				} else
+					if (CL_ExaminePrintString(str)) // au21 - look for anything interesting like player IP addresses or ping reports
 					CSQC_AddPrintText(str);	//[515]: csqc
 				break;
 
 			case svc_centerprint:
-				CL_VM_Parse_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));	//[515]: csqc
+				str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));					
+				if (cl.is_qex && str[0] == '$') { // AURA 1.3
+					str = LOC_GetString (str);
+				}
+
+				CL_VM_Parse_CenterPrint(str);	//[515]: csqc
 				break;
 
 			case svc_stufftext:
@@ -3988,6 +4070,15 @@ void CL_ParseServerMessage(void)
 							++str;
 					}
 				}
+
+				// Baker r8191
+				if (String_Does_Start_With (str, HINT_MESSAGE_PREFIX)) {
+					Con_DPrintLinef ("Received server hint: %s", str);
+					str += strlen (HINT_MESSAGE_PREFIX);
+					CL_ParseHint (str);
+					break; // Do not continue.
+				}
+
 				CL_VM_Parse_StuffCmd(str);	//[515]: csqc
 				break;
 
@@ -4112,6 +4203,12 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_effect:
+				if (cl.is_qex) { // AURA 1.5
+					// case  svc_achievement_fights_effect_52 AURA
+					str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+					Con_DPrintLinef ("Ignoring svc_achievement (%s)", str);
+					break;
+				}
 				CL_ParseEffect ();
 				break;
 
@@ -4140,6 +4237,12 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_spawnstatic2:
+				if (cl.is_qex) { // AURA 1.6
+					// svc_qex_localsound_fights_spawnstatic2_56
+					CL_ParseLocalSound();
+					break;
+				}
+svc_spawnstatic2_ugly: // AURA 13.2
 				CL_ParseStatic (true);
 				break;
 
@@ -4163,9 +4266,19 @@ void CL_ParseServerMessage(void)
 				j = MSG_ReadByte(&cl_message);
 				// LadyHavoc: it's rude to kick off the client if they missed the
 				// reconnect somehow, so allow signon 1 even if at signon 1
-				if (j <= cls.signon && j != 1)
+				if (j <= cls.signon && j != SIGNON_1)
 					Host_Error_Line ("Received signon %d when at %d", j, cls.signon);
-				cls.signon = j;
+				cls.signon = j; // NORMAL QUAKE / DARKPLACES
+				//if (cls.signon == SIGNON_1) {
+				//	// Baker: Save the time here
+				//	// we are going to use this to detect "slow loads hopefully".
+				//	cls.signon_1_time = Sys_DirtyTime();
+				//} else 
+				if (cls.signon == 3 /*SIGNONS_4*/) {
+					// Baker: Slow load end
+					// Baker: Demo playback never hits 4
+					cl_signon_start_time = 0;
+				}
 				CL_SignonReply ();
 				break;
 
@@ -4222,7 +4335,13 @@ void CL_ParseServerMessage(void)
 					cl.completed_time = cl.time;
 				cl.intermission = 2;
 				CL_VM_UpdateIntermissionState(cl.intermission);
-				SCR_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
+
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') { // AURA 1.7
+					str = LOC_GetString (str);
+				}
+
+				SCR_CenterPrint(str);
 				break;
 
 			case svc_cutscene:
@@ -4230,7 +4349,13 @@ void CL_ParseServerMessage(void)
 					cl.completed_time = cl.time;
 				cl.intermission = 3;
 				CL_VM_UpdateIntermissionState(cl.intermission);
-				SCR_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
+
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (cl.is_qex && str[0] == '$') { // AURA 1.8
+					str = LOC_GetString (str);
+				}
+
+				SCR_CenterPrint (str);
 				break;
 
 			case svc_sellscreen:
@@ -4256,6 +4381,12 @@ void CL_ParseServerMessage(void)
 					SHOWLMP_decodehide();
 				break;
 			case svc_showlmp: // 35
+				if (cl.is_qex) { // AURA 13.1
+					// svc_zirc_qex_svc_spawnstatic2_35
+					// Baker: we are using this as svc_spawnstatic2 if sv.is_qex
+					// AFAIK GAME_NEHAHRA is sole user of this goofy svc that LadyHavoc describes as junk
+					goto svc_spawnstatic2_ugly;
+				}
 				if (gamemode == GAME_TENEBRAE)
 				{
 					// particle effect
@@ -4274,10 +4405,10 @@ void CL_ParseServerMessage(void)
 				break;
 
 			case svc_entities:
-				if (cls.signon == SIGNONS - 1)
+				if (cls.signon == SIGNONS_4 - 1)
 				{
 					// first update is the final signon stage
-					cls.signon = SIGNONS;
+					cls.signon = SIGNONS_4;
 					CL_SignonReply ();
 				}
 				if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3)
@@ -4310,7 +4441,7 @@ void CL_ParseServerMessage(void)
 		}
 	}
 
-	if (cls.signon == SIGNONS)
+	if (cls.signon == SIGNONS_4)
 		CL_UpdateItemsAndWeapon();
 //	R_TimeReport("UpdateItems");
 

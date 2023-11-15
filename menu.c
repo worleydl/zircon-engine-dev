@@ -468,15 +468,19 @@ void Hotspots_Add2 (float left, float top, float width, float height, int count_
 
 // Called at the start of most M_ Draw frames (almost).
 // Why does M_Main not call it?
-#define PPX_Start(realcursor, frameselcursor) drawidx = 0; drawsel_idx = not_found_neg1; frameselcursor = realcursor
+#define PPX_Start(realcursor) \
+	drawidx = 0; \
+	drawsel_idx = not_found_neg1; \
+	g_draw_frame_cursor = realcursor
 
+int g_draw_frame_cursor;
 // Call at end of every M_ Draw frame (almost)
 // Why does M_Main not call it, for instance?
 // It highlights the current item.
 static void PPX_DrawSel_End (void)
 {
 	if (drawsel_idx!= not_found_neg1) { // PPX SEL
-		crectf_s r	= hotspotxs[drawsel_idx].r;
+		crectf_s r	 = hotspotxs[drawsel_idx].r;
 		float xmag	= vid.width / vid_conwidth.value; // 1300 / 240
 		float ymag	= vid.height / vid_conheight.value;
 

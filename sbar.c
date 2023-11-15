@@ -665,7 +665,7 @@ levtime:
 
 	if ((cl.islocalgame || cl.skill_level_p1) && cl.gametype == GAME_COOP ) {
 		const char *skillstrings[] = {"Easy", "Normal", "Hard", "Nightmare"};
-		int skillz = cl.skill_level_p1 ? (cl.skill_level_p1 - 1) : skill.integer;
+		int skillz = cl.skill_level_p1 ? (cl.skill_level_p1 - 1) : skill.integer; // Baker r8191
 		if (in_range (/*easy*/ 0, skillz, /*nightmare*/ 3)) {
 			Sbar_DrawString (8 + 8 * (20 - strlen(skillstrings[skillz]) / 2.0), 12, skillstrings[skillz]);
 		}
@@ -998,7 +998,7 @@ void Sbar_ShowFPS(void)
 	char speedstring[32];
 	char blurstring[32];
 	char topspeedstring[48];
-	char texstring[MAX_QPATH];
+	char texstring[MAX_QPATH_128];
 	char entstring[32];
 	qbool red = false;
 	soundstring[0] = 0;
@@ -1016,8 +1016,7 @@ void Sbar_ShowFPS(void)
 	angstring[0] = 0;	
 	entstring[0] = 0;
 	
-	#pragma message ("Baker: Let's resolve console fps issue first.")
-	if (showfps.integer && showfps_framerate >= 0.00001 && cls.signon == SIGNONS) {  // Baker r8083
+	if (showfps.integer && showfps_framerate >= 0.00001 && cls.signon == SIGNONS_4) {  // Baker r8083
 		red = (showfps_framerate < 1.0f);
 		if (showfps.integer == 2)
 			dpsnprintf(fpsstring, sizeof(fpsstring), "%7.3f mspf", (1000.0 / showfps_framerate));
@@ -1203,6 +1202,18 @@ void Sbar_ShowFPS(void)
 			}
 
 			r_draw2d_force = false;
+		}
+		if (posstring[0]) {
+			fps_x = vid_conwidth.integer - DrawQ_TextWidth(posstring, 0, fps_scalex, fps_scaley, true, FONT_INFOBAR);
+			DrawQ_Fill(fps_x, fps_y, vid_conwidth.integer - fps_x, fps_scaley, 0, 0, 0, 0.5, 0);
+			DrawQ_String(fps_x, fps_y, posstring, 0, fps_scalex, fps_scaley, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
+			fps_y += fps_scaley;
+		}
+		if (angstring[0]) {
+			fps_x = vid_conwidth.integer - DrawQ_TextWidth(angstring, 0, fps_scalex, fps_scaley, true, FONT_INFOBAR);
+			DrawQ_Fill(fps_x, fps_y, vid_conwidth.integer - fps_x, fps_scaley, 0, 0, 0, 0.5, 0);
+			DrawQ_String(fps_x, fps_y, angstring, 0, fps_scalex, fps_scaley, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
+			fps_y += fps_scaley;
 		}
 		if (timedemostring1[0])
 		{

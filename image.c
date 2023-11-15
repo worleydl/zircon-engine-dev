@@ -1046,7 +1046,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 	imageformat_t *firstformat, *format;
 	int mymiplevel;
 	unsigned char *f, *data = NULL, *data2 = NULL;
-	char basename[MAX_QPATH], name[MAX_QPATH], name2[MAX_QPATH], path[MAX_QPATH], afterpath[MAX_QPATH], *c;
+	char basename[MAX_QPATH_128], name[MAX_QPATH_128], name2[MAX_QPATH_128], path[MAX_QPATH_128], afterpath[MAX_QPATH_128], *c;
 	char vabuf[1024];
 	//if (developer_memorydebug.integer)
 	//	Mem_CheckSentinelsGlobal();
@@ -1087,7 +1087,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 
 		FS_SanitizePath(name);
 
-		if (FS_FileExists(name) && (f = FS_LoadFile(name, tempmempool, true, &filesize)) != NULL)
+		if (FS_FileExists(name) && (f = FS_LoadFile(name, tempmempool, fs_quiet_true, &filesize)) != NULL)
 		{
 			mymiplevel = miplevel ? *miplevel : 0;
 			image_width = 0;
@@ -1099,7 +1099,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 				if (format->loadfunc == JPEG_LoadImage_BGRA) // jpeg can't do alpha, so let's simulate it by loading another jpeg
 				{
 					dpsnprintf (name2, sizeof(name2), format->formatstring, va(vabuf, sizeof(vabuf), "%s_alpha", basename));
-					f = FS_LoadFile(name2, tempmempool, true, &filesize);
+					f = FS_LoadFile(name2, tempmempool, fs_quiet_true, &filesize);
 					if (f)
 					{
 						int mymiplevel2 = miplevel ? *miplevel : 0;
@@ -1131,7 +1131,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 						Con_Printf ("- had to fix %s (%d pixels changed)\n", name, n);
 						if (r_fixtrans_auto.integer >= 2)
 						{
-							char outfilename[MAX_QPATH], buf[MAX_QPATH];
+							char outfilename[MAX_QPATH_128], buf[MAX_QPATH_128];
 							Image_StripImageExtension(name, buf, sizeof(buf));
 							dpsnprintf(outfilename, sizeof(outfilename), "fixtrans/%s.tga", buf);
 							Image_WriteTGABGRA(outfilename, image_width, image_height, data);
@@ -1197,7 +1197,7 @@ qbool Image_GetStockPicSize(const char *filename, int *returnwidth, int *returnh
 {
 	unsigned char *data;
 	fs_offset_t filesize;
-	char lmppath[MAX_QPATH];
+	char lmppath[MAX_QPATH_128];
 	if (String_Does_Match_Caseless(filename, "gfx/conchars"))
 	{
 		*returnwidth = 128;
@@ -1206,7 +1206,7 @@ qbool Image_GetStockPicSize(const char *filename, int *returnwidth, int *returnh
 	}
 
 	dpsnprintf(lmppath, sizeof(lmppath), "%s.lmp", filename);
-	data = FS_LoadFile(lmppath, tempmempool, true, &filesize);
+	data = FS_LoadFile(lmppath, tempmempool, fs_quiet_true, &filesize);
 	if (data)
 	{
 		if (filesize > 8)
@@ -1378,7 +1378,7 @@ void Image_FixTransparentPixels_f(cmd_state_t *cmd)
 	const char *filename, *filename_pattern;
 	fssearch_t *search;
 	int i, n;
-	char outfilename[MAX_QPATH], buf[MAX_QPATH];
+	char outfilename[MAX_QPATH_128], buf[MAX_QPATH_128];
 	unsigned char *data;
 	if (Cmd_Argc(cmd) != 2)
 	{
@@ -1386,7 +1386,7 @@ void Image_FixTransparentPixels_f(cmd_state_t *cmd)
 		return;
 	}
 	filename_pattern = Cmd_Argv(cmd, 1);
-	search = FS_Search(filename_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+	search = FS_Search(filename_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 	if (!search)
 		return;
 	for(i = 0; i < search->numfilenames; ++i)

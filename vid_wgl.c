@@ -40,7 +40,7 @@ static const char *WIN_CLASSNAME_CLASS1 = "ZirconWindowClass";
 #endif
 #endif
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include <windows.h>
 #include <mmsystem.h>
 #ifdef SUPPORTDIRECTX
@@ -212,7 +212,7 @@ void VID_Finish (void)
 	{
 		switch(vid.renderpath)
 		{
-		case RENDERPATH_GL20:
+		case RENDERPATH_GL32:
 		case RENDERPATH_GLES2:
 			if (vid_usingvsync != vid_usevsync)
 			{
@@ -231,7 +231,7 @@ void VID_Finish (void)
 	// without this help
 	Sleep(0);
 
-	VID_UpdateGamma(false, 256);
+	VID_UpdateGamma();
 }
 
 //==========================================================================
@@ -336,6 +336,7 @@ MAIN WINDOW
 ===================================================================
 */
 
+#if 0
 /*
 ================
 ClearAllStates
@@ -347,6 +348,7 @@ static void ClearAllStates (void)
 	if (vid_usingmouse)
 		mouse_oldbuttonstate = 0;
 }
+#endif
 
 void AppActivate(BOOL fActive, BOOL minimize)
 /****************************************************************************
@@ -365,8 +367,8 @@ void AppActivate(BOOL fActive, BOOL minimize)
 	vid_activewindow = fActive != FALSE;
 	vid_reallyhidden = minimize != FALSE;
 
-	vid.factive = vid_activewindow;
-	vid.inactivefullscreen = !vid.factive && vid_isfullscreen;
+//	vid.factive = vid_activewindow;
+//	vid.inactivefullscreen = !vid_activewindow && vid_isfullscreen;
 
 	// enable/disable sound on focus gain/loss
 	if ((!vid_reallyhidden && vid_activewindow) || !snd_mutewhenidle.integer)
@@ -408,15 +410,15 @@ void AppActivate(BOOL fActive, BOOL minimize)
 
 	if (!fActive)
 	{
-		VID_SetMouse(false, false, false);
-		Key_Release_Keys (); // Baker 1002
+		VID_SetMouse(false, false);
+//		Key_Release_Keys (); // Baker 1002
 		if (vid_isfullscreen)
 		{
 			if (gldll)
 				ChangeDisplaySettings (NULL, CDS_FULLSCREEN);
 			vid_wassuspended = true;
 		}
-		VID_RestoreSystemGamma();
+//		VID_RestoreSystemGamma();
 	}
 }
 
@@ -743,7 +745,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 	#if 0 //def _DEBUG
 		const char *sx = msg_to_str ((unsigned)uMsg);
 		Sys_PrintToTerminal2 (sx);
-		Sys_PrintToTerminal2 (va3 ( "wparam: %x lparam %x", wParam, lParam));
+		Sys_PrintToTerminal2 (va2 ( "wparam: %x lparam %x", wParam, lParam));
 	#endif // DEBUG
 
 	switch (uMsg) {
@@ -763,16 +765,16 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 
 			// Baker: this stops a crash I don't feel like dealing with right now
 
-			if (fMinimized && vid.minimized == false) {
-				vid.savedgamma = v_gamma.value;
-				vid.savedcontrast = v_contrast.value;
+			//if (fMinimized && vid.minimized == false) {
+			//	vid.savedgamma = v_gamma.value;
+			//	vid.savedcontrast = v_contrast.value;
 
-				Cvar_SetValueQuick(&v_gamma, 1);
-				Cvar_SetValueQuick(&v_contrast, 1);
-				VID_UpdateGamma(false, 256);
-				//Sys_PrintToTerminal ("Gamma save");
-			}
-			vid.minimized = fMinimized;
+			//	Cvar_SetValueQuick(&v_gamma, 1);
+			//	Cvar_SetValueQuick(&v_contrast, 1);
+			//	VID_UpdateGamma(false, 256);
+			//	//Sys_PrintToTerminal ("Gamma save");
+			//}
+//			vid.minimized = fMinimized;
 
 
 			return 0;
@@ -784,7 +786,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 		case WM_MOVE:
 			window_x = (int) LOWORD(lParam);
 			window_y = (int) HIWORD(lParam);
-			VID_SetMouse(false, false, false);
+			VID_SetMouse(false, false);
 			break;
 
 		case WM_KEYDOWN:
@@ -895,16 +897,16 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 
 				// Baker: this stops a crash I don't feel like dealing with right now
 
-				if (fMinimized && vid.minimized == false) {
-					vid.savedgamma = v_gamma.value;
-					vid.savedcontrast = v_contrast.value;
+				//if (fMinimized && vid.minimized == false) {
+				//	vid.savedgamma = v_gamma.value;
+				//	vid.savedcontrast = v_contrast.value;
 
-					Cvar_SetValueQuick(&v_gamma, 1);
-					Cvar_SetValueQuick(&v_contrast, 1);
-					VID_UpdateGamma(false, 256);
-					//Sys_PrintToTerminal ("Gamma save");
-				}
-				vid.minimized = fMinimized;
+				//	Cvar_SetValueQuick(&v_gamma, 1);
+				//	Cvar_SetValueQuick(&v_contrast, 1);
+				//	VID_UpdateGamma(false, 256);
+				//	//Sys_PrintToTerminal ("Gamma save");
+				//}
+//				vid.minimized = fMinimized;
 
 
 
@@ -913,11 +915,11 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 
 			if (wParam == SIZE_RESTORED) {
 				fMinimized = false;
-				if (fMinimized == false && vid.minimized) {
-					//Sys_PrintToTerminal ("vid.unminimized");
-					vid.unminimized=true;
-				}
-				vid.minimized = fMinimized;
+				//if (fMinimized == false && vid.minimized) {
+				//	//Sys_PrintToTerminal ("vid.unminimized");
+				//	vid.unminimized=true;
+				//}
+//				vid.minimized = fMinimized;
 
 			}
 
@@ -927,7 +929,7 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 		case WM_CLOSE:
 			//if (MessageBox (mainwindow, "Are you sure you want to quit?", "Confirm Exit", MB_YESNO | MB_SETFOREGROUND | MB_ICONQUESTION) == IDYES) // Baker 1012.1
 
-			Host_Quit_f (); //Sys_Quit (0);
+			host.state = host_shutdown; //Host_Quit_f (); //Sys_Quit (0);
 
 
 			break;
@@ -938,21 +940,21 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 			AppActivate(!(fActive == WA_INACTIVE), fMinimized);
 
 			// Baker: this stops a crash I don't feel like dealing with right now
-			if (fMinimized == false && vid.minimized) {
-				//Sys_PrintToTerminal2 ("vid.unminimized");
-				vid.unminimized=true;
-			}
+			//if (fMinimized == false && vid.minimized) {
+			//	//Sys_PrintToTerminal2 ("vid.unminimized");
+			//	vid.unminimized=true;
+			//}
 
-			if (fMinimized && vid.minimized == false) {
-				vid.savedgamma = v_gamma.value;
-				vid.savedcontrast = v_contrast.value;
+			//if (fMinimized && vid.minimized == false) {
+			//	vid.savedgamma = v_gamma.value;
+			//	vid.savedcontrast = v_contrast.value;
 
-				Cvar_SetValueQuick(&v_gamma, 1);
-				Cvar_SetValueQuick(&v_contrast, 1);
-				VID_UpdateGamma(false, 256);
-				//Sys_PrintToTerminal ("Gamma save");
-			}
-			vid.minimized = fMinimized;
+			//	Cvar_SetValueQuick(&v_gamma, 1);
+			//	Cvar_SetValueQuick(&v_contrast, 1);
+			//	VID_UpdateGamma(false, 256);
+			//	//Sys_PrintToTerminal ("Gamma save");
+			//}
+			//vid.minimized = fMinimized;
 
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
@@ -1015,7 +1017,7 @@ static void GL_CloseLibrary(void)
 		qwglGetProcAddress = NULL;
 		gl_extensions = "";
 		gl_platform = "";
-		gl_platformextensions = "";
+//		gl_platformextensions = "";
 	}
 }
 
@@ -1243,8 +1245,8 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 	gldrivername = "opengl32.dll";
 // COMMANDLINEOPTION: Windows WGL: -gl_driver <drivername> selects a GL driver library, default is opengl32.dll, useful only for 3dfxogl.dll or 3dfxvgl.dll, if you don't know what this is for, you don't need it
 	i = Sys_CheckParm("-gl_driver");
-	if (i && i < com_argc - 1)
-		gldrivername = com_argv[i + 1];
+	if (i && i <sys.argc - 1)
+		gldrivername = sys.argv[i + 1];
 	if (!GL_OpenLibrary(gldrivername))
 	{
 		Con_Printf("Unable to load GL driver %s\n", gldrivername);
@@ -1487,7 +1489,8 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 
 		if (windowpass == 0)
 		{
-			if (!GL_CheckExtension("WGL_ARB_pixel_format", wglpixelformatfuncs, "-noarbpixelformat", false) || !qwglChoosePixelFormatARB(baseDC, attribs, attribsf, 1, &newpixelformat, &numpixelformats) || !newpixelformat)
+			if (!GL_CheckExtension("WGL_ARB_pixel_format", /*wglpixelformatfuncs,*/ 
+				"-noarbpixelformat", false) || !qwglChoosePixelFormatARB(baseDC, attribs, attribsf, 1, &newpixelformat, &numpixelformats) || !newpixelformat)
 				break;
 			// ok we got one - do it all over again with newpixelformat
 			qwglMakeCurrent(NULL, NULL);
@@ -1664,14 +1667,6 @@ void VID_SetMouse(qbool fullscreengrab, qbool relative, qbool hidecursor)
 
 	if (!mouseinitialized)
 		return;
-
-	if (!vid.factive/*fActive*/) {
-		if (fullscreengrab || relative || hidecursor) {
-			//int j = 5;
-
-		}
-
-	}
 
 	// relative? demoplay?
 	if (relative) {
@@ -2095,9 +2090,9 @@ void VID_Init(void)
 	InitCommonControls();
 #if 1
 	//HINSTANCE		hInst = GetModuleHandle(NULL);
-	HICON			hIconx = iszircicon ?
-						LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON1)) :
-						LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON2));	// Baker 1000.1
+	HICON			hIconx = /*iszircicon ?*/
+						LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON1))/* :
+						LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON2))*/;	// Baker 1000.1
 
 	HCURSOR			hCursor =LoadCursor (NULL,IDC_ARROW);
 	WNDCLASS		wc = {CS_HREDRAW | CS_VREDRAW, (WNDPROC)MainWndProc, 0, 0, global_hInstance, hIconx, hCursor,
@@ -2112,8 +2107,10 @@ void VID_Init(void)
 	memset(&initialdevmode, 0, sizeof(initialdevmode));
 	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &initialdevmode);
 
+#if 0
 	vid.desktop_width = desktop_mode.width = initialdevmode.dmPelsWidth;
 	vid.desktop_height =desktop_mode.height = initialdevmode.dmPelsHeight;
+#endif
 	desktop_mode.bpp = initialdevmode.dmBitsPerPel;
 	desktop_mode.refreshrate = initialdevmode.dmDisplayFrequency;
 	desktop_mode.pixelheight_num = 1;

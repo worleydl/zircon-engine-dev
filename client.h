@@ -499,7 +499,7 @@ typedef struct scoreboard_s
 	int		qw_movementloss;
 	int		qw_spectator;
 	char	qw_team[8];
-	char	qw_skin[MAX_QPATH];
+	char	qw_skin[MAX_QPATH_128];
 } scoreboard_t;
 
 typedef struct cshift_s
@@ -523,7 +523,15 @@ typedef struct cshift_s
 // client_state_t should hold all pieces of the client state
 //
 
-#define	SIGNONS		4			// signon messages to receive before connected
+#define SIGNON_ZERO		0
+#define SIGNON_1		1		// Baker: causes client to CL_SendPlayerInfo
+#define SIGNON_2		2		// Baker: causes client to send "spawn"
+#define SIGNON_3		3		// Baker: causes client to send "begin"
+								//  4 is everything loaded.  DarkPlaces purges unused stuff here.
+#define	SIGNONS_4		4			// signon messages to receive before connected
+
+extern double	cl_signon_start_time; // Baker: playdemo, map, reconnect call .. detects slow load times, forces info.
+
 
 typedef enum cactive_e
 {
@@ -578,7 +586,7 @@ typedef struct client_static_s
 	// list of demos in loop
 	char demos[MAX_DEMOS][MAX_DEMONAME];
 	// the actively playing demo (set by CL_PlayDemo)
-	char demoname[MAX_QPATH];
+	char demoname[MAX_QPATH_128];
 
 // demo recording info must be here, because record is started before
 // entering a map (and clearing client_state_t)
@@ -620,13 +628,14 @@ typedef struct client_static_s
 #define MAX_RCONS 16
 	int rcon_trying;
 	lhnetaddress_t rcon_addresses[MAX_RCONS];
-	char rcon_commands[MAX_RCONS][MAX_INPUTLINE];
+	char rcon_commands[MAX_RCONS][MAX_INPUTLINE_16384];
 	double rcon_timeout[MAX_RCONS];
 	int rcon_ringpos;
 
 // connection information
-	// 0 to SIGNONS
+	// 0 to SIGNONS_4
 	int signon;
+
 	// network connection
 	netconn_t *netcon;
 
@@ -646,7 +655,7 @@ typedef struct client_static_s
 	unsigned int qw_outgoing_sequence;
 
 	// current file download buffer (only saved when file is completed)
-	char qw_downloadname[MAX_QPATH];
+	char qw_downloadname[MAX_QPATH_128];
 	unsigned char *qw_downloadmemory;
 	int qw_downloadmemorycursize;
 	int qw_downloadmemorymaxsize;
@@ -698,6 +707,7 @@ typedef struct client_static_s
 	int r_speeds_graph_datamax[r_stat_count];
 }
 client_static_t;
+
 
 extern client_static_t	cls;
 
@@ -855,6 +865,7 @@ typedef struct client_state_s
 
 	// don't change view angle, full screen, etc
 	int intermission;
+	int is_qex; // AURA 2.0
 	// latched at intermission start
 	double completed_time;
 
@@ -890,15 +901,15 @@ typedef struct client_state_s
 	struct sfx_s *sound_precache[MAX_SOUNDS];
 
 	// FIXME: this is a lot of memory to be keeping around, this really should be dynamically allocated and freed somehow
-	char model_name[MAX_MODELS][MAX_QPATH];
-	char sound_name[MAX_SOUNDS][MAX_QPATH];
+	char model_name[MAX_MODELS][MAX_QPATH_128];
+	char sound_name[MAX_SOUNDS][MAX_QPATH_128];
 
 	// for display on solo scoreboard
 	char worldmessage[40]; // map title (not related to filename)
 	// variants of map name
-	char worldbasename[MAX_QPATH]; // %s
-	char worldname[MAX_QPATH]; // maps/%s.bsp
-	char worldnamenoextension[MAX_QPATH]; // maps/%s
+	char worldbasename[MAX_QPATH_128]; // %s
+	char worldname[MAX_QPATH_128]; // maps/%s.bsp
+	char worldnamenoextension[MAX_QPATH_128]; // maps/%s
 	// cl_entitites[cl.viewentity] = player
 	int viewentity;
 	// the real player entity (normally same as viewentity,
@@ -1116,7 +1127,7 @@ typedef struct client_state_s
 	matrix4x4_t csqc_viewmodelmatrixfromengine;
 	qbool csqc_usecsqclistener;
 	matrix4x4_t csqc_listenermatrix;
-	char csqc_printtextbuf[MAX_INPUTLINE];
+	char csqc_printtextbuf[MAX_INPUTLINE_16384];
 
 	// collision culling data
 	world_t world;
@@ -1379,9 +1390,9 @@ void CL_NewFrameReceived(int num);
 void CL_ParseEntityLump(char *entitystring);
 void CL_FindNonSolidLocation(const vec3_t in, vec3_t out, vec_t radius);
 void CL_RelinkLightFlashes(void);
-void CL_Beam_AddPolygons(const beam_t *b);
+//void CL_Beam_AddPolygons(const beam_t *b); // Baker r0105: classic DarkPlaces lightning
 void CL_UpdateMoveVars(void);
 void CL_Locs_Reload_f(cmd_state_t *cmd);
 
-#endif
+#endif // CLIENT_H
 

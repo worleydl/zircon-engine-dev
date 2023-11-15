@@ -152,7 +152,7 @@ static void M_Menu_VideoNova_AdjustSliders (int dir)
 				menu_video_resolution = menu_video_resolutions_count - 1;
 			if (menu_video_resolutions[menu_video_resolution].width < 600)
 				continue;
-#if (defined(_WIN32) && !defined(CORE_SDL)) || defined(MACOSX)
+#if 0 && (defined(_WIN32) && !defined(CORE_SDL)) || defined(MACOSX)
 			if (menu_video_resolutions[menu_video_resolution].width > vid.desktop_width)
 				continue;
 #endif // defined(_WIN32) && !defined(CORE_SDL)
@@ -296,7 +296,7 @@ leftus:
 }
 
 
-void VID_ListModes_f(void)
+void VID_ListModes_f(cmd_state_t *cmd)
 {
 	int j;
 
@@ -314,7 +314,7 @@ void VID_ListModes_f(void)
 
 	}
  
-#if 0       
+#if 1
     Con_PrintLinef ("Current mode:    vid.width vid.height vid.fullscreen " NEWLINE " ... %d x %d fs %d ", vid.width, vid.height, vid.fullscreen);
     Con_PrintLinef ("Current mode dot!:vid.width vid.height vid.fullscreen " NEWLINE " ... %d x %d fs %d ", vid.mode.width, vid.mode.height, vid.mode.fullscreen);
     Con_PrintLinef ("Current cvars:   vid_width vid_height vid_fullscreen " NEWLINE " ... %d x %d fs %d ", vid_width.integer, vid_height.integer, vid_fullscreen.integer);

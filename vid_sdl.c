@@ -934,6 +934,11 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, click,&buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
+
+		VID_TouchscreenArea (1 + 8,-150,  -64,   50,   50, "gfx/touch_up.tga"    , 0.0f, NULL, NULL, &buttons[5], K_UPARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea (1 + 8,-100,  -64,   50,   50, "gfx/touch_down.tga"    , 0.0f, NULL, NULL, &buttons[6], K_DOWNARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea (1 + 8, -50,  -64,   50,   50, "gfx/touch_tab.tga"    , 0.0f, NULL, NULL, &buttons[7], K_TAB, NULL, 0, 0, 0, true);
+
 		break;
 
 	case key_game:
@@ -962,6 +967,11 @@ static void IN_Move_TouchScreen_Quake(void)
 		VID_TouchscreenArea(16, -320,-480,640, 960, NULL                         , 0.0f, NULL, click,&buttons[2], K_MOUSE1, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[3], K_SPACE, NULL, 0, 0, 0, true);
 		VID_TouchscreenArea( 0,   0,   0,   0,   0, NULL                         , 0.0f, NULL, NULL, &buttons[4], K_MOUSE2, NULL, 0, 0, 0, true);
+
+		VID_TouchscreenArea ( 3,  -100,  -125,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[5], K_UPARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea ( 3,  -150,  -100,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[6], K_LEFTARROW, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea ( 3,   -50,  -100,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[8], K_ENTER, NULL, 0, 0, 0, true);
+		VID_TouchscreenArea ( 3,  -100,   -75,  50,  50, "gfx/touch_square.tga"                     , 0.0f, NULL, NULL, &buttons[7], K_DOWNARROW, NULL, 0, 0, 0, true);
 
 		if (buttons[2]) { // attack?
 			in_windowmouse_x = x;
@@ -1310,7 +1320,7 @@ void Sys_SendKeyEvents( void )
 							// better not call R_Modules_Restart from here directly, as this may wreak havoc...
 							// so, let's better queue it for next frame
 							if (!sdl_needs_restart) {
-								Cbuf_AddText (cmd_local, NEWLINE "r_restart" NEWLINE);
+								Cbuf_AddTextLine (cmd_local, NEWLINE "r_restart");
 								sdl_needs_restart = true;
 							}
 #endif

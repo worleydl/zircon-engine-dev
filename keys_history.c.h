@@ -10,7 +10,7 @@ static void Key_History_Init(void)
 	historyfile = FS_OpenRealFile("zircon_history.txt", "rb", false); // rb to handle unix line endings on windows too
 	if (historyfile)
 	{
-		char buf[MAX_INPUTLINE];
+		char buf[MAX_INPUTLINE_16384];
 		int bufpos;
 		int c;
 
@@ -31,7 +31,7 @@ static void Key_History_Init(void)
 			}
 			else
 			{
-				if (bufpos < MAX_INPUTLINE - 1)
+				if (bufpos < MAX_INPUTLINE_16384 - 1)
 					buf[bufpos++] = c;
 			}
 		}
@@ -43,7 +43,8 @@ static void Key_History_Init(void)
 	history_line = -1;
 }
 
-static void Key_History_Shutdown(void)
+// Baker r1485: close missing history loophole by writing history during gamedir change process
+void Key_History_Write (void)
 {
 	// TODO write history to a file
 
@@ -57,8 +58,37 @@ static void Key_History_Shutdown(void)
 		FS_Close(historyfile);
 	}
 //#endif
+}
+
+static void Key_History_Shutdown(void)
+{
+	Key_History_Write ();
 
 	ConBuffer_Shutdown(&history);
+}
+
+// Baker r1486: RTrim history submissions, deny back-to-back duplicates
+void Key_History_Push_String (const char *stext)
+{
+	char sline[MAX_INPUTLINE_16384];
+	c_strlcpy (sline, stext);
+	String_Edit_RTrim_Whitespace_Including_Spaces (sline);
+
+	if (sline[0] == 0)
+		return; // Blank line after trim
+
+	// Check disallowing back-to-back duplicates
+	
+	int lastline = CONBUFFER_LINES_COUNT(&history) - 1;
+	if (lastline != -1) {
+		char sdupchek[MAX_INPUTLINE_16384] = {0};
+		c_strlcpy (sdupchek, ConBuffer_GetLine (&history, lastline));
+		if (String_Does_Match (sline, sdupchek))
+			return; // BACK-TO-BACK duplicate
+	} // if
+
+	ConBuffer_AddLine(&history, 
+		sline, (int)strlen(sline), CON_MASK_NONE_0);
 }
 
 static void Key_History_Push(void)
@@ -68,7 +98,8 @@ static void Key_History_Push(void)
 		if (String_Does_Start_With(key_line, "]quit") == false) // putting these into the history just sucks
 		if (String_Does_Match(key_line, "]rcon_password")==false) // putting these into the history just sucks
 		if (String_Does_Start_With(key_line, "]rcon_password ")==false) // putting these into the history just sucks
-			ConBuffer_AddLine(&history, key_line + 1, (int)strlen(key_line) - 1, 0);
+			Key_History_Push_String (&key_line[1]);
+			//ConBuffer_AddLine(&history, key_line + 1, (int)strlen(key_line) - 1, CON_MASK_NONE_0);
 
 	Con_PrintLinef ("%s", key_line);
 	history_line = -1;
@@ -89,16 +120,14 @@ static qbool Key_History_Get_foundCommand(void)
 static void Key_History_Up(void)
 {
 	if (history_line == -1) // editing the "new" line
-		strlcpy(history_savedline, key_line + 1, sizeof(history_savedline));
+		c_strlcpy (history_savedline, key_line + 1);
 
 	if (Key_History_Get_foundCommand())
 		return;
 
-	if (history_line == -1)
-	{
+	if (history_line == -1) {
 		history_line = CONBUFFER_LINES_COUNT(&history) - 1;
-		if (history_line != -1)
-		{
+		if (history_line != -1) {
 			strlcpy(key_line + 1, ConBuffer_GetLine(&history, history_line), sizeof(key_line) - 1);
 			key_linepos = (int)strlen(key_line);
 		}
@@ -471,6 +500,8 @@ static const keyname_t   keynames[] = {
 	{"JOY_LEFT", K_JOY_LEFT},
 	{"JOY_RIGHT", K_JOY_RIGHT},
 
+	WARP_X_ (CHAR_BACKQUOTE_96)
+
 	{"SEMICOLON", ';'},			// because a raw semicolon separates commands
 	{"TILDE", '~'},
 	{"BACKQUOTE", '`'},
@@ -610,6 +641,88 @@ static const keyname_t   keynames[] = {
 	{NULL, 0}
 };
 
+
+int GetKeyboardList_Count (const char *s_prefix)
+{
+	int array_count = (int)ARRAY_COUNT(keynames);
+
+	stringlist_t	matchedSet;
+	stringlistinit  (&matchedSet); // this does not allocate
+
+	for (int idx = 0; idx < array_count; idx++) {
+		const char *s =  keynames[idx].name;
+		if (s == NULL) continue;	// yay!  the last entry is bad
+		if (String_Does_Start_With_Caseless (s, "KP_"))		continue;	// do not want JOY, Xbox live for now
+		if (String_Does_Start_With_Caseless (s, "AUX"))		continue;	// do not want
+		if (String_Does_Start_With_Caseless (s, "MIDI"))	continue;	// do not want
+			
+		if (String_Does_Start_With_Caseless (s, s_prefix) == false)
+			continue;
+
+		stringlistappend (&matchedSet, s);		
+	} // while
+
+	// SORT
+	stringlistsort (&matchedSet, true);
+
+	int num_matches = 0;
+
+	for (int idx = 0; idx < matchedSet.numstrings; idx ++) {
+		char *sxy = matchedSet.strings[idx];
+		if (String_Does_Start_With_Caseless (sxy, s_prefix) == false)
+			continue;
+
+		SPARTIAL_EVAL_
+
+		num_matches ++;
+	} // for
+
+	stringlistfreecontents (&matchedSet);
+
+	return num_matches;
+}
+
+/*
+*/
+
+void Partial_Reset (void)
+{
+	freenull_ (_g_autocomplete.s_search_partial_a);
+#ifdef _DEBUG
+	void Sys_PrintToTerminal2(const char *text);
+	Sys_PrintToTerminal ("Partial Reset\n");
+#endif
+}
+
+
+WARP_X_CALLERS_ (Key_ClearEditLine)
+void Partial_Reset_Undo_Normal_Selection_Reset (void)
+{
+	// Partial reset ...
+	Partial_Reset ();	// Clears ac->s_search_partial_a
+	Con_Undo_Point (q_undo_action_normal_0, q_was_a_space_false);
+	Key_Console_Cursor_Move (q_netchange_zero, selection_clear);
+
+	
+}
+
+// Presumably, the undo portion was handled
+void Partial_Reset_Undo_Navis_Selection_Reset (void)
+{
+	Partial_Reset ();	// Clears ac->s_search_partial_a
+	Key_Console_Cursor_Move (q_netchange_zero, selection_clear);
+}
+
+void Partial_Reset_Undo_Clear_Selection_Reset (void)
+{
+	// Partial reset ...
+	Partial_Reset ();	// Clears ac->s_search_partial_a
+	Con_Undo_Clear ();
+	Key_Console_Cursor_Move (q_netchange_zero, selection_clear);
+
+	
+}
+
 /*
 ==============================================================================
 
@@ -625,7 +738,7 @@ int Key_ClearEditLine(qbool is_console)
 
 		key_line[0] = ']';
 		key_line[1] = 0;
-		Partial_Reset_Undo_Selection_Reset ();
+		Partial_Reset_Undo_Clear_Selection_Reset ();
 		return 1;
 	}
 	else

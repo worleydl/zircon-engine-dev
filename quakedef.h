@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define STARTCONFIGFILENAME "quake.rc"
 #define CONFIGFILENAME "config.cfg"
 
-#define HINT_MESSAGE_PREFIX "//hint "
+#define HINT_MESSAGE_PREFIX "//hint "	// Baker r8191 skill level hint from server to client
 
 // moveflags values
 #define MOVEFLAG_VALID 0x80000000

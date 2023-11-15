@@ -57,7 +57,7 @@ Called to play the next demo in the demo loop
 */
 void CL_NextDemo (void)
 {
-	char	str[MAX_INPUTLINE];
+	char	str[MAX_INPUTLINE_16384];
 
 	if (cls.demonum == -1)
 		return;		// don't play demos
@@ -208,10 +208,8 @@ void CL_ReadDemoMessage(void)
 	{
 		// decide if it is time to grab the next message
 		// always grab until fully connected
-		if (cls.signon == SIGNONS)
-		{
-			if (cls.timedemo)
-			{
+		if (cls.signon == SIGNONS_4) { // DEMO READ
+			if (cls.timedemo) {
 				cls.td_frames++;
 				cls.td_onesecondframes++;
 				// if this is the first official frame we can now grab the real
@@ -279,7 +277,7 @@ void CL_ReadDemoMessage(void)
 			MSG_BeginReading(&cl_message);
 			CL_ParseServerMessage();
 
-			if (cls.signon != SIGNONS)
+			if (cls.signon != SIGNONS_4) // DEMO
 				Cbuf_Execute((cmd_local)->cbuf); // immediately execute svc_stufftext if in the demo before connect!
 
 			// In case the demo contains a "svc_disconnect" message
@@ -343,6 +341,7 @@ CL_Record_f
 record <demoname> <map> [cd track]
 ====================
 */
+int in_record_hack; // Baker r0070: "record" at any time - saves a .sav game or reconnects to a server.
 void CL_Record_f(cmd_state_t *cmd)
 {
 	int c, track;
@@ -360,10 +359,47 @@ void CL_Record_f(cmd_state_t *cmd)
 		return;
 	}
 
+	WARP_X_ (SV_CanSave)
+#if 222 // Baker r0070: These were missing from DarkPlaces Beta
+	if (cls.demorecording) {
+		Con_PrintLinef ("Already recording a demo.");
+		return;
+	}
+
+	if (sv.active && cl.islocalgame && cl.intermission) {
+		Con_PrintLinef ("Can't record during intermission");
+		return;
+	}
+#endif
+
 	if (c == 2 && cls.state == ca_connected) {
+#if 222 // Baker r0070 - create a temp.sav
+		if (sv.active && cl.islocalgame && !cl.intermission && in_record_hack == 0) {
+			prvm_prog_t *prog = SVVM_prog;
+			int deadflag = cl.islocalgame && svs.clients[0].active && PRVM_serveredictfloat(svs.clients[0].edict, deadflag);
+			if (deadflag) {
+				Con_PrintLinef ("Can't record while dead");
+				return;
+			}
+			in_record_hack = 1;
+			Con_DPrintLinef ("Initiating record hack ...");
+			Cbuf_AddTextLine (cmd, va (vabuf, sizeof(vabuf), "save temp; disconnect; record %s; load temp", Cmd_Argv(cmd, 1)) );
+			return;
+		}
+		if (!sv.active && cls.state == ca_connected && in_record_hack == 0) {
+			in_record_hack = 2;
+			Con_DPrintLinef ("Initiating record hack ...");
+			Cbuf_AddTextLine (cmd, va (vabuf, sizeof(vabuf), "disconnect; record %s; reconnect", Cmd_Argv(cmd, 1)) );
+			return;
+		}
+
+#endif
 		Con_PrintLinef ("Can not record - already connected to server" NEWLINE "Client demo recording must be started before connecting");
 		return;
 	}
+
+	if (in_record_hack)
+		in_record_hack = 0;
 
 	if (cls.state == ca_connected)
 		CL_Disconnect();
@@ -403,7 +439,7 @@ void CL_Record_f(cmd_state_t *cmd)
 
 void CL_PlayDemo(const char *demo)
 {
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 	int c;
 	qbool neg = false;
 	qfile_t *f;
@@ -431,7 +467,7 @@ void CL_PlayDemo(const char *demo)
 
 	Con_PrintLinef ("Playing demo %s.", name);
 	cls.demofile = f;
-	strlcpy(cls.demoname, name, sizeof(cls.demoname));
+	c_strlcpy (cls.demoname, name);
 
 	cls.demoplayback = true;
 	cls.state = ca_connected;
@@ -463,7 +499,8 @@ void CL_PlayDemo_f(cmd_state_t *cmd)
 		return;
 	}
 
-	CL_PlayDemo(Cmd_Argv(cmd, 1));
+	cl_signon_start_time = Sys_DirtyTime (); // playdemo
+	CL_PlayDemo (Cmd_Argv(cmd, 1));
 }
 
 typedef struct
@@ -656,15 +693,15 @@ static void CL_Startdemos_f(cmd_state_t *cmd)
 	}
 	Con_DPrintLinef ("%d demo(s) in loop", c);
 
-	for (i=1 ; i<c+1 ; i++)
-		strlcpy (cls.demos[i-1], Cmd_Argv(cmd, i), sizeof (cls.demos[i-1]));
+	for (i = 1 ; i < c + 1; i ++)
+		c_strlcpy (cls.demos[i-1], Cmd_Argv(cmd, i));
 
 	// LadyHavoc: clear the remaining slots
-	for (;i <= MAX_DEMOS;i++)
+	for ( ; i <= MAX_DEMOS; i ++)
 		cls.demos[i-1][0] = 0;
 
-	if (!sv.active && cls.demonum != -1 && !cls.demoplayback)
-	{
+	cl_signon_start_time = Sys_DirtyTime (); // startdemos
+	if (!sv.active && cls.demonum != -1 && !cls.demoplayback) {
 		cls.demonum = 0;
 		CL_NextDemo ();
 	}
@@ -709,9 +746,9 @@ static void CL_PauseDemo_f(cmd_state_t *cmd)
 {
 	cls.demopaused = !cls.demopaused;
 	if (cls.demopaused)
-		Con_Print("Demo paused\n");
+		Con_PrintLinef ("Demo paused");
 	else
-		Con_Print("Demo unpaused\n");
+		Con_PrintLinef ("Demo unpaused");
 }
 
 void CL_Demo_Init(void)

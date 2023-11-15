@@ -589,7 +589,7 @@ void CL_VM_Parse_StuffCmd (const char *msg)
 		// FIXME find the actual CAUSE of this, and make demo playback WAIT
 		// until all maps are loaded, then remove this hack
 
-		char buf[MAX_INPUTLINE];
+		char buf[MAX_INPUTLINE_16384];
 		const char *p, *q;
 		size_t l;
 
@@ -659,16 +659,16 @@ void CSQC_AddPrintText (const char *msg)
 		// FIXME: is this bugged?
 		j = strlen(msg)-1;
 		if (msg[j] != '\n' && msg[j] != '\r') {
-			if (strlen(cl.csqc_printtextbuf)+j >= MAX_INPUTLINE) {
+			if (strlen(cl.csqc_printtextbuf)+j >= MAX_INPUTLINE_16384) {
 				CL_VM_Parse_Print(cl.csqc_printtextbuf);
 				cl.csqc_printtextbuf[0] = 0;
 			}
 			else {
-				c_strlcat(cl.csqc_printtextbuf, msg);//, MAX_INPUTLINE);
+				c_strlcat(cl.csqc_printtextbuf, msg);//, MAX_INPUTLINE_16384);
 			}
 			return;
 		}
-		c_strlcat(cl.csqc_printtextbuf, msg); //, MAX_INPUTLINE);
+		c_strlcat(cl.csqc_printtextbuf, msg); //, MAX_INPUTLINE_16384);
 		CL_VM_Parse_Print(cl.csqc_printtextbuf);
 		cl.csqc_printtextbuf[0] = 0;
 	}
@@ -983,7 +983,7 @@ extern cvar_t csqc_usedemoprogs;
 void CL_VM_Init (void)
 {
 	prvm_prog_t *prog = CLVM_prog;
-	const char *csprogsfn = NULL;
+	const char *csprogsname = NULL;
 	unsigned char *csprogsdata = NULL;
 	fs_offset_t csprogsdatasize = 0;
 	int csprogsdatacrc, requiredcrc;
@@ -997,18 +997,22 @@ void CL_VM_Init (void)
 	Cvar_SetValueQuick(&csqc_progcrc, -1);
 	Cvar_SetValueQuick(&csqc_progsize, -1);
 
+	// Baker r0101: csqc_enable
+	if (csqc_enable.integer == 0)
+		return;
+
 	// if the server is not requesting a csprogs, then we're done here
 	if (requiredcrc < 0)
 		return;
 
 	// see if the requested csprogs.dat file matches the requested crc
 	if (!cls.demoplayback || csqc_usedemoprogs.integer) {
-		csprogsfn = va(vabuf, sizeof(vabuf), "dlcache/%s.%d.%d", csqc_progname.string, requiredsize, requiredcrc);
+		csprogsname = va(vabuf, sizeof(vabuf), "dlcache/%s.%d.%d", csqc_progname.string, requiredsize, requiredcrc);
 		if (cls.caughtcsprogsdata && 
 			cls.caughtcsprogsdatasize == requiredsize && 
 			CRC_Block(cls.caughtcsprogsdata, (size_t)cls.caughtcsprogsdatasize) == requiredcrc)
 		{
-			Con_DPrintf ("Using buffered \"%s\"\n", csprogsfn);  // Baker: and this is what?
+			Con_DPrintf ("Using buffered \"%s\"\n", csprogsname);  // Baker: and this is what?
 			csprogsdata = cls.caughtcsprogsdata;
 			csprogsdatasize = cls.caughtcsprogsdatasize;
 			cls.caughtcsprogsdata = NULL;
@@ -1016,15 +1020,15 @@ void CL_VM_Init (void)
 		}
 		else
 		{
-			Con_DPrintf ("Not using buffered \"%s\" (buffered: %p, %d)\n", csprogsfn, (void *)cls.caughtcsprogsdata, (int) cls.caughtcsprogsdatasize);
-			csprogsdata = FS_LoadFile(csprogsfn, tempmempool, true, &csprogsdatasize);
+			Con_DPrintf ("Not using buffered \"%s\" (buffered: %p, %d)\n", csprogsname, (void *)cls.caughtcsprogsdata, (int) cls.caughtcsprogsdatasize);
+			csprogsdata = FS_LoadFile(csprogsname, tempmempool, fs_quiet_true, &csprogsdatasize);
 		}
 	}
 
-	if (!csprogsdata)
+	if (csprogsdata == NULL)
 	{
-		csprogsfn = csqc_progname.string; // Baker: a cvar
-		csprogsdata = FS_LoadFile(csprogsfn, tempmempool, true, &csprogsdatasize);
+		csprogsname = csqc_progname.string; // Baker: a cvar
+		csprogsdata = FS_LoadFile(csprogsname, tempmempool, fs_quiet_true, &csprogsdatasize);
 	}
 
 	if (csprogsdata) {
@@ -1084,7 +1088,7 @@ void CL_VM_Init (void)
 	prog->ExecuteProgram        = CLVM_ExecuteProgram;
 
 	// Baker r1414 - automatic unload of fte csqc-lite csprogs.dat
-	const char *s_missing_fn = PRVM_Prog_Load(prog, csprogsfn, csprogsdata, csprogsdatasize, cl_numrequiredfunc, cl_required_func, CL_REQFIELDS, cl_reqfields, CL_REQGLOBALS, cl_reqglobals);
+	const char *s_missing_fn = PRVM_Prog_Load(prog, csprogsname, csprogsdata, csprogsdatasize, cl_numrequiredfunc, cl_required_func, CL_REQFIELDS, cl_reqfields, CL_REQGLOBALS, cl_reqglobals);
 
 	// Baker: See if csprogs supports DarkPlaces (pass is no guarantee, but we elim some)
 	if (s_missing_fn) {
@@ -1099,7 +1103,7 @@ void CL_VM_Init (void)
 	if (!prog->loaded)
 	{
 		Mem_Free(csprogsdata);
-		Host_Error_Line ("CSQC %s failed to load", csprogsfn);
+		Host_Error_Line ("CSQC %s failed to load", csprogsname);
 	}
 
 

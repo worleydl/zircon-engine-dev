@@ -72,8 +72,8 @@ static void Con_Pos_f(cmd_state_t *cmd)
 	if (cl.entities) {
 		char vabuf[1024];
 		va(vabuf, sizeof(vabuf),
-			QUOTEDSTR("origin") " " QUOTEDSTR("%3.0f %3.0f %3.0f") NEWLINE
-			QUOTEDSTR("angles") " " QUOTEDSTR("%3.0f %3.0f %3.0f") NEWLINE,
+			QUOTED_STR("origin") " " QUOTED_STR("%3.0f %3.0f %3.0f") NEWLINE
+			QUOTED_STR("angles") " " QUOTED_STR("%3.0f %3.0f %3.0f") NEWLINE,
 			cl.entities[cl.playerentity].state_current.origin[0],
 			cl.entities[cl.playerentity].state_current.origin[1],
 			cl.entities[cl.playerentity].state_current.origin[2],
@@ -447,7 +447,7 @@ int ConBuffer_FindPrevLine(conbuffer_t *buf, int mask_must, int mask_mustnot, in
 
 const char *ConBuffer_GetLine(conbuffer_t *buf, int i)
 {
-	static char copybuf[MAX_INPUTLINE]; // client only
+	static char copybuf[MAX_INPUTLINE_16384]; // client only
 	con_lineinfo_t *l = &CONBUFFER_LINES(buf, i);
 	size_t sz = l->len+1 > sizeof(copybuf) ? sizeof(copybuf) : l->len+1;
 	strlcpy(copybuf, l->start, sz);
@@ -740,6 +740,7 @@ CONSOLE
 ==============================================================================
 */
 
+// Baker: Where does key_dest get set to console?
 void Con_ToggleConsole (void)
 {
 	if (Sys_CheckParm ("-noconsole"))
@@ -749,14 +750,13 @@ void Con_ToggleConsole (void)
 	// toggle the 'user wants console' bit
 	Flag_Toggle (key_consoleactive, KEY_CONSOLEACTIVE_USER_1);
 
-#if 1 // Baker 1013.1
-	//key_line[0] = ']';
-	//key_line[1] = 0; 	// EvilTypeGuy: null terminate
-	//key_linepos = 1;
-	
+#if 1 // Baker 1013.1	
+	// Baker: Key_ClearEditLine returns 1, calls Partial_Reset_Undo_Selection_Reset, key_linepos to 1, clears text
 	key_linepos = Key_ClearEditLine(true); // SEL/UNDO Con_ToggleConsole calls Partial_Reset_Undo_Selection_Reset
 
-	con_backscroll = 0; history_line = -1; // Au 15
+	// Baker: This is the only real place both of these variables are reset
+	// Everything calls Con_ToggleConsole
+	SET___ con_backscroll = 0; history_line = -1; 
 #endif
 
 	Con_ClearNotify(); // Baker: Really?  Do other engines do that?  No.  But's not a big deal.
@@ -1303,7 +1303,7 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 {
 	static int mask = 0;
 	static int index = 0;
-	static char line[MAX_INPUTLINE];
+	static char line[MAX_INPUTLINE_16384];
 
 	if (con_mutex)
 		Thread_LockMutex(con_mutex);
@@ -1398,7 +1398,7 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 
 				if (sys_colortranslation.integer == 1) // ANSI
 				{
-					static char printline[MAX_INPUTLINE * 4 + 3];
+					static char printline[MAX_INPUTLINE_16384 * 4 + 3];
 						// 2 can become 7 bytes, rounding that up to 8, and 3 bytes are added at the end
 						// a newline can transform into four bytes, but then prevents the three extra bytes from appearing
 					int lastcolor = 0;
@@ -1519,7 +1519,7 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 				}
 				else // strip
 				{
-					static char printline[MAX_INPUTLINE]; // it can only get shorter here
+					static char printline[MAX_INPUTLINE_16384]; // it can only get shorter here
 					const char *in;
 					char *out;
 					for(in = line, out = printline; *in; ++in)
@@ -1587,7 +1587,7 @@ Con_MaskPrintf
 void Con_MaskPrintf(int mask, const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	va_start(argptr,fmt);
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
@@ -1614,7 +1614,7 @@ Con_Printf
 void Con_Printf(const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	va_start(argptr,fmt);
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
@@ -1628,16 +1628,16 @@ void Con_Printf(const char *fmt, ...)
 void Con_PrintLinef (const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	// Baker: We are doing -4 to ensure room for newline
 	// TODO: Check that dpvsnprintf handles UTF-8 truncation properly?
 	//  Nope. vsnprintf can truncate anywhere ...  
 	va_start(argptr,fmt);
-	dpvsnprintf(msg, /*size*/ MAX_INPUTLINE - 4, fmt, argptr);
+	dpvsnprintf(msg, /*size*/ MAX_INPUTLINE_16384 - 4, fmt, argptr);
 	va_end(argptr);
 
-	// Baker: This max len is MAX_INPUTLINE
+	// Baker: This max len is MAX_INPUTLINE_16384
 	int s_len = (int)strlen(msg);
 	msg[s_len + 0] = 10; 	// 0	 ---> 10
 	msg[s_len + 1] = 0; 	// extra ---> 0
@@ -1649,14 +1649,14 @@ void Con_PrintLinef (const char *fmt, ...)
 void Con_HidenotifyPrintLinef(const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	va_start(argptr,fmt);
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
 	va_end(argptr);
 
 	int s_len = (int)strlen(msg);
-	if (s_len >= MAX_INPUTLINE - 1) {
+	if (s_len >= MAX_INPUTLINE_16384 - 1) {
 		msg[s_len - 1] = 10; // trunc
 	} else {
 		msg[s_len] = 10; // was 0
@@ -1688,7 +1688,7 @@ Con_DPrintf
 void Con_DPrintf (const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	if (developer.integer < 0) // at 0, we still add to the buffer but hide
 		return;
@@ -1703,7 +1703,7 @@ void Con_DPrintf (const char *fmt, ...)
 void Con_DPrintLinef(const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	if (developer.integer < 0) // at 0, we still add to the buffer but hide
 		return;
@@ -1712,10 +1712,10 @@ void Con_DPrintLinef(const char *fmt, ...)
 	// TODO: Check that dpvsnprintf handles UTF-8 truncation properly?
 	//  Nope. vsnprintf can truncate anywhere ...  
 	va_start(argptr, fmt);
-	dpvsnprintf(msg, /*size*/ MAX_INPUTLINE - 4, fmt, argptr);
+	dpvsnprintf(msg, /*size*/ MAX_INPUTLINE_16384 - 4, fmt, argptr);
 	va_end(argptr);
 
-	// Baker: This max len is MAX_INPUTLINE
+	// Baker: This max len is MAX_INPUTLINE_16384
 	int s_len = (int)strlen(msg);
 	msg[s_len + 0] = 10; 	// 0	 ---> 10
 	msg[s_len + 1] = 0; 	// extra ---> 0
@@ -1741,13 +1741,17 @@ The input line scrolls horizontally if typing goes beyond the right edge
 Modified by EvilTypeGuy eviltypeguy@qeradiant.com
 ================
 */
+
+// FFA extern const char *g_p_selbeyond;
+// FFA extern int g_p_selbeyond_x; 
+
 static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 {
 	// Baker: DarkPlaces copies the draw input line for the console or chat buffer
 	// to a text buffer every frame
 	// it manipulates it and memmoves within text
 	int text_slen, i, col_out, linepos, text_start, prefix_start = 0;
-	char text[MAX_INPUTLINE + 5 + 9 + 1]; // space for ^xRGB, "say_team:" and \0
+	char text[MAX_INPUTLINE_16384 + 5 + 9 + 1]; // space for ^xRGB, "say_team:" and \0
 	float xo;
 	size_t len_out;
 	const char *prefix;
@@ -1817,6 +1821,7 @@ static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 	len_out = linepos;
 	col_out = -1;
 	xo = 0;
+
 	if (linepos > 0)
 		xo = DrawQ_TextWidth_UntilWidth_TrackColors(text, &len_out, 
 			inputsize, inputsize, &col_out, false, fnt, 1000000000);
@@ -1832,6 +1837,24 @@ static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 
 
 	WARP_X_ (DrawQ_String_Scale)
+
+baker_font_setup_here:
+
+#if 0 // // FFA 
+	// Baker the additional chars is onlu when linepos is in there
+	if (0 && is_console && key_sellength) {
+		int xcharpos0		= key_sellength > 0 ? key_linepos - key_sellength : key_linepos;
+		int xcharlength		= key_sellength > 0 ? key_sellength :  - key_sellength;
+		int xcharbeyond		= xcharpos0 + xcharlength;
+		char *s_ptr_beyond	= &text[xcharbeyond];
+		
+		g_p_selbeyond		= s_ptr_beyond;
+		g_p_selbeyond_x		= 0;
+	} else {
+		g_p_selbeyond		= NULL; // No request
+		g_p_selbeyond_x		= 0;
+	}
+#endif
 
 	DrawQ_String (
 		text_start,			// start px
@@ -1878,6 +1901,41 @@ static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 		}
 
 	} // cursor visible
+
+	if (is_console && key_sellength) {
+		float draw_start = text_start + xo; // Baker: should always be accurate
+		// Baker: What happens if we try to put UTF8 in a name?
+		// How can we input UTF8 into DarkPlaces without the clipboard?
+		// Baker: It's a bit more complex .. DarkPlaces supports ^xFC3 RGB color codes
+
+		float x0 = text_start + xo - con_textsize.value * key_sellength;
+		float y0 = con_vislines - con_textsize.value * 2;
+		float w0 = con_textsize.value * key_sellength;
+		float h0 = con_textsize.value * 1;
+
+		if (w0 < 0) {
+			x0 = x0 + w0;
+			w0 = - w0;
+		}
+
+#if 0 // FFA
+		if (g_p_selbeyond_x) {
+			float jx0 = text_start + xo;
+			float jx1 = g_p_selbeyond_x;
+			float jxw = jx1 - jx0;
+			float jw0 = jxw;
+			if (jw0) {
+				x0 = jx0;
+				w0 = jxw;
+			}
+		}
+		g_p_selbeyond		= NULL; // No request
+		g_p_selbeyond_x		= 0;
+#endif
+
+		DrawQ_Fill (x0, y0, w0, h0, /*rgb*/ 0.5, 0.5, 0.5, /*a*/ 0.5, DRAWFLAG_ADDITIVE);	// h
+	} // selection
+
 }
 
 typedef struct
@@ -2242,7 +2300,7 @@ void Con_DrawConsole (int lines)
 	r_draw2d_force = true;
 
 // draw the background
-	alpha0 = cls.signon == SIGNONS ? scr_conalpha.value : 1.0f; // always full alpha when not in game
+	alpha0 = cls.signon == SIGNONS_4 ? scr_conalpha.value : 1.0f; // DrawConsole -  always full alpha when not in game
 	if ((alpha = alpha0 * scr_conalphafactor.value) > 0)
 	{
 		sx = scr_conscroll_x.value;
@@ -2805,7 +2863,7 @@ int Con_CompleteCommandLine_Zircon(cmd_state_t *cmd, qbool is_console, qbool is_
 {
 	autocomplete_t *ac = &_g_autocomplete;
 	char *oldspartial = ac->s_search_partial_a;
-	int must_end = false;
+	char *must_end_autocomplete = NULL;
 
 	// Baker: Due to our goto hijinx, let's make sure these get zero filled here ...
 	const char **list[4] = {0, 0, 0, 0};
@@ -2901,7 +2959,7 @@ exit_possible:
 			else if (String_Isin1 (command, "r_editlights_edit") /**/)				ac->searchtype = 10;
 			else if (String_Isin1 (command, "sv_cmd") /**/)							ac->searchtype = 11;
 			else if (String_Isin1 (command, "cl_cmd") /**/)							ac->searchtype = 12;
-			else if (String_Isin1 (command, "menu_cmd") /**/)						ac->searchtype = 13;
+//			else if (String_Isin1 (command, "menu_cmd") /**/)						ac->searchtype = 13;
 			else if (String_Isin2 (command, "modelprecache","modeldecompile" ) )	ac->searchtype = 14;
 			else if (String_Isin1 (command, "play") /**/)							ac->searchtype = 15;
 			else if (String_Isin1 (command, "r_replacemaptexture") /**/)			ac->searchtype = 16;
@@ -2933,36 +2991,35 @@ autocomplete_go:
 	int is_quiet = oldspartial ? true : false;
 
 	if (ac->searchtype)	{
-		//extern cvar_t prvm_sv_gamecommands;
-		//extern cvar_t prvm_cl_gamecommands;
+		extern cvar_t prvm_sv_gamecommands; // Baker r7103 gamecommand autocomplete
+		extern cvar_t prvm_cl_gamecommands; // Baker r7103 gamecommand autocomplete
 		//extern cvar_t prvm_menu_gamecommands;
 
 		switch (ac->searchtype) {
-		//case 1:  GetMapList				(s, q_reply_buf_NULL, q_reply_size_0, q_is_menu_fill_false, q_is_zautocomplete_true, is_quiet);	break;
-		//case 2:  GetXList_Count			(s, ".sav", q_strip_exten_true); break;
-		//case 3:  GetXList_Count			(s, ".dem", q_strip_exten_true); break;
-		//case 4:  ModList_X				(s);	break;
-		//case 5:  GetXList_Count			(s, ".cfg", q_strip_exten_false); break;
-		//case 6:  GetXSkyList_Count		(s);	break;
-		case 7:  
-			GetXTexMode_Count		(s);	break;
-		//case 8:  GetXCopy_Count			(s);	break;
-		//case 9:  GetXEdicts_Count		(s);	break;
-		//case 10: GetRT_Count			(s);	break; // r_editlights_edit
-		//case 11: GetGameCommands_Count  (s, prvm_sv_gamecommands.string);	break;
-		//case 12: GetGameCommands_Count  (s, prvm_cl_gamecommands.string);	break;
-		//case 13: GetGameCommands_Count  (s, prvm_menu_gamecommands.string);	break;
-		//case 14: GetXModelList_Count	(s);	break;
-		//case 15: GetXSoundList_Count	(s);	break;
-		//case 16: GetXTextureWList_Count	(s);	break; // world textures
-		//case 17: GetXKeyList_Count		(s);	break;
-		//case 18: Folder_List_X			(s);	break;
-		//case 19: GetXTextureList_Count	(s);	break; // general textures
+		case 1:  GetMapList				(s, q_reply_buf_NULL, q_reply_size_0, q_is_menu_fill_false, q_is_zautocomplete_true, is_quiet);	break;
+		case 2:  GetFileList_Count		(s, ".sav", q_strip_exten_true); break;
+		case 3:  GetFileList_Count		(s, ".dem", q_strip_exten_true); break;
+		case 4:  GetModList_Count		(s);	break; // game
+		case 5:  GetFileList_Count		(s, ".cfg", q_strip_exten_false); break;
+		case 6:  GetSkyList_Count		(s);	break;
+		case 7:  GetTexMode_Count		(s);	break;
+		case 8:  GetCopyCmd_Count		(s);	break;
+		case 9:  GetEdictsCmd_Count		(s);	break;
+		case 10: GetREditLightsEdit_Count(s);	break;
+		case 11: GetGameCommands_Count  (s, prvm_sv_gamecommands.string);	break; // Baker r7103 gamecommand autocomplete
+		case 12: GetGameCommands_Count  (s, prvm_cl_gamecommands.string);	break; // Baker r7103 gamecommand autocomplete
+//		case 13: GetGameCommands_Count  (s, prvm_menu_gamecommands.string);	break;
+		case 14: GetModelList_Count		(s);	break; // modelprecache, modeldecompile
+		case 15: GetSoundList_Count		(s);	break; // "play" sound command 
+		case 16: GetTexWorld_Count		(s);	break; // r_replacemaptexture arg1 world textures
+		case 17: GetKeyboardList_Count	(s);	break; // "bind", "unbind"
+		case 18: GetFolderList_Count	(s);	break; // "dir", "ls", "folder"
+		case 19: GetTexGeneric_Count	(s);	break; // r_replacemaptexture arg2 general textures
 		} // switch
 
 		if (ac->s_match_alphatop_a == NULL) {
 exit_possible2:
-			must_end = true; 
+			must_end_autocomplete = "No possible matches"; 
 			goto exit_out; // No possible matches
 		}
 		goto search_completed;
@@ -2988,7 +3045,7 @@ unidentified:
 
 	if (c + v + a == 0) {
 		// No possible matches
-		must_end = true;
+		must_end_autocomplete = "No possible alias, command, variable match";
 		goto exit_out;
 	}
 
@@ -3012,7 +3069,7 @@ unidentified:
 		// all possible matches share this character, so we continue...
 		if (s_match[common_length] == NULL_CHAR_0) {
 			// if all matches ended at the same position, stop (this means there is only one match)
-			goto one_match_skip;
+			goto search_completed;
 		}
 	} // for
 
@@ -3043,29 +3100,29 @@ search_completed:
 	// We may skip printing if we only had one match, we still do the completion
 one_match_skip:
 
+	// Baker: We are always adding a space after the autocomplete.
+
 	char *fill = ac->s_completion_a;
-	int fill_len = (int)strlen(fill);
+	int actual_len = (int)strlen(fill);
+	int fill_len = actual_len + ONE_CHAR_1;
 
 	// prevent a buffer overrun by limiting cmd_len according to remaining space
-	fill_len = Smallest(fill_len, (int)sizeof(key_line) - 1 - ac->search_partial_offset);
+	fill_len = Smallest(fill_len, (int)sizeof(key_line) - ONE_CHAR_1 - ac->search_partial_offset);
 	if (fill) {
 		// start of complete .. copy the "cmd" (completion) over
 		key_linepos = ac->search_partial_offset;
-		memcpy (&key_line[key_linepos], fill, fill_len);
+		memcpy (&key_line[key_linepos], fill, actual_len);
+		key_line[key_linepos + fill_len - ONE_CHAR_1] = SPACE_CHAR_32;
 		key_linepos += fill_len;
 
 		// if there is only one match, add a space after it
 		int is_only_one = oldspartial == NULL 
 			&& String_Does_Match (ac->s_match_alphalast_a, ac->s_match_alphatop_a);  
-//			ac->s_match_before_a == NULL && 
-//			ac->s_match_after_a == NULL;
 		if (key_linepos < (int)sizeof(key_line) - 1 && is_only_one) {
 			// Only first partial complete shall do this
-			key_line[key_linepos ++] = ' ';
-			must_end = true;
-			// Should we reset autocomplete? Yes
-
-		}
+//			key_line[key_linepos ++] = ' ';
+			must_end_autocomplete = "Only one match";
+		} // if
 	}
 
 	// use strlcat to avoid a buffer overrun
@@ -3077,27 +3134,9 @@ one_match_skip:
 		if (list[j]) Mem_Free((void *)list[j]);
 	}
 
-	//if (spartial_first_temp_a) {
-	//	Sys_PrintToTerminal2 (va3("First: %s\n", spartial_first_temp_a));
-	//}
-	//if (spartial_best_before_a) {
-	//	Sys_PrintToTerminal2 (va3("First: %s\n", spartial_best_before_a));
-	//}
-	//if (spartial_best_after_a) {
-	//	Sys_PrintToTerminal2 (va3("First: %s\n", spartial_best_after_a));
-	//}
-	//if (spartial_last_temp_a) {
-	//	Sys_PrintToTerminal2 (va3("First: %s\n", spartial_last_temp_a));
-	//}
-
-	if (oldspartial == NULL) {
-		//setstr (spartial_a, spartial512);
-		//Sys_PrintToTerminal2 (va3("Partial Set to: " QUOTED_S "\n", spartial512));
-	}
-
 exit_out:
 
-	if (must_end) {
+	if (must_end_autocomplete) {
 		// Search terminated, likely due to ZERO or ONE result
 		// Clear stuff
 		Partial_Reset ();
@@ -3178,15 +3217,15 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 
 		if (String_Does_Match(command, "map") || String_Does_Match(command, "changelevel") || (patterns && String_Does_Match(patterns, "map"))) {
 			//maps search
-			char t[MAX_QPATH];
+			char t[MAX_QPATH_128];
 			if (GetMapList(s, t, sizeof(t), q_is_menu_fill_false, q_is_zautocomplete_false, q_is_suppress_print_false)) {
 				// first move the cursor
 				linepos += (int)strlen(t) - (int)strlen(s);
 
 				// and now do the actual work
 				*s = 0;
-				strlcat(line, t, MAX_INPUTLINE);
-				strlcat(line, s2, MAX_INPUTLINE); //add back chars after cursor
+				strlcat(line, t, MAX_INPUTLINE_16384);
+				strlcat(line, s2, MAX_INPUTLINE_16384); //add back chars after cursor
 
 				// and fix the cursor
 				if (linepos > (int) strlen(line))
@@ -3197,7 +3236,7 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 		else
 		{
 			if (patterns) {
-				char t[MAX_QPATH];
+				char t[MAX_QPATH_128];
 				stringlist_t resultbuf, dirbuf;
 
 				// Usage:
@@ -3226,7 +3265,7 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 					fssearch_t *search;
 					if (strchr(com_token, '/'))
 					{
-						search = FS_Search(com_token, fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+						search = FS_Search(com_token, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 					}
 					else
 					{
@@ -3235,16 +3274,16 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 						{
 							strlcpy(t, s, min(sizeof(t), (unsigned int)(slash - s + 2))); // + 2, because I want to include the slash
 							strlcat(t, com_token, sizeof(t));
-							search = FS_Search(t, fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+							search = FS_Search(t, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 						}
 						else
-							search = FS_Search(com_token, fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+							search = FS_Search(com_token, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 					}
 					if (search)
 					{
 						for(i = 0; i < search->numfilenames; ++i)
 							if (!strncmp(search->filenames[i], s, strlen(s)))
-								if (FS_FileType(search->filenames[i]) == FS_FILETYPE_FILE)
+								if (FS_FileOrDirectoryType(search->filenames[i]) == FS_FILETYPE_FILE)
 									stringlistappend(&resultbuf, search->filenames[i]);
 						FS_FreeSearch(search);
 					}
@@ -3258,15 +3297,15 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 					{
 						strlcpy(t, s, min(sizeof(t), (unsigned int)(slash - s + 2))); // + 2, because I want to include the slash
 						strlcat(t, "*", sizeof(t));
-						search = FS_Search(t, fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+						search = FS_Search (t, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 					}
 					else
-						search = FS_Search("*", fs_caseless_true, fs_quiet_true, fs_pakfile_null);
+						search = FS_Search ("*", fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 					if (search)
 					{
 						for(i = 0; i < search->numfilenames; ++i)
 							if (!strncmp(search->filenames[i], s, strlen(s)))
-								if (FS_FileType(search->filenames[i]) == FS_FILETYPE_DIRECTORY)
+								if (FS_FileOrDirectoryType(search->filenames[i]) == FS_FILETYPE_DIRECTORY)
 									stringlistappend(&dirbuf, search->filenames[i]);
 						FS_FreeSearch(search);
 					}
@@ -3324,8 +3363,8 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 
 					// and now do the actual work
 					*s = 0;
-					strlcat(line, t, MAX_INPUTLINE);
-					strlcat(line, s2, MAX_INPUTLINE); //add back chars after cursor
+					strlcat(line, t, MAX_INPUTLINE_16384);
+					strlcat(line, s2, MAX_INPUTLINE_16384); //add back chars after cursor
 
 					// and fix the cursor
 					if (linepos > (int) strlen(line))
@@ -3463,6 +3502,10 @@ void Con_Shutdown (void)
 Con_Init
 ================
 */
+
+#include "jack_scripts.c.h"
+
+
 void Con_Init (void)
 {
 	con_linewidth = 80;
@@ -3471,7 +3514,7 @@ void Con_Init (void)
 		con_mutex = Thread_CreateMutex();
 
 	// Allocate a log queue, this will be freed after configs are parsed
-	logq_size = MAX_INPUTLINE;
+	logq_size = MAX_INPUTLINE_16384;
 	logqueue = (unsigned char *)Mem_Alloc (tempmempool, logq_size);
 	logq_ind = 0;
 
@@ -3542,6 +3585,7 @@ void Con_Init (void)
 	Cmd_AddCommand (CF_CLIENT, "copy", Con_Copy_f, "copy console history to clipboard scrubbing color colors based on condump_stripcolors.integer [Zircon]"); // Baker r3101: "copy" and "copy ents"
 	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command	
 	Cmd_AddCommand (CF_CLIENT, "pos", Con_Pos_f, "print pos and angles [Zircon]"); // Baker r3171: "pos" command
+	Cmd_AddCommand (CF_CLIENT, "jack_scripts", Con_Jack_Scripts_f, "Update scripts/shaderlist.txt and write .shader copies to gamedir/_jack_shaders folder [Zircon]"); // Baker r7105
 
 	con_initialized = true;
 	Con_DPrintLinef ("Console initialized."); // Baker: less console spam

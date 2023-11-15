@@ -77,12 +77,22 @@ static void M_Maps_Draw (void)
 			maplist_s *mx = &m_maplist[n];
 
 			Hotspots_Add2 (menu_x + (8 * 9), menu_y + drawcur_y, (55 * 8) /*360*/, 8, 1, hotspottype_button, n);
-			M_ItemPrint ((8 +  0) * 10, drawcur_y, (const char *)mx->smtru_a, true);
-			M_ItemPrint ((8 + 18) * 10, drawcur_y, (const char *)mx->sqbsp, true);
-			M_ItemPrint2 ((8 + 21) * 10, drawcur_y, (const char *)mx->smsg_a, true);
+			M_ItemPrint ((8 +  0) * 10, drawcur_y, (const char *)mx->s_name_trunc_16_a, true);
+			M_ItemPrint ((8 + 18) * 10, drawcur_y, (const char *)mx->s_bsp_code, true);
+			M_ItemPrint2 ((8 + 21) * 10, drawcur_y, (const char *)mx->s_map_title_trunc_28_a, true);
 			
 			drawcur_y +=8;
 		} // for
+
+		// Print current map
+		if (1) {
+			const char *s = "";
+			if (cls.state == ca_connected && cls.signon == SIGNONS_4) // MAPS MENU
+				s = cl.worldbasename;
+			int slen = (int)strlen(s);
+			M_Print        (640 - (11   * 8) - 12, 40, "current map");
+			M_PrintBronzey (640 - (slen * 8) - 12, 48, s);
+		}
 	} // endrow > startrow
 	else
 	{
@@ -112,11 +122,12 @@ static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 		if (local_count) {
 			char vabuf[1024];
 			maplist_s *mx = &m_maplist[local_cursor];
-			va (vabuf, sizeof(vabuf), "map %s", mx->sm_a);
+			va (vabuf, sizeof(vabuf), "map %s", mx->s_name_after_maps_folder_a);
 			menu_state_reenter = 1;
 			Cbuf_AddTextLine (cmd, vabuf );
 
-			// Con_History_Maybe_Push (vabuf); // Au 15
+			// Baker r0072: Add maps menu map to command history for recall.
+			Key_History_Push_String (vabuf);
 
 			key_dest = key_game;
 			menu_state_set_nova (m_none);
@@ -200,7 +211,7 @@ static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 
 				maplist_s *mx = &m_maplist[startx];
 
-				if (String_Does_Start_With_Caseless ((char *)mx->smtru_a, sprefix)) {
+				if (String_Does_Start_With_Caseless ((char *)mx->s_name_after_maps_folder_a, sprefix)) {
 					local_cursor = startx;
 					break;
 				} // if

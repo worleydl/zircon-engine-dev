@@ -6,7 +6,6 @@
 #define 	visiblerows 	m_optn_visiblerows
 
 extern cvar_t con_textsize;
-static int m_optcursorx;
 static int options_cursorx;
 
 int m_optn_visiblerows;
@@ -52,12 +51,10 @@ void M_Menu_Options_Nova_f(cmd_state_t *cmd)
 
 static void M_Menu_OptionsNova_AdjustSliders (int dir)
 {
-	
 	cvar_t *pcvar;
 
 	S_LocalSound ("sound/misc/menu3.wav");
 
-	
 	switch (local_cursor) {
 	default:
 	case_break moa_Key_Setup_0:				
@@ -99,9 +96,9 @@ static void M_OptionsNova_PrintCommand(const char *s, int enabled)
 {
 	Hotspots_Add (menu_x + 80 - 16, menu_y + drawcur_y, 320, 8 + 1, 1, hotspottype_button); // PPX DUR
 	if (drawcur_y >= 32) {
-		int issel = drawidx == frame_cursor; 
+		int issel = drawidx == g_draw_frame_cursor; 
 		if (issel) { 
-			drawsel_idx = frame_cursor;	 
+			drawsel_idx = g_draw_frame_cursor;	 
 		}
 		M_ItemPrint(0 + 80, drawcur_y, s, enabled);
 	}
@@ -114,10 +111,10 @@ static void M_OptionsNova_PrintSS(const char *s, int enabled, const char *s2)
 {
 	Hotspots_Add (menu_x + 80 - 16, menu_y + drawcur_y, 320, 8 + 1, 1, hotspottype_slider);
 	if (drawcur_y >= 32) {
-		int issel = drawidx == frame_cursor; 
-		if (issel) { 
-			drawsel_idx = frame_cursor;	 
-		}
+		int issel = drawidx == g_draw_frame_cursor; 
+		if (issel)
+			drawsel_idx = g_draw_frame_cursor;	 
+		
 		M_ItemPrint(0 + 80,                          drawcur_y, s, enabled);
 		M_ItemPrint(0 + 80 + (int)strlen(s) * 8 + 8, drawcur_y, s2, enabled);
 	}
@@ -126,12 +123,14 @@ static void M_OptionsNova_PrintSS(const char *s, int enabled, const char *s2)
 	drawidx++;
 }
 
-
 static void M_OptionsNova_PrintCheckbox(const char *s, int enabled, int yes)
 {
 	Hotspots_Add (menu_x + 80 - 16, menu_y + drawcur_y, 320, 8 + 1, 1, hotspottype_slider);
 	if (drawcur_y >= 32) {
-		int issel = drawidx == frame_cursor; if (issel) { drawsel_idx = frame_cursor;	}
+		int issel = drawidx == g_draw_frame_cursor;
+		if (issel) 
+			drawsel_idx = g_draw_frame_cursor;
+
 		M_ItemPrint(0 + 80, drawcur_y, s, enabled);
 		M_DrawCheckbox(0 + 80 + (int)strlen(s) * 8 + 8, drawcur_y, yes);
 	}
@@ -144,7 +143,9 @@ static void M_OptionsNova_PrintSlider(const char *s, int enabled, float value, f
 { 
 	Hotspots_Add (menu_x + 80 - 16, menu_y + drawcur_y, 320, 8 + 1, /*count*/ 1, hotspottype_slider);
 	if (drawcur_y >= 32) {
-		int issel = drawidx == frame_cursor;  if (issel) { drawsel_idx = frame_cursor; }	 // PPX 2.2
+		int issel = drawidx == g_draw_frame_cursor;  
+		if (issel) 
+			drawsel_idx = g_draw_frame_cursor;
 		M_ItemPrint(0 + 80, drawcur_y, s, enabled);
 		M_DrawSlider(0 + 80 + (int)strlen(s) * 8 + 8, drawcur_y, value, minvalue, maxvalue);
 	}
@@ -157,14 +158,14 @@ static void M_Options_Nova_Draw (void)
 {
 	char vabuf[1024];
 	M_Background(320, bound(200, 32 + local_count * 8, vid_conheight.integer), q_darken_true);
-	PPX_Start(local_cursor, frame_cursor); // PPX FRAME
+	PPX_Start (local_cursor);
 
 	M_DrawPic(16, 4, "gfx/qplaque", NO_HOTSPOTS_0, NA0, NA0);
 	cachepic_t *p0 = Draw_CachePic ("gfx/p_option");
 	M_DrawPic((320-Draw_GetPicWidth(p0))/2, 4, "gfx/p_option", NO_HOTSPOTS_0, NA0, NA0);
 
 	visiblerows = (int)((menu_height - 32) / 8);
-	drawcur_y = 32 - bound(0, frame_cursor - (visiblerows / 2), 
+	drawcur_y = 32 - bound(0, local_cursor - (visiblerows / 2), 
 			max(0, local_count - visiblerows)) * 8;
 
 	cvar_t *pcvar;
@@ -309,7 +310,6 @@ leftus:
 	} // sw
 }
 
-#undef frame_cursor
 #undef local_count
 #undef local_cursor
 #undef visiblerows

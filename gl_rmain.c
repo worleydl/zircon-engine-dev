@@ -69,6 +69,9 @@ cvar_t r_motionblur_mousefactor = {CF_CLIENT | CF_ARCHIVE, "r_motionblur_mousefa
 cvar_t r_motionblur_mousefactor_minspeed = {CF_CLIENT | CF_ARCHIVE, "r_motionblur_mousefactor_minspeed", "0", "lower value of mouse acceleration when it starts to factor into blur equation"};
 cvar_t r_motionblur_mousefactor_maxspeed = {CF_CLIENT | CF_ARCHIVE, "r_motionblur_mousefactor_maxspeed", "50", "upper value of mouse acceleration when it reaches the peak factor into blur equation"};
 
+cvar_t r_minlight = {CF_CLIENT | CF_ARCHIVE, "r_minlight", "0.5", "light minimum threshold to 10 percent for models [Zircon]"}; // Baker r1490
+cvar_t r_suppress_minlight = {CF_CLIENT, "r_suppress_minlight", "0", "ignore the value of r_minlight to allow CSQC to control this without stomping user preferences"}; // Baker r1490
+
 cvar_t r_depthfirst = {CF_CLIENT | CF_ARCHIVE, "r_depthfirst", "0", "renders a depth-only version of the scene before normal rendering begins to eliminate overdraw, values: 0 = off, 1 = world depth, 2 = world and model depth"};
 cvar_t r_useinfinitefarclip = {CF_CLIENT | CF_ARCHIVE, "r_useinfinitefarclip", "1", "enables use of a special kind of projection matrix that has an extremely large farclip"};
 cvar_t r_farclip_base = {CF_CLIENT, "r_farclip_base", "65536", "farclip (furthest visible distance) for rendering when r_useinfinitefarclip is 0"};
@@ -250,6 +253,8 @@ cvar_t r_buffermegs[R_BUFFERDATA_COUNT] =
 	{CF_CLIENT | CF_ARCHIVE, "r_buffermegs_uniform", "0.25", "uniform buffer size for one frame"},
 };
 
+cvar_t external_lits = {CF_CLIENT | CF_ARCHIVE, "external_lits", "1", "load external lit files [Zircon]"}; // Baker r1247: external_lits capability
+
 // NEHAHRA COMPAT SECTION
 cvar_t gl_fogenable = {CF_CLIENT, "gl_fogenable", "0", "nehahra fog enable (for Nehahra compatibility only)"};
 cvar_t gl_fogdensity = {CF_CLIENT, "gl_fogdensity", "0.25", "nehahra fog density (recommend values below 0.1) (for Nehahra compatibility only)"};
@@ -309,7 +314,7 @@ unsigned int r_maxqueries;
 
 typedef struct r_qwskincache_s
 {
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 	skinframe_t *skinframe;
 }
 r_qwskincache_t;
@@ -1006,7 +1011,7 @@ static void R_InitShaderModeInfo(void)
 	{
 		for (i = 0; i < SHADERMODE_COUNT; i++)
 		{
-			char filename[MAX_QPATH];
+			char filename[MAX_QPATH_128];
 			modeinfo = &shadermodeinfo[language][i];
 			modeinfo->builtinstring = R_ShaderStrCat(modeinfo->builtinshaderstrings);
 			modeinfo->builtincrc = CRC_Block((const unsigned char *)modeinfo->builtinstring, strlen(modeinfo->builtinstring));
@@ -1024,7 +1029,7 @@ static char *ShaderModeInfo_GetShaderText(shadermodeinfo_t *modeinfo, qbool prin
 		return Mem_strdup(r_main_mempool, modeinfo->builtinstring);
 	// note that FS_LoadFile appends a 0 byte to make it a valid string
 
-	shaderstring = (char*)FS_LoadFile(modeinfo->filename, r_main_mempool, false, NULL);
+	shaderstring = (char*)FS_LoadFile(modeinfo->filename, r_main_mempool, fs_quiet_FALSE, fs_size_ptr_null);
 
 	if (shaderstring)
 	{
@@ -1152,8 +1157,9 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 	geomstrings_count = 0;
 
 	// compile the shader program
-	if (vertstrings_count + geomstrings_count + fragstrings_count)
+	if (vertstrings_count + geomstrings_count + fragstrings_count) {
 		p->program = GL_Backend_CompileProgram(vertstrings_count, vertstrings_list, geomstrings_count, geomstrings_list, fragstrings_count, fragstrings_list);
+	}
 	if (p->program)
 	{
 		CHECKGLERROR
@@ -1578,7 +1584,7 @@ static int R_BlendFuncFlags(int src, int dst)
 	return r;
 }
 
-void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdiffuse[3], const float rtlightspecular[3], rsurfacepass_t rsurfacepass, int texturenumsurfaces, const msurface_t **texturesurfacelist, void *surfacewaterplane, qbool notrippy, qbool ui)
+void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdiffuse[3], const float rtlightspecular[3], rsurfacepass_t rsurfacepass, int texturenumsurfaces, const msurface_t **texturesurfacelist, void *surfacewaterplane, qbool notrippy, qbool is_ui)
 {
 	// select a permutation of the lighting shader appropriate to this
 	// combination of texture, entity, light source, and fogging, only use the
@@ -1599,6 +1605,15 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 		permutation |= SHADERPERMUTATION_OCCLUDE;
 	if (t->r_water_waterscroll[0] && t->r_water_waterscroll[1])
 		permutation |= SHADERPERMUTATION_NORMALMAPSCROLLBLEND; // todo: make generic
+
+	// Baker: marker for attempting to examine r9073u
+	// Something is up to with .shader tcmod scale
+	// and it does not appear that the texture matrix
+	// is what is going on, something obscure and
+	// hard to locate is going on.
+	//if (String_Does_Contain (t->name, "water1")) {
+	//	int j = 5;
+	//}
 
 	// Baker r0083: r_waterdeform
 #if 1
@@ -1861,7 +1876,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 		// lightmapped wall
 		if ((t->glowtexture || t->backgroundglowtexture) && r_hdr_glowintensity.value > 0 && !gl_lightmaps.integer)
 			permutation |= SHADERPERMUTATION_GLOW;
-		if (r_refdef.fogenabled && !ui)
+		if (r_refdef.fogenabled && !is_ui)
 			permutation |= r_texture_fogheighttexture ? SHADERPERMUTATION_FOGHEIGHTTEXTURE : (r_refdef.fogplaneviewabove ? SHADERPERMUTATION_FOGOUTSIDE : SHADERPERMUTATION_FOGINSIDE);
 		if (t->colormapping)
 			permutation |= SHADERPERMUTATION_COLORMAPPING;
@@ -1933,7 +1948,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 	}
 	if (!(blendfuncflags & BLENDFUNC_ALLOWS_ANYFOG))
 		permutation &= ~(SHADERPERMUTATION_FOGHEIGHTTEXTURE | SHADERPERMUTATION_FOGOUTSIDE | SHADERPERMUTATION_FOGINSIDE);
-	if (blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACKALPHA && !ui)
+	if (blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACKALPHA && !is_ui)
 		permutation |= SHADERPERMUTATION_FOGALPHAHACK;
 	switch(vid.renderpath)
 	{
@@ -1995,7 +2010,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 				if (r_glsl_permutation->loc_DeferredMod_Specular >= 0) qglUniform3f(r_glsl_permutation->loc_DeferredMod_Specular, t->render_rtlight_specular[0], t->render_rtlight_specular[1], t->render_rtlight_specular[2]);
 			}
 			// additive passes are only darkened by fog, not tinted
-			if (r_glsl_permutation->loc_FogColor >= 0 && !ui)
+			if (r_glsl_permutation->loc_FogColor >= 0 && !is_ui)
 			{
 				if (blendfuncflags & BLENDFUNC_ALLOWS_FOG_HACK0)
 					qglUniform3f(r_glsl_permutation->loc_FogColor, 0, 0, 0);
@@ -2012,6 +2027,16 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 			if (r_glsl_permutation->loc_SpecularPower >= 0) qglUniform1f(r_glsl_permutation->loc_SpecularPower, t->specularpower * (r_shadow_glossexact.integer ? 0.25f : 1.0f) - 1.0f);
 			if (r_glsl_permutation->loc_NormalmapScrollBlend >= 0) qglUniform2f(r_glsl_permutation->loc_NormalmapScrollBlend, t->r_water_waterscroll[0], t->r_water_waterscroll[1]);
 		}
+
+	// Baker: marker for attempting to examine r9073u
+	// Something is up to with .shader tcmod scale
+	// and it does not appear that the texture matrix
+	// is what is going on, something obscure and
+	// hard to locate is going on.
+	//if (String_Does_Contain (t->name, "water1")) {
+	//	int j = 5;
+	//}
+
 		if (r_glsl_permutation->loc_TexMatrix >= 0) {Matrix4x4_ToArrayFloatGL(&t->currenttexmatrix, m16f);qglUniformMatrix4fv(r_glsl_permutation->loc_TexMatrix, 1, false, m16f);}
 		if (r_glsl_permutation->loc_BackgroundTexMatrix >= 0) {Matrix4x4_ToArrayFloatGL(&t->currentbackgroundtexmatrix, m16f);qglUniformMatrix4fv(r_glsl_permutation->loc_BackgroundTexMatrix, 1, false, m16f);}
 		if (r_glsl_permutation->loc_ShadowMapMatrix >= 0) {Matrix4x4_ToArrayFloatGL(&r_shadow_shadowmapmatrix, m16f);qglUniformMatrix4fv(r_glsl_permutation->loc_ShadowMapMatrix, 1, false, m16f);}
@@ -2250,7 +2275,7 @@ void R_SkinFrame_Purge(void)
 
 skinframe_t *R_SkinFrame_FindNextByName( skinframe_t *last, const char *name ) {
 	skinframe_t *item;
-	char basename[MAX_QPATH];
+	char basename[MAX_QPATH_128];
 
 	Image_StripImageExtension(name, basename, sizeof(basename));
 
@@ -2276,7 +2301,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 	skinframe_t *item;
 	int compareflags = textureflags & TEXF_IMPORTANTBITS;
 	int hashindex;
-	char basename[MAX_QPATH];
+	char basename[MAX_QPATH_128];
 
 	Image_StripImageExtension(name, basename, sizeof(basename));
 
@@ -2289,8 +2314,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 			item->comparecrc == comparecrc)
 			break;
 
-	if (!item)
-	{
+	if (!item) {
 		if (!add)
 			return NULL;
 		item = (skinframe_t *)Mem_ExpandableArray_AllocRecord(&r_skinframe.array);
@@ -2373,7 +2397,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	rtexture_t *ddsbase = NULL;
 	qbool ddshasalpha = false;
 	float ddsavgcolor[4];
-	char basename[MAX_QPATH];
+	char basename[MAX_QPATH_128];
 	int miplevel = R_PicmipForFlags(textureflags);
 	int savemiplevel = miplevel;
 	int mymiplevel;
@@ -2580,7 +2604,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 WARP_X_ (TEXF_FORCE_RELOAD)
 skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, 
 	const unsigned char *skindata, int width, int height, int comparewidth, 
-	int compareheight, int comparecrc, qbool sRGB, qbool is_q1skyload)
+	int compareheight, int comparecrc, qbool is_sRGB, qbool is_q1skyload)
 {
 	int i;
 	skinframe_t *skinframe;
@@ -2631,7 +2655,7 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 		Mem_Free(a);
 	}
 	// Q1SKY Upload occurs here
-	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, sRGB ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags, -1, NULL);
+	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, is_sRGB ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags, -1, NULL);
 	if (textureflags & TEXF_ALPHA)
 	{
 		for (i = 3;i < width * height * 4;i += 4)
@@ -2659,7 +2683,7 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 	return skinframe;
 }
 
-skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, int loadpantsandshirt, int loadglowtexture, const unsigned char *skindata, int width, int height)
+skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, int loadpantsandshirt, int loadglowtexture, const unsigned char *skindata, int width, int height, int is_fence)
 {
 	int i;
 	int featuresmask;
@@ -2707,6 +2731,12 @@ skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, i
 	// fence textures
 	if (name[0] == '{')
 		skinframe->hasalpha = true;
+
+	// Baker r0087:
+	if (is_fence) {
+		skinframe->hasalpha = true;
+	}
+
 	skinframe->qhascolormapping = loadpantsandshirt && (featuresmask & (PALETTEFEATURE_PANTS | PALETTEFEATURE_SHIRT));
 	skinframe->qgeneratenmap = r_shadow_bumpscale_basetexture.value > 0;
 	skinframe->qgeneratemerged = true;
@@ -2732,8 +2762,7 @@ static void R_SkinFrame_GenerateTexturesFromQPixels(skinframe_t *skinframe, qboo
 	if (!skinframe->qhascolormapping)
 		colormapped = false;
 
-	if (colormapped)
-	{
+	if (colormapped) {
 		if (!skinframe->qgeneratebase)
 			return;
 	}
@@ -3252,7 +3281,7 @@ static void gl_main_shutdown(void)
 static void gl_main_newmap(void)
 {
 	// FIXME: move this code to client
-	char *entities, entname[MAX_QPATH];
+	char *entities, entname[MAX_QPATH_128];
 	if (r_qwskincache)
 		Mem_Free(r_qwskincache);
 	r_qwskincache = NULL;
@@ -3260,7 +3289,7 @@ static void gl_main_newmap(void)
 
 	if (cl.worldmodel) {
 		dpsnprintf(entname, sizeof(entname), "%s.ent", cl.worldnamenoextension);
-		if ((entities = (char *)FS_LoadFile(entname, tempmempool, true, NULL)))
+		if ((entities = (char *)FS_LoadFile(entname, tempmempool, fs_quiet_true, fs_size_ptr_null)))
 		{
 			CL_ParseEntityLump(entities);
 			Mem_Free(entities);
@@ -3280,231 +3309,6 @@ void Nehahra_StopMod_f(cmd_state_t* cmd)
 	// Nothing, just stops a print
 }
 
-void GL_Main_Init(void)
-{
-	int i;
-	r_main_mempool = Mem_AllocPool("Renderer", 0, NULL);
-	R_InitShaderModeInfo();
-
-	Cmd_AddCommand(CF_CLIENT, "r_glsl_restart", R_GLSL_Restart_f, "unloads GLSL shaders, they will then be reloaded as needed");
-	Cmd_AddCommand(CF_CLIENT, "r_glsl_dumpshader", R_GLSL_DumpShader_f, "dumps the engine internal default.glsl shader into glsl/default.glsl");
-	// FIXME: the client should set up r_refdef.fog stuff including the fogmasktable
-	if (gamemode == GAME_NEHAHRA)
-	{
-		Cvar_RegisterVariable (&gl_fogenable);
-		Cvar_RegisterVariable (&gl_fogdensity);
-		Cvar_RegisterVariable (&gl_fogred);
-		Cvar_RegisterVariable (&gl_foggreen);
-		Cvar_RegisterVariable (&gl_fogblue);
-		Cvar_RegisterVariable (&gl_fogstart);
-		Cvar_RegisterVariable (&gl_fogend);
-		Cvar_RegisterVariable (&gl_skyclip);
-		Cvar_RegisterVariable(&r_waterripple);
-		Cvar_RegisterVariable(&r_oldsky);
-
-		Cmd_AddCommand(CF_CLIENT, "stopmod", Nehahra_StopMod_f, "nehahra stopmod (for Nehahra compatibility only)");
-
-	}
-	Cvar_RegisterVariable(&r_motionblur);
-	Cvar_RegisterVariable(&r_damageblur);
-	Cvar_RegisterVariable(&r_motionblur_averaging);
-	Cvar_RegisterVariable(&r_motionblur_randomize);
-	Cvar_RegisterVariable(&r_motionblur_minblur);
-	Cvar_RegisterVariable(&r_motionblur_maxblur);
-	Cvar_RegisterVariable(&r_motionblur_velocityfactor);
-	Cvar_RegisterVariable(&r_motionblur_velocityfactor_minspeed);
-	Cvar_RegisterVariable(&r_motionblur_velocityfactor_maxspeed);
-	Cvar_RegisterVariable(&r_motionblur_mousefactor);
-	Cvar_RegisterVariable(&r_motionblur_mousefactor_minspeed);
-	Cvar_RegisterVariable(&r_motionblur_mousefactor_maxspeed);
-	Cvar_RegisterVariable(&r_depthfirst);
-	Cvar_RegisterVariable(&r_useinfinitefarclip);
-	Cvar_RegisterVariable(&r_farclip_base);
-	Cvar_RegisterVariable(&r_farclip_world);
-	Cvar_RegisterVariable(&r_nearclip);
-	Cvar_RegisterVariable(&r_deformvertexes);
-	Cvar_RegisterVariable(&r_transparent);
-	Cvar_RegisterVariable(&r_transparent_alphatocoverage);
-	Cvar_RegisterVariable(&r_transparent_sortsurfacesbynearest);
-	Cvar_RegisterVariable(&r_transparent_useplanardistance);
-	Cvar_RegisterVariable(&r_showoverdraw);
-	Cvar_RegisterVariable(&r_showbboxes);
-	Cvar_RegisterVariable(&r_showbboxes_client);
-	Cvar_RegisterVariable(&r_showsurfaces);
-	Cvar_RegisterVariable(&r_showtris);
-	Cvar_RegisterVariable(&r_shownormals);
-	Cvar_RegisterVariable(&r_showlighting);
-	Cvar_RegisterVariable(&r_showcollisionbrushes);
-	Cvar_RegisterVariable(&r_showcollisionbrushes_polygonfactor);
-	Cvar_RegisterVariable(&r_showcollisionbrushes_polygonoffset);
-	Cvar_RegisterVariable(&r_showdisabledepthtest);
-	Cvar_RegisterVariable(&r_showspriteedges);
-	Cvar_RegisterVariable(&r_showparticleedges);
-	Cvar_RegisterVariable(&r_drawportals);
-	Cvar_RegisterVariable(&r_drawentities);
-	Cvar_RegisterVariable(&r_draw2d);
-	Cvar_RegisterVariable(&r_drawworld);
-	Cvar_RegisterVariable(&r_cullentities_trace);
-	Cvar_RegisterVariable(&r_cullentities_trace_entityocclusion);
-	Cvar_RegisterVariable(&r_cullentities_trace_samples);
-	Cvar_RegisterVariable(&r_cullentities_trace_tempentitysamples);
-	Cvar_RegisterVariable(&r_cullentities_trace_enlarge);
-	Cvar_RegisterVariable(&r_cullentities_trace_expand);
-	Cvar_RegisterVariable(&r_cullentities_trace_pad);
-	Cvar_RegisterVariable(&r_cullentities_trace_delay);
-	Cvar_RegisterVariable(&r_cullentities_trace_eyejitter);
-	Cvar_RegisterVariable(&r_sortentities);
-	Cvar_RegisterVariable(&r_drawviewmodel);
-	Cvar_RegisterVariable(&r_drawexteriormodel);
-	Cvar_RegisterVariable(&r_speeds);
-	Cvar_RegisterVariable(&r_fullbrights);
-	Cvar_RegisterVariable(&r_wateralpha);
-	Cvar_RegisterVariable(&r_dynamic);
-	Cvar_RegisterVariable(&r_fullbright_directed);
-	Cvar_RegisterVariable(&r_fullbright_directed_ambient);
-	Cvar_RegisterVariable(&r_fullbright_directed_diffuse);
-	Cvar_RegisterVariable(&r_fullbright_directed_pitch);
-	Cvar_RegisterVariable(&r_fullbright_directed_pitch_relative);
-	Cvar_RegisterVariable(&r_fullbright);
-	Cvar_RegisterVariable(&r_shadows);
-	Cvar_RegisterVariable(&r_shadows_darken);
-	Cvar_RegisterVariable(&r_shadows_drawafterrtlighting);
-	Cvar_RegisterVariable(&r_shadows_castfrombmodels);
-	Cvar_RegisterVariable(&r_shadows_throwdistance);
-	Cvar_RegisterVariable(&r_shadows_throwdirection);
-	Cvar_RegisterVariable(&r_shadows_focus);
-	Cvar_RegisterVariable(&r_shadows_shadowmapscale);
-	Cvar_RegisterVariable(&r_shadows_shadowmapbias);
-	Cvar_RegisterVariable(&r_q1bsp_skymasking);
-	Cvar_RegisterVariable(&r_polygonoffset_submodel_factor);
-	Cvar_RegisterVariable(&r_polygonoffset_submodel_offset);
-	Cvar_RegisterVariable(&r_polygonoffset_decals_factor);
-	Cvar_RegisterVariable(&r_polygonoffset_decals_offset);
-	Cvar_RegisterVariable(&r_fog_exp2);
-	Cvar_RegisterVariable(&r_fog_clear);
-	Cvar_RegisterVariable(&r_drawfog);
-	Cvar_RegisterVariable(&r_transparentdepthmasking);
-	Cvar_RegisterVariable(&r_transparent_sortmindist);
-	Cvar_RegisterVariable(&r_transparent_sortmaxdist);
-	Cvar_RegisterVariable(&r_transparent_sortarraysize);
-	Cvar_RegisterVariable(&r_texture_dds_load);
-	Cvar_RegisterVariable(&r_texture_dds_save);
-	Cvar_RegisterVariable(&r_textureunits);
-	Cvar_RegisterVariable(&gl_combine);
-	Cvar_RegisterVariable(&r_usedepthtextures);
-	Cvar_RegisterVariable(&r_viewfbo);
-	Cvar_RegisterVariable(&r_rendertarget_debug);
-	Cvar_RegisterVariable(&r_viewscale);
-	Cvar_RegisterVariable(&r_viewscale_fpsscaling);
-	Cvar_RegisterVariable(&r_viewscale_fpsscaling_min);
-	Cvar_RegisterVariable(&r_viewscale_fpsscaling_multiply);
-	Cvar_RegisterVariable(&r_viewscale_fpsscaling_stepsize);
-	Cvar_RegisterVariable(&r_viewscale_fpsscaling_stepmax);
-	Cvar_RegisterVariable(&r_viewscale_fpsscaling_target);
-	Cvar_RegisterVariable(&r_glsl);
-	Cvar_RegisterVariable(&r_glsl_deluxemapping);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_steps);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_reliefmapping);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_reliefmapping_steps);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_reliefmapping_refinesteps);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_scale);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_lod);
-	Cvar_RegisterVariable(&r_glsl_offsetmapping_lod_distance);
-	Cvar_RegisterVariable(&r_glsl_postprocess);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec1);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec2);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec3);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec4);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec1_enable);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec2_enable);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec3_enable);
-	Cvar_RegisterVariable(&r_glsl_postprocess_uservec4_enable);
-	Cvar_RegisterVariable(&r_celshading);
-	Cvar_RegisterVariable(&r_celoutlines);
-	Cvar_RegisterVariable(&r_fxaa);
-
-	Cvar_RegisterVariable(&r_water);
-	Cvar_RegisterVariable(&r_water_cameraentitiesonly);
-	Cvar_RegisterVariable(&r_water_resolutionmultiplier);
-	Cvar_RegisterVariable(&r_water_clippingplanebias);
-	Cvar_RegisterVariable(&r_water_refractdistort);
-	Cvar_RegisterVariable(&r_water_reflectdistort);
-	Cvar_RegisterVariable(&r_water_scissormode);
-	Cvar_RegisterVariable(&r_water_lowquality);
-	Cvar_RegisterVariable(&r_water_hideplayer);
-
-	Cvar_RegisterVariable(&r_lerpsprites);
-	Cvar_RegisterVariable(&r_lerpmodels);
-	Cvar_RegisterVariable(&r_nolerp_list);
-	Cvar_RegisterVariable(&r_lerplightstyles);
-	Cvar_RegisterVariable(&r_waterscroll);
-	Cvar_RegisterVariable(&r_bloom);
-	Cvar_RegisterVariable(&r_colorfringe);
-	Cvar_RegisterVariable(&r_bloom_colorscale);
-	Cvar_RegisterVariable(&r_bloom_brighten);
-	Cvar_RegisterVariable(&r_bloom_blur);
-	Cvar_RegisterVariable(&r_bloom_resolution);
-	Cvar_RegisterVariable(&r_bloom_colorexponent);
-	Cvar_RegisterVariable(&r_bloom_colorsubtract);
-	Cvar_RegisterVariable(&r_bloom_scenebrightness);
-	Cvar_RegisterVariable(&r_hdr_scenebrightness);
-	Cvar_RegisterVariable(&r_hdr_glowintensity);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_multiplier);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_minvalue);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_maxvalue);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_value);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_fade_up);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_fade_down);
-	Cvar_RegisterVariable(&r_hdr_irisadaptation_radius);
-	Cvar_RegisterVariable(&r_smoothnormals_areaweighting);
-	Cvar_RegisterVariable(&developer_texturelogging);
-	Cvar_RegisterVariable(&gl_lightmaps);
-	Cvar_RegisterVariable(&r_test);
-	Cvar_RegisterVariable(&r_batch_multidraw);
-	Cvar_RegisterVariable(&r_batch_multidraw_mintriangles);
-	Cvar_RegisterVariable(&r_batch_debugdynamicvertexpath);
-	Cvar_RegisterVariable(&r_glsl_skeletal);
-	Cvar_RegisterVariable(&r_glsl_saturation);
-	Cvar_RegisterVariable(&r_glsl_saturation_redcompensate);
-	Cvar_RegisterVariable(&r_glsl_vertextextureblend_usebothalphas);
-	Cvar_RegisterVariable(&r_framedatasize);
-	for (i = 0;i < R_BUFFERDATA_COUNT;i++)
-		Cvar_RegisterVariable(&r_buffermegs[i]);
-	Cvar_RegisterVariable(&r_batch_dynamicbuffer);
-	Cvar_RegisterVariable(&r_q1bsp_lightmap_updates_enabled);
-	Cvar_RegisterVariable(&r_q1bsp_lightmap_updates_combine);
-	Cvar_RegisterVariable(&r_q1bsp_lightmap_updates_hidden_surfaces);
-	if (gamemode == GAME_NEHAHRA || gamemode == GAME_TENEBRAE)
-		Cvar_SetValue(&cvars_all, "r_fullbrights", 0);
-#ifdef DP_MOBILETOUCH
-	// GLES devices have terrible depth precision in general, so...
-	Cvar_SetValueQuick(&r_nearclip, 4);
-	Cvar_SetValueQuick(&r_farclip_base, 4096);
-	Cvar_SetValueQuick(&r_farclip_world, 0);
-	Cvar_SetValueQuick(&r_useinfinitefarclip, 0);
-#endif
-	R_RegisterModule("GL_Main", gl_main_start, gl_main_shutdown, gl_main_newmap, NULL, NULL);
-}
-
-void Render_Init(void)
-{
-	gl_backend_init();
-	R_Textures_Init();
-	GL_Main_Init();
-	Font_Init();
-	GL_Draw_Init();
-	R_Shadow_Init();
-	R_Sky_Init();
-	GL_Surf_Init();
-	Sbar_Init();
-	R_Particles_Init();
-	R_Explosion_Init();
-	R_LightningBeams_Init();
-	CL_MeshEntities_Init();
-	Mod_RenderInit();
-}
 
 static void R_GetCornerOfBox(vec3_t out, const vec3_t mins, const vec3_t maxs, int signbits)
 {
@@ -5554,7 +5358,12 @@ void R_UpdateVariables(void)
 	r_refdef.scene.lightmapintensity = r_refdef.scene.rtworld ? r_shadow_realtime_world_lightmaps.value : 1;
 	if (r_refdef.scene.worldmodel)
 	{
-		r_refdef.scene.lightmapintensity *= r_refdef.scene.worldmodel->lightmapscale;
+		r_refdef.scene.lightmapintensity *= 
+			r_refdef.scene.worldmodel->lightmapscale;
+		// Baker r9008: get Q3 world model to use lightstyle 0 like classic DarkPlaces
+		if (cl.worldmodel && cl.worldmodel->type == mod_brushq3) {
+			r_refdef.scene.lightmapintensity *= r_refdef.scene.rtlightstylevalue[0];
+		}
 	}
 	if (r_showsurfaces.integer)
 	{
@@ -5998,6 +5807,13 @@ void R_RenderScene(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *viewco
 		R_DrawExplosions();
 		if (r_timereport_active)
 			R_TimeReport("explosions");
+
+#if 1 // Baker r0105: DarkPlaces classic lightning
+
+		R_DrawLightningBeams();
+		if (r_timereport_active)
+			R_TimeReport("lightning");
+#endif 
 	}
 
 	if (r_refdef.view.showdebug)
@@ -6582,24 +6398,24 @@ static void R_tcMod_ApplyToMatrix(matrix4x4_t *texmatrix, q3shaderinfo_layer_tcm
 static void R_LoadQWSkin(r_qwskincache_t *cache, const char *skinname)
 {
 	int textureflags = (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_PICMIP;
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 	skinframe_t *skinframe;
 	unsigned char pixels[296*194];
 	strlcpy(cache->name, skinname, sizeof(cache->name));
 	dpsnprintf(name, sizeof(name), "skins/%s.pcx", cache->name);
 	if (developer_loading.integer)
-		Con_Printf ("loading %s\n", name);
+		Con_PrintLinef ("loading %s", name);
 	skinframe = R_SkinFrame_Find(name, textureflags, 0, 0, 0, false);
 	if (!skinframe || !skinframe->base)
 	{
 		unsigned char *f;
 		fs_offset_t filesize;
 		skinframe = NULL;
-		f = FS_LoadFile(name, tempmempool, true, &filesize);
+		f = FS_LoadFile(name, tempmempool, fs_quiet_true, &filesize);
 		if (f)
 		{
 			if (LoadPCX_QWSkin(f, (int)filesize, pixels, 296, 194))
-				skinframe = R_SkinFrame_LoadInternalQuake(name, textureflags, true, r_fullbrights.integer, pixels, image_width, image_height);
+				skinframe = R_SkinFrame_LoadInternalQuake(name, textureflags, true, r_fullbrights.integer, pixels, image_width, image_height, q_is_fence_model_false);
 			Mem_Free(f);
 		}
 	}
@@ -6652,6 +6468,15 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 		}
 		texture->currentframe = t;
 	}
+
+	// Baker: marker for attempting to examine r9073u
+	// Something is up to with .shader tcmod scale
+	// and it does not appear that the texture matrix
+	// is what is going on, something obscure and
+	// hard to locate is going on.
+	//if (String_Does_Contain (t->name, "water1")) {
+	//	int j = 5;
+	//}
 
 	// update currentskinframe to be a qw skin or animation frame
 	if (rsurface.ent_qwskin >= 0)
@@ -6711,7 +6536,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 		}
 	}
 	else if ((t->currentmaterialflags & MATERIALFLAG_FULLBRIGHT) || !(rsurface.ent_flags & RENDER_LIGHT))
-	{
+		{
 		// fullbright is basically MATERIALFLAG_MODELLIGHT but with ambient locked to 1,1,1 and no shading
 		t->currentmaterialflags = (t->currentmaterialflags | MATERIALFLAG_NORTLIGHT | MATERIALFLAG_MODELLIGHT) & ~MATERIALFLAG_LIGHTGRID;
 		for (q = 0; q < 3; q++)
@@ -8788,11 +8613,11 @@ static void R_DrawTextureSurfaceList_Sky(int texturenumsurfaces, const msurface_
 
 extern rtexture_t *r_shadow_prepasslightingdiffusetexture;
 extern rtexture_t *r_shadow_prepasslightingspeculartexture;
-static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool prepass, qbool ui)
+static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool is_writedepth, qbool is_prepass, qbool is_ui)
 {
 	if (r_fb.water.renderingscene && (rsurface.texture->currentmaterialflags & (MATERIALFLAG_WATERSHADER | MATERIALFLAG_REFRACTION | MATERIALFLAG_REFLECTION | MATERIALFLAG_CAMERA)))
 		return;
-	if (prepass)
+	if (is_prepass)
 	{
 		// render screenspace normalmap to texture
 		GL_DepthMask(true);
@@ -8834,7 +8659,7 @@ static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface
 			else if ((rsurface.texture->currentmaterialflags & MATERIALFLAG_REFLECTION))
 			{
 				// render surface with reflection texture as input
-				GL_DepthMask(writedepth && !(rsurface.texture->currentmaterialflags & MATERIALFLAG_BLENDED));
+				GL_DepthMask(is_writedepth && !(rsurface.texture->currentmaterialflags & MATERIALFLAG_BLENDED));
 				R_SetupShader_Surface(vec3_origin, vec3_origin, vec3_origin, RSURFPASS_BASE, end-start, texturesurfacelist + start, (void *)(r_fb.water.waterplanes + startplaneindex), false, false);
 				RSurf_DrawBatch();
 			}
@@ -8843,12 +8668,12 @@ static void R_DrawTextureSurfaceList_GL20(int texturenumsurfaces, const msurface
 	}
 
 	// render surface batch normally
-	GL_DepthMask(writedepth && !(rsurface.texture->currentmaterialflags & MATERIALFLAG_BLENDED));
-	R_SetupShader_Surface(vec3_origin, vec3_origin, vec3_origin, RSURFPASS_BASE, texturenumsurfaces, texturesurfacelist, NULL, (rsurface.texture->currentmaterialflags & MATERIALFLAG_SKY) != 0 || ui, ui);
+	GL_DepthMask(is_writedepth && !(rsurface.texture->currentmaterialflags & MATERIALFLAG_BLENDED));
+	R_SetupShader_Surface(vec3_origin, vec3_origin, vec3_origin, RSURFPASS_BASE, texturenumsurfaces, texturesurfacelist, NULL, (rsurface.texture->currentmaterialflags & MATERIALFLAG_SKY) != 0 || is_ui, is_ui);
 	RSurf_DrawBatch();
 }
 
-static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth)
+static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool is_writedepth)
 {
 	int vi;
 	int j;
@@ -8861,7 +8686,7 @@ static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const 
 	R_SetupShader_Generic_NoTexture(false, false);
 
 	GL_BlendFunc(GL_ONE, GL_ZERO);
-	GL_DepthMask(writedepth);
+	GL_DepthMask(is_writedepth);
 
 	RSurf_PrepareVerticesForBatch(BATCHNEED_ARRAY_VERTEX | BATCHNEED_ARRAY_VERTEXCOLOR | BATCHNEED_ARRAY_TEXCOORD | BATCHNEED_ALWAYSCOPY, texturenumsurfaces, texturesurfacelist);
 	vi = 0;
@@ -8880,20 +8705,20 @@ static void R_DrawTextureSurfaceList_ShowSurfaces(int texturenumsurfaces, const 
 	RSurf_DrawBatch();
 }
 
-static void R_DrawModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool writedepth, qbool prepass, qbool ui)
+static void R_DrawModelTextureSurfaceList(int texturenumsurfaces, const msurface_t **texturesurfacelist, qbool is_writedepth, qbool is_prepass, qbool is_ui)
 {
 	CHECKGLERROR
 	RSurf_SetupDepthAndCulling();
 	if (r_showsurfaces.integer && r_refdef.view.showdebug)
 	{
-		R_DrawTextureSurfaceList_ShowSurfaces(texturenumsurfaces, texturesurfacelist, writedepth);
+		R_DrawTextureSurfaceList_ShowSurfaces(texturenumsurfaces, texturesurfacelist, is_writedepth);
 		return;
 	}
 	switch (vid.renderpath)
 	{
 	case RENDERPATH_GL32:
 	case RENDERPATH_GLES2:
-		R_DrawTextureSurfaceList_GL20(texturenumsurfaces, texturesurfacelist, writedepth, prepass, ui);
+		R_DrawTextureSurfaceList_GL20(texturenumsurfaces, texturesurfacelist, is_writedepth, is_prepass, is_ui);
 		break;
 	}
 	CHECKGLERROR
@@ -10226,7 +10051,9 @@ void R_DebugLine(vec3_t start, vec3_t end)
 }
 
 
-void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool writedepth, qbool prepass, qbool ui)
+void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, int materialflags, 
+		int firstvertex, int numvertices, int firsttriangle, int numtriangles, 
+		qbool is_writedepth, qbool is_prepass, qbool is_ui)
 {
 	static texture_t texture;
 
@@ -10243,10 +10070,10 @@ void R_DrawCustomSurface(skinframe_t *skinframe, const matrix4x4_t *texmatrix, i
 	texture.specularpowermod = 1;
 	texture.transparentsort = TRANSPARENTSORT_DISTANCE;
 
-	R_DrawCustomSurface_Texture(&texture, texmatrix, materialflags, firstvertex, numvertices, firsttriangle, numtriangles, writedepth, prepass, ui);
+	R_DrawCustomSurface_Texture(&texture, texmatrix, materialflags, firstvertex, numvertices, firsttriangle, numtriangles, is_writedepth, is_prepass, is_ui);
 }
 
-void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool writedepth, qbool prepass, qbool ui)
+void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatrix, int materialflags, int firstvertex, int numvertices, int firsttriangle, int numtriangles, qbool is_writedepth, qbool is_prepass, qbool is_ui)
 {
 	static msurface_t surface;
 	const msurface_t *surfacelist = &surface;
@@ -10263,5 +10090,238 @@ void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatri
 	rsurface.lightmaptexture = NULL;
 	rsurface.deluxemaptexture = NULL;
 	rsurface.uselightmaptexture = false;
-	R_DrawModelTextureSurfaceList(1, &surfacelist, writedepth, prepass, ui);
+	R_DrawModelTextureSurfaceList(1, &surfacelist, is_writedepth, is_prepass, is_ui);
+}
+
+void GL_Main_Init(void)
+{
+	int i;
+	r_main_mempool = Mem_AllocPool("Renderer", 0, NULL);
+	R_InitShaderModeInfo();
+
+	Cmd_AddCommand(CF_CLIENT, "r_glsl_restart", R_GLSL_Restart_f, "unloads GLSL shaders, they will then be reloaded as needed");
+	Cmd_AddCommand(CF_CLIENT, "r_glsl_dumpshader", R_GLSL_DumpShader_f, "dumps the engine internal default.glsl shader into glsl/default.glsl");
+	// FIXME: the client should set up r_refdef.fog stuff including the fogmasktable
+	if (gamemode == GAME_NEHAHRA)
+	{
+		Cvar_RegisterVariable (&gl_fogenable);
+		Cvar_RegisterVariable (&gl_fogdensity);
+		Cvar_RegisterVariable (&gl_fogred);
+		Cvar_RegisterVariable (&gl_foggreen);
+		Cvar_RegisterVariable (&gl_fogblue);
+		Cvar_RegisterVariable (&gl_fogstart);
+		Cvar_RegisterVariable (&gl_fogend);
+		Cvar_RegisterVariable (&gl_skyclip);
+		Cvar_RegisterVariable(&r_waterripple);
+		Cvar_RegisterVariable(&r_oldsky);
+
+		Cmd_AddCommand(CF_CLIENT, "stopmod", Nehahra_StopMod_f, "nehahra stopmod (for Nehahra compatibility only)"); // Baker r1484: Less Nehahra missing cvar/cmd messages
+
+	}
+	Cvar_RegisterVariable(&r_motionblur);
+	Cvar_RegisterVariable(&r_damageblur);
+	Cvar_RegisterVariable(&r_motionblur_averaging);
+	Cvar_RegisterVariable(&r_motionblur_randomize);
+	Cvar_RegisterVariable(&r_motionblur_minblur);
+	Cvar_RegisterVariable(&r_motionblur_maxblur);
+	Cvar_RegisterVariable(&r_motionblur_velocityfactor);
+	Cvar_RegisterVariable(&r_motionblur_velocityfactor_minspeed);
+	Cvar_RegisterVariable(&r_motionblur_velocityfactor_maxspeed);
+	Cvar_RegisterVariable(&r_motionblur_mousefactor);
+	Cvar_RegisterVariable(&r_motionblur_mousefactor_minspeed);
+	Cvar_RegisterVariable(&r_motionblur_mousefactor_maxspeed);
+
+	Cvar_RegisterVariable(&r_minlight); // Baker r1490
+	Cvar_RegisterVariable(&r_suppress_minlight); // Baker r1490
+
+	Cvar_RegisterVariable(&r_depthfirst);
+	Cvar_RegisterVariable(&r_useinfinitefarclip);
+	Cvar_RegisterVariable(&r_farclip_base);
+	Cvar_RegisterVariable(&r_farclip_world);
+	Cvar_RegisterVariable(&r_nearclip);
+	Cvar_RegisterVariable(&r_deformvertexes);
+	Cvar_RegisterVariable(&r_transparent);
+	Cvar_RegisterVariable(&r_transparent_alphatocoverage);
+	Cvar_RegisterVariable(&r_transparent_sortsurfacesbynearest);
+	Cvar_RegisterVariable(&r_transparent_useplanardistance);
+	Cvar_RegisterVariable(&r_showoverdraw);
+	Cvar_RegisterVariable(&r_showbboxes);
+	Cvar_RegisterVariable(&r_showbboxes_client);
+	Cvar_RegisterVariable(&r_showsurfaces);
+	Cvar_RegisterVariable(&r_showtris);
+	Cvar_RegisterVariable(&r_shownormals);
+	Cvar_RegisterVariable(&r_showlighting);
+	Cvar_RegisterVariable(&r_showcollisionbrushes);
+	Cvar_RegisterVariable(&r_showcollisionbrushes_polygonfactor);
+	Cvar_RegisterVariable(&r_showcollisionbrushes_polygonoffset);
+	Cvar_RegisterVariable(&r_showdisabledepthtest);
+	Cvar_RegisterVariable(&r_showspriteedges);
+	Cvar_RegisterVariable(&r_showparticleedges);
+	Cvar_RegisterVariable(&r_drawportals);
+	Cvar_RegisterVariable(&r_drawentities);
+	Cvar_RegisterVariable(&r_draw2d);
+	Cvar_RegisterVariable(&r_drawworld);
+	Cvar_RegisterVariable(&r_cullentities_trace);
+	Cvar_RegisterVariable(&r_cullentities_trace_entityocclusion);
+	Cvar_RegisterVariable(&r_cullentities_trace_samples);
+	Cvar_RegisterVariable(&r_cullentities_trace_tempentitysamples);
+	Cvar_RegisterVariable(&r_cullentities_trace_enlarge);
+	Cvar_RegisterVariable(&r_cullentities_trace_expand);
+	Cvar_RegisterVariable(&r_cullentities_trace_pad);
+	Cvar_RegisterVariable(&r_cullentities_trace_delay);
+	Cvar_RegisterVariable(&r_cullentities_trace_eyejitter);
+	Cvar_RegisterVariable(&r_sortentities);
+	Cvar_RegisterVariable(&r_drawviewmodel);
+	Cvar_RegisterVariable(&r_drawexteriormodel);
+	Cvar_RegisterVariable(&r_speeds);
+	Cvar_RegisterVariable(&r_fullbrights);
+	Cvar_RegisterVariable(&r_wateralpha);
+	Cvar_RegisterVariable(&r_dynamic);
+	Cvar_RegisterVariable(&r_fullbright_directed);
+	Cvar_RegisterVariable(&r_fullbright_directed_ambient);
+	Cvar_RegisterVariable(&r_fullbright_directed_diffuse);
+	Cvar_RegisterVariable(&r_fullbright_directed_pitch);
+	Cvar_RegisterVariable(&r_fullbright_directed_pitch_relative);
+	Cvar_RegisterVariable(&r_fullbright);
+	Cvar_RegisterVariable(&r_shadows);
+	Cvar_RegisterVariable(&r_shadows_darken);
+	Cvar_RegisterVariable(&r_shadows_drawafterrtlighting);
+	Cvar_RegisterVariable(&r_shadows_castfrombmodels);
+	Cvar_RegisterVariable(&r_shadows_throwdistance);
+	Cvar_RegisterVariable(&r_shadows_throwdirection);
+	Cvar_RegisterVariable(&r_shadows_focus);
+	Cvar_RegisterVariable(&r_shadows_shadowmapscale);
+	Cvar_RegisterVariable(&r_shadows_shadowmapbias);
+	Cvar_RegisterVariable(&r_q1bsp_skymasking);
+	Cvar_RegisterVariable(&r_polygonoffset_submodel_factor);
+	Cvar_RegisterVariable(&r_polygonoffset_submodel_offset);
+	Cvar_RegisterVariable(&r_polygonoffset_decals_factor);
+	Cvar_RegisterVariable(&r_polygonoffset_decals_offset);
+	Cvar_RegisterVariable(&r_fog_exp2);
+	Cvar_RegisterVariable(&r_fog_clear);
+	Cvar_RegisterVariable(&r_drawfog);
+	Cvar_RegisterVariable(&r_transparentdepthmasking);
+	Cvar_RegisterVariable(&r_transparent_sortmindist);
+	Cvar_RegisterVariable(&r_transparent_sortmaxdist);
+	Cvar_RegisterVariable(&r_transparent_sortarraysize);
+	Cvar_RegisterVariable(&r_texture_dds_load);
+	Cvar_RegisterVariable(&r_texture_dds_save);
+	Cvar_RegisterVariable(&r_textureunits);
+	Cvar_RegisterVariable(&gl_combine);
+	Cvar_RegisterVariable(&r_usedepthtextures);
+	Cvar_RegisterVariable(&r_viewfbo);
+	Cvar_RegisterVariable(&r_rendertarget_debug);
+	Cvar_RegisterVariable(&r_viewscale);
+	Cvar_RegisterVariable(&r_viewscale_fpsscaling);
+	Cvar_RegisterVariable(&r_viewscale_fpsscaling_min);
+	Cvar_RegisterVariable(&r_viewscale_fpsscaling_multiply);
+	Cvar_RegisterVariable(&r_viewscale_fpsscaling_stepsize);
+	Cvar_RegisterVariable(&r_viewscale_fpsscaling_stepmax);
+	Cvar_RegisterVariable(&r_viewscale_fpsscaling_target);
+	Cvar_RegisterVariable(&r_glsl);
+	Cvar_RegisterVariable(&r_glsl_deluxemapping);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_steps);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_reliefmapping);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_reliefmapping_steps);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_reliefmapping_refinesteps);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_scale);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_lod);
+	Cvar_RegisterVariable(&r_glsl_offsetmapping_lod_distance);
+	Cvar_RegisterVariable(&r_glsl_postprocess);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec1);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec2);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec3);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec4);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec1_enable);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec2_enable);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec3_enable);
+	Cvar_RegisterVariable(&r_glsl_postprocess_uservec4_enable);
+	Cvar_RegisterVariable(&r_celshading);
+	Cvar_RegisterVariable(&r_celoutlines);
+	Cvar_RegisterVariable(&r_fxaa);
+
+	Cvar_RegisterVariable(&external_lits); //Baker r1247
+
+
+	Cvar_RegisterVariable(&r_water);
+	Cvar_RegisterVariable(&r_water_cameraentitiesonly);
+	Cvar_RegisterVariable(&r_water_resolutionmultiplier);
+	Cvar_RegisterVariable(&r_water_clippingplanebias);
+	Cvar_RegisterVariable(&r_water_refractdistort);
+	Cvar_RegisterVariable(&r_water_reflectdistort);
+	Cvar_RegisterVariable(&r_water_scissormode);
+	Cvar_RegisterVariable(&r_water_lowquality);
+	Cvar_RegisterVariable(&r_water_hideplayer);
+
+	Cvar_RegisterVariable(&r_lerpsprites);
+	Cvar_RegisterVariable(&r_lerpmodels);
+	Cvar_RegisterVariable(&r_nolerp_list);
+	Cvar_RegisterVariable(&r_lerplightstyles);
+	Cvar_RegisterVariable(&r_waterscroll);
+	Cvar_RegisterVariable(&r_bloom);
+	Cvar_RegisterVariable(&r_colorfringe);
+	Cvar_RegisterVariable(&r_bloom_colorscale);
+	Cvar_RegisterVariable(&r_bloom_brighten);
+	Cvar_RegisterVariable(&r_bloom_blur);
+	Cvar_RegisterVariable(&r_bloom_resolution);
+	Cvar_RegisterVariable(&r_bloom_colorexponent);
+	Cvar_RegisterVariable(&r_bloom_colorsubtract);
+	Cvar_RegisterVariable(&r_bloom_scenebrightness);
+	Cvar_RegisterVariable(&r_hdr_scenebrightness);
+	Cvar_RegisterVariable(&r_hdr_glowintensity);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_multiplier);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_minvalue);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_maxvalue);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_value);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_fade_up);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_fade_down);
+	Cvar_RegisterVariable(&r_hdr_irisadaptation_radius);
+	Cvar_RegisterVariable(&r_smoothnormals_areaweighting);
+	Cvar_RegisterVariable(&developer_texturelogging);
+	Cvar_RegisterVariable(&gl_lightmaps);
+	Cvar_RegisterVariable(&r_test);
+	Cvar_RegisterVariable(&r_batch_multidraw);
+	Cvar_RegisterVariable(&r_batch_multidraw_mintriangles);
+	Cvar_RegisterVariable(&r_batch_debugdynamicvertexpath);
+	Cvar_RegisterVariable(&r_glsl_skeletal);
+	Cvar_RegisterVariable(&r_glsl_saturation);
+	Cvar_RegisterVariable(&r_glsl_saturation_redcompensate);
+	Cvar_RegisterVariable(&r_glsl_vertextextureblend_usebothalphas);
+	Cvar_RegisterVariable(&r_framedatasize);
+	for (i = 0;i < R_BUFFERDATA_COUNT;i++)
+		Cvar_RegisterVariable(&r_buffermegs[i]);
+	Cvar_RegisterVariable(&r_batch_dynamicbuffer);
+	Cvar_RegisterVariable(&r_q1bsp_lightmap_updates_enabled);
+	Cvar_RegisterVariable(&r_q1bsp_lightmap_updates_combine);
+	Cvar_RegisterVariable(&r_q1bsp_lightmap_updates_hidden_surfaces);
+	if (gamemode == GAME_NEHAHRA || gamemode == GAME_TENEBRAE)
+		Cvar_SetValue(&cvars_all, "r_fullbrights", 0);
+#ifdef DP_MOBILETOUCH
+	// GLES devices have terrible depth precision in general, so...
+	Cvar_SetValueQuick(&r_nearclip, 4);
+	Cvar_SetValueQuick(&r_farclip_base, 4096);
+	Cvar_SetValueQuick(&r_farclip_world, 0);
+	Cvar_SetValueQuick(&r_useinfinitefarclip, 0);
+#endif
+	R_RegisterModule("GL_Main", gl_main_start, gl_main_shutdown, gl_main_newmap, NULL, NULL);
+}
+
+void Render_Init(void)
+{
+	gl_backend_init();
+	R_Textures_Init();
+	GL_Main_Init();
+	Font_Init();
+	GL_Draw_Init();
+	R_Shadow_Init();
+	R_Sky_Init();
+	GL_Surf_Init();
+	Sbar_Init();
+	R_Particles_Init();
+	R_Explosion_Init();
+	R_LightningBeams_Init();
+	CL_MeshEntities_Init();
+	Mod_RenderInit();
 }

@@ -925,7 +925,7 @@ static void Mod_MDL_LoadFrames (unsigned char *datapointer, int inverts, int *ve
 void Mod_BuildAliasSkinsFromSkinFiles(texture_t *skin, skinfile_t *skinfile, const char *meshname, const char *shadername)
 {
 	int i;
-	char stripbuf[MAX_QPATH];
+	char stripbuf[MAX_QPATH_128];
 	skinfileitem_t *skinfileitem;
 	if (developer_extra.integer)
 		Con_DPrintf ("Looking up texture for %s (default: %s)\n", meshname, shadername);
@@ -984,13 +984,15 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 	daliasframetype_t *pinframetype;
 	daliasgroup_t *pinframegroup;
 	unsigned char *datapointer, *startframes, *startskins;
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 	skinframe_t *tempskinframe;
 	animscene_t *tempskinscenes;
 	texture_t *tempaliasskins;
 	float *vertst;
 	int *vertonseam, *vertremap;
 	skinfile_t *skinfiles;
+
+	int is_fence  = false; // Baker r0087: fence
 
 	datapointer = (unsigned char *)buffer;
 	pinmodel = (mdl_t *)datapointer;
@@ -1041,6 +1043,18 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 	BOUNDI((int)loadmodel->synctype,0,2);
 	// convert model flags to EF flags (MF_ROCKET becomes EF_ROCKET, etc)
 	i = LittleLong (pinmodel->flags);
+#pragma message ("Baker: This is not quite the right way disable PRYDON CURSOR with model load")
+#if 1 // Baker r0087: Fence texture q1 mdl support
+	if (gamemode != GAME_PRYDON) {
+		if (Have_Flag (i /*pinmodel->flags*/, MF_FENCE) ) {
+			is_fence = true;
+			Flag_Remove_From (i, MF_FENCE);
+
+		}
+	}
+#endif
+
+
 	loadmodel->effects = ((i & 255) << 24) | (i & 0x00FFFF00);
 
 	if (strstr(r_nolerp_list.string, loadmodel->model_name))
@@ -1236,8 +1250,9 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 					dpsnprintf (name, sizeof(name), "%s_%d_%d", loadmodel->model_name, i, j);
 				else
 					dpsnprintf (name, sizeof(name), "%s_%d", loadmodel->model_name, i);
+				// Baker r0087: fence
 				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, false, false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL))
-					Mod_LoadCustomMaterial(loadmodel->mempool, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, SUPERCONTENTS_SOLID, MATERIALFLAG_WALL, R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_PICMIP, true, r_fullbrights.integer, (unsigned char *)datapointer, skinwidth, skinheight));
+					Mod_LoadCustomMaterial(loadmodel->mempool, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, SUPERCONTENTS_SOLID, MATERIALFLAG_WALL, R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_PICMIP, true, r_fullbrights.integer, (unsigned char *)datapointer, skinwidth, skinheight, is_fence));
 				datapointer += skinwidth * skinheight;
 				totalskins++;
 			}
@@ -1246,9 +1261,9 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 		// (this was added because yummyluv kept pestering me about support for it)
 		// TODO: support shaders here?
 		for (;;)
-		{
+		{ 
 			dpsnprintf(name, sizeof(name), "%s_%d", loadmodel->model_name, loadmodel->numskins);
-			tempskinframe = R_SkinFrame_LoadExternal(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, false, false);
+			tempskinframe = R_SkinFrame_LoadExternal(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, q_tx_fallback_notexture_false, q_tx_complain_false);
 			if (!tempskinframe)
 				break;
 			// expand the arrays to make room
@@ -2503,7 +2518,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	unsigned char *data;
 	pskchunk_t *pchunk;
 	skinfile_t *skinfiles;
-	char animname[MAX_QPATH];
+	char animname[MAX_QPATH_128];
 	size_t size;
 	float biggestorigin;
 
@@ -2529,7 +2544,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 
 	FS_StripExtension(loadmodel->model_name, animname, sizeof(animname));
 	strlcat(animname, ".psa", sizeof(animname));
-	animbuffer = animfilebuffer = FS_LoadFile(animname, loadmodel->mempool, false, &filesize);
+	animbuffer = animfilebuffer = FS_LoadFile(animname, loadmodel->mempool, fs_quiet_FALSE, &filesize);
 	animbufferend = (void *)((unsigned char*)animbuffer + (int)filesize);
 	if (!animbuffer)
 		animbufferend = animbuffer;

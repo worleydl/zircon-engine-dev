@@ -241,7 +241,7 @@ typedef struct fontfilecache_s
 	unsigned char *buf;
 	fs_offset_t len;
 	int refcount;
-	char path[MAX_QPATH];
+	char path[MAX_QPATH_128];
 }
 fontfilecache_t;
 #define MAX_FONTFILES 8
@@ -608,7 +608,7 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font)
 {
 	size_t namelen;
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	int status;
 	size_t i;
 	const unsigned char *data;
@@ -1203,7 +1203,7 @@ static float Font_SearchSize(ft2_font_t *font, FT_Face fontface, float size)
 
 static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch, ft2_font_map_t **outmap)
 {
-	char map_identifier[MAX_QPATH];
+	char map_identifier[MAX_QPATH_128];
 	unsigned long mapidx = _ch / FONT_CHARS_PER_MAP;
 	unsigned char *data = NULL;
 	FT_ULong ch, mapch;

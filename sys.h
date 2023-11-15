@@ -25,7 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qtypes.h"
 #include "qdefs.h"
 
-#define USEXMP // Baker:
+#ifndef USEXMP
+	#define USEXMP // Baker:
+#endif
 
 /* Preprocessor macros to identify platform
     DP_OS_NAME 	- "friendly" name of the OS, for humans to read
@@ -202,6 +204,14 @@ void Sys_Error (const char *error, ...) DP_FUNC_PRINTF(1) DP_FUNC_NORETURN;
 void Sys_PrintToTerminal(const char *text);
 void Sys_PrintfToTerminal (const char *fmt, ...);
 
+#ifdef _DEBUG
+	// Baker: This prints output to the Visual Studio debug console
+	// I use it for console debugging during times that console printing
+	// not workable for feedback 
+	void Sys_PrintToTerminal2(const char *text);
+#endif
+
+
 /// INFO: This is only called by Host_Shutdown so we dont need testing for recursion
 void Sys_Shutdown (void);
 void Sys_Quit (int returnvalue);
@@ -236,6 +246,7 @@ void Sys_Sleep(int microseconds);
 void Sys_SendKeyEvents (void);
 
 char *Sys_GetClipboardData (void);
+int Sys_SetClipboardData(const char *text_to_clipboard);
 
 extern qbool sys_supportsdlgetticks;
 unsigned int Sys_SDL_GetTicks (void); // wrapper to call SDL_GetTicks

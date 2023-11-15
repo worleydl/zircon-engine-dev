@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cl_collision.h"
 
 cvar_t cl_name = {CF_CLIENT | CF_ARCHIVE | CF_USERINFO, "_cl_name", "player", "player name"};
-cvar_t cl_rate = {CF_CLIENT | CF_ARCHIVE | CF_USERINFO, "rate", "20000", "connection speed"};
+cvar_t cl_rate = {CF_CLIENT | CF_ARCHIVE | CF_USERINFO, "rate", "9999999", "connection speed"}; // Baker r8193 rate increase
 cvar_t cl_rate_burstsize = {CF_CLIENT | CF_ARCHIVE | CF_USERINFO, "rate_burstsize", "1024", "rate control burst size"};
 cvar_t cl_topcolor = {CF_CLIENT | CF_ARCHIVE | CF_USERINFO, "topcolor", "0", "color of your shirt"};
 cvar_t cl_bottomcolor = {CF_CLIENT | CF_ARCHIVE | CF_USERINFO, "bottomcolor", "0", "color of your pants"};
@@ -171,7 +171,7 @@ void CL_ForwardToServer (const char *s)
 void CL_ForwardToServer_f (cmd_state_t *cmd)
 {
 	const char *s;
-	char vabuf[MAX_INPUTLINE];
+	char vabuf[MAX_INPUTLINE_16384];
 	size_t i;
 	if (String_Does_Match_Caseless(Cmd_Argv(cmd, 0), "cmd"))
 	{

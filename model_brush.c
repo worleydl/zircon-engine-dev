@@ -63,7 +63,8 @@ cvar_t mod_q2bsp_littransparentsurfaces = {CF_CLIENT, "mod_q2bsp_littransparents
 cvar_t mod_q1bsp_polygoncollisions = {CF_CLIENT | CF_SERVER, "mod_q1bsp_polygoncollisions", "0", "disables use of precomputed cliphulls and instead collides with polygons (uses Bounding Interval Hierarchy optimizations)"};
 cvar_t mod_q1bsp_zero_hullsize_cutoff = {CF_CLIENT | CF_SERVER, "mod_q1bsp_zero_hullsize_cutoff", "3", "bboxes with an X dimension smaller than this will use the smallest cliphull (0x0x0) instead of being rounded up to the player cliphull (32x32x56) in Q1BSP, or crouching player (32x32x36) in HLBSP"};
 
-cvar_t mod_bsp_portalize = {CF_CLIENT, "mod_bsp_portalize", "1", "enables portal generation from BSP tree (may take several seconds per map), used by r_drawportals, r_useportalculling, r_shadow_realtime_dlight_portalculling, r_shadow_realtime_world_compileportalculling"};
+WARP_X_ (r_useportalculling)
+cvar_t mod_bsp_portalize = {CF_CLIENT, "mod_bsp_portalize", "1", "enables portal generation from BSP tree (may take several seconds per map), used by r_drawportals, r_useportalculling, r_shadow_realtime_dlight_portalculling, r_shadow_realtime_world_compileportalculling, Baker: set to 2 to always generate this data [Zircon]"}; // Baker r0100
 cvar_t mod_recalculatenodeboxes = {CF_CLIENT | CF_SERVER, "mod_recalculatenodeboxes", "1", "enables use of generated node bounding boxes based on BSP tree portal reconstruction, rather than the node boxes supplied by the map compiler"};
 
 cvar_t mod_obj_orientation = {CF_CLIENT | CF_SERVER, "mod_obj_orientation", "1", "fix orientation of OBJ models to the usual conventions (if zero, use coordinates as is)"};
@@ -1639,7 +1640,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 	texture_t backuptex;
 	unsigned char *data, *mtdata;
 	const char *s;
-	char mapname[MAX_QPATH], name[MAX_QPATH];
+	char mapname[MAX_QPATH_128], name[MAX_QPATH_128];
 	unsigned char zeroopaque[4], zerotrans[4];
 	sizebuf_t miptexsb;
 	char vabuf[1024];
@@ -1924,7 +1925,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 						} // CRC
 					} // shot1sid 32 32 w h
 
-					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalQuake(tx->name, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, false, r_fullbrights.integer, mtdata, tx->width, tx->height);
+					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalQuake(tx->name, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP, false, r_fullbrights.integer, mtdata, tx->width, tx->height, q_is_fence_model_false);
 				}
 				// if mtdata is NULL, the "missing" texture has already been assigned to this
 				// LadyHavoc: some Tenebrae textures get replaced by black
@@ -2106,44 +2107,44 @@ static void Mod_Q1BSP_LoadLighting(sizebuf_t *sb)
 {
 	int i;
 	unsigned char *in, *out, *data, d;
-	char litfilename[MAX_QPATH];
-	char dlitfilename[MAX_QPATH];
+	char litfilename[MAX_QPATH_128];
+	char dlitfilename[MAX_QPATH_128];
 	fs_offset_t filesize;
-	if (loadmodel->brush.ishlbsp) // LadyHavoc: load the colored lighting data straight
-	{
+	if (loadmodel->brush.ishlbsp) { // LadyHavoc: load the colored lighting data straight
 		loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, sb->cursize);
 		for (i = 0;i < sb->cursize;i++)
 			loadmodel->brushq1.lightdata[i] = sb->data[i] >>= 1;
-	}
-	else // LadyHavoc: bsp version 29 (normal white lighting)
-	{
+	} else { 
+		// LadyHavoc: bsp version 29 (normal white lighting)
+	
 		// LadyHavoc: hope is not lost yet, check for a .lit file to load
-		c_strlcpy (litfilename, loadmodel->model_name);
-		FS_StripExtension (litfilename, litfilename, sizeof (litfilename));
-		c_strlcpy (dlitfilename, litfilename);
-		c_strlcat (litfilename, ".lit");
-		c_strlcat (dlitfilename, ".dlit");
-		data = (unsigned char*) FS_LoadFile(litfilename, tempmempool, false, &filesize);
-		if (data)
-		{
-			if (filesize == (fs_offset_t)(8 + sb->cursize * 3) && data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T')
-			{
+		
+		// Baker r1247: external_lits
+		if (external_lits.integer == 0) {
+			data = NULL;
+			filesize = 0;
+		} else {
+			c_strlcpy (litfilename, loadmodel->model_name);
+			FS_StripExtension (litfilename, litfilename, sizeof (litfilename));
+			c_strlcpy (dlitfilename, litfilename);
+			c_strlcat (litfilename, ".lit");
+			c_strlcat (dlitfilename, ".dlit");
+			data = (unsigned char*) FS_LoadFile(litfilename, tempmempool, fs_quiet_FALSE, &filesize);
+		}
+		if (data) {
+			if (filesize == (fs_offset_t)(8 + sb->cursize * 3) && data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T') {
 				i = LittleLong(((int *)data)[1]);
-				if (i == 1)
-				{
+				if (i == 1) {
 					if (developer_loading.integer)
-						Con_Printf ("loaded %s\n", litfilename);
+						Con_PrintLinef ("loaded %s", litfilename);
 					loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, filesize - 8);
 					memcpy(loadmodel->brushq1.lightdata, data + 8, filesize - 8);
 					Mem_Free(data);
-					data = (unsigned char*) FS_LoadFile(dlitfilename, tempmempool, false, &filesize);
-					if (data)
-					{
-						if (filesize == (fs_offset_t)(8 + sb->cursize * 3) && data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T')
-						{
+					data = (unsigned char*) FS_LoadFile(dlitfilename, tempmempool, fs_quiet_FALSE, &filesize);
+					if (data) {
+						if (filesize == (fs_offset_t)(8 + sb->cursize * 3) && data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T') {
 							i = LittleLong(((int *)data)[1]);
-							if (i == 1)
-							{
+							if (i == 1) {
 								if (developer_loading.integer)
 									Con_PrintLinef ("loaded %s", dlitfilename);
 								loadmodel->brushq1.nmaplightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, filesize - 8);
@@ -2158,26 +2159,25 @@ static void Mod_Q1BSP_LoadLighting(sizebuf_t *sb)
 					return;
 				}
 				else
-					Con_Printf ("Unknown .lit file version (%d)\n", i);
+					Con_PrintLinef ("Unknown .lit file version (%d)", i);
 			}
 			else if (filesize == 8)
-				Con_Print("Empty .lit file, ignoring\n");
+				Con_PrintLinef ("Empty .lit file, ignoring");
 			else
 				Con_PrintLinef ("Corrupt .lit file (file size %d bytes, should be %d bytes), ignoring", (int) filesize, (int) (8 + sb->cursize * 3));
-			if (data)
-			{
+
+			if (data) {
 				Mem_Free(data);
 				data = NULL;
 			}
-		}
+		} // if data
 		// LadyHavoc: oh well, expand the white lighting data
 		if (!sb->cursize)
 			return;
 		loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, sb->cursize*3);
 		in = sb->data;
 		out = loadmodel->brushq1.lightdata;
-		for (i = 0;i < sb->cursize;i++)
-		{
+		for (i = 0;i < sb->cursize;i++) {
 			d = *in++;
 			*out++ = d;
 			*out++ = d;
@@ -2406,7 +2406,7 @@ static void Mod_Q1BSP_LoadTexinfo(sizebuf_t *sb)
 		if (loadmodel->data_textures)
 		{
 			if ((unsigned int) miptex >= (unsigned int) loadmodel->num_textures)
-				Con_Printf ("error in model \"%s\": invalid miptex index %d(of %d)\n", loadmodel->model_name, miptex, loadmodel->num_textures);
+				Con_PrintLinef ("error in model " QUOTED_S ": invalid miptex index %d(of %d)", loadmodel->model_name, miptex, loadmodel->num_textures);
 			else
 				out->textureindex = miptex;
 		}
@@ -3284,10 +3284,10 @@ static void Mod_Q1BSP_LoadMapBrushes(void)
 	int submodel, numbrushes;
 	qbool firstbrush;
 	char *text, *maptext;
-	char mapfilename[MAX_QPATH];
+	char mapfilename[MAX_QPATH_128];
 	FS_StripExtension (loadmodel->name, mapfilename, sizeof (mapfilename));
 	strlcat (mapfilename, ".map", sizeof (mapfilename));
-	maptext = (unsigned char*) FS_LoadFile(mapfilename, tempmempool, false, NULL);
+	maptext = (unsigned char*) FS_LoadFile(mapfilename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	if (!maptext)
 		return;
 	text = maptext;
@@ -4018,9 +4018,16 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	mod->brushq1.data_compressedpvs = NULL;
 	mod->brushq1.num_compressedpvs = 0;
 
+	// Baker r
 	Mod_Q1BSP_MakeHull0();
-	if (mod_bsp_portalize.integer)
-		Mod_BSP_MakePortals();
+	if (mod_bsp_portalize.integer) {
+		// Baker r0100: Only do Mod_BSP_MakePortals when it would be used.
+		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == NULL || r_novis.integer) {
+			Mod_BSP_MakePortals ();
+		} else {
+			Con_DPrintLinef ("Vis data found and not r_novis, skipping Mod_BSP_MakePortals");
+		}
+	} // portalize.integer
 
 	mod->numframes = 2;		// regular and alternate animation
 	mod->numskins = 1;
@@ -4360,7 +4367,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 	int i, l, count;
 	int structsize = 76;
 	int maxtextures = 1024; // hardcoded limit of quake2 engine, so we may as well use it as an upper bound
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 
 	if (sb->cursize % structsize)
 		Host_Error_Line ("Mod_Q2BSP_LoadTexinfo: funny lump size in %s",loadmodel->model_name);
@@ -4402,7 +4409,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 				fs_offset_t walfilesize = 0;
 				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, tx, filename, true, true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 				// now read the .wal file to get metadata (even if a .tga was overriding it, we still need the wal data)
-				walfile = FS_LoadFile(filename, tempmempool, true, &walfilesize);
+				walfile = FS_LoadFile(filename, tempmempool, fs_quiet_true, &walfilesize);
 				if (walfile)
 				{
 					int w, h;
@@ -5131,7 +5138,7 @@ static int Mod_Q3BSP_NativeContentsFromSuperContents(int supercontents);
 static void Mod_Q3BSP_LoadEntities(lump_t *l)
 {
 	const char *data;
-	char key[128], value[MAX_INPUTLINE];
+	char key[128], value[MAX_INPUTLINE_16384];
 	float v[3];
 	loadmodel->brushq3.num_lightgrid_cellsize[0] = 64;
 	loadmodel->brushq3.num_lightgrid_cellsize[1] = 64;
@@ -5521,7 +5528,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 	unsigned char *mergedpixels;
 	unsigned char *mergeddeluxepixels;
 	unsigned char *mergebuf;
-	char mapname[MAX_QPATH];
+	char mapname[MAX_QPATH_128];
 	qbool external;
 	unsigned char *inpixels[10000]; // max count q3map2 can output (it uses 4 digits)
 	char vabuf[1024];
@@ -7531,9 +7538,16 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	loadmodel->brush.numsubmodels = loadmodel->brushq3.num_models;
 
 	// the MakePortals code works fine on the q3bsp data as well
-	if (mod_bsp_portalize.integer)
-		Mod_BSP_MakePortals();
-
+	#pragma message ("Baker: mod_bsp_portalize how detect no vis data q3?") 
+	if (mod_bsp_portalize.integer) {
+		// Baker r0100: Only do Mod_BSP_MakePortals when it would be used.
+		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == NULL || r_novis.integer) {
+			Mod_BSP_MakePortals ();
+		} else {
+			Con_DPrintLinef ("Vis data found and not r_novis, skipping Mod_BSP_MakePortals");
+		}
+	}
+	
 	// FIXME: shader alpha should replace r_wateralpha support in q3bsp
 	loadmodel->brush.supportwateralpha = true;
 
@@ -8207,7 +8221,7 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 	char *s;
 	char *argv[512];
 	char line[1024];
-	char materialname[MAX_QPATH];
+	char materialname[MAX_QPATH_128];
 	int i, j, l, numvertices, firstvertex, firsttriangle, elementindex, vertexindex, surfacevertices, surfacetriangles, surfaceelements, submodelindex = 0;
 	int index1, index2, index3;
 	objvertex_t vfirst, vprev, vcurrent;
@@ -8398,10 +8412,10 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 				if (maxtextures <= numtextures)
 				{
 					maxtextures = max(maxtextures * 2, 256);
-					texturenames = (char *)Mem_Realloc(loadmodel->mempool, texturenames, maxtextures * MAX_QPATH);
+					texturenames = (char *)Mem_Realloc(loadmodel->mempool, texturenames, maxtextures * MAX_QPATH_128);
 				}
 				textureindex = numtextures++;
-				strlcpy(texturenames + textureindex*MAX_QPATH, loadmodel->model_name, MAX_QPATH);
+				strlcpy(texturenames + textureindex*MAX_QPATH_128, loadmodel->model_name, MAX_QPATH_128);
 			}
 			for (j = 1;j < argc;j++)
 			{
@@ -8482,7 +8496,7 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 		else if (String_Does_Match(argv[0], "usemtl"))
 		{
 			for (i = 0;i < numtextures;i++)
-				if (String_Does_Match(texturenames+i*MAX_QPATH, argv[1]))
+				if (String_Does_Match(texturenames+i*MAX_QPATH_128, argv[1]))
 					break;
 			if (i < numtextures)
 				textureindex = i;
@@ -8491,10 +8505,10 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 				if (maxtextures <= numtextures)
 				{
 					maxtextures = max(maxtextures * 2, 256);
-					texturenames = (char *)Mem_Realloc(loadmodel->mempool, texturenames, maxtextures * MAX_QPATH);
+					texturenames = (char *)Mem_Realloc(loadmodel->mempool, texturenames, maxtextures * MAX_QPATH_128);
 				}
 				textureindex = numtextures++;
-				strlcpy(texturenames + textureindex*MAX_QPATH, argv[1], MAX_QPATH);
+				strlcpy(texturenames + textureindex*MAX_QPATH_128, argv[1], MAX_QPATH_128);
 			}
 		}
 	}
@@ -8639,7 +8653,7 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 
 	// load the textures
 	for (textureindex = 0;textureindex < numtextures;textureindex++)
-		Mod_BuildAliasSkinsFromSkinFiles(loadmodel->data_textures + textureindex, skinfiles, texturenames + textureindex*MAX_QPATH, texturenames + textureindex*MAX_QPATH);
+		Mod_BuildAliasSkinsFromSkinFiles(loadmodel->data_textures + textureindex, skinfiles, texturenames + textureindex*MAX_QPATH_128, texturenames + textureindex*MAX_QPATH_128);
 	Mod_FreeSkinFiles(skinfiles);
 
 	// set the surface textures to their real values now that we loaded them...

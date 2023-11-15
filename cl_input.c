@@ -81,7 +81,7 @@ static void KeyDown (cmd_state_t *cmd, kbutton_t *b)
 		b->down[1] = k;
 	else
 	{
-		Con_Print("Three keys down for a button!\n");
+		Con_PrintLinef ("Three keys down for a button!");
 		return;
 	}
 
@@ -156,7 +156,9 @@ static void IN_LookdownUp(cmd_state_t *cmd) {KeyUp(cmd, &in_lookdown);}
 static void IN_MoveleftDown(cmd_state_t *cmd) {KeyDown(cmd, &in_moveleft);}
 static void IN_MoveleftUp(cmd_state_t *cmd) {KeyUp(cmd, &in_moveleft);}
 static void IN_MoverightDown(cmd_state_t *cmd) {KeyDown(cmd, &in_moveright);}
-static void IN_MoverightUp(cmd_state_t *cmd) {KeyUp(cmd, &in_moveright);}
+static void IN_MoverightUp(cmd_state_t *cmd) {
+	KeyUp(cmd, &in_moveright);
+}
 
 static void IN_SpeedDown(cmd_state_t *cmd) {KeyDown(cmd, &in_speed);}
 static void IN_SpeedUp(cmd_state_t *cmd) {KeyUp(cmd, &in_speed);}
@@ -555,8 +557,7 @@ void CL_Input (void)
 	}
 
 	// apply m_accelerate if it is on
-	if (m_accelerate.value > 0)
-	{
+	if (m_accelerate.value > 0) {
 		float mouse_deltadist = sqrtf(in_mouse_x * in_mouse_x + in_mouse_y * in_mouse_y);
 		float speed = mouse_deltadist / cl.realframetime;
 		static float averagespeed = 0;
@@ -1637,8 +1638,8 @@ void CL_ClientMovement_Replay(void)
 	for (i = 0;i < CL_MAX_USERCMDS;i++)
 		if (cl.movecmd[i].sequence > cls.servermovesequence)
 			totalmovemsec += cl.movecmd[i].msec;
-	cl.movement_predicted = totalmovemsec >= cl_movement_minping.value && cls.servermovesequence && (cl_movement.integer && !cls.demoplayback && cls.signon == SIGNONS && cl.stats[STAT_HEALTH] > 0 && !cl.intermission);
-	//Con_Printf ("%d = %.0f >= %.0f && %u && (%d && %d && %d == %d && %d > 0 && %d\n", cl.movement_predicted, totalmovemsec, cl_movement_minping.value, cls.servermovesequence, cl_movement.integer, !cls.demoplayback, cls.signon, SIGNONS, cl.stats[STAT_HEALTH], !cl.intermission);
+	cl.movement_predicted = totalmovemsec >= cl_movement_minping.value && cls.servermovesequence && (cl_movement.integer && !cls.demoplayback && cls.signon == SIGNONS_4 && cl.stats[STAT_HEALTH] > 0 && !cl.intermission);
+	//Con_Printf ("%d = %.0f >= %.0f && %u && (%d && %d && %d == %d && %d > 0 && %d\n", cl.movement_predicted, totalmovemsec, cl_movement_minping.value, cls.servermovesequence, cl_movement.integer, !cls.demoplayback, cls.signon, SIGNONS_4, cl.stats[STAT_HEALTH], !cl.intermission);
 	if (cl.movement_predicted)
 	{
 		//Con_Printf ("%dms\n", cl.movecmd[0].msec);
@@ -1909,7 +1910,7 @@ void CL_SendMove(void)
 	// (otherwise it is only for prediction)
 
 	// do not send 0ms packets because they mess up physics
-	if (cl.cmd.msec == 0 && cl.time > cl.oldtime && (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS)) {
+	if (cl.cmd.msec == 0 && cl.time > cl.oldtime && (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS_4)) {
 		return;
 	}
 
@@ -1976,7 +1977,7 @@ void CL_SendMove(void)
 	// set prydon cursor info
 	CL_UpdatePrydonCursor();
 
-	if (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS)
+	if (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS_4)
 	{
 		switch (cls.protocol)
 		{

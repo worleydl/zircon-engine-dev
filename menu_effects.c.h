@@ -1,6 +1,5 @@
 // menu_effects.c.h - 100%
 
-#define		frame_cursor	m_optcursor
 #define 	local_count		OPTIONS_EFFECTS_ITEMS
 #define		local_cursor	options_effects_cursor
 #define 	visiblerows 	m_effects_visiblerows
@@ -82,7 +81,7 @@ static void M_Options_Effects_Draw (void)
 {
 	cachepic_t	*p0;
 
-	PPX_Start(local_cursor, frame_cursor); // PPX FRAME
+	PPX_Start (local_cursor);
 
 	M_Background(320, bound(200, 32 + local_count * 8, vid_conheight.integer), q_darken_true);
 
@@ -214,7 +213,6 @@ leftus:
 	} // sw
 }
 
-#undef frame_cursor
 #undef local_count
 #undef local_cursor
 #undef visiblerows

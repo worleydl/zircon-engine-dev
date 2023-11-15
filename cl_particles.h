@@ -28,6 +28,8 @@ extern struct cvar_s cl_decals;
 extern struct cvar_s cl_decals_time;
 extern struct cvar_s cl_decals_fadetime;
 
+extern struct cvar_s cl_beams_polygons;
+
 typedef enum
 {
 	PARTICLE_BILLBOARD = 0,

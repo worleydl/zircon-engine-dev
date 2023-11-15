@@ -380,7 +380,7 @@ char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit)
 
 // Short: Removes last character from string by replacing it with null character
 // Notes: None.
-char *String_Edit_Remove_End (char *s_edit)
+char *String_Edit_Remove_Last_Character (char *s_edit)
 {
 	int len = (int)strlen(s_edit);
 
@@ -398,6 +398,15 @@ char *String_Edit_RemoveTrailingSpaces (char *s_edit)
 	int /*ssize_t*/ offset;
 	for (offset = (int)strlen(s_edit) - 1; offset >= 0 && s_edit[offset] == SPACE_CHAR_32; offset--)
 		s_edit[offset] = 0; // remove trailing spaces
+
+	return s_edit;
+}
+
+
+char *String_Edit_RemoveTrailingUnixSlash (char *s_edit)
+{
+	if (String_Does_End_With (s_edit, "/"))
+		String_Edit_Remove_Last_Character (s_edit);
 
 	return s_edit;
 }

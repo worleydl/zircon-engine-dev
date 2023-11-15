@@ -86,7 +86,7 @@ S_LoadSound
 */
 qbool S_LoadSound (sfx_t *sfx, qbool complain)
 {
-	char namebuffer[MAX_QPATH + 16];
+	char namebuffer[MAX_QPATH_128 + 16];
 	size_t len;
 
 	// See if already loaded
@@ -163,7 +163,7 @@ qbool S_LoadSound (sfx_t *sfx, qbool complain)
 	// Can't load the sound!
 	sfx->flags |= SFXFLAG_FILEMISSING;
 	if (complain) {
-		Con_PrintLinef (CON_ERROR "Failed to load sound " QUOTED_S, sfx->name);
+		Con_DPrintLinef (CON_ERROR "Failed to load sound " QUOTED_S, sfx->name);
 	}
 
 	SCR_PopLoadingScreen(false);

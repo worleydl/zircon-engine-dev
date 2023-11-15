@@ -124,7 +124,7 @@ unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
 
 	if (!wad.gfx_base)
 	{
-		if ((wad.gfx_base = FS_LoadFile ("gfx.wad", cls.permanentmempool, false, &filesize)))
+		if ((wad.gfx_base = FS_LoadFile ("gfx.wad", cls.permanentmempool, fs_quiet_FALSE, &filesize)))
 		{
 			if (memcmp(wad.gfx_base, "WAD2", 4))
 			{

@@ -22,7 +22,7 @@
     <ProjectGuid>{72D93E63-FDBB-4AA3-B42B-FAADA6D7F5B2}</ProjectGuid>
     <RootNamespace>darkplacessdl2</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>zircon_dpbeta_x</ProjectName>
+    <ProjectName>zircon_beta</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -365,6 +365,7 @@
     <ClInclude Include="input.h" />
     <ClInclude Include="jpeg.h" />
     <ClInclude Include="keys.h" />
+    <ClInclude Include="keys_undo.c.h" />
     <ClInclude Include="lhfont.h" />
     <ClInclude Include="lhnet.h" />
     <ClInclude Include="libcurl.h" />

@@ -113,7 +113,7 @@ void SV_Spawn_f(cmd_state_t *cmd)
 		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
 		prog->ExecuteProgram(prog, PRVM_serverfunction(ClientConnect), "QC function ClientConnect is missing");
 
-		Con_Printf ("%s connected\n", host_client->name);
+		Con_PrintLinef ("%s connected", host_client->name);
 
 		PRVM_serverglobalfloat(time) = sv.time;
 		prog->ExecuteProgram(prog, PRVM_serverfunction(PutClientInServer), "QC function PutClientInServer is missing");
@@ -432,6 +432,35 @@ SV_WaterMove
 
 ===================
 */
+// Baker r0085: FitzQuake noclipping
+void SV_NoClip_Move (void)
+{
+	prvm_prog_t *prog = SVVM_prog;
+	int i;
+	vec3_t wishvel, v_angle;
+	vec_t fwishspeed, temp;
+
+	// user intentions
+	VectorCopy(PRVM_serveredictvector(host_client->edict, v_angle), v_angle);
+	AngleVectors(v_angle, forward, right, up);
+
+	for (i=0 ; i<3 ; i++)
+		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
+
+		wishvel[2] += usercmd.upmove;
+
+	fwishspeed = VectorLength(wishvel);
+	if (fwishspeed > sv_maxspeed.value)
+	{
+		temp = sv_maxspeed.value/fwishspeed;
+		VectorScale (wishvel, temp, wishvel);
+		fwishspeed = sv_maxspeed.value;
+	}
+
+	for (i=0 ; i<3 ; i++)
+		PRVM_serveredictvector(host_client->edict, velocity)[i] = wishvel[i];
+}
+
 static void SV_WaterMove (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -629,6 +658,13 @@ void SV_PlayerPhysics (void)
 		return;
 	}
 
+	// Baker r0085: FitzQuake noclipping
+	if ((PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_NOCLIP) && sv_altnoclipmove.integer) {
+		SV_NoClip_Move (); 
+		SV_CheckVelocity(host_client->edict);
+		return;
+	}
+
 	SV_AirMove ();
 	SV_CheckVelocity(host_client->edict);
 }
@@ -739,9 +775,8 @@ static void SV_ReadClientMove (void)
 
 	// movement packet loss tracking
 	// bones_was_here: checking begun prevents heavy loss detection right after a map change
-#pragma message ("Baker: Investigate this as a candidate for stuck keys kbbutton +forward that occurs during level change on rare occasions, takes 20 times sometimes to reproduce")
-#pragma message ("Baker: I am looking for something that ignores moves/keys that did not exist in DarkPlaces classic")
 	// Baker: 9068u ALT-TAB on level change keys stuck.  This is a change.  Is this involved in the stuck stuck issue?  Test.
+	// Baker: We still stuck!  Not fix issue.
 	if (move->sequence && host_client->begun)
 	{
 		if (move->sequence > host_client->movement_highestsequence_seen)

@@ -65,14 +65,23 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	MF_TRACER2	64			// orange split trail + rotate
 #define	MF_TRACER3	128			// purple trail
 
+// Baker r0087: Fence texture q1 mdl support
+#define MF_FENCE	16384		// 0x40000	
+
+
 // entity effects
 #define	EF_BRIGHTFIELD			1
 #define	EF_MUZZLEFLASH 			2
 #define	EF_BRIGHTLIGHT 			4
 #define	EF_DIMLIGHT 			8
-#define	EF_NODRAW_16				16
-#define EF_ADDITIVE				32
-#define EF_BLUE					64
+#define	EF_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16	// AURA 7.0
+
+#define	EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16
+#define	EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32		32
+#define	EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64			64
+
+#define EF_ADDITIVE				32			// EF_QEX_PENTALIGHT FIGHTS	EF_ADDITIVE 32
+#define EF_BLUE					64			// EF_QEX_CANDLELIGHT FIGHTS EF_BLUE
 #define EF_RED					128
 #define EF_NOGUNBOB				256			// LadyHavoc: when used with .viewmodelforclient this makes the entity attach to the view without gun bobbing and such effects, it also works on the player entity to disable gun bobbing of the engine-managed .viewmodel (without affecting any .viewmodelforclient entities attached to the player)
 #define EF_FULLBRIGHT			512			// LadyHavoc: fullbright
@@ -263,6 +272,28 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define	svc_showlmp			35		// [string] slotname [string] lmpfilename [short] x [short] y
 #define	svc_hidelmp			36		// [string] slotname
 #define	svc_skybox			37		// [string] skyname
+
+#define	svc_zirc_qex_svc_spawnstatic2_35				35		// [string] slotname [string] lmpfilename [short] x [short] y
+
+// AURA 7.1
+#define svc_qex_botchat								38		// AURA
+#define svc_achievement_fights_effect_52			52		// AURA
+#define svc_qex_localsound_fights_spawnstatic2_56	56		// AURA
+
+// 2021 RE-RELEASE:
+	//"svc_setviews", // 45		AURA 1.1
+	//"svc_updateping", // 46
+	//"svc_updatesocial", // 47
+	//"svc_updateplinfo", // 48
+	//"svc_rawprint", // 49
+	//"svc_servervars", // 50
+	//"svc_seq", // 51
+	//"svc_achievement", // 52
+	//"svc_chat", // 53
+	//"svc_levelcompleted", // 54
+	//"svc_backtolobby", // 55
+	//"svc_localsound" // 56
+
 
 // LadyHavoc: my svc_ range, 50-69
 #define svc_downloaddata	50		// [int] start [short] size

@@ -72,7 +72,7 @@ FIXME: make this just a stuffed echo?
 void SV_ClientPrintf(const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	va_start(argptr,fmt);
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
@@ -116,7 +116,7 @@ Sends text to all active clients
 void SV_BroadcastPrintf(const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	va_start(argptr,fmt);
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
@@ -135,7 +135,7 @@ Send text over to the client to be executed
 void SV_ClientCommands(const char *fmt, ...)
 {
 	va_list argptr;
-	char string[MAX_INPUTLINE];
+	char string[MAX_INPUTLINE_16384];
 
 	if (!host_client->netconnection)
 		return;
@@ -465,7 +465,15 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 			lightpflags |= PFLAGS_FULLDYNAMIC;
 		}
 	}
-
+	else if (sv.is_qex) { // AURA 10.3
+		if (Have_Flag (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64)) {
+			int efx = effects;
+			Flag_Remove_From (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64);
+			if (Have_Flag (efx, EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32))	Flag_Add_To (effects, EF_RED); // 128
+			if (Have_Flag (efx, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16))		Flag_Add_To (effects, EF_BLUE); // 64
+			if (Have_Flag (efx, EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64))		Flag_Add_To (effects, EF_DIMLIGHT); // 8 .. I guess?
+		} // if
+	} // qex
 	specialvisibilityradius = 0;
 	if (lightpflags & PFLAGS_FULLDYNAMIC)
 		specialvisibilityradius = max(specialvisibilityradius, light[3]);
@@ -889,8 +897,10 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 			return;
 		if (s->drawonlytoclient && s->drawonlytoclient != sv.writeentitiestoclient_cliententitynumber)
 			return;
-		if (s->effects & EF_NODRAW_16)
+		if (s->effects & EF_NODRAW_16) { // AURA 10.4
+			if (!sv.is_qex) // AURA CL will deal?
 			return;
+		}
 		// LadyHavoc: only send entities with a model or important effects
 		if (!s->modelindex && s->specialvisibilityradius == 0)
 			return;

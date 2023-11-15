@@ -373,9 +373,10 @@ keynum_t;
 
 typedef enum keydest_e { key_game, key_message, key_menu, key_menu_grabbed, key_console, key_void } keydest_t;
 
-extern	char		key_line[MAX_INPUTLINE];
+extern	char		key_line[MAX_INPUTLINE_16384];
 extern	int			key_linepos;
-extern	qbool	key_insert;	// insert key toggle (for editing)
+extern	int			key_sellength;
+extern	qbool		key_insert;	// insert key toggle (for editing)
 extern	keydest_t	key_dest;
 // key_consoleactive bits
 // user wants console (halfscreen)
@@ -386,7 +387,7 @@ extern	int			key_consoleactive;
 extern	char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
 
 extern signed char chat_mode; // 0 for say, 1 for say_team, -1 for command
-extern char chat_buffer[MAX_INPUTLINE];
+extern char chat_buffer[MAX_INPUTLINE_16384];
 extern int	chat_bufferpos;
 
 int Key_ClearEditLine(qbool is_console);
@@ -402,6 +403,9 @@ void Key_EventQueue_Unblock(void);
 int Key_AddChar(int unicode, qbool is_console);
 int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicode);
 
+
+void Key_History_Write (void); // Baker r1485: close missing history loophole by writing history during gamedir change process
+
 qbool Key_SetBinding (int keynum, int bindmap, const char *binding);
 const char *Key_GetBind (int key, int bindmap);
 void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bindmap);
@@ -410,6 +414,9 @@ void Key_GetBindMap(int *fg, int *bg);
 const char *Key_KeynumToString (int keynum, char *buf, size_t buflength);
 int Key_StringToKeynum (const char *str);
 
+int GetKeyboardList_Count (const char *s_prefix); // Baker autocomplete
+
+void Key_History_Push_String (const char *stext); // Baker r1486: RTrim whitespace from history submissions, deny back-to-back dups
 extern int history_line; // Au 15
 
 #endif // __KEYS_H

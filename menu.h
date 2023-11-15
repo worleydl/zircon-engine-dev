@@ -111,5 +111,8 @@ void menu_state_set_nova(int ee); // Baker: allows nostartdemos to exit menu?
 
 extern qbool menu_is_csqc;
 
+void VID_ListModes_f(cmd_state_t *cmd); // Mode list that video menu uses
+
+
 #endif // ! MENU_H
 

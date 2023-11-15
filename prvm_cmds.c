@@ -25,7 +25,7 @@ extern dllhandle_t ode_dll;
 void VM_Warning(prvm_prog_t *prog, const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 	static double recursive = -1;
 
 	va_start(argptr,fmt);
@@ -356,7 +356,7 @@ void VM_error(prvm_prog_t *prog)
 	VM_VarString(prog, 0, string, sizeof(string));
 	Con_Printf (CON_ERROR "======%s ERROR in %s:\n%s\n", prog->name, PRVM_GetString(prog, prog->xfunction->s_name), string);
 	ed = PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self));
-	PRVM_ED_Print(prog, ed, NULL);
+	PRVM_ED_Print(prog, ed, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 
 	prog->error_cmd("%s: Program error in function %s:\n%s\nTip: read above for entity information\n", prog->name, PRVM_GetString(prog, prog->xfunction->s_name), string);
 }
@@ -379,7 +379,7 @@ void VM_objerror(prvm_prog_t *prog)
 	VM_VarString(prog, 0, string, sizeof(string));
 	Con_Printf (CON_ERROR "======OBJECT ERROR======\n"); // , prog->name, PRVM_GetString(prog->xfunction->s_name), string); // or include them? FIXME
 	ed = PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self));
-	PRVM_ED_Print(prog, ed, NULL);
+	PRVM_ED_Print(prog, ed, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 	PRVM_ED_Free (prog, ed);
 	Con_Printf (CON_ERROR "%s OBJECT ERROR in %s:\n%s\nTip: read above for entity information\n", prog->name, PRVM_GetString(prog, prog->xfunction->s_name), string);
 }
@@ -1453,7 +1453,7 @@ void VM_eprint(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNT(1,VM_eprint);
 
-	PRVM_ED_PrintNum (prog, PRVM_G_EDICTNUM(OFS_PARM0), NULL);
+	PRVM_ED_PrintNum (prog, PRVM_G_EDICTNUM(OFS_PARM0), q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 }
 
 /*
@@ -1547,6 +1547,7 @@ server and menu
 changelevel(string map)
 ==============
 */
+WARP_X_ (SV_Changelevel_f)
 void VM_changelevel(prvm_prog_t *prog)
 {
 	char vabuf[1024];
@@ -1554,7 +1555,7 @@ void VM_changelevel(prvm_prog_t *prog)
 
 	if (!sv.active)
 	{
-		VM_Warning(prog, "VM_changelevel: game is not server (%s)\n", prog->name);
+		VM_Warning(prog, "VM_changelevel: game is not server (%s)" NEWLINE, prog->name);
 		return;
 	}
 
@@ -1563,7 +1564,8 @@ void VM_changelevel(prvm_prog_t *prog)
 		return;
 	svs.changelevel_issued = true;
 
-	Cbuf_AddText(cmd_local, va(vabuf, sizeof(vabuf), "changelevel %s\n", PRVM_G_STRING(OFS_PARM0)));
+	const char *s = va(vabuf, sizeof(vabuf), "changelevel %s", PRVM_G_STRING(OFS_PARM0) );
+	Cbuf_AddTextLine (cmd_local, s);
 }
 
 /*
@@ -2140,7 +2142,7 @@ void VM_getentityfieldstring(prvm_prog_t *prog)
 	prvm_eval_t *val;
 	prvm_edict_t * ent;
 	int i = (int)PRVM_G_FLOAT(OFS_PARM0);
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 	
 	if (i < 0 || i >= prog->numfielddefs)
 	{
@@ -2696,7 +2698,7 @@ void VM_tokenizebyseparator (prvm_prog_t *prog)
 	const char *separators[7];
 	const char *p, *p0;
 	const char *token;
-	char tokentext[MAX_INPUTLINE];
+	char tokentext[MAX_INPUTLINE_16384];
 
 	VM_SAFEPARMCOUNTRANGE(2, 8,VM_tokenizebyseparator);
 
@@ -3048,7 +3050,7 @@ void VM_loadfromfile(prvm_prog_t *prog)
 	}
 
 	// not conform with VM_fopen
-	data = (char *)FS_LoadFile(filename, tempmempool, false, NULL);
+	data = (char *)FS_LoadFile(filename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	if (data == NULL)
 		PRVM_G_FLOAT(OFS_RETURN) = -1;
 
@@ -3141,7 +3143,7 @@ void VM_search_begin(prvm_prog_t *prog)
 		return;
 	}
 
-	if (!(prog->opensearches[handle] = FS_Search(pattern,caseinsens, quiet, packfile)))
+	if (!(prog->opensearches[handle] = FS_Search(pattern,caseinsens, quiet, packfile, fs_gamedironly_false)))
 		PRVM_G_FLOAT(OFS_RETURN) = -1;
 	else
 	{
@@ -5314,7 +5316,7 @@ typedef struct
 	prvm_prog_t *prog;
 	double starttime;
 	float id;
-	char buffer[MAX_INPUTLINE];
+	char buffer[MAX_INPUTLINE_16384];
 	char posttype[128];
 	unsigned char *postdata; // free when uri_to_prog_t is freed
 	size_t postlen;
@@ -5708,7 +5710,7 @@ string sprintf(string format, ...)
 void VM_sprintf(prvm_prog_t *prog)
 {
 	const char *s, *s0;
-	char outbuf[MAX_INPUTLINE];
+	char outbuf[MAX_INPUTLINE_16384];
 	char *o = outbuf, *end = outbuf + sizeof(outbuf), *err;
 	const char *p;
 	int argpos = 1;

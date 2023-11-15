@@ -44,11 +44,16 @@ struct cachepic_s
 	// flags - CACHEPICFLAG_NEWPIC for example
 	unsigned int flags;
 	// name of pic
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 };
 
 dp_fonts_t dp_fonts;
 static mempool_t *fonts_mempool = NULL;
+
+#if 0 // FFA
+const char *g_p_selbeyond;
+int g_p_selbeyond_x;
+#endif
 
 cvar_t r_textshadow = {CF_CLIENT | CF_ARCHIVE, "r_textshadow", "0", "draws a shadow on all text to improve readability (note: value controls offset, 1 = 1 pixel, 1.5 = 1.5 pixels, etc)"};
 cvar_t r_textbrightness = {CF_CLIENT | CF_ARCHIVE, "r_textbrightness", "0", "additional brightness for text color codes (0 keeps colors as is, 1 makes them all white)"};
@@ -329,7 +334,7 @@ void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, flo
 {
 	int i, ch;
 	float maxwidth;
-	char widthfile[MAX_QPATH];
+	char widthfile[MAX_QPATH_128];
 	char *widthbuf;
 	fs_offset_t widthbufsize;
 
@@ -395,7 +400,7 @@ void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, flo
 		fnt->width_of[ch] = 1;
 
 	// FIXME load "name.width", if it fails, fill all with 1
-	if ((widthbuf = (char *) FS_LoadFile(widthfile, tempmempool, true, &widthbufsize)))
+	if ((widthbuf = (char *) FS_LoadFile(widthfile, tempmempool, fs_quiet_true, &widthbufsize)))
 	{
 		float extraspacing = 0;
 		const char *p = widthbuf;
@@ -544,7 +549,7 @@ static void LoadFont_f(cmd_state_t *cmd)
 	int i, sizes;
 	const char *filelist, *c, *cm;
 	float sz, scale, voffset;
-	char mainfont[MAX_QPATH];
+	char mainfont[MAX_QPATH_128];
 
 	if (Cmd_Argc(cmd) < 2)
 	{
@@ -592,7 +597,7 @@ static void LoadFont_f(cmd_state_t *cmd)
 		c = cm;
 	}
 
-	if (!c || (c - filelist) > MAX_QPATH)
+	if (!c || (c - filelist) > MAX_QPATH_128)
 		strlcpy(mainfont, filelist, sizeof(mainfont));
 	else
 	{
@@ -617,7 +622,7 @@ static void LoadFont_f(cmd_state_t *cmd)
 			f->fallback_faces[i] = 0; // f->req_face; could make it stick to the default-font's face index
 			c = cm;
 		}
-		if (!c || (c-filelist) > MAX_QPATH)
+		if (!c || (c-filelist) > MAX_QPATH_128)
 		{
 			strlcpy(f->fallbacks[i], filelist, sizeof(mainfont));
 		}
@@ -852,13 +857,13 @@ static const vec4_t string_colors[] =
 	/*3*/		{1.03, 0.5, 0.36, 1.0}, // Baker 1007 bronzey Baker 1007 3
 				// US: 143 69 50
 				// MV: 143 67 51
-	/*4*/		{0.0, 0.0, 1.0, 1.0}, // blue
-	/*5*/		{0.0, 1.0, 1.0, 1.0}, // cyan
-	/*6*/		{1.0, 0.0, 1.0, 1.0}, // magenta
-	/*7*/		{1.0, 1.0, 1.0, 1.0}, // white
+	/*4*/		{0.0, 0.0, 1.0, 1.0}, // 4 blue
+	/*5*/		{0.0, 1.0, 1.0, 1.0}, // 5 cyan
+	/*6*/		{1.0, 0.0, 1.0, 1.0}, // 6 magenta
+	/*7*/		{1.0, 1.0, 1.0, 1.0}, // 7 white
 	// [515]'s BX_COLOREDTEXT extension
-	{1.0, 1.0, 1.0, 0.5}, // half transparent
-	{0.5, 0.5, 0.5, 1.0}  // half brightness
+	{1.0, 1.0, 1.0, 0.5}, // 8 half transparent
+	{0.5, 0.5, 0.5, 1.0}  // 9 half brightness
 	// Black's color table
 	//{1.0, 1.0, 1.0, 1.0},
 	//{1.0, 0.0, 0.0, 1.0},
@@ -1180,6 +1185,8 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 		*/
 		while (((bytes_left = maxlen - (text - text_start)) > 0) && *text)
 		{
+
+baker_font:
 			// Baker text variable advances as each prints
 			// Bytes left is a massive number perhaps to prevent
 			// a runaway loop from occurring somehow
@@ -1191,10 +1198,22 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 			// or colored
 			// for text highlight we could check if text >= stopping point
 			// and set a variable
+
+#if 0 // FFA
+			// Baker: u8_getnchar advances text
+			const char *b4 = text;
+			if (g_p_selbeyond && text >= g_p_selbeyond) {
+				g_p_selbeyond_x = x;
+				g_p_selbeyond = NULL;
+			}
+#endif
+
 			nextch = ch = u8_getnchar(text, &text, bytes_left);
+
 			i = text - text_start;
-			if (!ch)
+			if (!ch) {
 				break;
+			}
 			if (ch == ' ' && !fontmap)
 			{
 				x += width_of[(int) ' '] * dw;
@@ -1331,6 +1350,12 @@ out:
 				y -= 1.0/pix_y * r_textshadow.value;
 			}
 		} // while
+#if 0 // FFA
+		if (g_p_selbeyond) {
+			g_p_selbeyond_x = x;
+			g_p_selbeyond = NULL;
+		}
+#endif
 	} // for shadow
 
 	if (outcolor)

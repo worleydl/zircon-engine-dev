@@ -63,7 +63,7 @@ typedef struct snd_ringbuffer_s
 typedef struct snd_fetcher_s snd_fetcher_t;
 struct sfx_s
 {
-	char				name[MAX_QPATH];
+	char				name[MAX_QPATH_128];
 	struct sfx_s				*next;
 	size_t				memsize;		// total memory used (including struct sfx_s and fetcher data)
 

@@ -421,8 +421,8 @@ extern int serverreplycount;
 
 extern sizebuf_t cl_message;
 extern sizebuf_t sv_message;
-extern char cl_readstring[MAX_INPUTLINE];
-extern char sv_readstring[MAX_INPUTLINE];
+extern char cl_readstring[MAX_INPUTLINE_16384];
+extern char sv_readstring[MAX_INPUTLINE_16384];
 
 extern struct cvar_s sv_public;
 

@@ -18,4 +18,6 @@ void V_StartPitchDrift(void);
 void V_StopPitchDrift (void);
 void V_StartPitchDrift_f(struct cmd_state_s *cmd);
 
+extern cvar_t r_viewmodel_ring_alpha; // Baker r1488 viewmodel ring alpha
+
 #endif // VIEW_H

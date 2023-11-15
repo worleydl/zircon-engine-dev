@@ -1604,7 +1604,7 @@ float loadfont(string fontname, string fontmaps, string sizes, float slot)
 void VM_loadfont(prvm_prog_t *prog)
 {
 	const char *fontname, *filelist, *sizes, *c, *cm;
-	char mainfont[MAX_QPATH];
+	char mainfont[MAX_QPATH_128];
 	int i, numsizes;
 	float sz, scale, voffset;
 	dp_font_t *f;
@@ -1655,7 +1655,7 @@ void VM_loadfont(prvm_prog_t *prog)
 		f->req_face = 0;
 		c = cm;
 	}
-	if (!c || (c - filelist) > MAX_QPATH)
+	if (!c || (c - filelist) > MAX_QPATH_128)
 		strlcpy(mainfont, filelist, sizeof(mainfont));
 	else
 	{
@@ -1681,7 +1681,7 @@ void VM_loadfont(prvm_prog_t *prog)
 			f->fallback_faces[i] = 0; // f->req_face; could make it stick to the default-font's face index
 			c = cm;
 		}
-		if (!c || (c-filelist) > MAX_QPATH)
+		if (!c || (c-filelist) > MAX_QPATH_128)
 		{
 			strlcpy(f->fallbacks[i], filelist, sizeof(mainfont));
 		}

@@ -1,12 +1,12 @@
 #ifdef CORE_SDL
 
 #ifdef _WIN32
-#include <io.h> // Include this BEFORE darkplaces.h because it uses strncpy which trips DP_STATIC_ASSERT
-#include "conio.h"
+	#include <io.h> // Include this BEFORE darkplaces.h because it uses strncpy which trips DP_STATIC_ASSERT
+	#include "conio.h"
 #else
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
+	#include <unistd.h>
+	#include <fcntl.h>
+	#include <sys/time.h>
 #endif
 
 #ifdef __ANDROID__
@@ -53,10 +53,18 @@ void Sys_Shutdown (void)
 }
 
 static qbool nocrashdialog;
+/*
+===============================================================================
+
+SYSTEM IO
+
+===============================================================================
+*/
+
 void Sys_Error (const char *error, ...)
 {
 	va_list argptr;
-	char string[MAX_INPUTLINE];
+	char text[MAX_INPUTLINE_16384];
 
 // change stdin to non blocking
 #ifndef _WIN32
@@ -64,13 +72,13 @@ void Sys_Error (const char *error, ...)
 #endif
 
 	va_start (argptr,error);
-	dpvsnprintf (string, sizeof (string), error, argptr);
+	dpvsnprintf (text, sizeof (text), error, argptr);
 	va_end (argptr);
 
-	Con_PrintLinef (CON_ERROR "Engine Error: %s", string);
+	Con_PrintLinef (CON_ERROR "Engine Error: %s", text);
 	
 	if (!nocrashdialog)
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", string, NULL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", text, NULL);
 
 	//Host_Shutdown ();
 	exit (1);
@@ -133,7 +141,7 @@ void Sys_PrintToTerminal(const char *text)
 
 char *Sys_ConsoleInput(void)
 {
-	static char text[MAX_INPUTLINE];
+	static char text[MAX_INPUTLINE_16384];
 	int len = 0;
 #ifdef _WIN32
 	int c;
@@ -188,6 +196,12 @@ char *Sys_ConsoleInput(void)
 	return NULL;
 }
 
+WARP_X_ (Sys_GetClipboardData)
+int Sys_SetClipboardData(const char *text_to_clipboard)
+{
+	return !SDL_SetClipboardText(text_to_clipboard);
+}
+
 char *Sys_GetClipboardData (void)
 {
 	char *data = NULL;
@@ -196,7 +210,7 @@ char *Sys_GetClipboardData (void)
 	cliptext = SDL_GetClipboardText();
 	if (cliptext != NULL) {
 		size_t allocsize;
-		allocsize = min(MAX_INPUTLINE, strlen(cliptext) + 1);
+		allocsize = min(MAX_INPUTLINE_16384, strlen(cliptext) + 1);
 		data = (char *)Z_Malloc (allocsize);
 		strlcpy (data, cliptext, allocsize);
 		SDL_free(cliptext);
@@ -244,7 +258,7 @@ int main (int argc, char *argv[])
 #endif // XCODE
     
 	if (sys.argc == 1 /*only the exe*/) {
-		char	cmdline_fake[MAX_INPUTLINE];
+		char	cmdline_fake[MAX_INPUTLINE_16384];
 		
 		const char *s_fp = 
 #ifdef __ANDROID__
@@ -372,7 +386,7 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
 
 #ifdef _WIN32
 	// empty
-	SBUF___ const char *Sys_Getcwd_SBuf (void) // No trailing slash
+	SBUF___ char *Sys_Getcwd_SBuf (void) // No trailing slash
 	{
 		static char workingdir[MAX_OSPATH_EX_1024];
 		int ok = 0;
@@ -395,7 +409,7 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
 
 	
 
-	SBUF___ const char *Sys_Getcwd_SBuf (void) // No trailing slash
+	SBUF___ char *Sys_Getcwd_SBuf (void) // No trailing slash
 
 	{
 		static char workingdir[MAX_OSPATH_EX_1024];

@@ -89,7 +89,7 @@ static qbool wasPlaying = false;
 static qbool initialized = false;
 static qbool enabled = false;
 static float cdvolume;
-typedef char filename_t[MAX_QPATH];
+typedef char filename_t[MAX_QPATH_128];
 #ifdef MAXTRACKS
 static filename_t remap[MAXTRACKS];
 #endif
@@ -120,7 +120,7 @@ static void CDAudio_Play_byName (const char *trackname, qbool looping, qbool try
 {
 	unsigned int track;
 	sfx_t* sfx;
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 
 	CL_StartVideo();
 
@@ -454,7 +454,7 @@ static void CDAudio_StartPlaylist(qbool resume)
 	int count;
 	int listindex;
 	float position;
-	char trackname[MAX_QPATH];
+	char trackname[MAX_QPATH_128];
 	CDAudio_Stop();
 	index = music_playlist_index.integer;
 	if (index >= 0 && index < MAX_PLAYLISTS && bgmvolume.value > 0)

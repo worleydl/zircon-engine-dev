@@ -48,7 +48,7 @@ typedef struct clvideo_s
 
 	// cachepic holds the relevant texture_t and we simply update the texture as needed
 	struct cachepic_s *cachepic;
-	char	name[MAX_QPATH]; // name of this video UI element (not the filename)
+	char	name[MAX_QPATH_128]; // name of this video UI element (not the filename)
 	int		width;
 	int		height;
 
@@ -72,7 +72,7 @@ typedef struct clvideo_s
 	// when lasttime - realtime > THRESHOLD, all but the stream is freed
 	qbool suspended;
 
-	char	filename[MAX_QPATH];
+	char	filename[MAX_QPATH_128];
 } clvideo_t;
 
 clvideo_t*	CL_OpenVideo( const char *filename, const char *name, int owner, const char *subtitlesfile );

@@ -198,7 +198,7 @@ static void set_effects0 (int level)
 	switch (level) {
 	case 0: 
 		Cbuf_AddTextLine (cmd_local, "cl_decals 0; cl_decals_fadetime 1; cl_decals_models 0; cl_particles_quality 0.8; gl_flashblend 0; mod_q3bsp_nolightmaps 0; r_bloom 0; r_coronas_occlusionquery 0; r_depthfirst 0; r_drawdecals_drawdistance 500; r_drawparticles_drawdistance 2000; r_glsl_deluxemapping 0; r_glsl_offsetmapping 0; r_glsl_offsetmapping_reliefmapping 0; r_motionblur 0; r_shadow_realtime_dlight 0; r_shadow_realtime_dlight_shadows 0; r_shadow_realtime_world 0; r_shadow_realtime_world_shadows 0; r_shadow_realtime_world_lightmaps 0; r_shadow_shadowmapping 0; r_shadow_usenormalmap 0; r_showsurfaces 0; r_sky 1; r_subdivisions_tolerance 4");
-		if (1 /*iszirc || gamemode == GAME_QUAKE3_QUAKE1*/) {
+		if (fs_is_zircon_galaxy || gamemode == GAME_QUAKE3_QUAKE1) {
 			Cbuf_AddTextLine (cmd_local, "r_water 1; r_water_resolutionmultiplier 1.0; r_shadow_gloss 0");
 		} else {
 			Cbuf_AddTextLine (cmd_local, "r_water 0; r_water_resolutionmultiplier 0.5; r_shadow_gloss 0");
@@ -207,7 +207,7 @@ static void set_effects0 (int level)
 
 	case 1:  // Vanilla level							
 		Cbuf_AddTextLine (cmd_local, "cl_decals 0; cl_decals_fadetime 1; cl_decals_models 0; cl_particles_quality 0.990; gl_flashblend 0; mod_q3bsp_nolightmaps 0; r_bloom 0; r_coronas_occlusionquery 0; r_depthfirst 0; r_drawdecals_drawdistance 500; r_drawparticles_drawdistance 2000; r_glsl_deluxemapping 0; r_glsl_offsetmapping 0; r_glsl_offsetmapping_reliefmapping 0; r_motionblur 0; r_shadow_realtime_dlight 1; r_shadow_realtime_dlight_shadows 0; r_shadow_realtime_world 0; r_shadow_realtime_world_shadows 0; r_shadow_realtime_world_lightmaps 0; r_shadow_shadowmapping 0; r_shadow_usenormalmap 1; r_showsurfaces 0; r_sky 1; r_subdivisions_tolerance 4");
-		if (1 /*iszirc || gamemode == GAME_QUAKE3_QUAKE1*/) {
+		if (fs_is_zircon_galaxy || gamemode == GAME_QUAKE3_QUAKE1) {
 			Cbuf_AddTextLine (cmd_local, "r_water 1; r_water_resolutionmultiplier 1.0; r_shadow_gloss 0");
 		} else {
 			Cbuf_AddTextLine (cmd_local, "r_water 1; r_water_resolutionmultiplier 0.5; r_shadow_gloss 0");
@@ -217,7 +217,7 @@ static void set_effects0 (int level)
 
 	case 2:  // default level							
 		Cbuf_AddTextLine (cmd_local, "cl_decals 1; cl_decals_fadetime 1; cl_decals_models 0; cl_particles_quality 1; gl_flashblend 0; mod_q3bsp_nolightmaps 0; r_bloom 0; r_coronas_occlusionquery 0; r_depthfirst 0; r_drawdecals_drawdistance 500; r_drawparticles_drawdistance 2000; r_glsl_deluxemapping 0; r_glsl_offsetmapping 0; r_glsl_offsetmapping_reliefmapping 0; r_motionblur 0; r_shadow_realtime_dlight 1; r_shadow_realtime_dlight_shadows 0; r_shadow_realtime_world 0; r_shadow_realtime_world_shadows 0; r_shadow_realtime_world_lightmaps 0; r_shadow_shadowmapping 0; r_shadow_usenormalmap 1; r_showsurfaces 0; r_sky 1; r_subdivisions_tolerance 4");
-		if (1 /*iszirc || gamemode == GAME_QUAKE3_QUAKE1*/) {
+		if (fs_is_zircon_galaxy || gamemode == GAME_QUAKE3_QUAKE1) {
 			Cbuf_AddTextLine (cmd_local, "r_water 1; r_water_resolutionmultiplier 1.0; r_shadow_gloss 1");
 		} else {
 			Cbuf_AddTextLine (cmd_local, "r_water 1; r_water_resolutionmultiplier 0.5; r_shadow_gloss 1");

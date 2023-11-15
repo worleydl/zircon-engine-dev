@@ -30,6 +30,17 @@ int		prvm_type_size[8] = {1,sizeof(string_t)/4,1,3,1,1,sizeof(func_t)/4,sizeof(v
 prvm_eval_t prvm_badvalue; // used only for error returns
 
 cvar_t prvm_language = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "prvm_language", "", "when set, loads PROGSFILE.LANGUAGENAME.po and common.LANGUAGENAME.po for string translations; when set to dump, PROGSFILE.pot is written from the strings in the progs"};
+
+// Baker r7084: gamecommand autocomplete
+cvar_t prvm_sv_gamecommands = {CF_SERVER, "prvm_sv_gamecommands", "", "Space delimited list of GameCommands for SV.  Set via progs to provide engine information for console autocomplete of sv_cmd [Zircon]"};  // Baker r7103 gamecommand autocomplete
+cvar_t prvm_sv_progfields = {CF_SERVER, "prvm_sv_progfields", "", "Space delimited list of SV prog fieldnames.  Set via progs to provide engine information for console autocomplete of sv_cmd [Zircon]"};  // Baker r7103 gamecommand autocomplete
+
+cvar_t prvm_cl_gamecommands = {CF_CLIENT, "prvm_cl_gamecommands", "", "Space delimited list of GameCommands for CL.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};  // Baker r7103 gamecommand autocomplete
+cvar_t prvm_cl_progfields = {CF_CLIENT, "prvm_cl_progfields", "", "Space delimited list of CL prog fieldnames.  Set via progs to provide engine information for console autocomplete of cl_cmd [Zircon]"};  // Baker r7103 gamecommand autocomplete
+
+//cvar_t prvm_menu_gamecommands = {CF_MENU, "prvm_menu_gamecommands", "", "Space delimited list of GameCommands for MENU.  Set via progs to provide engine information for console autocomplete of menu_cmd [Zircon]"};
+
+
 // LadyHavoc: prints every opcode as it executes - warning: this is significant spew
 cvar_t prvm_traceqc = {CF_CLIENT | CF_SERVER, "prvm_traceqc", "0", "prints every QuakeC statement as it is executed (only for really thorough debugging!)"};
 // LadyHavoc: counts usage of each QuakeC statement
@@ -598,7 +609,7 @@ char *PRVM_GlobalString (prvm_prog_t *prog, int ofs, char *line, size_t lineleng
 	//size_t	i;
 	mdef_t	*def;
 	prvm_eval_t	*val;
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 
 	val = (prvm_eval_t *)&prog->globals.fp[ofs];
 	def = PRVM_ED_GlobalAtOfs(prog, ofs);
@@ -647,28 +658,121 @@ For debugging
 */
 // LadyHavoc: optimized this to print out much more quickly (tempstring)
 // LadyHavoc: changed to print out every 4096 characters (incase there are a lot of fields to print)
-void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, const char *wildcard_fieldname)
+void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, const char *wildcard_fieldname, const char *classname_partial, const char *targetname_partial)
 {
-	size_t	l;
+	size_t	slen;
 	mdef_t	*d;
 	prvm_eval_t	*val;
-	int		i, j;
+	int		n, j;
 	const char	*name;
 	int		type;
-	char	tempstring[MAX_INPUTLINE], tempstring2[260]; // temporary string buffers
-	char	valuebuf[MAX_INPUTLINE];
+	char	tempstring[MAX_INPUTLINE_16384], tempstring2[260]; // temporary string buffers
+	char	valuebuf[MAX_INPUTLINE_16384];
 
-	if (ed->free)
-	{
-		Con_Printf ("%s: FREE\n",prog->name);
+	if (ed->free) {
+		if (classname_partial && classname_partial[0]) {
+			// do not print
+		} else {
+			if (shall_print_free) {
+				Con_PrintLinef ("%s: FREE", prog->name);
+			}
+		}
 		return;
 	}
 
+	int ismatch = false;
+	
+	if (targetname_partial && targetname_partial[0]) {
+		tempstring[0] = 0;
+		for (n = 1; n < prog->numfielddefs; n ++) {
+			d = &prog->fielddefs[n];
+			name = PRVM_GetString(prog, d->s_name);
+			if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
+				continue;	// skip _x, _y, _z vars
+	
+			val = (prvm_eval_t *)(ed->fields.fp + d->ofs);
+	
+			// if the value is still all 0, skip the field
+			type = d->type & ~DEF_SAVEGLOBAL;
+	
+			for (j = 0; j < prvm_type_size[type]; j ++) {
+				if (val->ivector[j])
+					break;
+			} // j
+	
+			if (j == prvm_type_size[type])
+				continue;	
+	
+			if (String_Does_Match (name, "targetname")) {
+				name = PRVM_ValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf));
+
+				if (strlen(name) > sizeof(tempstring2)-4) {
+					memcpy (tempstring2, name, sizeof(tempstring2)-4);
+					tempstring2[sizeof(tempstring2)-4] = tempstring2[sizeof(tempstring2)-3] = tempstring2[sizeof(tempstring2)-2] = '.';
+					tempstring2[sizeof(tempstring2)-1] = 0;
+					name = tempstring2;
+				}
+				strlcat(tempstring, name, sizeof(tempstring));
+				if (String_Does_Contain (tempstring, targetname_partial) == false) {
+					// disqual
+					return;
+				} else {
+					ismatch = true;
+				}
+			} // if	
+		} // for n
+		if (!ismatch)
+			return;
+	} // targetname match
+
+	if (classname_partial && classname_partial[0]) {
+		tempstring[0] = 0;
+		for (n = 1; n < prog->numfielddefs; n ++) {
+			d = &prog->fielddefs[n];
+			name = PRVM_GetString(prog, d->s_name);
+			if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
+				continue;	// skip _x, _y, _z vars
+	
+			val = (prvm_eval_t *)(ed->fields.fp + d->ofs);
+	
+			// if the value is still all 0, skip the field
+			type = d->type & ~DEF_SAVEGLOBAL;
+	
+			for (j = 0; j < prvm_type_size[type]; j ++) {
+				if (val->ivector[j])
+					break;
+			} // j
+	
+			if (j == prvm_type_size[type])
+				continue;	
+	
+			if (String_Does_Match (name, "classname")) {
+				name = PRVM_ValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf));
+
+				if (strlen(name) > sizeof(tempstring2)-4) {
+					memcpy (tempstring2, name, sizeof(tempstring2)-4);
+					tempstring2[sizeof(tempstring2)-4] = tempstring2[sizeof(tempstring2)-3] = tempstring2[sizeof(tempstring2)-2] = '.';
+					tempstring2[sizeof(tempstring2)-1] = 0;
+					name = tempstring2;
+				}
+				strlcat(tempstring, name, sizeof(tempstring));
+				if (String_Does_Contain (tempstring, classname_partial) == false) {
+					// disqual
+					return;
+				} else {
+					ismatch = true;
+				}
+			} // if	classname
+		} // for n
+		if (!ismatch)
+			return;
+	} // class match
+
 	tempstring[0] = 0;
 	dpsnprintf(tempstring, sizeof(tempstring), "\n%s EDICT %d:\n", prog->name, PRVM_NUM_FOR_EDICT(ed));
-	for (i = 1;i < prog->numfielddefs;i++)
+	for (n = 1; n < prog->numfielddefs; n ++)
 	{
-		d = &prog->fielddefs[i];
+		d = &prog->fielddefs[n];
 		name = PRVM_GetString(prog, d->s_name);
 		if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
 			continue;	// skip _x, _y, _z vars
@@ -698,7 +802,7 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, const char *wildcard_fie
 			name = tempstring2;
 		}
 		strlcat(tempstring, name, sizeof(tempstring));
-		for (l = strlen(name);l < 14;l++)
+		for (slen = strlen(name);slen < 14;slen++)
 			strlcat(tempstring, " ", sizeof(tempstring));
 		strlcat(tempstring, " ", sizeof(tempstring));
 
@@ -737,7 +841,7 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 	const char	*name;
 	int		type;
 	char vabuf[1024];
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 
 	FS_Print(f, "{\n");
 
@@ -778,9 +882,9 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 	FS_Print(f, "}\n");
 }
 
-void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, const char *wildcard_fieldname)
+void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, int shall_print_free, const char *wildcard_fieldname, const char *classname_partial, const char *targetname_partial)
 {
-	PRVM_ED_Print(prog, PRVM_EDICT_NUM(ent), wildcard_fieldname);
+	PRVM_ED_Print (prog, PRVM_EDICT_NUM(ent), shall_print_free, wildcard_fieldname, classname_partial, targetname_partial);
 }
 
 /*
@@ -790,6 +894,8 @@ PRVM_ED_PrintEdicts_f
 For debugging, prints all the entities in the current server
 =============
 */
+
+// "prvm_edicts"
 void PRVM_ED_PrintEdicts_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
@@ -812,7 +918,69 @@ void PRVM_ED_PrintEdicts_f(cmd_state_t *cmd)
 
 	Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
 	for (i=0 ; i<prog->num_edicts ; i++)
-		PRVM_ED_PrintNum (prog, i, wildcard_fieldname);
+		PRVM_ED_PrintNum (prog, i, q_vm_printfree_true, wildcard_fieldname, 
+			q_vm_classname_NULL, q_vm_targetname_NULL);
+}
+// "edicts"
+void PRVM_ED_PrintEdicts_SV_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog;
+	int		edict_num;
+	const char *wildcard_fieldname = NULL;
+	const char *classname_partial = "";
+	const char *targetname_partial = "";
+	
+	if (!(prog = PRVM_FriendlyProgFromString("server")))
+		return;
+
+	if (Cmd_Argc(cmd) == 3) {
+		if (String_Does_Match_Caseless (Cmd_Argv(cmd, 1), "targetname")) {
+			targetname_partial = Cmd_Argv(cmd, 2);
+		} else {
+			Con_PrintLinef ("Expected targetname like " QUOTED_STR("edicts targetname t18") );
+			return;
+		}
+	}
+	else if (Cmd_Argc(cmd) == 2) {
+		classname_partial = Cmd_Argv(cmd, 1);
+	}
+
+	if (Cmd_Argc(cmd) == 3) {
+		Con_PrintLinef ("%s: entities with targetname containing " QUOTED_S, prog->name, /*prog->num_edicts, */targetname_partial);
+	} else if (Cmd_Argc(cmd) == 2) {
+		Con_PrintLinef ("%s: entities with classname containing " QUOTED_S, prog->name, /*prog->num_edicts, */classname_partial);
+	} else {
+		Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
+	}
+
+	int shall_print_free = *classname_partial || *targetname_partial;
+
+	for (edict_num = 0 ; edict_num < prog->num_edicts ; edict_num ++)
+		PRVM_ED_PrintNum (prog, edict_num, shall_print_free, wildcard_fieldname, classname_partial, targetname_partial);
+}
+
+// "csedicts"
+void PRVM_ED_PrintEdicts_CL_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog;
+	int		n;
+	const char *wildcard_fieldname = NULL;
+	const char *classname_partial = "";
+
+	if (!(prog = PRVM_FriendlyProgFromString("client")))
+		return;
+
+	if (Cmd_Argc(cmd) == 2) classname_partial = Cmd_Argv(cmd, 1);
+
+	if (Cmd_Argc(cmd) == 2) {
+		Con_PrintLinef ("%s:entities containing " QUOTED_S, prog->name, classname_partial);
+	} else {
+		Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
+	}
+
+	int shall_print_free = *classname_partial;
+	for (n = 0; n < prog->num_edicts; n ++)
+		PRVM_ED_PrintNum (prog, n, shall_print_free, wildcard_fieldname, classname_partial, q_vm_targetname_NULL);
 }
 
 /*
@@ -822,10 +990,12 @@ PRVM_ED_PrintEdict_f
 For debugging, prints a single edict
 =============
 */
+
+// "prvm_edict"
 static void PRVM_ED_PrintEdict_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
-	int		i;
+	int		edict_num;
 	const char	*wildcard_fieldname;
 
 	if (Cmd_Argc(cmd) < 3 || Cmd_Argc(cmd) > 4)
@@ -837,10 +1007,10 @@ static void PRVM_ED_PrintEdict_f(cmd_state_t *cmd)
 	if (!(prog = PRVM_FriendlyProgFromString(Cmd_Argv(cmd, 1))))
 		return;
 
-	i = atoi (Cmd_Argv(cmd, 2));
-	if (i >= prog->num_edicts)
+	edict_num = atoi (Cmd_Argv(cmd, 2));
+	if (edict_num >= prog->num_edicts)
 	{
-		Con_Print("Bad edict number\n");
+		Con_PrintLinef ("Bad edict number");
 		return;
 	}
 	if ( Cmd_Argc(cmd) == 4)
@@ -849,7 +1019,54 @@ static void PRVM_ED_PrintEdict_f(cmd_state_t *cmd)
 	else
 		// Use All
 		wildcard_fieldname = NULL;
-	PRVM_ED_PrintNum (prog, i, wildcard_fieldname);
+	PRVM_ED_PrintNum (prog, edict_num, q_vm_printfree_true, wildcard_fieldname, q_vm_classname_NULL, q_vm_targetname_NULL);
+}
+
+static void PRVM_ED_PrintEdict_SV_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog;
+	int		edict_num;
+	const char	*wildcard_fieldname = NULL;
+
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("edict <edict number>");
+		return;
+	}
+
+	if (!(prog = PRVM_FriendlyProgFromString("server")))
+		return;
+
+	edict_num = atoi (Cmd_Argv(cmd, 1));
+
+	if (edict_num >= prog->num_edicts) {
+		Con_PrintLinef ("Bad edict number");
+		return;
+	}
+	PRVM_ED_PrintNum (prog, edict_num, q_vm_printfree_true, wildcard_fieldname, q_vm_classname_NULL, q_vm_targetname_NULL);
+}
+
+// "edict 11"
+static void PRVM_ED_PrintEdict_CL_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog;
+	int		edict_num;
+	const char	*wildcard_fieldname = NULL;
+
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("csedict <edict number>");
+		return;
+	}
+
+	if (!(prog = PRVM_FriendlyProgFromString("client")))
+		return;
+
+	edict_num = atoi (Cmd_Argv(cmd, 1));
+	if (edict_num >= prog->num_edicts) {
+		Con_PrintLinef ("Bad edict number");
+		return;
+	}
+	PRVM_ED_PrintNum (prog, edict_num, q_vm_printfree_true, wildcard_fieldname, 
+		q_vm_classname_NULL, q_vm_targetname_NULL);  // Baker r7101: edicts with criteria
 }
 
 /*
@@ -898,7 +1115,7 @@ void PRVM_ED_WriteGlobals (prvm_prog_t *prog, qfile_t *f)
 	const char		*name;
 	int			type;
 	char vabuf[1024];
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 
 	FS_Print(f,"{\n");
 	for (i = 0;i < prog->numglobaldefs;i++)
@@ -932,7 +1149,7 @@ PRVM_ED_ParseGlobals
 */
 void PRVM_ED_ParseGlobals (prvm_prog_t *prog, const char *data)
 {
-	char keyname[MAX_INPUTLINE];
+	char keyname[MAX_INPUTLINE_16384];
 	mdef_t *key;
 
 	while (1)
@@ -1154,7 +1371,7 @@ static void PRVM_ED_EdictGet_f(cmd_state_t *cmd)
 	mdef_t *key;
 	const char *s;
 	prvm_eval_t *v;
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 
 	if (Cmd_Argc(cmd) != 4 && Cmd_Argc(cmd) != 5)
 	{
@@ -1197,7 +1414,7 @@ static void PRVM_ED_GlobalGet_f(cmd_state_t *cmd)
 	mdef_t *key;
 	const char *s;
 	prvm_eval_t *v;
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 
 	if (Cmd_Argc(cmd) != 3 && Cmd_Argc(cmd) != 4)
 	{
@@ -1387,8 +1604,8 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 	{
 		if (!PRVM_alledictstring(ent, classname))
 		{
-			Con_Print("No classname for:\n");
-			PRVM_ED_Print(prog, ent, NULL);
+			Con_PrintLinef ("No classname for:");
+			PRVM_ED_Print(prog, ent, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 			PRVM_ED_Free (prog, ent);
 			return false;
 		}
@@ -1438,7 +1655,7 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 				
 				Con_DPrint("No spawn function for:\n");
 				if (developer.integer > 0) // don't confuse non-developers with errors	
-					PRVM_ED_Print(prog, ent, NULL);
+					PRVM_ED_Print(prog, ent, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 
 				PRVM_ED_Free (prog, ent);
 				return false; // not included in "inhibited" count
@@ -1778,8 +1995,8 @@ static po_t *PRVM_PO_Load(const char *filename, const char *filename2, mempool_t
 	po_t *po = NULL;
 	const char *p, *q;
 	int mode;
-	char inbuf[MAX_INPUTLINE];
-	char decodedbuf[MAX_INPUTLINE];
+	char inbuf[MAX_INPUTLINE_16384];
+	char decodedbuf[MAX_INPUTLINE_16384];
 	size_t decodedpos;
 	int hashindex;
 	po_string_t thisstr;
@@ -1788,7 +2005,7 @@ static po_t *PRVM_PO_Load(const char *filename, const char *filename2, mempool_t
 	for (i = 0; i < 2; ++i)
 	{
 		const char *buf = (const char *)
-			FS_LoadFile((i > 0 ? filename : filename2), pool, true, NULL);
+			FS_LoadFile((i > 0 ? filename : filename2), pool, fs_quiet_true, fs_size_ptr_null);
 		// first read filename2, then read filename
 		// so that progs.dat.de.po wins over common.de.po
 		// and within file, last item wins
@@ -1949,7 +2166,7 @@ static void PRVM_LoadLNO( prvm_prog_t *prog, const char *progname ) {
 	FS_StripExtension( progname, filename, sizeof( filename ) );
 	strlcat( filename, ".lno", sizeof( filename ) );
 
-	lno = FS_LoadFile( filename, tempmempool, false, &filesize );
+	lno = FS_LoadFile( filename, tempmempool, fs_quiet_FALSE, &filesize );
 	if ( !lno ) {
 		return;
 	}
@@ -2042,7 +2259,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 		filesize = size;
 	}
 	else
-		dprograms = (dprograms_t *)FS_LoadFile (filename, prog->progs_mempool, false, &filesize);
+		dprograms = (dprograms_t *)FS_LoadFile (filename, prog->progs_mempool, fs_quiet_FALSE, &filesize);
 	if (dprograms == NULL || filesize < (fs_offset_t)sizeof(dprograms_t))
 		prog->error_cmd("PRVM_LoadProgs: couldn't load %s for %s", filename, prog->name);
 	// TODO bounds check header fields (e.g. numstatements), they must never go behind end of file
@@ -2059,7 +2276,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 // byte swap the header
 	prog->progs_version = LittleLong(dprograms->version);
 	prog->progs_crc = LittleLong(dprograms->crc);
-	if (prog->progs_version == /*fte*/ 7 ) {
+	if (prog->progs_version == PROG_VERSION_FTE_7) {
 		dprograms_v7_t *v7 = (dprograms_v7_t*)dprograms;
 		structtype = LittleLong(v7->secondaryversion);
 		if (structtype == PROG_SECONDARYVERSION16 ||
@@ -2543,7 +2760,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 						const char *value = PRVM_GetString(prog, val->string);
 						if (*value)
 						{
-							char buf[MAX_INPUTLINE];
+							char buf[MAX_INPUTLINE_16384];
 							PRVM_PO_UnparseString(buf, value, sizeof(buf));
 							FS_Printf(f, "msgid \"%s\"\nmsgstr \"\"\n\n", buf);
 						}
@@ -2727,7 +2944,7 @@ static void PRVM_Fields_f(cmd_state_t *cmd)
 	prvm_prog_t *prog;
 	int i, j, ednum, used, usedamount;
 	int *counts;
-	char tempstring[MAX_INPUTLINE], tempstring2[260];
+	char tempstring[MAX_INPUTLINE_16384], tempstring2[260];
 	const char *name;
 	prvm_edict_t *ed;
 	mdef_t *d;
@@ -2894,7 +3111,7 @@ static void PRVM_Global_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
 	mdef_t *global;
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 	if ( Cmd_Argc(cmd) != 3 ) {
 		Con_Printf ( "prvm_global <program name> <global name>\n" );
 		return;
@@ -3142,59 +3359,6 @@ static void PRVM_EdictWatchpoint_f(cmd_state_t *cmd)
 	PRVM_UpdateBreakpoints(prog);
 }
 
-/*
-===============
-PRVM_Init
-===============
-*/
-void PRVM_Init (void)
-{
-	Cmd_AddCommand(CF_SHARED, "prvm_edict", PRVM_ED_PrintEdict_f, "print all data about an entity number in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_edicts", PRVM_ED_PrintEdicts_f, "prints all data about all entities in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_edictcount", PRVM_ED_Count_f, "prints number of active entities in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_profile", PRVM_Profile_f, "prints execution statistics about the most used QuakeC functions in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_childprofile", PRVM_ChildProfile_f, "prints execution statistics about the most used QuakeC functions in the selected VM (server, client, menu), sorted by time taken in function with child calls");
-	Cmd_AddCommand(CF_SHARED, "prvm_callprofile", PRVM_CallProfile_f, "prints execution statistics about the most time consuming QuakeC calls from the engine in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_fields", PRVM_Fields_f, "prints usage statistics on properties (how many entities have non-zero values) in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_globals", PRVM_Globals_f, "prints all global variables in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_global", PRVM_Global_f, "prints value of a specified global variable in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_globalset", PRVM_GlobalSet_f, "sets value of a specified global variable in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_edictset", PRVM_ED_EdictSet_f, "changes value of a specified property of a specified entity in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "prvm_edictget", PRVM_ED_EdictGet_f, "retrieves the value of a specified property of a specified entity in the selected VM (server, client menu) into a cvar or to the console");
-	Cmd_AddCommand(CF_SHARED, "prvm_globalget", PRVM_ED_GlobalGet_f, "retrieves the value of a specified global variable in the selected VM (server, client menu) into a cvar or to the console");
-	Cmd_AddCommand(CF_SHARED, "prvm_printfunction", PRVM_PrintFunction_f, "prints a disassembly (QuakeC instructions) of the specified function in the selected VM (server, client, menu)");
-	Cmd_AddCommand(CF_SHARED, "cl_cmd", PRVM_GameCommand_Client_f, "calls the client QC function GameCommand with the supplied string as argument");
-	Cmd_AddCommand(CF_SHARED, "menu_cmd", PRVM_GameCommand_Menu_f, "calls the menu QC function GameCommand with the supplied string as argument");
-	Cmd_AddCommand(CF_SHARED, "sv_cmd", PRVM_GameCommand_Server_f, "calls the server QC function GameCommand with the supplied string as argument");
-
-	Cmd_AddCommand(CF_SHARED, "prvm_breakpoint", PRVM_Breakpoint_f, "marks a statement or function as breakpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear breakpoint");
-	Cmd_AddCommand(CF_SHARED, "prvm_globalwatchpoint", PRVM_GlobalWatchpoint_f, "marks a global as watchpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear watchpoint");
-	Cmd_AddCommand(CF_SHARED, "prvm_edictwatchpoint", PRVM_EdictWatchpoint_f, "marks an entity field as watchpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear watchpoint");
-
-	Cvar_RegisterVariable (&prvm_language);
-	Cvar_RegisterVariable (&prvm_traceqc);
-	Cvar_RegisterVariable (&prvm_statementprofiling);
-	Cvar_RegisterVariable (&prvm_timeprofiling);
-	Cvar_RegisterVariable (&prvm_coverage);
-	Cvar_RegisterVariable (&prvm_backtraceforwarnings);
-	Cvar_RegisterVariable (&prvm_leaktest);
-	Cvar_RegisterVariable (&prvm_leaktest_follow_targetname);
-	Cvar_RegisterVariable (&prvm_leaktest_ignore_classnames);
-	Cvar_RegisterVariable (&prvm_errordump);
-	Cvar_RegisterVariable (&prvm_breakpointdump);
-	Cvar_RegisterVariable (&prvm_reuseedicts_startuptime);
-	Cvar_RegisterVariable (&prvm_reuseedicts_neverinsameframe);
-	Cvar_RegisterVariable (&prvm_garbagecollection_enable);
-	Cvar_RegisterVariable (&prvm_garbagecollection_notify);
-	Cvar_RegisterVariable (&prvm_garbagecollection_scan_limit);
-	Cvar_RegisterVariable (&prvm_garbagecollection_strings);
-	Cvar_RegisterVariable (&prvm_stringdebug);
-
-	// COMMANDLINEOPTION: PRVM: -norunaway disables the runaway loop check (it might be impossible to exit DarkPlaces if used!)
-	prvm_runawaycheck = !Sys_CheckParm("-norunaway");
-
-	//VM_Cmd_Init();
-}
 
 /*
 ===============
@@ -3647,8 +3811,8 @@ void PRVM_LeakTest(prvm_prog_t *prog)
 		if (!ed->priv.required->mark)
 		if (ed->priv.required->allocation_origin)
 		{
-			Con_PrintLinef ("Unreferenced edict found!\n  Allocated at: %s", ed->priv.required->allocation_origin);
-			PRVM_ED_Print(prog, ed, NULL);
+			Con_PrintLinef ("Unreferenced edict found!" NEWLINE "  Allocated at: %s", ed->priv.required->allocation_origin);
+			PRVM_ED_Print(prog, ed, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 			Con_Print("\n");
 			leaked = true;
 		}
@@ -3813,4 +3977,76 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 	default:
 		memset(gc, 0, sizeof(*gc));
 	}
+}
+
+/*
+===============
+PRVM_Init
+===============
+*/
+void PRVM_Init (void)
+{
+	Cmd_AddCommand(CF_SHARED, "prvm_edict", PRVM_ED_PrintEdict_f, "print all data about an entity number in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_edicts", PRVM_ED_PrintEdicts_f, "prints all data about all entities in the selected VM (server, client, menu)");
+
+	Cmd_AddCommand (CF_SHARED, "edict", PRVM_ED_PrintEdict_SV_f, "print all data about an entity number in the server VM [Zircon]");  // Baker r1083: "edict" and "edicts"
+	Cmd_AddCommand (CF_SHARED, "csedict", PRVM_ED_PrintEdict_CL_f, "print all data about an entity number in the client VM [Zircon]");  // Baker r1083: "edict" and "edicts"
+
+	Cmd_AddCommand (CF_SHARED, "edicts", PRVM_ED_PrintEdicts_SV_f, "prints all data about all entities in the selected VM (server, client, menu) [Zircon]");  // Baker r1083: "edict" and "edicts"
+	Cmd_AddCommand (CF_SHARED, "csedicts", PRVM_ED_PrintEdicts_CL_f, "prints all data about all entities in the selected VM (server, client, menu) [Zircon]");  // Baker r1083: "edict" and "edicts"
+
+	Cmd_AddCommand(CF_SHARED, "prvm_edictcount", PRVM_ED_Count_f, "prints number of active entities in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_profile", PRVM_Profile_f, "prints execution statistics about the most used QuakeC functions in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_childprofile", PRVM_ChildProfile_f, "prints execution statistics about the most used QuakeC functions in the selected VM (server, client, menu), sorted by time taken in function with child calls");
+	Cmd_AddCommand(CF_SHARED, "prvm_callprofile", PRVM_CallProfile_f, "prints execution statistics about the most time consuming QuakeC calls from the engine in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_fields", PRVM_Fields_f, "prints usage statistics on properties (how many entities have non-zero values) in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_globals", PRVM_Globals_f, "prints all global variables in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_global", PRVM_Global_f, "prints value of a specified global variable in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_globalset", PRVM_GlobalSet_f, "sets value of a specified global variable in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_edictset", PRVM_ED_EdictSet_f, "changes value of a specified property of a specified entity in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "prvm_edictget", PRVM_ED_EdictGet_f, "retrieves the value of a specified property of a specified entity in the selected VM (server, client menu) into a cvar or to the console");
+	Cmd_AddCommand(CF_SHARED, "prvm_globalget", PRVM_ED_GlobalGet_f, "retrieves the value of a specified global variable in the selected VM (server, client menu) into a cvar or to the console");
+	Cmd_AddCommand(CF_SHARED, "prvm_printfunction", PRVM_PrintFunction_f, "prints a disassembly (QuakeC instructions) of the specified function in the selected VM (server, client, menu)");
+	Cmd_AddCommand(CF_SHARED, "cl_cmd", PRVM_GameCommand_Client_f, "calls the client QC function GameCommand with the supplied string as argument");
+	Cmd_AddCommand(CF_SHARED, "menu_cmd", PRVM_GameCommand_Menu_f, "calls the menu QC function GameCommand with the supplied string as argument");
+	Cmd_AddCommand(CF_SHARED, "sv_cmd", PRVM_GameCommand_Server_f, "calls the server QC function GameCommand with the supplied string as argument");
+
+	Cmd_AddCommand(CF_SHARED, "prvm_breakpoint", PRVM_Breakpoint_f, "marks a statement or function as breakpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear breakpoint");
+	Cmd_AddCommand(CF_SHARED, "prvm_globalwatchpoint", PRVM_GlobalWatchpoint_f, "marks a global as watchpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear watchpoint");
+	Cmd_AddCommand(CF_SHARED, "prvm_edictwatchpoint", PRVM_EdictWatchpoint_f, "marks an entity field as watchpoint (when this is executed, a stack trace is printed); to actually halt and investigate state, combine this with a gdb breakpoint on PRVM_Breakpoint, or with prvm_breakpointdump; run with just progs name to clear watchpoint");
+
+	// Baker r7084: gamecommand autocomplete assist
+	Cvar_RegisterVariable (&prvm_sv_gamecommands); // Baker r7103 gamecommand autocomplete
+	Cvar_RegisterVariable (&prvm_sv_progfields); // Baker r7103 gamecommand autocomplete
+	
+	Cvar_RegisterVariable (&prvm_cl_gamecommands); // Baker r7103 gamecommand autocomplete
+	Cvar_RegisterVariable (&prvm_cl_progfields); // Baker r7103 gamecommand autocomplete
+
+#pragma message ("Baker: At some point revive prvm_menu_gamecommands, lack of CF_MENU is why we stall")
+	// Cvar_RegisterVariable (&prvm_menu_gamecommands);
+	// End
+
+	Cvar_RegisterVariable (&prvm_language);
+	Cvar_RegisterVariable (&prvm_traceqc);
+	Cvar_RegisterVariable (&prvm_statementprofiling);
+	Cvar_RegisterVariable (&prvm_timeprofiling);
+	Cvar_RegisterVariable (&prvm_coverage);
+	Cvar_RegisterVariable (&prvm_backtraceforwarnings);
+	Cvar_RegisterVariable (&prvm_leaktest);
+	Cvar_RegisterVariable (&prvm_leaktest_follow_targetname);
+	Cvar_RegisterVariable (&prvm_leaktest_ignore_classnames);
+	Cvar_RegisterVariable (&prvm_errordump);
+	Cvar_RegisterVariable (&prvm_breakpointdump);
+	Cvar_RegisterVariable (&prvm_reuseedicts_startuptime);
+	Cvar_RegisterVariable (&prvm_reuseedicts_neverinsameframe);
+	Cvar_RegisterVariable (&prvm_garbagecollection_enable);
+	Cvar_RegisterVariable (&prvm_garbagecollection_notify);
+	Cvar_RegisterVariable (&prvm_garbagecollection_scan_limit);
+	Cvar_RegisterVariable (&prvm_garbagecollection_strings);
+	Cvar_RegisterVariable (&prvm_stringdebug);
+
+	// COMMANDLINEOPTION: PRVM: -norunaway disables the runaway loop check (it might be impossible to exit DarkPlaces if used!)
+	prvm_runawaycheck = !Sys_CheckParm("-norunaway");
+
+	//VM_Cmd_Init();
 }

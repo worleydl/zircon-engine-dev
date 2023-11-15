@@ -69,7 +69,7 @@ struct cmd_state_s;
 #define CF_DEFAULTSET (1<<30)
 #define CF_ALLOCATED (1<<31)   // created by Cvar_Get() (console or QC)
 
-#define CF_SHARED 3
+#define CF_SHARED (CF_CLIENT | CF_SERVER) // 3
 
 typedef void(*xcommand_t) (struct cmd_state_s *cmd);
 

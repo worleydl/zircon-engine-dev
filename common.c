@@ -37,7 +37,7 @@ cvar_t cmdline = {CF_CLIENT | CF_SERVER, "cmdline","0", "contains commandline th
 cvar_t cl_playermodel = {CF_CLIENT | CF_SERVER | CF_USERINFO | CF_ARCHIVE, "playermodel", "", "current player model in Nexuiz/Xonotic"};
 cvar_t cl_playerskin = {CF_CLIENT | CF_SERVER | CF_USERINFO | CF_ARCHIVE, "playerskin", "", "current player skin in Nexuiz/Xonotic"};
 
-char com_token[MAX_INPUTLINE];
+char com_token[MAX_INPUTLINE_16384];
 
 sys_t sys;
 //===========================================================================
@@ -900,7 +900,7 @@ COM_Init
 void COM_Init_Commands (void)
 {
 	int i, j, n;
-	char com_cmdline[MAX_INPUTLINE];
+	char com_cmdline[MAX_INPUTLINE_16384];
 
 	Cvar_RegisterVariable (&registered);
 	Cvar_RegisterVariable (&cmdline);

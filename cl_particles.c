@@ -540,7 +540,7 @@ static void CL_Particles_LoadEffectInfo(const char *customfile)
 	int filepass;
 	unsigned char *filedata;
 	fs_offset_t filesize;
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	numparticleeffectinfo = 0;
 	memset(particleeffectinfo, 0, sizeof(particleeffectinfo));
 	memset(particleeffectname, 0, sizeof(particleeffectname));
@@ -563,7 +563,7 @@ static void CL_Particles_LoadEffectInfo(const char *customfile)
 		}
 		else
 			break;
-		filedata = FS_LoadFile(filename, tempmempool, true, &filesize);
+		filedata = FS_LoadFile(filename, tempmempool, fs_quiet_true, &filesize);
 		if (!filedata)
 			continue;
 		CL_Particles_ParseEffectInfo((const char *)filedata, (const char *)filedata + filesize, filename);
@@ -1695,13 +1695,13 @@ void CL_ReadPointFile_f(cmd_state_t *cmd)
 	vec3_t vecorg;
 	int r, c, s;
 	char *pointfile = NULL, *pointfilepos, *t, tchar;
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 
 	if (!cl.worldmodel)
 		return;
 
 	dpsnprintf(name, sizeof(name), "%s.pts", cl.worldnamenoextension);
-	pointfile = (char *)FS_LoadFile(name, tempmempool, true, NULL);
+	pointfile = (char *)FS_LoadFile(name, tempmempool, fs_quiet_true, fs_size_ptr_null);
 	if (!pointfile)
 	{
 		Con_Printf ("Could not open %s\n", name);
@@ -2128,7 +2128,7 @@ static void R_InitParticleTexture (void)
 	vec3_t light;
 	char *buf;
 	fs_offset_t filesize;
-	char texturename[MAX_QPATH];
+	char texturename[MAX_QPATH_128];
 	skinframe_t *sf;
 
 	// a note: decals need to modulate (multiply) the background color to
@@ -2336,7 +2336,7 @@ static void R_InitParticleTexture (void)
 	particletexture[tex_beam].t2 = 1;
 
 	// now load an texcoord/texture override file
-	buf = (char *) FS_LoadFile("particles/particlefont.txt", tempmempool, false, &filesize);
+	buf = (char *) FS_LoadFile("particles/particlefont.txt", tempmempool, fs_quiet_FALSE, &filesize);
 	if (buf)
 	{
 		const char *bufptr;

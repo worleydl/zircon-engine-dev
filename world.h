@@ -67,7 +67,7 @@ struct prvm_prog_s;
 typedef struct world_s
 {
 	// convenient fields
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	vec3_t mins;
 	vec3_t maxs;
 	struct prvm_prog_s *prog;

@@ -23,7 +23,7 @@
 
 //LadyHavoc: rewrote most of this.
 
-#if defined(_MSC_VER) && _MSC_VER < 1900 // Baker: cutoff?
+#if 0 && defined(_MSC_VER) && _MSC_VER < 1900 // Baker: cutoff?
 
 	#include "quakedef.h"
 
@@ -35,6 +35,7 @@
 #else
 	#include "darkplaces.h"
 	#include "image.h"
+	# undef sprintf
 	# undef snprintf
 	# undef vsnprintf
 	#include "image_png.h"

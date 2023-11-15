@@ -222,7 +222,7 @@ typedef float (*COM_WordWidthFunc_t) (void *passthrough, const char *w, size_t *
 typedef int (*COM_LineProcessorFunc) (void *passthrough, const char *line, size_t length, float width, qbool isContination);
 int COM_Wordwrap(const char *string, size_t length, float continuationSize, float maxWidth, COM_WordWidthFunc_t wordWidth, void *passthroughCW, COM_LineProcessorFunc processLine, void *passthroughPL);
 
-extern char com_token[MAX_INPUTLINE];
+extern char com_token[MAX_INPUTLINE_16384];
 
 int COM_ParseToken_Simple(const char **datapointer, qbool returnnewline, qbool parsebackslash, qbool parsecomments);
 int COM_ParseToken_QuakeC(const char **datapointer, qbool returnnewline);
@@ -411,12 +411,17 @@ char *String_Edit_Replace (char *s_edit, size_t s_size, const char *s_find, cons
 char *String_Replace_Alloc (const char *s, const char *s_find, const char *s_replace);
 char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit);
 
+char *String_Edit_RemoveTrailingUnixSlash (char *s_edit);
+
 int String_Does_End_With (const char *s, const char *s_suffix);
 
+#define		String_Is_Dot(s)	(s[0] == '.' && s[1] == NULL_CHAR_0)
+#define		String_Is_DotDot(s)	(s[0] == '.' && s[1] == '.' && s[2] == NULL_CHAR_0)
+
 #if 1
-#define String_Does_Contain(s,s_find) (!!strstr(s,s_find))
+	#define String_Does_Contain(s,s_find) (!!strstr(s,s_find))
 #else
-int String_Does_Contain (const char *s, const char *s_find);
+	int String_Does_Contain (const char *s, const char *s_find);
 #endif
 
 int String_Does_Contain_Caseless (const char *s, const char *s_find);

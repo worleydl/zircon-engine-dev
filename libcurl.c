@@ -488,7 +488,7 @@ static unsigned char *decode_image(downloadinfo *di, const char *content_type)
 {
 	unsigned char *pixels = NULL;
 	fs_offset_t filesize = 0;
-	unsigned char *data = FS_LoadFile(di->filename, tempmempool, true, &filesize);
+	unsigned char *data = FS_LoadFile(di->filename, tempmempool, fs_quiet_true, &filesize);
 	if (data)
 	{
 		int mip = 0;
@@ -1694,7 +1694,7 @@ static const char *Curl_FindPackURL(const char *filename)
 {
 	static char foundurl[1024]; // invoked only by server
 	fs_offset_t filesize;
-	char *buf = (char *) FS_LoadFile("curl_urls.txt", tempmempool, true, &filesize);
+	char *buf = (char *) FS_LoadFile("curl_urls.txt", tempmempool, fs_quiet_true, &filesize);
 	if (buf && filesize)
 	{
 		// read lines of format "pattern url"

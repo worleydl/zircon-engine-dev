@@ -344,7 +344,7 @@ typedef struct model_brush_s
 	// trace a line of sight through this model (returns false if the line if sight is definitely blocked)
 	qbool (*TraceLineOfSight)(struct model_s *model, const vec3_t start, const vec3_t end, const vec3_t acceptmins, const vec3_t acceptmaxs);
 
-	char skybox[MAX_QPATH];
+	char skybox[MAX_QPATH_128];
 
 	struct skinframe_s *solidskyskinframe;
 	struct skinframe_s *alphaskyskinframe;

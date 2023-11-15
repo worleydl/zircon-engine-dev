@@ -226,7 +226,7 @@ void Mod_RenderInit(void)
 
 void Mod_UnloadModel (model_t *mod)
 {
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 	qbool used;
 	model_t *parentmodel;
 
@@ -473,7 +473,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 	if (!mod->loaded || checkdisk) {
 		if (checkdisk && mod->loaded)
 			Con_DPrintLinef ("checking model %s", mod->model_name);
-		buf = FS_LoadFile (mod->model_name, tempmempool, false, &filesize);
+		buf = FS_LoadFile (mod->model_name, tempmempool, fs_quiet_FALSE, &filesize);
 		if (buf) {
 			crc = CRC_Block((unsigned char *)buf, filesize);
 			// we need to reload the model if the crc does not match
@@ -545,7 +545,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 
 				Mod_FindPotentialDeforms(mod);
 
-				buf = FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.framegroups", mod->model_name), tempmempool, false, &filesize);
+				buf = FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.framegroups", mod->model_name), tempmempool, fs_quiet_FALSE, &filesize);
 				if (buf)
 				{
 					Mod_FrameGroupify(mod, (const char *)buf);
@@ -1487,6 +1487,7 @@ void Mod_LoadQ3Shaders(void)
 	unsigned long custsurfaceflags[256]; 
 	int numcustsurfaceflags;
 	qbool dpshaderkill;
+	int i, tcmodindex;
 
 	Mod_FreeQ3Shaders();
 
@@ -1500,7 +1501,7 @@ void Mod_LoadQ3Shaders(void)
 
 	// parse custinfoparms.txt
 	numcustsurfaceflags = 0;
-	if ((text = f = (char *)FS_LoadFile("scripts/custinfoparms.txt", tempmempool, false, NULL)) != NULL)
+	if ((text = f = (char *)FS_LoadFile("scripts/custinfoparms.txt", tempmempool, fs_quiet_FALSE, fs_size_ptr_null)) != NULL)
 	{
 		if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
 			Con_DPrintf ("scripts/custinfoparms.txt: contentflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
@@ -1541,11 +1542,11 @@ void Mod_LoadQ3Shaders(void)
 	}
 
 	// parse shaders
-	search = FS_Search("scripts/*.shader", fs_caseless_true, fs_quiet_FALSE, fs_pakfile_null);
+	search = FS_Search("scripts/*.shader", fs_caseless_true, fs_quiet_FALSE, fs_pakfile_null, fs_gamedironly_false);
 	if (!search)
 		return;
 	for (fileindex = 0;fileindex < search->numfilenames;fileindex++) {
-		text = f = (char *)FS_LoadFile(search->filenames[fileindex], tempmempool, false, NULL);
+		text = f = (char *)FS_LoadFile(search->filenames[fileindex], tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
 		if (!f)
 			continue;
 		while (COM_ParseToken_QuakeC(&text, false)) {
@@ -1678,14 +1679,12 @@ void Mod_LoadQ3Shaders(void)
 							if (String_Does_Match_Caseless(parameter[1], "$lightmap"))
 								shader.lighting = true;
 						} else if (numparameters >= 3 && (String_Does_Match_Caseless(parameter[0], "animmap") || String_Does_Match_Caseless(parameter[0], "animclampmap"))) {
-							int i;
 							layer->numframes = min(numparameters - 2, TEXTURE_MAXFRAMES_64);
 							layer->framerate = atof(parameter[1]);
 							layer->texturename = (char **) Mem_Alloc (q3shaders_mem, sizeof (char*) * layer->numframes);
 							for (i = 0;i < layer->numframes;i++)
 								layer->texturename[i] = Mem_strdup (q3shaders_mem, parameter[i + 2]);
 						} else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "rgbgen")) {
-							int i;
 							for (i = 0;i < numparameters - 2 && i < Q3RGBGEN_MAXPARMS_3;i++)
 								layer->rgbgen.parms[i] = atof(parameter[i+2]);
 							     if (String_Does_Match_Caseless(parameter[1], "identity"))         layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITY;
@@ -1706,7 +1705,6 @@ void Mod_LoadQ3Shaders(void)
 							else Con_DPrintf ("%s parsing warning: unknown rgbgen %s\n", search->filenames[fileindex], parameter[1]);
 						}
 						else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "alphagen")) {
-							int i;
 							for (i = 0;i < numparameters - 2 && i < Q3ALPHAGEN_MAXPARMS_1; i++) {
 								layer->alphagen.parms[i] = atof(parameter[i+2]);
 							}
@@ -1727,7 +1725,6 @@ void Mod_LoadQ3Shaders(void)
 							else Con_DPrintf ("%s parsing warning: unknown alphagen %s\n", search->filenames[fileindex], parameter[1]);
 						}
 						else if (numparameters >= 2 && (String_Does_Match_Caseless(parameter[0], "texgen") || String_Does_Match_Caseless(parameter[0], "tcgen"))) {
-							int i;
 							// observed values: tcgen environment
 							// no other values have been observed in real shaders
 							for (i = 0;i < numparameters - 2 && i < Q3TCGEN_MAXPARMS_6;i++)
@@ -1740,7 +1737,7 @@ void Mod_LoadQ3Shaders(void)
 							else Con_DPrintf ("%s parsing warning: unknown tcgen mode %s\n", search->filenames[fileindex], parameter[1]);
 						}
 						else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "tcmod")) {
-							int i, tcmodindex;
+
 							// observed values:
 							// tcmod rotate #
 							// tcmod scale # #
@@ -1760,9 +1757,19 @@ void Mod_LoadQ3Shaders(void)
 
 									 if (String_Does_Match_Caseless(parameter[1], "entitytranslate")) layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ENTITYTRANSLATE;
 								else if (String_Does_Match_Caseless(parameter[1], "rotate"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ROTATE;
-								else if (String_Does_Match_Caseless(parameter[1], "scale"))           layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCALE;
-#pragma message ("TCMod scale issue with Quake Combat+")
-#pragma message ("Get your battery of Zircon Galaxy test maps ... like reflecto water etc onto this computer")
+								else if (String_Does_Match_Caseless(parameter[1], "scale")) {
+#if 1 // Baker: r9073u bug area of interest
+	// I have seen nothing unusual here
+	// This is an attempt to reduce the problem.
+	// Baker - temp hack -- why! .. And this does not fix anything.  It reduces the crazy.
+	if (layer->tcmods[tcmodindex].parms[0])
+		layer->tcmods[tcmodindex].parms[0] = sqrt(sqrt (layer->tcmods[tcmodindex].parms[0])); //0.25;//1 / layer->tcmods[tcmodindex].parms[0]; 
+	if (layer->tcmods[tcmodindex].parms[1])
+		layer->tcmods[tcmodindex].parms[1] = sqrt(sqrt (layer->tcmods[tcmodindex].parms[1])); //1 / layer->tcmods[tcmodindex].parms[1]; 
+#endif
+									layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCALE;
+								}
+//#pragma message ("TCMod scale issue with Quake Combat+")
 								else if (String_Does_Match_Caseless(parameter[1], "scroll"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCROLL;
 								else if (String_Does_Match_Caseless(parameter[1], "page"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_PAGE;
 								else if (String_Does_Match_Caseless(parameter[1], "stretch"))
@@ -1853,14 +1860,10 @@ void Mod_LoadQ3Shaders(void)
 				}
 				if (numparameters < 1)
 					continue;
-				if (String_Does_Match_Caseless(parameter[0], "surfaceparm") && numparameters >= 2)
-				{
-					if (String_Does_Match_Caseless(parameter[1], "alphashadow"))
-						shader.surfaceparms |= Q3SURFACEPARM_ALPHASHADOW;
-					else if (String_Does_Match_Caseless(parameter[1], "areaportal"))
-						shader.surfaceparms |= Q3SURFACEPARM_AREAPORTAL;
-					else if (String_Does_Match_Caseless(parameter[1], "botclip"))
-						shader.surfaceparms |= Q3SURFACEPARM_BOTCLIP;
+				if (String_Does_Match_Caseless(parameter[0], "surfaceparm") && numparameters >= 2) {
+					if (String_Does_Match_Caseless(parameter[1], "alphashadow")) shader.surfaceparms |= Q3SURFACEPARM_ALPHASHADOW;
+					else if (String_Does_Match_Caseless(parameter[1], "areaportal")) shader.surfaceparms |= Q3SURFACEPARM_AREAPORTAL;
+					else if (String_Does_Match_Caseless(parameter[1], "botclip")) shader.surfaceparms |= Q3SURFACEPARM_BOTCLIP;
 					else if (String_Does_Match_Caseless(parameter[1], "clusterportal")) shader.surfaceparms |= Q3SURFACEPARM_CLUSTERPORTAL;
 					else if (String_Does_Match_Caseless(parameter[1], "detail")) shader.surfaceparms |= Q3SURFACEPARM_DETAIL;
 					else if (String_Does_Match_Caseless(parameter[1], "donotenter")) shader.surfaceparms |= Q3SURFACEPARM_DONOTENTER;
@@ -1943,7 +1946,7 @@ void Mod_LoadQ3Shaders(void)
 						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) <= atof(parameter[3]))
 							shader.dpshaderkill = dpshaderkill;
 					} else {
-						Con_DPrintf ("%s parsing warning: unknown dpshaderkillifcvar op \"%s\", or not enough arguments\n", search->filenames[fileindex], op);
+						Con_DPrintLinef ("%s parsing warning: unknown dpshaderkillifcvar op " QUOTED_S ", or not enough arguments", search->filenames[fileindex], op);
 					}
 				} else if (String_Does_Match_Caseless(parameter[0], "sky") && numparameters >= 2) {
 					// some q3 skies don't have the sky parm set
@@ -1979,7 +1982,7 @@ void Mod_LoadQ3Shaders(void)
 					else if (String_Does_Match_Caseless(parameter[1], "hud"))
 						shader.transparentsort = TRANSPARENTSORT_HUD;
 					else
-						Con_DPrintf ("%s parsing warning: unknown dptransparentsort category \"%s\", or not enough arguments\n", search->filenames[fileindex], parameter[1]);
+						Con_DPrintLinef ("%s parsing warning: unknown dptransparentsort category " QUOTED_S ", or not enough arguments", search->filenames[fileindex], parameter[1]);
 				} else if (String_Does_Match_Caseless(parameter[0], "dprefract") && numparameters >= 5) {
 					shader.textureflags |= Q3TEXTUREFLAG_REFRACTION;
 					shader.refractfactor = atof(parameter[1]);
@@ -2023,7 +2026,7 @@ void Mod_LoadQ3Shaders(void)
 					} // numparameters >= 5
 				}
 				else if (String_Does_Match_Caseless(parameter[0], "deformvertexes") && numparameters >= 2) {
-					int i, deformindex;
+					int deformindex;
 					for (deformindex = 0;deformindex < Q3MAXDEFORMS_4;deformindex++)
 						if (!shader.deforms[deformindex].deform)
 							break;
@@ -2147,7 +2150,7 @@ qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, tex
 	shader_t *shader;
 	if (!name)
 		name = "";
-	strlcpy(texture->name, name, sizeof(texture->name));
+	c_strlcpy (texture->name, name);
 	texture->basealpha = 1.0f;
 	shader = name[0] ? Mod_LookupQ3Shader(name) : NULL;
 
@@ -2508,7 +2511,7 @@ nothing                GL_ZERO GL_ONE
 			else
 				success = false;
 			if (!success && warnmissing)
-				Con_Printf ("^1%s:^7 could not load texture ^3\"%s\"\n", modelname, texture->name);
+				Con_PrintLinef ("^1%s:^7 could not load texture " CON_BRONZE QUOTED_S, modelname, texture->name);
 		}
 	}
 	// init the animation variables
@@ -2582,7 +2585,7 @@ skinfile_t *Mod_LoadSkinFiles(void)
 	const char *data;
 	skinfile_t *skinfile = NULL, *first = NULL;
 	skinfileitem_t *skinfileitem;
-	char word[10][MAX_QPATH];
+	char word[10][MAX_QPATH_128];
 	char vabuf[1024];
 
 /*
@@ -2601,7 +2604,7 @@ tag_weapon,
 tag_torso,
 */
 	memset(word, 0, sizeof(word));
-	for (i = 0;i < 256 && (data = text = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s_%d.skin", loadmodel->model_name, i), tempmempool, true, NULL));i++) {
+	for (i = 0;i < 256 && (data = text = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s_%d.skin", loadmodel->model_name, i), tempmempool, fs_quiet_true, fs_size_ptr_null));i++) {
 		// If it's the first file we parse
 		if (skinfile == NULL)
 		{
@@ -2914,7 +2917,7 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 	char *outbuffer = (char *) Z_Malloc(outbuffermax), *oldbuffer;
 	const msurface_t *surface;
 	const int maxtextures = 256;
-	char *texturenames = (char *) Z_Malloc(maxtextures * MAX_QPATH);
+	char *texturenames = (char *) Z_Malloc(maxtextures * MAX_QPATH_128);
 	model_t *submodel;
 
 	// construct the mtllib file
@@ -2928,14 +2931,14 @@ static void Mod_Decompile_OBJ(model_t *model, const char *filename, const char *
 		countfaces += surface->num_triangles;
 		texname = (surface->texture && surface->texture->name[0]) ? surface->texture->name : "default";
 		for (textureindex = 0;textureindex < counttextures;textureindex++)
-			if (String_Does_Match(texturenames + textureindex * MAX_QPATH, texname))
+			if (String_Does_Match(texturenames + textureindex * MAX_QPATH_128, texname))
 				break;
 		if (textureindex < counttextures)
 			continue; // already wrote this material entry
 		if (textureindex >= maxtextures)
 			continue; // just a precaution
 		textureindex = counttextures++;
-		strlcpy(texturenames + textureindex * MAX_QPATH, texname, MAX_QPATH);
+		strlcpy(texturenames + textureindex * MAX_QPATH_128, texname, MAX_QPATH_128);
 		if (outbufferpos >= outbuffermax >> 1)
 		{
 			outbuffermax *= 2;
@@ -3190,12 +3193,12 @@ static void Mod_Decompile_f(cmd_state_t *cmd)
 {
 	int i, j, k, l, first, count;
 	model_t *mod;
-	char inname[MAX_QPATH];
-	char outname[MAX_QPATH];
-	char mtlname[MAX_QPATH];
-	char basename[MAX_QPATH];
-	char animname[MAX_QPATH];
-	char animname2[MAX_QPATH];
+	char inname[MAX_QPATH_128];
+	char outname[MAX_QPATH_128];
+	char mtlname[MAX_QPATH_128];
+	char basename[MAX_QPATH_128];
+	char animname[MAX_QPATH_128];
+	char animname2[MAX_QPATH_128];
 	char zymtextbuffer[16384];
 	char dpmtextbuffer[16384];
 	char framegroupstextbuffer[16384];

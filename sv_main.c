@@ -50,7 +50,6 @@ cvar_t pausable = {CF_SERVER, "pausable","1", "allow players to pause or not (ot
 cvar_t pr_checkextension = {CF_SERVER | CF_READONLY, "pr_checkextension", "1", "indicates to QuakeC that the standard quakec extensions system is available (if 0, quakec should not attempt to use extensions)"};
 cvar_t samelevel = {CF_SERVER | CF_NOTIFY, "samelevel","0", "repeats same level if level ends (due to timelimit or someone hitting an exit)"};
 cvar_t skill = {CF_SERVER, "skill","1", "difficulty level of game, affects monster layouts in levels, 0 = easy, 1 = normal, 2 = hard, 3 = nightmare (same layout as hard but monsters fire twice)"};
-cvar_t campaign = {CF_SERVER, "campaign", "0", "singleplayer mode"};
 cvar_t host_timescale = {CF_CLIENT | CF_SERVER, "host_timescale", "1.0", "controls game speed, 0.5 is half speed, 2 is double speed"};
 
 cvar_t sv_accelerate = {CF_SERVER, "sv_accelerate", "10", "rate at which a player accelerates to sv_maxspeed"};
@@ -67,11 +66,13 @@ cvar_t sv_airstrafeaccel_qw = {CF_SERVER, "sv_airstrafeaccel_qw", "0", "when set
 cvar_t sv_aircontrol = {CF_SERVER, "sv_aircontrol", "0", "CPMA-style air control"};
 cvar_t sv_aircontrol_power = {CF_SERVER, "sv_aircontrol_power", "2", "CPMA-style air control exponent"};
 cvar_t sv_aircontrol_penalty = {CF_SERVER, "sv_aircontrol_penalty", "0", "deceleration while using CPMA-style air control"};
+cvar_t sv_altnoclipmove = {CF_SERVER, "sv_altnoclipmove", "1", "FitzQuake/Quake2 style noclip [Zircon]"}; // Baker r0085: FitzQuake no clipping
+
 cvar_t sv_allowdownloads = {CF_SERVER, "sv_allowdownloads", "1", "whether to allow clients to download files from the server (does not affect http downloads)"};
-cvar_t sv_allowdownloads_archive = {CF_SERVER, "sv_allowdownloads_archive", "0", "whether to allow downloads of archives (pak/pk3)"};
+cvar_t sv_allowdownloads_archive = {CF_SERVER, "sv_allowdownloads_archive", "1", "whether to allow downloads of archives (pak/pk3) [Zircon default]"}; // Baker r0104: download defaults
 cvar_t sv_allowdownloads_config = {CF_SERVER, "sv_allowdownloads_config", "0", "whether to allow downloads of config files (cfg)"};
 cvar_t sv_allowdownloads_dlcache = {CF_SERVER, "sv_allowdownloads_dlcache", "0", "whether to allow downloads of dlcache files (dlcache/)"};
-cvar_t sv_allowdownloads_inarchive = {CF_SERVER, "sv_allowdownloads_inarchive", "0", "whether to allow downloads from archives (pak/pk3)"};
+cvar_t sv_allowdownloads_inarchive = {CF_SERVER, "sv_allowdownloads_inarchive", "1", "whether to allow downloads from archives (pak/pk3) [Zircon default]"}; // Baker r0104: download defaults
 cvar_t sv_areagrid_link_SOLID_NOT = {CF_SERVER | CF_NOTIFY, "sv_areagrid_link_SOLID_NOT", "1", "set to 0 to prevent SOLID_NOT entities from being linked to the area grid, and unlink any that are already linked (in the code paths that would otherwise link them), for better performance"};
 cvar_t sv_areagrid_mingridsize = {CF_SERVER | CF_NOTIFY, "sv_areagrid_mingridsize", "128", "minimum areagrid cell size, smaller values work better for lots of small objects, higher values for large objects"};
 cvar_t sv_checkforpacketsduringsleep = {CF_SERVER, "sv_checkforpacketsduringsleep", "0", "uses select() function to wait between frames which can be interrupted by packets being received, instead of Sleep()/usleep()/SDL_Sleep() functions which do not check for packets"};
@@ -99,7 +100,7 @@ cvar_t sv_debugmove = {CF_SERVER | CF_NOTIFY, "sv_debugmove", "0", "disables col
 cvar_t sv_echobprint = {CF_SERVER | CF_ARCHIVE, "sv_echobprint", "1", "prints gamecode bprint() calls to server console"};
 cvar_t sv_edgefriction = {CF_SERVER, "edgefriction", "1", "how much you slow down when nearing a ledge you might fall off, multiplier of sv_friction (Quake used 2, QuakeWorld used 1 due to a bug in physics code)"};
 cvar_t sv_entpatch = {CF_SERVER, "sv_entpatch", "1", "enables loading of .ent files to override entities in the bsp (for example Threewave CTF server pack contains .ent patch files enabling play of CTF on id1 maps)"};
-cvar_t sv_freezenonclients = {CF_SERVER | CF_NOTIFY, "sv_freezenonclients", "0", "freezes time, except for players, allowing you to walk around and take screenshots of explosions"};
+cvar_t sv_freezenonclients = {CF_SERVER /*| CF_NOTIFY*/, "sv_freezenonclients", "0", "freezes time, except for players, allowing you to walk around and take screenshots of explosions"};
 
 cvar_t sv_friction = {CF_SERVER | CF_NOTIFY, "sv_friction","4", "how fast you slow down"};
 cvar_t sv_gameplayfix_blowupfallenzombies = {CF_SERVER, "sv_gameplayfix_blowupfallenzombies", "1", "causes findradius to detect SOLID_NOT entities such as zombies and corpses on the floor, allowing splash damage to apply to them"};
@@ -171,8 +172,8 @@ cvar_t sv_threaded = {CF_SERVER, "sv_threaded", "0", "enables a separate thread 
 cvar_t teamplay = {CF_SERVER | CF_NOTIFY, "teamplay","0", "teamplay mode, values depend on mod but typically 0 = no teams, 1 = no team damage no self damage, 2 = team damage and self damage, some mods support 3 = no team damage but can damage self"};
 cvar_t timelimit = {CF_SERVER | CF_NOTIFY, "timelimit","0", "ends level at this time (in minutes)"};
 
-cvar_t sv_rollspeed = {CF_CLIENT, "sv_rollspeed", "200", "how much strafing is necessary to tilt the view"};
-cvar_t sv_rollangle = {CF_CLIENT, "sv_rollangle", "2.0", "how much to tilt the view when strafing"};
+cvar_t sv_rollspeed = {CF_CLIENT | CF_ARCHIVE, "sv_rollspeed", "200", "how much strafing is necessary to tilt the view"};
+cvar_t sv_rollangle = {CF_CLIENT | CF_ARCHIVE, "sv_rollangle", "2.0", "how much to tilt the view when strafing"};
 
 cvar_t saved1 = {CF_SERVER | CF_ARCHIVE, "saved1", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
 cvar_t saved2 = {CF_SERVER | CF_ARCHIVE, "saved2", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
@@ -185,6 +186,10 @@ cvar_t scratch2 = {CF_SERVER,"scratch2", "0", "unused cvar in quake, can be used
 cvar_t scratch3 = {CF_SERVER, "scratch3", "0", "unused cvar in quake, can be used by mods"};
 cvar_t scratch4 = {CF_SERVER, "scratch4", "0", "unused cvar in quake, can be used by mods"};
 cvar_t temp1 = {CF_SERVER, "temp1","0", "general cvar for mods to use, in stock id1 this selects which death animation to use on players (0 = random death, other values select specific death scenes)"};
+
+cvar_t campaign = {CF_SERVER, "campaign","0", "Rerelease [Zircon]" }; // AURA 10.0 
+cvar_t horde = {CF_SERVER, "horde","0", "Rerelease [Zircon]" }; // AURA
+cvar_t scr_usekfont = {CF_SERVER, "scr_usekfont","0", "Rerelease [Zircon]" }; // AURA
 
 cvar_t nehx00 = {CF_SERVER, "nehx00", "0", "nehahra data storage cvar (used in singleplayer)"};
 cvar_t nehx01 = {CF_SERVER, "nehx01", "0", "nehahra data storage cvar (used in singleplayer)"};
@@ -494,226 +499,6 @@ static void SV_ServerOptions (void)
 		Cvar_SetValueQuick(&deathmatch, 1);
 }
 
-/*
-===============
-SV_Init
-===============
-*/
-void SV_Init (void)
-{
-	// init the csqc progs cvars, since they are updated/used by the server code
-	// TODO: fix this since this is a quick hack to make some of [515]'s broken code run ;) [9/13/2006 Black]
-	extern cvar_t csqc_progname;	//[515]: csqc crc check and right csprogs name according to progs.dat
-	extern cvar_t csqc_progcrc;
-	extern cvar_t csqc_progsize;
-	extern cvar_t csqc_usedemoprogs;
-
-	Cvar_RegisterVariable(&sv_worldmessage);
-	Cvar_RegisterVariable(&sv_worldname);
-	Cvar_RegisterVariable(&sv_worldnamenoextension);
-	Cvar_RegisterVariable(&sv_worldbasename);
-
-	Cvar_RegisterVariable (&csqc_progname);
-	Cvar_RegisterVariable (&csqc_progcrc);
-	Cvar_RegisterVariable (&csqc_progsize);
-	Cvar_RegisterVariable (&csqc_usedemoprogs);
-
-	Cmd_AddCommand(CF_SHARED, "sv_saveentfile", SV_SaveEntFile_f, "save map entities to .ent file (to allow external editing)");
-	Cmd_AddCommand(CF_SHARED, "sv_areastats", SV_AreaStats_f, "prints statistics on entity culling during collision traces");
-	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "sv_startdownload", SV_StartDownload_f, "begins sending a file to the client (network protocol use only)");
-	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "download", SV_Download_f, "downloads a specified file from the server");
-
-	Cvar_RegisterVariable (&sv_disablenotify);
-	Cvar_RegisterVariable (&coop);
-	Cvar_RegisterVariable (&deathmatch);
-	Cvar_RegisterVariable (&fraglimit);
-	Cvar_RegisterVariable (&gamecfg);
-	Cvar_RegisterVariable (&noexit);
-	Cvar_RegisterVariable (&nomonsters);
-	Cvar_RegisterVariable (&pausable);
-	Cvar_RegisterVariable (&pr_checkextension);
-	Cvar_RegisterVariable (&samelevel);
-	Cvar_RegisterVariable (&skill);
-	
-	Cvar_RegisterVariable (&host_timescale);
-	Cvar_RegisterCallback (&host_timescale, Host_Timescale_c);
-	//Cvar_RegisterVirtual (&host_timescale, "slowmo");
-	//Cvar_RegisterVirtual (&host_timescale, "timescale");
-	Cvar_RegisterVariable (&sv_accelerate);
-	Cvar_RegisterVariable (&sv_aim);
-	Cvar_RegisterVariable (&sv_airaccel_qw);
-	Cvar_RegisterVariable (&sv_airaccel_qw_stretchfactor);
-	Cvar_RegisterVariable (&sv_airaccel_sideways_friction);
-	Cvar_RegisterVariable (&sv_airaccelerate);
-	Cvar_RegisterVariable (&sv_airstopaccelerate);
-	Cvar_RegisterVariable (&sv_airstrafeaccelerate);
-	Cvar_RegisterVariable (&sv_maxairstrafespeed);
-	Cvar_RegisterVariable (&sv_airstrafeaccel_qw);
-	Cvar_RegisterVariable (&sv_airspeedlimit_nonqw);
-	Cvar_RegisterVariable (&sv_aircontrol);
-	Cvar_RegisterVariable (&sv_aircontrol_power);
-	Cvar_RegisterVariable (&sv_aircontrol_penalty);
-	Cvar_RegisterVariable (&sv_allowdownloads);
-	Cvar_RegisterVariable (&sv_allowdownloads_archive);
-	Cvar_RegisterVariable (&sv_allowdownloads_config);
-	Cvar_RegisterVariable (&sv_allowdownloads_dlcache);
-	Cvar_RegisterVariable (&sv_allowdownloads_inarchive);
-	Cvar_RegisterVariable (&sv_areagrid_link_SOLID_NOT);
-	Cvar_RegisterVariable (&sv_areagrid_mingridsize);
-	Cvar_RegisterVariable (&sv_checkforpacketsduringsleep);
-	Cvar_RegisterVariable (&sv_clmovement_enable);
-	Cvar_RegisterVariable (&sv_clmovement_minping);
-	Cvar_RegisterVariable (&sv_clmovement_minping_disabletime);
-	Cvar_RegisterVariable (&sv_clmovement_inputtimeout);
-	Cvar_RegisterVariable (&sv_cullentities_nevercullbmodels);
-	Cvar_RegisterVariable (&sv_cullentities_pvs);
-	Cvar_RegisterVariable (&sv_cullentities_stats);
-	Cvar_RegisterVariable (&sv_cullentities_trace);
-	Cvar_RegisterVariable (&sv_cullentities_trace_delay);
-	Cvar_RegisterVariable (&sv_cullentities_trace_delay_players);
-	Cvar_RegisterVariable (&sv_cullentities_trace_enlarge);
-	Cvar_RegisterVariable (&sv_cullentities_trace_expand);
-	Cvar_RegisterVariable (&sv_cullentities_trace_eyejitter);
-	Cvar_RegisterVariable (&sv_cullentities_trace_entityocclusion);
-	Cvar_RegisterVariable (&sv_cullentities_trace_prediction);
-	Cvar_RegisterVariable (&sv_cullentities_trace_prediction_time);
-	Cvar_RegisterVariable (&sv_cullentities_trace_samples);
-	Cvar_RegisterVariable (&sv_cullentities_trace_samples_extra);
-	Cvar_RegisterVariable (&sv_cullentities_trace_samples_players);
-	Cvar_RegisterVariable (&sv_cullentities_trace_spectators);
-	Cvar_RegisterVariable (&sv_debugmove);
-	Cvar_RegisterVariable (&sv_echobprint);
-	Cvar_RegisterVariable (&sv_edgefriction);
-	Cvar_RegisterVariable (&sv_entpatch);
-	Cvar_RegisterVariable (&sv_freezenonclients);
-	Cvar_RegisterVariable (&sv_friction);
-	Cvar_RegisterVariable (&sv_gameplayfix_blowupfallenzombies);
-	Cvar_RegisterVariable (&sv_gameplayfix_consistentplayerprethink);
-	Cvar_RegisterVariable (&sv_gameplayfix_delayprojectiles);
-	Cvar_RegisterVariable (&sv_gameplayfix_droptofloorstartsolid);
-	Cvar_RegisterVariable (&sv_gameplayfix_droptofloorstartsolid_nudgetocorrect);
-	Cvar_RegisterVariable (&sv_gameplayfix_easierwaterjump);
-	Cvar_RegisterVariable (&sv_gameplayfix_findradiusdistancetobox);
-	Cvar_RegisterVariable (&sv_gameplayfix_gravityunaffectedbyticrate);
-	Cvar_RegisterVariable (&sv_gameplayfix_grenadebouncedownslopes);
-	Cvar_RegisterVariable (&sv_gameplayfix_multiplethinksperframe);
-	Cvar_RegisterVariable (&sv_gameplayfix_noairborncorpse);
-	Cvar_RegisterVariable (&sv_gameplayfix_noairborncorpse_allowsuspendeditems);
-	Cvar_RegisterVariable (&sv_gameplayfix_nudgeoutofsolid);
-	Cvar_RegisterVariable (&sv_gameplayfix_nudgeoutofsolid_separation);
-	Cvar_RegisterVariable (&sv_gameplayfix_q2airaccelerate);
-	Cvar_RegisterVariable (&sv_gameplayfix_nogravityonground);
-	Cvar_RegisterVariable (&sv_gameplayfix_setmodelrealbox);
-	Cvar_RegisterVariable (&sv_gameplayfix_slidemoveprojectiles);
-	Cvar_RegisterVariable (&sv_gameplayfix_stepdown);
-	Cvar_RegisterVariable (&sv_gameplayfix_stepmultipletimes);
-	Cvar_RegisterVariable (&sv_gameplayfix_nostepmoveonsteepslopes);
-	Cvar_RegisterVariable (&sv_gameplayfix_swiminbmodels);
-	Cvar_RegisterVariable (&sv_gameplayfix_upwardvelocityclearsongroundflag);
-	Cvar_RegisterVariable (&sv_gameplayfix_downtracesupportsongroundflag);
-	Cvar_RegisterVariable (&sv_gameplayfix_q1bsptracelinereportstexture);
-	Cvar_RegisterVariable (&sv_gameplayfix_unstickplayers);
-	Cvar_RegisterVariable (&sv_gameplayfix_unstickentities);
-	Cvar_RegisterVariable (&sv_gameplayfix_fixedcheckwatertransition);
-	Cvar_RegisterVariable (&sv_gameplayfix_customstats);
-	Cvar_RegisterVariable (&sv_gravity);
-	Cvar_RegisterVariable (&sv_init_frame_count);
-	Cvar_RegisterVariable (&sv_idealpitchscale);
-	Cvar_RegisterVariable (&sv_jumpstep);
-	Cvar_RegisterVariable (&sv_jumpvelocity);
-	Cvar_RegisterVariable (&sv_legacy_bbox_expand);
-	Cvar_RegisterVariable (&sv_maxairspeed);
-	Cvar_RegisterVariable (&sv_maxrate);
-	Cvar_RegisterVariable (&sv_maxspeed);
-	Cvar_RegisterVariable (&sv_maxvelocity);
-	Cvar_RegisterVariable (&sv_nostep);
-	Cvar_RegisterVariable (&sv_playerphysicsqc);
-	Cvar_RegisterVariable (&sv_progs);
-	Cvar_RegisterVariable (&sv_protocolname);
-	Cvar_RegisterVariable (&sv_random_seed);
-	Cvar_RegisterVariable (&host_limitlocal);
-	Cvar_RegisterVirtual(&host_limitlocal, "sv_ratelimitlocalplayer");
-	Cvar_RegisterVariable (&sv_sound_land);
-	Cvar_RegisterVariable (&sv_sound_watersplash);
-	Cvar_RegisterVariable (&sv_stepheight);
-	Cvar_RegisterVariable (&sv_stopspeed);
-	Cvar_RegisterVariable (&sv_wallfriction);
-	Cvar_RegisterVariable (&sv_wateraccelerate);
-	Cvar_RegisterVariable (&sv_waterfriction);
-	Cvar_RegisterVariable (&sv_warsowbunny_airforwardaccel);
-	Cvar_RegisterVariable (&sv_warsowbunny_accel);
-	Cvar_RegisterVariable (&sv_warsowbunny_topspeed);
-	Cvar_RegisterVariable (&sv_warsowbunny_turnaccel);
-	Cvar_RegisterVariable (&sv_warsowbunny_backtosideratio);
-	Cvar_RegisterVariable (&sv_onlycsqcnetworking);
-	Cvar_RegisterVariable (&sv_areadebug);
-
-	Cvar_RegisterVariable (&sys_ticrate);
-	Cvar_RegisterVariable (&sv_maxphysicsframesperserverframe);
-	Cvar_RegisterVariable (&sv_lagreporting_always);
-	Cvar_RegisterVariable (&sv_lagreporting_strict);
-	Cvar_RegisterVariable (&sv_threaded);
-
-	Cvar_RegisterVariable (&teamplay);
-	Cvar_RegisterVariable (&timelimit);
-
-	Cvar_RegisterVariable (&sv_rollangle);
-	Cvar_RegisterVariable (&sv_rollspeed);
-
-	Cvar_RegisterVariable (&saved1);
-	Cvar_RegisterVariable (&saved2);
-	Cvar_RegisterVariable (&saved3);
-	Cvar_RegisterVariable (&saved4);
-
-	Cvar_RegisterVariable (&savedgamecfg);
-	Cvar_RegisterVariable (&scratch1);
-	Cvar_RegisterVariable (&scratch2);
-	Cvar_RegisterVariable (&scratch3);
-	Cvar_RegisterVariable (&scratch4);
-	Cvar_RegisterVariable (&temp1);
-
-	Cvar_RegisterVariable (&campaign);
-	// LadyHavoc: Nehahra uses these to pass data around cutscene demos
-	Cvar_RegisterVariable (&nehx00);
-	Cvar_RegisterVariable (&nehx01);
-	Cvar_RegisterVariable (&nehx02);
-	Cvar_RegisterVariable (&nehx03);
-	Cvar_RegisterVariable (&nehx04);
-	Cvar_RegisterVariable (&nehx05);
-	Cvar_RegisterVariable (&nehx06);
-	Cvar_RegisterVariable (&nehx07);
-	Cvar_RegisterVariable (&nehx08);
-	Cvar_RegisterVariable (&nehx09);
-	Cvar_RegisterVariable (&nehx10);
-	Cvar_RegisterVariable (&nehx11);
-	Cvar_RegisterVariable (&nehx12);
-	Cvar_RegisterVariable (&nehx13);
-	Cvar_RegisterVariable (&nehx14);
-	Cvar_RegisterVariable (&nehx15);
-	Cvar_RegisterVariable (&nehx16);
-	Cvar_RegisterVariable (&nehx17);
-	Cvar_RegisterVariable (&nehx18);
-	Cvar_RegisterVariable (&nehx19);
-	Cvar_RegisterVariable (&cutscene); // for Nehahra but useful to other mods as well
-
-	Cvar_RegisterVariable (&sv_autodemo_perclient);
-	Cvar_RegisterVariable (&sv_autodemo_perclient_nameformat);
-	Cvar_RegisterVariable (&sv_autodemo_perclient_discardable);
-
-	Cvar_RegisterVariable (&halflifebsp);
-	Cvar_RegisterVariable (&sv_mapformat_is_quake2);
-	Cvar_RegisterVariable (&sv_mapformat_is_quake3);
-
-	Cvar_RegisterVariable (&sv_writepicture_quality);
-
-	SV_InitOperatorCommands();
-	host.hook.SV_Shutdown = SV_Shutdown;
-
-	sv_mempool = Mem_AllocPool("server", 0, NULL);
-
-	SV_ServerOptions();
-	Cvar_Callback(&sv_netport);
-}
 
 static void SV_SaveEntFile_f(cmd_state_t *cmd)
 {
@@ -723,6 +508,42 @@ static void SV_SaveEntFile_f(cmd_state_t *cmd)
 		return;
 	}
 	FS_WriteFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), sv.worldmodel->brush.entities, (fs_offset_t)strlen(sv.worldmodel->brush.entities));
+}
+
+
+// If early, send the game only.
+// If late, send everything.  Even the game again.  Client clears that on new map.
+// Issue a commented out svc_stufftext like "//hint game warp -quoth"
+
+// Baker r8191 skill level hint from server to client
+static void SV_InsertHints (sizebuf_t *sb, qbool is_early_gamedir_only)
+{
+	char vabuf[1024];
+	const char *sv_hint_string;
+	
+	Con_DPrintLinef ("Send hints ... Early? = %d", is_early_gamedir_only);
+
+	// Must send gamedir change very early. Other hints must occur AFTER
+	if (1) {
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "game %s" NEWLINE, gamedirname1 );
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
+	
+	if (is_early_gamedir_only == false) {
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "skill %d" NEWLINE, skill.integer);		
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
+
+	if (is_early_gamedir_only == false) { // AURA 10.2
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "qex %d" NEWLINE, sv.is_qex );
+		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);
+		MSG_WriteString (sb, sv_hint_string);
+	}
 }
 
 /*
@@ -802,11 +623,14 @@ void SV_SendServerinfo (client_t *client)
 	dpsnprintf (message, sizeof (message), "\nServer: %s build %s (progs %d crc)\n", gamename, buildstring, prog->filecrc);
 	MSG_WriteString (&client->netconnection->message,message);
 
+	// Baker r8191 skill level hint from server to client
+	SV_InsertHints (&client->netconnection->message, true /* early hints */); // Baker -- throw some extra hints to client here
+
 	SV_StopDemoRecording(client); // to split up demos into different files
 	if (sv_autodemo_perclient.integer)
 	{
 		char demofile[MAX_OSPATH];
-		char ipaddress[MAX_QPATH];
+		char ipaddress[MAX_QPATH_128];
 		size_t j;
 
 		// start a new demo file
@@ -900,6 +724,9 @@ void SV_SendServerinfo (client_t *client)
 
 	MSG_WriteByte (&client->netconnection->message, svc_signonnum);
 	MSG_WriteByte (&client->netconnection->message, 1);
+
+	// Baker r8191 skill level and other hints from server to client
+	SV_InsertHints (&client->netconnection->message, false /* late hints */); // Baker -- throw some extra hints to client here.
 
 	client->prespawned = false;		// need prespawn, spawn, etc
 	client->spawned = false;		// need prespawn, spawn, etc
@@ -1016,7 +843,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 	va_list argptr;
 	char reason[512] = "";
 
-	Con_Printf ("Client \"%s\" dropped", host_client->name);
+	Con_Printf ("Client " QUOTED_S " dropped", host_client->name);
 
 	if (fmt)
 	{
@@ -1024,11 +851,11 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 		dpvsnprintf(reason, sizeof(reason), fmt, argptr);
 		va_end(argptr);
 
-		Con_Printf (" (%s)\n", reason);
+		Con_PrintLinef (" (%s)", reason);
 	}
 	else
 	{
-		Con_Printf (" \n");
+		Con_Printf (NEWLINE);
 	}
 
 	SV_StopDemoRecording(host_client);
@@ -1053,7 +880,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 				if (sv.protocol == PROTOCOL_DARKPLACES8)
 					MSG_WriteString(&buf, reason);
 				else
-					SV_ClientPrintf("%s\n", reason);
+					SV_ClientPrintf("%s" NEWLINE, reason);
 			}
 			NetConn_SendUnreliableMessage(host_client->netconnection, &buf, sv.protocol, 10000, 0, false);
 			NetConn_SendUnreliableMessage(host_client->netconnection, &buf, sv.protocol, 10000, 0, false);
@@ -1063,7 +890,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 
 	// call qc ClientDisconnect function
 	// LadyHavoc: don't call QC if server is dead (avoids recursive
-	// Host_Error_Line in some mods when they run out of edicts)
+	// Host_Error in some mods when they run out of edicts)
 	if (host_client->clientconnectcalled && sv.active && host_client->edict)
 	{
 		// call the prog function for removing a client
@@ -1083,14 +910,14 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 		host_client->netconnection = NULL;
 	}
 	if (fmt)
-		SV_BroadcastPrintf("\003^3%s left the game (%s)" NEWLINE, host_client->name, reason);
+		SV_BroadcastPrintf("\003" CON_BRONZE "%s left the game (%s)" NEWLINE, host_client->name, reason);
 	else
-		SV_BroadcastPrintf("\003^3%s left the game"  NEWLINE, host_client->name);
+		SV_BroadcastPrintf("\003" CON_BRONZE "%s left the game"  NEWLINE, host_client->name);
 
 	// if a download is active, close it
 	if (host_client->download_file)
 	{
-		Con_DPrintf ("Download of %s aborted when %s dropped\n", host_client->download_name, host_client->name);
+		Con_DPrintLinef ("Download of %s aborted when %s dropped", host_client->download_name, host_client->name);
 		FS_Close(host_client->download_file);
 		host_client->download_file = NULL;
 		host_client->download_name[0] = 0;
@@ -1143,7 +970,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 				break;
 		if (i == svs.maxclients)
 		{
-			Con_Printf ("Loaded game, everyone rejoined - unpausing\n");
+			Con_PrintLinef ("Loaded game, everyone rejoined - unpausing");
 			sv.paused = sv.loadgame = false; // we're basically done with loading now
 		}
 	}
@@ -1232,10 +1059,9 @@ static void SV_Download_f(cmd_state_t *cmd)
 
 	is_csqc = (sv.csqc_progname[0] && strcmp(Cmd_Argv(cmd, 1), sv.csqc_progname) == 0);
 	
-	if (!sv_allowdownloads.integer && !is_csqc)
-	{
-		SV_ClientPrintf("Downloads are disabled on this server\n");
-		SV_ClientCommands("\nstopdownload\n");
+	if (!sv_allowdownloads.integer && !is_csqc) {
+		SV_ClientPrintf("Downloads are disabled on this server" NEWLINE);
+		SV_ClientCommands(NEWLINE "stopdownload" NEWLINE);
 		return;
 	}
 
@@ -1249,7 +1075,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		Con_DPrintLinef ("Download request for %s by %s", host_client->download_name, host_client->name);
 
 	if (is_csqc) {
-		char extensions[MAX_QPATH]; // make sure this can hold all extensions
+		char extensions[MAX_QPATH_128]; // make sure this can hold all extensions
 		extensions[0] = '\0';
 		
 		if (host_client->download_deflate)
@@ -1273,7 +1099,10 @@ static void SV_Download_f(cmd_state_t *cmd)
 
 	if (!FS_FileExists(host_client->download_name))
 	{
-		SV_ClientPrintf("Download rejected: server does not have the file " QUOTED_S NEWLINE "You may need to separately download or purchase the data archives for this game/mod to get this file" NEWLINE, host_client->download_name);
+		SV_ClientPrintf(
+			"Download rejected: server does not have the file " QUOTED_S NEWLINE 
+			"You may need to separately download or purchase the data archives for this game/mod to get this file" NEWLINE, 
+			host_client->download_name);
 		SV_ClientCommands(NEWLINE "stopdownload" NEWLINE);
 		return;
 	}
@@ -1281,6 +1110,10 @@ static void SV_Download_f(cmd_state_t *cmd)
 	// check if the user is trying to download part of registered Quake(r)
 	whichpack = FS_WhichPack(host_client->download_name);
 	whichpack2 = FS_WhichPack("gfx/pop.lmp");
+
+#if 0 // Baker r0104: No one is going to use this insane method to steal Quake in 2023
+		// And the checking for pop.lmp hurts total conversions that have the file just so they can
+		// run properly in a Quake engine.  I bet open sourced X-Men Ravages of Apocalypse has one.
 	if ((whichpack && whichpack2 && String_Does_Match_Caseless(whichpack, whichpack2)) 
 		|| FS_IsRegisteredQuakePack(host_client->download_name))
 	{
@@ -1290,6 +1123,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		SV_ClientCommands(NEWLINE "stopdownload" NEWLINE);
 		return;
 	}
+#endif
 
 	// check if the server has forbidden archive downloads entirely
 	if (!sv_allowdownloads_inarchive.integer) {
@@ -1363,7 +1197,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	 * we can only do this if we would actually deflate on the fly
 	 * which we do not (yet)!
 	{
-		char extensions[MAX_QPATH]; // make sure this can hold all extensions
+		char extensions[MAX_QPATH_128]; // make sure this can hold all extensions
 		extensions[0] = '\0';
 		
 		if (host_client->download_deflate)
@@ -1403,7 +1237,7 @@ SV_ModelIndex
 int SV_ModelIndex(const char *s, int precachemode)
 {
 	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE) ? 256 : MAX_MODELS);
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	if (!s || !*s)
 		return 0;
 	// testing
@@ -1457,16 +1291,42 @@ int SV_ModelIndex(const char *s, int precachemode)
 	return 0;
 }
 
+ // Baker r9067: loadgame precaches "precache at any time models and sounds"
+int SV_ModelIndex_Count(void)
+{
+	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_MODELS);
+	for (i = 2;i < limit;i++) {
+		if (!sv.model_precache[i][0]) {
+			return i;
+		}
+	}
+	return 0;
+}
+
 /*
 ================
 SV_SoundIndex
 
 ================
 */
+ // Baker r9067: loadgame precaches "precache at any time models and sounds"
+int SV_SoundIndex_Count(void)
+{
+	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_SOUNDS);
+	
+	for (i = 1;i < limit;i++) {
+		if (!sv.sound_precache[i][0]) {
+			return i;
+		}
+	}
+	
+	return 0;
+}
+
 int SV_SoundIndex(const char *s, int precachemode)
 {
 	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP) ? 256 : MAX_SOUNDS);
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	if (!s || !*s)
 		return 0;
 	// testing
@@ -1521,7 +1381,7 @@ int SV_ParticleEffectIndex(const char *name)
 	const char *textstart;
 	//const char *textend;
 	char argv[16][1024];
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	if (!sv.particleeffectnamesloaded)
 	{
 		sv.particleeffectnamesloaded = true;
@@ -1536,7 +1396,7 @@ int SV_ParticleEffectIndex(const char *name)
 				dpsnprintf(filename, sizeof(filename), "%s_effectinfo.txt", sv.worldnamenoextension);
 			else
 				break;
-			filedata = FS_LoadFile(filename, tempmempool, true, &filesize);
+			filedata = FS_LoadFile(filename, tempmempool, fs_quiet_true, &filesize);
 			if (!filedata)
 				continue;
 			textstart = (const char *)filedata;
@@ -1717,7 +1577,7 @@ static void SV_Prepare_CSQC(void)
 	svs.csqc_progdata_deflated = NULL;
 	
 	sv.csqc_progname[0] = 0;
-	svs.csqc_progdata = FS_LoadFile(csqc_progname.string, sv_mempool, false, &progsize);
+	svs.csqc_progdata = FS_LoadFile(csqc_progname.string, sv_mempool, fs_quiet_FALSE, &progsize);
 
 	if (progsize > 0)
 	{
@@ -1784,8 +1644,11 @@ SV_SpawnServer
 This is called at the start of each level
 ================
 */
+extern cvar_t prvm_sv_gamecommands; // Baker r7103 gamecommand autocomplete
+extern cvar_t prvm_cl_gamecommands; // Baker r7103 gamecommand autocomplete
+extern cvar_t prvm_sv_progfields;
 
-void SV_SpawnServer (const char *map)
+void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t *ent;
@@ -1795,16 +1658,20 @@ void SV_SpawnServer (const char *map)
 	char modelname[sizeof(sv.worldname)];
 	char vabuf[1024];
 
-	Con_DPrintLinef ("SpawnServer: %s", map);
+	Cvar_SetValueQuick	(&sv_freezenonclients, 0); // Baker r0090: freezeall
+	Cvar_SetValueQuick	(&tool_inspector, 0); // Baker r0106: tool inspector
 
-	dpsnprintf (modelname, sizeof(modelname), "maps/%s.bsp", map);
+	Cvar_SetQuick		(&prvm_sv_gamecommands, "");  // Baker r7103 gamecommand autocomplete
+	Cvar_SetQuick		(&prvm_sv_progfields, "");  // Baker r7103 gamecommand autocomplete
 
-	if (!FS_FileExists(modelname))
-	{
-		dpsnprintf (modelname, sizeof(modelname), "maps/%s", map);
-		if (!FS_FileExists(modelname))
-		{
-			Con_Printf ("SpawnServer: no map file named %s\n", modelname);
+	Con_DPrintLinef ("SpawnServer: %s", mapshortname);
+
+	dpsnprintf (modelname, sizeof(modelname), "maps/%s.bsp", mapshortname);
+
+	if (!FS_FileExists(modelname)) {
+		dpsnprintf (modelname, sizeof(modelname), "maps/%s", mapshortname);
+		if (!FS_FileExists(modelname)) {
+			Con_PrintLinef ("SpawnServer: no map file named %s", modelname);
 			return;
 		}
 	}
@@ -1813,17 +1680,14 @@ void SV_SpawnServer (const char *map)
 
 	if (!host_isclient.integer)
 		Sys_MakeProcessNice();
-	else
-	{
+	else {
 		SCR_BeginLoadingPlaque(false);
 		S_StopAllSounds();
 	}
 
-	if (sv.active)
-	{
+	if (sv.active) {
 		World_End(&sv.world);
-		if (PRVM_serverfunction(SV_Shutdown))
-		{
+		if (PRVM_serverfunction(SV_Shutdown)) {
 			func_t s = PRVM_serverfunction(SV_Shutdown);
 			PRVM_serverglobalfloat(time) = sv.time;
 			PRVM_serverfunction(SV_Shutdown) = 0; // prevent it from getting called again
@@ -1835,9 +1699,8 @@ void SV_SpawnServer (const char *map)
 	Mod_FreeQ3Shaders();
 
 	worldmodel = Mod_ForName(modelname, false, developer.integer > 0, NULL);
-	if (!worldmodel || !worldmodel->TraceBox)
-	{
-		Con_Printf ("Couldn't load map %s\n", modelname);
+	if (!worldmodel || !worldmodel->TraceBox) {
+		Con_PrintLinef ("Couldn't load map %s", modelname);
 
 		if (!host_isclient.integer)
 			Sys_MakeProcessMean();
@@ -1851,7 +1714,7 @@ void SV_SpawnServer (const char *map)
 
 	// let's not have any servers with no name
 	if (hostname.string[0] == 0)
-		Cvar_SetQuick(&hostname, "UNNAMED");
+		Cvar_SetQuick (&hostname, "UNNAMED");
 	scr_centertime_off = 0;
 
 	svs.changelevel_issued = false;		// now safe to issue another
@@ -1863,20 +1726,16 @@ void SV_SpawnServer (const char *map)
 //
 // tell all connected clients that we are going to a new level
 //
-	if (sv.active)
-	{
+	if (sv.active) {
 		client_t *client;
-		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++)
-		{
-			if (client->netconnection)
-			{
+		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++) {
+			if (client->netconnection) {
+				WARP_X_ (CL_Reconnect_f)
 				MSG_WriteByte(&client->netconnection->message, svc_stufftext);
-				MSG_WriteString(&client->netconnection->message, "reconnect\n");
-			}
-		}
-	}
-	else
-	{
+				MSG_WriteString(&client->netconnection->message, "reconnect" NEWLINE);
+			} // if
+		} // for
+	} else {
 		// open server port
 		NetConn_OpenServerPorts(true);
 	}
@@ -1909,16 +1768,15 @@ void SV_SpawnServer (const char *map)
 
 	// if running a local client, make sure it doesn't try to access the last
 	// level's data which is no longer valiud
-	cls.signon = 0;
+	cls.signon = SIGNON_ZERO; // SV_SPAWNSERVER - Baker: interesting
 
 	Cvar_SetValueQuick(&halflifebsp, worldmodel->brush.ishlbsp);
 	Cvar_SetValueQuick(&sv_mapformat_is_quake2, worldmodel->brush.isq2bsp);
 	Cvar_SetValueQuick(&sv_mapformat_is_quake3, worldmodel->brush.isq3bsp);
 
-	if (*sv_random_seed.string)
-	{
+	if (*sv_random_seed.string) {
 		srand(sv_random_seed.integer);
-		Con_Printf (CON_WARN "NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.\n", sv_random_seed.integer);
+		Con_PrintLinef (CON_WARN "NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.", sv_random_seed.integer);
 	}
 
 	SV_VM_Setup();
@@ -1926,8 +1784,8 @@ void SV_SpawnServer (const char *map)
 	sv.active = true;
 
 	// set level base name variables for later use
-	strlcpy (sv.name, map, sizeof (sv.name));
-	strlcpy(sv.worldname, modelname, sizeof(sv.worldname));
+	c_strlcpy (sv.name, mapshortname);
+	c_strlcpy (sv.worldname, modelname);
 	FS_StripExtension(sv.worldname, sv.worldnamenoextension, sizeof(sv.worldnamenoextension));
 	strlcpy(sv.worldbasename, !strncmp(sv.worldnamenoextension, "maps/", 5) ? sv.worldnamenoextension + 5 : sv.worldnamenoextension, sizeof(sv.worldbasename));
 	//Cvar_SetQuick(&sv_worldmessage, sv.worldmessage); // set later after QC is spawned
@@ -1936,8 +1794,7 @@ void SV_SpawnServer (const char *map)
 	Cvar_SetQuick(&sv_worldbasename, sv.worldbasename);
 
 	sv.protocol = Protocol_EnumForName(sv_protocolname.string);
-	if (sv.protocol == PROTOCOL_UNKNOWN)
-	{
+	if (sv.protocol == PROTOCOL_UNKNOWN) {
 		char buffer[1024];
 		Protocol_Names(buffer, sizeof(buffer));
 		Con_PrintLinef (CON_ERROR "Unknown sv_protocolname " QUOTED_S ", valid values are:" NEWLINE "%s", sv_protocolname.string, buffer);
@@ -2028,8 +1885,7 @@ void SV_SpawnServer (const char *map)
 	}
 
 	// load replacement entity file if found
-	if (sv_entpatch.integer && (entities = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), tempmempool, true, NULL)))
-	{
+	if (sv_entpatch.integer && (entities = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), tempmempool, fs_quiet_true, fs_size_ptr_null))) {
 		Con_PrintLinef ("Loaded %s.ent", sv.worldnamenoextension);
 		PRVM_ED_LoadFromFile(prog, entities);
 		Mem_Free(entities);
@@ -2037,6 +1893,17 @@ void SV_SpawnServer (const char *map)
 	else
 		PRVM_ED_LoadFromFile(prog, sv.worldmodel->brush.entities);
 
+#if 1  // Baker r9067: loadgame precaches "precache at any time models and sounds"
+	// Baker r9067: Only a host is client situation requires this fix.
+	if (sloadgame && host_isclient.integer) {
+		// read extended data if present
+		// the extended data is stored inside a /* */ comment block, which the
+		// parser intentionally skips, so we have to check for it manually here
+#if 0
+		#include "sv_main_precache.c.h"
+#endif
+	}
+#endif
 
 	// LadyHavoc: clear world angles (to fix e3m3.bsp)
 	VectorClear(PRVM_serveredictvector(prog->edicts, angles));
@@ -2306,6 +2173,91 @@ static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 	return true;
 }
 
+/*
+===============
+PR_HasGlobal
+===============
+*/
+
+// AURA 10.5
+static qbool PR_HasGlobal_Float_With_Value (prvm_prog_t *prog, const char *name, float value) // AURA
+{
+	mdef_t *g = PRVM_ED_FindGlobal (prog, name);
+	if (g && (g->type & ~DEF_SAVEGLOBAL) == ev_float) {
+		//float fval = PRVM_gameglobalfloat( PRVM_serveredictfloat(host_client->edict, items)
+		return true;
+		
+	}
+	return false;
+}
+
+
+/*
+===============
+PR_PatchRereleaseBuiltins
+
+for 2021 re-release
+===============
+*/
+
+/* for 2021 re-release */
+typedef struct { // AURA
+	const char *name;
+	int first_statement;
+	int patch_statement;
+} exbuiltin_t;
+
+static const exbuiltin_t exbuiltins[] = {
+	/* Update-1 adds the following builtins with new ids. Patch them to use old indices.
+	 * (https://steamcommunity.com/games/2310/announcements/detail/2943653788150871156) */
+	{ "centerprint", -90, -73 },
+	{ "bprint", -91, -23 },
+	{ "sprint", -92, -24 },
+
+	/* Update-3 changes its unique builtins to be looked up by name instead of builtin
+	 * numbers, to avoid conflict with other engines. Patch them to use our indices.
+	 * (https://steamcommunity.com/games/2310/announcements/detail/3177861894960065435) */
+	{ "ex_centerprint", 0, -73 },
+	{ "ex_bprint", 0, -23 },
+	{ "ex_sprint", 0, -24 },
+	{ "ex_finaleFinished", 0, -79 },
+
+	{ "ex_localsound", 0, -80 },
+
+	{ "ex_draw_point", 0, -81 },
+	{ "ex_draw_line", 0, -82 },
+	{ "ex_draw_arrow", 0, -83 },
+	{ "ex_draw_ray", 0,  -84 },
+	{ "ex_draw_circle", 0, -85 },
+	{ "ex_draw_bounds", 0, -86 },
+	{ "ex_draw_worldtext", 0, -87 },
+	{ "ex_draw_sphere", 0, -88 },
+	{ "ex_draw_cylinder", 0, -89 },
+
+	{ "ex_CheckPlayerEXFlags", 0, -90 },
+	{ "ex_walkpathtogoal", 0,  -91 },
+	{ "ex_bot_movetopoint", 0, -92 },
+	{ "ex_bot_followentity", 0, -92 },
+	//const char *name;
+	//int first_statement;
+	//int patch_statement;
+
+	{ NULL, 0, 0 }			/* end-of-list. */
+};
+
+static void PR_PatchRereleaseBuiltins (prvm_prog_t *prog)
+{
+	const exbuiltin_t *ex = exbuiltins;
+	mfunction_t *f;
+
+	for ( ; ex->name != NULL; ++ex)
+	{
+		f = PRVM_ED_FindFunction (prog, ex->name);
+		if (f && f->first_statement == ex->first_statement)
+			f->first_statement = ex->patch_statement;
+	}
+}
+
 static void SV_VM_Setup(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -2345,7 +2297,22 @@ static void SV_VM_Setup(void)
 	prog->error_cmd             = Host_Error_Line;
 	prog->ExecuteProgram        = SVVM_ExecuteProgram;
 
+	// AURA PR
 	PRVM_Prog_Load(prog, sv_progs.string, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
+
+	// AURA 10.6
+	{
+		int is_rerelease = PR_HasGlobal_Float_With_Value (prog, "EF_QUADLIGHT", 0 /*EF_QEX_QUADLIGHT*/) && 
+			(PR_HasGlobal_Float_With_Value (prog, "EF_PENTLIGHT", 0 /*EF_QEX_PENTALIGHT*/) || PR_HasGlobal_Float_With_Value (prog, "EF_PENTALIGHT", 0 /*EF_QEX_PENTALIGHT*/));
+		
+		if (is_rerelease) {
+			// AURA -- demos can still do bad things
+			// AURA -- default.cfg (?)
+			Con_PrintLinef ("Re-release progs detected");
+			PR_PatchRereleaseBuiltins (prog); // AURA
+		}
+		sv.is_qex = is_rerelease;
+	}
 
 	// some mods compiled with scrambling compilers lack certain critical
 	// global names and field names such as "self" and "time" and "nextthink"
@@ -2717,7 +2684,7 @@ static int SV_ThreadFunc(void *voiddata)
 	sv_realtime = Sys_DirtyTime();
 	while (!svs.threadstop)
 	{
-		// FIXME: we need to handle Host_Error_Line in the server thread somehow
+		// FIXME: we need to handle Host_Error in the server thread somehow
 //		if (setjmp(sv_abortframe))
 //			continue;			// something bad happened in the server game
 
@@ -2869,4 +2836,241 @@ void SV_StopThread(void)
 	Thread_WaitThread(svs.thread, 0);
 	Thread_DestroyMutex(svs.threadmutex);
 	svs.threaded = false;
+}
+
+// Baker r0090: freezeall
+void SV_Freezeall_f(cmd_state_t *cmd)
+{
+	Cvar_SetValueQuick (&sv_freezenonclients, !sv_freezenonclients.integer);
+}
+
+/*
+===============
+SV_Init
+===============
+*/
+void SV_Init (void)
+{
+	// init the csqc progs cvars, since they are updated/used by the server code
+	// TODO: fix this since this is a quick hack to make some of [515]'s broken code run ;) [9/13/2006 Black]
+	extern cvar_t csqc_progname;	//[515]: csqc crc check and right csprogs name according to progs.dat
+	extern cvar_t csqc_progcrc;
+	extern cvar_t csqc_progsize;
+	extern cvar_t csqc_usedemoprogs;
+
+	Cvar_RegisterVariable(&sv_worldmessage);
+	Cvar_RegisterVariable(&sv_worldname);
+	Cvar_RegisterVariable(&sv_worldnamenoextension);
+	Cvar_RegisterVariable(&sv_worldbasename);
+
+	Cvar_RegisterVariable (&csqc_enable); // Baker r0101; csqc_enable
+	Cvar_RegisterVariable (&csqc_progname);
+	Cvar_RegisterVariable (&csqc_progcrc);
+	Cvar_RegisterVariable (&csqc_progsize);
+	Cvar_RegisterVariable (&csqc_usedemoprogs);
+
+	Cmd_AddCommand(CF_SHARED, "sv_saveentfile", SV_SaveEntFile_f, "save map entities to .ent file (to allow external editing)");
+	Cmd_AddCommand(CF_SHARED, "sv_areastats", SV_AreaStats_f, "prints statistics on entity culling during collision traces");
+	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "sv_startdownload", SV_StartDownload_f, "begins sending a file to the client (network protocol use only)");
+	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "download", SV_Download_f, "downloads a specified file from the server");
+
+	Cmd_AddCommand(CF_CLIENT, "freezeall", SV_Freezeall_f, "toggles sv_freezenonclients [Zircon]"); // Baker r0090: freezeall
+
+	Cvar_RegisterVariable (&sv_disablenotify);
+	Cvar_RegisterVariable (&coop);
+	Cvar_RegisterVariable (&deathmatch);
+	Cvar_RegisterVariable (&fraglimit);
+	Cvar_RegisterVariable (&gamecfg);
+	Cvar_RegisterVariable (&noexit);
+	Cvar_RegisterVariable (&nomonsters);
+	Cvar_RegisterVariable (&pausable);
+	Cvar_RegisterVariable (&pr_checkextension);
+	Cvar_RegisterVariable (&samelevel);
+	Cvar_RegisterVariable (&skill);
+	
+	Cvar_RegisterVariable (&host_timescale);
+	Cvar_RegisterCallback (&host_timescale, Host_Timescale_c);
+
+	Cvar_RegisterVirtual (&host_timescale, "slowmo"); // Baker Quake Combat+ and presumably Quake 1.5 use this cvar, so it lives.
+	//Cvar_RegisterVirtual (&host_timescale, "timescale");
+
+	Cvar_RegisterVariable (&sv_accelerate);
+	Cvar_RegisterVariable (&sv_aim);
+	Cvar_RegisterVariable (&sv_airaccel_qw);
+	Cvar_RegisterVariable (&sv_airaccel_qw_stretchfactor);
+	Cvar_RegisterVariable (&sv_airaccel_sideways_friction);
+	Cvar_RegisterVariable (&sv_airaccelerate);
+	Cvar_RegisterVariable (&sv_airstopaccelerate);
+	Cvar_RegisterVariable (&sv_airstrafeaccelerate);
+	Cvar_RegisterVariable (&sv_maxairstrafespeed);
+	Cvar_RegisterVariable (&sv_airstrafeaccel_qw);
+	Cvar_RegisterVariable (&sv_airspeedlimit_nonqw);
+	Cvar_RegisterVariable (&sv_aircontrol);
+	Cvar_RegisterVariable (&sv_aircontrol_power);
+	Cvar_RegisterVariable (&sv_aircontrol_penalty);
+	Cvar_RegisterVariable (&sv_altnoclipmove); // Baker r0085: FitzQuake noclipping
+	
+	Cvar_RegisterVariable (&sv_allowdownloads);
+	Cvar_RegisterVariable (&sv_allowdownloads_archive);
+	Cvar_RegisterVariable (&sv_allowdownloads_config);
+	Cvar_RegisterVariable (&sv_allowdownloads_dlcache);
+	Cvar_RegisterVariable (&sv_allowdownloads_inarchive);
+	Cvar_RegisterVariable (&sv_areagrid_link_SOLID_NOT);
+	Cvar_RegisterVariable (&sv_areagrid_mingridsize);
+	Cvar_RegisterVariable (&sv_checkforpacketsduringsleep);
+	Cvar_RegisterVariable (&sv_clmovement_enable);
+	Cvar_RegisterVariable (&sv_clmovement_minping);
+	Cvar_RegisterVariable (&sv_clmovement_minping_disabletime);
+	Cvar_RegisterVariable (&sv_clmovement_inputtimeout);
+	Cvar_RegisterVariable (&sv_cullentities_nevercullbmodels);
+	Cvar_RegisterVariable (&sv_cullentities_pvs);
+	Cvar_RegisterVariable (&sv_cullentities_stats);
+	Cvar_RegisterVariable (&sv_cullentities_trace);
+	Cvar_RegisterVariable (&sv_cullentities_trace_delay);
+	Cvar_RegisterVariable (&sv_cullentities_trace_delay_players);
+	Cvar_RegisterVariable (&sv_cullentities_trace_enlarge);
+	Cvar_RegisterVariable (&sv_cullentities_trace_expand);
+	Cvar_RegisterVariable (&sv_cullentities_trace_eyejitter);
+	Cvar_RegisterVariable (&sv_cullentities_trace_entityocclusion);
+	Cvar_RegisterVariable (&sv_cullentities_trace_prediction);
+	Cvar_RegisterVariable (&sv_cullentities_trace_prediction_time);
+	Cvar_RegisterVariable (&sv_cullentities_trace_samples);
+	Cvar_RegisterVariable (&sv_cullentities_trace_samples_extra);
+	Cvar_RegisterVariable (&sv_cullentities_trace_samples_players);
+	Cvar_RegisterVariable (&sv_cullentities_trace_spectators);
+	Cvar_RegisterVariable (&sv_debugmove);
+	Cvar_RegisterVariable (&sv_echobprint);
+	Cvar_RegisterVariable (&sv_edgefriction);
+	Cvar_RegisterVariable (&sv_entpatch);
+	Cvar_RegisterVariable (&sv_freezenonclients);
+	Cvar_RegisterVariable (&sv_friction);
+	Cvar_RegisterVariable (&sv_gameplayfix_blowupfallenzombies);
+	Cvar_RegisterVariable (&sv_gameplayfix_consistentplayerprethink);
+	Cvar_RegisterVariable (&sv_gameplayfix_delayprojectiles);
+	Cvar_RegisterVariable (&sv_gameplayfix_droptofloorstartsolid);
+	Cvar_RegisterVariable (&sv_gameplayfix_droptofloorstartsolid_nudgetocorrect);
+	Cvar_RegisterVariable (&sv_gameplayfix_easierwaterjump);
+	Cvar_RegisterVariable (&sv_gameplayfix_findradiusdistancetobox);
+	Cvar_RegisterVariable (&sv_gameplayfix_gravityunaffectedbyticrate);
+	Cvar_RegisterVariable (&sv_gameplayfix_grenadebouncedownslopes);
+	Cvar_RegisterVariable (&sv_gameplayfix_multiplethinksperframe);
+	Cvar_RegisterVariable (&sv_gameplayfix_noairborncorpse);
+	Cvar_RegisterVariable (&sv_gameplayfix_noairborncorpse_allowsuspendeditems);
+	Cvar_RegisterVariable (&sv_gameplayfix_nudgeoutofsolid);
+	Cvar_RegisterVariable (&sv_gameplayfix_nudgeoutofsolid_separation);
+	Cvar_RegisterVariable (&sv_gameplayfix_q2airaccelerate);
+	Cvar_RegisterVariable (&sv_gameplayfix_nogravityonground);
+	Cvar_RegisterVariable (&sv_gameplayfix_setmodelrealbox);
+	Cvar_RegisterVariable (&sv_gameplayfix_slidemoveprojectiles);
+	Cvar_RegisterVariable (&sv_gameplayfix_stepdown);
+	Cvar_RegisterVariable (&sv_gameplayfix_stepmultipletimes);
+	Cvar_RegisterVariable (&sv_gameplayfix_nostepmoveonsteepslopes);
+	Cvar_RegisterVariable (&sv_gameplayfix_swiminbmodels);
+	Cvar_RegisterVariable (&sv_gameplayfix_upwardvelocityclearsongroundflag);
+	Cvar_RegisterVariable (&sv_gameplayfix_downtracesupportsongroundflag);
+	Cvar_RegisterVariable (&sv_gameplayfix_q1bsptracelinereportstexture);
+	Cvar_RegisterVariable (&sv_gameplayfix_unstickplayers);
+	Cvar_RegisterVariable (&sv_gameplayfix_unstickentities);
+	Cvar_RegisterVariable (&sv_gameplayfix_fixedcheckwatertransition);
+	Cvar_RegisterVariable (&sv_gameplayfix_customstats);
+	Cvar_RegisterVariable (&sv_gravity);
+	Cvar_RegisterVariable (&sv_init_frame_count);
+	Cvar_RegisterVariable (&sv_idealpitchscale);
+	Cvar_RegisterVariable (&sv_jumpstep);
+	Cvar_RegisterVariable (&sv_jumpvelocity);
+	Cvar_RegisterVariable (&sv_legacy_bbox_expand);
+	Cvar_RegisterVariable (&sv_maxairspeed);
+	Cvar_RegisterVariable (&sv_maxrate);
+	Cvar_RegisterVariable (&sv_maxspeed);
+	Cvar_RegisterVariable (&sv_maxvelocity);
+	Cvar_RegisterVariable (&sv_nostep);
+	Cvar_RegisterVariable (&sv_playerphysicsqc);
+	Cvar_RegisterVariable (&sv_progs);
+	Cvar_RegisterVariable (&sv_protocolname);
+	Cvar_RegisterVariable (&sv_random_seed);
+	Cvar_RegisterVariable (&host_limitlocal);
+	Cvar_RegisterVirtual(&host_limitlocal, "sv_ratelimitlocalplayer");
+	Cvar_RegisterVariable (&sv_sound_land);
+	Cvar_RegisterVariable (&sv_sound_watersplash);
+	Cvar_RegisterVariable (&sv_stepheight);
+	Cvar_RegisterVariable (&sv_stopspeed);
+	Cvar_RegisterVariable (&sv_wallfriction);
+	Cvar_RegisterVariable (&sv_wateraccelerate);
+	Cvar_RegisterVariable (&sv_waterfriction);
+	Cvar_RegisterVariable (&sv_warsowbunny_airforwardaccel);
+	Cvar_RegisterVariable (&sv_warsowbunny_accel);
+	Cvar_RegisterVariable (&sv_warsowbunny_topspeed);
+	Cvar_RegisterVariable (&sv_warsowbunny_turnaccel);
+	Cvar_RegisterVariable (&sv_warsowbunny_backtosideratio);
+	Cvar_RegisterVariable (&sv_onlycsqcnetworking);
+	Cvar_RegisterVariable (&sv_areadebug);
+
+	Cvar_RegisterVariable (&sys_ticrate);
+	Cvar_RegisterVariable (&sv_maxphysicsframesperserverframe);
+	Cvar_RegisterVariable (&sv_lagreporting_always);
+	Cvar_RegisterVariable (&sv_lagreporting_strict);
+	Cvar_RegisterVariable (&sv_threaded);
+
+	Cvar_RegisterVariable (&teamplay);
+	Cvar_RegisterVariable (&timelimit);
+
+	Cvar_RegisterVariable (&sv_rollangle);
+	Cvar_RegisterVariable (&sv_rollspeed);
+
+	Cvar_RegisterVariable (&saved1);
+	Cvar_RegisterVariable (&saved2);
+	Cvar_RegisterVariable (&saved3);
+	Cvar_RegisterVariable (&saved4);
+
+	Cvar_RegisterVariable (&savedgamecfg);
+	Cvar_RegisterVariable (&scratch1);
+	Cvar_RegisterVariable (&scratch2);
+	Cvar_RegisterVariable (&scratch3);
+	Cvar_RegisterVariable (&scratch4);
+	Cvar_RegisterVariable (&temp1);
+
+	Cvar_RegisterVariable (&campaign); // AURA 10.1
+	Cvar_RegisterVariable (&scr_usekfont); // AURA
+	Cvar_RegisterVariable (&horde);
+
+	// LadyHavoc: Nehahra uses these to pass data around cutscene demos
+	Cvar_RegisterVariable (&nehx00);
+	Cvar_RegisterVariable (&nehx01);
+	Cvar_RegisterVariable (&nehx02);
+	Cvar_RegisterVariable (&nehx03);
+	Cvar_RegisterVariable (&nehx04);
+	Cvar_RegisterVariable (&nehx05);
+	Cvar_RegisterVariable (&nehx06);
+	Cvar_RegisterVariable (&nehx07);
+	Cvar_RegisterVariable (&nehx08);
+	Cvar_RegisterVariable (&nehx09);
+	Cvar_RegisterVariable (&nehx10);
+	Cvar_RegisterVariable (&nehx11);
+	Cvar_RegisterVariable (&nehx12);
+	Cvar_RegisterVariable (&nehx13);
+	Cvar_RegisterVariable (&nehx14);
+	Cvar_RegisterVariable (&nehx15);
+	Cvar_RegisterVariable (&nehx16);
+	Cvar_RegisterVariable (&nehx17);
+	Cvar_RegisterVariable (&nehx18);
+	Cvar_RegisterVariable (&nehx19);
+	Cvar_RegisterVariable (&cutscene); // for Nehahra but useful to other mods as well
+
+	Cvar_RegisterVariable (&sv_autodemo_perclient);
+	Cvar_RegisterVariable (&sv_autodemo_perclient_nameformat);
+	Cvar_RegisterVariable (&sv_autodemo_perclient_discardable);
+
+	Cvar_RegisterVariable (&halflifebsp);
+	Cvar_RegisterVariable (&sv_mapformat_is_quake2);
+	Cvar_RegisterVariable (&sv_mapformat_is_quake3);
+
+	Cvar_RegisterVariable (&sv_writepicture_quality);
+
+	SV_InitOperatorCommands();
+	host.hook.SV_Shutdown = SV_Shutdown;
+
+	sv_mempool = Mem_AllocPool("server", 0, NULL);
+
+	SV_ServerOptions();
+	Cvar_Callback(&sv_netport);
 }

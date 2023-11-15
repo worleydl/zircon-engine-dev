@@ -100,28 +100,29 @@ typedef struct server_s
 	// crc of clientside progs at time of level start
 	int csqc_progcrc; // -1 = no progs
 	int csqc_progsize; // -1 = no progs
-	char csqc_progname[MAX_QPATH]; // copied from csqc_progname at level start
+	char csqc_progname[MAX_QPATH_128]; // copied from csqc_progname at level start
 
 	/// collision culling data
 	world_t world;
 
 	/// map name
 	char name[64]; // %s followed by entrance name
+	int is_qex; // AURA 9.0
 	// variants of map name
 	char worldmessage[40]; // map title (not related to filename)
-	char worldbasename[MAX_QPATH]; // %s
-	char worldname[MAX_QPATH]; // maps/%s.bsp
-	char worldnamenoextension[MAX_QPATH]; // maps/%s
+	char worldbasename[MAX_QPATH_128]; // %s
+	char worldname[MAX_QPATH_128]; // maps/%s.bsp
+	char worldnamenoextension[MAX_QPATH_128]; // maps/%s
 	struct model_s *worldmodel;
 	// NULL terminated
-	// LadyHavoc: precaches are now MAX_QPATH rather than a pointer
+	// LadyHavoc: precaches are now MAX_QPATH_128 rather than a pointer
 	// updated by SV_ModelIndex
-	char model_precache[MAX_MODELS][MAX_QPATH];
+	char model_precache[MAX_MODELS][MAX_QPATH_128];
 	struct model_s *models[MAX_MODELS];
 	// NULL terminated
-	// LadyHavoc: precaches are now MAX_QPATH rather than a pointer
+	// LadyHavoc: precaches are now MAX_QPATH_128 rather than a pointer
 	// updated by SV_SoundIndex
-	char sound_precache[MAX_SOUNDS][MAX_QPATH];
+	char sound_precache[MAX_SOUNDS][MAX_QPATH_128];
 	char lightstyles[MAX_LIGHTSTYLES][64];
 	/// some actions are only valid during load
 	server_state_t state;
@@ -144,7 +145,7 @@ typedef struct server_s
 	server_floodaddress_t getstatusfloodaddresses[MAX_GETSTATUSFLOODADDRESSES];
 
 	qbool particleeffectnamesloaded;
-	char particleeffectname[MAX_PARTICLEEFFECTNAME][MAX_QPATH];
+	char particleeffectname[MAX_PARTICLEEFFECTNAME][MAX_QPATH_128];
 
 	int writeentitiestoclient_stats_culled_pvs;
 	int writeentitiestoclient_stats_culled_trace;
@@ -239,11 +240,11 @@ typedef struct client_s
 	char name[MAX_SCOREBOARDNAME_128], old_name[MAX_SCOREBOARDNAME_128];
 	int colors, old_colors;
 	int frags, old_frags;
-	char playermodel[MAX_QPATH], old_model[MAX_QPATH];
-	char playerskin[MAX_QPATH], old_skin[MAX_QPATH];
+	char playermodel[MAX_QPATH_128], old_model[MAX_QPATH_128];
+	char playerskin[MAX_QPATH_128], old_skin[MAX_QPATH_128];
 
 	/// netaddress support
-	char netaddress[MAX_QPATH];
+	char netaddress[MAX_QPATH_128];
 
 	/// visibility state
 	float visibletime[MAX_EDICTS];
@@ -267,7 +268,7 @@ typedef struct client_s
 	int latestframenum;
 
 	/// cache weaponmodel name lookups
-	char weaponmodel[MAX_QPATH];
+	char weaponmodel[MAX_QPATH_128];
 	int weaponmodelindex;
 
 	/// clientcamera (entity to use as camera)
@@ -290,7 +291,7 @@ typedef struct client_s
 	qfile_t *download_file;
 	int download_expectedposition; ///< next position the client should ack
 	qbool download_started;
-	char download_name[MAX_QPATH];
+	char download_name[MAX_QPATH_128];
 	qbool download_deflate;
 
 	// fixangle data
@@ -324,6 +325,7 @@ typedef struct client_s
 #define	MOVETYPE_NOCLIP			8
 #define	MOVETYPE_FLYMISSILE		9		///< extra size to monsters
 #define	MOVETYPE_BOUNCE			10
+#define	MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11	11		// 2021 rerelease gibs // AURA 9.1
 #define MOVETYPE_BOUNCEMISSILE	11		///< bounce w/o gravity
 #define MOVETYPE_FOLLOW			12		///< track movement of aiment
 #define MOVETYPE_FAKEPUSH		13		///< tenebrae's push that doesn't push
@@ -411,6 +413,8 @@ extern cvar_t sv_airstrafeaccel_qw;
 extern cvar_t sv_aircontrol;
 extern cvar_t sv_aircontrol_power;
 extern cvar_t sv_aircontrol_penalty;
+extern cvar_t sv_altnoclipmove; // Baker r0085: FitzQuake noclipping
+
 extern cvar_t sv_airspeedlimit_nonqw;
 extern cvar_t sv_allowdownloads;
 extern cvar_t sv_allowdownloads_archive;
@@ -534,6 +538,9 @@ void SV_ReadClientMessage(void);
 int SV_ModelIndex(const char *s, int precachemode);
 int SV_SoundIndex(const char *s, int precachemode);
 
+int SV_SoundIndex_Count(void);  // Baker r9067: loadgame precaches "precache at any time models and sounds"
+int SV_ModelIndex_Count(void);  // Baker r9067: loadgame precaches "precache at any time models and sounds"
+
 int SV_ParticleEffectIndex(const char *name);
 
 model_t *SV_GetModelByIndex(int modelindex);
@@ -603,7 +610,7 @@ void VM_SV_MoveToGoal(prvm_prog_t *prog);
 void SV_ApplyClientMove (void);
 void SV_SaveSpawnparms (void);
 
-void SV_SpawnServer (const char *map);
+void SV_SpawnServer (const char *mapshortname, char *sloadgame);  // Baker r9067: loadgame precaches "precache at any time models and sounds"
 
 void SV_CheckVelocity (prvm_edict_t *ent);
 

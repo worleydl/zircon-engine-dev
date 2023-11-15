@@ -98,7 +98,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 	dspriteinterval_t	*pinintervals;
 	skinframe_t			*skinframe;
 	float				modelradius, interval;
-	char				name[MAX_QPATH], fogname[MAX_QPATH];
+	char				name[MAX_QPATH_128], fogname[MAX_QPATH_128];
 	const void			*startframes;
 	int                 texflags = (r_mipsprites.integer ? TEXF_MIPMAP : 0) | ((gl_texturecompression.integer && gl_texturecompression_sprites.integer) ? TEXF_COMPRESS : 0) | TEXF_ISSPRITE | TEXF_PICMIP | TEXF_ALPHA | TEXF_CLAMP;
 	modelradius = 0;
@@ -108,7 +108,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 
 	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
-	for (i = 0;i < MAX_QPATH && loadmodel->model_name[i];i++)
+	for (i = 0;i < MAX_QPATH_128 && loadmodel->model_name[i];i++)
 		if (loadmodel->model_name[i] == '!')
 			fullbright = false;
 
@@ -405,7 +405,7 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 
 	// LadyHavoc: hack to allow sprites to be non-fullbright
 	fullbright = true;
-	for (i = 0;i < MAX_QPATH && loadmodel->model_name[i];i++)
+	for (i = 0;i < MAX_QPATH_128 && loadmodel->model_name[i];i++)
 		if (loadmodel->model_name[i] == '!')
 			fullbright = false;
 

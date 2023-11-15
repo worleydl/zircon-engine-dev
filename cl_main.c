@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // we need to declare some mouse variables here, because the menu system
 // references them even when on a unix system.
 
+cvar_t csqc_enable = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "csqc_enable","1","whether csqc csprogs.dat loads [Zircon]"}; // Baker r0101: csqc_enable
 cvar_t csqc_progname = {CF_CLIENT | CF_SERVER, "csqc_progname","csprogs.dat","name of csprogs.dat file to load"};
 cvar_t csqc_progcrc = {CF_CLIENT | CF_READONLY, "csqc_progcrc","-1","CRC of csprogs.dat file to load (-1 is none), only used during level changes and then reset to -1"};
 cvar_t csqc_progsize = {CF_CLIENT | CF_READONLY, "csqc_progsize","-1","file size of csprogs.dat file to load (-1 is none), only used during level changes and then reset to -1"};
@@ -111,6 +112,9 @@ cvar_t cl_gameplayfix_nudgeoutofsolid_separation = {CF_CLIENT, "cl_gameplayfix_n
 
 client_static_t	cls;
 client_state_t	cl;
+
+double	cl_signon_start_time; // Baker: playdemo, map, reconnect call .. detects slow load times, forces info.
+
 
 /*
 =====================
@@ -456,7 +460,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 	cl.islocalgame = false;
 
 	cls.demoplayback = cls.timedemo = host.restless = false;
-	cls.signon = 0;
+	cls.signon = SIGNON_ZERO; // Disconnect, seems to be NORMAL QUAKE / DARKPLACES / QUAKEWORLD
 
 	Cvar_Callback(&cl_netport);
 
@@ -480,6 +484,7 @@ This command causes the client to wait for the signon messages again.
 This is sent just before a server changes levels
 ==================
 */
+// Baker: Changelevel ... sets SIGNON_ZERO
 static void CL_Reconnect_f(cmd_state_t *cmd)
 {
 	char temp[128];
@@ -522,7 +527,8 @@ static void CL_Reconnect_f(cmd_state_t *cmd)
 			Con_PrintLinef ("reconnect: no signon, ignoring reconnect");
 			return;
 		}
-		cls.signon = 0;		// need new connection messages
+		cl_signon_start_time = Sys_DirtyTime (); // reconnect
+		cls.signon = SIGNON_ZERO;  // NORMAL QUAKE / DARKPLACES - need new connection messages
 	}
 }
 
@@ -545,7 +551,8 @@ static void CL_Connect_f(cmd_state_t *cmd)
 	// clear the rcon password, to prevent vulnerability by stuffcmd-ing a connect command
 	if (rcon_secure.integer <= 0)
 		Cvar_SetQuick(&rcon_password, "");
-	CL_EstablishConnection(Cmd_Argv(cmd, 1), 2);
+
+	CL_EstablishConnection (Cmd_Argv(cmd, 1), 2);
 }
 
 void CL_Disconnect_f(cmd_state_t *cmd)
@@ -1518,12 +1525,18 @@ static void CL_UpdateViewModel(void)
 		ent->state_current.modelindex = 0;
 	else if (cl.stats[STAT_ITEMS] & IT_INVISIBILITY)
 	{
-		if (gamemode == GAME_TRANSFUSION)
+		// Baker r1488 viewmodel ring alpha
+		if (r_viewmodel_ring_alpha.value) {
+			ent->state_current.alpha = (byte)(r_viewmodel_ring_alpha.value * 255.0); // IIX
+			goto skip;
+		} else if (gamemode == GAME_TRANSFUSION) {
 			ent->state_current.alpha = 128;
-		else
+		} else {
 			ent->state_current.modelindex = 0;
+		}
 	}
 	ent->state_current.alpha = cl.entities[cl.viewentity].state_current.alpha;
+skip:  // Baker r1488 viewmodel ring alpha
 	ent->state_current.effects = EF_NOSHADOW | (cl.entities[cl.viewentity].state_current.effects & (EF_ADDITIVE | EF_FULLBRIGHT | EF_NODEPTHTEST | EF_NOGUNBOB));
 
 	// reset animation interpolation on weaponmodel if model changed
@@ -1916,7 +1929,7 @@ void CL_RelinkBeams(void)
 				r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 			}
 			if (cl_beams_polygons.integer) {
-				CL_Beam_AddPolygons(b);
+				//CL_Beam_AddPolygons(b);
 				continue;
 			}
 		}
@@ -2058,7 +2071,7 @@ void CL_UpdateWorld(void)
 		
 	cl.num_brushmodel_entities = 0;
 
-	if (cls.state == ca_connected && cls.signon == SIGNONS)
+	if (cls.state == ca_connected && cls.signon == SIGNONS_4)
 	{
 		// prepare for a new frame
 		CL_LerpPlayer(CL_LerpPoint());
@@ -2318,7 +2331,7 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 {
 	cl_locnode_t *loc;
 	qfile_t *outfile;
-	char locfilename[MAX_QPATH];
+	char locfilename[MAX_QPATH_128];
 	if (!cl.locnodes)
 	{
 		Con_Printf ("No loc points/boxes exist!\n");
@@ -2355,7 +2368,7 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 			int len;
 			const char *s;
 			const char *in = loc->name;
-			char name[MAX_INPUTLINE];
+			char name[MAX_INPUTLINE_16384];
 			for (len = 0;len < (int)sizeof(name) - 1 && *in;)
 			{
 				if (*in == ' ') {s = "$loc_name_separator";in++;}
@@ -2394,8 +2407,8 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 	char *filedata, *text, *textend, *linestart, *linetext, *lineend;
 	fs_offset_t filesize;
 	vec3_t mins, maxs;
-	char locfilename[MAX_QPATH];
-	char name[MAX_INPUTLINE];
+	char locfilename[MAX_QPATH_128];
+	char name[MAX_INPUTLINE_16384];
 
 	if (cls.state != ca_connected || !cl.worldmodel)
 	{
@@ -2407,11 +2420,11 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 
 	// try maps/something.loc first (LadyHavoc: where I think they should be)
 	dpsnprintf(locfilename, sizeof(locfilename), "%s.loc", cl.worldnamenoextension);
-	filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, false, &filesize);
+	filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, fs_quiet_FALSE, &filesize);
 	if (!filedata) {
 		// try proquake name as well (LadyHavoc: I hate path mangling)
 		dpsnprintf(locfilename, sizeof(locfilename), "locs/%s.loc", cl.worldbasename);
-		filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, false, &filesize);
+		filedata = (char *)FS_LoadFile(locfilename, cls.levelmempool, fs_quiet_FALSE, &filesize);
 		if (!filedata)
 			return;
 	}
@@ -2662,7 +2675,7 @@ static void CL_UpdateEntityShading_Entity(entity_render_t *ent)
 	ent->render_lightgrid = false;
 	ent->render_modellight_forced = false;
 	ent->render_rtlight_disabled = false;
-
+lightme:
 	// pick an appropriate value for render_modellight_origin - if this is an
 	// attachment we want to use the parent's render_modellight_origin so that
 	// shading is the same (also important for r_shadows to cast shadows in the
@@ -2746,9 +2759,36 @@ static void CL_UpdateEntityShading_Entity(entity_render_t *ent)
 			ent->render_lightgrid = true;
 			// no need to call R_CompleteLightPoint as we base it on render_lightmap_*
 		}
-		else if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit && r_refdef.scene.worldmodel->brush.LightPoint)
-			R_CompleteLightPoint(a, c, dir, shadingorigin, LP_LIGHTMAP, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
-		else if (r_fullbright_directed.integer)
+		else if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit && 
+			r_refdef.scene.worldmodel->brush.LightPoint) {
+lightme2:
+traditional:
+				R_CompleteLightPoint(a, c, dir, shadingorigin, LP_LIGHTMAP, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
+				
+				// Baker r1490: minlight
+				extern cvar_t r_suppress_minlight;
+				extern cvar_t r_minlight;
+				if (r_suppress_minlight.value == 0 && r_minlight.value > 0) {
+					// a is ent->modellight_ambient
+					// c is ent->modellight_diffuse
+					// 10 pct is suppose to be minimum
+					// So let's say we have 20 30 11
+					float tot = a[0] + a[1] + a[2];
+					if (tot < r_minlight.value) {
+						if (tot) {
+							float scale = r_minlight.value / tot;
+							a[0] *= scale;
+							a[1] *= scale;
+							a[2] *= scale;
+						} else {
+							a[0] = a[1] = a[2] = r_minlight.value / 3.0; //0.10;
+							if (!c[0] && !c[1] && !c[1]) {
+								c[0] = c[1] = c[2] = 0.40;
+							}
+						}
+					}
+				} // if minlight
+		} else if (r_fullbright_directed.integer)
 			CL_UpdateEntityShading_GetDirectedFullbright(a, c, dir);
 		else
 			R_CompleteLightPoint(a, c, dir, shadingorigin, LP_LIGHTMAP, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
@@ -2835,7 +2875,7 @@ double CL_Frame (double time)
 
 	if (cls.state != ca_dedicated && (cl_timer > 0 || cls.timedemo || ((vid_activewindow ? cl_maxfps : cl_maxidlefps).value < 1)))
 	{
-		qbool is_active_hosting_server = sv.active && svs.maxclients > 1;
+		qbool is_hosting_multiplayer_server = sv.active && svs.maxclients > 1;
 
 		R_TimeReport("---");
 		Collision_Cache_NewFrame();
@@ -2844,7 +2884,7 @@ double CL_Frame (double time)
 		if (!vid_activewindow && cl_maxidlefps.value >= 1 && !cls.timedemo) {
 			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxidlefps.value);
 		} else if ( (!vid_activewindow || key_consoleactive || key_dest == key_menu) && 
-			is_active_hosting_server == false && 
+			is_hosting_multiplayer_server == false && 
 			!cls.timedemo && cl_maxconsole_menu_fps.value >= 1) {
 			// Baker r8192: throttle engine in low intensity situations
 			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxconsole_menu_fps.value);

@@ -44,10 +44,13 @@ extern char fs_gamedir [MAX_OSPATH];
 extern char fs_basedir [MAX_OSPATH];
 extern char fs_userdir [MAX_OSPATH];
 
+extern int fs_data_override; // Baker r0009: Super -data override
+extern int fs_is_zircon_galaxy;
+
 // list of active game directories (empty if not running a mod)
 #define MAX_GAMEDIRS 16
 extern int fs_numgamedirs;
-extern char fs_gamedirs[MAX_GAMEDIRS][MAX_QPATH];
+extern char fs_gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
 
 typedef struct vfs_s
 {
@@ -55,13 +58,18 @@ typedef struct vfs_s
 	char basedir[MAX_OSPATH];
 	char userdir[MAX_OSPATH];
 	int numgamedirs;
-	char gamedirs[MAX_GAMEDIRS][MAX_QPATH];
+	char gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
 } vfs_t;
 
 // ------ Main functions ------ //
 
 // IMPORTANT: the file path is automatically prefixed by the current game directory for
 // each file created by FS_WriteFile, or opened in "write" or "append" mode by FS_OpenRealFile
+
+typedef struct {
+	char	searchpathx[MAX_QPATH_128 * 2];
+} loadinfo_t;
+
 
 qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_dirs, qbool dlcache); // already_loaded may be NULL if caller does not care
 const char *FS_WhichPack(const char *filename);
@@ -101,12 +109,14 @@ gamedir_t;
 extern gamedir_t *fs_all_gamedirs; // terminated by entry with empty name
 extern int fs_all_gamedirs_count;
 
-qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH], qbool complain, qbool failmissing);
+qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH_128], qbool complain, qbool failmissing);
 qbool FS_IsRegisteredQuakePack(const char *name);
+
 int FS_CRCFile(const char *filename, size_t *filesizepointer);
 void FS_UnloadPacks_dlcache(void);
 void FS_Rescan(void);
 
+WARP_X_ (stringlist_t) // Different from fssearch_s in structure
 typedef struct fssearch_s
 {
 	int numfilenames;
@@ -116,7 +126,7 @@ typedef struct fssearch_s
 }
 fssearch_t;
 
-fssearch_t *FS_Search(const char *pattern, int caseinsensitive, int quiet, const char *packfile);
+fssearch_t *FS_Search(const char *pattern, int caseinsensitive, int quiet, const char *packfile, int isgamedironly);
 void FS_FreeSearch(fssearch_t *search);
 
 unsigned char *FS_LoadFile (const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer);
@@ -133,8 +143,9 @@ void FS_DefaultExtension (char *path, const char *extension, size_t size_path);
 #define FS_FILETYPE_NONE 0
 #define FS_FILETYPE_FILE 1
 #define FS_FILETYPE_DIRECTORY 2
-int FS_FileType (const char *filename);		// the file can be into a package
-int FS_SysFileType (const char *filename);		// only look for files outside of packages
+int FS_FileOrDirectoryType (const char *filename);		// the file can be into a package
+int FS_SysFileOrDirectoryType (const char *filename);		// only look for files outside of packages
+
 
 qbool FS_FileExists (const char *filename);		// the file can be into a package
 qbool FS_SysFileExists (const char *filename);	// only look for files outside of packages

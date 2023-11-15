@@ -98,7 +98,7 @@ static void Palette_SetupSpecialPalettes(void)
 	}
 	u;
 
-	colormap = FS_LoadFile("gfx/colormap.lmp", tempmempool, true, &filesize);
+	colormap = FS_LoadFile("gfx/colormap.lmp", tempmempool, fs_quiet_true, &filesize);
 	if (colormap && filesize >= 16385)
 		fullbright_start = 256 - colormap[16384];
 	else
@@ -197,7 +197,7 @@ static void Palette_SetupSpecialPalettes(void)
 static void Palette_LoadQ2Colormap(void)
 {
 	fs_offset_t filesize;
-	unsigned char * q2colormapfile = FS_LoadFile("pics/colormap.pcx", tempmempool, true, &filesize);
+	unsigned char * q2colormapfile = FS_LoadFile("pics/colormap.pcx", tempmempool, fs_quiet_true, &filesize);
 	if (q2colormapfile && filesize >= 768)
 	{
 		unsigned char q2palette_rgb[256][3];
@@ -298,7 +298,7 @@ static void Palette_Load(void)
 
 	BuildGammaTable8(1.0f, gamma, scale, base, 1, texturegammaramp, 256);
 
-	palfile = (unsigned char *)FS_LoadFile ("gfx/palette.lmp", tempmempool, false, &filesize);
+	palfile = (unsigned char *)FS_LoadFile ("gfx/palette.lmp", tempmempool, fs_quiet_FALSE, &filesize);
 	if (palfile && filesize >= 768)
 		memcpy(palette_rgb, palfile, 768);
 	else
@@ -319,7 +319,7 @@ static void Palette_Load(void)
 	}
 
 	if (*r_colormap_palette.string)
-		palfile = (unsigned char *)FS_LoadFile (r_colormap_palette.string, tempmempool, false, &filesize);
+		palfile = (unsigned char *)FS_LoadFile (r_colormap_palette.string, tempmempool, fs_quiet_FALSE, &filesize);
 	else
 		palfile = NULL;
 

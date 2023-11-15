@@ -98,12 +98,12 @@ typedef struct dp_font_s
 	cachepic_t *pic;
 	float width_of[256]; // width_of[0] == max width of any char; 1.0f is base width (1/16 of texture width); therefore, all widths have to be <= 1 (does not include scale)
 	float maxwidth; // precalculated max width of the font (includes scale)
-	char texpath[MAX_QPATH];
-	char title[MAX_QPATH];
+	char texpath[MAX_QPATH_128];
+	char title[MAX_QPATH_128];
 
 	int req_face; // requested face index, usually 0
 	float req_sizes[MAX_FONT_SIZES]; // sizes to render the font with, 0 still defaults to 16 (backward compatibility when loadfont doesn't get a size parameter) and -1 = disabled
-	char fallbacks[MAX_FONT_FALLBACKS][MAX_QPATH];
+	char fallbacks[MAX_FONT_FALLBACKS][MAX_QPATH_128];
 	int fallback_faces[MAX_FONT_FALLBACKS];
 	struct ft2_font_s *ft2;
 

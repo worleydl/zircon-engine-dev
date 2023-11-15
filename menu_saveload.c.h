@@ -94,7 +94,8 @@ static void M_Load_Draw (void)
 	for (drawidx = 0 ; drawidx< local_count; drawidx++) {
 		Hotspots_Add (menu_x + 16 - 16, menu_y + drawcur_y, 320, 8 + 1, 1, hotspottype_slider); // PPX DUR
 		M_Print(16, drawcur_y, m_filenames[drawidx]);
-		if (drawidx == local_cursor) drawsel_idx = drawidx;
+		if (drawidx == local_cursor) 
+			drawsel_idx = drawidx;
 		drawcur_y += 8;
 	}
 

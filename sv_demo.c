@@ -6,7 +6,7 @@ extern cvar_t sv_autodemo_perclient_discardable;
 void SV_StartDemoRecording(client_t *client, const char *filename, int forcetrack)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	char name[MAX_QPATH];
+	char name[MAX_QPATH_128];
 
 	if (client->sv_demo_file != NULL)
 		return; // we already have a demo

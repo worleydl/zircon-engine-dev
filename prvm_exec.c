@@ -305,7 +305,7 @@ static void PRVM_PrintStatement(prvm_prog_t *prog, mstatement_t *s)
 {
 	size_t i;
 	int opnum = (int)(s - prog->statements);
-	char valuebuf[MAX_INPUTLINE];
+	char valuebuf[MAX_INPUTLINE_16384];
 	const char *opname;
 
 	Con_Printf ("s%d: ", opnum);
@@ -953,7 +953,7 @@ void MVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessag
 	if (!fnum || fnum >= (unsigned int)prog->numfunctions)
 	{
 		if (PRVM_allglobaledict(self))
-			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL);
+			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 		prog->error_cmd("MVM_ExecuteProgram: %s", errormessage);
 	}
 
@@ -1062,7 +1062,7 @@ void CLVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessa
 	if (!fnum || fnum >= (unsigned int)prog->numfunctions)
 	{
 		if (PRVM_allglobaledict(self))
-			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL);
+			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 		prog->error_cmd("CLVM_ExecuteProgram: %s", errormessage);
 	}
 
@@ -1175,7 +1175,7 @@ void PRVM_ExecuteProgram (prvm_prog_t *prog, func_t fnum, const char *errormessa
 	if (!fnum || fnum >= (unsigned int)prog->numfunctions)
 	{
 		if (PRVM_allglobaledict(self))
-			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), NULL);
+			PRVM_ED_Print(prog, PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self)), q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 		prog->error_cmd("SVVM_ExecuteProgram: %s", errormessage);
 	}
 

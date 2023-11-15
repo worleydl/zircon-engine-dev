@@ -130,7 +130,7 @@ int r_shadow_viewwidth;
 int r_shadow_viewheight;
 
 // lights are reloaded when this changes
-char r_shadow_mapname[MAX_QPATH];
+char r_shadow_mapname[MAX_QPATH_128];
 
 // buffer for doing corona fading
 unsigned int r_shadow_occlusion_buf = 0;
@@ -4839,17 +4839,54 @@ static void R_Shadow_SelectLightInView(void)
 	R_Shadow_SelectLight(best);
 }
 
+// Baker r7104: bake rtlight tool for Q3 map
+void R_Shadow_EditLights_Bake_f(cmd_state_t *cmd)
+{
+	extern cvar_t sv_worldbasename;
+
+	char	s_source[MAX_QPATH_128];
+	char	s_dest[MAX_QPATH_128];
+	char	*lightsstring;
+
+	int isok;
+	
+	if (cl.worldmodel == NULL) {
+		Con_PrintLinef ("No map loaded.");
+		return;
+	}
+
+	c_dpsnprintf1(s_source, "data/%s.rtlights", sv_worldbasename.string);
+	c_dpsnprintf1(s_dest,   "maps/%s.rtlights", sv_worldbasename.string);
+
+	lightsstring = (char *)FS_LoadFile(s_source, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
+	if (!lightsstring) {
+		Con_PrintLinef ("Failed to read file " QUOTED_S, s_source);
+		return;
+	}
+	
+	isok = FS_WriteFile(s_dest, lightsstring, strlen(lightsstring));
+
+	if (!isok) {
+		Con_PrintLinef ("Failed to write file " QUOTED_S, s_dest);
+		Mem_Free (lightsstring);
+		return;
+	}
+
+	Con_PrintLinef ("Wrote " QUOTED_S, s_dest);
+	Mem_Free (lightsstring);
+}
+
 void R_Shadow_LoadWorldLights(void)
 {
 	int n, a, style, shadow, flags;
-	char tempchar, *lightsstring, *s, *t, name[MAX_QPATH], cubemapname[MAX_QPATH];
+	char tempchar, *lightsstring, *s, *t, name[MAX_QPATH_128], cubemapname[MAX_QPATH_128];
 	float origin[3], radius, color[3], angles[3], corona, coronasizescale, ambientscale, diffusescale, specularscale;
 	if (cl.worldmodel == NULL) {
 		Con_PrintLinef ("No map loaded.");
 		return;
 	}
 	dpsnprintf(name, sizeof(name), "%s.rtlights", cl.worldnamenoextension);
-	lightsstring = (char *)FS_LoadFile(name, tempmempool, false, NULL);
+	lightsstring = (char *)FS_LoadFile(name, tempmempool, false, fs_size_ptr_null);
 	if (lightsstring) {
 		s = lightsstring;
 		n = 0;
@@ -4888,8 +4925,8 @@ void R_Shadow_LoadWorldLights(void)
 #define sscanf sscanf_s
 #endif
 			cubemapname[sizeof(cubemapname)-1] = 0;
-#if MAX_QPATH != 128
-#error update this code if MAX_QPATH changes
+#if MAX_QPATH_128 != 128
+#error update this code if MAX_QPATH_128 changes
 #endif
 			a = sscanf(t, "%f %f %f %f %f %f %f %d %127s %f %f %f %f %f %f %f %f %d", &origin[0], &origin[1], &origin[2], &radius, &color[0], &color[1], &color[2], &style, cubemapname
 #if _MSC_VER >= 1400
@@ -4954,8 +4991,8 @@ void R_Shadow_SaveWorldLights(void)
 	dlight_t *light;
 	size_t bufchars, bufmaxchars;
 	char *buf, *oldbuf;
-	char name[MAX_QPATH];
-	char line[MAX_INPUTLINE];
+	char name[MAX_QPATH_128];
+	char line[MAX_INPUTLINE_16384];
 	size_t range = Mem_ExpandableArray_IndexRange(&r_shadow_worldlightsarray); // checked, assuming the dpsnprintf mess doesn't screw it up...
 	// I hate lines which are 3 times my screen size :( --blub
 	if (!range)
@@ -5006,7 +5043,7 @@ void R_Shadow_SaveWorldLights(void)
 void R_Shadow_LoadLightsFile(void)
 {
 	int n, a, style;
-	char tempchar, *lightsstring, *s, *t, name[MAX_QPATH];
+	char tempchar, *lightsstring, *s, *t, name[MAX_QPATH_128];
 	float origin[3], radius, color[3], subtract, spotdir[3], spotcone, falloff, distbias;
 	if (cl.worldmodel == NULL)
 	{
@@ -5014,7 +5051,7 @@ void R_Shadow_LoadLightsFile(void)
 		return;
 	}
 	dpsnprintf(name, sizeof(name), "%s.lights", cl.worldnamenoextension);
-	lightsstring = (char *)FS_LoadFile(name, tempmempool, false, NULL);
+	lightsstring = (char *)FS_LoadFile(name, tempmempool, false, fs_size_ptr_null);
 	if (lightsstring)
 	{
 		s = lightsstring;
@@ -5067,7 +5104,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 	char *entfiledata;
 	const char *data;
 	float origin[3], angles[3], radius, color[3], light[4], fadescale, lightscale, originhack[3], overridecolor[3], vec[4];
-	char key[256], value[MAX_INPUTLINE];
+	char key[256], value[MAX_INPUTLINE_16384];
 	char vabuf[1024];
 
 	if (cl.worldmodel == NULL)
@@ -5077,7 +5114,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 	}
 	// try to load a .ent file first
 	dpsnprintf(key, sizeof(key), "%s.ent", cl.worldnamenoextension);
-	data = entfiledata = (char *)FS_LoadFile(key, tempmempool, true, NULL);
+	data = entfiledata = (char *)FS_LoadFile(key, tempmempool, fs_quiet_true, fs_size_ptr_null);
 	// and if that is not found, fall back to the bsp file entity string
 	if (!data)
 		data = cl.worldmodel->brush.entities;
@@ -5381,7 +5418,7 @@ static void R_Shadow_EditLights_Edit_f(cmd_state_t *cmd)
 	vec3_t origin, angles, color;
 	vec_t radius, corona, coronasizescale, ambientscale, diffusescale, specularscale;
 	int style, shadows, flags, normalmode, realtimemode;
-	char cubemapname[MAX_INPUTLINE];
+	char cubemapname[MAX_INPUTLINE_16384];
 	if (!r_editlights.integer)
 	{
 		Con_Print("Cannot spawn light when not in editing mode.  Set r_editlights to 1.\n");
@@ -5982,48 +6019,56 @@ static void R_Shadow_EditLights_Lock_f(cmd_state_t *cmd)
 	r_editlights_lockcursor = true;
 }
 
-static void R_Shadow_EditLights_Init(void)
+// Baker r0093
+static void R_Shadow_EditLights_Select_Index_f(cmd_state_t *cmd)
 {
-	Cvar_RegisterVariable(&r_editlights);
-	Cvar_RegisterVariable(&r_editlights_cursordistance);
-	Cvar_RegisterVariable(&r_editlights_cursorpushback);
-	Cvar_RegisterVariable(&r_editlights_cursorpushoff);
-	Cvar_RegisterVariable(&r_editlights_cursorgrid);
-	Cvar_RegisterVariable(&r_editlights_quakelightsizescale);
-	Cvar_RegisterVariable(&r_editlights_drawproperties);
-	Cvar_RegisterVariable(&r_editlights_current_origin);
-	Cvar_RegisterVariable(&r_editlights_current_angles);
-	Cvar_RegisterVariable(&r_editlights_current_color);
-	Cvar_RegisterVariable(&r_editlights_current_radius);
-	Cvar_RegisterVariable(&r_editlights_current_corona);
-	Cvar_RegisterVariable(&r_editlights_current_coronasize);
-	Cvar_RegisterVariable(&r_editlights_current_style);
-	Cvar_RegisterVariable(&r_editlights_current_shadows);
-	Cvar_RegisterVariable(&r_editlights_current_cubemap);
-	Cvar_RegisterVariable(&r_editlights_current_ambient);
-	Cvar_RegisterVariable(&r_editlights_current_diffuse);
-	Cvar_RegisterVariable(&r_editlights_current_specular);
-	Cvar_RegisterVariable(&r_editlights_current_normalmode);
-	Cvar_RegisterVariable(&r_editlights_current_realtimemode);
+	if (!r_editlights.integer) {
+		Con_PrintLinef ("r_editlights is 0, not active");
+		return;
+	}
 
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_help", R_Shadow_EditLights_Help_f, "prints documentation on console commands and variables in rtlight editing system");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_clear", R_Shadow_EditLights_Clear_f, "removes all world lights (let there be darkness!)");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_reload", R_Shadow_EditLights_Reload_f, "reloads rtlights file (or imports from .lights file or .ent file or the map itself)");
+	if (Cmd_Argc (cmd) != 2) {
+		Con_PrintLinef ("specify light number");
+		return;
+	}
 
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_save", R_Shadow_EditLights_Save_f, "save .rtlights file for current level");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_spawn", R_Shadow_EditLights_Spawn_f, "creates a light with default properties (let there be light!)");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_edit", R_Shadow_EditLights_Edit_f, "changes a property on the selected light");
+	int lightnumber, lightcount;
+	size_t seekthis;
+	seekthis = atoi (Cmd_Argv(cmd, 1));
 
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_editall", R_Shadow_EditLights_EditAll_f, "changes a property on ALL lights at once (tip: use radiusscale and colorscale to alter these properties)");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_remove", R_Shadow_EditLights_Remove_f, "remove selected light");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_toggleshadow", R_Shadow_EditLights_ToggleShadow_f, "toggle on/off the shadow option on the selected light");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_togglecorona", R_Shadow_EditLights_ToggleCorona_f, "toggle on/off the corona option on the selected light");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_importlightentitiesfrommap", R_Shadow_EditLights_ImportLightEntitiesFromMap_f, "load lights from .ent file or map entities (ignoring .rtlights or .lights file)");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_importlightsfile", R_Shadow_EditLights_ImportLightsFile_f, "load lights from .lights file (ignoring .rtlights or .ent files and map entities)");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_copyinfo", R_Shadow_EditLights_CopyInfo_f, "store a copy of all properties (except origin) of the selected light");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_pasteinfo", R_Shadow_EditLights_PasteInfo_f, "apply the stored properties onto the selected light (making it exactly identical except for origin)");
-	Cmd_AddCommand(CF_CLIENT, "r_editlights_lock", R_Shadow_EditLights_Lock_f, "lock selection to current light, if already locked - unlock");
+	size_t lightindex, range;
+	dlight_t *light;
+	dlight_t *lighthit = NULL;
+
+	lightnumber = -1;
+	lightcount = 0;
+	range = Mem_ExpandableArray_IndexRange(&r_shadow_worldlightsarray); // checked
+	for (lightindex = 0; lightindex < range; lightindex ++) {
+		light = (dlight_t *) Mem_ExpandableArray_RecordAtIndex(&r_shadow_worldlightsarray, lightindex);
+		if (!light)
+			continue;
+		//if (light == r_shadow_selectedlight)
+		//	lightnumber = (int)lightindex;
+		if (lightindex == seekthis) {
+			lighthit = light;
+		}
+	} // for
+
+	if (!lighthit) {
+		Con_PrintLinef ("Could not find light index #%d in set of lights 0 to %d", seekthis, range - 1);
+		return;
+	}
+	if (r_editlights.integer) {
+		// Unlock
+		R_Shadow_EditLights_Lock_f (cmd_local);
+	}
+
+	R_Shadow_SelectLight(lighthit);
+
+	R_Shadow_EditLights_Lock_f (cmd_local);
+
 }
+
 
 
 
@@ -6164,5 +6209,52 @@ void R_CompleteLightPoint(float *ambient, float *diffuse, float *lightdir, const
 		ambient[q] = sa[q] + -0.333f * diffuse[q] + ambientintensity;
 	}
 }
+
+static void R_Shadow_EditLights_Init(void)
+{
+	Cvar_RegisterVariable(&r_editlights);
+	Cvar_RegisterVariable(&r_editlights_cursordistance);
+	Cvar_RegisterVariable(&r_editlights_cursorpushback);
+	Cvar_RegisterVariable(&r_editlights_cursorpushoff);
+	Cvar_RegisterVariable(&r_editlights_cursorgrid);
+	Cvar_RegisterVariable(&r_editlights_quakelightsizescale);
+	Cvar_RegisterVariable(&r_editlights_drawproperties);
+	Cvar_RegisterVariable(&r_editlights_current_origin);
+	Cvar_RegisterVariable(&r_editlights_current_angles);
+	Cvar_RegisterVariable(&r_editlights_current_color);
+	Cvar_RegisterVariable(&r_editlights_current_radius);
+	Cvar_RegisterVariable(&r_editlights_current_corona);
+	Cvar_RegisterVariable(&r_editlights_current_coronasize);
+	Cvar_RegisterVariable(&r_editlights_current_style);
+	Cvar_RegisterVariable(&r_editlights_current_shadows);
+	Cvar_RegisterVariable(&r_editlights_current_cubemap);
+	Cvar_RegisterVariable(&r_editlights_current_ambient);
+	Cvar_RegisterVariable(&r_editlights_current_diffuse);
+	Cvar_RegisterVariable(&r_editlights_current_specular);
+	Cvar_RegisterVariable(&r_editlights_current_normalmode);
+	Cvar_RegisterVariable(&r_editlights_current_realtimemode);
+
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_help", R_Shadow_EditLights_Help_f, "prints documentation on console commands and variables in rtlight editing system");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_clear", R_Shadow_EditLights_Clear_f, "removes all world lights (let there be darkness!)");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_reload", R_Shadow_EditLights_Reload_f, "reloads rtlights file (or imports from .lights file or .ent file or the map itself)");
+
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_save", R_Shadow_EditLights_Save_f, "save .rtlights file for current level");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_spawn", R_Shadow_EditLights_Spawn_f, "creates a light with default properties (let there be light!)");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_edit", R_Shadow_EditLights_Edit_f, "changes a property on the selected light");
+
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_editall", R_Shadow_EditLights_EditAll_f, "changes a property on ALL lights at once (tip: use radiusscale and colorscale to alter these properties)");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_remove", R_Shadow_EditLights_Remove_f, "remove selected light");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_toggleshadow", R_Shadow_EditLights_ToggleShadow_f, "toggle on/off the shadow option on the selected light");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_togglecorona", R_Shadow_EditLights_ToggleCorona_f, "toggle on/off the corona option on the selected light");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_importlightentitiesfrommap", R_Shadow_EditLights_ImportLightEntitiesFromMap_f, "load lights from .ent file or map entities (ignoring .rtlights or .lights file)");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_importlightsfile", R_Shadow_EditLights_ImportLightsFile_f, "load lights from .lights file (ignoring .rtlights or .ent files and map entities)");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_copyinfo", R_Shadow_EditLights_CopyInfo_f, "store a copy of all properties (except origin) of the selected light");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_pasteinfo", R_Shadow_EditLights_PasteInfo_f, "apply the stored properties onto the selected light (making it exactly identical except for origin)");
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_lock", R_Shadow_EditLights_Lock_f, "lock selection to current light, if already locked - unlock");
+
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_select_index", R_Shadow_EditLights_Select_Index_f, "changes a property on the selected light [Zircon]"); // Baker r0093
+	Cmd_AddCommand(CF_CLIENT, "r_editlights_dlight_bake", R_Shadow_EditLights_Bake_f, "copies data/<map>.rtlights to maps/<map>.rtlights. Part of a dynamic lights generation process. [Zircon]"); // Baker r7104
+}
+
 
 // mark 5

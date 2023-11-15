@@ -121,7 +121,7 @@ void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, con
 	if (value[0])
 	{
 		// set the key/value and append the remaining text
-		char tempbuffer[MAX_INPUTLINE];
+		char tempbuffer[MAX_INPUTLINE_16384];
 		strlcpy(tempbuffer, buffer + pos2, sizeof(tempbuffer));
 		dpsnprintf(buffer + pos, bufferlength - pos, "\\%s\\%s%s", key, value, tempbuffer);
 	}
@@ -135,8 +135,8 @@ void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, con
 void InfoString_Print(char *buffer)
 {
 	int i;
-	char key[MAX_INPUTLINE];
-	char value[MAX_INPUTLINE];
+	char key[MAX_INPUTLINE_16384];
+	char value[MAX_INPUTLINE_16384];
 	while (*buffer)
 	{
 		if (*buffer != '\\')

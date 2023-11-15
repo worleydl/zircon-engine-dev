@@ -51,12 +51,12 @@ typedef struct gamemode_info_s
 
 static const gamemode_info_t gamemode_info [GAME_COUNT] =
 {// game						basegame					prog_name				cmdline						gamename					gamenetworkfilername		basegame	modgame			screenshot			userdir					   // commandline option
-{ GAME_NORMAL,					GAME_NORMAL,				"",						"-quake",					"Zircon-Quake",			"DarkPlaces-Quake",			"id1",		NULL,			"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -quake runs the game Quake (default)
-{ GAME_HIPNOTIC,				GAME_NORMAL,				"hipnotic",				"-hipnotic",				"Zircon-Hipnotic",		"Darkplaces-Hipnotic",		"id1",		"hipnotic",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -hipnotic runs Quake mission pack 1: The Scourge of Armagon
-{ GAME_ROGUE,					GAME_NORMAL,				"rogue",				"-rogue",					"Zircon-Rogue",			"Darkplaces-Rogue",			"id1",		"rogue",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -rogue runs Quake mission pack 2: The Dissolution of Eternity
-{ GAME_NEHAHRA,					GAME_NORMAL,				"nehahra",				"-nehahra",					"Zircon-Nehahra",		"DarkPlaces-Nehahra",		"id1",		"nehahra",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -nehahra runs The Seal of Nehahra movie and game
-{ GAME_QUOTH,					GAME_NORMAL,				"quoth",				"-quoth",					"Zircon-Quoth",			"Darkplaces-Quoth",			"id1",		"quoth",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -quoth runs the Quoth mod for playing community maps made for it
-{ GAME_QUAKE3_QUAKE1,			GAME_NORMAL,				"quake3_quake1",		"-quake3_quake1",			"Zircon-Q3Q1",			"DarkPlaces-Q3Q1",			"id1",		"quake3_quake1","dp",				"zircon"				}, // COMMANDLINEOPTION: Game: -quake3_quake1
+{ GAME_NORMAL,					GAME_NORMAL,				"",						"-quake",					"Zircon Beta-Quake",		"DarkPlaces-Quake",			"id1",		NULL,			"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -quake runs the game Quake (default)
+{ GAME_HIPNOTIC,				GAME_NORMAL,				"hipnotic",				"-hipnotic",				"Zircon Beta-Hipnotic",		"Darkplaces-Hipnotic",		"id1",		"hipnotic",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -hipnotic runs Quake mission pack 1: The Scourge of Armagon
+{ GAME_ROGUE,					GAME_NORMAL,				"rogue",				"-rogue",					"Zircon Beta-Rogue",		"Darkplaces-Rogue",			"id1",		"rogue",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -rogue runs Quake mission pack 2: The Dissolution of Eternity
+{ GAME_NEHAHRA,					GAME_NORMAL,				"nehahra",				"-nehahra",					"Zircon Beta-Nehahra",		"DarkPlaces-Nehahra",		"id1",		"nehahra",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -nehahra runs The Seal of Nehahra movie and game
+{ GAME_QUOTH,					GAME_NORMAL,				"quoth",				"-quoth",					"Zircon Beta-Quoth",		"Darkplaces-Quoth",			"id1",		"quoth",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -quoth runs the Quoth mod for playing community maps made for it
+{ GAME_QUAKE3_QUAKE1,			GAME_NORMAL,				"quake3_quake1",		"-quake3_quake1",			"Zircon Beta-Q3Q1",			"DarkPlaces-Q3Q1",			"id1",		"quake3_quake1","dp",				"zircon"				}, // COMMANDLINEOPTION: Game: -quake3_quake1
 { GAME_NEXUIZ,					GAME_NEXUIZ,				"nexuiz",				"-nexuiz",					"Nexuiz",					"Nexuiz",					"data",		NULL,			"nexuiz",			"nexuiz"				}, // COMMANDLINEOPTION: Game: -nexuiz runs the multiplayer game Nexuiz
 { GAME_XONOTIC,					GAME_XONOTIC,				"xonotic",				"-xonotic",					"Xonotic",					"Xonotic",					"data",		NULL,			"xonotic",			"xonotic"				}, // COMMANDLINEOPTION: Game: -xonotic runs the multiplayer game Xonotic
 { GAME_TRANSFUSION,				GAME_TRANSFUSION,			"transfusion",			"-transfusion",				"Transfusion",				"Transfusion",				"basetf",	NULL,			"transfusion",		"transfusion"			}, // COMMANDLINEOPTION: Game: -transfusion runs Transfusion (the recreation of Blood in Quake)
@@ -95,6 +95,13 @@ void COM_InitGameType (void)
 	char name [MAX_OSPATH];
 	int i;
 	int index = 0;
+	fs_is_zircon_galaxy = File_Is_Existing_File (
+#ifdef __ANDROID__
+	
+		"/sdcard/zircon/"
+#endif
+		"zircon/gfx/qplaque.png"
+	);
 
 #ifdef FORCEGAME
 	COM_ToLowerString(FORCEGAME, name, sizeof (name));
@@ -163,6 +170,11 @@ static void COM_SetGameType(int index)
 
 	gamescreenshotname = gamemode_info[index].gamescreenshotname;
 	gameuserdirname = gamemode_info[index].gameuserdirname;
+	if (fs_is_zircon_galaxy) {
+		gamename = "Zircon X";
+		gamedirname1 = "zircon";
+		gamenetworkfiltername = gamescreenshotname = gameuserdirname = "Zircon";
+	}
 
 	if (gamemode == com_startupgamemode)
 	{

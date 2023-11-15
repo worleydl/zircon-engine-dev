@@ -107,8 +107,13 @@ void Log_Printf(const char *logfilename, const char *fmt, ...) DP_FUNC_PRINTF(2)
 #define CON_WARN "^3"
 #define CON_ERROR "^3"
 
+#define CON_RED "^1"
 #define CON_BRONZE "^3"
 #define CON_WHITE "^7"
+
+#define CON_GREEN "^2"
+#define CON_CYAN "^5"
+
 
 // CON_MASK_PRINT is the default (Con_Print/Con_Printf)
 // CON_MASK_DEVELOPER is used by Con_DPrint/Con_DPrintf
@@ -174,10 +179,10 @@ extern float console_user_pct;
 void Con_AdjustConsoleHeight(const float delta);
 
 typedef struct {
-	unsigned char *sm_a;
-	unsigned char *smtru_a;
-	unsigned char *smsg_a;
-	unsigned char *sqbsp;
+	unsigned char *s_name_after_maps_folder_a;
+	unsigned char *s_name_trunc_16_a;
+	unsigned char *s_map_title_trunc_28_a;
+	unsigned char *s_bsp_code;
 } maplist_s;
 
 #define MAXMAPLIST_4096 4096
@@ -217,8 +222,20 @@ typedef struct autocomplete_s {
 
 extern autocomplete_t _g_autocomplete;
 
+typedef enum {
+	cursor_reset_0 = 0, 
+	cursor_reset_abs, 
+	selection_clear, 
+	cursor_select, 
+	cursor_select_all
+} cursor_e;
+
 void Partial_Reset (void); // Autocomplete
-void Partial_Reset_Undo_Selection_Reset (void);
+void Partial_Reset_Undo_Normal_Selection_Reset (void);
+void Partial_Reset_Undo_Navis_Selection_Reset (void);
+void Con_Undo_Point (int action, int was_space);
+void Key_Console_Cursor_Move(int netchange, cursor_e action);
+
 
 #endif // ! CONSOLE_H
 

@@ -49,20 +49,23 @@ command from the console.  Active clients are kicked off.
 */
 static void SV_Map_f(cmd_state_t *cmd)
 {
-	char level[MAX_QPATH];
+	char level[MAX_QPATH_128];
 
 	// Baker r1202: "map" command with no params says map name
 	if (Cmd_Argc(cmd) != 2) {
 		// Baker: If we are on a map, print the name of the map
 		if (sv.active) {
 			Con_PrintLinef ("map is %s", sv.name);
-			//Con_DPrintLinef ("cl wateralpha support? %d", sv.worldmodel->brush.supportwateralpha);
+			if (cl.worldmodel)
+				Con_DPrintLinef ("cl wateralpha support? %d", cl.worldmodel->brush.supportwateralpha);
 		}
-		else if (host_isclient.integer) {
-
+		else if (!sv.active && cls.state == ca_connected && cls.signon == SIGNONS_4) {
+			Con_PrintLinef ("map is %s", cl.worldbasename);
+			if (cl.worldmodel)
+				Con_DPrintLinef ("cl wateralpha support? %d", cl.worldmodel->brush.supportwateralpha);
+		} else {
+			Con_PrintLinef ("map <levelname> : start a new game (kicks off all players)");
 		}
-	
-		Con_PrintLinef ("map <levelname> : start a new game (kicks off all players)");
 		return;
 	}
 
@@ -94,8 +97,11 @@ static void SV_Map_f(cmd_state_t *cmd)
 		host.hook.ToggleMenu();
 
 	svs.serverflags = 0;			// haven't completed an episode yet
-	strlcpy(level, Cmd_Argv(cmd, 1), sizeof(level));
-	SV_SpawnServer(level);
+	c_strlcpy (level, Cmd_Argv(cmd, 1));
+
+	cl_signon_start_time = Sys_DirtyTime (); // map
+
+	SV_SpawnServer(level, q_s_loadgame_NULL);
 
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
@@ -110,7 +116,7 @@ Goes to a new map, taking all clients along
 */
 static void SV_Changelevel_f(cmd_state_t *cmd)
 {
-	char level[MAX_QPATH];
+	char level[MAX_QPATH_128];
 
 	if (Cmd_Argc(cmd) != 2) {
 		Con_PrintLinef ("changelevel <levelname> : continue game on a new level");
@@ -128,8 +134,8 @@ static void SV_Changelevel_f(cmd_state_t *cmd)
 		host.hook.ToggleMenu();
 
 	SV_SaveSpawnparms ();
-	strlcpy(level, Cmd_Argv(cmd, 1), sizeof(level));
-	SV_SpawnServer(level);
+	c_strlcpy (level, Cmd_Argv(cmd, 1) );
+	SV_SpawnServer(level, q_s_loadgame_NULL);
 	
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
@@ -144,7 +150,7 @@ Restarts the current server for a dead player
 */
 static void SV_Restart_f(cmd_state_t *cmd)
 {
-	char mapname[MAX_QPATH];
+	char mapname[MAX_QPATH_128];
 
 	if (Cmd_Argc(cmd) != 1) {
 		Con_PrintLinef ("restart : restart current level");
@@ -162,7 +168,7 @@ static void SV_Restart_f(cmd_state_t *cmd)
 		host.hook.ToggleMenu();
 
 	strlcpy(mapname, sv.name, sizeof(mapname));
-	SV_SpawnServer(mapname);
+	SV_SpawnServer(mapname, q_s_loadgame_NULL);
 	
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
@@ -202,34 +208,50 @@ SV_God_f
 Sets client to godmode
 ==================
 */
+// Baker r1244: FitzQuake explicit option "god 1" forces god mode on
 static void SV_God_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
 
-	PRVM_serveredictfloat(host_client->edict, flags) = (int)PRVM_serveredictfloat(host_client->edict, flags) ^ FL_GODMODE;
+	int flagz = PRVM_serveredictfloat(host_client->edict, flags);
+	int wants_on = 0;
+	int was_on = Have_Flag (flagz, FL_GODMODE);
+	if (Cmd_Argc (cmd) > 1)	{ wants_on = atof(Cmd_Argv (cmd, 1)) != 0; }
+	else					{ wants_on = !was_on; }
+	
+	if (wants_on)	{ Flag_Add_To (flagz, FL_GODMODE);		} 
+	else			{ Flag_Remove_From (flagz, FL_GODMODE); }
+	
+	PRVM_serveredictfloat(host_client->edict, flags) = flagz;
+
 	if (!((int)PRVM_serveredictfloat(host_client->edict, flags) & FL_GODMODE) )
-		SV_ClientPrint("godmode OFF\n");
+		SV_ClientPrint("godmode OFF" NEWLINE);
 	else
-		SV_ClientPrint("godmode ON\n");
+		SV_ClientPrint("godmode ON" NEWLINE);
 }
 
 qbool noclip_anglehack;
 
+// Baker r1244: FitzQuake explicit option "god 1" forces god mode on
 static void SV_Noclip_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
 
-	if (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_NOCLIP)
-	{
+	int wants_on = 0;
+	int was_on = PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_NOCLIP;
+	if (Cmd_Argc (cmd) > 1)	{ wants_on = atof(Cmd_Argv (cmd, 1)) != 0; }
+	else					{ wants_on = !was_on; }
+
+	if (wants_on) {
 		noclip_anglehack = true;
 		PRVM_serveredictfloat(host_client->edict, movetype) = MOVETYPE_NOCLIP;
-		SV_ClientPrint("noclip ON\n");
+		SV_ClientPrint("noclip ON" NEWLINE);
 	}
 	else
 	{
 		noclip_anglehack = false;
 		PRVM_serveredictfloat(host_client->edict, movetype) = MOVETYPE_WALK;
-		SV_ClientPrint("noclip OFF\n");
+		SV_ClientPrint("noclip OFF" NEWLINE);
 	}
 }
 
@@ -238,11 +260,13 @@ static void SV_Noclip_f(cmd_state_t *cmd)
 SV_Give_f
 ==================
 */
+// Baker r1245: FitzQuake give armor "give a 200"
 static void SV_Give_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	const char *t;
 	int v;
+	int flagsz;
 
 	t = Cmd_Argv(cmd, 1);
 	v = atoi (Cmd_Argv(cmd, 2));
@@ -259,24 +283,15 @@ static void SV_Give_f(cmd_state_t *cmd)
 	case '8':
 	case '9':
 		// MED 01/04/97 added hipnotic give stuff
-		if (gamemode == GAME_HIPNOTIC || gamemode == GAME_QUOTH)
-		{
-			if (t[0] == '6')
-			{
-				if (t[1] == 'a')
-					PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | HIT_PROXIMITY_GUN;
-				else
-					PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | IT_GRENADE_LAUNCHER;
+		if (gamemode == GAME_HIPNOTIC || gamemode == GAME_QUOTH) {
+			if (t[0] == '6') {
+				if (t[1] == 'a')	PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | HIT_PROXIMITY_GUN;
+				else				PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | IT_GRENADE_LAUNCHER;
 			}
-			else if (t[0] == '9')
-				PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | HIT_LASER_CANNON;
-			else if (t[0] == '0')
-				PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | HIT_MJOLNIR;
-			else if (t[0] >= '2')
-				PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | (IT_SHOTGUN << (t[0] - '2'));
-		}
-		else
-		{
+			else if (t[0] == '9')	PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | HIT_LASER_CANNON;
+			else if (t[0] == '0')	PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | HIT_MJOLNIR;
+			else if (t[0] >= '2')	PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | (IT_SHOTGUN << (t[0] - '2'));
+		} else {
 			if (t[0] >= '2')
 				PRVM_serveredictfloat(host_client->edict, items) = (int)PRVM_serveredictfloat(host_client->edict, items) | (IT_SHOTGUN << (t[0] - '2'));
 		}
@@ -339,6 +354,29 @@ static void SV_Give_f(cmd_state_t *cmd)
 				PRVM_serveredictfloat(host_client->edict, ammo_cells) = v;
 		}
 		break;
+
+    case 'a':
+		flagsz = PRVM_serveredictfloat(host_client->edict, items);
+		PRVM_serveredictfloat(host_client->edict, armorvalue) = v;
+		if (gamemode == GAME_ROGUE)	{	Flag_Remove_From	(flagsz, RIT_ARMOR1 | RIT_ARMOR2 | RIT_ARMOR3 ); }
+		else						{	Flag_Remove_From	(flagsz, IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3 );	}
+
+		if (v > 150) {
+			PRVM_serveredictfloat(host_client->edict, armortype) = 0.8;
+			if (gamemode == GAME_ROGUE)	{	Flag_Add_To			(flagsz, IT_ARMOR3); }
+			else						{Flag_Add_To			(flagsz, IT_ARMOR3); }
+		} else if (v > 100) {
+			PRVM_serveredictfloat(host_client->edict, armortype) = 0.6;
+			if (gamemode == GAME_ROGUE)	{	Flag_Add_To			(flagsz, IT_ARMOR2); }
+			else						{Flag_Add_To			(flagsz, IT_ARMOR2); }
+		} else if (v >= 0) {
+			PRVM_serveredictfloat(host_client->edict, armortype) = 0.3;
+			if (gamemode == GAME_ROGUE)	{	Flag_Add_To			(flagsz, IT_ARMOR1); }
+			else						{Flag_Add_To			(flagsz, IT_ARMOR1); }
+		}
+		PRVM_serveredictfloat(host_client->edict, items) = flagsz;
+		break;
+
 	}
 }
 
@@ -349,11 +387,17 @@ SV_Fly_f
 Sets client to flymode
 ==================
 */
+// Baker r1244: FitzQuake explicit option "god 1" forces god mode on
 static void SV_Fly_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
 
-	if (PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_FLY) {
+	int wants_on = 0;
+	int was_on = PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_FLY;
+	if (Cmd_Argc (cmd) > 1)	{ wants_on = atof(Cmd_Argv (cmd, 1)) != 0; }
+	else					{ wants_on = !was_on; }
+
+	if (wants_on) {
 		PRVM_serveredictfloat(host_client->edict, movetype) = MOVETYPE_FLY;
 		SV_ClientPrint("flymode ON\n");
 	} else {
@@ -362,15 +406,26 @@ static void SV_Fly_f(cmd_state_t *cmd)
 	}
 }
 
+// Baker r1244: FitzQuake explicit option "god 1" forces god mode on
 static void SV_Notarget_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
 
-	PRVM_serveredictfloat(host_client->edict, flags) = (int)PRVM_serveredictfloat(host_client->edict, flags) ^ FL_NOTARGET;
+	int flagz = PRVM_serveredictfloat(host_client->edict, flags);
+	int wants_on = 0;
+	int was_on = Have_Flag (flagz, FL_NOTARGET);
+	if (Cmd_Argc (cmd) > 1)	{ wants_on = atof(Cmd_Argv (cmd, 1)) != 0; }
+	else					{ wants_on = !was_on; }
+	
+	if (wants_on)	{ Flag_Add_To (flagz, FL_NOTARGET);		} 
+	else			{ Flag_Remove_From (flagz, FL_NOTARGET); }
+	
+	PRVM_serveredictfloat(host_client->edict, flags) = flagz;
+
 	if (!((int)PRVM_serveredictfloat(host_client->edict, flags) & FL_NOTARGET) )
-		SV_ClientPrint("notarget OFF\n");
+		SV_ClientPrint("notarget OFF" NEWLINE);
 	else
-		SV_ClientPrint("notarget ON\n");
+		SV_ClientPrint("notarget ON" NEWLINE);
 }
 
 /*
@@ -383,7 +438,7 @@ static void SV_Kill_f(cmd_state_t *cmd)
 	prvm_prog_t *prog = SVVM_prog;
 	if (PRVM_serveredictfloat(host_client->edict, health) <= 0)
 	{
-		SV_ClientPrint("Can't suicide -- already dead!\n");
+		SV_ClientPrint("Can't suicide -- already dead!" NEWLINE);
 		return;
 	}
 
@@ -409,7 +464,7 @@ static void SV_Pause_f(cmd_state_t *cmd)
 
 	if (!pausable.integer && cmd->source == src_client && LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) != LHNETADDRESSTYPE_LOOP)
 	{
-		print("Pause not allowed.\n");
+		print("Pause not allowed." NEWLINE);
 		return;
 	}
 	
@@ -503,7 +558,7 @@ static void SV_Tell_f(cmd_state_t *cmd)
 	client_t *save;
 	int j;
 	const char *p1, *p2;
-	char text[MAX_INPUTLINE]; // LadyHavoc: FIXME: temporary buffer overflow fix (was 64)
+	char text[MAX_INPUTLINE_16384]; // LadyHavoc: FIXME: temporary buffer overflow fix (was 64)
 	qbool fromServer = false;
 
 	if (cmd->source == src_local)
@@ -715,7 +770,7 @@ static void SV_Status_f(cmd_state_t *cmd)
 	client_t *client;
 	int seconds = 0, minutes = 0, hours = 0, i, j, k, in, players, ping = 0, packetloss = 0;
 	void (*print) (const char *fmt, ...);
-	char ip[48]; // can contain a full length v6 address with [] and a port
+	char ip_48[48]; // can contain a full length v6 address with [] and a port
 	int frags;
 	char vabuf[1024];
 
@@ -728,31 +783,31 @@ static void SV_Status_f(cmd_state_t *cmd)
 		return;
 
 	in = 0;
-	if (Cmd_Argc(cmd) == 2)
-	{
-		if (strcmp(Cmd_Argv(cmd, 1), "1") == 0)
+	// status 1
+	// status 2
+	if (Cmd_Argc(cmd) == 2) {
+		if (String_Does_Match(Cmd_Argv(cmd, 1), "1"))
 			in = 1;
-		else if (strcmp(Cmd_Argv(cmd, 1), "2") == 0)
+		else if (String_Does_Match(Cmd_Argv(cmd, 1), "2"))
 			in = 2;
 	}
 
 	for (players = 0, i = 0;i < svs.maxclients;i++)
 		if (svs.clients[i].active)
 			players++;
-	print ("host:     %s\n", Cvar_VariableString (&cvars_all, "hostname", CF_SERVER));
-	print ("version:  %s build %s (gamename %s)\n", gamename, buildstring, gamenetworkfiltername);
-	print ("protocol: %d (%s)\n", Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol));
-	print ("map:      %s\n", sv.name);
-	print ("timing:   %s\n", SV_TimingReport(vabuf, sizeof(vabuf)));
-	print ("players:  %d active (%d max)\n\n", players, svs.maxclients);
+	print ("host:     %s" NEWLINE, Cvar_VariableString (&cvars_all, "hostname", CF_SERVER));
+	print ("version:  %s build %s (gamename %s)" NEWLINE, gamename, buildstring, gamenetworkfiltername);
+	print ("protocol: %d (%s) %s" NEWLINE, Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol), sv.is_qex ? "(remaster)" : "" ); // AURA 5.0
+	print ("map:      %s" NEWLINE, sv.name);
+	print ("timing:   %s" NEWLINE, SV_TimingReport(vabuf, sizeof(vabuf)));
+	print ("players:  %d active (%d max)" NEWLINE NEWLINE, players, svs.maxclients);
 
 	if (in == 1)
-		print ("^2IP                                             %%pl ping  time   frags  no   name\n");
+		print (CON_GREEN "IP                                             %%pl ping  time   frags  no   name" NEWLINE);
 	else if (in == 2)
-		print ("^5IP                                              no   name\n");
+		print (CON_CYAN "IP                                              no   name" NEWLINE);
 
-	for (i = 0, k = 0, client = svs.clients;i < svs.maxclients;i++, client++)
-	{
+	for (i = 0, k = 0, client = svs.clients;i < svs.maxclients;i++, client++) {
 		if (!client->active)
 			continue;
 
@@ -780,9 +835,9 @@ static void SV_Status_f(cmd_state_t *cmd)
 		}
 
 		if (sv_status_privacy.integer && cmd->source != src_local && LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) != LHNETADDRESSTYPE_LOOP)
-			strlcpy(ip, client->netconnection ? "hidden" : "botclient", 48);
+			c_strlcpy(ip_48, client->netconnection ? "hidden" : "botclient");
 		else
-			strlcpy(ip, (client->netconnection && *client->netconnection->address) ? client->netconnection->address : "botclient", 48);
+			c_strlcpy(ip_48, (client->netconnection && *client->netconnection->address) ? client->netconnection->address : "botclient");
 
 		frags = client->frags;
 
@@ -807,23 +862,23 @@ static void SV_Status_f(cmd_state_t *cmd)
 			if (sv.protocol == PROTOCOL_QUAKE && svs.maxclients <= 99)
 			{
 				// LadyHavoc: this is very touchy because we must maintain ProQuake compatible status output
-				print ("#%-2u %-16.16s  %3i  %2i:%02i:%02i\n", i+1, client->name, frags, hours, minutes, seconds);
-				print ("   %s\n", ip);
+				print ("#%-2u %-16.16s  %3d  %2d:%02d:%02d" NEWLINE, i + 1, client->name, frags, hours, minutes, seconds);
+				print ("   %s" NEWLINE, ip_48);
 			}
 			else
 			{
 				// LadyHavoc: no real restrictions here, not a ProQuake-compatible protocol anyway...
-				print ("#%-3u %-16.16s %4i  %2i:%02i:%02i\n", i+1, client->name, frags, hours, minutes, seconds);
-				print ("   %s\n", ip);
+				print ("#%-3u %-16.16s %4d  %2d:%02d:%02d" NEWLINE, i + 1, client->name, frags, hours, minutes, seconds);
+				print ("   %s" NEWLINE, ip_48);
 			}
 		}
 		else if (in == 1) // extended layout
 		{
-			print ("%s%-47s %2i %4i %2i:%02i:%02i %4i  #%-3u ^7%s\n", k%2 ? "^3" : "^7", ip, packetloss, ping, hours, minutes, seconds, frags, i+1, client->name);
+			print ("%s%-47s %2d %4d %2d:%02d:%02d %4d  #%-3u ^7%s" NEWLINE, k%2 ? "^3" : "^7", ip_48, packetloss, ping, hours, minutes, seconds, frags, i+1, client->name);
 		}
 		else if (in == 2) // reduced layout
 		{
-			print ("%s%-47s #%-3u ^7%s\n", k%2 ? "^3" : "^7", ip, i+1, client->name);
+			print ("%s%-47s #%-3u ^7%s" NEWLINE, k%2 ? "^3" : "^7", ip_48, i+1, client->name);
 		}
 	}
 }

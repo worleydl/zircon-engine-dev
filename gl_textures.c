@@ -200,7 +200,7 @@ typedef struct gltexture_s
 	// pointer to next texture in texturepool chain
 	struct gltexture_s *chain;
 	// name of the texture (this might be removed someday), no duplicates
-	char identifier[MAX_QPATH + 32];
+	char identifier[MAX_QPATH_128 + 32];
 	// original data size in *inputtexels
 	int inputwidth, inputheight, inputdepth;
 	// copy of the original texture(s) supplied to the upload function, for
@@ -1653,7 +1653,7 @@ rtexture_t *R_LoadTextureDDSFile(rtexturepool_t *rtexturepool, const char *filen
 		vabuf[i] = vabuf[i + 4];
 
 	Con_DPrintf ("Loading %s...\n", vabuf);
-	dds = FS_LoadFile(vabuf, tempmempool, true, &ddsfilesize);
+	dds = FS_LoadFile(vabuf, tempmempool, fs_quiet_true, &ddsfilesize);
 	ddssize = ddsfilesize;
 
 	if (!dds)
@@ -1772,7 +1772,7 @@ rtexture_t *R_LoadTextureDDSFile(rtexturepool_t *rtexturepool, const char *filen
 	}
 #endif // __ANDROID__
 
-	dds = FS_LoadFile(filename, tempmempool, true, &ddsfilesize);
+	dds = FS_LoadFile(filename, tempmempool, fs_quiet_true, &ddsfilesize);
 	ddssize = ddsfilesize;
 
 	if (!dds)

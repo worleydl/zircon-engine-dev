@@ -63,7 +63,6 @@ static const char *quake3_quake1bindnames[][2] =
 
 static const char *zirconbindnames[][2] =
 {
-//{"", 				""},
 {"+attack", 		"attack"},
 {"+search", 		"use"},
 {"+jump", 			"jump"},
@@ -109,9 +108,9 @@ void M_Menu_Keys_f(cmd_state_t *cmd)
 	if (gamemode == GAME_QUAKE3_QUAKE1) {
 		local_count = ARRAY_COUNT(quake3_quake1bindnames);
 		bindnames = quake3_quake1bindnames;
-	//} else if (iszirc) {
-	//	local_count = ARRAY_COUNT(zirconbindnames);
-	//	bindnames = zirconbindnames;
+	} else if (fs_is_zircon_galaxy) {
+		local_count = ARRAY_COUNT(zirconbindnames);
+		bindnames = zirconbindnames;
 	} else  {
 		local_count = ARRAY_COUNT(quakebindnames);
 		bindnames = quakebindnames;
@@ -151,7 +150,7 @@ static void M_Keys_Draw (void)
 	int		keys[NUMKEYS];
 	int		y;
 	cachepic_t	*p0;
-	char	keystring[MAX_INPUTLINE];
+	char	keystring[MAX_INPUTLINE_16384];
 
 	M_Background(320, 48 + 8 * local_count, q_darken_true);
 
@@ -199,12 +198,12 @@ static void M_Keys_Draw (void)
 			for (j = 0;j < NUMKEYS;j++) {
 				if (keys[j] != -1) {
 					const char *s = Key_KeynumToString (keys[j], tinystr, sizeof(tinystr));
-					//if (iszirc && s == tinystr) {
-					//	// Zircon Galaxy .. capitalize
-					//	// the key names if 'a' or such
-					//	// s == tinystr means the key took as-is
-					//	tinystr[0] = toupper(tinystr[0]);
-					//}
+					if (fs_is_zircon_galaxy && s == tinystr) {
+						// Zircon Galaxy .. capitalize
+						// the key names if 'a' or such
+						// s == tinystr means the key took as-is
+						tinystr[0] = toupper(tinystr[0]);
+					}
 					if (j > 0)
 						c_strlcat(keystring, " or ");
 					c_strlcat(keystring, s);

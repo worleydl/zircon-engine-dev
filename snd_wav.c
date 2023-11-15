@@ -279,7 +279,7 @@ qbool S_LoadWavFile (const char *filename, sfx_t *sfx)
 		return true;
 
 	// Load the file
-	data = FS_LoadFile(filename, snd_mempool, false, &filesize);
+	data = FS_LoadFile(filename, snd_mempool, fs_quiet_FALSE, &filesize);
 	if (!data)
 		return false;
 

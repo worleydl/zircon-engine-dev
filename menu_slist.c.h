@@ -56,7 +56,7 @@ static void M_ServerList_Draw (void)
 	// scroll the list as the cursor moves
 
 	drawcur_y = 60;
-	visiblerows = (int)((menu_height - (/*2*/ 1 * 8) - drawcur_y) / 8 / 1 /*2*/);
+	visiblerows = (int)((menu_height - (/*rows*/ (2 + 1) * 8) - drawcur_y) / 8);
 
 	// Baker: Do it this way because a short list may have more visible rows than the list count
 	// so using bound doesn't work. 
@@ -105,6 +105,22 @@ static void M_ServerList_Draw (void)
 	}
 
 	PPX_DrawSel_End ();
+
+	if (local_count) {
+		int idx =  
+			hotspotx_hover == not_found_neg1 ? 
+			local_cursor : hotspotx_hover + startrow;  
+ 
+		serverlist_entry_t *ex = ServerList_GetViewEntry(idx);
+
+		drawcur_y = menu_height - (/*rows*/ (1) * 8) - 4;
+		
+		s = va(vabuf, sizeof(vabuf), S_FMT_LEFT_PAD_40, ex->info.name);
+		M_PrintBronzey	( (2 +  0) * 8, drawcur_y, s);
+
+		s = va(vabuf, sizeof(vabuf), S_FMT_LEFT_PAD_40, ex->info.cname);
+		M_Print			( (2 + 40) * 8 , drawcur_y, s);
+	} // if
 }
 
 static void M_ServerList_Key(cmd_state_t *cmd, int k, int ascii)

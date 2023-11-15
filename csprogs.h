@@ -93,10 +93,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RF_FULLBRIGHT			256
 #define RF_NOSHADOW				512
 
+extern cvar_t csqc_enable;		// Baker r0101:  csqc_enable
 extern cvar_t csqc_progname;	//[515]: csqc crc check and right csprogs name according to progs.dat
 extern cvar_t csqc_progcrc;
 extern cvar_t csqc_progsize;
 extern cvar_t csqc_polygons_defaultmaterial_nocullface;
+
+
 
 void CL_VM_PreventInformationLeaks(void);
 

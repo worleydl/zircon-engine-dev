@@ -490,7 +490,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain, qbool fallbacknotexture);
 skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const char *name, int textureflags, qbool complain, qbool fallbacknotexture);
 skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, const unsigned char *skindata, int width, int height, int comparewidth, int compareheight, int comparecrc, qbool sRGB, qbool is_q1skyload);
-skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, int loadpantsandshirt, int loadglowtexture, const unsigned char *skindata, int width, int height);
+skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, int loadpantsandshirt, int loadglowtexture, const unsigned char *skindata, int width, int height, int is_fence); // Baker r0087: fence
 skinframe_t *R_SkinFrame_LoadInternal8bit(const char *name, int textureflags, const unsigned char *skindata, int width, int height, const unsigned int *palette, const unsigned int *alphapalette);
 skinframe_t *R_SkinFrame_LoadMissing(void);
 skinframe_t *R_SkinFrame_LoadNoTexture(void);
@@ -990,6 +990,7 @@ void SCR_DrawConsole(void);
 void R_Shadow_EditLights_DrawSelectedLightProperties(void);
 void R_DecalSystem_Reset(decalsystem_t *decalsystem);
 void R_Shadow_UpdateBounceGridTexture(void);
+void R_DrawLightningBeams(void);  // Baker r0105: DarkPlaces classic lightning
 void R_DrawPortals(void);
 void R_BuildLightMap(const entity_render_t *ent, msurface_t *surface, int combine);
 void R_Water_AddWaterPlane(msurface_t *surface, int entno);

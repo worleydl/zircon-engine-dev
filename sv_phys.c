@@ -2724,7 +2724,11 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 	SV_CheckVelocity (ent);
 
 // add gravity
-	if (PRVM_serveredictfloat(ent, movetype) == MOVETYPE_TOSS || PRVM_serveredictfloat(ent, movetype) == MOVETYPE_BOUNCE)
+	float fmovetype = PRVM_serveredictfloat(ent, movetype);
+	if (sv.is_qex && fmovetype == MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11) // AURA 11.0
+		fmovetype = MOVETYPE_BOUNCE; // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11
+
+	if (isin2 (fmovetype, MOVETYPE_TOSS, MOVETYPE_BOUNCE))
 		PRVM_serveredictvector(ent, velocity)[2] -= SV_Gravity(ent);
 
 // move angles
@@ -2764,6 +2768,9 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 		switch((int)PRVM_serveredictfloat(ent, movetype))
 		{
 		case MOVETYPE_BOUNCEMISSILE:
+			if (sv.is_qex) { // AURA 11.1
+				goto gib_movetype; // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 is BOUNCE
+			}
 			bouncefactor = PRVM_serveredictfloat(ent, bouncefactor);
 			if (!bouncefactor)
 				bouncefactor = 1.0f;
@@ -2773,7 +2780,9 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 			if (!sv_gameplayfix_slidemoveprojectiles.integer)
 				movetime = 0;
 			break;
+
 		case MOVETYPE_BOUNCE:
+gib_movetype: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 is BOUNCE // AURA 11.2
 			bouncefactor = PRVM_serveredictfloat(ent, bouncefactor);
 			if (!bouncefactor)
 				bouncefactor = 0.5f;
@@ -2973,7 +2982,7 @@ static void SV_Physics_Entity (prvm_edict_t *ent)
 		break;
 	case MOVETYPE_TOSS:
 	case MOVETYPE_BOUNCE:
-	case MOVETYPE_BOUNCEMISSILE:
+	case MOVETYPE_BOUNCEMISSILE: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11
 	case MOVETYPE_FLYMISSILE:
 	case MOVETYPE_FLY:
 	case MOVETYPE_FLY_WORLDONLY:
@@ -3028,7 +3037,7 @@ static void SV_Physics_ClientEntity_NoThink (prvm_edict_t *ent)
 		break;
 	case MOVETYPE_TOSS:
 	case MOVETYPE_BOUNCE:
-	case MOVETYPE_BOUNCEMISSILE:
+	case MOVETYPE_BOUNCEMISSILE: // MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11 // AURA
 	case MOVETYPE_FLYMISSILE:
 		SV_Physics_Toss (ent);
 		break;

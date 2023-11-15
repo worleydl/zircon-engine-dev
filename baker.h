@@ -71,7 +71,9 @@ typedef struct _crect_t_s {
 #define NEWLINE_CHAR_10					10				// '\n'		//#define NEWLINE_CHAR_10				10
 #define CARRIAGE_RETURN_CHAR_13			13				// '\r'		//#define CARRIAGE_RETURN_CHAR_13		13
 #define	CHAR_TILDE_126					126
+#define	CHAR_BACKQUOTE_96				96
 
+#define	CARRIAGE_RETURN					"\r"
 #define	NEWLINE							"\n"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,7 +152,7 @@ typedef struct _crect_t_s {
 //  DEV STRING: Baker
 ///////////////////////////////////////////////////////////////////////////////
 
-#define	QUOTEDSTR(s_literal)		"\"" s_literal "\""		// QUOTEDSTR("maxplayers") -- LITERAL STRING (Unused but keep, move along ...)
+#define	 QUOTED_STR(s_literal)		"\"" s_literal "\""		// QUOTED_STR("maxplayers") -- LITERAL STRING (Unused but keep, move along ...)
 
 #define  QUOTED_F					"\"%f\""		//       quoted  Endangered?
 #define  QUOTED_G					"\"%g\""		//       quoted
@@ -177,6 +179,8 @@ typedef struct _crect_t_s {
 #define freenull_(x)					if (x) { free (x); x = NULL; }
 #define setstr(x,y)						freenull_ (x) x = strdup(y);
 
+#define SET___
+
 #ifndef c_strlcpy
 	#define c_strlcpy(_dest, _source) \
 		strlcpy (_dest, _source, sizeof(_dest)) // Ender
@@ -199,7 +203,7 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard);
 int Sys_Folder_Open_Folder_Must_Exist (const char *path_to_file);
 SBUF___ const char *Sys_Binary_URL_SBuf (void); // 
 
-SBUF___ const char *Sys_Getcwd_SBuf (void);
+SBUF___ char *Sys_Getcwd_SBuf (void);
 
 
 ///////////////////////////////////////////////////////////////////////////////

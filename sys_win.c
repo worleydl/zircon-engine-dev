@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "qtypes.h"
 
-#include "darkplaces.h"
+#include "quakedef.h"
 #include <errno.h>
 #include "resource.h"
 #include "conproc.h"
@@ -60,7 +60,7 @@ SYSTEM IO
 void Sys_Error (const char *error, ...)
 {
 	va_list		argptr;
-	char		text[MAX_INPUTLINE];
+	char		text[MAX_INPUTLINE_16384];
 	static int	in_sys_error0 = 0;
 	static int	in_sys_error1 = 0;
 	static int	in_sys_error2 = 0;
@@ -70,16 +70,20 @@ void Sys_Error (const char *error, ...)
 	dpvsnprintf (text, sizeof (text), error, argptr);
 	va_end (argptr);
 
-	Con_Printf ("Quake Error: %s\n", text);
+	Con_PrintLinef (CON_ERROR "Engine Error: %s", text);
 
 	// close video so the message box is visible, unless we already tried that
-	if (!in_sys_error0 && cls.state != ca_dedicated)
+	if (!in_sys_error0) 
+//		&& cls.state != ca_dedicated)
+#pragma message ("Baker: Fix me")
 	{
 		in_sys_error0 = 1;
 		VID_Shutdown();
 	}
 
-	if (!in_sys_error3 && cls.state != ca_dedicated)
+#pragma message ("Baker: Fix me")
+	if (!in_sys_error3 )
+// && cls.state != ca_dedicated)
 	{
 		in_sys_error3 = true;
 		MessageBox(NULL, text, "Quake Error", MB_OK | MB_SETFOREGROUND | MB_ICONSTOP);
@@ -142,7 +146,7 @@ void Sys_PrintToTerminal2(const char *text)
 
 char *Sys_ConsoleInput (void)
 {
-	static char text[MAX_INPUTLINE];
+	static char text[MAX_INPUTLINE_16384];
 	static int len;
 	INPUT_RECORD recs[1024];
 	int ch;
@@ -255,7 +259,7 @@ int Sys_SetClipboardData(const char *text_to_clipboard)
 
 char *Sys_GetClipboardData (void)
 {
-	static char sbuf[MAX_INPUTLINE /*16384*/];
+	static char sbuf[MAX_INPUTLINE_16384 /*16384*/];
 	char *data = NULL;
 	char *cliptext;
 
@@ -268,7 +272,7 @@ char *Sys_GetClipboardData (void)
 				size_t slen = GlobalSize (hClipboardData) + 1;
 				//data = (char *)Z_Malloc (allocsize);
 
-				int slen2 = (int) Smallest( (MAX_INPUTLINE - 1), slen) ;
+				int slen2 = (int) Smallest( (MAX_INPUTLINE_16384 - 1), slen) ;
 
 				strlcpy (sbuf, cliptext, slen2);
 				GlobalUnlock (hClipboardData);
@@ -318,19 +322,19 @@ void Sys_InitConsole (void)
 	// give QHOST a chance to hook into the console
 		if ((t = Sys_CheckParm ("-HFILE")) > 0)
 		{
-			if (t < com_argc)
+			if (t < sys.argc)
 				hFile = (HANDLE)atoi (com_argv[t+1]);
 		}
 
 		if ((t = Sys_CheckParm ("-HPARENT")) > 0)
 		{
-			if (t < com_argc)
+			if (t < sys.argc)
 				heventParent = (HANDLE)atoi (com_argv[t+1]);
 		}
 
 		if ((t = Sys_CheckParm ("-HCHILD")) > 0)
 		{
-			if (t < com_argc)
+			if (t < sys.argc)
 				heventChild = (HANDLE)atoi (com_argv[t+1]);
 		}
 
@@ -364,7 +368,7 @@ char		program_name[MAX_OSPATH];
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	MEMORYSTATUS lpBuffer;
-	char	cmdline_fake[MAX_INPUTLINE];
+	char	cmdline_fake[MAX_INPUTLINE_16384];
 	char	*com_cmdline = lpCmdLine;
 
 	/* previous instances do not exist in Win32 */
@@ -379,8 +383,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	program_name[sizeof(program_name)-1] = 0;
 	GetModuleFileNameA(NULL, program_name, sizeof(program_name) - 1);
 
-	com_argc = 1;
-	com_argv = argv;
+	sys.argc = 1;
+	sys.argv = argv;
 	argv[0] = program_name;
 
 	// Baker: I would prefer this to be in a platform neutral place
@@ -399,7 +403,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}
 
 	// FIXME: this tokenizer is rather redundent, call a more general one
-	while (*com_cmdline && (com_argc < MAX_NUM_ARGVS))
+	while (*com_cmdline && (sys.argc < MAX_NUM_ARGVS))
 	{
 		while (*com_cmdline && ISWHITESPACE(*com_cmdline))
 			com_cmdline++;
@@ -411,16 +415,16 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		{
 			// quoted string
 			com_cmdline++;
-			argv[com_argc] = com_cmdline;
-			com_argc++;
+			argv[sys.argc] = com_cmdline;
+			sys.argc++;
 			while (*com_cmdline && (*com_cmdline != '\"'))
 				com_cmdline++;
 		}
 		else
 		{
 			// unquoted word
-			argv[com_argc] = com_cmdline;
-			com_argc++;
+			argv[sys.argc] = com_cmdline;
+			sys.argc++;
 			while (*com_cmdline && !ISWHITESPACE(*com_cmdline))
 				com_cmdline++;
 		}
@@ -454,7 +458,7 @@ int main (int argc, const char *argv[])
 	program_name[sizeof(program_name)-1] = 0;
 	GetModuleFileNameA(NULL, program_name, sizeof(program_name) - 1);
 
-	com_argc = argc;
+	sys.argc = argc;
 	com_argv = argv;
 
 	Host_Main();
@@ -509,7 +513,7 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
 
 #define MAX_OSPATH_EX 256   // Technically 260 +/-
 
-SBUF___ const char *Sys_Getcwd_SBuf (void) // No trailing slash
+SBUF___ char *Sys_Getcwd_SBuf (void) // No trailing slash
 {
 	static char workingdir[MAX_OSPATH_EX];
 	int ok = 0;

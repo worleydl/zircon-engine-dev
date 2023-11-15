@@ -659,7 +659,7 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 {
 	int failed = false;
 	const glfunction_t *func;
-	char extstr[MAX_INPUTLINE];
+	char extstr[MAX_INPUTLINE_16384];
 
 	Con_DPrintf ("checking for %s...  ", name);
 
@@ -1285,137 +1285,6 @@ static const char *xinputdllnames [] =
 static dllhandle_t xinputdll_dll = NULL;
 #endif
 
-void VID_Shared_Init(void)
-{
-	Cvar_RegisterVariable(&gl_info_vendor);
-	Cvar_RegisterVariable(&gl_info_renderer);
-	Cvar_RegisterVariable(&gl_info_version);
-	Cvar_RegisterVariable(&gl_info_extensions);
-	Cvar_RegisterVariable(&gl_info_platform);
-	Cvar_RegisterVariable(&gl_info_driver);
-	Cvar_RegisterVariable(&v_gamma);
-	Cvar_RegisterVariable(&v_brightness);
-	Cvar_RegisterVariable(&v_contrastboost);
-	Cvar_RegisterVariable(&v_contrast);
-
-	Cvar_RegisterVariable(&v_color_enable);
-	Cvar_RegisterVariable(&v_color_black_r);
-	Cvar_RegisterVariable(&v_color_black_g);
-	Cvar_RegisterVariable(&v_color_black_b);
-	Cvar_RegisterVariable(&v_color_grey_r);
-	Cvar_RegisterVariable(&v_color_grey_g);
-	Cvar_RegisterVariable(&v_color_grey_b);
-	Cvar_RegisterVariable(&v_color_white_r);
-	Cvar_RegisterVariable(&v_color_white_g);
-	Cvar_RegisterVariable(&v_color_white_b);
-
-	Cvar_RegisterVariable(&v_glslgamma_2d);
-
-	Cvar_RegisterVariable(&v_psycho);
-
-	Cvar_RegisterVariable(&vid_fullscreen);
-	Cvar_RegisterVariable(&vid_width);
-	Cvar_RegisterVariable(&vid_height);
-
-	// Baker r0001 - ALT-ENTER support
-	Cvar_RegisterVariable(&vid_fullscreen_width);
-	Cvar_RegisterVariable(&vid_fullscreen_height);
-	Cvar_RegisterVariable(&vid_window_width);
-	Cvar_RegisterVariable(&vid_window_height);
-
-	// Baker r0005: Autoscale 360p
-	Cvar_RegisterVariable(&vid_fullscreen_conscale);
-	Cvar_RegisterVariable(&vid_window_conscale);
-
-	Cvar_RegisterVariable(&vid_bitsperpixel);
-	Cvar_RegisterVariable(&vid_samples);
-	Cvar_RegisterVariable(&vid_refreshrate);
-	Cvar_RegisterVariable(&vid_userefreshrate);
-	Cvar_RegisterVariable(&vid_stereobuffer);
-	Cvar_RegisterVariable(&vid_touchscreen_density);
-	Cvar_RegisterVariable(&vid_touchscreen_xdpi);
-	Cvar_RegisterVariable(&vid_touchscreen_ydpi);
-	Cvar_RegisterVariable(&vid_vsync);
-	Cvar_RegisterVariable(&vid_mouse);
-	Cvar_RegisterVariable(&vid_grabkeyboard);
-	Cvar_RegisterVariable(&vid_touchscreen);
-	Cvar_RegisterVariable(&vid_touchscreen_showkeyboard);
-	Cvar_RegisterVariable(&vid_touchscreen_supportshowkeyboard);
-	Cvar_RegisterVariable(&vid_stick_mouse);
-	
-	Cvar_RegisterVariable(&vid_desktopfullscreen);
-	Cvar_RegisterVariable(&vid_minwidth);
-	Cvar_RegisterVariable(&vid_minheight);
-
-	Cvar_RegisterVariable(&vid_resizable);
-
-	// NEW DARKPLACES BETA CVARS
-	Cvar_RegisterVariable(&vid_mouse_clickthrough);
-	Cvar_RegisterVariable(&vid_borderless);
-#ifdef _WIN32
-	Cvar_RegisterVariable(&vid_ignore_taskbar);
-#endif
-
-	// LEGACY
-	// END LEGACY
-
-	Cvar_RegisterVariable(&gl_finish);
-	Cvar_RegisterVariable(&vid_sRGB);
-	Cvar_RegisterVariable(&vid_sRGB_fallback);
-
-	Cvar_RegisterVariable(&joy_active);
-#ifdef _WIN32
-	Cvar_RegisterVariable(&joy_xinputavailable);
-#endif
-	Cvar_RegisterVariable(&joy_detected);
-	Cvar_RegisterVariable(&joy_enable);
-	Cvar_RegisterVariable(&joy_index);
-	Cvar_RegisterVariable(&joy_axisforward);
-	Cvar_RegisterVariable(&joy_axisside);
-	Cvar_RegisterVariable(&joy_axisup);
-	Cvar_RegisterVariable(&joy_axispitch);
-	Cvar_RegisterVariable(&joy_axisyaw);
-	//Cvar_RegisterVariable(&joy_axisroll);
-	Cvar_RegisterVariable(&joy_deadzoneforward);
-	Cvar_RegisterVariable(&joy_deadzoneside);
-	Cvar_RegisterVariable(&joy_deadzoneup);
-	Cvar_RegisterVariable(&joy_deadzonepitch);
-	Cvar_RegisterVariable(&joy_deadzoneyaw);
-	//Cvar_RegisterVariable(&joy_deadzoneroll);
-	Cvar_RegisterVariable(&joy_sensitivityforward);
-	Cvar_RegisterVariable(&joy_sensitivityside);
-	Cvar_RegisterVariable(&joy_sensitivityup);
-	Cvar_RegisterVariable(&joy_sensitivitypitch);
-	Cvar_RegisterVariable(&joy_sensitivityyaw);
-	//Cvar_RegisterVariable(&joy_sensitivityroll);
-	Cvar_RegisterVariable(&joy_axiskeyevents);
-	Cvar_RegisterVariable(&joy_axiskeyevents_deadzone);
-	Cvar_RegisterVariable(&joy_x360_axisforward);
-	Cvar_RegisterVariable(&joy_x360_axisside);
-	Cvar_RegisterVariable(&joy_x360_axisup);
-	Cvar_RegisterVariable(&joy_x360_axispitch);
-	Cvar_RegisterVariable(&joy_x360_axisyaw);
-	//Cvar_RegisterVariable(&joy_x360_axisroll);
-	Cvar_RegisterVariable(&joy_x360_deadzoneforward);
-	Cvar_RegisterVariable(&joy_x360_deadzoneside);
-	Cvar_RegisterVariable(&joy_x360_deadzoneup);
-	Cvar_RegisterVariable(&joy_x360_deadzonepitch);
-	Cvar_RegisterVariable(&joy_x360_deadzoneyaw);
-	//Cvar_RegisterVariable(&joy_x360_deadzoneroll);
-	Cvar_RegisterVariable(&joy_x360_sensitivityforward);
-	Cvar_RegisterVariable(&joy_x360_sensitivityside);
-	Cvar_RegisterVariable(&joy_x360_sensitivityup);
-	Cvar_RegisterVariable(&joy_x360_sensitivitypitch);
-	Cvar_RegisterVariable(&joy_x360_sensitivityyaw);
-	//Cvar_RegisterVariable(&joy_x360_sensitivityroll);
-
-#ifdef _WIN32
-	Sys_LoadDependency(xinputdllnames, &xinputdll_dll, xinputdllfuncs);
-#endif
-
-	Cmd_AddCommand(CF_CLIENT, "force_centerview", Force_CenterView_f, "recenters view (stops looking up/down)");
-	Cmd_AddCommand(CF_CLIENT, "vid_restart", VID_Restart_f, "restarts video system (closes and reopens the window, restarts renderer)");
-}
 
 
 static int VID_Mode(int fullscreen, int width, int height, int bpp, float refreshrate, int stereobuffer)
@@ -1702,4 +1571,137 @@ size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool useref
 		--count;
 	}
 	return count;
+}
+
+void VID_Shared_Init(void)
+{
+	Cvar_RegisterVariable(&gl_info_vendor);
+	Cvar_RegisterVariable(&gl_info_renderer);
+	Cvar_RegisterVariable(&gl_info_version);
+	Cvar_RegisterVariable(&gl_info_extensions);
+	Cvar_RegisterVariable(&gl_info_platform);
+	Cvar_RegisterVariable(&gl_info_driver);
+	Cvar_RegisterVariable(&v_gamma);
+	Cvar_RegisterVariable(&v_brightness);
+	Cvar_RegisterVariable(&v_contrastboost);
+	Cvar_RegisterVariable(&v_contrast);
+
+	Cvar_RegisterVariable(&v_color_enable);
+	Cvar_RegisterVariable(&v_color_black_r);
+	Cvar_RegisterVariable(&v_color_black_g);
+	Cvar_RegisterVariable(&v_color_black_b);
+	Cvar_RegisterVariable(&v_color_grey_r);
+	Cvar_RegisterVariable(&v_color_grey_g);
+	Cvar_RegisterVariable(&v_color_grey_b);
+	Cvar_RegisterVariable(&v_color_white_r);
+	Cvar_RegisterVariable(&v_color_white_g);
+	Cvar_RegisterVariable(&v_color_white_b);
+
+	Cvar_RegisterVariable(&v_glslgamma_2d);
+
+	Cvar_RegisterVariable(&v_psycho);
+
+	Cvar_RegisterVariable(&vid_fullscreen);
+	Cvar_RegisterVariable(&vid_width);
+	Cvar_RegisterVariable(&vid_height);
+
+	// Baker r0001 - ALT-ENTER support
+	Cvar_RegisterVariable(&vid_fullscreen_width);
+	Cvar_RegisterVariable(&vid_fullscreen_height);
+	Cvar_RegisterVariable(&vid_window_width);
+	Cvar_RegisterVariable(&vid_window_height);
+
+	// Baker r0005: Autoscale 360p
+	Cvar_RegisterVariable(&vid_fullscreen_conscale);
+	Cvar_RegisterVariable(&vid_window_conscale);
+
+	Cvar_RegisterVariable(&vid_bitsperpixel);
+	Cvar_RegisterVariable(&vid_samples);
+	Cvar_RegisterVariable(&vid_refreshrate);
+	Cvar_RegisterVariable(&vid_userefreshrate);
+	Cvar_RegisterVariable(&vid_stereobuffer);
+	Cvar_RegisterVariable(&vid_touchscreen_density);
+	Cvar_RegisterVariable(&vid_touchscreen_xdpi);
+	Cvar_RegisterVariable(&vid_touchscreen_ydpi);
+	Cvar_RegisterVariable(&vid_vsync);
+	Cvar_RegisterVariable(&vid_mouse);
+	Cvar_RegisterVariable(&vid_grabkeyboard);
+	Cvar_RegisterVariable(&vid_touchscreen);
+	Cvar_RegisterVariable(&vid_touchscreen_showkeyboard);
+	Cvar_RegisterVariable(&vid_touchscreen_supportshowkeyboard);
+	Cvar_RegisterVariable(&vid_stick_mouse);
+	
+	Cvar_RegisterVariable(&vid_desktopfullscreen);
+	Cvar_RegisterVariable(&vid_minwidth);
+	Cvar_RegisterVariable(&vid_minheight);
+
+	Cvar_RegisterVariable(&vid_resizable);
+
+	// NEW DARKPLACES BETA CVARS
+	Cvar_RegisterVariable(&vid_mouse_clickthrough);
+	Cvar_RegisterVariable(&vid_borderless);
+#ifdef _WIN32
+	Cvar_RegisterVariable(&vid_ignore_taskbar);
+#endif
+
+	// LEGACY
+	// END LEGACY
+
+	Cvar_RegisterVariable(&gl_finish);
+	Cvar_RegisterVariable(&vid_sRGB);
+	Cvar_RegisterVariable(&vid_sRGB_fallback);
+
+	Cvar_RegisterVariable(&joy_active);
+#ifdef _WIN32
+	Cvar_RegisterVariable(&joy_xinputavailable);
+#endif
+	Cvar_RegisterVariable(&joy_detected);
+	Cvar_RegisterVariable(&joy_enable);
+	Cvar_RegisterVariable(&joy_index);
+	Cvar_RegisterVariable(&joy_axisforward);
+	Cvar_RegisterVariable(&joy_axisside);
+	Cvar_RegisterVariable(&joy_axisup);
+	Cvar_RegisterVariable(&joy_axispitch);
+	Cvar_RegisterVariable(&joy_axisyaw);
+	//Cvar_RegisterVariable(&joy_axisroll);
+	Cvar_RegisterVariable(&joy_deadzoneforward);
+	Cvar_RegisterVariable(&joy_deadzoneside);
+	Cvar_RegisterVariable(&joy_deadzoneup);
+	Cvar_RegisterVariable(&joy_deadzonepitch);
+	Cvar_RegisterVariable(&joy_deadzoneyaw);
+	//Cvar_RegisterVariable(&joy_deadzoneroll);
+	Cvar_RegisterVariable(&joy_sensitivityforward);
+	Cvar_RegisterVariable(&joy_sensitivityside);
+	Cvar_RegisterVariable(&joy_sensitivityup);
+	Cvar_RegisterVariable(&joy_sensitivitypitch);
+	Cvar_RegisterVariable(&joy_sensitivityyaw);
+	//Cvar_RegisterVariable(&joy_sensitivityroll);
+	Cvar_RegisterVariable(&joy_axiskeyevents);
+	Cvar_RegisterVariable(&joy_axiskeyevents_deadzone);
+	Cvar_RegisterVariable(&joy_x360_axisforward);
+	Cvar_RegisterVariable(&joy_x360_axisside);
+	Cvar_RegisterVariable(&joy_x360_axisup);
+	Cvar_RegisterVariable(&joy_x360_axispitch);
+	Cvar_RegisterVariable(&joy_x360_axisyaw);
+	//Cvar_RegisterVariable(&joy_x360_axisroll);
+	Cvar_RegisterVariable(&joy_x360_deadzoneforward);
+	Cvar_RegisterVariable(&joy_x360_deadzoneside);
+	Cvar_RegisterVariable(&joy_x360_deadzoneup);
+	Cvar_RegisterVariable(&joy_x360_deadzonepitch);
+	Cvar_RegisterVariable(&joy_x360_deadzoneyaw);
+	//Cvar_RegisterVariable(&joy_x360_deadzoneroll);
+	Cvar_RegisterVariable(&joy_x360_sensitivityforward);
+	Cvar_RegisterVariable(&joy_x360_sensitivityside);
+	Cvar_RegisterVariable(&joy_x360_sensitivityup);
+	Cvar_RegisterVariable(&joy_x360_sensitivitypitch);
+	Cvar_RegisterVariable(&joy_x360_sensitivityyaw);
+	//Cvar_RegisterVariable(&joy_x360_sensitivityroll);
+
+#ifdef _WIN32
+	Sys_LoadDependency(xinputdllnames, &xinputdll_dll, xinputdllfuncs);
+#endif
+
+	Cmd_AddCommand(CF_CLIENT, "force_centerview", Force_CenterView_f, "recenters view (stops looking up/down)");
+	Cmd_AddCommand(CF_CLIENT, "vid_restart", VID_Restart_f, "restarts video system (closes and reopens the window, restarts renderer)");
+	Cmd_AddCommand(CF_CLIENT, "vid_listmodes", VID_ListModes_f, "list video modes [Zircon]");
 }

@@ -37,7 +37,7 @@ void Curl_SendRequirements(void);
 
 typedef struct Curl_downloadinfo_s
 {
-	char filename[MAX_QPATH];
+	char filename[MAX_QPATH_128];
 	double progress;
 	double speed;
 	qbool queued;

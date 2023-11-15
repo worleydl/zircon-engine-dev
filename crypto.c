@@ -1733,7 +1733,7 @@ static int Crypto_ServerParsePacket_Internal(const char *data_in, size_t len_in,
 	int aeslevel;
 	D0_BOOL aes;
 	D0_BOOL status;
-	char infostringvalue[MAX_INPUTLINE];
+	char infostringvalue[MAX_INPUTLINE_16384];
 	char vabuf[1024];
 
 	if (!d0_blind_id_dll)
@@ -2043,7 +2043,7 @@ int Crypto_ServerParsePacket(const char *data_in, size_t len_in, char *data_out,
 	const char *cnt;
 	qbool do_time = false;
 	qbool do_reject = false;
-	char infostringvalue[MAX_INPUTLINE];
+	char infostringvalue[MAX_INPUTLINE_16384];
 	if (crypto_servercpupercent.value > 0 || crypto_servercpumaxtime.value > 0)
 		if (len_in > 5 && !memcmp(data_in, "d0pk\\", 5))
 		{
@@ -2114,7 +2114,7 @@ int Crypto_ClientParsePacket(const char *data_in, size_t len_in, char *data_out,
 	D0_BOOL aes;
 	char *data_out_p = data_out;
 	D0_BOOL status;
-	char infostringvalue[MAX_INPUTLINE];
+	char infostringvalue[MAX_INPUTLINE_16384];
 	char vabuf[1024];
 
 	if (!d0_blind_id_dll)

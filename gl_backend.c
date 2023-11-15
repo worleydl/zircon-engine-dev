@@ -1562,7 +1562,7 @@ static qbool GL_Backend_CompileShader(int programobject, GLenum shadertypeenum, 
 {
 	int shaderobject;
 	int shadercompiled;
-	char compilelog[MAX_INPUTLINE];
+	char compilelog[MAX_INPUTLINE_16384];
 	shaderobject = qglCreateShader(shadertypeenum);CHECKGLERROR
 	if (!shaderobject)
 		return false;
@@ -1570,14 +1570,21 @@ static qbool GL_Backend_CompileShader(int programobject, GLenum shadertypeenum, 
 	qglCompileShader(shaderobject);CHECKGLERROR
 	qglGetShaderiv(shaderobject, GL_COMPILE_STATUS, &shadercompiled);CHECKGLERROR
 	qglGetShaderInfoLog(shaderobject, sizeof(compilelog), NULL, compilelog);CHECKGLERROR
-	if (compilelog[0] && ((strstr(compilelog, "error") || strstr(compilelog, "ERROR") || strstr(compilelog, "Error")) || ((strstr(compilelog, "WARNING") || strstr(compilelog, "warning") || strstr(compilelog, "Warning")) && developer.integer) || developer_extra.integer))
-	{
-		int i, j, pretextlines = 0;
-		for (i = 0;i < numstrings - 1;i++)
-			for (j = 0;strings[i][j];j++)
-				if (strings[i][j] == '\n')
-					pretextlines++;
-		Con_PrintLinef ("%s shader compile log:" NEWLINE "%s" NEWLINE "(line offset for any above warnings/errors: %d)", shadertype, compilelog, pretextlines);
+	if (compilelog[0] ) {
+		int is_all_clear = String_Does_Match_Caseless (compilelog, "No errors."); // Baker r0089:  Some Intel Graphics do this.
+		int shall_error = is_all_clear == false && (strstr(compilelog, "error") || strstr(compilelog, "ERROR") || strstr(compilelog, "Error"));
+		int shall_warn = is_all_clear == false && developer.integer && (strstr(compilelog, "WARNING") || strstr(compilelog, "warning") || strstr(compilelog, "Warning") );
+		if (developer_extra.integer || shall_error || shall_warn) {
+			int i, j, pretextlines = 0;
+			for (i = 0; i < numstrings - 1; i++) {
+				for (j = 0; strings[i][j]; j++) {
+					if (strings[i][j] ==  NEWLINE_CHAR_10)
+						pretextlines++;
+				} // j
+			} // i 
+			Con_PrintLinef ("%s shader compile log:" NEWLINE "%s" NEWLINE 
+					"(line offset for any above warnings/errors: %d)", shadertype, compilelog, pretextlines);
+		} // if print
 	} // compilelog[0]
 
 	if (!shadercompiled)
@@ -1594,7 +1601,7 @@ unsigned int GL_Backend_CompileProgram(int vertexstrings_count, const char **ver
 {
 	GLint programlinked;
 	GLuint programobject = 0;
-	char linklog[MAX_INPUTLINE];
+	char linklog[MAX_INPUTLINE_16384];
 	CHECKGLERROR
 
 	programobject = qglCreateProgram();CHECKGLERROR

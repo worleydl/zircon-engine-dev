@@ -33,7 +33,7 @@ typedef struct capturevideostate_s
 	int soundsampleframe;
 	unsigned char *screenbuffer;
 	unsigned char *outbuffer;
-	char basename[MAX_QPATH];
+	char basename[MAX_QPATH_128];
 	int width, height;
 
 	// precomputed RGB to YUV tables

@@ -134,7 +134,7 @@ static void LoadSubtitles( clvideo_t *video, const char *subtitlesfile )
 
 	if (gamemode == GAME_BLOODOMNICIDE)
 	{
-		char overridename[MAX_QPATH];
+		char overridename[MAX_QPATH_128];
 		cvar_t *langcvar;
 
 		langcvar = Cvar_FindVar(&cvars_all, "language", CF_CLIENT | CF_SERVER);
@@ -142,14 +142,14 @@ static void LoadSubtitles( clvideo_t *video, const char *subtitlesfile )
 		if (langcvar)
 		{
 			dpsnprintf(overridename, sizeof(overridename), "locale/%s/%s", langcvar->string, subtitlesfile);
-			subtitle_text = (char *)FS_LoadFile(overridename, cls.permanentmempool, false, NULL);
+			subtitle_text = (char *)FS_LoadFile(overridename, cls.permanentmempool, fs_quiet_FALSE, fs_size_ptr_null);
 		}
 		if (!subtitle_text)
-			subtitle_text = (char *)FS_LoadFile(subtitlesfile, cls.permanentmempool, false, NULL);
+			subtitle_text = (char *)FS_LoadFile(subtitlesfile, cls.permanentmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	}
 	else
 	{
-		subtitle_text = (char *)FS_LoadFile(subtitlesfile, cls.permanentmempool, false, NULL);
+		subtitle_text = (char *)FS_LoadFile(subtitlesfile, cls.permanentmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	}
 	if (!subtitle_text)
 	{
@@ -612,7 +612,7 @@ void CL_VideoStop(void)
 
 static void CL_PlayVideo_f(cmd_state_t *cmd)
 {
-	char name[MAX_QPATH], subtitlesfile[MAX_QPATH];
+	char name[MAX_QPATH_128], subtitlesfile[MAX_QPATH_128];
 	const char *extension;
 
 	CL_StartVideo();

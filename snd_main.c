@@ -269,7 +269,7 @@ void S_FreeSfx (sfx_t *sfx, qbool force);
 static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation)
 {
 	int i, ch_ind;
-	char name [MAX_QPATH];
+	char name [MAX_QPATH_128];
 	sfx_t *sfx;
 
 	i = 1;
@@ -388,6 +388,78 @@ int S_GetSoundWidth(void)
 	return snd_renderbuffer ? snd_renderbuffer->format.width : 0;
 }
 
+#if 333
+static qbool S_ChooseCheaperFormat (snd_format_t* format, qbool fixed_speed, qbool fixed_width, qbool fixed_channels)
+{
+	static const snd_format_t thresholds [] =
+	{
+		// speed			width			channels
+		{ SND_MIN_SPEED,	SND_MIN_WIDTH,	SND_MIN_CHANNELS },
+		{ 11025,			1,				2 },
+		{ 22050,			2,				2 },
+		{ 44100,			2,				2 },
+		{ 48000,			2,				6 },
+		{ 96000,			2,				6 },
+		{ SND_MAX_SPEED,	SND_MAX_WIDTH,	SND_MAX_CHANNELS },
+	};
+	const unsigned int nb_thresholds = sizeof(thresholds) / sizeof(thresholds[0]);
+	unsigned int speed_level, width_level, channels_level;
+
+	// If we have reached the minimum values, there's nothing more we can do
+	if ((format->speed == thresholds[0].speed || fixed_speed) &&
+		(format->width == thresholds[0].width || fixed_width) &&
+		(format->channels == thresholds[0].channels || fixed_channels))
+		return false;
+
+	// Check the min and max values
+	#define CHECK_BOUNDARIES(param)								\
+	if (format->param < thresholds[0].param)					\
+	{															\
+		format->param = thresholds[0].param;					\
+		return true;											\
+	}															\
+	if (format->param > thresholds[nb_thresholds - 1].param)	\
+	{															\
+		format->param = thresholds[nb_thresholds - 1].param;	\
+		return true;											\
+	}
+	CHECK_BOUNDARIES(speed);
+	CHECK_BOUNDARIES(width);
+	CHECK_BOUNDARIES(channels);
+	#undef CHECK_BOUNDARIES
+
+	// Find the level of each parameter
+	#define FIND_LEVEL(param)									\
+	param##_level = 0;											\
+	while (param##_level < nb_thresholds - 1)					\
+	{															\
+		if (format->param <= thresholds[param##_level].param)	\
+			break;												\
+																\
+		param##_level++;										\
+	}
+	FIND_LEVEL(speed);
+	FIND_LEVEL(width);
+	FIND_LEVEL(channels);
+	#undef FIND_LEVEL
+
+	// Decrease the parameter with the highest level to the previous level
+	if (channels_level >= speed_level && channels_level >= width_level && !fixed_channels)
+	{
+		format->channels = thresholds[channels_level - 1].channels;
+		return true;
+	}
+	if (speed_level >= width_level && !fixed_speed)
+	{
+		format->speed = thresholds[speed_level - 1].speed;
+		return true;
+	}
+
+	format->width = thresholds[width_level - 1].width;
+	return true;
+}
+#endif
+
 
 #define SWAP_LISTENERS(l1, l2, tmpl) { tmpl = (l1); (l1) = (l2); (l2) = tmpl; }
 
@@ -474,6 +546,7 @@ static void S_SetChannelLayout (void)
 
 void S_Startup (void)
 {
+	qbool fixed_speed, fixed_width, fixed_channels;
 	snd_format_t chosen_fmt;
 	static snd_format_t prev_render_format = {0, 0, 0};
 	char *env;
@@ -484,6 +557,10 @@ void S_Startup (void)
 
 	if (!snd_initialized.integer)
 		return;
+
+	fixed_speed = false;
+	fixed_width = false;
+	fixed_channels = false;
 
 	// Get the starting sound format from the cvars
 	chosen_fmt.speed = snd_speed.integer;
@@ -502,6 +579,7 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
+		fixed_channels = true;
 	}
 #if _MSC_VER >= 1400
 	_dupenv_s(&env, &envlen, "QUAKE_SOUND_SPEED");
@@ -514,6 +592,7 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
+		fixed_speed = true;
 	}
 #if _MSC_VER >= 1400
 	_dupenv_s(&env, &envlen, "QUAKE_SOUND_SAMPLEBITS");
@@ -526,6 +605,7 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
+		fixed_width = true;
 	}
 
 	// Parse the command line to see if the player wants a particular sound format
@@ -533,28 +613,33 @@ void S_Startup (void)
 	if (Sys_CheckParm ("-sndquad") != 0)
 	{
 		chosen_fmt.channels = 4;
+		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndstereo sets sound output to stereo
 	else if (Sys_CheckParm ("-sndstereo") != 0)
 	{
 		chosen_fmt.channels = 2;
+		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndmono sets sound output to mono
 	else if (Sys_CheckParm ("-sndmono") != 0)
 	{
 		chosen_fmt.channels = 1;
+		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndspeed <hz> chooses sound output rate (supported values are 48000, 44100, 32000, 24000, 22050, 16000, 11025 (quake), 8000)
 	i = Sys_CheckParm ("-sndspeed");
 	if (0 < i && i < sys.argc - 1)
 	{
 		chosen_fmt.speed = atoi (sys.argv[i + 1]);
+		fixed_speed = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndbits <bits> chooses 8 bit or 16 bit or 32bit float sound output
 	i = Sys_CheckParm ("-sndbits");
 	if (0 < i && i < sys.argc - 1)
 	{
 		chosen_fmt.width = atoi (sys.argv[i + 1]) / 8;
+		fixed_width = true;
 	}
 
 #if 0
@@ -562,6 +647,7 @@ void S_Startup (void)
 	// You can't change sound speed after start time (not yet supported)
 	if (prev_render_format.speed != 0)
 	{
+		fixed_speed = true;
 		if (chosen_fmt.speed != prev_render_format.speed)
 		{
 			Con_Printf ("S_Startup: sound speed has changed! This is NOT supported yet. Falling back to previous speed (%u Hz)\n",
@@ -575,44 +661,69 @@ void S_Startup (void)
 	if (chosen_fmt.speed < SND_MIN_SPEED)
 	{
 		chosen_fmt.speed = SND_MIN_SPEED;
+		fixed_speed = false;
 	}
 	else if (chosen_fmt.speed > SND_MAX_SPEED)
 	{
 		chosen_fmt.speed = SND_MAX_SPEED;
+		fixed_speed = false;
 	}
 
 	if (chosen_fmt.width < SND_MIN_WIDTH)
 	{
 		chosen_fmt.width = SND_MIN_WIDTH;
+		fixed_width = false;
 	}
 	else if (chosen_fmt.width == 3)
 	{
-		chosen_fmt.width = 4;
+		chosen_fmt.width = 4;  // Baker: SND_MAX_WIDTH is 2 ?
 	}
 	else if (chosen_fmt.width > SND_MAX_WIDTH)
 	{
 		chosen_fmt.width = SND_MAX_WIDTH;
+		fixed_width = false;
 	}
 
 	if (chosen_fmt.channels < SND_MIN_CHANNELS)
 	{
 		chosen_fmt.channels = SND_MIN_CHANNELS;
+		fixed_channels = false;
 	}
 	else if (chosen_fmt.channels > SND_MAX_CHANNELS)
 	{
 		chosen_fmt.channels = SND_MAX_CHANNELS;
+		fixed_channels = false;
 	}
 
 	// create the sound buffer used for sumitting the samples to the plaform-dependent module
 	if (!simsound)
 	{
+		int accepted;
+
+		accepted = false;
 		if (vid.restart_count < 2) // Baker r1481: Reduce ALT-ENTER video restart spam
 		Con_PrintLinef ("S_Startup: initializing sound output format: %dHz, %d bit, %d channels...",
 					chosen_fmt.speed,
-					chosen_fmt.width,
+					chosen_fmt.width * 8, // Baker
 					chosen_fmt.channels);
 
-		if (!SndSys_Init(&chosen_fmt))
+		accepted = SndSys_Init(&chosen_fmt);
+
+#if 333 
+		while (!accepted) {
+			// Else, try to find a less resource-demanding format
+			if (!S_ChooseCheaperFormat (&chosen_fmt, fixed_speed, fixed_width, fixed_channels))
+				break;
+			Con_Printf("Retry: initializing sound output format: %dHz, %d bit, %d channels...\n",
+						chosen_fmt.speed, chosen_fmt.width * 8,
+						chosen_fmt.channels);
+
+			accepted = SndSys_Init(&chosen_fmt);
+		} // while !accepted
+#endif // defined(_WIN32) && defined(!CORE_SDL) 
+
+		// If we haven't found a suitable format
+		if (!accepted)
 		{
 			Con_Print("S_Startup: SndSys_Init failed.\n");
 			sound_spatialized = false;

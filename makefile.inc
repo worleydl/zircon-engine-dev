@@ -70,7 +70,6 @@ OBJ_COMMON= \
 	cl_particles.o \
 	cl_screen.o \
 	cl_video.o \
-	cl_video_libavw.o \
 	clvm_cmds.o \
 	cmd.o \
 	collision.o \

@@ -25,7 +25,7 @@
 
 #define MAX_NUM_ARGVS	50	// Baker: Windows and reconstitute the command line for the cmdline externally visible cvar
 
-#define	MAX_INPUTLINE			16384 ///< maximum length of console commandline, QuakeC strings, and many other text processing buffers
+#define	MAX_INPUTLINE_16384		16384 ///< maximum length of console commandline, QuakeC strings, and many other text processing buffers
 #define	CON_TEXTSIZE			1048576 ///< max scrollback buffer characters in console
 #define	CON_MAXLINES			16384 ///< max scrollback buffer lines in console
 #define	HIST_TEXTSIZE			262144 ///< max command history buffer characters in console
@@ -98,16 +98,17 @@
 
 
 
-#define CMD_TOKENIZELENGTH (MAX_INPUTLINE + MAX_ARGS_80) ///< maximum tokenizable commandline length (counting trailing 0)
+#define CMD_TOKENIZELENGTH (MAX_INPUTLINE_16384 + MAX_ARGS_80) ///< maximum tokenizable commandline length (counting trailing 0)
 
 
-#define	MAX_QPATH		128			///< max length of a quake game pathname
+#define	MAX_QPATH_128		128			///< max length of a quake game pathname
+
 #ifdef PATH_MAX
-#define	MAX_OSPATH		PATH_MAX
+	#define	MAX_OSPATH		PATH_MAX
 #elif MAX_PATH
-#define	MAX_OSPATH		MAX_PATH
+	#define	MAX_OSPATH		MAX_PATH
 #else
-#define	MAX_OSPATH		1024		///< max length of a filesystem pathname
+	#define	MAX_OSPATH		1024		///< max length of a filesystem pathname
 #endif
 
 #define	ON_EPSILON		0.1			///< point on plane side epsilon

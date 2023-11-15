@@ -21,7 +21,7 @@ typedef struct modlist_entry_s
 	// name of the modification, this is (will...be) displayed on the menu entry
 	char name[128];
 	// directory where we will find it
-	char dir[MAX_QPATH];
+	char dir[MAX_QPATH_128];
 } modlist_entry_t;
 
 static int modlist_cursor;
@@ -37,7 +37,7 @@ static void ModList_RebuildList(void)
 	const char *description;
 
 	stringlistinit(&list);
-	listdirectory(&list, fs_basedir, "");
+	listdirectory(&list, fs_basedir, fs_all_files_empty_string);
 	stringlistsort(&list, true);
 	modlist_count = 0;
 	modlist_numenabled = fs_numgamedirs;
@@ -76,7 +76,7 @@ static void ModList_Enable (void)
 {
 	int i;
 	int numgamedirs;
-	char gamedirs[MODLIST_MAXDIRS][MAX_QPATH];
+	char gamedirs[MODLIST_MAXDIRS][MAX_QPATH_128];
 
 	// copy our mod list into an array for FS_ChangeGameDirs
 	numgamedirs = modlist_numenabled;

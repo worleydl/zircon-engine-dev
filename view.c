@@ -143,6 +143,8 @@ cvar_t chase_pitchangle = {CF_CLIENT | CF_ARCHIVE, "chase_pitchangle", "55", "ch
 cvar_t v_yshearing = {CF_CLIENT, "v_yshearing", "0", "be all out of gum (set this to the maximum angle to allow Y shearing for - try values like 75)"};
 
 cvar_t r_viewmodel_quake = {CF_CLIENT | CF_ARCHIVE, "r_viewmodel_quake", "0", "Quake-style weapon viewmodel angle adjustment"};
+cvar_t r_viewmodel_offset = {CF_CLIENT, "r_viewmodel_offset","0", "Adjust weapon position to the left or right like 5 [Zircon]"}; // Baker r1489: viewmodel offset
+cvar_t r_viewmodel_ring_alpha = {CF_CLIENT | CF_ARCHIVE, "r_viewmodel_ring_alpha","0", "Invisible player has transparent weapon instead of view blend  [Zircon]"}; // Baker r1488 viewmodel ring alpha
 
 float	v_dmg_time, v_dmg_roll, v_dmg_pitch;
 
@@ -929,6 +931,15 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 		Matrix4x4_Copy(&viewmodelmatrix_nobob, &r_refdef.view.matrix);
 		Matrix4x4_ConcatScale(&viewmodelmatrix_nobob, cl_viewmodel_scale.value);
 
+		// Baker r1489 viewmodel offset
+		// Baker: this works, gunorg has not been applied yet
+		if (r_viewmodel_offset.value) {
+			vec3_t	right;
+
+			AngleVectors (viewangles, NULL, right, NULL);
+			VectorMA (gunorg,  r_viewmodel_offset.value, right,   gunorg);
+		}
+
 		Matrix4x4_CreateFromQuakeEntity(&viewmodelmatrix_withbob, gunorg[0], gunorg[1], gunorg[2], gunangles[0], gunangles[1], gunangles[2], cl_viewmodel_scale.value);
 		if (v_yshearing.value > 0)
 			Matrix4x4_QuakeToDuke3D(&viewmodelmatrix_withbob, &viewmodelmatrix_withbob, v_yshearing.value);
@@ -948,7 +959,7 @@ void V_CalcRefdef (void)
 	entity_t *ent;
 	qbool cldead;
 
-	if (cls.state == ca_connected && cls.signon == SIGNONS && !cl.csqc_server2csqcentitynumber[cl.viewentity])
+	if (cls.state == ca_connected && cls.signon == SIGNONS_4 && !cl.csqc_server2csqcentitynumber[cl.viewentity])
 	{
 		// ent is the view entity (visible when out of body)
 		ent = &cl.entities[cl.viewentity];
@@ -1054,7 +1065,7 @@ void V_CalcViewBlend(void)
 	r_refdef.frustumscale_y = 1;
 	r_refdef.waterwarp2 = 0; // Baker r0082
 
-	if (cls.state == ca_connected && cls.signon == SIGNONS)
+	if (cls.state == ca_connected && cls.signon == SIGNONS_4)
 	{
 		// set contents color
 		int supercontents;
@@ -1309,5 +1320,7 @@ void V_Init (void)
 	Cvar_RegisterVariable (&v_yshearing);
 
 	Cvar_RegisterVariable (&r_viewmodel_quake);
+	Cvar_RegisterVariable (&r_viewmodel_offset); // Baker r1489: viewmodel offset
+	Cvar_RegisterVariable (&r_viewmodel_ring_alpha); // Baker r1488 viewmodel ring alpha
 }
 

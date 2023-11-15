@@ -54,9 +54,9 @@ cvar_t scr_loadingscreen_firstforstartup = {CF_CLIENT, "scr_loadingscreen_firstf
 
 cvar_t scr_loadingscreen_barcolor = {CF_CLIENT, "scr_loadingscreen_barcolor", "0.25 0.25 0.25", "rgb color of loadingscreen progress bar [Zircon default]"}; // Baker r8003 gray progress bar is the default color.
 
-cvar_t scr_loadingscreen_barheight = {CF_CLIENT, "scr_loadingscreen_barheight", "0", "the height of the loadingscreen progress bar [Zircon default]"}; // Baker r8082
+cvar_t scr_loadingscreen_barheight = {CF_CLIENT, "scr_loadingscreen_barheight", "0", "the height of the loadingscreen progress bar [Zircon default]"}; // Baker r8082: Was going to set 0, but some of the slow loading giant Quake maps, this increases confidence it is actually loading and not frozen
 cvar_t scr_loadingscreen_maxfps = {CF_CLIENT, "scr_loadingscreen_maxfps", "10", "maximum FPS for loading screen so it will not update very often (this reduces loading time with lots of models)"}; // Baker r1462: Faster load times.
-cvar_t scr_infobar_height = {CF_CLIENT, "scr_infobar_height", "8", "the height of the infobar items"}; 
+cvar_t scr_infobar_height = {CF_CLIENT, "scr_infobar_height", "8", "the height of the infobar items"};
 //cvar_t vid_conwidthauto = {CF_CLIENT | CF_ARCHIVE, "vid_conwidthauto", "1", "automatically update vid_conwidth to match aspect ratio"}; // Baker r0005: 2d sizing needs this removed as is not using value in calc
 cvar_t vid_conwidth = {CF_CLIENT | CF_ARCHIVE, "vid_conwidth", "640", "virtual width of 2D graphics system (note: changes may be overwritten, see vid_conwidthauto)"};
 cvar_t vid_conheight = {CF_CLIENT | CF_ARCHIVE, "vid_conheight", "480", "virtual height of 2D graphics system"};
@@ -100,6 +100,8 @@ cvar_t timedemo_screenshotframelist = {CF_CLIENT, "timedemo_screenshotframelist"
 cvar_t vid_touchscreen_outlinealpha = {CF_CLIENT, "vid_touchscreen_outlinealpha", "0", "opacity of touchscreen area outlines"};
 cvar_t vid_touchscreen_overlayalpha = {CF_CLIENT, "vid_touchscreen_overlayalpha", "0.25", "opacity of touchscreen area icons"};
 
+cvar_t tool_inspector = {CF_CLIENT, "tool_inspector", "0", "view visible entity QC information [Zircon]"}; // Baker r0106: tool inspector
+
 extern cvar_t sbar_info_pos;
 extern cvar_t r_fog_clear;
 
@@ -130,13 +132,13 @@ CENTER PRINTING
 ===============================================================================
 */
 
-char		scr_centerstring[MAX_INPUTLINE];
+char		scr_centerstring[MAX_INPUTLINE_16384];
 float		scr_centertime_start;	// for slow victory printing
 float		scr_centertime_off;
 int			scr_center_lines;
 int			scr_erase_lines;
 int			scr_erase_center;
-char        scr_infobarstring[MAX_INPUTLINE];
+char        scr_infobarstring[MAX_INPUTLINE_16384];
 float       scr_infobartime_off;
 
 /*
@@ -520,7 +522,7 @@ static int SCR_DrawQWDownload(int offset)
 	len = (int)strlen(temp);
 	x = (vid_conwidth.integer - DrawQ_TextWidth(temp, len, size, size, true, FONT_INFOBAR)) / 2;
 	y = vid_conheight.integer - size - offset;
-	DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS ? 0.5 : 1, 0);
+	DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS_4 ? 0.5 : 1, 0);
 	DrawQ_String(x, y, temp, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
 	return size;
 }
@@ -538,7 +540,7 @@ static int SCR_DrawInfobarString(int offset)
 	len = (int)strlen(scr_infobarstring);
 	x = (vid_conwidth.integer - DrawQ_TextWidth(scr_infobarstring, len, size, size, false, FONT_INFOBAR)) / 2;
 	y = vid_conheight.integer - size - offset;
-	DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS ? 0.5 : 1, 0);
+	DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS_4 ? 0.5 : 1, 0);
 	DrawQ_String(x, y, scr_infobarstring, len, size, size, 1, 1, 1, 1, 0, NULL, false, FONT_INFOBAR);
 	return size;
 }
@@ -571,7 +573,7 @@ static int SCR_DrawCurlDownload(int offset)
 	{
 		len = (int)strlen(addinfo);
 		x = (vid_conwidth.integer - DrawQ_TextWidth(addinfo, len, size, size, true, FONT_INFOBAR)) / 2;
-		DrawQ_Fill(0, y - size, vid_conwidth.integer, size, 1, 1, 1, cls.signon == SIGNONS ? 0.8 : 1, 0);
+		DrawQ_Fill(0, y - size, vid_conwidth.integer, size, 1, 1, 1, cls.signon == SIGNONS_4 ? 0.8 : 1, 0);
 		DrawQ_String(x, y - size, addinfo, len, size, size, 0, 0, 0, 1, 0, NULL, true, FONT_INFOBAR);
 	}
 
@@ -585,7 +587,7 @@ static int SCR_DrawCurlDownload(int offset)
 			dpsnprintf(temp, sizeof(temp), "Downloading %s ...  %5.1f%% @ %.1f KiB/s", downinfo[i].filename, 100.0 * downinfo[i].progress, downinfo[i].speed / 1024.0);
 		len = (int)strlen(temp);
 		x = (vid_conwidth.integer - DrawQ_TextWidth(temp, len, size, size, true, FONT_INFOBAR)) / 2;
-		DrawQ_Fill(0, y + i * size, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS ? 0.5 : 1, 0);
+		DrawQ_Fill(0, y + i * size, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS_4 ? 0.5 : 1, 0);
 		DrawQ_String(x, y + i * size, temp, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
 	}
 
@@ -606,8 +608,14 @@ static void SCR_DrawInfobar(void)
 	offset += SCR_DrawCurlDownload(offset);
 	if (scr_infobartime_off > 0)
 		offset += SCR_DrawInfobarString(offset);
-	if (!offset && scr_loading)
-		offset = scr_loadingscreen_barheight.integer;
+	if (!offset && scr_loading) {
+		int effective_loading = scr_loadingscreen_barheight.integer;
+		if (!effective_loading && scr_loading && cl_signon_start_time
+			&& Sys_DirtyTime() - cl_signon_start_time > 1.5)
+			effective_loading = 8;
+
+		offset = effective_loading;
+	}
 	if (offset != scr_con_margin_bottom)
 		Con_DPrintf ("broken console margin calculation: %d != %d\n", offset, scr_con_margin_bottom);
 }
@@ -679,9 +687,9 @@ static void SCR_SetUpToDrawConsole (void)
 		framecounter = 0;
 #endif
 
-	if (scr_conforcewhiledisconnected.integer >= 2 && key_dest == key_game && cls.signon != SIGNONS)
+	if (scr_conforcewhiledisconnected.integer >= 2 && key_dest == key_game && cls.signon != SIGNONS_4)
 		Flag_Add_To(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4);
-	else if (scr_conforcewhiledisconnected.integer >= 1 && key_dest == key_game && cls.signon != SIGNONS && !sv.active)
+	else if (scr_conforcewhiledisconnected.integer >= 1 && key_dest == key_game && cls.signon != SIGNONS_4 && !sv.active)
 		Flag_Add_To(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4); // |= KEY_CONSOLEACTIVE_FORCED;
 	else
 		Flag_Remove_From(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4); // &= ~KEY_CONSOLEACTIVE_FORCED_4;
@@ -702,14 +710,24 @@ SCR_DrawConsole
 */
 void SCR_DrawConsole (void)
 {
+	int effective_loading = scr_loadingscreen_barheight.integer;
+	if (!effective_loading && 
+		scr_loading && 
+		cl_signon_start_time &&
+		((Sys_DirtyTime() - cl_signon_start_time) > 1.5) )
+		effective_loading = 8;
+
+
 	// infobar and loading progress are not drawn simultaneously
-	scr_con_margin_bottom = SCR_InfobarHeight() ? SCR_InfobarHeight() : scr_loading * scr_loadingscreen_barheight.integer;
+	scr_con_margin_bottom = SCR_InfobarHeight() ? SCR_InfobarHeight() : 
+		scr_loading * effective_loading;
+
 	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4)) {
 		// full screen
 		Con_DrawConsole (vid_conheight.integer - scr_con_margin_bottom);
 	}
 	else if (scr_con_current)
-		Con_DrawConsole (min(scr_con_current, vid_conheight.integer - scr_con_margin_bottom));
+		Con_DrawConsole (Smallest(scr_con_current, vid_conheight.integer - scr_con_margin_bottom));
 	else
 		con_vislines = 0;
 }
@@ -760,9 +778,9 @@ SCR_ScreenShot_f
 void SCR_ScreenShot_f (cmd_state_t *cmd)
 {
 	static int shotnumber;
-	static char old_prefix_name[MAX_QPATH];
-	char prefix_name[MAX_QPATH];
-	char filename[MAX_QPATH];
+	static char old_prefix_name[MAX_QPATH_128];
+	char prefix_name[MAX_QPATH_128];
+	char filename[MAX_QPATH_128];
 	unsigned char *buffer1;
 	unsigned char *buffer2;
 	qbool jpeg = (scr_screenshot_jpeg.integer != 0);
@@ -1179,7 +1197,7 @@ envmapinfo[12] =
 static void R_Envmap_f (cmd_state_t *cmd)
 {
 	int j, size;
-	char filename[MAX_QPATH], basename[MAX_QPATH];
+	char filename[MAX_QPATH_128], basename[MAX_QPATH_128];
 	unsigned char *buffer1;
 	unsigned char *buffer2;
 	r_rendertarget_t *rt;
@@ -1446,7 +1464,7 @@ extern cvar_t v_isometric_verticalfov;
 typedef struct loadingscreenstack_s
 {
 	struct loadingscreenstack_s *prev;
-	char msg[MAX_QPATH];
+	char msg[MAX_QPATH_128];
 	float absolute_loading_amount_min; // this corresponds to relative completion 0 of this item
 	float absolute_loading_amount_len; // this corresponds to relative completion 1 of this item
 	float relative_completion; // 0 .. 1
@@ -1640,7 +1658,15 @@ static void SCR_DrawLoadingStack(void)
 	float verts[12];
 	float colors[16];
 
-	SCR_DrawLoadingStack_r(loadingscreenstack, vid_conheight.integer, scr_loadingscreen_barheight.value);
+	int effective_loading = scr_loadingscreen_barheight.integer;
+	if (!effective_loading && 
+		scr_loading && 
+		cl_signon_start_time &&
+		((Sys_DirtyTime() - cl_signon_start_time) > 1.5) )
+		effective_loading = 8;
+
+
+	SCR_DrawLoadingStack_r(loadingscreenstack, vid_conheight.integer, effective_loading);
 	if (loadingscreenstack)
 	{
 		// height = 32; // sorry, using the actual one is ugly
@@ -1651,7 +1677,7 @@ static void SCR_DrawLoadingStack(void)
 		//R_Mesh_ResetTextureState();
 		verts[2] = verts[5] = verts[8] = verts[11] = 0;
 		verts[0] = verts[9] = 0;
-		verts[1] = verts[4] = vid_conheight.integer - scr_loadingscreen_barheight.value;
+		verts[1] = verts[4] = vid_conheight.integer - effective_loading;
 		verts[3] = verts[6] = vid_conwidth.integer * loadingscreenstack->absolute_loading_amount_min;
 		verts[7] = verts[10] = vid_conheight.integer;
 		
@@ -1875,6 +1901,104 @@ cldraw2d3:
 	}
 }
 
+#if 1
+
+entity_t *find_e_render (entity_render_t *exy, int *enumy)
+{
+	int i;
+
+	for (i = 1; i < cl.num_entities; i ++) {
+		if (cl.entities_active[i]) {
+			entity_t *e = cl.entities + i;
+			entity_render_t *exy2 = &e->render;
+			if (exy2 == exy) {
+				(*enumy) = i;
+				return e;
+			} // if
+		} // if
+	} // i
+	return NULL;
+}
+
+void CL_Tool_Inspector (void)
+{
+	SV_LockThreadMutex (); // 
+
+	int conwidth_2d_phase = scale_width_360;
+	int conheight_2d_phase = scale_height_360;
+
+	WARP_X_ (PRVM_ED_Write)
+				
+	prvm_prog_t *prog = SVVM_prog;
+	for (int ent_num = 0; ent_num < r_refdef.scene.numentities; ent_num++) {
+		if (!r_refdef.viewcache.entityvisible[ent_num])
+			continue;
+		entity_render_t *erender = r_refdef.scene.entities[ent_num];
+		
+		if (erender->model && erender->model->Draw != NULL) {
+			int enummy = 0;
+			entity_t *e = find_e_render(erender, &enummy);
+			
+			if (e) {
+				prvm_edict_t *ed = PRVM_EDICT_NUM(enummy);
+				if (ed->free == false) {
+					const char	*s_cls = PRVM_GetString(prog, PRVM_alledictstring(ed, classname));
+					const char	*s_mdl = PRVM_GetString(prog, PRVM_alledictstring(ed, model));
+					prvm_vec_t *v = PRVM_serveredictvector(ed, origin);
+
+					vec3_t v2d = {0};
+					int ismap = s_mdl && s_mdl[0] == '*';
+
+					if (ismap) {
+						prvm_vec_t *v1 = PRVM_serveredictvector(ed, absmin);
+						prvm_vec_t *v2 = PRVM_serveredictvector(ed, absmax);
+						vec3_t v3 = { (v1[0] + v2[0])/2.0, 
+							          (v1[1] + v2[1])/2.0, 
+									  (v1[2] + v2[2])/2.0
+								};
+						Math_Project (v3, v2d);
+					} else {
+						Math_Project (v, v2d);
+					}
+
+					// Set tool_inspector 2 for single frame printed information to console
+					// it then reverts to tool_inspector 1
+					if (tool_inspector.integer > 1)
+						Con_PrintLinef ("%4d %-20.20s @ %3.1f %3.1f %3.1f ", enummy, s_cls, v[0], v[1], v[2]);
+					
+					char vuf[64];
+					char vuf2[64];
+					char vuf3[64];
+					
+					dpsnprintf (vuf, sizeof(vuf), "edict %d", enummy);
+					dpsnprintf (vuf2, sizeof(vuf2), "%s", s_cls);
+					dpsnprintf (vuf3, sizeof(vuf3), "%s", s_mdl);
+
+					int larger = (int)Largest(strlen(vuf), Largest(strlen(vuf2), strlen(vuf3))) ;
+					int w = 8 * larger * vid_conwidth.value/conwidth_2d_phase;
+					int h1= 8 * 1 * vid_conheight.value/conheight_2d_phase;
+					int h= h1 * 3;// * oldh/vid_conheight.value;
+					
+					int x= v2d[0] - w/2.0 ;
+					int y0= v2d[1] - h/2.0;
+					int y1= y0 + h1;
+					int y2= y1 + h1;
+					
+					DrawQ_Fill(x,y0, w, h, /*rgba:*/ 0, 0, 0, 1.0, DRAWFLAG_NORMAL);
+					DrawQ_String(x,y0, vuf, 0, /*scale x y*/ h1, h1, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, /*outcolor*/ NULL, /*ig*/ true, FONT_CENTERPRINT);
+					DrawQ_String(x,y1, vuf2, 0, /*scale x y*/ h1, h1, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, /*outcolor*/ NULL, /*ig*/ true, FONT_CENTERPRINT);
+					DrawQ_String(x,y2, vuf3, 0, /*scale x y*/ h1, h1, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, /*outcolor*/ NULL, /*ig*/ true, FONT_CENTERPRINT);
+				} // edict not free
+			} // e
+		} // if
+	} // for
+	if (tool_inspector.integer > 1)
+		Cvar_SetValueQuick (&tool_inspector, 1);
+	
+	SV_UnlockThreadMutex ();
+}
+#endif
+
 WARP_X_CALLERS_ (sure)
 static void CL_UpdateScreen_SCR_DrawScreen(void)
 {
@@ -1883,7 +2007,7 @@ cldraw2d0:
 
 	// Baker: This does canvas stuff, we must have vid_conwidth / vid_conheight finalized BEFORE
 drawstart:
-	DrawQ_Start();
+	DrawQ_Start(); // Scissor, viewport, matrixes, etc.
 
 	R_Mesh_Start();
 
@@ -1893,11 +2017,11 @@ drawstart:
 	r_refdef.view.cullface_front = GL_BACK;
 	r_refdef.view.cullface_back = GL_FRONT;
 
-	if (!scr_loading && cls.signon == SIGNONS) {
+	if (!scr_loading && cls.signon == SIGNONS_4) {
 		float size;
 
 		size = scr_viewsize.value * (1.0 / 100.0);
-		size = min(size, 1);
+		size = Smallest(size, 1);
 
 		if (r_stereo_sidebyside.integer)
 		{
@@ -1971,8 +2095,12 @@ drawstart:
 			CL_UpdateEntityShading();
 			R_RenderView(0, NULL, NULL, r_refdef.view.x, r_refdef.view.y, r_refdef.view.width, r_refdef.view.height);
 		}
+
+		if (!cls.demoplayback && tool_inspector.integer) {
+			CL_Tool_Inspector ();
+		}
 		// END CL_VM_UpdateView / CSQC
-	} // cls.signon == SIGNONS
+	} // cls.signon == SIGNONS_4
 
 	// Don't apply debugging stuff like r_showsurfaces to the UI
 	r_refdef.view.showdebug = false;
@@ -1983,7 +2111,7 @@ draw9wrap3d:
 	// 1. Finish this draw
 	// 2. Reset conwidth/conheight
 	// 3. Start a new draw
-
+baker_draw_phase_2:
 	if (CLVM_prog->loaded && csqc_full_width_height.integer) {
 		// CSQC loaded and wants full screen
 		DrawQ_Finish();
@@ -1991,10 +2119,13 @@ draw9wrap3d:
 		Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
 		Cvar_SetValueQuick (&vid_conheight, scale_height_360);
 
+baker_really_do_this:
+		SCR_SetUpToDrawConsole(); // conlines measurement and stuff
+
 		// Start a new draw, this time without fullscreen
 		//Draw_Frame();						// Looks like frees unused pics
 		r_viewport_t viewport;
-	
+
 		R_Viewport_InitOrtho(&viewport, &identitymatrix, 0, 0, vid.width, vid.height, 0, 0, vid_conwidth.integer, vid_conheight.integer, -10, 100, NULL);
 		R_Mesh_SetRenderTargets(0, NULL, NULL, NULL, NULL, NULL);
 		R_SetViewport(&viewport);
@@ -2035,7 +2166,7 @@ draw9wrap3d:
 		if (*t)
 		{
 			// we need to take a screenshot of this frame...
-			char filename[MAX_QPATH];
+			char filename[MAX_QPATH_128];
 			unsigned char *buffer1;
 			unsigned char *buffer2;
 			dpsnprintf(filename, sizeof(filename), "timedemoscreenshots/%s%06d.tga", cls.demoname, cls.td_frames);
@@ -2062,7 +2193,7 @@ d2go:
 	else
 		host.paused = false;
 
-	if (!scr_loading && cls.signon == SIGNONS) {
+	if (!scr_loading && cls.signon == SIGNONS_4) {
 		SCR_DrawNet();
 		SCR_DrawTurtle();
 		SCR_DrawPause();
@@ -2090,7 +2221,7 @@ menu:
 		{
 			connect_status.absolute_loading_amount_min = 0;
 			if (cls.signon > 0)
-				dpsnprintf(connect_status.msg, sizeof(connect_status.msg), "Connect: Signon stage %d of %d", cls.signon, SIGNONS);
+				dpsnprintf(connect_status.msg, sizeof(connect_status.msg), "Connect: Signon stage %d of %d", cls.signon, SIGNONS_4);
 			else if (cls.connect_remainingtries > 0)
 				dpsnprintf(connect_status.msg, sizeof(connect_status.msg), "Connect: Trying...  %d", cls.connect_remainingtries);
 			else
@@ -2104,6 +2235,7 @@ menu:
 			loadingscreenstack = NULL;
 	}
 
+baker_draw_phase_console:
 	SCR_DrawConsole();
 	SCR_DrawInfobar();
 
@@ -2226,7 +2358,7 @@ void CL_UpdateScreen(void)
 
 	if (scr_loading)
 	{
-		if (!loadingscreenstack && !cls.connect_trying && (cls.state != ca_connected || cls.signon == SIGNONS))
+		if (!loadingscreenstack && !cls.connect_trying && (cls.state != ca_connected || cls.signon == SIGNONS_4))
 			SCR_EndLoadingPlaque();
 		else if (scr_loadingscreen_maxfps.value)
 		{
@@ -2238,7 +2370,7 @@ void CL_UpdateScreen(void)
 		}
 	}
 
-boom:
+baker_csqc_draw_start_logic_here:
 	CL_UpdateScreen_SCR_UpdateVars(); // Viewsize and stuff, scale_360_calc conwidth
 
 	R_FrameData_NewFrame(); // Nothing with conwidth
@@ -2252,7 +2384,12 @@ cldraw2d2:
 	r_refdef.view.colormask[1] = 1;
 	r_refdef.view.colormask[2] = 1;
 
-	SCR_SetUpToDrawConsole(); // conlines measurement and stuff
+baker_bypass_console_calcs_do_later:
+	if (CLVM_prog->loaded && csqc_full_width_height.integer) {
+		// Skip for later
+	} else {
+		SCR_SetUpToDrawConsole(); // conlines measurement and stuff
+	}
 
 #ifndef USE_GLES2
 	CHECKGLERROR
@@ -2441,34 +2578,35 @@ void CL_Screen_Init(void)
 	Cvar_RegisterVariable (&cl_capturevideo_ogg);
 	Cvar_RegisterVariable (&cl_capturevideo_framestep);
 #endif
+	Cvar_RegisterVariable (&tool_inspector);
 	Cvar_RegisterVariable (&r_letterbox);
-	Cvar_RegisterVariable(&r_stereo_separation);
-	Cvar_RegisterVariable(&r_stereo_sidebyside);
-	Cvar_RegisterVariable(&r_stereo_horizontal);
-	Cvar_RegisterVariable(&r_stereo_vertical);
-	Cvar_RegisterVariable(&r_stereo_redblue);
-	Cvar_RegisterVariable(&r_stereo_redcyan);
-	Cvar_RegisterVariable(&r_stereo_redgreen);
-	Cvar_RegisterVariable(&r_stereo_angle);
-	Cvar_RegisterVariable(&scr_stipple);
-	Cvar_RegisterVariable(&scr_refresh);
-	Cvar_RegisterVariable(&net_graph);
-	Cvar_RegisterVirtual(&net_graph, "shownetgraph");
-	Cvar_RegisterVariable(&cl_demo_mousegrab);
-	Cvar_RegisterVariable(&timedemo_screenshotframelist);
-	Cvar_RegisterVariable(&vid_touchscreen_outlinealpha);
-	Cvar_RegisterVariable(&vid_touchscreen_overlayalpha);
-	Cvar_RegisterVariable(&r_speeds_graph);
+	Cvar_RegisterVariable (&r_stereo_separation);
+	Cvar_RegisterVariable (&r_stereo_sidebyside);
+	Cvar_RegisterVariable (&r_stereo_horizontal);
+	Cvar_RegisterVariable (&r_stereo_vertical);
+	Cvar_RegisterVariable (&r_stereo_redblue);
+	Cvar_RegisterVariable (&r_stereo_redcyan);
+	Cvar_RegisterVariable (&r_stereo_redgreen);
+	Cvar_RegisterVariable (&r_stereo_angle);
+	Cvar_RegisterVariable (&scr_stipple);
+	Cvar_RegisterVariable (&scr_refresh);
+	Cvar_RegisterVariable (&net_graph);
+	Cvar_RegisterVirtual( &net_graph, "shownetgraph");
+	Cvar_RegisterVariable (&cl_demo_mousegrab);
+	Cvar_RegisterVariable (&timedemo_screenshotframelist);
+	Cvar_RegisterVariable (&vid_touchscreen_outlinealpha);
+	Cvar_RegisterVariable (&vid_touchscreen_overlayalpha);
+	Cvar_RegisterVariable (&r_speeds_graph);
 	for (i = 0;i < (int)(sizeof(r_speeds_graph_filter)/sizeof(r_speeds_graph_filter[0]));i++)
 		Cvar_RegisterVariable(&r_speeds_graph_filter[i]);
-	Cvar_RegisterVariable(&r_speeds_graph_length);
-	Cvar_RegisterVariable(&r_speeds_graph_seconds);
-	Cvar_RegisterVariable(&r_speeds_graph_x);
-	Cvar_RegisterVariable(&r_speeds_graph_y);
-	Cvar_RegisterVariable(&r_speeds_graph_width);
-	Cvar_RegisterVariable(&r_speeds_graph_height);
-	Cvar_RegisterVariable(&r_speeds_graph_maxtimedelta);
-	Cvar_RegisterVariable(&r_speeds_graph_maxdefault);
+	Cvar_RegisterVariable (&r_speeds_graph_length);
+	Cvar_RegisterVariable (&r_speeds_graph_seconds);
+	Cvar_RegisterVariable (&r_speeds_graph_x);
+	Cvar_RegisterVariable (&r_speeds_graph_y);
+	Cvar_RegisterVariable (&r_speeds_graph_width);
+	Cvar_RegisterVariable (&r_speeds_graph_height);
+	Cvar_RegisterVariable (&r_speeds_graph_maxtimedelta);
+	Cvar_RegisterVariable (&r_speeds_graph_maxdefault);
 
 	// if we want no console, turn it off here too
 	if (Sys_CheckParm ("-noconsole"))

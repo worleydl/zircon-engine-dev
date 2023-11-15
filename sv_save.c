@@ -36,7 +36,7 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 	qfile_t	*f;
 	int		i, k, l, numbuffers, lightstyles = 64;
 	char	comment[SAVEGAME_COMMENT_LENGTH+1];
-	char	line[MAX_INPUTLINE];
+	char	line[MAX_INPUTLINE_16384];
 	qbool isserver;
 	char	*s;
 
@@ -208,7 +208,7 @@ SV_Savegame_f
 void SV_Savegame_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	char	name[MAX_QPATH];
+	char	name[MAX_QPATH_128];
 
 	if (!sv.active)
 	{
@@ -247,8 +247,8 @@ SV_Loadgame_f
 void SV_Loadgame_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	char filename[MAX_QPATH];
-	char mapname[MAX_QPATH];
+	char filename[MAX_QPATH_128];
+	char mapname[MAX_QPATH_128];
 	float time;
 	const char *start;
 	const char *end;
@@ -281,7 +281,7 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 
 	cls.demonum = -1;		// stop demo loop in case this fails
 
-	t = text = (char *)FS_LoadFile (filename, tempmempool, false, NULL);
+	t = text = (char *)FS_LoadFile (filename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	if (!text) {
 		Con_PrintLinef ("ERROR: couldn't open.");
 		return;
@@ -332,7 +332,7 @@ void SV_Loadgame_f(cmd_state_t *cmd)
 	if (developer_entityparsing.integer)
 		Con_PrintLinef ("SV_Loadgame_f: spawning server");
 
-	SV_SpawnServer (mapname);
+	SV_SpawnServer (mapname, filename); // Baker r9067: loadgame precaches "precache at any time models and sounds"
 	if (!sv.active)
 	{
 		Mem_Free(text);

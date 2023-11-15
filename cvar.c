@@ -221,18 +221,27 @@ int Cvar_CompleteCountPossible(cvar_state_t *cvars, const char *partial, int nee
 	h = 0;
 	len = strlen(partial);
 
-	if (!len)
+	if (!len && !is_from_nothing)
 		return	0;
 
 	// Loop through the cvars and count all possible matches
-	for (cvar = cvars->vars; cvar; cvar = cvar->next)
-		if (!strncasecmp(partial, cvar->name, len) && (cvar->flags & neededflags))
+	for (cvar = cvars->vars; cvar; cvar = cvar->next) {
+		if (String_Does_Start_With_Caseless (cvar->name, partial) && (cvar->flags & neededflags)) {
+			const char *sxy = cvar->name;
+			SPARTIAL_EVAL_
 			h++;
-		else
-			for (char **alias = cvar->aliases; alias && *alias; alias++)
-				if (!strncasecmp(partial, *alias, len) && (cvar->flags & neededflags))
+		}
+		else {
+			for (char **alias = cvar->aliases; alias && *alias; alias++) {
+				if (String_Does_Start_With_Caseless(*alias, partial) && (cvar->flags & neededflags)) {
+					const char *sxy = cvar->name;
+					SPARTIAL_EVAL_
 					h++;
-		
+				}
+			} // for alias of this cvar
+		} // if
+	} // for cvar
+
 	return h;
 }
 
@@ -271,11 +280,11 @@ const char **Cvar_CompleteBuildList(cvar_state_t *cvars, const char *partial, in
 
 void Cvar_PrintHelp(cvar_t *cvar, const char *name, qbool full)
 {
-	if (String_Does_Not_Match(cvar->name, name))
-		Con_Printf (CON_BRONZE "%s^7 (alias of " CON_BRONZE "%s^7)", name, cvar->name); // Baker: purple to bronze.
+	if (String_Does_Not_Match (cvar->name, name))
+		Con_Printf (CON_BRONZE "%s" CON_WHITE " (alias of " CON_BRONZE "%s" CON_WHITE ")", name, cvar->name); // Baker: purple to bronze.
 	else
-		Con_Printf (CON_BRONZE "%s^7", name);
-	Con_Printf (" is \"%s^7\" [\"%s^7\"]", ((cvar->flags & CF_PRIVATE) ? "********"/*hunter2*/ : cvar->string), cvar->defstring);
+		Con_Printf (CON_BRONZE "%s" CON_WHITE, name);
+	Con_Printf (" is \"%s" CON_WHITE " [\"%s" CON_WHITE "\"]", ((cvar->flags & CF_PRIVATE) ? "********"/*hunter2*/ : cvar->string), cvar->defstring);
 	if (full)
 		Con_Printf (" %s", cvar->description);
 	Con_Print("\n");
@@ -467,7 +476,7 @@ Cvar_SetValue
 */
 void Cvar_SetValueQuick(cvar_t *var, float value)
 {
-	char val[MAX_INPUTLINE];
+	char val[MAX_INPUTLINE_16384];
 
 	if ((float)((int)value) == value)
 		dpsnprintf(val, sizeof(val), "%d", (int)value);
@@ -478,7 +487,7 @@ void Cvar_SetValueQuick(cvar_t *var, float value)
 
 void Cvar_SetValue(cvar_state_t *cvars, const char *var_name, float value)
 {
-	char val[MAX_INPUTLINE];
+	char val[MAX_INPUTLINE_16384];
 
 	if ((float)((int)value) == value)
 		dpsnprintf(val, sizeof(val), "%d", (int)value);
@@ -863,6 +872,10 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 				// Baker r9002: DarkPlaces Beta gamedir switch crash bug-fix
 				const char *s_copy_str = NULL;
 				const char *s_copy_defstr = NULL;
+
+				if (c == &scr_fov) {
+					int j = 5;
+				}
 				// Baker: I doubt c->initstate->string can be trusted		
 				if (c->string)		s_copy_str = Mem_strdup(zonemempool, c->initstate->defstring); // Baker r9061: don't trust c->initstate->string ever
 				if (c->defstring)	s_copy_defstr = Mem_strdup(zonemempool, c->initstate->defstring);
@@ -876,10 +889,19 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 			}
 			else {
 				// Con_PrintLinef ("Cvar_RestoreInitState: " QUOTED_S " is unchanged", c->name);
+				// Baker need to set string to default string
+				if (String_Does_Match (c->string, c->defstring) == false) {
+					#pragma message ("Baker: Ran into situation where default string and string didn't match after this process")
+					Z_Free((char *)c->string);
+					c->string = Mem_strdup(zonemempool, c->defstring); 
+				}
 			}
 			c->flags = c->initstate->flags;
 			c->value = c->initstate->value;
 			c->integer = c->initstate->integer;
+			if ((int)c->value != c->integer) {
+				int j = 5;
+			}
 			VectorCopy(c->initstate->vector, c->vector);
 			cp = &c->next;
 		}
@@ -910,6 +932,7 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 
 			cvar_hash_t *hash_cur, *hash_prev = NULL;
 #if 1
+			// Baker r9002: DarkPlaces Beta gamedir switch crash bug-fix
 			for (hash_cur = cvars->hashtable[hashindex]; hash_cur; hash_cur = hash_cur->next) {
 				cvar_t *cvar_current = hash_cur->cvar;
 				Con_PrintLinef ("Unlinking %s", c->name);
@@ -1051,7 +1074,7 @@ with the archive flag set to true.
 void Cvar_WriteVariables (cvar_state_t *cvars, qfile_t *f)
 {
 	cvar_t	*var;
-	char buf1[MAX_INPUTLINE], buf2[MAX_INPUTLINE];
+	char buf1[MAX_INPUTLINE_16384], buf2[MAX_INPUTLINE_16384];
 
 	// don't save cvars that match their default value
 	for (var = cvars->vars ; var ; var = var->next) {

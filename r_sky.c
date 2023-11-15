@@ -1,3 +1,4 @@
+// r_sky.c
 
 #include "quakedef.h"
 #include "image.h"
@@ -14,7 +15,7 @@ int skyscissor[4];
 static int skyrendersphere;
 static int skyrenderbox;
 static rtexturepool_t *skytexturepool;
-static char skyname[MAX_QPATH];
+static char skyname[MAX_QPATH_128];
 static matrix4x4_t skymatrix;
 static matrix4x4_t skyinversematrix;
 
@@ -99,7 +100,7 @@ static int R_LoadSkyBox(void)
 {
 	int i, j, success;
 	int indices[4] = {0,1,2,3};
-	char name[MAX_INPUTLINE];
+	char name[MAX_INPUTLINE_16384];
 	unsigned char *image_buffer;
 	unsigned char *temp;
 	char vabuf[1024];
@@ -406,8 +407,8 @@ void R_Sky(void)
 	Matrix4x4_CreateFromQuakeEntity(&skymatrix, r_refdef.view.origin[0], r_refdef.view.origin[1], r_refdef.view.origin[2], 0, 0, 0, r_refdef.farclip * (0.5f / 16.0f));
 	Matrix4x4_Invert_Simple(&skyinversematrix, &skymatrix);
 
-	if (r_sky_scissor.integer)
-	{
+	// Baker: r_sky_scissor default is 1
+	if (r_sky_scissor.integer) {
 		// if the scissor is empty just return
 		if (skyscissor[2] == 0 || skyscissor[3] == 0)
 			return;
@@ -441,7 +442,7 @@ void R_Sky(void)
 void R_ResetSkyBox(void)
 {
 	R_UnloadSkyBox();
-	memset(skyname,0,MAX_QPATH);
+	memset(skyname,0,MAX_QPATH_128);
 	R_LoadSkyBox();
 }
 
@@ -464,7 +465,8 @@ static void r_sky_newmap(void)
 
 void R_Sky_Init(void)
 {
-	Cmd_AddCommand(CF_CLIENT, "loadsky", &LoadSky_f, "load a skybox by basename (for example loadsky mtnsun_ loads mtnsun_ft.tga and so on)");
+	Cmd_AddCommand (CF_CLIENT, "loadsky", &LoadSky_f, "load a skybox by basename (for example loadsky mtnsun_ loads mtnsun_ft.tga and so on)");
+	Cmd_AddCommand (CF_CLIENT, "sky", &LoadSky_f, "load a skybox by basename (for example loadsky mtnsun_ loads mtnsun_ft.tga and so on) [Zircon]"); //  Baker r1242: "sky" same as loadsky command
 	Cvar_RegisterVariable (&r_sky);
 	Cvar_RegisterVariable (&r_skyscroll1);
 	Cvar_RegisterVariable (&r_skyscroll2);

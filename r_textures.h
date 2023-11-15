@@ -140,7 +140,7 @@ typedef struct skinframe_s
 	// (so that two q1bsp maps with the same texture name for different
 	//  textures do not have any conflicts)
 	struct skinframe_s *next; // next on hash chain
-	char basename[MAX_QPATH]; // name of this
+	char basename[MAX_QPATH_128]; // name of this
 	int textureflags; // texture flags to use
 	int comparewidth;
 	int compareheight;

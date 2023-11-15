@@ -506,7 +506,7 @@ void Sys_Sleep(int microseconds)
 void Sys_PrintfToTerminal (const char *fmt, ...)
 {
 	va_list argptr;
-	char msg[MAX_INPUTLINE];
+	char msg[MAX_INPUTLINE_16384];
 
 	va_start(argptr,fmt);
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);

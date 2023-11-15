@@ -119,7 +119,7 @@ static void M_Setup_Draw (void)
 		menuplyr_load = false;
 		menuplyr_top = -1;
 		menuplyr_bottom = -1;
-		f = FS_LoadFile("gfx/menuplyr.lmp", tempmempool, true, &filesize);
+		f = FS_LoadFile("gfx/menuplyr.lmp", tempmempool, fs_quiet_true, &filesize);
 		if (f && filesize >= 9)
 		{
 			int width, height;

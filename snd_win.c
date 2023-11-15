@@ -88,7 +88,7 @@ static const GUID MY_KSDATAFORMAT_SUBTYPE_PCM =
 // ==============================================================================
 
 extern HWND mainwindow;
-static cvar_t snd_wav_partitionsize = {CVAR_SAVE, "snd_wav_partitionsize", "1024", "controls sound delay in samples, values too low will cause crackling, too high will cause delayed sounds"};
+static cvar_t snd_wav_partitionsize = {CF_CLIENT | CF_ARCHIVE, "snd_wav_partitionsize", "1024", "controls sound delay in samples, values too low will cause crackling, too high will cause delayed sounds"};
 static qbool sndsys_registeredcvars = false;
 
 #ifdef SUPPORTDIRECTX
