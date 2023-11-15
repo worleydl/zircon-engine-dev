@@ -66,7 +66,7 @@ cvar_t con_chatsound_team_mask = {CF_CLIENT, "con_chatsound_team_mask","40","Mag
 
 cvar_t con_zircon_autocomplete = {CF_CLIENT | CF_ARCHIVE, "con_zircon_autocomplete","1", "autocomplete always completes first possible match in full, TAB goes to next match, SHIFT TAB to prior match [Zircon]"}; // Baker r0062: full auto-completion
 
-// Baker r3171: "pos" command
+
 static void Con_Pos_f(cmd_state_t *cmd)
 {
 	if (cl.entities) {
@@ -3585,6 +3585,7 @@ void Con_Init (void)
 	Cmd_AddCommand (CF_CLIENT, "copy", Con_Copy_f, "copy console history to clipboard scrubbing color colors based on condump_stripcolors.integer [Zircon]"); // Baker r3101: "copy" and "copy ents"
 	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command	
 	Cmd_AddCommand (CF_CLIENT, "pos", Con_Pos_f, "print pos and angles [Zircon]"); // Baker r3171: "pos" command
+
 	Cmd_AddCommand (CF_CLIENT, "jack_scripts", Con_Jack_Scripts_f, "Update scripts/shaderlist.txt and write .shader copies to gamedir/_jack_shaders folder [Zircon]"); // Baker r7105
 
 	con_initialized = true;

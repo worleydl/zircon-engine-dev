@@ -108,7 +108,10 @@ cvar_t cl_maxidlefps = {CF_CLIENT | CF_ARCHIVE, "cl_maxidlefps", "20", "maximum 
 cvar_t cl_maxconsole_menu_fps = { CF_CLIENT, "cl_maxconsole_menu_fps", "72", "maximum fps cap when console is up or menu is up and not hosting a game [Zircon]" }; // Baker r8192: throttle
 
 cvar_t cl_areagrid_link_SOLID_NOT = {CF_CLIENT, "cl_areagrid_link_SOLID_NOT", "1", "set to 0 to prevent SOLID_NOT entities from being linked to the area grid, and unlink any that are already linked (in the code paths that would otherwise link them), for better performance"};
+#if 111 //  - M1
+#else
 cvar_t cl_gameplayfix_nudgeoutofsolid_separation = {CF_CLIENT, "cl_gameplayfix_nudgeoutofsolid_separation", "0.03125", "keep objects this distance apart to prevent collision issues on seams"};
+#endif
 
 client_static_t	cls;
 client_state_t	cl;
@@ -3192,8 +3195,10 @@ void CL_Init (void)
 		
 		Cvar_RegisterVariable(&csqc_polygons_defaultmaterial_nocullface);
 		Cvar_RegisterVariable (&cl_areagrid_link_SOLID_NOT);
+#if 111
+#else
 		Cvar_RegisterVariable (&cl_gameplayfix_nudgeoutofsolid_separation);
-
+#endif
 		CL_Parse_Init();
 		CL_Particles_Init();
 		CL_Screen_Init();

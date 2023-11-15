@@ -3082,7 +3082,7 @@ void VM_modulo(prvm_prog_t *prog)
 		PRVM_G_FLOAT(OFS_RETURN) = val - m * (prvm_int_t)(val / m);
 	else
 	{
-		VM_Warning(prog, "Attempted modulo of %f by zero\n", val);
+		VM_Warning(prog, "Attempted modulo of %f by zero" NEWLINE, val);
 		PRVM_G_FLOAT(OFS_RETURN) = 0;
 	}
 }
@@ -5577,6 +5577,8 @@ void VM_SV_getextresponse (prvm_prog_t *prog)
 	}
 }
 
+#if 111  // - M1
+#else
 // DP_QC_NUDGEOUTOFSOLID
 // float(entity ent) nudgeoutofsolid = #567;
 void VM_nudgeoutofsolid(prvm_prog_t *prog)
@@ -5611,6 +5613,7 @@ void VM_nudgeoutofsolid(prvm_prog_t *prog)
 			Sys_Error ("PHYS_NudgeOutOfSolid: cannot be called from %s VM\n", prog->name);
 	}
 }
+#endif
 
 /*
 =========

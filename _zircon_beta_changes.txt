@@ -3,6 +3,21 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 2
+
+1. Use /MT as Visual Studio compiler option.  This embeds the .exe with some dependencies
+   and reduces the need to download Visual Studio Run-times and such, which KleskBY
+   says applies to Windows 7 and can apply in other cirumstances.
+
+2. sv_gameplayfix_nudgeoutofsolid was defaulting 1, it is now correctly defaulting 0.
+   We are using DarkPlaces classic physics in Zircon (DarkPlaces 2014 physics).  This
+   artifact from new DarkPlaces physics wasn't removed.  Additionally: csqc 
+   droptofloor mirrors old logic, this was on a TODO before and is now completed.
+
+3174. "setpos" command.  Set origin and angles, for debugging. 
+
+106b. "tool_inspector 1" -- entities are now sorted.
+
 // Zircon Major Features
 
 0000. Mouse driven menu

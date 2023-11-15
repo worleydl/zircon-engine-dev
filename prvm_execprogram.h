@@ -378,7 +378,7 @@ int i;
 				else
 				{
 					PRE_ERROR();
-					VM_Warning(prog, "Attempted division of %f by zero\n", OPA->_float);
+					VM_Warning(prog, "Attempted division of %f by zero" NEWLINE, OPA->_float);
 					OPC->_float = 0.0f;
 				}
 				DISPATCH_OPCODE();

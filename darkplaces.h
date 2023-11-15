@@ -67,6 +67,7 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 
 #define fs_all_files_empty_string		""
 #define fs_make_unique_true				true
+#define fs_make_unique_false			false
 #define fs_one_per_line_true			true
 #define fs_one_per_line_false			false
 #define fs_reply_already_loaded_null	NULL
@@ -123,6 +124,11 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_prepass_false					false
 #define q_is_ui_fog_ignore_false		false		// fog related, presumably to exclude fog from 
 													//   affecting certain elements
+
+
+#define q_outcolor_null					NULL
+#define q_ignore_color_codes_true		true
+
 
 #include "common.h"
 #include "filematch.h"

@@ -142,7 +142,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "progs.h"
 #include "progsvm.h"
 #include "server.h"
+#if 111 // M1
+#else
 #include "phys.h"
+#endif
 
 #include "input.h"
 #include "keys.h"

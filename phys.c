@@ -1,4 +1,7 @@
 // for physics functions shared by the client and server
+// Baker: physics pass
+
+#if 000
 
 #include "phys.h"
 
@@ -69,3 +72,5 @@ int PHYS_NudgeOutOfSolid(prvm_prog_t *prog, prvm_edict_t *ent)
 	}
 	return 0;
 }
+
+#endif

@@ -484,7 +484,10 @@ void VM_getsurfacetriangle(prvm_prog_t *prog);
 void VM_physics_enable(prvm_prog_t *prog);
 void VM_physics_addforce(prvm_prog_t *prog);
 void VM_physics_addtorque(prvm_prog_t *prog);
+#if 111 //  - M1
+#else
 void VM_nudgeoutofsolid(prvm_prog_t *prog);
+#endif
 
 void VM_coverage(prvm_prog_t *prog);
 

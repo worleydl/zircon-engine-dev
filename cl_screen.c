@@ -1930,68 +1930,130 @@ void CL_Tool_Inspector (void)
 	WARP_X_ (PRVM_ED_Write)
 				
 	prvm_prog_t *prog = SVVM_prog;
+//	vec_t vieworigin;
+	
+//	Matrix4x4_OriginFromMatrix(&r_refdef.view.matrix, vieworigin);
+
+	stringlist_t	matchedSet;
+	stringlistinit  (&matchedSet); // this does not allocate
+
 	for (int ent_num = 0; ent_num < r_refdef.scene.numentities; ent_num++) {
 		if (!r_refdef.viewcache.entityvisible[ent_num])
 			continue;
-		entity_render_t *erender = r_refdef.scene.entities[ent_num];
+		entity_render_t *e_this = r_refdef.scene.entities[ent_num];
 		
-		if (erender->model && erender->model->Draw != NULL) {
-			int enummy = 0;
-			entity_t *e = find_e_render(erender, &enummy);
+		if (e_this->model && e_this->model->Draw != NULL) {
+			int edict_num = 0;
+			entity_t *e = find_e_render(e_this, &edict_num);
 			
 			if (e) {
-				prvm_edict_t *ed = PRVM_EDICT_NUM(enummy);
+				prvm_edict_t *ed = PRVM_EDICT_NUM(edict_num);
 				if (ed->free == false) {
-					const char	*s_cls = PRVM_GetString(prog, PRVM_alledictstring(ed, classname));
+					//const char*s_cls = PRVM_GetString(prog, PRVM_alledictstring(ed, classname));
 					const char	*s_mdl = PRVM_GetString(prog, PRVM_alledictstring(ed, model));
-					prvm_vec_t *v = PRVM_serveredictvector(ed, origin);
+					prvm_vec_t *e_orig = PRVM_serveredictvector(ed, origin);
 
-					vec3_t v2d = {0};
+					vec3_t v_screen2d= {0};
 					int ismap = s_mdl && s_mdl[0] == '*';
-
+					float dist;
+					vec3_t dist3;
 					if (ismap) {
 						prvm_vec_t *v1 = PRVM_serveredictvector(ed, absmin);
 						prvm_vec_t *v2 = PRVM_serveredictvector(ed, absmax);
-						vec3_t v3 = { (v1[0] + v2[0])/2.0, 
+						vec3_t e_box_center = { (v1[0] + v2[0])/2.0, 
 							          (v1[1] + v2[1])/2.0, 
 									  (v1[2] + v2[2])/2.0
 								};
-						Math_Project (v3, v2d);
+						Math_Project (e_box_center, v_screen2d);
+						VectorSubtract(e_box_center, r_refdef.view.origin, dist3);
 					} else {
-						Math_Project (v, v2d);
+						Math_Project (e_orig, v_screen2d);
+						VectorSubtract(e_orig, r_refdef.view.origin, dist3);
 					}
+					dist = VectorLength (dist3);
+					// Dist is d(P1,P2) = (x2 x1)2 + (y2 y1)2 + (z2 z1)2
+					// Sort
+					
+					char s_descr[64];
+					c_dpsnprintf2 (s_descr, "%08.1f %d", dist, (int)edict_num);
+					char *s_this = Z_strdup (s_descr); 
+					stringlistappend (&matchedSet, s_this);
 
-					// Set tool_inspector 2 for single frame printed information to console
-					// it then reverts to tool_inspector 1
-					if (tool_inspector.integer > 1)
-						Con_PrintLinef ("%4d %-20.20s @ %3.1f %3.1f %3.1f ", enummy, s_cls, v[0], v[1], v[2]);
-					
-					char vuf[64];
-					char vuf2[64];
-					char vuf3[64];
-					
-					dpsnprintf (vuf, sizeof(vuf), "edict %d", enummy);
-					dpsnprintf (vuf2, sizeof(vuf2), "%s", s_cls);
-					dpsnprintf (vuf3, sizeof(vuf3), "%s", s_mdl);
 
-					int larger = (int)Largest(strlen(vuf), Largest(strlen(vuf2), strlen(vuf3))) ;
-					int w = 8 * larger * vid_conwidth.value/conwidth_2d_phase;
-					int h1= 8 * 1 * vid_conheight.value/conheight_2d_phase;
-					int h= h1 * 3;// * oldh/vid_conheight.value;
-					
-					int x= v2d[0] - w/2.0 ;
-					int y0= v2d[1] - h/2.0;
-					int y1= y0 + h1;
-					int y2= y1 + h1;
-					
-					DrawQ_Fill(x,y0, w, h, /*rgba:*/ 0, 0, 0, 1.0, DRAWFLAG_NORMAL);
-					DrawQ_String(x,y0, vuf, 0, /*scale x y*/ h1, h1, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, /*outcolor*/ NULL, /*ig*/ true, FONT_CENTERPRINT);
-					DrawQ_String(x,y1, vuf2, 0, /*scale x y*/ h1, h1, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, /*outcolor*/ NULL, /*ig*/ true, FONT_CENTERPRINT);
-					DrawQ_String(x,y2, vuf3, 0, /*scale x y*/ h1, h1, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, /*outcolor*/ NULL, /*ig*/ true, FONT_CENTERPRINT);
 				} // edict not free
 			} // e
 		} // if
 	} // for
+
+	// SORT
+	stringlistsort (&matchedSet, fs_make_unique_false);
+	
+	// Reverse so furthest away prints first, closest prints last.
+	for (int idx = matchedSet.numstrings - 1; idx >= 0; idx --) {
+		char *sxy = matchedSet.strings[idx];
+		char *s_edictnum = &sxy[9]; // First 8 characters are 0 filled distance, space, then edict num
+		int edict_num = atoi(s_edictnum);
+		prvm_edict_t *ed = PRVM_EDICT_NUM(edict_num);
+
+		const char	*s_cls = PRVM_GetString(prog, PRVM_alledictstring(ed, classname));
+		const char	*s_mdl = PRVM_GetString(prog, PRVM_alledictstring(ed, model));
+		prvm_vec_t *e_orig = PRVM_serveredictvector(ed, origin);
+
+		vec3_t v_screen2d= {0};
+		int ismap = s_mdl && s_mdl[0] == '*';
+		float dist;
+		vec3_t dist3;
+		if (ismap) {
+			prvm_vec_t *v1 = PRVM_serveredictvector(ed, absmin);
+			prvm_vec_t *v2 = PRVM_serveredictvector(ed, absmax);
+			vec3_t e_box_center = { (v1[0] + v2[0])/2.0, 
+				          (v1[1] + v2[1])/2.0, 
+						  (v1[2] + v2[2])/2.0
+					};
+			Math_Project (e_box_center, v_screen2d);
+			VectorSubtract(e_box_center, r_refdef.view.origin, dist3);
+		} else {
+			Math_Project (e_orig, v_screen2d);
+			VectorSubtract(e_orig, r_refdef.view.origin, dist3);
+		}
+		dist = VectorLength (dist3);
+		// Dist is d(P1,P2) = (x2 x1)2 + (y2 y1)2 + (z2 z1)2
+		// Sort
+#if 1
+					// Set tool_inspector 2 for single frame printed information to console
+					// it then reverts to tool_inspector 1
+					if (tool_inspector.integer > 1)
+						Con_PrintLinef ("%4d %-20.20s @ %3.1f %3.1f %3.1f ", edict_num, s_cls, e_orig[0], e_orig[1], e_orig[2]);
+
+					char vuf[64];
+					char vuf2[64];
+					char vuf3[64];
+					
+					c_dpsnprintf1 (vuf, "edict %d", edict_num);
+					c_dpsnprintf1 (vuf2, "%s", s_cls);
+					c_dpsnprintf1 (vuf3, "%s", s_mdl);
+
+					int larger = (int)Largest(strlen(vuf), Largest(strlen(vuf2), strlen(vuf3))) ;
+					int width_row	= 8 * larger * vid_conwidth.value/conwidth_2d_phase;
+					int height_row	= 8 * 1 * vid_conheight.value/conheight_2d_phase;
+					int height_tot	= height_row * 3;
+					
+					int x	= v_screen2d[0] - width_row / 2.0;
+					int y0	= v_screen2d[1] - height_row / 2.0;
+					int y1	= y0 + height_row;
+					int y2	= y1 + height_row;
+					
+					DrawQ_Fill		(x,y0, width_row, height_tot, /*rgba:*/ 0, 0, 0, 1.0, DRAWFLAG_NORMAL);
+					DrawQ_String	(x,y0, vuf,  0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+					DrawQ_String	(x,y1, vuf2, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+					DrawQ_String	(x,y2, vuf3, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+#endif
+
+
+	}	
+
+	stringlistfreecontents (&matchedSet);
+
 	if (tool_inspector.integer > 1)
 		Cvar_SetValueQuick (&tool_inspector, 1);
 	
@@ -2085,10 +2147,13 @@ drawstart:
 	csqc:
 		// if CSQC is loaded, it is required to provide the CSQC_UpdateView function,
 		// and won't render a view if it does not call that.
-		if (cl.csqc_loaded)
+		if (cl.csqc_loaded) {
 			CL_VM_UpdateView(r_stereo_side ? 0.0 : max(0.0, cl.time - cl.oldtime));
+		}
 		else
 		{
+			cl.csqc_vidvars.drawworld = r_drawworld.integer != 0; // Baker: r_drawworld sometimes ignored fix.
+
 			// Prepare the scene mesh for rendering - this is lightning beams and other effects rendered as normal surfaces
 			CL_MeshEntities_Scene_FinalizeRenderEntity();
 

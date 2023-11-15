@@ -451,6 +451,56 @@ static void SV_Kill_f(cmd_state_t *cmd)
 
 /*
 ==================
+SV_SetPos_f
+==================
+*/
+// Baker r3174: "setpos x y z [pitch] [yaw] [roll]"
+static void SV_SetPos_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog = SVVM_prog;
+	prvm_edict_t *player_ed = host_client->edict;
+
+	vec3_t origin = {0}, angles = {0};
+	int do_angles = false;
+
+	if (Cmd_Argc(cmd) == 7) {
+		origin[0] = atof(Cmd_Argv(cmd, 1));
+		origin[1] = atof(Cmd_Argv(cmd, 2));
+		origin[2] = atof(Cmd_Argv(cmd, 3));
+		angles[0] = atof(Cmd_Argv(cmd, 4));
+		angles[1] = atof(Cmd_Argv(cmd, 5));
+		angles[2] = atof(Cmd_Argv(cmd, 6));
+		do_angles = true;
+	} else if (Cmd_Argc(cmd) == 4) {
+		origin[0] = atof(Cmd_Argv(cmd, 1));
+		origin[1] = atof(Cmd_Argv(cmd, 2));
+		origin[2] = atof(Cmd_Argv(cmd, 3));
+//		VectorCopy (cl.viewangles, angles);
+	} else {
+		SV_ClientPrint("Can't setpos -- need origin" NEWLINE);
+		return;
+	}
+
+	VectorClear (PRVM_serveredictvector(player_ed, velocity));
+	VectorCopy	(origin, PRVM_serveredictvector(player_ed, origin));
+	if (do_angles) {
+		VectorCopy	(angles, PRVM_serveredictvector(player_ed, angles));
+	}
+
+	// Baker: simulate teleport
+	PRVM_serveredictfloat(player_ed, fixangle) = 
+		(int)true;
+
+	int flagz = PRVM_serveredictfloat(player_ed, flags);
+	if (Have_Flag (flagz, FL_ONGROUND)) {
+		Flag_Remove_From (flagz, FL_ONGROUND);
+		PRVM_serveredictfloat(player_ed, flags) = (int)flagz;
+	}
+} 
+
+
+/*
+==================
 SV_Pause_f
 ==================
 */
@@ -1694,6 +1744,7 @@ void SV_InitOperatorCommands(void)
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "fly", SV_Fly_f, "fly mode (flight)");
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "noclip", SV_Noclip_f, "noclip mode (flight without collisions, move through walls)");
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "give", SV_Give_f, "alter inventory");
+	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "setpos", SV_SetPos_f, "set current origin <angles> [Zircon]"); // Baker r3174
 	Cmd_AddCommand(CF_SERVER_FROM_CLIENT | CF_CLIENTCLOSECONSOLE, "kill", SV_Kill_f, "die instantly"); // Baker r1003: close console for map/load/etc.
 	
 	Cmd_AddCommand(CF_USERINFO, "color", SV_Color_f, "change your player shirt and pants colors");

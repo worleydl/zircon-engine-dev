@@ -550,7 +550,7 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 // #34 float() droptofloor
 static void VM_CL_droptofloor (prvm_prog_t *prog)
 {
-#pragma message ("Baker revert VM_CL_droptofloor")
+//#pragma message ("Baker revert VM_CL_droptofloor")
 	prvm_edict_t		*ent;
 	vec3_t				start, end, mins, maxs;
 	trace_t				trace;
@@ -575,12 +575,16 @@ static void VM_CL_droptofloor (prvm_prog_t *prog)
 	VectorCopy(PRVM_clientedictvector(ent, mins), mins);
 	VectorCopy(PRVM_clientedictvector(ent, maxs), maxs);
 	VectorCopy(PRVM_clientedictvector(ent, origin), end);
+#if 111
+	end[2] -= 256;
+#else
 	if (cl.worldmodel->brush.isq3bsp)
 		end[2] -= 4096;
 	else if (cl.worldmodel->brush.isq2bsp)
 		end[2] -= 128;
 	else
 		end[2] -= 256; // Quake, QuakeWorld
+#endif
 
 	trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, NULL, true);
 
@@ -5546,7 +5550,11 @@ NULL,							// #563
 NULL,							// #564
 NULL,							// #565
 VM_CL_findbox,					// #566 entity(vector mins, vector maxs) findbox = #566; (DP_QC_FINDBOX)
+#if 111  // - M1
+NULL,							// #567
+#else
 VM_nudgeoutofsolid,				// #567 float(entity ent) nudgeoutofsolid = #567; (DP_QC_NUDGEOUTOFSOLID)
+#endif
 NULL,							// #568
 NULL,							// #569
 NULL,							// #570
