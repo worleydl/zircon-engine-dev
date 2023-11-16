@@ -1251,8 +1251,22 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 				else
 					dpsnprintf (name, sizeof(name), "%s_%d", loadmodel->model_name, i);
 				// Baker r0087: fence
-				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, false, false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL))
-					Mod_LoadCustomMaterial(loadmodel->mempool, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, SUPERCONTENTS_SOLID, MATERIALFLAG_WALL, R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_PICMIP, true, r_fullbrights.integer, (unsigned char *)datapointer, skinwidth, skinheight, is_fence));
+				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, false, false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)) {
+					int material_flagz = MATERIALFLAG_WALL;
+					if (is_fence)
+						Flag_Add_To (material_flagz, 
+								MATERIALFLAG_ALPHA | 
+								MATERIALFLAG_BLENDED | 
+								MATERIALFLAG_NOSHADOW);
+
+					Mod_LoadCustomMaterial(loadmodel->mempool, 
+						loadmodel->data_textures + totalskins * loadmodel->num_surfaces, 
+						name, 
+						SUPERCONTENTS_SOLID, 
+						material_flagz /*MATERIALFLAG_WALL*/, 
+						R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ? 
+							TEXF_MIPMAP : 0) | TEXF_PICMIP, true, r_fullbrights.integer, (unsigned char *)datapointer, skinwidth, skinheight, is_fence));
+				}
 				datapointer += skinwidth * skinheight;
 				totalskins++;
 			}

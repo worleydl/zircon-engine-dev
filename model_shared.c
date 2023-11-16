@@ -2139,7 +2139,7 @@ texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(mempool_t *mempool, 
 	for (j = 0; j < Q3MAXTCMODS_8 && layer->tcmods[j].tcmod != Q3TCMOD_NONE; j++)
 		shaderpass->tcmods[j] = layer->tcmods[j];
 	for (j = 0; j < layer->numframes; j++)
-		shaderpass->skinframes[j] = R_SkinFrame_LoadExternal(layer->texturename[j], texflags, false, true);
+		shaderpass->skinframes[j] = R_SkinFrame_LoadExternal(layer->texturename[j], texflags, q_tx_complain_false, q_tx_fallback_notexture_true);
 	return shaderpass;
 }
 
@@ -2499,7 +2499,7 @@ nothing                GL_ZERO GL_ONE
 		}
 		else
 		{
-			skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, false, fallback);
+			skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
 			if (skinframe)
 			{
 				texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(mempool, skinframe);

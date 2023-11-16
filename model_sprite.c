@@ -220,7 +220,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 						dpsnprintf (name, sizeof(name), "%s_%d", loadmodel->model_name, i);
 						dpsnprintf (fogname, sizeof(fogname), "%s_%dfog", loadmodel->model_name, i);
 					}
-					if (!(skinframe = R_SkinFrame_LoadExternal(name, texflags | TEXF_COMPRESS, false, false)))
+					if (!(skinframe = R_SkinFrame_LoadExternal(name, texflags | TEXF_COMPRESS, q_tx_complain_false, q_tx_fallback_notexture_false)))
 					{
 						unsigned char *pixels = (unsigned char *) Mem_Alloc(loadmodel->mempool, width*height*4);
 						if (version == SPRITE32_VERSION)
@@ -456,7 +456,7 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 		{
 			const dsprite2frame_t *pinframe;
 			pinframe = &pinqsprite->frames[i];
-			if (!(skinframe = R_SkinFrame_LoadExternal(pinframe->name, texflags, false, false)))
+			if (!(skinframe = R_SkinFrame_LoadExternal(pinframe->name, texflags, q_tx_complain_false, q_tx_fallback_notexture_false)))
 			{
 				Con_PrintLinef (CON_ERROR "Mod_IDS2_Load: failed to load %s", pinframe->name);
 				skinframe = R_SkinFrame_LoadMissing();

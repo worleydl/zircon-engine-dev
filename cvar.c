@@ -902,7 +902,7 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 			if ((int)c->value != c->integer) {
 				int j = 5;
 			}
-			VectorCopy(c->initstate->vector, c->vector);
+			VectorCopy(c->initstate->fvector, c->fvector);
 			cp = &c->next;
 		}
 		else

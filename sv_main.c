@@ -1672,6 +1672,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 
 	Cvar_SetValueQuick	(&sv_freezenonclients, 0); // Baker r0090: freezeall
 	Cvar_SetValueQuick	(&tool_inspector, 0); // Baker r0106: tool inspector
+	Cvar_SetValueQuick	(&tool_marker, 0); // Baker r0109: tool marker
 
 	Cvar_SetQuick		(&prvm_sv_gamecommands, "");  // Baker r7103 gamecommand autocomplete
 	Cvar_SetQuick		(&prvm_sv_progfields, "");  // Baker r7103 gamecommand autocomplete

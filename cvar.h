@@ -73,7 +73,7 @@ typedef struct cvar_s
 	const char *description;
 	int integer;
 	float value;
-	float vector[3];
+	float fvector[3];
 
 	const char *defstring;
 

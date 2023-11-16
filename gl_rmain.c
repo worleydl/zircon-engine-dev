@@ -2421,7 +2421,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	// FIXME handle miplevel
 
 	if (developer_loading.integer)
-		Con_Printf ("loading skin \"%s\"\n", name);
+		Con_PrintLinef ("loading skin " QUOTED_S, name);
 
 	// we've got some pixels to store, so really allocate this new texture now
 	if (!skinframe)
@@ -2604,7 +2604,8 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 WARP_X_ (TEXF_FORCE_RELOAD)
 skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags, 
 	const unsigned char *skindata, int width, int height, int comparewidth, 
-	int compareheight, int comparecrc, qbool is_sRGB, qbool is_q1skyload)
+	int compareheight, int comparecrc, 
+		qbool is_sRGB, qbool is_q1skyload)
 {
 	int i;
 	skinframe_t *skinframe;
@@ -2614,7 +2615,14 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 		return NULL;
 
 	// if already loaded just return it, otherwise make a new skinframe
-	skinframe = R_SkinFrame_Find(name, textureflags, comparewidth, compareheight, comparecrc, true);
+	skinframe = R_SkinFrame_Find(
+		name, 
+		textureflags, 
+		comparewidth, 
+		compareheight, 
+		comparecrc, 
+		true
+	);
 
 	// Baker r9011 fix q1bsp sky never being reloaded after first map 
 	if (skinframe->base) {
@@ -2655,7 +2663,17 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 		Mem_Free(a);
 	}
 	// Q1SKY Upload occurs here
-	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, is_sRGB ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags, -1, NULL);
+	skinframe->base = skinframe->merged = 
+		R_LoadTexture2D(
+			r_main_texturepool, 
+			skinframe->basename, 
+			width, height, skindata, 
+			is_sRGB ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, 
+			textureflags, 
+			-1, 
+			NULL
+	);
+
 	if (textureflags & TEXF_ALPHA)
 	{
 		for (i = 3;i < width * height * 4;i += 4)
@@ -2715,7 +2733,7 @@ skinframe_t *R_SkinFrame_LoadInternalQuake(const char *name, int textureflags, i
 		return NULL;
 
 	if (developer_loading.integer)
-		Con_Printf ("loading quake skin \"%s\"\n", name);
+		Con_PrintLinef ("loading quake skin " QUOTED_S, name);
 
 	// we actually don't upload anything until the first use, because mdl skins frequently go unused, and are almost never used in both modes (colormapped and non-colormapped)
 	skinframe->qpixels = (unsigned char *)Mem_Alloc(r_main_mempool, width*height); // FIXME LEAK
@@ -2856,7 +2874,7 @@ skinframe_t *R_SkinFrame_LoadInternal8bit(const char *name, int textureflags, co
 		Con_Printf ("loading embedded 8bit image \"%s\"\n", name);
 
 	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, TEXTYPE_PALETTE, textureflags, -1, palette);
-	if ((textureflags & TEXF_ALPHA) && alphapalette)
+	if ((textureflags & TEXF_ALPHA)) // Baker: && alphapalette didn't exist before
 	{
 		for (i = 0;i < width * height;i++)
 		{

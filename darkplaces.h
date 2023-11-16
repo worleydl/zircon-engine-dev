@@ -116,14 +116,22 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_is_sky_load_false				false
 
 #define q_tx_complain_false				false
+#define q_tx_complain_true				true
 #define q_tx_fallback_notexture_false	false
+#define q_tx_fallback_notexture_true	true
 #define q_tx_is_sRGB_false				false
+#define q_tx_complain_false				false
+#define q_tx_allowfixtrans_false		false
+#define q_tx_convertsrgb_false			false
+#define q_tx_miplevel_null				NULL
+
 
 #define q_write_depth_false				false		// GL_DepthMask
 #define q_write_depth_true				true		// GL_DepthMask
 #define q_prepass_false					false
 #define q_is_ui_fog_ignore_false		false		// fog related, presumably to exclude fog from 
 													//   affecting certain elements
+
 
 
 #define q_outcolor_null					NULL

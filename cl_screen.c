@@ -101,6 +101,7 @@ cvar_t vid_touchscreen_outlinealpha = {CF_CLIENT, "vid_touchscreen_outlinealpha"
 cvar_t vid_touchscreen_overlayalpha = {CF_CLIENT, "vid_touchscreen_overlayalpha", "0.25", "opacity of touchscreen area icons"};
 
 cvar_t tool_inspector = {CF_CLIENT, "tool_inspector", "0", "view visible entity QC information [Zircon]"}; // Baker r0106: tool inspector
+cvar_t tool_marker = {CF_CLIENT, "tool_marker", "0", "set a position to display on-screen, this value must be quoted since it is a since string [Zircon]"}; // Baker r0109: tool marker
 
 extern cvar_t sbar_info_pos;
 extern cvar_t r_fog_clear;
@@ -1957,6 +1958,7 @@ void CL_Tool_Inspector (void)
 					int ismap = s_mdl && s_mdl[0] == '*';
 					float dist;
 					vec3_t dist3;
+
 					if (ismap) {
 						prvm_vec_t *v1 = PRVM_serveredictvector(ed, absmin);
 						prvm_vec_t *v2 = PRVM_serveredictvector(ed, absmax);
@@ -2061,6 +2063,47 @@ void CL_Tool_Inspector (void)
 }
 #endif
 
+void CL_Tool_Marker (void)
+{
+	int conwidth_2d_phase = scale_width_360;
+	int conheight_2d_phase = scale_height_360;
+
+	//vector markpos = 
+	//VectorCopy (tool_marker.vector, markpos);
+	vec3_t v_screen2d = {0};
+	vec3_t mark_origin = {0};
+
+	Math_atov (tool_marker.string, mark_origin);
+
+	if (!mark_origin[1] && !mark_origin[2]) {
+		Con_PrintLinef (CON_RED, "Tool marker needs x y z where x and y are non-zero");
+		Con_PrintLinef (CON_BRONZE "Make sure you put the origin in quotes");
+		Con_PrintLinef (CON_BRONZE "Example: " CON_WHITE "tool_marker " QUOTED_STR("120 -3600 24") );
+		Con_PrintLinef (CON_BRONZE "and ensure X and Y are not zero");
+		Cvar_SetValueQuick (&tool_marker, 0);
+	}
+
+	Math_Project (mark_origin, v_screen2d);
+
+	if (v_screen2d[2] <= 0)
+		return; // It's behind us
+
+	int width_row	= (8 * ONE_CHAR_1 * 3) * vid_conwidth.value/conwidth_2d_phase;
+	int height_row	= (8 * ONE_CHAR_1 * 1) * vid_conheight.value/conheight_2d_phase;
+	int height_tot	= height_row * 3;
+	
+	int x	= v_screen2d[0] - width_row / 2.0;
+	int y0	= v_screen2d[1] - height_row / 2.0;
+	int y1	= y0 + height_row;
+	//int y2	= y1 + height_row;
+	
+	DrawQ_Fill		(x, y0, width_row, height_tot, /*rgba:*/ 0, 0, 1.0, 1.0, DRAWFLAG_NORMAL);
+	DrawQ_String	(x + height_row, y1, "X", 0, /*scale x y*/ height_row, height_row, 
+		/*rgba:*/ 1, 1, 1, 1.0, 
+		DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+
+}
+
 WARP_X_CALLERS_ (sure)
 static void CL_UpdateScreen_SCR_DrawScreen(void)
 {
@@ -2163,6 +2206,9 @@ drawstart:
 
 		if (!cls.demoplayback && tool_inspector.integer) {
 			CL_Tool_Inspector ();
+		}
+		if (tool_marker.integer) {
+			CL_Tool_Marker ();
 		}
 		// END CL_VM_UpdateView / CSQC
 	} // cls.signon == SIGNONS_4
@@ -2644,6 +2690,8 @@ void CL_Screen_Init(void)
 	Cvar_RegisterVariable (&cl_capturevideo_framestep);
 #endif
 	Cvar_RegisterVariable (&tool_inspector);
+	Cvar_RegisterVariable (&tool_marker); // Baker r0109: tool marker
+
 	Cvar_RegisterVariable (&r_letterbox);
 	Cvar_RegisterVariable (&r_stereo_separation);
 	Cvar_RegisterVariable (&r_stereo_sidebyside);

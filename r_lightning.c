@@ -27,7 +27,7 @@ static void r_lightningbeams_start(void)
 static void r_lightningbeams_setupqmbtexture(void)
 {
 	r_lightningbeamqmbtexture = R_SkinFrame_LoadExternal("particles/lightning.pcx", 
-		TEXF_ALPHA | TEXF_FORCELINEAR, q_tx_fallback_notexture_false, q_tx_complain_false);
+		TEXF_ALPHA | TEXF_FORCELINEAR, q_tx_complain_false, q_tx_fallback_notexture_false);
 //	if (r_lightningbeamqmbtexture == NULL) {
 //		r_lightningbeamqmbtexture = R_SkinFrame_LoadExternal("particles/lightning.pcx", TEXF_ALPHA | TEXF_FORCELINEAR, false);
 //	}

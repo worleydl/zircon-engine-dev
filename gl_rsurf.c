@@ -1504,8 +1504,9 @@ static void R_ReplaceWorldTexture_f(cmd_state_t *cmd)
 	if (!newt[0])
 		newt = r;
 	for(i=0,t=m->data_textures;i<m->num_textures;i++,t++) {
-		if (/*t->width && String_Does_Match_Caseless(t->name, r)*/ matchpattern( t->name, r, true ) ) {
-			if ((skinframe = R_SkinFrame_LoadExternal(newt, TEXF_MIPMAP | TEXF_ALPHA | TEXF_PICMIP, true, false))) {
+		// /*t->width && String_Does_Match_Caseless(t->name, r)*/
+		if ( matchpattern( t->name, r, fs_caseless_true) ) {
+			if ((skinframe = R_SkinFrame_LoadExternal(newt, TEXF_MIPMAP | TEXF_ALPHA | TEXF_PICMIP, q_tx_complain_true, q_tx_fallback_notexture_false))) {
 //				t->skinframes[0] = skinframe;
 				t->currentskinframe = skinframe;
 				Con_PrintLinef ("%s replaced with %s", r, newt);

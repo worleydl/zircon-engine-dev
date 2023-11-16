@@ -3,6 +3,25 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 3
+
+1. 2020 XMas Jam map shades has .mdl using fence texture flag (16384).  The engine was processing
+   the skin as transparent, but not rendering as transparent.  Fixed.
+   
+2. tool_marker "-36 25 244" -- will draw a topmost red marker where that location is. 
+
+3. Theoretically fixed Replacement textures in "textures/yourmaps/cop3_4.tga" failing to work.
+   This issue was inherited from DarkPlaces Beta.  A decent chance I have it fully resolved.
+
+   CAVEAT: I don't have anything to really test this out.  I have a single texture test
+   from Jakub1.  Map specific replacement textures that collide with another texture map
+   are somewhat uncommon and I don't have one available for some more thorough testing.
+   
+   TODO: See if can improve upon solution for weird untested corner cases no one will likely
+   ever encounter, but I have an awareness that the texture load process in DarkPlaces Beta is
+   not directly equivalent to classic DarkPlaces.  This lack of equivalence may be involved in
+   some weird tcmod scale issues I have seen that have no cause I have been able to locate yet.
+
 // Zircon Beta Release 2
 
 1. Use /MT as Visual Studio compiler option.  This embeds the .exe with some dependencies

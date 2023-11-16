@@ -1531,8 +1531,7 @@ static void Mod_BSP_DecompressVis(const unsigned char *in, const unsigned char *
 	unsigned char *outstart = out;
 	while (out < outend)
 	{
-		if (in == inend)
-		{
+		if (in == inend) {
 			Con_PrintLinef ("Mod_BSP_DecompressVis: input underrun on model \"%s\" (decompressed %d of %d output bytes)", loadmodel->model_name, (int)(out - outstart), (int)(outend - outstart));
 			return;
 		}
@@ -1541,15 +1540,12 @@ static void Mod_BSP_DecompressVis(const unsigned char *in, const unsigned char *
 			*out++ = c;
 		else
 		{
-			if (in == inend)
-			{
+			if (in == inend) {
 				Con_PrintLinef ("Mod_BSP_DecompressVis: input underrun (during zero-run) on model \"%s\" (decompressed %d of %d output bytes)", loadmodel->model_name, (int)(out - outstart), (int)(outend - outstart));
 				return;
 			}
-			for (c = *in++;c > 0;c--)
-			{
-				if (out == outend)
-				{
+			for (c = *in++;c > 0;c--) {
+				if (out == outend) {
 					Con_PrintLinef ("Mod_BSP_DecompressVis: output overrun on model \"%s\" (decompressed %d of %d output bytes)", loadmodel->model_name, (int)(out - outstart), (int)(outend - outstart));
 					return;
 				}
@@ -1644,6 +1640,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 	unsigned char zeroopaque[4], zerotrans[4];
 	sizebuf_t miptexsb;
 	char vabuf[1024];
+	char vabuf2[1024];
 	Vector4Set(zeroopaque, 0, 0, 0, 255);
 	Vector4Set(zerotrans, 0, 0, 0, 128);
 
@@ -1654,8 +1651,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 	// loading will choose according to the contents behind the surface
 	// (necessary to support e1m5 logo shadow which has a SKY contents brush,
 	// while correctly treating sky textures as occluders in other situations).
-	if (sb->cursize)
-	{
+	if (sb->cursize) {
 		int numsky = 0;
 		size_t watermark;
 		nummiptex = MSG_ReadLittleLong(sb);
@@ -1709,9 +1705,8 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 
 	// fill out all slots with notexture
 	skinframemissing = R_SkinFrame_LoadMissing();
-	for (i = 0, tx = loadmodel->data_textures;i < loadmodel->num_textures;i++, tx++)
-	{
-		strlcpy(tx->name, "NO TEXTURE FOUND", sizeof(tx->name));
+	for (i = 0, tx = loadmodel->data_textures;i < loadmodel->num_textures;i++, tx++) {
+		c_strlcpy(tx->name, "NO TEXTURE FOUND");
 		tx->width = 16;
 		tx->height = 16;
 		tx->basealpha = 1.0f;
@@ -1749,21 +1744,20 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		tx->transparentsort = TRANSPARENTSORT_DISTANCE;
 		// WHEN ADDING DEFAULTS HERE, REMEMBER TO PUT DEFAULTS IN ALL LOADERS
 		// JUST GREP FOR "specularscalemod = 1".
-	}
+	} // for
 
-	if (!sb->cursize)
-	{
+	if (!sb->cursize) {
 		Con_PrintLinef ("%s: no miptex lump to load textures from", loadmodel->model_name);
 		return;
 	}
 
 	s = loadmodel->model_name;
-	if (!strncasecmp(s, "maps/", 5))
+	if (String_Does_Start_With_Caseless (s, "maps/"))
 		s += 5;
-	FS_StripExtension(s, mapname, sizeof(mapname));
+	FS_StripExtension (s, mapname, sizeof(mapname));
 
 	// LadyHavoc: mostly rewritten map texture loader
-	for (i = 0;i < nummiptex;i++) {
+	for (i = 0; i < nummiptex; i++) {
 		doffset = MSG_ReadLittleLong(sb);
 		if (r_nosurftextures.integer)
 			continue;
@@ -1778,15 +1772,14 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		// copy name, but only up to 16 characters
 		// (the output buffer can hold more than this, but the input buffer is
 		//  only 16)
-		for (j = 0;j < 16;j++)
+		for (j = 0; j < 16; j++)
 			name[j] = MSG_ReadByte(&miptexsb);
 		name[j] = 0;
 		// pretty up the buffer (replacing any trailing garbage with 0)
 		for (j = (int)strlen(name);j < 16;j++)
 			name[j] = 0;
 
-		if (!name[0])
-		{
+		if (!name[0]) {
 			dpsnprintf(name, sizeof(name), "unnamed%d", i);
 			Con_DPrintLinef ("%s: warning: renaming unnamed texture to %s", loadmodel->model_name, name);
 		}
@@ -1800,14 +1793,14 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			// texture included
 			if (j < 40 || j + mtwidth * mtheight > miptexsb.cursize)
 			{
-				Con_PrintLinef ("%s: Texture \"%s\" is corrupt or incomplete", loadmodel->model_name, name);
+				Con_PrintLinef ("%s: Texture " QUOTED_S " is corrupt or incomplete", loadmodel->model_name, name);
 				continue;
 			}
 			mtdata = miptexsb.data + j;
 		}
 
 		if ((mtwidth & 15) || (mtheight & 15))
-			Con_DPrintLinef ("%s: warning: texture \"%s\" is not 16 aligned", loadmodel->model_name, name);
+			Con_DPrintLinef ("%s: warning: texture " QUOTED_S " is not 16 aligned", loadmodel->model_name, name);
 
 		// LadyHavoc: force all names to lowercase
 		for (j = 0;name[j];j++)
@@ -1815,23 +1808,57 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				name[j] += 'a' - 'A';
 
 		tx = loadmodel->data_textures + i;
-		// try to load shader or external textures, but first we have to backup the texture_t because shader loading overwrites it even if it fails
+		// try to load shader or external textures, 
+		// but first we have to backup the texture_t because shader loading overwrites it 
+		// even if it fails
 		backuptex = loadmodel->data_textures[i];
-		// Q1SKY - this is not Q1SKY
-		if (name[0] && /* HACK */ String_Does_Start_With(name, "sky") == false /*strncmp(name, "sky", 3)*/
-			/* END HACK */ && 
-			(Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s/%s", mapname, name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL) ||
-		    Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i, va(vabuf, sizeof(vabuf), "%s"   , name), false, false, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)))
+
+		const char *s_mapname_texture;
+		const char *s_regular_texture;		
+
+		if (gamemode == GAME_TENEBRAE) s_mapname_texture = name;
+		else s_mapname_texture = va (vabuf2, sizeof(vabuf2), "textures/%s/%s", mapname, name);
+
+		// Baker: Give textures/[mapname]/[your texture] first crack at it?
+		skinframe_t *skinframe;
+
+		if (gamemode == GAME_TENEBRAE) s_regular_texture = name;
+		else s_regular_texture = va (vabuf, sizeof(vabuf), "%s", name);
+
+		if (!name[0] || String_Does_Start_With(name, "sky"))
+			goto sky_skip;
+
+		#define TXFLAGS1 (TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS)
+		skinframe = R_SkinFrame_LoadExternal(
+			s_mapname_texture, TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
+		
+		if (skinframe) {
+			// Baker: Yes we are shittily loading the texture a 2nd time later ...
+			// We need tx->materialshaderpass->skinframes[0]
+			// and possibly other things set?
+			// Perhaps .. anyway this safest for now.
+			goto sky_skip;
+		}
+
+// BAKER BAKER
+		// /* HACK */  Tries to load non-sky textures from shader.
+		if (
+				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, 
+				loadmodel->data_textures + i, 
+				s_regular_texture, q_tx_complain_false, q_tx_fallback_notexture_false, TXFLAGS1, MATERIALFLAG_WALL
+				) )
 		{
 			// set the width/height fields which are used for parsing texcoords in this bsp format
 			tx->width = mtwidth;
 			tx->height = mtheight;
 			continue;
 		}
+
+sky_skip:
 		// no luck with loading shaders or external textures - restore the in-progress texture loading
 		loadmodel->data_textures[i] = backuptex;
 
-		strlcpy(tx->name, name, sizeof(tx->name));
+		c_strlcpy (tx->name, name);
 		tx->width = mtwidth;
 		tx->height = mtheight;
 		tx->basealpha = 1.0f;
@@ -1858,7 +1885,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				tx->surfaceflags = mod_q1bsp_texture_water.surfaceflags;
 			}
 		}
-		else if (String_Does_Start_With(tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/)
+		else if (String_Does_Start_With(tx->name, "sky"))
 		{
 			tx->supercontents = mod_q1bsp_texture_sky.supercontents;
 			tx->surfaceflags = mod_q1bsp_texture_sky.surfaceflags;
@@ -1871,19 +1898,42 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			tx->surfaceflags = mod_q1bsp_texture_solid.surfaceflags;
 		}
 
-		if (cls.state != ca_dedicated)
-		{
-			skinframe_t *skinframe = R_SkinFrame_LoadExternal(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s/%s", mapname, tx->name), TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, false, false);
-			if ((!skinframe &&
-			    !(skinframe = R_SkinFrame_LoadExternal(gamemode == GAME_TENEBRAE ? 
-					tx->name : va(vabuf, sizeof(vabuf), "textures/%s", tx->name), TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, false, false)))
-				// HACK: It loads custom skybox textures as a wall if loaded as a skinframe.
+		if (cls.state != ca_dedicated) {
+regularo:
+			if (gamemode == GAME_TENEBRAE) s_mapname_texture = tx->name;
+			else s_mapname_texture = va (vabuf2, sizeof(vabuf2), "textures/%s/%s", mapname, tx->name);
+
+			if (gamemode == GAME_TENEBRAE) s_regular_texture = tx->name;
+			else s_regular_texture = va (vabuf, sizeof(vabuf), "textures/%s", tx->name);
+
+			skinframe = R_SkinFrame_LoadExternal(s_mapname_texture, 
+				TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
+
+			// No map texture -- use regular texture
+			if (!skinframe) {
+					
+				skinframe = R_SkinFrame_LoadExternal (s_regular_texture, 
+					TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
+			}
+
+			// HACK: It loads custom skybox textures as a wall if loaded as a skinframe.
+			if (!skinframe 
 				|| String_Does_Start_With(tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/)
 			{
 				// did not find external texture via shader loading, load it from the bsp or wad3
-				if (loadmodel->brush.ishlbsp)
-				{
-					// internal texture overrides wad
+				skinframe = R_SkinFrame_LoadExternal(
+					s_mapname_texture, TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
+				
+				// No map texture -- use regular texture ?
+				if (!skinframe)
+					skinframe = R_SkinFrame_LoadExternal(s_regular_texture, TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
+				
+				// allow offsetmapping on external textures without a q3 shader
+				if (skinframe)
+					tx->offsetmapping = OFFSETMAPPING_DEFAULT; 
+				
+				if (!skinframe && loadmodel->brush.ishlbsp) {
+					// HALF-LIFE BSP: internal texture overrides wad
 					unsigned char *pixels, * freepixels;
 					pixels = freepixels = NULL;
 					if (mtdata)
@@ -1899,14 +1949,21 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 					if (freepixels)
 						Mem_Free(freepixels);
 				}
+				// Sky split procedure
 				else if (String_Does_Start_With (tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/ 
 					&& mtwidth == mtheight * 2)
 				{
-					data = loadimagepixelsbgra(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s/%s", mapname, tx->name), false, false, false, NULL);
+					// Q1 SKY SPLIT
+					data = loadimagepixelsbgra(s_mapname_texture,
+						q_tx_complain_false,
+						q_tx_allowfixtrans_false,
+						q_tx_convertsrgb_false,
+						q_tx_miplevel_null);
+					// No map folder texture, use regular replacement
 					if (!data)
-						data = loadimagepixelsbgra(gamemode == GAME_TENEBRAE ? tx->name : va(vabuf, sizeof(vabuf), "textures/%s", tx->name), false, false, false, NULL);
-					if (data && image_width == image_height * 2)
-					{
+						data = loadimagepixelsbgra(s_regular_texture, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, q_tx_miplevel_null);
+	
+					if (data && image_width == image_height * 2) {
 						Mod_Q1BSP_LoadSplitSky (data, image_width, image_height, 4);
 						Mem_Free(data);
 					}
@@ -1929,15 +1986,15 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				}
 				// if mtdata is NULL, the "missing" texture has already been assigned to this
 				// LadyHavoc: some Tenebrae textures get replaced by black
-				if (!strncmp(tx->name, "*glassmirror", 12)) // Tenebrae
-					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_MIPMAP | TEXF_ALPHA, zerotrans, 1, 1, 0, 0, 0, false, /*q1skyload*/ false);
-				else if (!strncmp(tx->name, "mirror", 6)) // Tenebrae
-					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, 0, zeroopaque, 1, 1, 0, 0, 0, false, /*q1skyload*/ false);
-			}
+				if (String_Does_Start_With (tx->name, "*glassmirror")) // Tenebrae
+					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_MIPMAP | TEXF_ALPHA, zerotrans, 1, 1, 0, 0, 0, q_tx_convertsrgb_false, q_is_sky_load_false);
+				else if (String_Does_Start_With(tx->name, "mirror")) // Tenebrae
+					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, 0, zeroopaque, 1, 1, 0, 0, 0, q_tx_convertsrgb_false, q_is_sky_load_false);
+			} // !skinframe, !sky 
 			else
 				tx->materialshaderpass->skinframes[0] = skinframe;
 			tx->currentskinframe = tx->materialshaderpass->skinframes[0];
-		}
+		}  
 
 		tx->basematerialflags = MATERIALFLAG_WALL;
 		if (tx->name[0] == '*')
@@ -1979,7 +2036,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			tx->skynoshadowtexture = currentskynoshadowtexture;
 			currentskynoshadowtexture++;
 		}
-	}
+	} // for each texture
 
 	// sequence the animations
 	for (i = 0;i < nummiptex;i++)

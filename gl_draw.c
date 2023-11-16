@@ -217,8 +217,8 @@ qbool Draw_IsPicLoaded(cachepic_t *pic)
 		return false;
 	if (pic->autoload && (!pic->skinframe || !pic->skinframe->base))
 	{
-		Con_DPrintf ("Draw_IsPicLoaded(\"%s\"): Loading external skin\n", pic->name);
-		pic->skinframe = R_SkinFrame_LoadExternal(pic->name, pic->texflags | TEXF_FORCE_RELOAD, false, true);
+		Con_DPrintLinef ("Draw_IsPicLoaded(" QUOTED_S "): Loading external skin", pic->name);
+		pic->skinframe = R_SkinFrame_LoadExternal(pic->name, pic->texflags | TEXF_FORCE_RELOAD, q_tx_complain_false, q_tx_fallback_notexture_true);
 	}
 	// skinframe will only be NULL if the pic was created with CACHEPICFLAG_FAILONMISSING_256 and not found
 	return pic->skinframe != NULL && pic->skinframe->base != NULL;
@@ -231,7 +231,7 @@ rtexture_t *Draw_GetPicTexture(cachepic_t *pic)
 	if (pic->autoload && (!pic->skinframe || !pic->skinframe->base))
 	{
 		Con_DPrintLinef ("Draw_GetPicTexture(" QUOTED_S "): Loading external skin", pic->name);
-		pic->skinframe = R_SkinFrame_LoadExternal(pic->name, pic->texflags | TEXF_FORCE_RELOAD, false, true);
+		pic->skinframe = R_SkinFrame_LoadExternal(pic->name, pic->texflags | TEXF_FORCE_RELOAD, q_tx_complain_false, q_tx_fallback_notexture_true);
 	}
 	pic->lastusedframe = draw_frame;
 	return pic->skinframe ? pic->skinframe->base : NULL;

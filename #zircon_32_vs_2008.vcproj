@@ -1368,7 +1368,7 @@
 			Name="A_Nova"
 			>
 			<File
-				RelativePath=".\_zircon_dp_beta_progress.txt"
+				RelativePath=".\_zircon_beta_changes.txt"
 				>
 			</File>
 			<File

@@ -20,6 +20,7 @@ extern struct cvar_s scr_screenshot_gammaboost;
 extern struct cvar_s scr_screenshot_name;
 
 extern struct cvar_s tool_inspector; // Baker r0106: tool inspector
+extern struct cvar_s tool_marker; // Baker r0109: tool marker
 
 void CL_Screen_NewMap(void);
 void CL_Screen_Init(void);
