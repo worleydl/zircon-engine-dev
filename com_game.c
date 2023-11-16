@@ -42,7 +42,7 @@ typedef struct gamemode_info_s
 	const char *prog_name; // not null
 	const char *cmdline; // not null "-hipnotic"
 	const char *gamename; // not null
-	const char*	gamenetworkfiltername; // not null
+	const char *	gamenetworkfiltername; // not null
 	const char *gamedirname1; // not null
 	const char *gamedirname2; // null
 	const char *gamescreenshotname; // not nul

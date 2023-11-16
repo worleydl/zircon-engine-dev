@@ -208,7 +208,7 @@ void SndSys_Shutdown (void)
 SndSys_Write
 ====================
 */
-static int SndSys_Write (const unsigned char* buffer, unsigned int nb_bytes)
+static int SndSys_Write (const unsigned char * buffer, unsigned int nb_bytes)
 {
 	int written;
 	unsigned int factor;

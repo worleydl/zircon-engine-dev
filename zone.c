@@ -875,7 +875,7 @@ char *_Mem_strdup (mempool_t *pool, const char *s, const char *filename, int fil
 	if (s == NULL)
 		return NULL;
 	sz = strlen (s) + 1;
-	p = (char*)_Mem_Alloc (pool, NULL, sz, 16, filename, fileline);
+	p = (char *)_Mem_Alloc (pool, NULL, sz, 16, filename, fileline);
 	strlcpy (p, s, sz);
 	return p;
 }

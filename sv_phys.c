@@ -1213,11 +1213,30 @@ static int SV_FlyMove (prvm_edict_t *ent, float time, qbool applygravity, float 
 
 	VectorCopy(PRVM_serveredictvector(ent, velocity), restore_velocity);
 
+#if 0 // Baker: to debug/watch to catch change
+	int myoffset = prog->fieldoffsets.flags;
+	void *p_flot = (prvm_eval_t *)((ent)->fields.fp + (prog->fieldoffsets.flags));
+	float *p_floatus = (float *)p_flot;
+	float floatu = *p_floatus; 
+//	PRVM_EDICTFIELDFLOAT(ed, prog->fieldoffsets.fieldname)
+//		PRVM_EDICTFIELDVALUE(ent, flags)->_float
+//#define PRVM_EDICTFIELDVALUE(ed, fieldoffset)    
+//		((fieldoffset) < 0 ? Con_Printf ("Invalid fieldoffset at %s:%d\n", __FILE__, __LINE__), &prvm_badvalue : 
+//		(prvm_eval_t *)((ent)->fields.fp + (prog->fieldoffsets.flags)))
+//
+//	int foffset = 
+//(prvm_eval_t *)((ed)->fields.fp + (fieldoffset))
+//	int is_onground = prog->fieldoffsets.flags 
+//		(int)PRVM_serveredictfloat(ent, flags);
+#endif
+	int is_onground = (int)PRVM_serveredictfloat(ent, flags);
+	is_onground = Have_Flag (is_onground, FL_ONGROUND); // 512
+
 	if (applygravity)
 	{
 		gravity = SV_Gravity(ent);
-
-		if (!sv_gameplayfix_nogravityonground.integer || !((int)PRVM_serveredictfloat(ent, flags) & FL_ONGROUND))
+		// Baker: If not on-ground or we don't have nogravground set, apply gravity
+		if (is_onground == false || sv_gameplayfix_nogravityonground.integer == 0)
 		{
 			if (sv_gameplayfix_gravityunaffectedbyticrate.integer)
 				PRVM_serveredictvector(ent, velocity)[2] -= gravity * 0.5f;
@@ -2402,35 +2421,36 @@ static void SV_WalkMove (prvm_edict_t *ent)
 
 	clip = SV_FlyMove (ent, sv.frametime, applygravity, NULL, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, sv_gameplayfix_stepmultipletimes.integer ? sv_stepheight.value : 0);
 
-	if (sv_gameplayfix_downtracesupportsongroundflag.integer)
-	if (!(clip & 1))
-	{
-		// only try this if there was no floor in the way in the trace (no,
-		// this check seems to be not REALLY necessary, because if clip & 1,
-		// our trace will hit that thing too)
-		VectorSet(upmove, PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2] + 1);
-		VectorSet(downmove, PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2] - 1);
-		if (PRVM_serveredictfloat(ent, movetype) == MOVETYPE_FLYMISSILE)
-			type = MOVE_MISSILE;
-		else if (PRVM_serveredictfloat(ent, movetype) == MOVETYPE_FLY_WORLDONLY)
-			type = MOVE_WORLDONLY;
-		else if (PRVM_serveredictfloat(ent, solid) == SOLID_TRIGGER || PRVM_serveredictfloat(ent, solid) == SOLID_NOT)
-			type = MOVE_NOMONSTERS; // only clip against bmodels
-		else
-			type = MOVE_NORMAL;
-		VectorCopy(PRVM_serveredictvector(ent, mins), entmins);
-		VectorCopy(PRVM_serveredictvector(ent, maxs), entmaxs);
-		trace = SV_TraceBox(upmove, entmins, entmaxs, downmove, type, ent, SV_GenericHitSuperContentsMask(ent), skipsupercontentsmask, skipmaterialflagsmask, collision_extendmovelength.value);
-		if (trace.fraction < 1 && trace.plane.normal[2] > 0.7)
+	if (sv_gameplayfix_downtracesupportsongroundflag.integer) {
+		if (!(clip & 1))
 		{
-			clip |= 1; // but we HAVE found a floor
-			// set groundentity so we get carried when walking onto a mover with sv_gameplayfix_nogravityonground
-			PRVM_serveredictedict(ent, groundentity) = PRVM_EDICT_TO_PROG(trace.ent);
+			// only try this if there was no floor in the way in the trace (no,
+			// this check seems to be not REALLY necessary, because if clip & 1,
+			// our trace will hit that thing too)
+			VectorSet(upmove, PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2] + 1);
+			VectorSet(downmove, PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2] - 1);
+			if (PRVM_serveredictfloat(ent, movetype) == MOVETYPE_FLYMISSILE)
+				type = MOVE_MISSILE;
+			else if (PRVM_serveredictfloat(ent, movetype) == MOVETYPE_FLY_WORLDONLY)
+				type = MOVE_WORLDONLY;
+			else if (PRVM_serveredictfloat(ent, solid) == SOLID_TRIGGER || PRVM_serveredictfloat(ent, solid) == SOLID_NOT)
+				type = MOVE_NOMONSTERS; // only clip against bmodels
+			else
+				type = MOVE_NORMAL;
+			VectorCopy(PRVM_serveredictvector(ent, mins), entmins);
+			VectorCopy(PRVM_serveredictvector(ent, maxs), entmaxs);
+			trace = SV_TraceBox(upmove, entmins, entmaxs, downmove, type, ent, SV_GenericHitSuperContentsMask(ent), skipsupercontentsmask, skipmaterialflagsmask, collision_extendmovelength.value);
+			if (trace.fraction < 1 && trace.plane.normal[2] > 0.7)
+			{
+				clip |= 1; // but we HAVE found a floor
+				// set groundentity so we get carried when walking onto a mover with sv_gameplayfix_nogravityonground
+				PRVM_serveredictedict(ent, groundentity) = PRVM_EDICT_TO_PROG(trace.ent);
+			}
 		}
 	}
 
 	// if the move did not hit the ground at any point, we're not on ground
-	if (!(clip & 1))
+	if (Have_Flag(clip, 1) == false)
 		PRVM_serveredictfloat(ent, flags) = (int)PRVM_serveredictfloat(ent, flags) & ~FL_ONGROUND;
 
 	SV_CheckVelocity(ent);

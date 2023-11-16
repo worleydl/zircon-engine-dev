@@ -78,7 +78,7 @@ void GL_PrintError(GLenum errornumber, const char *filename, unsigned int linenu
 	}
 }
 
-static void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const GLvoid* userParam)
+static void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const GLvoid* userParam)
 {
 	const char *sev = "ENUM?", *typ = "ENUM?", *src = "ENUM?";
 	switch (severity)

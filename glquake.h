@@ -60,7 +60,7 @@ typedef double GLclampd;
 typedef char GLchar;
 typedef ptrdiff_t GLintptr;
 typedef ptrdiff_t GLsizeiptr;
-typedef void (GLAPIENTRY *GLDEBUGPROCARB)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const GLvoid* userParam);
+typedef void (GLAPIENTRY *GLDEBUGPROCARB)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const GLvoid* userParam);
 
 #define GL_STEREO					0x0C33
 #define GL_DONT_CARE				0x1100
@@ -601,7 +601,7 @@ extern GLint(GLAPIENTRY *qglGetAttribLocation)(GLuint programObj, const GLchar *
 extern GLint(GLAPIENTRY *qglGetUniformLocation)(GLuint programObj, const GLchar *name);
 extern GLuint(GLAPIENTRY *qglCreateProgram)(void);
 extern GLuint(GLAPIENTRY *qglCreateShader)(GLenum shaderType);
-extern GLuint(GLAPIENTRY *qglGetDebugMessageLogARB)(GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar* messageLog);
+extern GLuint(GLAPIENTRY *qglGetDebugMessageLogARB)(GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar * messageLog);
 extern GLuint(GLAPIENTRY *qglGetUniformBlockIndex)(GLuint program, const char *uniformBlockName);
 extern GLvoid(GLAPIENTRY *qglBindFramebuffer)(GLenum target, GLuint framebuffer);
 extern GLvoid(GLAPIENTRY *qglBindRenderbuffer)(GLenum target, GLuint renderbuffer);
@@ -653,7 +653,7 @@ extern void (GLAPIENTRY *qglCopyTexSubImage3D)(GLenum target, GLint level, GLint
 extern void (GLAPIENTRY *qglCullFace)(GLenum mode);
 extern void (GLAPIENTRY *qglDebugMessageCallbackARB)(GLDEBUGPROCARB callback, const GLvoid* userParam);
 extern void (GLAPIENTRY *qglDebugMessageControlARB)(GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint* ids, GLboolean enabled);
-extern void (GLAPIENTRY *qglDebugMessageInsertARB)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* buf);
+extern void (GLAPIENTRY *qglDebugMessageInsertARB)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * buf);
 extern void (GLAPIENTRY *qglDeleteBuffers) (GLsizei n, const GLuint *buffers);
 extern void (GLAPIENTRY *qglDeleteProgram)(GLuint obj);
 extern void (GLAPIENTRY *qglDeleteQueries)(GLsizei n, const GLuint *ids);

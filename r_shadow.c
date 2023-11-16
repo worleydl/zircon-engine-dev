@@ -4495,7 +4495,7 @@ static void R_DrawCorona(rtlight_t *rtlight, float cscale, float scale)
 			// store the pixel counts into a uniform buffer for the shader to
 			// use - we'll never know the results on the cpu without
 			// synchronizing and we don't want that
-#define BUFFER_OFFSET(i)    ((GLint *)((unsigned char*)NULL + (i)))
+#define BUFFER_OFFSET(i)    ((GLint *)((unsigned char *)NULL + (i)))
 			if (!r_shadow_occlusion_buf) {
 				qglGenBuffers(1, &r_shadow_occlusion_buf);
 				qglBindBuffer(GL_QUERY_BUFFER, r_shadow_occlusion_buf);

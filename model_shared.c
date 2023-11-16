@@ -1681,7 +1681,7 @@ void Mod_LoadQ3Shaders(void)
 						} else if (numparameters >= 3 && (String_Does_Match_Caseless(parameter[0], "animmap") || String_Does_Match_Caseless(parameter[0], "animclampmap"))) {
 							layer->numframes = min(numparameters - 2, TEXTURE_MAXFRAMES_64);
 							layer->framerate = atof(parameter[1]);
-							layer->texturename = (char **) Mem_Alloc (q3shaders_mem, sizeof (char*) * layer->numframes);
+							layer->texturename = (char **) Mem_Alloc (q3shaders_mem, sizeof (char *) * layer->numframes);
 							for (i = 0;i < layer->numframes;i++)
 								layer->texturename[i] = Mem_strdup (q3shaders_mem, parameter[i + 2]);
 						} else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "rgbgen")) {
@@ -1758,15 +1758,6 @@ void Mod_LoadQ3Shaders(void)
 									 if (String_Does_Match_Caseless(parameter[1], "entitytranslate")) layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ENTITYTRANSLATE;
 								else if (String_Does_Match_Caseless(parameter[1], "rotate"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ROTATE;
 								else if (String_Does_Match_Caseless(parameter[1], "scale")) {
-#if 1 // Baker: r9073u bug area of interest
-	// I have seen nothing unusual here
-	// This is an attempt to reduce the problem.
-	// Baker - temp hack -- why! .. And this does not fix anything.  It reduces the crazy.
-	if (layer->tcmods[tcmodindex].parms[0])
-		layer->tcmods[tcmodindex].parms[0] = sqrt(sqrt (layer->tcmods[tcmodindex].parms[0])); //0.25;//1 / layer->tcmods[tcmodindex].parms[0]; 
-	if (layer->tcmods[tcmodindex].parms[1])
-		layer->tcmods[tcmodindex].parms[1] = sqrt(sqrt (layer->tcmods[tcmodindex].parms[1])); //1 / layer->tcmods[tcmodindex].parms[1]; 
-#endif
 									layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCALE;
 								}
 //#pragma message ("TCMod scale issue with Quake Combat+")
@@ -2166,7 +2157,7 @@ qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, tex
 	if (defaulttexflags & TEXF_ISSPRITE)
 		texflagsor |= TEXF_ISSPRITE;
 	// unless later loaded from the shader
-	texture->offsetmapping = (mod_noshader_default_offsetmapping.value) ? OFFSETMAPPING_DEFAULT : OFFSETMAPPING_OFF;
+	texture->offsetmapping = (mod_noshader_default_offsetmapping.value) /*defaults 1*/ ? OFFSETMAPPING_DEFAULT : OFFSETMAPPING_OFF;
 	texture->offsetscale = 1;
 	texture->offsetbias = 0;
 	texture->specularscalemod = 1;
@@ -2499,6 +2490,27 @@ nothing                GL_ZERO GL_ONE
 		}
 		else
 		{
+#if 1				
+			if (fallback)
+			{
+				skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
+				if (skinframe)
+				{
+					texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(mempool, skinframe);
+					if (texture->materialshaderpass->skinframes[0]->hasalpha)
+						texture->basematerialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
+					if (texture->q2contents)
+						texture->supercontents = Mod_Q2BSP_SuperContentsFromNativeContents(texture->q2contents);
+				}
+				else
+					success = false;
+			}
+			else
+				success = false;
+			if (!success && warnmissing)
+				Con_PrintLinef ("^1%s:^7 could not load texture " CON_BRONZE QUOTED_S, loadmodel->model_name, texture->name);
+#else
+			// HEREON
 			skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
 			if (skinframe)
 			{
@@ -2512,6 +2524,7 @@ nothing                GL_ZERO GL_ONE
 				success = false;
 			if (!success && warnmissing)
 				Con_PrintLinef ("^1%s:^7 could not load texture " CON_BRONZE QUOTED_S, modelname, texture->name);
+#endif
 		}
 	}
 	// init the animation variables
@@ -4364,7 +4377,7 @@ texture_t *Mod_Mesh_GetTexture(model_t *mod, const char *name, int defaultdrawfl
 			mod->data_surfaces[i].texture = mod->data_textures + (mod->data_surfaces[i].texture - oldtextures);
 	}
 	t = &mod->data_textures[mod->num_textures++];
-	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, true, true, defaulttexflags, defaultmaterialflags);
+	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, defaulttexflags, defaultmaterialflags);
 	t->mesh_drawflag = drawflag;
 	t->mesh_defaulttexflags = defaulttexflags;
 	t->mesh_defaultmaterialflags = defaultmaterialflags;

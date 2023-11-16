@@ -250,7 +250,7 @@ static void S_ConvertPaintBuffer(portable_sampleframe_t *painted_ptr, void *rb_p
 	}
 	else  // 8bit
 	{
-		unsigned char *snd_out = (unsigned char*)rb_ptr;
+		unsigned char *snd_out = (unsigned char *)rb_ptr;
 		if (nchannels == 8)  // 7.1 surround
 		{
 			for (i = 0; i < nbframes; i++, painted_ptr++)

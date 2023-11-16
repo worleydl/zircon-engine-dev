@@ -259,7 +259,7 @@ static dllhandle_t libavformat_dll = NULL;
 
 qbool LibAV_LoadLibrary(void)
 {
-	const char* dllnames_libavcodec [] =
+	const char * dllnames_libavcodec [] =
 	{
 #if defined(WIN32)
 		"libavcodec.dll",
@@ -271,7 +271,7 @@ qbool LibAV_LoadLibrary(void)
 		NULL
 	};
 
-	const char* dllnames_libavformat [] =
+	const char * dllnames_libavformat [] =
 	{
 #if defined(WIN32)
 		"libavformat.dll",

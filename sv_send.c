@@ -1217,7 +1217,8 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 
 // Baker: This defaults 0.  Xonotic uses it.
 // Baker: Custom stats disables stats above 220
-	if (sv_gameplayfix_customstats.integer == 0) {
+
+	if (sv_gameplayfix_customstats.integer == 0 /*defaults 0, XONOTIC*/) {
 		statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value;
 		statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
 		statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;		
@@ -1225,11 +1226,23 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		statsf[STAT_MOVEVARS_AIRCONTROL_POWER] = sv_aircontrol_power.value;
 		// movement settings for prediction
 		// note: these are not sent in protocols with lower MAX_CL_STATS limits
+
+		stats[STAT_MOVEFLAGS] = MOVEFLAG_VALID;
+		if (sv_gameplayfix_q2airaccelerate.integer)
+			Flag_Add_To (stats[STAT_MOVEFLAGS], MOVEFLAG_Q2AIRACCELERATE);
+		if (sv_gameplayfix_nogravityonground.integer)
+			Flag_Add_To (stats[STAT_MOVEFLAGS], MOVEFLAG_NOGRAVITYONGROUND);
+		if (sv_gameplayfix_gravityunaffectedbyticrate.integer)
+			Flag_Add_To (stats[STAT_MOVEFLAGS], MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE);
+
+#if 0
 		stats[STAT_MOVEFLAGS] = MOVEFLAG_VALID
 			| (sv_gameplayfix_q2airaccelerate.integer ? MOVEFLAG_Q2AIRACCELERATE : 0)
 			| (sv_gameplayfix_nogravityonground.integer ? MOVEFLAG_NOGRAVITYONGROUND : 0)
 			| (sv_gameplayfix_gravityunaffectedbyticrate.integer ? MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE : 0)
 		;
+#endif
+
 		statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value;
 		statsf[STAT_MOVEVARS_WARSOWBUNNY_ACCEL] = sv_warsowbunny_accel.value;
 		statsf[STAT_MOVEVARS_WARSOWBUNNY_TOPSPEED] = sv_warsowbunny_topspeed.value;

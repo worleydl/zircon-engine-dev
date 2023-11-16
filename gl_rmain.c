@@ -1029,7 +1029,7 @@ static char *ShaderModeInfo_GetShaderText(shadermodeinfo_t *modeinfo, qbool prin
 		return Mem_strdup(r_main_mempool, modeinfo->builtinstring);
 	// note that FS_LoadFile appends a 0 byte to make it a valid string
 
-	shaderstring = (char*)FS_LoadFile(modeinfo->filename, r_main_mempool, fs_quiet_FALSE, fs_size_ptr_null);
+	shaderstring = (char *)FS_LoadFile(modeinfo->filename, r_main_mempool, fs_quiet_FALSE, fs_size_ptr_null);
 
 	if (shaderstring)
 	{

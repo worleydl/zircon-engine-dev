@@ -3,6 +3,33 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 4 - November 16 2023
+
+1. Rewrote part of texture loader to more resemble DarkPlaces classic while keeping the intent
+   of the changes in DarkPlaces Beta.
+   
+   This fixed texture scaling with "tcmod scale" with Quake_Rivarez_Ed_v1.0.1.
+   And should fully fix "textures/[mapname]/[yourtexture].tga"
+   
+   And hopefully will fully address water and animated issues that previously existed.
+   
+   I don't conveniently have test cases for all of this, so not fully tested.
+   
+2. "infobar 5 your_message" sort of centerprints excepts as a subtitle.
+   The timing of this was wrong, corrected (it was displaying half the appropriate time).
+   
+   NEW:  Since it is basically a different kind of centerprint, I have it log to console.
+   
+   To disable logging to console: "con_logcenterprint 0"
+   
+3. KleskBY likes "sv_gameplayfix_nogravityonground 1" because modern games don't have the player
+   slide down slopes and such.  However it didn't "work".  Or rather how it works was documented.
+   "sv_gameplayfix_nogravityonground 1" requires "sv_gameplayfix_downtracesupportsongroundflag 1"
+   to function right with Quake.  Added to documentation of sv_gameplayfix_nogravityonground cvar.
+
+4. TODO: Slight console flash during loading.
+
+
 // Zircon Beta Release 3
 
 1. 2020 XMas Jam map shades has .mdl using fence texture flag (16384).  The engine was processing

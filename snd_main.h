@@ -45,7 +45,7 @@ typedef struct snd_buffer_s
 typedef struct snd_ringbuffer_s
 {
 	snd_format_t		format;
-	unsigned char*		ring;
+	unsigned char *		ring;
 	unsigned int		maxframes;	// max size (buffer size), in sample frames
 	unsigned int		startframe;	// index of the first frame in the buffer
 									// if startframe == endframe, the bufffer is empty

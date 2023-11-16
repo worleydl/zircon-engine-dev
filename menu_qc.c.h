@@ -12,7 +12,7 @@ static const char *m_required_func[] = {
 "m_shutdown",
 };
 
-static int m_numrequiredfunc = sizeof(m_required_func) / sizeof(char*);
+static int m_numrequiredfunc = sizeof(m_required_func) / sizeof(char *);
 
 static prvm_required_field_t m_required_fields[] =
 {

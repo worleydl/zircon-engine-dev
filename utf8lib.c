@@ -62,7 +62,7 @@ Uchar utf8_range[5] = {
 #define U8_ANALYZE_INFINITY 7
 static qbool u8_analyze(const char *_s, size_t *_start, size_t *_len, Uchar *_ch, size_t _maxlen)
 {
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 	size_t i, j;
 	size_t bits = 0;
 	Uchar ch;
@@ -196,7 +196,7 @@ size_t u8_strlen(const char *_s)
 {
 	size_t st, ln;
 	size_t len = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	if (!utf8_enable.integer)
 		return strlen(_s);
@@ -218,7 +218,7 @@ size_t u8_strlen(const char *_s)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 			break;
 		// valid character, skip after it
 		s += st + ln;
@@ -250,7 +250,7 @@ size_t u8_strnlen(const char *_s, size_t n)
 {
 	size_t st, ln;
 	size_t len = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	if (!utf8_enable.integer)
 	{
@@ -277,7 +277,7 @@ size_t u8_strnlen(const char *_s, size_t n)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s, &st, &ln, NULL, n))
+		if (!u8_analyze((const char *)s, &st, &ln, NULL, n))
 			break;
 		// valid character, see if it's still inside the range specified by n:
 		if (n < st + ln)
@@ -293,7 +293,7 @@ static size_t u8_strnlen_colorcodes(const char *_s, size_t n)
 {
 	size_t st, ln;
 	size_t len = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	while (*s && n)
 	{
@@ -320,7 +320,7 @@ static size_t u8_strnlen_colorcodes(const char *_s, size_t n)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s, &st, &ln, NULL, n))
+		if (!u8_analyze((const char *)s, &st, &ln, NULL, n))
 			break;
 		// valid character, see if it's still inside the range specified by n:
 		if (n < st + ln)
@@ -341,7 +341,7 @@ size_t u8_bytelen(const char *_s, size_t n)
 {
 	size_t st, ln;
 	size_t len = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	if (!utf8_enable.integer) {
 		len = strlen(_s);
@@ -367,7 +367,7 @@ size_t u8_bytelen(const char *_s, size_t n)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 			break;
 		--n;
 		s += st + ln;
@@ -380,7 +380,7 @@ static size_t u8_bytelen_colorcodes(const char *_s, size_t n)
 {
 	size_t st, ln;
 	size_t len = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	while (*s && n)
 	{
@@ -407,7 +407,7 @@ static size_t u8_bytelen_colorcodes(const char *_s, size_t n)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 			break;
 		--n;
 		s += st + ln;
@@ -426,7 +426,7 @@ int u8_byteofs(const char *_s, size_t i, size_t *len)
 {
 	size_t st, ln;
 	size_t ofs = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	if (!utf8_enable.integer)
 	{
@@ -444,7 +444,7 @@ int u8_byteofs(const char *_s, size_t i, size_t *len)
 	do
 	{
 		ofs += ln;
-		if (!u8_analyze((const char*)s + ofs, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s + ofs, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 			return -1;
 		ofs += st;
 	} while(i-- > 0);
@@ -465,7 +465,7 @@ int u8_charidx(const char *_s, size_t i, size_t *len)
 	size_t ofs = 0;
 	size_t pofs = 0;
 	int idx = 0;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 
 	if (!utf8_enable.integer)
 	{
@@ -491,7 +491,7 @@ int u8_charidx(const char *_s, size_t i, size_t *len)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s+ofs, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s+ofs, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 			return -1;
 		// see if next char is after the bytemark
 		if (ofs + st > i)
@@ -525,7 +525,7 @@ int u8_charidx(const char *_s, size_t i, size_t *len)
 size_t u8_prevbyte(const char *_s, size_t i)
 {
 	size_t st, ln;
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 	size_t lastofs = 0;
 	size_t ofs = 0;
 
@@ -552,7 +552,7 @@ size_t u8_prevbyte(const char *_s, size_t i)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s+ofs, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s+ofs, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 			return lastofs;
 		if (ofs + st > i)
 			return lastofs;
@@ -776,7 +776,7 @@ COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid);
 size_t
 u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 {
-	const unsigned char *s = (const unsigned char*)_s;
+	const unsigned char *s = (const unsigned char *)_s;
 	const unsigned char *end;
 	size_t len = 0;
 	size_t st, ln;
@@ -846,7 +846,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 			continue;
 		}
 
-		if (!u8_analyze((const char*)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
+		if (!u8_analyze((const char *)s, &st, &ln, NULL, U8_ANALYZE_INFINITY))
 		{
 			// we CAN end up here, if an invalid char is between this one and the end of the string
 			if (valid)

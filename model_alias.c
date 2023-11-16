@@ -944,7 +944,7 @@ void Mod_BuildAliasSkinsFromSkinFiles(texture_t *skin, skinfile_t *skinfile, con
 					Image_StripImageExtension(skinfileitem->replacement, stripbuf, sizeof(stripbuf));
 					if (developer_extra.integer)
 						Con_DPrintf ("--> got %s from skin file\n", stripbuf);
-					Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, skin, stripbuf, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+					Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, skin, stripbuf, q_tx_warn_missing_true, q_tx_fallback_notexture_true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 					break;
 				}
 			}
@@ -961,9 +961,9 @@ void Mod_BuildAliasSkinsFromSkinFiles(texture_t *skin, skinfile_t *skinfile, con
 	else
 	{
 		if (developer_extra.integer)
-			Con_DPrintf ("--> using default\n");
+			Con_DPrintLinef ("--> using default");
 		Image_StripImageExtension(shadername, stripbuf, sizeof(stripbuf));
-		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, skin, stripbuf, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, skin, stripbuf, q_tx_warn_missing_true, q_tx_fallback_notexture_true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 	}
 }
 extern cvar_t r_nolerp_list;
@@ -1251,7 +1251,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 				else
 					dpsnprintf (name, sizeof(name), "%s_%d", loadmodel->model_name, i);
 				// Baker r0087: fence
-				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, false, false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)) {
+				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + totalskins * loadmodel->num_surfaces, name, q_tx_warn_missing_false, q_tx_fallback_notexture_false, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL)) {
 					int material_flagz = MATERIALFLAG_WALL;
 					if (is_fence)
 						Flag_Add_To (material_flagz, 
@@ -1440,7 +1440,7 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->num_texturesperskin = loadmodel->num_surfaces;
 		loadmodel->data_textures = (texture_t *)Mem_Alloc(loadmodel->mempool, loadmodel->num_surfaces * loadmodel->numskins * sizeof(texture_t));
 		for (i = 0;i < loadmodel->numskins;i++, inskin += MD2_SKINNAME)
-			Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i * loadmodel->num_surfaces, inskin, true, true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+			Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, loadmodel->data_textures + i * loadmodel->num_surfaces, inskin, q_tx_warn_missing_true, q_tx_fallback_notexture_true, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 	}
 	else
 	{
@@ -2559,7 +2559,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	FS_StripExtension(loadmodel->model_name, animname, sizeof(animname));
 	strlcat(animname, ".psa", sizeof(animname));
 	animbuffer = animfilebuffer = FS_LoadFile(animname, loadmodel->mempool, fs_quiet_FALSE, &filesize);
-	animbufferend = (void *)((unsigned char*)animbuffer + (int)filesize);
+	animbufferend = (void *)((unsigned char *)animbuffer + (int)filesize);
 	if (!animbuffer)
 		animbufferend = animbuffer;
 

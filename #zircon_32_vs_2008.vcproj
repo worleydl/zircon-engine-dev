@@ -508,6 +508,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\model_brush_vbsp.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\model_shared.c"
 				>
 			</File>

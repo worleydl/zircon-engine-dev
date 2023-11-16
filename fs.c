@@ -2842,7 +2842,7 @@ fs_offset_t FS_Read (qfile_t* file, void *buffer, size_t buffersize)
 	// Get rid of the ungetc character
 	if (file->ungetc != EOF)
 	{
-		((char*)buffer)[0] = file->ungetc;
+		((char *)buffer)[0] = file->ungetc;
 		buffersize--;
 		file->ungetc = EOF;
 		done = 1;
@@ -2895,7 +2895,7 @@ fs_offset_t FS_Read (qfile_t* file, void *buffer, size_t buffersize)
 				// the caller never called FS_Seek, this still
 				// works fine.  So no reporting this error.
 			}
-			nb = FILEDESC_READ (file->handle, &((unsigned char*)buffer)[done], count);
+			nb = FILEDESC_READ (file->handle, &((unsigned char *)buffer)[done], count);
 			if (nb > 0)
 			{
 				done += nb;
@@ -2923,7 +2923,7 @@ fs_offset_t FS_Read (qfile_t* file, void *buffer, size_t buffersize)
 
 				// Copy the requested data in "buffer" (as much as we can)
 				count = (fs_offset_t)buffersize > file->buff_len ? file->buff_len : (fs_offset_t)buffersize;
-				memcpy (&((unsigned char*)buffer)[done], file->buff, count);
+				memcpy (&((unsigned char *)buffer)[done], file->buff, count);
 				file->buff_ind = count;
 				done += count;
 			}
@@ -2987,14 +2987,14 @@ fs_offset_t FS_Read (qfile_t* file, void *buffer, size_t buffersize)
 
 			// Copy the requested data in "buffer" (as much as we can)
 			count = (fs_offset_t)buffersize > file->buff_len ? file->buff_len : (fs_offset_t)buffersize;
-			memcpy (&((unsigned char*)buffer)[done], file->buff, count);
+			memcpy (&((unsigned char *)buffer)[done], file->buff, count);
 			file->buff_ind = count;
 		}
 
 		// Else, we inflate directly in "buffer"
 		else
 		{
-			ztk->zstream.next_out = &((unsigned char*)buffer)[done];
+			ztk->zstream.next_out = &((unsigned char *)buffer)[done];
 			ztk->zstream.avail_out = (unsigned int)buffersize;
 			error = qz_inflate (&ztk->zstream, Z_SYNC_FLUSH);
 			if (error != Z_OK && error != Z_STREAM_END)
@@ -4026,7 +4026,7 @@ unsigned char *FS_Deflate(const unsigned char *data, size_t size, size_t *deflat
 		return NULL;
 	}
 
-	strm.next_in = (unsigned char*)data;
+	strm.next_in = (unsigned char *)data;
 	strm.avail_in = (unsigned int)size;
 
 	tmp = (unsigned char *) Mem_Alloc(tempmempool, size);
@@ -4126,7 +4126,7 @@ unsigned char *FS_Inflate(const unsigned char *data, size_t size, size_t *inflat
 		return NULL;
 	}
 
-	strm.next_in = (unsigned char*)data;
+	strm.next_in = (unsigned char *)data;
 	strm.avail_in = (unsigned int)size;
 
 	do

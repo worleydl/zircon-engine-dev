@@ -77,76 +77,6 @@ static texture_t mod_q1bsp_texture_water;
 
 static qbool Mod_Q3BSP_TraceLineOfSight(struct model_s *model, const vec3_t start, const vec3_t end, const vec3_t acceptmins, const vec3_t acceptmaxs);
 
-void Mod_BrushInit(void)
-{
-//	Cvar_RegisterVariable(&r_subdivide_size);
-	Cvar_RegisterVariable(&mod_bsp_portalize);
-	Cvar_RegisterVariable(&r_novis);
-	Cvar_RegisterVariable(&r_nosurftextures);
-	Cvar_RegisterVariable(&r_subdivisions_tolerance);
-	Cvar_RegisterVariable(&r_subdivisions_mintess);
-	Cvar_RegisterVariable(&r_subdivisions_maxtess);
-	Cvar_RegisterVariable(&r_subdivisions_maxvertices);
-	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_tolerance);
-	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_mintess);
-	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_maxtess);
-	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_maxvertices);
-	Cvar_RegisterVariable(&r_trippy);
-	Cvar_RegisterVariable(&mod_noshader_default_offsetmapping);
-	Cvar_RegisterVariable(&mod_obj_orientation);
-	Cvar_RegisterVariable(&mod_q2bsp_littransparentsurfaces);
-	Cvar_RegisterVariable(&mod_q3bsp_curves_collisions);
-	Cvar_RegisterVariable(&mod_q3bsp_optimizedtraceline);
-	Cvar_RegisterVariable(&mod_q3bsp_lightmapmergepower);
-	Cvar_RegisterVariable(&mod_q3bsp_nolightmaps);
-	Cvar_RegisterVariable(&mod_q3bsp_sRGBlightmaps);
-	Cvar_RegisterVariable(&mod_q3bsp_lightgrid_texture);
-	Cvar_RegisterVariable(&mod_q3bsp_lightgrid_world_surfaces);
-	Cvar_RegisterVariable(&mod_q3bsp_lightgrid_bsp_surfaces);
-	Cvar_RegisterVariable(&mod_q3bsp_tracelineofsight_brushes);
-	Cvar_RegisterVariable(&mod_q3shader_default_offsetmapping);
-	Cvar_RegisterVariable(&mod_q3shader_default_offsetmapping_scale);
-	Cvar_RegisterVariable(&mod_q3shader_default_offsetmapping_bias);
-	Cvar_RegisterVariable(&mod_q3shader_default_polygonfactor);
-	Cvar_RegisterVariable(&mod_q3shader_default_polygonoffset);
-	Cvar_RegisterVariable(&mod_q3shader_default_refractive_index);
-	Cvar_RegisterVariable(&mod_q3shader_force_addalpha);
-	Cvar_RegisterVariable(&mod_q3shader_force_terrain_alphaflag);
-	Cvar_RegisterVariable(&mod_q1bsp_polygoncollisions);
-	Cvar_RegisterVariable(&mod_q1bsp_zero_hullsize_cutoff);
-	Cvar_RegisterVariable(&mod_recalculatenodeboxes);
-
-	// these games were made for older DP engines and are no longer
-	// maintained; use this hack to show their textures properly
-	if (gamemode == GAME_NEXUIZ)
-		Cvar_SetQuick(&mod_q3shader_force_addalpha, "1");
-
-	memset(&mod_q1bsp_texture_solid, 0, sizeof(mod_q1bsp_texture_solid));
-	strlcpy(mod_q1bsp_texture_solid.name, "solid" , sizeof(mod_q1bsp_texture_solid.name));
-	mod_q1bsp_texture_solid.surfaceflags = 0;
-	mod_q1bsp_texture_solid.supercontents = SUPERCONTENTS_SOLID;
-
-	mod_q1bsp_texture_sky = mod_q1bsp_texture_solid;
-	strlcpy(mod_q1bsp_texture_sky.name, "sky", sizeof(mod_q1bsp_texture_sky.name));
-	mod_q1bsp_texture_sky.surfaceflags = Q3SURFACEFLAG_SKY | Q3SURFACEFLAG_NOIMPACT | Q3SURFACEFLAG_NOMARKS | Q3SURFACEFLAG_NODLIGHT | Q3SURFACEFLAG_NOLIGHTMAP;
-	mod_q1bsp_texture_sky.supercontents = SUPERCONTENTS_SKY | SUPERCONTENTS_NODROP;
-
-	mod_q1bsp_texture_lava = mod_q1bsp_texture_solid;
-	strlcpy(mod_q1bsp_texture_lava.name, "*lava", sizeof(mod_q1bsp_texture_lava.name));
-	mod_q1bsp_texture_lava.surfaceflags = Q3SURFACEFLAG_NOMARKS;
-	mod_q1bsp_texture_lava.supercontents = SUPERCONTENTS_LAVA | SUPERCONTENTS_NODROP;
-
-	mod_q1bsp_texture_slime = mod_q1bsp_texture_solid;
-	strlcpy(mod_q1bsp_texture_slime.name, "*slime", sizeof(mod_q1bsp_texture_slime.name));
-	mod_q1bsp_texture_slime.surfaceflags = Q3SURFACEFLAG_NOMARKS;
-	mod_q1bsp_texture_slime.supercontents = SUPERCONTENTS_SLIME;
-
-	mod_q1bsp_texture_water = mod_q1bsp_texture_solid;
-	strlcpy(mod_q1bsp_texture_water.name, "*water", sizeof(mod_q1bsp_texture_water.name));
-	mod_q1bsp_texture_water.surfaceflags = Q3SURFACEFLAG_NOMARKS;
-	mod_q1bsp_texture_water.supercontents = SUPERCONTENTS_WATER;
-}
-
 static mleaf_t *Mod_BSP_PointInLeaf(model_t *model, const vec3_t p)
 {
 	mnode_t *node;
@@ -1813,44 +1743,20 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		// even if it fails
 		backuptex = loadmodel->data_textures[i];
 
-		const char *s_mapname_texture;
-		const char *s_regular_texture;		
-
-		if (gamemode == GAME_TENEBRAE) s_mapname_texture = name;
-		else s_mapname_texture = va (vabuf2, sizeof(vabuf2), "textures/%s/%s", mapname, name);
-
-		// Baker: Give textures/[mapname]/[your texture] first crack at it?
-		skinframe_t *skinframe;
-
-		if (gamemode == GAME_TENEBRAE) s_regular_texture = name;
-		else s_regular_texture = va (vabuf, sizeof(vabuf), "%s", name);
-
-		if (!name[0] || String_Does_Start_With(name, "sky"))
-			goto sky_skip;
-
 		#define TXFLAGS1 (TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS)
-		skinframe = R_SkinFrame_LoadExternal(
-			s_mapname_texture, TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
-		
-		if (skinframe) {
-			// Baker: Yes we are shittily loading the texture a 2nd time later ...
-			// We need tx->materialshaderpass->skinframes[0]
-			// and possibly other things set?
-			// Perhaps .. anyway this safest for now.
-			goto sky_skip;
-		}
+
 
 // BAKER BAKER
 		// /* HACK */  Tries to load non-sky textures from shader.
-		if (
+		if (name[0] && String_Does_Start_With(name, "sky") == false &&
 				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, 
 				loadmodel->data_textures + i, 
-				s_regular_texture, q_tx_complain_false, q_tx_fallback_notexture_false, TXFLAGS1, MATERIALFLAG_WALL
+				name, q_tx_complain_false, q_tx_fallback_notexture_false, TXFLAGS1, MATERIALFLAG_WALL
 				) )
 		{
 			// set the width/height fields which are used for parsing texcoords in this bsp format
-			tx->width = mtwidth;
-			tx->height = mtheight;
+//			tx->width = mtwidth;
+//			tx->height = mtheight;
 			continue;
 		}
 
@@ -1858,6 +1764,7 @@ sky_skip:
 		// no luck with loading shaders or external textures - restore the in-progress texture loading
 		loadmodel->data_textures[i] = backuptex;
 
+		tx = loadmodel->data_textures + i;
 		c_strlcpy (tx->name, name);
 		tx->width = mtwidth;
 		tx->height = mtheight;
@@ -1900,6 +1807,9 @@ sky_skip:
 
 		if (cls.state != ca_dedicated) {
 regularo:
+		const char *s_mapname_texture;
+		const char *s_regular_texture;		
+			skinframe_t *skinframe;
 			if (gamemode == GAME_TENEBRAE) s_mapname_texture = tx->name;
 			else s_mapname_texture = va (vabuf2, sizeof(vabuf2), "textures/%s/%s", mapname, tx->name);
 
@@ -2186,7 +2096,7 @@ static void Mod_Q1BSP_LoadLighting(sizebuf_t *sb)
 			c_strlcpy (dlitfilename, litfilename);
 			c_strlcat (litfilename, ".lit");
 			c_strlcat (dlitfilename, ".dlit");
-			data = (unsigned char*) FS_LoadFile(litfilename, tempmempool, fs_quiet_FALSE, &filesize);
+			data = (unsigned char *) FS_LoadFile(litfilename, tempmempool, fs_quiet_FALSE, &filesize);
 		}
 		if (data) {
 			if (filesize == (fs_offset_t)(8 + sb->cursize * 3) && data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T') {
@@ -2197,7 +2107,7 @@ static void Mod_Q1BSP_LoadLighting(sizebuf_t *sb)
 					loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, filesize - 8);
 					memcpy(loadmodel->brushq1.lightdata, data + 8, filesize - 8);
 					Mem_Free(data);
-					data = (unsigned char*) FS_LoadFile(dlitfilename, tempmempool, fs_quiet_FALSE, &filesize);
+					data = (unsigned char *) FS_LoadFile(dlitfilename, tempmempool, fs_quiet_FALSE, &filesize);
 					if (data) {
 						if (filesize == (fs_offset_t)(8 + sb->cursize * 3) && data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T') {
 							i = LittleLong(((int *)data)[1]);
@@ -3344,7 +3254,7 @@ static void Mod_Q1BSP_LoadMapBrushes(void)
 	char mapfilename[MAX_QPATH_128];
 	FS_StripExtension (loadmodel->name, mapfilename, sizeof (mapfilename));
 	strlcat (mapfilename, ".map", sizeof (mapfilename));
-	maptext = (unsigned char*) FS_LoadFile(mapfilename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
+	maptext = (unsigned char *) FS_LoadFile(mapfilename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
 	if (!maptext)
 		return;
 	text = maptext;
@@ -3735,12 +3645,12 @@ static void Mod_BSP_RecursiveNodePortals(mnode_t *node)
 
 	if (nodeportal->numpoints < 3)
 	{
-		Con_Print(CON_WARN "Mod_BSP_RecursiveNodePortals: WARNING: new portal was clipped away\n");
+		Con_PrintLinef (CON_WARN "Mod_BSP_RecursiveNodePortals: WARNING: new portal was clipped away");
 		nodeportal->numpoints = 0;
 	}
 	else if (nodeportal->numpoints >= MAX_PORTALPOINTS)
 	{
-		Con_Print(CON_WARN "Mod_BSP_RecursiveNodePortals: WARNING: new portal has too many points\n");
+		Con_PrintLinef (CON_WARN "Mod_BSP_RecursiveNodePortals: WARNING: new portal has too many points");
 		nodeportal->numpoints = 0;
 	}
 
@@ -4075,7 +3985,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	mod->brushq1.data_compressedpvs = NULL;
 	mod->brushq1.num_compressedpvs = 0;
 
-	// Baker r
+	// Baker r0100
 	Mod_Q1BSP_MakeHull0();
 	if (mod_bsp_portalize.integer) {
 		// Baker r0100: Only do Mod_BSP_MakePortals when it would be used.
@@ -4140,7 +4050,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 			// copy the base model to this one
 			*mod = *loadmodel;
 			// rename the clone back to its proper name
-			strlcpy(mod->model_name, name, sizeof(mod->model_name));
+			c_strlcpy (mod->model_name, name);
 			mod->brush.parentmodel = loadmodel;
 			// textures and memory belong to the main model
 			mod->texturepool = NULL;
@@ -4240,7 +4150,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		else
 		{
 			// LadyHavoc: empty submodel(lacrima.bsp has such a glitch)
-			Con_Printf (CON_WARN "warning: empty submodel *%d in %s\n", i+1, loadmodel->model_name);
+			Con_PrintLinef (CON_WARN "warning: empty submodel *%d in %s", i+1, loadmodel->model_name);
 		}
 		//mod->brushq1.num_visleafs = bm->visleafs;
 
@@ -4270,7 +4180,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	// make the model surface list (used by shadowing/lighting)
 	Mod_MakeSortedSurfaces(loadmodel);
 
-	Con_DPrintf ("Stats for q1bsp model \"%s\": %d faces, %d nodes, %d leafs, %d visleafs, %d visleafportals, mesh: %d vertices, %d triangles, %d surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintLinef ("Stats for q1bsp model " QUOTED_S ": %d faces, %d nodes, %d leafs, %d visleafs, %d visleafportals, mesh: %d vertices, %d triangles, %d surfaces", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }
 
 int Mod_Q2BSP_SuperContentsFromNativeContents(int nativecontents)
@@ -4365,8 +4275,7 @@ static void Mod_Q2BSP_LoadNodes(sizebuf_t *sb)
 	loadmodel->brush.data_nodes = out;
 	loadmodel->brush.num_nodes = count;
 
-	for ( i=0 ; i<count ; i++, out++)
-	{
+	for ( i=0 ; i<count ; i++, out++) {
 		p = MSG_ReadLittleLong(sb);
 		out->plane = loadmodel->brush.data_planes + p;
 		child[0] = MSG_ReadLittleLong(sb);
@@ -4444,7 +4353,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 
 		out->q2flags = MSG_ReadLittleLong(sb);
 		out->q2value = MSG_ReadLittleLong(sb);
-		MSG_ReadBytes(sb, 32, (unsigned char*)out->q2texture);
+		MSG_ReadBytes(sb, 32, (unsigned char *)out->q2texture);
 		out->q2texture[31] = 0; // make absolutely sure it is terminated
 		out->q2nexttexinfo = MSG_ReadLittleLong(sb);
 
@@ -4464,7 +4373,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 				int q2flags = out->q2flags;
 				unsigned char *walfile = NULL;
 				fs_offset_t walfilesize = 0;
-				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, tx, filename, true, true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, tx, filename, q_tx_warn_missing_true, q_tx_fallback_notexture_true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 				// now read the .wal file to get metadata (even if a .tga was overriding it, we still need the wal data)
 				walfile = FS_LoadFile(filename, tempmempool, fs_quiet_true, &walfilesize);
 				if (walfile)
@@ -5050,8 +4959,7 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	{
 		mnode_t *rootnode = NULL;
 		int firstbrush = loadmodel->brush.num_brushes, lastbrush = 0;
-		if (i > 0)
-		{
+		if (i > 0) {
 			char name[10];
 			// duplicate the basic information
 			dpsnprintf(name, sizeof(name), "*%d", i);
@@ -5167,7 +5075,7 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		}
 		else
 		{
-			Con_Printf (CON_WARN "warning: empty submodel *%d in %s\n", i+1, loadmodel->model_name);
+			Con_PrintLinef (CON_WARN "warning: empty submodel *%d in %s", i+1, loadmodel->model_name);
 		}
 		//mod->brushq1.num_visleafs = bm->visleafs;
 
@@ -5186,7 +5094,7 @@ static void Mod_Q2BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	// make the model surface list (used by shadowing/lighting)
 	Mod_MakeSortedSurfaces(loadmodel);
 
-	Con_DPrintf ("Stats for q2bsp model \"%s\": %d faces, %d nodes, %d leafs, %d clusters, %d clusterportals, mesh: %d vertices, %d triangles, %d surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintLinef ("Stats for q2bsp model " QUOTED_S ": %d faces, %d nodes, %d leafs, %d clusters, %d clusterportals, mesh: %d vertices, %d triangles, %d surfaces", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }
 
 static int Mod_Q3BSP_SuperContentsFromNativeContents(int nativecontents);
@@ -5237,7 +5145,7 @@ static void Mod_Q3BSP_LoadEntities(lump_t *l)
 #else
 				VectorSet(v, 64, 64, 128);
 				if (sscanf(value, "%f %f %f", &v[0], &v[1], &v[2]) != 3)
-					Con_Printf ("Mod_Q3BSP_LoadEntities: funny gridsize \"%s\" in %s, interpreting as \"%f %f %f\" to match q3map2's parsing\n", value, loadmodel->model_name, v[0], v[1], v[2]);
+					Con_PrintLinef ("Mod_Q3BSP_LoadEntities: funny gridsize \"%s\" in %s, interpreting as \"%f %f %f\" to match q3map2's parsing", value, loadmodel->model_name, v[0], v[1], v[2]);
 				if (v[0] != 0 && v[1] != 0 && v[2] != 0)
 					VectorCopy(v, loadmodel->brushq3.num_lightgrid_cellsize);
 #endif
@@ -5275,11 +5183,10 @@ static void Mod_Q3BSP_LoadTextures(lump_t *l)
 	loadmodel->num_textures = count;
 	loadmodel->num_texturesperskin = loadmodel->num_textures;
 
-	for (i = 0;i < count;i++)
-	{
+	for (i = 0; i < count; i++) {
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
-		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, out + i, in[i].name, true, true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, out + i, in[i].name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 		// restore the surfaceflags and supercontents
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
@@ -5534,10 +5441,9 @@ static void Mod_Q3BSP_LoadTriangles(lump_t *l)
 		Host_Error_Line ("Mod_Q3BSP_LoadTriangles: funny lump size in %s",loadmodel->model_name);
 	count = l->filelen / sizeof(*in);
 
-	if (!loadmodel->brushq3.num_vertices)
-	{
+	if (!loadmodel->brushq3.num_vertices) {
 		if (count)
-			Con_Printf ("Mod_Q3BSP_LoadTriangles: %s has triangles but no vertexes, broken compiler, ignoring problem\n", loadmodel->model_name);
+			Con_PrintLinef ("Mod_Q3BSP_LoadTriangles: %s has triangles but no vertexes, broken compiler, ignoring problem", loadmodel->model_name);
 		loadmodel->brushq3.num_triangles = 0;
 		return;
 	}
@@ -5610,7 +5516,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 	{
 		// prefer internal LMs for compatibility (a BSP contains no info on whether external LMs exist)
 		if (developer_loading.integer)
-			Con_Printf ("Using internal lightmaps\n");
+			Con_PrintLinef ("Using internal lightmaps");
 		input_pointer = (q3dlightmap_t *)(mod_base + l->fileofs);
 		if (l->filelen % sizeof(*input_pointer))
 			Host_Error_Line ("Mod_Q3BSP_LoadLightmaps: funny lump size in %s",loadmodel->model_name);
@@ -5627,11 +5533,12 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 		if (!inpixels[0])
 			return;
 		else
-			Con_Printf ("Using external lightmaps\n");
+			Con_PrintLinef ("Using external lightmaps");
 
 		// using EXTERNAL lightmaps instead
-		if (image_width != (int) CeilPowerOf2(image_width) || image_width != image_height)
+		if (image_width != (int) CeilPowerOf2(image_width) || image_width != image_height) {
 			Con_Printf ("Mod_Q3BSP_LoadLightmaps: irregularly sized external lightmap in %s",loadmodel->model_name);
+		}
 
 		size = image_width;
 		bytesperpixel = 4;
@@ -5649,7 +5556,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 			{
 				Mem_Free(inpixels[count]);
 				inpixels[count] = NULL;
-				Con_Printf ("Mod_Q3BSP_LoadLightmaps: mismatched lightmap size in %s - external lightmap %s/lm_%04d does not match earlier ones\n", loadmodel->model_name, mapname, count);
+				Con_PrintLinef ("Mod_Q3BSP_LoadLightmaps: mismatched lightmap size in %s - external lightmap %s/lm_%04d does not match earlier ones", loadmodel->model_name, mapname, count);
 				break;
 			}
 		}
@@ -6578,7 +6485,7 @@ static void Mod_Q3BSP_LoadLightGrid(lump_t *l)
 			texturesize[0] = loadmodel->brushq3.num_lightgrid_isize[0];
 			texturesize[1] = loadmodel->brushq3.num_lightgrid_isize[1];
 			texturesize[2] = (loadmodel->brushq3.num_lightgrid_isize[2] + 2) * 3;
-			texturergba = (unsigned char*)Mem_Alloc(loadmodel->mempool, texturesize[0] * texturesize[1] * texturesize[2] * sizeof(char[4]));
+			texturergba = (unsigned char *)Mem_Alloc(loadmodel->mempool, texturesize[0] * texturesize[1] * texturesize[2] * sizeof(char[4]));
 			texturelayer[0] = texturergba + loadmodel->brushq3.num_lightgrid_isize[0] * loadmodel->brushq3.num_lightgrid_isize[1] * 4;
 			texturelayer[1] = texturelayer[0] + (loadmodel->brushq3.num_lightgrid_isize[0] * loadmodel->brushq3.num_lightgrid_isize[1] * (loadmodel->brushq3.num_lightgrid_isize[2] + 2)) * 4;
 			texturelayer[2] = texturelayer[1] + (loadmodel->brushq3.num_lightgrid_isize[0] * loadmodel->brushq3.num_lightgrid_isize[1] * (loadmodel->brushq3.num_lightgrid_isize[2] + 2)) * 4;
@@ -7728,7 +7635,7 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		}
 	}
 
-	Con_DPrintf ("Stats for q3bsp model \"%s\": %d faces, %d nodes, %d leafs, %d clusters, %d clusterportals, mesh: %d vertices, %d triangles, %d surfaces\n", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+	Con_DPrintLinef ("Stats for q3bsp model " QUOTED_S ": %d faces, %d nodes, %d leafs, %d clusters, %d clusterportals, mesh: %d vertices, %d triangles, %d surfaces", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
 }
 
 void Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend)
@@ -7740,519 +7647,9 @@ void Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend)
 		Mod_Q2BSP_Load(mod,buffer, bufferend);
 	else
 		Host_Error_Line ("Mod_IBSP_Load: unknown/unsupported version %d", i);
-}
+} // OF WHAT
 
-static void Mod_VBSP_LoadEntities(sizebuf_t *sb)
-{
-	loadmodel->brush.entities = NULL;
-	if (!sb->cursize)
-		return;
-	loadmodel->brush.entities = (char *)Mem_Alloc(loadmodel->mempool, sb->cursize + 1);
-	MSG_ReadBytes(sb, sb->cursize, (unsigned char *)loadmodel->brush.entities);
-	loadmodel->brush.entities[sb->cursize] = 0;
-}
-
-static void Mod_VBSP_LoadVertexes(sizebuf_t *sb)
-{
-	mvertex_t	*out;
-	int			i, count;
-	int			structsize = 12;
-
-	if (sb->cursize % structsize)
-		Host_Error_Line ("Mod_VBSP_LoadVertexes: funny lump size in %s",loadmodel->model_name);
-	count = sb->cursize / structsize;
-	out = (mvertex_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(*out));
-
-	loadmodel->brushq1.vertexes = out;
-	loadmodel->brushq1.numvertexes = count;
-
-	for ( i=0 ; i<count ; i++, out++)
-	{
-		out->position[0] = MSG_ReadLittleFloat(sb);
-		out->position[1] = MSG_ReadLittleFloat(sb);
-		out->position[2] = MSG_ReadLittleFloat(sb);
-	}
-}
-
-static void Mod_VBSP_LoadEdges(sizebuf_t *sb)
-{
-	medge_t *out;
-	int 	i, count;
-	int		structsize = 4;
-
-	if (sb->cursize % structsize)
-		Host_Error_Line ("Mod_VBSP_LoadEdges: funny lump size in %s",loadmodel->model_name);
-	count = sb->cursize / structsize;
-	out = (medge_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
-
-	loadmodel->brushq1.edges = out;
-	loadmodel->brushq1.numedges = count;
-
-	for ( i=0 ; i<count ; i++, out++)
-	{
-		out->v[0] = (unsigned short)MSG_ReadLittleShort(sb);
-		out->v[1] = (unsigned short)MSG_ReadLittleShort(sb);
-		
-		if ((int)out->v[0] >= loadmodel->brushq1.numvertexes || (int)out->v[1] >= loadmodel->brushq1.numvertexes)
-		{
-			Con_PrintLinef ("Mod_VBSP_LoadEdges: %s has invalid vertex indices in edge %d (vertices %d %d >= numvertices %d)", loadmodel->model_name, i, out->v[0], out->v[1], loadmodel->brushq1.numvertexes);
-			if (!loadmodel->brushq1.numvertexes)
-				Host_Error_Line ("Mod_VBSP_LoadEdges: %s has edges but no vertexes, cannot fix", loadmodel->model_name);
-				
-			out->v[0] = 0;
-			out->v[1] = 0;
-		}
-	}
-}
-
-static void Mod_VBSP_LoadSurfedges(sizebuf_t *sb)
-{
-	int		i;
-	int structsize = 4;
-
-	if (sb->cursize % structsize)
-		Host_Error_Line ("Mod_VBSP_LoadSurfedges: funny lump size in %s",loadmodel->model_name);
-	loadmodel->brushq1.numsurfedges = sb->cursize / structsize;
-	loadmodel->brushq1.surfedges = (int *)Mem_Alloc(loadmodel->mempool, loadmodel->brushq1.numsurfedges * sizeof(int));
-
-	for (i = 0;i < loadmodel->brushq1.numsurfedges;i++)
-		loadmodel->brushq1.surfedges[i] = MSG_ReadLittleLong(sb);
-}
-
-static void Mod_VBSP_LoadTextures(sizebuf_t *sb)
-{
-	Con_Printf (CON_WARN "Mod_VBSP_LoadTextures: Don't know how to do this yet\n");
-}
-
-static void Mod_VBSP_LoadPlanes(sizebuf_t *sb)
-{
-	int			i;
-	mplane_t	*out;
-	int structsize = 20;
-
-	if (sb->cursize % structsize)
-		Host_Error_Line ("Mod_VBSP_LoadPlanes: funny lump size in %s", loadmodel->model_name);
-	loadmodel->brush.num_planes = sb->cursize / structsize;
-	loadmodel->brush.data_planes = out = (mplane_t *)Mem_Alloc(loadmodel->mempool, loadmodel->brush.num_planes * sizeof(*out));
-
-	for (i = 0;i < loadmodel->brush.num_planes;i++, out++)
-	{
-		out->normal[0] = MSG_ReadLittleFloat(sb);
-		out->normal[1] = MSG_ReadLittleFloat(sb);
-		out->normal[2] = MSG_ReadLittleFloat(sb);
-		out->dist = MSG_ReadLittleFloat(sb);
-		MSG_ReadLittleLong(sb); // type is not used, we use PlaneClassify
-		PlaneClassify(out);
-	}
-}
-
-static void Mod_VBSP_LoadTexinfo(sizebuf_t *sb)
-{
-	mtexinfo_t *out;
-	int i, j, k, count, miptex;
-	int structsize = 72;
-
-	if (sb->cursize % structsize)
-		Host_Error_Line ("Mod_VBSP_LoadTexinfo: funny lump size in %s",loadmodel->model_name);
-	count = sb->cursize / structsize;
-	out = (mtexinfo_t *)Mem_Alloc(loadmodel->mempool, count * sizeof(*out));
-
-	loadmodel->brushq1.texinfo = out;
-	loadmodel->brushq1.numtexinfo = count;
-
-	for (i = 0;i < count;i++, out++)
-	{
-		for (k = 0;k < 2;k++)
-			for (j = 0;j < 4;j++)
-				out->vecs[k][j] = MSG_ReadLittleFloat(sb);
-
-		for (k = 0;k < 2;k++)
-			for (j = 0;j < 4;j++)
-				MSG_ReadLittleFloat(sb); // TODO lightmapVecs
-
-		out->q1flags = MSG_ReadLittleLong(sb);
-		miptex = MSG_ReadLittleLong(sb);
-
-		if (out->q1flags & TEX_SPECIAL)
-		{
-			// if texture chosen is NULL or the shader needs a lightmap,
-			// force to notexture water shader
-			out->textureindex = loadmodel->num_textures - 1;
-		}
-		else
-		{
-			// if texture chosen is NULL, force to notexture
-			out->textureindex = loadmodel->num_textures - 2;
-		}
-		// see if the specified miptex is valid and try to use it instead
-		if (loadmodel->data_textures)
-		{
-			if ((unsigned int) miptex >= (unsigned int) loadmodel->num_textures)
-				Con_Printf ("error in model \"%s\": invalid miptex index %d(of %d)\n", loadmodel->model_name, miptex, loadmodel->num_textures);
-			else
-				out->textureindex = miptex;
-		}
-	}
-}
-
-static void Mod_VBSP_LoadFaces(sizebuf_t *sb)
-{
-	msurface_t *surface;
-	int i, j, count, surfacenum, planenum, smax, tmax, ssize, tsize, firstedge, numedges, totalverts, totaltris, lightmapnumber, lightmapsize, totallightmapsamples, lightmapoffset, texinfoindex;
-	float texmins[2], texmaxs[2], val;
-	rtexture_t *lightmaptexture, *deluxemaptexture;
-	char vabuf[1024];
-	int structsize =  56;
-
-	if (sb->cursize % structsize)
-		Host_Error_Line ("Mod_VBSP_LoadFaces: funny lump size in %s",loadmodel->model_name);
-	count = sb->cursize / structsize;
-	loadmodel->data_surfaces = (msurface_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(msurface_t));
-	loadmodel->data_surfaces_lightmapinfo = (msurface_lightmapinfo_t *)Mem_Alloc(loadmodel->mempool, count*sizeof(msurface_lightmapinfo_t));
-
-	loadmodel->num_surfaces = count;
-
-	loadmodel->brushq1.firstrender = true;
-	loadmodel->brushq1.lightmapupdateflags = (unsigned char *)Mem_Alloc(loadmodel->mempool, count*sizeof(unsigned char));
-
-	totalverts = 0;
-	totaltris = 0;
-	for (surfacenum = 0;surfacenum < count;surfacenum++)
-	{
-		numedges = BuffLittleShort(sb->data + structsize * surfacenum + 8);
-		totalverts += numedges;
-		totaltris += numedges - 2;
-	}
-
-	Mod_AllocSurfMesh(loadmodel->mempool, totalverts, totaltris, true, false);
-
-	lightmaptexture = NULL;
-	deluxemaptexture = r_texture_blanknormalmap;
-	lightmapnumber = 0;
-	lightmapsize = bound(256, gl_max_lightmapsize.integer, (int)vid.maxtexturesize_2d);
-	totallightmapsamples = 0;
-
-	totalverts = 0;
-	totaltris = 0;
-	for (surfacenum = 0, surface = loadmodel->data_surfaces;surfacenum < count;surfacenum++, surface++)
-	{
-		surface->lightmapinfo = loadmodel->data_surfaces_lightmapinfo + surfacenum;
-		planenum = (unsigned short)MSG_ReadLittleShort(sb);
-		/*side = */MSG_ReadLittleShort(sb); // TODO support onNode?
-		firstedge = MSG_ReadLittleLong(sb);
-		numedges = (unsigned short)MSG_ReadLittleShort(sb);
-		texinfoindex = (unsigned short)MSG_ReadLittleShort(sb);
-		MSG_ReadLittleLong(sb); // skipping over dispinfo and surfaceFogVolumeID, both short
-		for (i = 0;i < MAXLIGHTMAPS;i++)
-			surface->lightmapinfo->styles[i] = MSG_ReadByte(sb);
-		lightmapoffset = MSG_ReadLittleLong(sb);
-
-		// FIXME: validate edges, texinfo, etc?
-		if ((unsigned int) firstedge > (unsigned int) loadmodel->brushq1.numsurfedges || (unsigned int) numedges > (unsigned int) loadmodel->brushq1.numsurfedges || (unsigned int) firstedge + (unsigned int) numedges > (unsigned int) loadmodel->brushq1.numsurfedges)
-			Host_Error_Line ("Mod_VBSP_LoadFaces: invalid edge range (firstedge %d, numedges %d, model edges %d)", firstedge, numedges, loadmodel->brushq1.numsurfedges);
-		if ((unsigned int) texinfoindex >= (unsigned int) loadmodel->brushq1.numtexinfo)
-			Host_Error_Line ("Mod_VBSP_LoadFaces: invalid texinfo index %d(model has %d texinfos)", texinfoindex, loadmodel->brushq1.numtexinfo);
-		if ((unsigned int) planenum >= (unsigned int) loadmodel->brush.num_planes)
-			Host_Error_Line ("Mod_VBSP_LoadFaces: invalid plane index %d (model has %d planes)", planenum, loadmodel->brush.num_planes);
-
-		surface->lightmapinfo->texinfo = loadmodel->brushq1.texinfo + texinfoindex;
-		surface->texture = loadmodel->data_textures + surface->lightmapinfo->texinfo->textureindex;
-
-		// Q2BSP doesn't use lightmaps on sky or warped surfaces (water), but still has a lightofs of 0
-		if (lightmapoffset == 0 && (surface->texture->q2flags & (Q2SURF_SKY | Q2SURF_WARP)))
-			lightmapoffset = -1;
-
-		//surface->flags = surface->texture->flags;
-		//if (LittleShort(in->side))
-		//	surface->flags |= SURF_PLANEBACK;
-		//surface->plane = loadmodel->brush.data_planes + planenum;
-
-		surface->num_firstvertex = totalverts;
-		surface->num_vertices = numedges;
-		surface->num_firsttriangle = totaltris;
-		surface->num_triangles = numedges - 2;
-		totalverts += numedges;
-		totaltris += numedges - 2;
-
-		// convert edges back to a normal polygon
-		for (i = 0;i < surface->num_vertices;i++)
-		{
-			int lindex = loadmodel->brushq1.surfedges[firstedge + i];
-			float s, t;
-			// note: the q1bsp format does not allow a 0 surfedge (it would have no negative counterpart)
-			if (lindex >= 0)
-				VectorCopy(loadmodel->brushq1.vertexes[loadmodel->brushq1.edges[lindex].v[0]].position, (loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3);
-			else
-				VectorCopy(loadmodel->brushq1.vertexes[loadmodel->brushq1.edges[-lindex].v[1]].position, (loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3);
-			s = DotProduct(((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3), surface->lightmapinfo->texinfo->vecs[0]) + surface->lightmapinfo->texinfo->vecs[0][3];
-			t = DotProduct(((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3), surface->lightmapinfo->texinfo->vecs[1]) + surface->lightmapinfo->texinfo->vecs[1][3];
-			(loadmodel->surfmesh.data_texcoordtexture2f + 2 * surface->num_firstvertex)[i * 2 + 0] = s / surface->texture->width;
-			(loadmodel->surfmesh.data_texcoordtexture2f + 2 * surface->num_firstvertex)[i * 2 + 1] = t / surface->texture->height;
-			(loadmodel->surfmesh.data_texcoordlightmap2f + 2 * surface->num_firstvertex)[i * 2 + 0] = 0;
-			(loadmodel->surfmesh.data_texcoordlightmap2f + 2 * surface->num_firstvertex)[i * 2 + 1] = 0;
-			(loadmodel->surfmesh.data_lightmapoffsets + surface->num_firstvertex)[i] = 0;
-		}
-
-		for (i = 0;i < surface->num_triangles;i++)
-		{
-			(loadmodel->surfmesh.data_element3i + 3 * surface->num_firsttriangle)[i * 3 + 0] = 0 + surface->num_firstvertex;
-			(loadmodel->surfmesh.data_element3i + 3 * surface->num_firsttriangle)[i * 3 + 1] = i + 1 + surface->num_firstvertex;
-			(loadmodel->surfmesh.data_element3i + 3 * surface->num_firsttriangle)[i * 3 + 2] = i + 2 + surface->num_firstvertex;
-		}
-
-		// compile additional data about the surface geometry
-		Mod_BuildNormals(surface->num_firstvertex, surface->num_vertices, surface->num_triangles, loadmodel->surfmesh.data_vertex3f, (loadmodel->surfmesh.data_element3i + 3 * surface->num_firsttriangle), loadmodel->surfmesh.data_normal3f, r_smoothnormals_areaweighting.integer != 0);
-		Mod_BuildTextureVectorsFromNormals(surface->num_firstvertex, surface->num_vertices, surface->num_triangles, loadmodel->surfmesh.data_vertex3f, loadmodel->surfmesh.data_texcoordtexture2f, loadmodel->surfmesh.data_normal3f, (loadmodel->surfmesh.data_element3i + 3 * surface->num_firsttriangle), loadmodel->surfmesh.data_svector3f, loadmodel->surfmesh.data_tvector3f, r_smoothnormals_areaweighting.integer != 0);
-		BoxFromPoints(surface->mins, surface->maxs, surface->num_vertices, (loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex));
-
-		// generate surface extents information
-		texmins[0] = texmaxs[0] = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex), surface->lightmapinfo->texinfo->vecs[0]) + surface->lightmapinfo->texinfo->vecs[0][3];
-		texmins[1] = texmaxs[1] = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex), surface->lightmapinfo->texinfo->vecs[1]) + surface->lightmapinfo->texinfo->vecs[1][3];
-		for (i = 1;i < surface->num_vertices;i++)
-		{
-			for (j = 0;j < 2;j++)
-			{
-				val = DotProduct((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3, surface->lightmapinfo->texinfo->vecs[j]) + surface->lightmapinfo->texinfo->vecs[j][3];
-				texmins[j] = min(texmins[j], val);
-				texmaxs[j] = max(texmaxs[j], val);
-			}
-		}
-		for (i = 0;i < 2;i++)
-		{
-			surface->lightmapinfo->texturemins[i] = (int) floor(texmins[i] / 16.0) * 16;
-			surface->lightmapinfo->extents[i] = (int) ceil(texmaxs[i] / 16.0) * 16 - surface->lightmapinfo->texturemins[i];
-		}
-
-		smax = surface->lightmapinfo->extents[0] >> 4;
-		tmax = surface->lightmapinfo->extents[1] >> 4;
-		ssize = (surface->lightmapinfo->extents[0] >> 4) + 1;
-		tsize = (surface->lightmapinfo->extents[1] >> 4) + 1;
-
-		// lighting info
-		surface->lightmaptexture = NULL;
-		surface->deluxemaptexture = r_texture_blanknormalmap;
-		if (lightmapoffset == -1)
-		{
-			surface->lightmapinfo->samples = NULL;
-#if 1
-			// give non-lightmapped water a 1x white lightmap
-			if (!loadmodel->brush.isq2bsp && surface->texture->name[0] == '*' && (surface->lightmapinfo->texinfo->q1flags & TEX_SPECIAL) && ssize <= 256 && tsize <= 256)
-			{
-				surface->lightmapinfo->samples = (unsigned char *)Mem_Alloc(loadmodel->mempool, ssize * tsize * 3);
-				surface->lightmapinfo->styles[0] = 0;
-				memset(surface->lightmapinfo->samples, 128, ssize * tsize * 3);
-			}
-#endif
-		}
-		else
-			surface->lightmapinfo->samples = loadmodel->brushq1.lightdata + lightmapoffset;
-
-		// check if we should apply a lightmap to this
-		if (!(surface->lightmapinfo->texinfo->q1flags & TEX_SPECIAL) || surface->lightmapinfo->samples)
-		{
-			if (ssize > 256 || tsize > 256)
-				Host_Error_Line ("Bad surface extents");
-
-			if (lightmapsize < ssize)
-				lightmapsize = ssize;
-			if (lightmapsize < tsize)
-				lightmapsize = tsize;
-
-			totallightmapsamples += ssize*tsize;
-
-			// force lightmap upload on first time seeing the surface
-			//
-			// additionally this is used by the later code to see if a
-			// lightmap is needed on this surface (rather than duplicating the
-			// logic above)
-			loadmodel->brushq1.lightmapupdateflags[surfacenum] = true;
-			loadmodel->lit = true;
-		}
-	}
-
-	// small maps (such as ammo boxes especially) don't need big lightmap
-	// textures, so this code tries to guess a good size based on
-	// totallightmapsamples (size of the lightmaps lump basically), as well as
-	// trying to max out the size if there is a lot of lightmap data to store
-	// additionally, never choose a lightmapsize that is smaller than the
-	// largest surface encountered (as it would fail)
-	i = lightmapsize;
-	for (lightmapsize = 64; (lightmapsize < i) && (lightmapsize < bound(128, gl_max_lightmapsize.integer, (int)vid.maxtexturesize_2d)) && (totallightmapsamples > lightmapsize*lightmapsize); lightmapsize*=2)
-		;
-
-	// now that we've decided the lightmap texture size, we can do the rest
-	if (cls.state != ca_dedicated)
-	{
-		int stainmapsize = 0;
-		mod_alloclightmap_state_t allocState;
-
-		Mod_AllocLightmap_Init(&allocState, loadmodel->mempool, lightmapsize, lightmapsize);
-		for (surfacenum = 0, surface = loadmodel->data_surfaces;surfacenum < count;surfacenum++, surface++)
-		{
-			int iu, iv, lightmapx = 0, lightmapy = 0;
-			float u, v, ubase, vbase, uscale, vscale;
-
-			if (!loadmodel->brushq1.lightmapupdateflags[surfacenum])
-				continue;
-
-			smax = surface->lightmapinfo->extents[0] >> 4;
-			tmax = surface->lightmapinfo->extents[1] >> 4;
-			ssize = (surface->lightmapinfo->extents[0] >> 4) + 1;
-			tsize = (surface->lightmapinfo->extents[1] >> 4) + 1;
-			stainmapsize += ssize * tsize * 3;
-
-			if (!lightmaptexture || !Mod_AllocLightmap_Block(&allocState, ssize, tsize, &lightmapx, &lightmapy))
-			{
-				// allocate a texture pool if we need it
-				if (loadmodel->texturepool == NULL)
-					loadmodel->texturepool = R_AllocTexturePool();
-				// could not find room, make a new lightmap
-				loadmodel->brushq3.num_mergedlightmaps = lightmapnumber + 1;
-				loadmodel->brushq3.data_lightmaps = (rtexture_t **)Mem_Realloc(loadmodel->mempool, loadmodel->brushq3.data_lightmaps, loadmodel->brushq3.num_mergedlightmaps * sizeof(loadmodel->brushq3.data_lightmaps[0]));
-				loadmodel->brushq3.data_deluxemaps = (rtexture_t **)Mem_Realloc(loadmodel->mempool, loadmodel->brushq3.data_deluxemaps, loadmodel->brushq3.num_mergedlightmaps * sizeof(loadmodel->brushq3.data_deluxemaps[0]));
-				loadmodel->brushq3.data_lightmaps[lightmapnumber] = lightmaptexture = R_LoadTexture2D(loadmodel->texturepool, va(vabuf, sizeof(vabuf), "lightmap%d", lightmapnumber), lightmapsize, lightmapsize, NULL, TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_ALLOWUPDATES, -1, NULL);
-				if (loadmodel->brushq1.nmaplightdata)
-					loadmodel->brushq3.data_deluxemaps[lightmapnumber] = deluxemaptexture = R_LoadTexture2D(loadmodel->texturepool, va(vabuf, sizeof(vabuf), "deluxemap%d", lightmapnumber), lightmapsize, lightmapsize, NULL, TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_ALLOWUPDATES, -1, NULL);
-				lightmapnumber++;
-				Mod_AllocLightmap_Reset(&allocState);
-				Mod_AllocLightmap_Block(&allocState, ssize, tsize, &lightmapx, &lightmapy);
-			}
-			surface->lightmaptexture = lightmaptexture;
-			surface->deluxemaptexture = deluxemaptexture;
-			surface->lightmapinfo->lightmaporigin[0] = lightmapx;
-			surface->lightmapinfo->lightmaporigin[1] = lightmapy;
-
-			uscale = 1.0f / (float)lightmapsize;
-			vscale = 1.0f / (float)lightmapsize;
-			ubase = lightmapx * uscale;
-			vbase = lightmapy * vscale;
-
-			for (i = 0;i < surface->num_vertices;i++)
-			{
-				u = ((DotProduct(((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3), surface->lightmapinfo->texinfo->vecs[0]) + surface->lightmapinfo->texinfo->vecs[0][3]) + 8 - surface->lightmapinfo->texturemins[0]) * (1.0 / 16.0);
-				v = ((DotProduct(((loadmodel->surfmesh.data_vertex3f + 3 * surface->num_firstvertex) + i * 3), surface->lightmapinfo->texinfo->vecs[1]) + surface->lightmapinfo->texinfo->vecs[1][3]) + 8 - surface->lightmapinfo->texturemins[1]) * (1.0 / 16.0);
-				(loadmodel->surfmesh.data_texcoordlightmap2f + 2 * surface->num_firstvertex)[i * 2 + 0] = u * uscale + ubase;
-				(loadmodel->surfmesh.data_texcoordlightmap2f + 2 * surface->num_firstvertex)[i * 2 + 1] = v * vscale + vbase;
-				// LadyHavoc: calc lightmap data offset for vertex lighting to use
-				iu = (int) u;
-				iv = (int) v;
-				(loadmodel->surfmesh.data_lightmapoffsets + surface->num_firstvertex)[i] = (bound(0, iv, tmax) * ssize + bound(0, iu, smax)) * 3;
-			}
-		}
-
-		if (cl_stainmaps.integer)
-		{
-			// allocate stainmaps for permanent marks on walls and clear white
-			unsigned char *stainsamples = NULL;
-			stainsamples = (unsigned char *)Mem_Alloc(loadmodel->mempool, stainmapsize);
-			memset(stainsamples, 255, stainmapsize);
-			// assign pointers
-			for (surfacenum = 0, surface = loadmodel->data_surfaces;surfacenum < count;surfacenum++, surface++)
-			{
-				if (!loadmodel->brushq1.lightmapupdateflags[surfacenum])
-					continue;
-				ssize = (surface->lightmapinfo->extents[0] >> 4) + 1;
-				tsize = (surface->lightmapinfo->extents[1] >> 4) + 1;
-				surface->lightmapinfo->stainsamples = stainsamples;
-				stainsamples += ssize * tsize * 3;
-			}
-		}
-	}
-
-	// generate ushort elements array if possible
-	if (loadmodel->surfmesh.data_element3s)
-		for (i = 0;i < loadmodel->surfmesh.num_triangles*3;i++)
-			loadmodel->surfmesh.data_element3s[i] = loadmodel->surfmesh.data_element3i[i];
-}
-
-// Valve BSP loader
-// Cloudwalk: Wasn't sober when I wrote this. I screamed and ran away at the face loader
-void Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend)
-{
-	static cvar_t *testing = NULL; // TEMPORARY
-	int i;
-	sizebuf_t sb;
-	sizebuf_t lumpsb[HL2HEADER_LUMPS];
-
-	if (!testing || !testing->integer)
-	{
-		if (!testing)
-			testing = Cvar_Get(&cvars_all, "mod_bsp_vbsptest", "0", CF_CLIENT | CF_SERVER, "uhhh");
-		Host_Error_Line ("Mod_VBSP_Load: not yet fully implemented. Change the now-generated \"mod_bsp_vbsptest\" to 1 if you wish to test this");
-	}
-	else
-	{
-
-		MSG_InitReadBuffer(&sb, (unsigned char *)buffer, (unsigned char *)bufferend - (unsigned char *)buffer);
-
-		mod->type = mod_brushhl2;
-
-		MSG_ReadLittleLong(&sb);
-		MSG_ReadLittleLong(&sb); // TODO version check
-
-		mod->modeldatatypestring = "VBSP";
-
-		// read lumps
-		for (i = 0; i < HL2HEADER_LUMPS; i++)
-		{
-			int offset = MSG_ReadLittleLong(&sb);
-			int size = MSG_ReadLittleLong(&sb);
-			MSG_ReadLittleLong(&sb); // TODO support version
-			MSG_ReadLittleLong(&sb); // TODO support ident
-			if (offset < 0 || offset + size > sb.cursize)
-				Host_Error_Line ("Mod_VBSP_Load: %s has invalid lump %d (offset %d, size %d, file size %d)", mod->model_name, i, offset, size, (int)sb.cursize);
-			MSG_InitReadBuffer(&lumpsb[i], sb.data + offset, size);
-		}
-
-		MSG_ReadLittleLong(&sb); // TODO support revision field
-
-		mod->soundfromcenter = true;
-		mod->TraceBox = Mod_CollisionBIH_TraceBox;
-		mod->TraceBrush = Mod_CollisionBIH_TraceBrush;
-		mod->TraceLine = Mod_CollisionBIH_TraceLine;
-		mod->TracePoint = Mod_CollisionBIH_TracePoint;
-		mod->PointSuperContents = Mod_CollisionBIH_PointSuperContents;
-		mod->TraceLineAgainstSurfaces = Mod_CollisionBIH_TraceLine;
-		mod->brush.TraceLineOfSight = Mod_Q3BSP_TraceLineOfSight; // probably not correct
-		mod->brush.SuperContentsFromNativeContents = Mod_Q3BSP_SuperContentsFromNativeContents; // probably not correct
-		mod->brush.NativeContentsFromSuperContents = Mod_Q3BSP_NativeContentsFromSuperContents; // probably not correct
-		mod->brush.GetPVS = Mod_BSP_GetPVS;
-		mod->brush.FatPVS = Mod_BSP_FatPVS;
-		mod->brush.BoxTouchingPVS = Mod_BSP_BoxTouchingPVS;
-		mod->brush.BoxTouchingLeafPVS = Mod_BSP_BoxTouchingLeafPVS;
-		mod->brush.BoxTouchingVisibleLeafs = Mod_BSP_BoxTouchingVisibleLeafs;
-		mod->brush.FindBoxClusters = Mod_BSP_FindBoxClusters;
-		mod->brush.LightPoint = Mod_Q3BSP_LightPoint; // probably not correct
-		mod->brush.FindNonSolidLocation = Mod_BSP_FindNonSolidLocation;
-		mod->brush.AmbientSoundLevelsForPoint = NULL;
-		mod->brush.RoundUpToHullSize = NULL;
-		mod->brush.PointInLeaf = Mod_BSP_PointInLeaf;
-		mod->Draw = R_Mod_Draw;
-		mod->DrawDepth = R_Mod_DrawDepth;
-		mod->DrawDebug = R_Mod_DrawDebug;
-		mod->DrawPrepass = R_Mod_DrawPrepass;
-		mod->GetLightInfo = R_Mod_GetLightInfo;
-		mod->CompileShadowMap = R_Mod_CompileShadowMap;
-		mod->DrawShadowMap = R_Mod_DrawShadowMap;
-		mod->DrawLight = R_Mod_DrawLight;
-
-		// allocate a texture pool if we need it
-		if (mod->texturepool == NULL)
-			mod->texturepool = R_AllocTexturePool();
-
-		Mod_VBSP_LoadEntities(&lumpsb[HL2LUMP_ENTITIES]);
-		Mod_VBSP_LoadVertexes(&lumpsb[HL2LUMP_VERTEXES]);
-		Mod_VBSP_LoadEdges(&lumpsb[HL2LUMP_EDGES]);
-		Mod_VBSP_LoadSurfedges(&lumpsb[HL2LUMP_SURFEDGES]);
-		Mod_VBSP_LoadTextures(&lumpsb[HL2LUMP_TEXDATA/*?*/]);
-		//Mod_VBSP_LoadLighting(&lumpsb[HL2LUMP_LIGHTING]);
-		Mod_VBSP_LoadPlanes(&lumpsb[HL2LUMP_PLANES]);
-		Mod_VBSP_LoadTexinfo(&lumpsb[HL2LUMP_TEXINFO]);
-
-		// AHHHHHHH
-		Mod_VBSP_LoadFaces(&lumpsb[HL2LUMP_FACES]);
-	}
-}
+#include "model_brush_vbsp.c.h"
 
 void Mod_MAP_Load(model_t *mod, void *buffer, void *bufferend)
 {
@@ -8859,4 +8256,74 @@ void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend)
 	Mod_MakeSortedSurfaces(loadmodel);
 
 	Con_DPrintLinef ("Stats for obj model \"%s\": %d faces, %d nodes, %d leafs, %d clusters, %d clusterportals, mesh: %d vertices, %d triangles, %d surfaces", loadmodel->model_name, loadmodel->num_surfaces, loadmodel->brush.num_nodes, loadmodel->brush.num_leafs, mod->brush.num_pvsclusters, loadmodel->brush.num_portals, loadmodel->surfmesh.num_vertices, loadmodel->surfmesh.num_triangles, loadmodel->num_surfaces);
+}
+
+void Mod_BrushInit(void)
+{
+//	Cvar_RegisterVariable(&r_subdivide_size);
+	Cvar_RegisterVariable(&mod_bsp_portalize);
+	Cvar_RegisterVariable(&r_novis);
+	Cvar_RegisterVariable(&r_nosurftextures);
+	Cvar_RegisterVariable(&r_subdivisions_tolerance);
+	Cvar_RegisterVariable(&r_subdivisions_mintess);
+	Cvar_RegisterVariable(&r_subdivisions_maxtess);
+	Cvar_RegisterVariable(&r_subdivisions_maxvertices);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_tolerance);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_mintess);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_maxtess);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_subdivisions_maxvertices);
+	Cvar_RegisterVariable(&r_trippy);
+	Cvar_RegisterVariable(&mod_noshader_default_offsetmapping);
+	Cvar_RegisterVariable(&mod_obj_orientation);
+	Cvar_RegisterVariable(&mod_q2bsp_littransparentsurfaces);
+	Cvar_RegisterVariable(&mod_q3bsp_curves_collisions);
+	Cvar_RegisterVariable(&mod_q3bsp_optimizedtraceline);
+	Cvar_RegisterVariable(&mod_q3bsp_lightmapmergepower);
+	Cvar_RegisterVariable(&mod_q3bsp_nolightmaps);
+	Cvar_RegisterVariable(&mod_q3bsp_sRGBlightmaps);
+	Cvar_RegisterVariable(&mod_q3bsp_lightgrid_texture);
+	Cvar_RegisterVariable(&mod_q3bsp_lightgrid_world_surfaces);
+	Cvar_RegisterVariable(&mod_q3bsp_lightgrid_bsp_surfaces);
+	Cvar_RegisterVariable(&mod_q3bsp_tracelineofsight_brushes);
+	Cvar_RegisterVariable(&mod_q3shader_default_offsetmapping);
+	Cvar_RegisterVariable(&mod_q3shader_default_offsetmapping_scale);
+	Cvar_RegisterVariable(&mod_q3shader_default_offsetmapping_bias);
+	Cvar_RegisterVariable(&mod_q3shader_default_polygonfactor);
+	Cvar_RegisterVariable(&mod_q3shader_default_polygonoffset);
+	Cvar_RegisterVariable(&mod_q3shader_default_refractive_index);
+	Cvar_RegisterVariable(&mod_q3shader_force_addalpha);
+	Cvar_RegisterVariable(&mod_q3shader_force_terrain_alphaflag);
+	Cvar_RegisterVariable(&mod_q1bsp_polygoncollisions);
+	Cvar_RegisterVariable(&mod_q1bsp_zero_hullsize_cutoff);
+	Cvar_RegisterVariable(&mod_recalculatenodeboxes);
+
+	// these games were made for older DP engines and are no longer
+	// maintained; use this hack to show their textures properly
+	if (gamemode == GAME_NEXUIZ)
+		Cvar_SetQuick(&mod_q3shader_force_addalpha, "1");
+
+	memset(&mod_q1bsp_texture_solid, 0, sizeof(mod_q1bsp_texture_solid));
+	strlcpy(mod_q1bsp_texture_solid.name, "solid" , sizeof(mod_q1bsp_texture_solid.name));
+	mod_q1bsp_texture_solid.surfaceflags = 0;
+	mod_q1bsp_texture_solid.supercontents = SUPERCONTENTS_SOLID;
+
+	mod_q1bsp_texture_sky = mod_q1bsp_texture_solid;
+	strlcpy(mod_q1bsp_texture_sky.name, "sky", sizeof(mod_q1bsp_texture_sky.name));
+	mod_q1bsp_texture_sky.surfaceflags = Q3SURFACEFLAG_SKY | Q3SURFACEFLAG_NOIMPACT | Q3SURFACEFLAG_NOMARKS | Q3SURFACEFLAG_NODLIGHT | Q3SURFACEFLAG_NOLIGHTMAP;
+	mod_q1bsp_texture_sky.supercontents = SUPERCONTENTS_SKY | SUPERCONTENTS_NODROP;
+
+	mod_q1bsp_texture_lava = mod_q1bsp_texture_solid;
+	strlcpy(mod_q1bsp_texture_lava.name, "*lava", sizeof(mod_q1bsp_texture_lava.name));
+	mod_q1bsp_texture_lava.surfaceflags = Q3SURFACEFLAG_NOMARKS;
+	mod_q1bsp_texture_lava.supercontents = SUPERCONTENTS_LAVA | SUPERCONTENTS_NODROP;
+
+	mod_q1bsp_texture_slime = mod_q1bsp_texture_solid;
+	strlcpy(mod_q1bsp_texture_slime.name, "*slime", sizeof(mod_q1bsp_texture_slime.name));
+	mod_q1bsp_texture_slime.surfaceflags = Q3SURFACEFLAG_NOMARKS;
+	mod_q1bsp_texture_slime.supercontents = SUPERCONTENTS_SLIME;
+
+	mod_q1bsp_texture_water = mod_q1bsp_texture_solid;
+	strlcpy(mod_q1bsp_texture_water.name, "*water", sizeof(mod_q1bsp_texture_water.name));
+	mod_q1bsp_texture_water.surfaceflags = Q3SURFACEFLAG_NOMARKS;
+	mod_q1bsp_texture_water.supercontents = SUPERCONTENTS_WATER;
 }

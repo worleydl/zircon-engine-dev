@@ -944,7 +944,7 @@ char *String_Find_Char_Nth_Instance (const char *s, int ch_findchar, int nth_ins
 char *String_Instance (const char *s, int ch_delim, int nth_instance, replyx int *len)
 {
 	// If we want the nth instance, we want the nth - 1 delimiter or the string itself.
-	char *found = nth_instance > 1 ? String_Find_Char_Nth_Instance (s, ch_delim, nth_instance - 1) : (/*unconstanting*/ char*)s;
+	char *found = nth_instance > 1 ? String_Find_Char_Nth_Instance (s, ch_delim, nth_instance - 1) : (/*unconstanting*/ char *)s;
 	char *s_start = NULL;
 	int slen = 0;
 

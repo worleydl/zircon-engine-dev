@@ -231,7 +231,7 @@ GLint (GLAPIENTRY *qglGetAttribLocation)(GLuint programObj, const GLchar *name);
 GLint (GLAPIENTRY *qglGetUniformLocation)(GLuint programObj, const GLchar *name);
 GLuint (GLAPIENTRY *qglCreateProgram)(void);
 GLuint (GLAPIENTRY *qglCreateShader)(GLenum shaderType);
-GLuint (GLAPIENTRY *qglGetDebugMessageLogARB)(GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar* messageLog);
+GLuint (GLAPIENTRY *qglGetDebugMessageLogARB)(GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar * messageLog);
 GLuint (GLAPIENTRY *qglGetUniformBlockIndex)(GLuint program, const char *uniformBlockName);
 GLvoid (GLAPIENTRY *qglBindFramebuffer)(GLenum target, GLuint framebuffer);
 GLvoid (GLAPIENTRY *qglBindRenderbuffer)(GLenum target, GLuint renderbuffer);
@@ -284,7 +284,7 @@ void (GLAPIENTRY *qglCopyTexSubImage3D)(GLenum target, GLint level, GLint xoffse
 void (GLAPIENTRY *qglCullFace)(GLenum mode);
 void (GLAPIENTRY *qglDebugMessageCallbackARB)(GLDEBUGPROCARB callback, const GLvoid* userParam);
 void (GLAPIENTRY *qglDebugMessageControlARB)(GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint* ids, GLboolean enabled);
-void (GLAPIENTRY *qglDebugMessageInsertARB)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* buf);
+void (GLAPIENTRY *qglDebugMessageInsertARB)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * buf);
 void (GLAPIENTRY *qglDeleteBuffers) (GLsizei n, const GLuint *buffers);
 void (GLAPIENTRY *qglDeleteProgram)(GLuint obj);
 void (GLAPIENTRY *qglDeleteQueries)(GLsizei n, const GLuint *ids);

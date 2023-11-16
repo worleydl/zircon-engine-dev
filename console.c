@@ -262,7 +262,7 @@ static void SanitizeString(char *in, char *out)
 			else if (*in != STRING_COLOR_TAG)
 				--in;
 		}
-		*out = qfont_table[*(unsigned char*)in];
+		*out = qfont_table[*(unsigned char *)in];
 		++in;
 		++out;
 	}
@@ -693,7 +693,7 @@ void Log_ConPrint (const char *msg)
 		{
 			// sanitize msg
 			size_t len = strlen(msg);
-			char *sanitizedmsg = (char*)Mem_Alloc(tempmempool, len + 1);
+			char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
 			memcpy (sanitizedmsg, msg, len);
 			SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 			FS_Print (logfile, sanitizedmsg);
@@ -905,7 +905,7 @@ static void Con_ConDump_f(cmd_state_t *cmd)
 		{
 			// sanitize msg
 			size_t len = CON_LINES(i).len;
-			char *sanitizedmsg = (char*)Mem_Alloc(tempmempool, len + 1);
+			char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
 			memcpy (sanitizedmsg, CON_LINES(i).start, len);
 			SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 			FS_Write(file, sanitizedmsg, strlen(sanitizedmsg));
@@ -958,13 +958,13 @@ void Con_Copy_f(cmd_state_t* cmd)
 			continue;
 
 		size_t len = CON_LINES(j).len;
-		char *sanitizedmsg = (char*)Mem_Alloc(tempmempool, len + 1);
+		char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
 		memcpy(sanitizedmsg, CON_LINES(j).start, len);
 		SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 		tle += ((int)strlen(sanitizedmsg) + ONE_CHAR_1);
 		Mem_Free(sanitizedmsg);
 	}
-	char *s_msg_alloc = (char*)calloc(tle, 1);
+	char *s_msg_alloc = (char *)calloc(tle, 1);
 	for (j = 0; j < CON_LINES_COUNT; ++j) {
 		// sanitize msg
 		con_lineinfo_t* cc = &CON_LINES(j);
@@ -972,7 +972,7 @@ void Con_Copy_f(cmd_state_t* cmd)
 			continue;
 
 		size_t len = CON_LINES(j).len;
-		char *sanitizedmsg = (char*)Mem_Alloc(tempmempool, len + 1);
+		char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
 		memcpy(sanitizedmsg, CON_LINES(j).start, len);
 		SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 		strlcat(s_msg_alloc, sanitizedmsg, tle);
@@ -2776,7 +2776,7 @@ static const char **Nicks_CompleteBuildList(int count)
 {
 	const char **buf;
 	int bpos = 0;
-	// the list is freed by Con_CompleteCommandLine, so create a char**
+	// the list is freed by Con_CompleteCommandLine, so create a char **
 	buf = (const char **)Mem_Alloc(tempmempool, count * sizeof(const char *) + sizeof (const char *));
 
 	for(; bpos < count; ++bpos)

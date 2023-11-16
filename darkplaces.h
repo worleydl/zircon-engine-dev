@@ -120,11 +120,11 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_tx_fallback_notexture_false	false
 #define q_tx_fallback_notexture_true	true
 #define q_tx_is_sRGB_false				false
-#define q_tx_complain_false				false
 #define q_tx_allowfixtrans_false		false
 #define q_tx_convertsrgb_false			false
 #define q_tx_miplevel_null				NULL
-
+#define q_tx_warn_missing_true			true
+#define q_tx_warn_missing_false			false
 
 #define q_write_depth_false				false		// GL_DepthMask
 #define q_write_depth_true				true		// GL_DepthMask

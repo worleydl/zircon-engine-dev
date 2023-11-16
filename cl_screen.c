@@ -153,7 +153,7 @@ for a few moments
 void SCR_CenterPrint(const char *str)
 {
 	Con_LogCenterPrint (str); // Baker r1421: centerprint logging to console
-	strlcpy (scr_centerstring, str, sizeof (scr_centerstring));
+	c_strlcpy (scr_centerstring, str);
 	scr_centertime_off = scr_centertime.value;
 	scr_centertime_start = cl.time;
 
@@ -618,7 +618,7 @@ static void SCR_DrawInfobar(void)
 		offset = effective_loading;
 	}
 	if (offset != scr_con_margin_bottom)
-		Con_DPrintf ("broken console margin calculation: %d != %d\n", offset, scr_con_margin_bottom);
+		Con_DPrintLinef ("broken console margin calculation: %d != %d", offset, scr_con_margin_bottom);
 }
 
 static int SCR_InfobarHeight(void)
@@ -656,9 +656,10 @@ static void SCR_InfoBar_f (cmd_state_t *cmd)
 {
 	if (Cmd_Argc(cmd) == 3) {
 		scr_infobartime_off = atof(Cmd_Argv(cmd, 1));
-		strlcpy(scr_infobarstring, Cmd_Argv(cmd, 2), sizeof(scr_infobarstring));
+		c_strlcpy (scr_infobarstring, Cmd_Argv(cmd, 2) );
+		Con_LogCenterPrint (scr_infobarstring); // Baker r1421: centerprint logging to console
 	} else {
-		Con_PrintLinef ("usage:\ninfobar expiretime \"string\"");
+		Con_PrintLinef ("usage:" NEWLINE "infobar expiretime " QUOTED_STR ("string") );
 	}
 }
 //=============================================================================
@@ -720,8 +721,7 @@ void SCR_DrawConsole (void)
 
 
 	// infobar and loading progress are not drawn simultaneously
-	scr_con_margin_bottom = SCR_InfobarHeight() ? SCR_InfobarHeight() : 
-		scr_loading * effective_loading;
+	scr_con_margin_bottom = scr_loading ? effective_loading : SCR_InfobarHeight();
 
 	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4)) {
 		// full screen
@@ -1950,7 +1950,7 @@ void CL_Tool_Inspector (void)
 			if (e) {
 				prvm_edict_t *ed = PRVM_EDICT_NUM(edict_num);
 				if (ed->free == false) {
-					//const char*s_cls = PRVM_GetString(prog, PRVM_alledictstring(ed, classname));
+					//const char *s_cls = PRVM_GetString(prog, PRVM_alledictstring(ed, classname));
 					const char	*s_mdl = PRVM_GetString(prog, PRVM_alledictstring(ed, model));
 					prvm_vec_t *e_orig = PRVM_serveredictvector(ed, origin);
 
@@ -2281,8 +2281,8 @@ baker_really_do_this:
 			unsigned char *buffer1;
 			unsigned char *buffer2;
 			dpsnprintf(filename, sizeof(filename), "timedemoscreenshots/%s%06d.tga", cls.demoname, cls.td_frames);
-			buffer1 = (unsigned char*)Mem_Alloc(tempmempool, vid.width * vid.height * 4);
-			buffer2 = (unsigned char*)Mem_Alloc(tempmempool, vid.width * vid.height * 3);
+			buffer1 = (unsigned char *)Mem_Alloc(tempmempool, vid.width * vid.height * 4);
+			buffer2 = (unsigned char *)Mem_Alloc(tempmempool, vid.width * vid.height * 3);
 			SCR_ScreenShot(filename, buffer1, buffer2, 0, 0, vid.width, vid.height, false, false, false, false, false, true, false);
 			Mem_Free(buffer1);
 			Mem_Free(buffer2);

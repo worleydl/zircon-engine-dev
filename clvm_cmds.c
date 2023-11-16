@@ -2067,7 +2067,7 @@ static void VM_CL_getstats (prvm_prog_t *prog)
 		VM_Warning(prog, "VM_CL_getstats: index>MAX_CL_STATS-4 or index<0\n");
 		return;
 	}
-	c_strlcpy(t, (char*)&cl.stats[i]);
+	c_strlcpy(t, (char *)&cl.stats[i]);
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, t);
 }
 

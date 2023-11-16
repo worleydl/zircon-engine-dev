@@ -1408,7 +1408,7 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 			VectorMA(s->velocity, accelspeed, wishdir, s->velocity);
 		}
 		gravity = cl.movevars_gravity * cl.movevars_entgravity * s->cmd.frametime;
-		if (!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND))
+		if (Have_Flag(cl.moveflags, MOVEFLAG_NOGRAVITYONGROUND) == false)
 		{
 			if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
 				s->velocity[2] -= gravity * 0.5f;
@@ -1419,9 +1419,9 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 			s->velocity[2] = 0;
 		if (VectorLength2(s->velocity))
 			CL_ClientMovement_Move(s);
-		if (!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND) || !s->onground)
+		if (Have_Flag(cl.moveflags, MOVEFLAG_NOGRAVITYONGROUND) == false || !s->onground)
 		{
-			if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
+			if (Have_Flag (cl.moveflags, MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE))
 				s->velocity[2] -= gravity * 0.5f;
 		}
 	}
@@ -1479,7 +1479,7 @@ static void CL_ClientMovement_Physics_Walk(cl_clientmovement_state_t *s)
 		else
 			s->velocity[2] -= gravity;
 		CL_ClientMovement_Move(s);
-		if (!(cl.moveflags & MOVEFLAG_NOGRAVITYONGROUND) || !s->onground)
+		if (Have_Flag(cl.moveflags, MOVEFLAG_NOGRAVITYONGROUND) == false || !s->onground)
 		{
 			if (cl.moveflags & MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE)
 				s->velocity[2] -= gravity * 0.5f;

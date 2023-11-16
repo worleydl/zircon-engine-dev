@@ -4058,9 +4058,9 @@ void VM_buf_sort (prvm_prog_t *prog)
 		stringbuffers_sortlength = 0x7FFFFFFF;
 
 	if (!PRVM_G_FLOAT(OFS_PARM2))
-		qsort(stringbuffer->strings, stringbuffer->num_strings, sizeof(char*), BufStr_SortStringsUP);
+		qsort(stringbuffer->strings, stringbuffer->num_strings, sizeof(char *), BufStr_SortStringsUP);
 	else
-		qsort(stringbuffer->strings, stringbuffer->num_strings, sizeof(char*), BufStr_SortStringsDOWN);
+		qsort(stringbuffer->strings, stringbuffer->num_strings, sizeof(char *), BufStr_SortStringsDOWN);
 
 	BufStr_Shrink(prog, stringbuffer);
 }

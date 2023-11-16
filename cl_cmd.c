@@ -523,7 +523,7 @@ static void CL_PQRcon_f(cmd_state_t *cmd)
 		SZ_Clear(&buf);
 		MSG_WriteLong(&buf, 0);
 		MSG_WriteByte(&buf, CCREQ_RCON);
-		SZ_Write(&buf, (const unsigned char*)rcon_password.string, n);
+		SZ_Write(&buf, (const unsigned char *)rcon_password.string, n);
 		MSG_WriteByte(&buf, 0); // terminate the (possibly partial) string
 		MSG_WriteString(&buf, Cmd_Args(cmd));
 		StoreBigLong(buf.data, NETFLAG_CTL | (buf.cursize & NETFLAG_LENGTH_MASK));
