@@ -847,7 +847,7 @@ void PRVM_ED_Free(prvm_prog_t *prog, prvm_edict_t *ed);
 void PRVM_ED_ClearEdict(prvm_prog_t *prog, prvm_edict_t *e);
 
 void PRVM_PrintFunctionStatements(prvm_prog_t *prog, const char *name);
-void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, const char *wildcard_fieldname, const char *classname_partial, const char *targetname_partial); // Baker r7101: edicts with criteria
+void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, const char *wildcard_fieldname, const char *s_fieldname_partial, const char *s_fieldvalue_partial); // Baker r7101: edicts with criteria
 void PRVM_ED_Write(prvm_prog_t *prog, struct qfile_s *f, prvm_edict_t *ed);
 const char *PRVM_ED_ParseEdict(prvm_prog_t *prog, const char *data, prvm_edict_t *ent);
 
@@ -897,7 +897,7 @@ extern int prvm_type_size[8]; // for consistency : I think a goal of this sub-pr
 void PRVM_Init_Exec(prvm_prog_t *prog);
 
 void PRVM_ED_PrintEdicts_f(struct cmd_state_s *cmd);
-void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, int shall_print_free, const char *wildcard_fieldname, const char *classname_partial, const char *targetname_partial);
+void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, int shall_print_free, const char *wildcard_fieldname, const char *s_fieldname_partial, const char *s_fieldvalue_partial);
 
 const char *PRVM_GetString(prvm_prog_t *prog, int num);
 int PRVM_SetEngineString(prvm_prog_t *prog, const char *s);

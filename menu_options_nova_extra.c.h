@@ -90,8 +90,17 @@ int set_waterwarp6()
 	return 1;
 }
 
+
+int get_waterwarp_rot(void)
+{
+	if (!r_waterwarp.value) return 0;
+	if (r_waterwarp.value == 2) return 2;
+	return 1;
+}
+
+
 // Warp
-const char *get_waterwarp6_text (int level)
+const char *get_waterdeform_text (int level)
 {
 	switch (level) {
 	default:

@@ -658,7 +658,7 @@ For debugging
 */
 // LadyHavoc: optimized this to print out much more quickly (tempstring)
 // LadyHavoc: changed to print out every 4096 characters (incase there are a lot of fields to print)
-void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, const char *wildcard_fieldname, const char *classname_partial, const char *targetname_partial)
+void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, const char *wildcard_fieldname, const char *s_fieldname_partial, const char *s_fieldvalue_partial)
 {
 	size_t	slen;
 	mdef_t	*d;
@@ -670,19 +670,15 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 	char	valuebuf[MAX_INPUTLINE_16384];
 
 	if (ed->free) {
-		if (classname_partial && classname_partial[0]) {
-			// do not print
-		} else {
-			if (shall_print_free) {
-				Con_PrintLinef ("%s: FREE", prog->name);
-			}
+		if (shall_print_free) {
+			Con_PrintLinef ("%s: FREE", prog->name);
 		}
 		return;
 	}
 
 	int ismatch = false;
 	
-	if (targetname_partial && targetname_partial[0]) {
+	if (s_fieldname_partial && s_fieldname_partial[0]) {
 		tempstring[0] = 0;
 		for (n = 1; n < prog->numfielddefs; n ++) {
 			d = &prog->fielddefs[n];
@@ -703,7 +699,7 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 			if (j == prvm_type_size[type])
 				continue;	
 	
-			if (String_Does_Match (name, "targetname")) {
+			if (String_Does_Contain (name, s_fieldname_partial /*"targetname"*/)) {
 				name = PRVM_ValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf));
 
 				if (strlen(name) > sizeof(tempstring2)-4) {
@@ -712,10 +708,12 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 					tempstring2[sizeof(tempstring2)-1] = 0;
 					name = tempstring2;
 				}
-				strlcat(tempstring, name, sizeof(tempstring));
-				if (String_Does_Contain (tempstring, targetname_partial) == false) {
+				c_strlcat(tempstring, name);
+				if (String_Does_Contain (tempstring, s_fieldvalue_partial) == false) {
 					// disqual
-					return;
+					//return;
+
+					// continue ... 
 				} else {
 					ismatch = true;
 				}
@@ -724,49 +722,6 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 		if (!ismatch)
 			return;
 	} // targetname match
-
-	if (classname_partial && classname_partial[0]) {
-		tempstring[0] = 0;
-		for (n = 1; n < prog->numfielddefs; n ++) {
-			d = &prog->fielddefs[n];
-			name = PRVM_GetString(prog, d->s_name);
-			if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
-				continue;	// skip _x, _y, _z vars
-	
-			val = (prvm_eval_t *)(ed->fields.fp + d->ofs);
-	
-			// if the value is still all 0, skip the field
-			type = d->type & ~DEF_SAVEGLOBAL;
-	
-			for (j = 0; j < prvm_type_size[type]; j ++) {
-				if (val->ivector[j])
-					break;
-			} // j
-	
-			if (j == prvm_type_size[type])
-				continue;	
-	
-			if (String_Does_Match (name, "classname")) {
-				name = PRVM_ValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf));
-
-				if (strlen(name) > sizeof(tempstring2)-4) {
-					memcpy (tempstring2, name, sizeof(tempstring2)-4);
-					tempstring2[sizeof(tempstring2)-4] = tempstring2[sizeof(tempstring2)-3] = tempstring2[sizeof(tempstring2)-2] = '.';
-					tempstring2[sizeof(tempstring2)-1] = 0;
-					name = tempstring2;
-				}
-				strlcat(tempstring, name, sizeof(tempstring));
-				if (String_Does_Contain (tempstring, classname_partial) == false) {
-					// disqual
-					return;
-				} else {
-					ismatch = true;
-				}
-			} // if	classname
-		} // for n
-		if (!ismatch)
-			return;
-	} // class match
 
 	tempstring[0] = 0;
 	dpsnprintf(tempstring, sizeof(tempstring), "\n%s EDICT %d:\n", prog->name, PRVM_NUM_FOR_EDICT(ed));
@@ -882,9 +837,9 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 	FS_Print(f, "}\n");
 }
 
-void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, int shall_print_free, const char *wildcard_fieldname, const char *classname_partial, const char *targetname_partial)
+void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, int shall_print_free, const char *wildcard_fieldname, const char *s_fieldname_partial, const char *s_fieldvalue_partial)
 {
-	PRVM_ED_Print (prog, PRVM_EDICT_NUM(ent), shall_print_free, wildcard_fieldname, classname_partial, targetname_partial);
+	PRVM_ED_Print (prog, PRVM_EDICT_NUM(ent), shall_print_free, wildcard_fieldname, s_fieldname_partial, s_fieldvalue_partial);
 }
 
 /*
@@ -921,66 +876,62 @@ void PRVM_ED_PrintEdicts_f(cmd_state_t *cmd)
 		PRVM_ED_PrintNum (prog, i, q_vm_printfree_true, wildcard_fieldname, 
 			q_vm_classname_NULL, q_vm_targetname_NULL);
 }
-// "edicts"
-void PRVM_ED_PrintEdicts_SV_f(cmd_state_t *cmd)
+
+
+void PRVM_ED_PrintEdicts_Either (cmd_state_t *cmd, prvm_prog_t *prog)
 {
-	prvm_prog_t *prog;
 	int		edict_num;
 	const char *wildcard_fieldname = NULL;
-	const char *classname_partial = "";
-	const char *targetname_partial = "";
+	const char *s_fieldname_partial = "";
+	const char *s_fieldvalue_partial = "";
 	
-	if (!(prog = PRVM_FriendlyProgFromString("server")))
-		return;
-
 	if (Cmd_Argc(cmd) == 3) {
-		if (String_Does_Match_Caseless (Cmd_Argv(cmd, 1), "targetname")) {
-			targetname_partial = Cmd_Argv(cmd, 2);
-		} else {
-			Con_PrintLinef ("Expected targetname like " QUOTED_STR("edicts targetname t18") );
-			return;
-		}
+		const char *s_arg1 = Cmd_Argv(cmd, 1);
+		int isnumeric = isdigit(s_arg1[0]);
+		s_fieldname_partial = Cmd_Argv(cmd, 1);
+		s_fieldvalue_partial = Cmd_Argv(cmd, 2);
 	}
 	else if (Cmd_Argc(cmd) == 2) {
-		classname_partial = Cmd_Argv(cmd, 1);
+		s_fieldname_partial = "classname";
+		s_fieldvalue_partial = Cmd_Argv(cmd, 1);
 	}
 
 	if (Cmd_Argc(cmd) == 3) {
-		Con_PrintLinef ("%s: entities with targetname containing " QUOTED_S, prog->name, /*prog->num_edicts, */targetname_partial);
+		Con_PrintLinef ("%s: entities with field " QUOTED_S " containing " QUOTED_S, 
+			prog->name, s_fieldname_partial, s_fieldvalue_partial);
 	} else if (Cmd_Argc(cmd) == 2) {
-		Con_PrintLinef ("%s: entities with classname containing " QUOTED_S, prog->name, /*prog->num_edicts, */classname_partial);
+		Con_PrintLinef ("%s: entities with classname containing " QUOTED_S, prog->name, s_fieldvalue_partial);
 	} else {
 		Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
 	}
 
-	int shall_print_free = *classname_partial || *targetname_partial;
+	// Baker: Any search criteria and we don't print "free"
+	int shall_print_free = !s_fieldname_partial || s_fieldname_partial[0] == NULL_CHAR_0;
 
 	for (edict_num = 0 ; edict_num < prog->num_edicts ; edict_num ++)
-		PRVM_ED_PrintNum (prog, edict_num, shall_print_free, wildcard_fieldname, classname_partial, targetname_partial);
+		PRVM_ED_PrintNum (prog, edict_num, shall_print_free, wildcard_fieldname, s_fieldname_partial, s_fieldvalue_partial);
+}
+
+// "edicts"
+void PRVM_ED_PrintEdicts_SV_f(cmd_state_t *cmd)
+{
+	prvm_prog_t *prog;
+	
+	if (!(prog = PRVM_FriendlyProgFromString("server")))
+		return;
+
+	PRVM_ED_PrintEdicts_Either (cmd, prog);
 }
 
 // "csedicts"
 void PRVM_ED_PrintEdicts_CL_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
-	int		n;
-	const char *wildcard_fieldname = NULL;
-	const char *classname_partial = "";
-
+	
 	if (!(prog = PRVM_FriendlyProgFromString("client")))
 		return;
 
-	if (Cmd_Argc(cmd) == 2) classname_partial = Cmd_Argv(cmd, 1);
-
-	if (Cmd_Argc(cmd) == 2) {
-		Con_PrintLinef ("%s:entities containing " QUOTED_S, prog->name, classname_partial);
-	} else {
-		Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
-	}
-
-	int shall_print_free = *classname_partial;
-	for (n = 0; n < prog->num_edicts; n ++)
-		PRVM_ED_PrintNum (prog, n, shall_print_free, wildcard_fieldname, classname_partial, q_vm_targetname_NULL);
+	PRVM_ED_PrintEdicts_Either (cmd, prog);
 }
 
 /*
@@ -3992,7 +3943,7 @@ void PRVM_Init (void)
 	Cmd_AddCommand (CF_SHARED, "edict", PRVM_ED_PrintEdict_SV_f, "print all data about an entity number in the server VM [Zircon]");  // Baker r1083: "edict" and "edicts"
 	Cmd_AddCommand (CF_SHARED, "csedict", PRVM_ED_PrintEdict_CL_f, "print all data about an entity number in the client VM [Zircon]");  // Baker r1083: "edict" and "edicts"
 
-	Cmd_AddCommand (CF_SHARED, "edicts", PRVM_ED_PrintEdicts_SV_f, "prints all data about all entities in the selected VM (server, client, menu) [Zircon]");  // Baker r1083: "edict" and "edicts"
+	Cmd_AddCommand (CF_SHARED, "edicts", PRVM_ED_PrintEdicts_SV_f, "prints all data about all entities in the VM server.  edicts <classname> or edicts <fieldnamepartial> <fieldvaluepartial> [Zircon]");  // Baker r1083: "edict" and "edicts"
 	Cmd_AddCommand (CF_SHARED, "csedicts", PRVM_ED_PrintEdicts_CL_f, "prints all data about all entities in the selected VM (server, client, menu) [Zircon]");  // Baker r1083: "edict" and "edicts"
 
 	Cmd_AddCommand(CF_SHARED, "prvm_edictcount", PRVM_ED_Count_f, "prints number of active entities in the selected VM (server, client, menu)");

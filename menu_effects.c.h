@@ -72,8 +72,9 @@ static void M_Menu_Options_Effects_AdjustSliders (int dir)
 	else if (local_cursor == optnum++) Cvar_SetValueQuick (&gl_polyblend, bound(0, gl_polyblend.value + dir * 0.1, 1));
 	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_skyscroll1, bound(-8, r_skyscroll1.value + dir * 0.1, 8));
 	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_skyscroll2, bound(-8, r_skyscroll2.value + dir * 0.1, 8));
-	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_waterwarp, bound(0, (int)(r_waterwarp.value + dir), 1));
+	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_waterwarp, bound(0, (int)(r_waterwarp.value + dir) , 2));
 	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_wateralpha, bound(0, r_wateralpha.value + dir * 0.1, 1));
+	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_waterdeform, bound(0, (int)(r_waterdeform.value + dir) , 2));
 	else if (local_cursor == optnum++) Cvar_SetValueQuick (&r_waterscroll, bound(0, r_waterscroll.value + dir * 0.5, 10));
 }
 
@@ -125,8 +126,9 @@ static void M_Options_Effects_Draw (void)
 	M_Options_PrintSlider(  "            View Blend", true, gl_polyblend.value, 0, 1);
 	M_Options_PrintSlider(  "Upper Sky Scroll Speed", true, r_skyscroll1.value, -8, 8);
 	M_Options_PrintSlider(  "Lower Sky Scroll Speed", true, r_skyscroll2.value, -8, 8);
-	M_Options_PrintSlider(  "  Underwater View Warp", true, r_waterwarp.value, 0, 1);
+	M_Options_PrintSS(      "  Underwater View Warp", true, get_waterwarp_text(get_waterwarp_rot()) );
 	M_Options_PrintSlider(  " Water Alpha (opacity)", true, r_wateralpha.value, 0, 1);
+	M_Options_PrintSS(      "          Water Deform", true, get_waterdeform_text(get_deform_rot()) );
 	M_Options_PrintSlider(  "        Water Movement", true, r_waterscroll.value, 0, 10);
 
 	PPX_DrawSel_End ();

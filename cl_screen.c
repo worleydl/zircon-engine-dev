@@ -669,6 +669,7 @@ static void SCR_InfoBar_f (cmd_state_t *cmd)
 SCR_SetUpToDrawConsole
 ==================
 */
+
 static void SCR_SetUpToDrawConsole (void)
 {
 #ifdef CONFIG_MENU
@@ -691,8 +692,9 @@ static void SCR_SetUpToDrawConsole (void)
 
 	if (scr_conforcewhiledisconnected.integer >= 2 && key_dest == key_game && cls.signon != SIGNONS_4)
 		Flag_Add_To(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4);
-	else if (scr_conforcewhiledisconnected.integer >= 1 && key_dest == key_game && cls.signon != SIGNONS_4 && !sv.active)
+	else if (scr_conforcewhiledisconnected.integer >= 1 && key_dest == key_game && cls.signon != SIGNONS_4 && !sv.active) {
 		Flag_Add_To(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4); // |= KEY_CONSOLEACTIVE_FORCED;
+	}
 	else
 		Flag_Remove_From(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4); // &= ~KEY_CONSOLEACTIVE_FORCED_4;
 
@@ -710,8 +712,11 @@ static void SCR_SetUpToDrawConsole (void)
 SCR_DrawConsole
 ==================
 */
+int scr_skip_once;
+
 void SCR_DrawConsole (void)
 {
+	static int mfirst;
 	int effective_loading = scr_loadingscreen_barheight.integer;
 	if (!effective_loading && 
 		scr_loading && 
@@ -723,14 +728,25 @@ void SCR_DrawConsole (void)
 	// infobar and loading progress are not drawn simultaneously
 	scr_con_margin_bottom = scr_loading ? effective_loading : SCR_InfobarHeight();
 
+	if (mfirst == 0) {
+		mfirst = 1;
+		goto no_draw_0;
+	}
+	if (scr_skip_once) {
+		scr_skip_once = false;
+		goto no_draw_0;
+	}
+
 	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4)) {
 		// full screen
 		Con_DrawConsole (vid_conheight.integer - scr_con_margin_bottom);
 	}
 	else if (scr_con_current)
 		Con_DrawConsole (Smallest(scr_con_current, vid_conheight.integer - scr_con_margin_bottom));
-	else
+	else {
+no_draw_0:
 		con_vislines = 0;
+	}
 }
 
 //=============================================================================
@@ -1535,6 +1551,7 @@ SCR_BeginLoadingPlaque
 void SCR_BeginLoadingPlaque(qbool startup)
 {
 	loadingscreenstack_t dummy_status;
+	scr_skip_once = true;
 
 	// we need to push a dummy status so CL_UpdateScreen knows we have things to load...
 	if (!loadingscreenstack)
@@ -1571,6 +1588,8 @@ void SCR_PushLoadingScreen (const char *msg, float len_in_parent)
 	loadingscreenstack_t *s = (loadingscreenstack_t *) Z_Malloc(sizeof(loadingscreenstack_t));
 	s->prev = loadingscreenstack;
 	loadingscreenstack = s;
+
+	scr_skip_once = true;
 
 	c_strlcpy(s->msg, msg);
 	s->relative_completion = 0;

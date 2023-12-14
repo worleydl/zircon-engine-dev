@@ -3,6 +3,24 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 5 - November 16 2023
+
+1. Added r_waterwarp (winquake underwater effect) / r_waterdeform (twist water) to effects menu.
+2. edicts [field name] [value] will find entities with that field equal to the value.
+
+	Example:  edicts classname player --> this will find anything with a classname containing player
+	          edicts model grenade --> this will find anything with a model that contains "grenade"
+	          edicts mod gren --> this will check any field with "mod" in the name and return
+	                               results with "gren" in the name.
+	                               
+    So yeah, it actually uses string partials for fieldname and value.
+    
+    edicts with 1 argument searches for classname.
+
+3.  Eliminated 2 instances of console drawing for a single frame.
+    First was on startup, the first frame seems to always draw the console (not any more!)
+    Second was on new map (not any more!).
+
 // Zircon Beta Release 4 - November 16 2023
 
 1. Rewrote part of texture loader to more resemble DarkPlaces classic while keeping the intent

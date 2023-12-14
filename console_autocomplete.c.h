@@ -498,6 +498,10 @@ int GetEdictsCmd_Count (const char *s_prefix)
 	int num_matches = 0;
 	// Ok .. this has to be sorted due to first/last.
 	const char *slist[] =  {
+		"classname",
+		"message",
+		"model",
+		"noise",
 		"targetname",
 	};
 
