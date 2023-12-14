@@ -222,13 +222,14 @@ CL_Name_f
 The logic from div0-stable's Host_Name_f() is now in SV_Name_f().
 ==================
 */
+WARP_X_ (SV_Name_f)
 static void CL_Name_f(cmd_state_t *cmd)
 {
 	char *newNameSource;
 
-	if (Cmd_Argc(cmd) == 1)
-	{
-		Con_Printf ("name: \"%s^7\"\n", cl_name.string);
+	if (Cmd_Argc(cmd) == 1) {
+		// Baker: CON_WHITE -- in case there is a color in the name
+		Con_PrintLinef ("name: \"%s" CON_WHITE "\"", cl_name.string);
 		return;
 	}
 
@@ -239,6 +240,9 @@ static void CL_Name_f(cmd_state_t *cmd)
 		newNameSource[MAX_SCOREBOARDNAME_128 - 1] = '\0'; // this is fine (cbuf stores length)
 
 	Cvar_SetQuick(&cl_name, newNameSource);
+
+	//if (host_isclient.integer == 0)
+	CL_SetInfo("name", cl_name.string, qnfo_send_true, qnfo_allowstar_false, qnfo_allowmodel_false, qnfo_quiet_false);
 }
 
 /*
@@ -289,6 +293,7 @@ static void CL_Bottomcolor_c(cvar_t *var)
 	cl_color.callback = callback_save;
 }
 
+WARP_X_ (CL_Name_f)
 static void CL_Color_f(cmd_state_t *cmd)
 {
 	int top, bottom;
@@ -297,8 +302,8 @@ static void CL_Color_f(cmd_state_t *cmd)
 	{
 		if (cmd->source == src_local)
 		{
-			Con_Printf ("\"color\" is \"%d %d\"\n", cl_topcolor.integer, cl_bottomcolor.integer);
-			Con_Print("color <0-15> [0-15]\n");
+			Con_PrintLinef (QUOTED_STR("color") " is \"%d %d\"", cl_topcolor.integer, cl_bottomcolor.integer);
+			Con_PrintLinef ("color <0-15> [0-15]");
 		}
 		return;
 	}
@@ -354,7 +359,7 @@ static void CL_User_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 
 	if (Cmd_Argc(cmd) != 2)
 	{
-		Con_Printf ("Usage: user <username / userid>\n");
+		Con_PrintLinef ("Usage: user <username / userid>");
 		return;
 	}
 
@@ -386,18 +391,18 @@ static void CL_Users_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 	int		c;
 
 	c = 0;
-	Con_Printf ("userid frags name\n");
-	Con_Printf ("------ ----- ----\n");
+	Con_PrintLinef ("userid frags name");
+	Con_PrintLinef ("------ ----- ----");
 	for (i = 0;i < cl.maxclients;i++)
 	{
 		if (cl.scores[i].name[0])
 		{
-			Con_Printf ("%6i %4i %s\n", cl.scores[i].qw_userid, cl.scores[i].frags, cl.scores[i].name);
+			Con_PrintLinef ("%6i %4i %s", cl.scores[i].qw_userid, cl.scores[i].frags, cl.scores[i].name);
 			c++;
 		}
 	}
 
-	Con_Printf ("%d total users\n", c);
+	Con_PrintLinef ("%d total users", c);
 }
 
 /*
@@ -752,6 +757,8 @@ void CL_InitCommands(void)
 	else
 		Cmd_AddCommand(CF_CLIENT, "name", CL_Name_f, "change your player name");
 
+	//Cvar_RegisterCallback(&cl_name, CL_Name_c);
+
 	Cvar_RegisterVariable(&cl_rate);
 	Cvar_RegisterVirtual(&cl_rate, "_cl_rate");
 	Cvar_RegisterVariable(&cl_rate_burstsize);
@@ -771,6 +778,8 @@ void CL_InitCommands(void)
 
 	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "cmd", CL_ForwardToServer_f, "send a console commandline to the server (used by some mods)");
 	Cmd_AddCommand(CF_CLIENT, "color", CL_Color_f, "change your player shirt and pants colors");
+	WARP_X_ (SV_Name_f CL_Name_f)
+//	Cmd_AddCommand(CF_CLIENT, "name", CL_Color_f, "change your player shirt and pants colors");
 	Cmd_AddCommand(CF_CLIENT, "rcon", CL_Rcon_f, "sends a command to the server console (if your rcon_password matches the server's rcon_password), or to the address specified by rcon_address when not connected (again rcon_password must match the server's); note: if rcon_secure is set, client and server clocks must be synced e.g. via NTP");
 	Cmd_AddCommand(CF_CLIENT, "srcon", CL_Rcon_f, "sends a command to the server console (if your rcon_password matches the server's rcon_password), or to the address specified by rcon_address when not connected (again rcon_password must match the server's); this always works as if rcon_secure is set; note: client and server clocks must be synced e.g. via NTP");
 	Cmd_AddCommand(CF_CLIENT, "pqrcon", CL_PQRcon_f, "sends a command to a proquake server console (if your rcon_password matches the server's rcon_password), or to the address specified by rcon_address when not connected (again rcon_password must match the server's)");

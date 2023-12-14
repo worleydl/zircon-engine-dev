@@ -1207,7 +1207,7 @@ static int Mod_BSP_LightPoint_RecursiveBSPNode(model_t *model, vec3_t ambientcol
 						dsi = lmwidth-2;
 					if (dti > lmheight-2)
 						dti = lmheight-2;
-					
+
 					// calculate bilinear interpolation factors
 					// and also multiply by fixedpoint conversion factors to
 					// compensate for lightmaps being 0-255 (as 0-2), we use
@@ -1394,7 +1394,7 @@ static int Mod_Q1BSP_TraceLineAgainstSurfacesRecursiveBSPNode(RecursiveHullCheck
 			t1 = DotProduct (plane->normal, t->start) - plane->dist;
 			t2 = DotProduct (plane->normal, t->end) - plane->dist;
 		}
-	
+
 		midf = t1 / (t1 - t2);
 		VectorMA(t->start, midf, t->dist, mid);
 
@@ -1552,8 +1552,8 @@ static void Mod_Q1BSP_LoadSplitSky (unsigned char *src, int width, int height, i
 		}
 	}
 
-	loadmodel->brush.solidskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_solidtexture", 0         , (unsigned char *) solidpixels, w, h, 0, 0, 0, vid.sRGB3D, true); // Baker r9011 fix q1bsp sky never being reloaded after first map 
-	loadmodel->brush.alphaskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_alphatexture", TEXF_ALPHA, (unsigned char *) alphapixels, w, h, 0, 0, 0, vid.sRGB3D, true); // Baker r9011 fix q1bsp sky never being reloaded after first map 
+	loadmodel->brush.solidskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_solidtexture", 0         , (unsigned char *) solidpixels, w, h, 0, 0, 0, vid.sRGB3D, true); // Baker r9011 fix q1bsp sky never being reloaded after first map
+	loadmodel->brush.alphaskyskinframe = R_SkinFrame_LoadInternalBGRA("sky_alphatexture", TEXF_ALPHA, (unsigned char *) alphapixels, w, h, 0, 0, 0, vid.sRGB3D, true); // Baker r9011 fix q1bsp sky never being reloaded after first map
 	Mem_Free(solidpixels);
 	Mem_Free(alphapixels);
 }
@@ -1738,8 +1738,8 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 				name[j] += 'a' - 'A';
 
 		tx = loadmodel->data_textures + i;
-		// try to load shader or external textures, 
-		// but first we have to backup the texture_t because shader loading overwrites it 
+		// try to load shader or external textures,
+		// but first we have to backup the texture_t because shader loading overwrites it
 		// even if it fails
 		backuptex = loadmodel->data_textures[i];
 
@@ -1749,8 +1749,8 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 // BAKER BAKER
 		// /* HACK */  Tries to load non-sky textures from shader.
 		if (name[0] && String_Does_Start_With(name, "sky") == false &&
-				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, 
-				loadmodel->data_textures + i, 
+				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name,
+				loadmodel->data_textures + i,
 				name, q_tx_complain_false, q_tx_fallback_notexture_false, TXFLAGS1, MATERIALFLAG_WALL
 				) )
 		{
@@ -1807,7 +1807,7 @@ sky_skip:
 
 		if (cls.state != ca_dedicated) {
 			const char *s_mapname_texture;
-			const char *s_regular_texture;		
+			const char *s_regular_texture;
 			skinframe_t *skinframe;
 regularo:
 			if (gamemode == GAME_TENEBRAE) s_mapname_texture = tx->name;
@@ -1816,32 +1816,32 @@ regularo:
 			if (gamemode == GAME_TENEBRAE) s_regular_texture = tx->name;
 			else s_regular_texture = va (vabuf, sizeof(vabuf), "textures/%s", tx->name);
 
-			skinframe = R_SkinFrame_LoadExternal(s_mapname_texture, 
+			skinframe = R_SkinFrame_LoadExternal(s_mapname_texture,
 				TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
 
 			// No map texture -- use regular texture
 			if (!skinframe) {
-					
-				skinframe = R_SkinFrame_LoadExternal (s_regular_texture, 
+
+				skinframe = R_SkinFrame_LoadExternal (s_regular_texture,
 					TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
 			}
 
 			// HACK: It loads custom skybox textures as a wall if loaded as a skinframe.
-			if (!skinframe 
+			if (!skinframe
 				|| String_Does_Start_With(tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/)
 			{
 				// did not find external texture via shader loading, load it from the bsp or wad3
 				skinframe = R_SkinFrame_LoadExternal(
 					s_mapname_texture, TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
-				
+
 				// No map texture -- use regular texture ?
 				if (!skinframe)
 					skinframe = R_SkinFrame_LoadExternal(s_regular_texture, TXFLAGS1, q_tx_complain_false, q_tx_fallback_notexture_false);
-				
+
 				// allow offsetmapping on external textures without a q3 shader
 				if (skinframe)
-					tx->offsetmapping = OFFSETMAPPING_DEFAULT; 
-				
+					tx->offsetmapping = OFFSETMAPPING_DEFAULT;
+
 				if (!skinframe && loadmodel->brush.ishlbsp) {
 					// HALF-LIFE BSP: internal texture overrides wad
 					unsigned char *pixels, * freepixels;
@@ -1860,7 +1860,7 @@ regularo:
 						Mem_Free(freepixels);
 				}
 				// Sky split procedure
-				else if (String_Does_Start_With (tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/ 
+				else if (String_Does_Start_With (tx->name, "sky") /*!strncmp(tx->name, "sky", 3)*/
 					&& mtwidth == mtheight * 2)
 				{
 					// Q1 SKY SPLIT
@@ -1872,7 +1872,7 @@ regularo:
 					// No map folder texture, use regular replacement
 					if (!data)
 						data = loadimagepixelsbgra(s_regular_texture, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, q_tx_miplevel_null);
-	
+
 					if (data && image_width == image_height * 2) {
 						Mod_Q1BSP_LoadSplitSky (data, image_width, image_height, 4);
 						Mem_Free(data);
@@ -1900,11 +1900,11 @@ regularo:
 					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, TEXF_MIPMAP | TEXF_ALPHA, zerotrans, 1, 1, 0, 0, 0, q_tx_convertsrgb_false, q_is_sky_load_false);
 				else if (String_Does_Start_With(tx->name, "mirror")) // Tenebrae
 					tx->materialshaderpass->skinframes[0] = R_SkinFrame_LoadInternalBGRA(tx->name, 0, zeroopaque, 1, 1, 0, 0, 0, q_tx_convertsrgb_false, q_is_sky_load_false);
-			} // !skinframe, !sky 
+			} // !skinframe, !sky
 			else
 				tx->materialshaderpass->skinframes[0] = skinframe;
 			tx->currentskinframe = tx->materialshaderpass->skinframes[0];
-		}  
+		}
 
 		tx->basematerialflags = MATERIALFLAG_WALL;
 		if (tx->name[0] == '*')
@@ -2081,11 +2081,11 @@ static void Mod_Q1BSP_LoadLighting(sizebuf_t *sb)
 		loadmodel->brushq1.lightdata = (unsigned char *)Mem_Alloc(loadmodel->mempool, sb->cursize);
 		for (i = 0;i < sb->cursize;i++)
 			loadmodel->brushq1.lightdata[i] = sb->data[i] >>= 1;
-	} else { 
+	} else {
 		// LadyHavoc: bsp version 29 (normal white lighting)
-	
+
 		// LadyHavoc: hope is not lost yet, check for a .lit file to load
-		
+
 		// Baker r1247: external_lits
 		if (external_lits.integer == 0) {
 			data = NULL;
@@ -2328,7 +2328,7 @@ static void Mod_Q1BSP_LoadEdges(sizebuf_t *sb)
 			Con_PrintLinef ("Mod_Q1BSP_LoadEdges: %s has invalid vertex indices in edge %d (vertices %d %d >= numvertices %d)", loadmodel->model_name, i, out->v[0], out->v[1], loadmodel->brushq1.numvertexes);
 			if (!loadmodel->brushq1.numvertexes)
 				Host_Error_Line ("Mod_Q1BSP_LoadEdges: %s has edges but no vertexes, cannot fix", loadmodel->model_name);
-				
+
 			out->v[0] = 0;
 			out->v[1] = 0;
 		}
@@ -3001,7 +3001,7 @@ static void Mod_Q1BSP_LoadLeafs(sizebuf_t *sb)
 			out->maxs[0] = MSG_ReadLittleShort(sb);
 			out->maxs[1] = MSG_ReadLittleShort(sb);
 			out->maxs[2] = MSG_ReadLittleShort(sb);
-	
+
 			firstmarksurface = MSG_ReadLittleLong(sb);
 			nummarksurfaces = MSG_ReadLittleLong(sb);
 		}
@@ -3013,7 +3013,7 @@ static void Mod_Q1BSP_LoadLeafs(sizebuf_t *sb)
 			out->maxs[0] = MSG_ReadLittleFloat(sb);
 			out->maxs[1] = MSG_ReadLittleFloat(sb);
 			out->maxs[2] = MSG_ReadLittleFloat(sb);
-	
+
 			firstmarksurface = MSG_ReadLittleLong(sb);
 			nummarksurfaces = MSG_ReadLittleLong(sb);
 		}
@@ -3025,7 +3025,7 @@ static void Mod_Q1BSP_LoadLeafs(sizebuf_t *sb)
 			out->maxs[0] = MSG_ReadLittleShort(sb);
 			out->maxs[1] = MSG_ReadLittleShort(sb);
 			out->maxs[2] = MSG_ReadLittleShort(sb);
-	
+
 			firstmarksurface = (unsigned short)MSG_ReadLittleShort(sb);
 			nummarksurfaces  = (unsigned short)MSG_ReadLittleShort(sb);
 		}
@@ -3989,7 +3989,7 @@ void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	Mod_Q1BSP_MakeHull0();
 	if (mod_bsp_portalize.integer) {
 		// Baker r0100: Only do Mod_BSP_MakePortals when it would be used.
-		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == NULL || r_novis.integer) {
+		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == 0 || r_novis.integer) {
 			Mod_BSP_MakePortals ();
 		} else {
 			Con_DPrintLinef ("Vis data found and not r_novis, skipping Mod_BSP_MakePortals");
@@ -4487,7 +4487,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 	loadmodel->data_textures = (texture_t*)Mem_Realloc(loadmodel->mempool, loadmodel->data_textures, loadmodel->num_texturesperskin * sizeof(texture_t));
 
 	// now assemble the texture chains
-	// if we encounter the textures out of order, the later ones won't mark the earlier ones in a sequence, so the earlier 
+	// if we encounter the textures out of order, the later ones won't mark the earlier ones in a sequence, so the earlier
 	for (i = 0, out = loadmodel->brushq1.texinfo;i < count;i++, out++)
 	{
 		int j, k;
@@ -4565,7 +4565,7 @@ static void Mod_Q2BSP_LoadLeafs(sizebuf_t *sb)
 		out->maxs[0] = MSG_ReadLittleShort(sb);
 		out->maxs[1] = MSG_ReadLittleShort(sb);
 		out->maxs[2] = MSG_ReadLittleShort(sb);
-	
+
 		firstmarksurface = (unsigned short)MSG_ReadLittleShort(sb);
 		nummarksurfaces  = (unsigned short)MSG_ReadLittleShort(sb);
 		firstmarkbrush = (unsigned short)MSG_ReadLittleShort(sb);
@@ -5910,7 +5910,7 @@ static void Mod_Q3BSP_LoadFaces(lump_t *l)
 	 		patchtess[patchtesscount].info.lods[PATCH_LOD_VISUAL].ytess = ytess;
 	 		patchtess[patchtesscount].info.lods[PATCH_LOD_COLLISION].xtess = cxtess;
 	 		patchtess[patchtesscount].info.lods[PATCH_LOD_COLLISION].ytess = cytess;
-	
+
 			patchtess[patchtesscount].surface_id = i;
 			patchtess[patchtesscount].lodgroup[0] = LittleFloat(in->specific.patch.mins[0]);
 			patchtess[patchtesscount].lodgroup[1] = LittleFloat(in->specific.patch.mins[1]);
@@ -7502,16 +7502,16 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	loadmodel->brush.numsubmodels = loadmodel->brushq3.num_models;
 
 	// the MakePortals code works fine on the q3bsp data as well
-	#pragma message ("Baker: mod_bsp_portalize how detect no vis data q3?") 
+	#pragma message ("Baker: mod_bsp_portalize how detect no vis data q3?")
 	if (mod_bsp_portalize.integer) {
 		// Baker r0100: Only do Mod_BSP_MakePortals when it would be used.
-		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == NULL || r_novis.integer) {
+		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == 0 || r_novis.integer) {
 			Mod_BSP_MakePortals ();
 		} else {
 			Con_DPrintLinef ("Vis data found and not r_novis, skipping Mod_BSP_MakePortals");
 		}
 	}
-	
+
 	// FIXME: shader alpha should replace r_wateralpha support in q3bsp
 	loadmodel->brush.supportwateralpha = true;
 

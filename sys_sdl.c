@@ -177,6 +177,8 @@ void Sys_PrintToTerminal(const char *text)
 	#endif
 }
 
+#ifdef _WIN32
+
 HANDLE				hinput, houtput;
 
 void Sys_Console_Init_WinQuake (void)
@@ -278,6 +280,8 @@ char *Sys_ConsoleInput_WinQuake (void)
 
 	return NULL;
 }
+
+#endif
 
 char *Sys_ConsoleInput (void) // CONSOLUS
 {

@@ -3,6 +3,19 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 8 - November 24 2023
+
+1. Upgraded the SDL2 version zircon_beta_gcc.exe, which seems to resolve vid_restart weirdness.
+   Q: Does it resolve jakub1 sound weirdness?
+2. Fixed zircon_beta_gcc.exe odd behavior with vid_restart by upgrading the SDL2 library version.
+3. "cvarlist changed" will list changed cvars.  The "changed" autocompletes.
+4. Fixed Linux sv-release compile.
+5. Fixed "name" command on client did not update on server.  Issue was inherited from DarkPlaces Beta.
+6. "sv_gameplayfix_fiendjumpfix 1" -- the fiend and dog jump fix from DarkPlaces Beta.
+7. Added fte_extensions.qc to dpdefs folder in source code.  fte's documentation for some QuakeC functions is
+   invaluable.
+8. Multiplayer -> Join Game and Multiplayer -> New Game show local ipv4 (like 192.168.0.3) and ipv6 addresses in menu.
+
 // Zircon Beta Release 7 - November 23 2023
 
 1. Video menu reworked and includes "Always force desktop resolution" ON/OFF, and rewired to make sure

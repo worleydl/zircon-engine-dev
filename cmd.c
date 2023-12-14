@@ -325,7 +325,7 @@ void Cbuf_AddTextLine (cmd_state_t *cmd, const char *text)
 {
 	char vabuf[16384];
 	c_dpsnprintf1 (vabuf, "%s" NEWLINE, text);
-	
+
 	Cbuf_AddText (cmd, vabuf);
 }
 
@@ -413,10 +413,10 @@ void Cbuf_Execute (cmd_buf_t *cbuf)
 		 * can insert data at the beginning of the text buffer
 		 */
 		current = List_Entry(cbuf->start.next, cmd_input_t, list);
-		
+
 		// Recycle memory so using WASD doesn't cause a malloc and free
 		List_Move_Tail(&current->list, &cbuf->free);
-		
+
 		/*
 		 * Assume we're rolling with the current command-line and
 		 * always set this false because alias expansion or cbuf insertion
@@ -913,10 +913,10 @@ static void Cmd_Inc_f(cmd_state_t *cmd)
 	cvar_t *cvCVar = Cvar_FindVar(cvars, Cmd_Argv(cmd, 1), ALL_FLAGS_ANTIZERO);
 
 	if (!cvCVar) {
-		Con_PrintLinef ("Variable %s not found", Cmd_Argv(cmd, 1)); 
+		Con_PrintLinef ("Variable %s not found", Cmd_Argv(cmd, 1));
 		return;
 	}
-	
+
 	if (Have_Flag(cvCVar->flags, CF_PERSISTENT)) {
 		Con_PrintLinef ("%s is CF_PERSISTENT", Cmd_Argv(cmd, 1));
 		return;
@@ -929,17 +929,17 @@ static void Cmd_Inc_f(cmd_state_t *cmd)
 
 	float amt, val;
 
-	switch (numargs) {		
+	switch (numargs) {
 	case 2:	val = cvCVar->value + 1;
 			Cvar_SetValueQuick(cvCVar, val);
 			break;
-	
+
 	case 3:	amt = atof(Cmd_Argv(cmd, 2));
 			val = cvCVar->value + amt;
 			Cvar_SetValueQuick(cvCVar, val);
 			break;
 	}
-	
+
 }
 
 static void Cmd_Dec_f(cmd_state_t *cmd)
@@ -956,7 +956,7 @@ static void Cmd_Dec_f(cmd_state_t *cmd)
 	cvar_t *cvCVar = Cvar_FindVar(cvars, Cmd_Argv(cmd, 1), ALL_FLAGS_ANTIZERO);
 
 	if (!cvCVar) {
-		Con_PrintLinef ("Variable %s not found", Cmd_Argv(cmd, 1), Cmd_Argv(cmd, 1));
+		Con_PrintLinef ("Variable %s not found", Cmd_Argv(cmd, 1));
 		return;
 	}
 
@@ -991,9 +991,9 @@ static void Cmd_Toggle_f(cmd_state_t *cmd)
 
 	if (nNumArgs == 1)
 		// No Arguments Specified; Print Usage
-		Con_PrintLinef ("Toggle Console Variable - Usage" NEWLINE 
+		Con_PrintLinef ("Toggle Console Variable - Usage" NEWLINE
 						"  toggle <variable> - toggles between 0 and 1" NEWLINE
-						"  toggle <variable> <value> - toggles between 0 and <value>" NEWLINE 
+						"  toggle <variable> <value> - toggles between 0 and <value>" NEWLINE
 						"  toggle <variable> [string 1] [string 2]...[string n] - cycles through all strings");
 	else
 	{ // Correct Arguments Specified
@@ -1542,7 +1542,7 @@ static qbool Cmd_PreprocessString(cmd_state_t *cmd, const char *intext, char *ou
 				}
 			}
 		}
-		else 
+		else
 			outtext[outlen++] = *in++;
 	}
 	outtext[outlen] = 0;
@@ -1703,7 +1703,7 @@ static void Cmd_Apropos_f(cmd_state_t *cmd)
 static cmd_state_t *Cmd_AddInterpreter(cmd_buf_t *cbuf, cvar_state_t *cvars, int cvars_flagsmask, int cmds_flagsmask, cmd_userdefined_t *userdefined)
 {
 	cmd_state_t *cmd = (cmd_state_t *)Mem_Alloc(tempmempool, sizeof(cmd_state_t));
-	
+
 	cmd->mempool = Mem_AllocPool("commands", 0, NULL);
 	// space for commands and script files
 	cmd->cbuf = cbuf;
@@ -1989,13 +1989,13 @@ int Cmd_CompleteCountPossible (cmd_state_t *cmd, const char *partial, int is_fro
 	for (func = cmd->userdefined->qc_functions; func; func = func->next) {
 		if (String_Does_Start_With_Caseless (func->name, partial)) {
 			const char *sxy = func->name;
-			
+
 			SPARTIAL_EVAL_
 
 			h++; // qualified
 		} // qualified
 	} // for
-	
+
 	for (func = cmd->engine_functions; func; func = func->next) {
 		if (String_Does_Start_With_Caseless(func->name, partial)) {
 			const char *sxy = func->name;
@@ -2003,7 +2003,7 @@ int Cmd_CompleteCountPossible (cmd_state_t *cmd, const char *partial, int is_fro
 			h++; // qualified
 		} // qualified
 	} // for
-	
+
 	return h;
 }
 
@@ -2127,7 +2127,7 @@ int Cmd_CompleteAliasCountPossible (cmd_state_t *cmd, const char *partial, int i
 			SPARTIAL_EVAL_
 		} // if
 	} // for
-	
+
 	return h;
 }
 
@@ -2164,7 +2164,7 @@ void Cmd_ClearCSQCCommands (cmd_state_t *cmd)
 {
 	cmd_function_t *func;
 	cmd_function_t **next = &cmd->userdefined->qc_functions;
-	
+
 	while(*next)
 	{
 		func = *next;
@@ -2179,7 +2179,7 @@ extern cvar_t sv_cheats;
  * Cloudwalk FIXME: This idea sounded great in my head but...
  * How do we handle commands that can be received by the client,
  * but which the server can also execute locally?
- * 
+ *
  * If we create a callback where the engine will forward to server
  * but try to execute the command locally if it's dedicated,
  * we're back to intermixing client and server code which I'm

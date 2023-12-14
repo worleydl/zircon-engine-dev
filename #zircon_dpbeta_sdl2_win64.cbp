@@ -9,20 +9,20 @@
 		<Build>
 			<Target title="Debug">
 				<Option output="c:/quak/zircon_beta_gcc_debug" prefix_auto="1" extension_auto="1" />
-				<Option object_output="build-obj/debug/darkplaces64-sdl/" />
+				<Option object_output="build-obj/debug/zircon_beta_gcc_debug/" />
 				<Option type="0" />
 				<Option compiler="mingw_64-bit_compiler" />
-				<Option parameters="-basedir c:\zerox1 -condebug" />
+				<Option parameters="-basedir c:\quak -condebug" />
 				<Compiler>
 					<Add option="-ggdb" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
 				<Option output="c:/quak/zircon_beta_gcc" prefix_auto="1" extension_auto="1" />
-				<Option object_output="build-obj/release/darkplaces64-sdl/" />
+				<Option object_output="build-obj/release/zircon_beta_gcc_release/" />
 				<Option type="0" />
 				<Option compiler="mingw_64-bit_compiler" />
-				<Option parameters="-basedir c:\zerox1 -condebug" />
+				<Option parameters="-basedir c:\quak -condebug" />
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-std=c99" />
@@ -49,7 +49,7 @@
 			<Add option="-D_FILE_OFFSET_BITS=64" />
 			<Add option="-D__KERNEL_STRICT_NAMES" />
 			<Add option="-DUSEODE" />
-			<Add directory="./xtra/SDK/SDL2-devel-2.0.8-mingw/SDL2-2.0.8/x86_64-w64-mingw32/include/SDL2" />
+			<Add directory="./xtra/SDK/SDL2-devel-2.28.5-mingw/SDL2-2.28.5/x86_64-w64-mingw32/include/SDL2" />
 		</Compiler>
 		<Linker>
 			<Add option="-s" />
@@ -76,7 +76,8 @@
 			<Add library="ole32" />
 			<Add library="oleaut32" />
 			<Add library="version" />
-			<Add directory="./xtra/SDK/SDL2-devel-2.0.8-mingw/SDL2-2.0.8/x86_64-w64-mingw32/lib" />
+			<Add library="SetupAPI" />
+			<Add directory="./xtra/SDK/SDL2-devel-2.28.5-mingw/SDL2-2.28.5/x86_64-w64-mingw32/lib" />
 		</Linker>
 		<Unit filename="av_backend_libav.c">
 			<Option compilerVar="CC" />

@@ -877,7 +877,7 @@ int R_Shadow_CalcTriangleSideMask(const vec3_t p1, const vec3_t p2, const vec3_t
 	if (an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
 		mask &= (3<<4)
 			| (dn1 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2))
-			| (dn2 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2))			
+			| (dn2 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2))
 			| (dn3 >= 0 ? (1<<0)|(2<<2) : (2<<0)|(1<<2));
 
 	dp1 = p1[1] + p1[2], dn1 = p1[1] - p1[2], ap1 = fabs(dp1), an1 = fabs(dn1),
@@ -886,7 +886,7 @@ int R_Shadow_CalcTriangleSideMask(const vec3_t p1, const vec3_t p2, const vec3_t
 	if (ap1 > bias*an1 && ap2 > bias*an2 && ap3 > bias*an3)
 		mask &= (3<<0)
 			| (dp1 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4))
-			| (dp2 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4))			
+			| (dp2 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4))
 			| (dp3 >= 0 ? (1<<2)|(1<<4) : (2<<2)|(2<<4));
 	if (an1 > bias*ap1 && an2 > bias*ap2 && an3 > bias*ap3)
 		mask &= (3<<0)
@@ -1386,7 +1386,7 @@ void R_Shadow_RenderMode_Begin(void)
 	GL_DepthMask(false);
 	GL_Color(0, 0, 0, 1);
 	GL_Scissor(r_refdef.view.viewport.x, r_refdef.view.viewport.y, r_refdef.view.viewport.width, r_refdef.view.viewport.height);
-	
+
 	r_shadow_rendermode = R_SHADOW_RENDERMODE_NONE;
 	r_shadow_lightingrendermode = R_SHADOW_RENDERMODE_LIGHT_GLSL;
 
@@ -1778,7 +1778,7 @@ static void R_Shadow_BounceGrid_UpdateSpacing(void)
 		dlight_t *light;
 		rtlight_t *rtlight;
 
-		// calculate bounds enclosing world lights as they should be noticably tighter 
+		// calculate bounds enclosing world lights as they should be noticably tighter
 		// than the world bounds on maps with unlit monster containers (see e1m7 etc)
 		range = (unsigned int)Mem_ExpandableArray_IndexRange(&r_shadow_worldlightsarray); // checked
 		for (lightindex = 0;lightindex < range;lightindex++)
@@ -1880,9 +1880,9 @@ static void R_Shadow_BounceGrid_UpdateSpacing(void)
 	numpixels = r_shadow_bouncegrid_state.pixelsperband*r_shadow_bouncegrid_state.pixelbands;
 	if (r_shadow_bouncegrid_state.numpixels != numpixels)
 	{
-		if (r_shadow_bouncegrid_state.texture) { 
+		if (r_shadow_bouncegrid_state.texture) {
 			R_FreeTexture(r_shadow_bouncegrid_state.texture);
-			r_shadow_bouncegrid_state.texture = NULL; 
+			r_shadow_bouncegrid_state.texture = NULL;
 		}
 
 		R_Shadow_BounceGrid_FreeHighPixels();
@@ -2763,9 +2763,9 @@ void R_Shadow_UpdateBounceGridTexture(void)
 	qbool settingschanged;
 
 	enable = R_Shadow_BounceGrid_CheckEnable(flag);
-	
+
 	R_Shadow_BounceGrid_GenerateSettings(&settings);
-	
+
 	// changing intensity does not require an update
 	r_shadow_bouncegrid_state.intensity = r_shadow_bouncegrid_intensity.value;
 
@@ -4849,7 +4849,7 @@ void R_Shadow_EditLights_Bake_f(cmd_state_t *cmd)
 	char	*lightsstring;
 
 	int isok;
-	
+
 	if (cl.worldmodel == NULL) {
 		Con_PrintLinef ("No map loaded.");
 		return;
@@ -4863,7 +4863,7 @@ void R_Shadow_EditLights_Bake_f(cmd_state_t *cmd)
 		Con_PrintLinef ("Failed to read file " QUOTED_S, s_source);
 		return;
 	}
-	
+
 	isok = FS_WriteFile(s_dest, lightsstring, strlen(lightsstring));
 
 	if (!isok) {
@@ -4941,7 +4941,7 @@ void R_Shadow_LoadWorldLights(void)
 			if (color[0] < 0) color[0] = 0;
 			if (color[1] < 0) color[1] = 0;
 			if (color[2] < 0) color[2] = 0;
-			
+
 			*s = tempchar;
 			if (a < 18)
 				flags = LIGHTFLAG_REALTIMEMODE;
@@ -5823,7 +5823,7 @@ void R_Shadow_EditLights_DrawSelectedLightProperties(void)
 	if (r_shadow_selectedlight == NULL)
 		return;
 	// Baker r9064: fix display and made colors print 2 digits after the decimal so it stays in the box.
-	// Colors printing like 0.015 vs. 0.02 keeps the colors printing within the specified region. 
+	// Colors printing like 0.015 vs. 0.02 keeps the colors printing within the specified region.
 	dpsnprintf(temp, sizeof(temp), "Light #%d properties:", lightnumber);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Origin       : %.0f %.0f %.0f\n", r_shadow_selectedlight->origin[0], r_shadow_selectedlight->origin[1], r_shadow_selectedlight->origin[2]);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
 	dpsnprintf(temp, sizeof(temp), "Angles       : %.0f %.0f %.0f\n", r_shadow_selectedlight->angles[0], r_shadow_selectedlight->angles[1], r_shadow_selectedlight->angles[2]);DrawQ_String(x, y, temp, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_DEFAULT);y += 8;
@@ -6055,7 +6055,7 @@ static void R_Shadow_EditLights_Select_Index_f(cmd_state_t *cmd)
 	} // for
 
 	if (!lighthit) {
-		Con_PrintLinef ("Could not find light index #%d in set of lights 0 to %d", seekthis, range - 1);
+		Con_PrintLinef ("Could not find light index #%d in set of lights 0 to %d", (int)seekthis, (int)range - 1);
 		return;
 	}
 	if (r_editlights.integer) {

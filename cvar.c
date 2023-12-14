@@ -1150,9 +1150,14 @@ void Cvar_List_f(cmd_state_t *cmd)
 	int count;
 	qbool ispattern;
 	char vabuf[1024];
+	int wants_changed = false;
 
-	if (Cmd_Argc(cmd) > 1)
-	{
+	if (Cmd_Argc(cmd) == 2 && String_Does_Match(Cmd_Argv(cmd, 1), "changed")) {
+		wants_changed = true;
+		partial = va(vabuf, sizeof(vabuf), "*");
+		ispattern = false;
+	} else
+	if (Cmd_Argc(cmd) > 1) {
 		partial = Cmd_Argv(cmd, 1);
 		ispattern = (strchr(partial, '*') || strchr(partial, '?'));
 		if (!ispattern)
@@ -1165,25 +1170,27 @@ void Cvar_List_f(cmd_state_t *cmd)
 	}
 
 	count = 0;
-	for (cvar = cvars->vars; cvar; cvar = cvar->next)
-	{
-		if (matchpattern_with_separator(cvar->name, partial, false, "", false))
-		{
-			Cvar_PrintHelp(cvar, cvar->name, true);
-			count++;
-		}
-		for (char **alias = cvar->aliases; alias && *alias; alias++)
-		{
-			if (matchpattern_with_separator(*alias, partial, false, "", false))
-			{
-				Cvar_PrintHelp(cvar, *alias, true);
+	for (cvar = cvars->vars; cvar; cvar = cvar->next) {
+		if (matchpattern_with_separator(cvar->name, partial, false, "", false)) {
+			int shall_write = wants_changed == false || String_Does_Not_Match (cvar->string, cvar->defstring);
+
+			if (shall_write) {
+				Cvar_PrintHelp(cvar, cvar->name, true);
 				count++;
 			}
 		}
-	}
+		for (char **alias = cvar->aliases; alias && *alias; alias++) {
+			if (matchpattern_with_separator(*alias, partial, false, "", false)) {
+			int shall_write = wants_changed == false|| String_Does_Not_Match (cvar->string, cvar->defstring);
+				if (shall_write) {
+					Cvar_PrintHelp(cvar, *alias, true);
+					count++;
+				}
+			}
+		} // for alias
+	} // for
 
-	if (Cmd_Argc(cmd) > 1)
-	{
+	if (Cmd_Argc(cmd) > 1 && wants_changed == false) {
 		if (ispattern)
 			Con_PrintLinef ("%d cvar%s matching " QUOTED_S, count, (count > 1) ? "s" : "", partial);
 		else

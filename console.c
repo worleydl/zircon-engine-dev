@@ -2965,6 +2965,7 @@ exit_possible:
 			else if (String_Isin1 (command, "r_replacemaptexture") /**/)			ac->searchtype = 16;
 			else if (String_Isin2 (command, "bind","unbind") /**/)					ac->searchtype = 17;
 			else if (String_Isin3 (command, "folder","dir","ls") /**/)				ac->searchtype = 18;
+			else if (String_Isin1 (command, "cvarlist") /**/)						ac->searchtype = 20;
 		} 
 		else if (ac->s_command0_a) {
 			// We are 2nd argument or further down (or someone typed multiple spaces that's on them)
@@ -3003,7 +3004,7 @@ autocomplete_go:
 		case 5:  GetFileList_Count		(s, ".cfg", q_strip_exten_false); break;
 		case 6:  GetSkyList_Count		(s);	break;
 		case 7:  GetTexMode_Count		(s);	break;
-		case 8:  GetCopyCmd_Count		(s);	break;
+		case 8:  GetAny1_Count			(s, "ents"); break;
 		case 9:  GetEdictsCmd_Count		(s);	break;
 		case 10: GetREditLightsEdit_Count(s);	break;
 		case 11: GetGameCommands_Count  (s, prvm_sv_gamecommands.string);	break; // Baker r7103 gamecommand autocomplete
@@ -3015,6 +3016,7 @@ autocomplete_go:
 		case 17: GetKeyboardList_Count	(s);	break; // "bind", "unbind"
 		case 18: GetFolderList_Count	(s);	break; // "dir", "ls", "folder"
 		case 19: GetTexGeneric_Count	(s);	break; // r_replacemaptexture arg2 general textures
+		case 20: GetAny1_Count			(s, "changed"); break; // cvarlist "changed"
 		} // switch
 
 		if (ac->s_match_alphatop_a == NULL) {

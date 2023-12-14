@@ -963,7 +963,7 @@ static void NetConn_OpenClientPort(const char *addressstring, lhnetaddresstype_t
 	{
 		if ((s = LHNET_OpenSocket_Connectionless(&address)))
 		{
-			cl_sockets[cl_numsockets++] = s;
+			SET___ cl_sockets[cl_numsockets++] = s; // Baker: cl_socket set
 			LHNETADDRESS_ToString(LHNET_AddressFromSocket(s), addressstring2, sizeof(addressstring2), true);
 			if (addresstype != LHNETADDRESSTYPE_LOOP)
 				Con_DPrintLinef ("Client opened a socket on address %s", addressstring2);
@@ -3644,6 +3644,37 @@ void NetConn_SleepMicroseconds(int microseconds)
 	LHNET_SleepUntilPacket_Microseconds(microseconds);
 }
 
+
+void Net_SocketPrint_f (cmd_state_t *cmd)
+{
+	char my_ipv4_address[256];
+	char my_ipv6_address[256];
+
+	UDP4_GetHostNameIP (NULL, 0, my_ipv4_address, sizeof(my_ipv4_address));
+	UDP6_GetHostNameIP (NULL, 0, my_ipv6_address, sizeof(my_ipv6_address));
+
+
+	Con_PrintLinef ("IPv4: %s", my_ipv4_address);
+	Con_PrintLinef ("IPv6: %s", my_ipv6_address);
+	
+	//for (i = 0;i < cl_numsockets;i++) {
+	//	if (!cl_sockets[i])
+	//		continue;
+	//	
+	//	char s[128];
+	//		
+	//	const char *cmdname, *extraoptions;
+	//	int af = LHNETADDRESS_GetAddressType(LHNET_AddressFromSocket(cl_sockets[i]));
+
+	//	lhnetaddress_t *lhaddy = LHNET_AddressFromSocket(cl_sockets[i]);
+	//	LHNETADDRESS_ToString(lhaddy, s, sizeof(s), q_include_port_true);
+
+	//	if (LHNETADDRESS_GetAddressType(&broadcastaddress) == af) {
+	//	}
+	//} // for
+}
+
+
 #ifdef CONFIG_MENU
 void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 {
@@ -3661,17 +3692,18 @@ void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 	// note this is IPv4-only, I doubt there are IPv6-only LANs out there
 	LHNETADDRESS_FromString(&broadcastaddress, "255.255.255.255", 26000);
 
-	if (querydp)
-	{
-		for (i = 0;i < cl_numsockets;i++)
-		{
-			if (cl_sockets[i])
-			{
+	if (querydp) {
+		for (i = 0;i < cl_numsockets;i++) {
+			if (cl_sockets[i]) {
+				char s[128];
+				
 				const char *cmdname, *extraoptions;
 				int af = LHNETADDRESS_GetAddressType(LHNET_AddressFromSocket(cl_sockets[i]));
 
-				if (LHNETADDRESS_GetAddressType(&broadcastaddress) == af)
-				{
+				lhnetaddress_t *lhaddy = LHNET_AddressFromSocket(cl_sockets[i]);
+				LHNETADDRESS_ToString(lhaddy, s, sizeof(s), q_include_port_true);
+
+				if (LHNETADDRESS_GetAddressType(&broadcastaddress) == af) {
 					// search LAN for Quake servers
 					SZ_Clear(&cl_message);
 					// save space for the header, filled in later
@@ -3863,9 +3895,9 @@ void Net_Slist_f(cmd_state_t *cmd)
 	serverlist_sortbyfield = SLIF_PING;
 	serverlist_sortflags = 0;
     if (m_state != m_slist) {
-		Con_Print("Sending requests to master servers\n");
+		Con_PrintLinef ("Sending requests to master servers");
 		ServerList_QueryList(true, true, false, true);
-		Con_Print("Listening for replies...\n");
+		Con_PrintLinef ("Listening for replies...");
 	} else
 		ServerList_QueryList(true, true, false, false);
 }
@@ -3895,6 +3927,7 @@ void NetConn_Init(void)
 	Cmd_AddCommand(CF_CLIENT, "net_slist", Net_Slist_f, "query dp master servers and print all server information");
 	Cmd_AddCommand(CF_CLIENT, "net_slistqw", Net_SlistQW_f, "query qw master servers and print all server information");
 	Cmd_AddCommand(CF_CLIENT, "net_refresh", Net_Refresh_f, "query dp master servers and refresh all server information");
+	Cmd_AddCommand(CF_CLIENT, "net_socketprint", Net_SocketPrint_f, "prints a list of socket addreses [Zircon]");
 #endif
 	Cmd_AddCommand(CF_SERVER, "heartbeat", Net_Heartbeat_f, "send a heartbeat to the master server (updates your server information)");
 	Cvar_RegisterVariable(&net_test);

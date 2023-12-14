@@ -26,9 +26,6 @@ typedef struct {int value;} Thread_Atomic;
 #define Thread_CreateBarrier(count)       (_Thread_CreateBarrier(count, __FILE__, __LINE__))
 #define Thread_DestroyBarrier(barrier)    (_Thread_DestroyBarrier(barrier, __FILE__, __LINE__))
 #define Thread_WaitBarrier(barrier)       (_Thread_WaitBarrier(barrier, __FILE__, __LINE__))
-
-
-#if defined(CORE_SDL)
 #define Thread_AtomicGet(a)               (_Thread_AtomicGet(a, __FILE__, __LINE__))
 #define Thread_AtomicSet(a, v)            (_Thread_AtomicSet(a, v, __FILE__, __LINE__))
 #define Thread_AtomicAdd(a, v)            (_Thread_AtomicAdd(a, v, __FILE__, __LINE__))
@@ -37,7 +34,6 @@ typedef struct {int value;} Thread_Atomic;
 #define Thread_AtomicTryLock(lock)        (_Thread_AtomicTryLock(lock, __FILE__, __LINE__))
 #define Thread_AtomicLock(lock)           (_Thread_AtomicLock(lock, __FILE__, __LINE__))
 #define Thread_AtomicUnlock(lock)         (_Thread_AtomicUnlock(lock, __FILE__, __LINE__))
-#endif
 
 int Thread_Init(void);
 void Thread_Shutdown(void);

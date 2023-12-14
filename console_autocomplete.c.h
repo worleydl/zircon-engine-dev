@@ -471,12 +471,13 @@ int GetModList_Count(const char *s_prefix)
 	return num_matches;
 }
 
-int GetCopyCmd_Count (const char *s_prefix)
+
+int GetAny1_Count (const char *s_prefix, const char *s_singleton)
 {
 	int			num_matches = 0;
 	// Ok .. this has to be sorted due to first/last.
 	const char *slist[] =  {
-		"ents",
+		s_singleton,
 	};
 
 	int			array_count = (int)ARRAY_COUNT(slist);
@@ -492,6 +493,28 @@ int GetCopyCmd_Count (const char *s_prefix)
 	} // idx
 	return num_matches;
 }
+
+//int GetCopyCmd_Count (const char *s_prefix)
+//{
+//	int			num_matches = 0;
+//	// Ok .. this has to be sorted due to first/last.
+//	const char *slist[] =  {
+//		"ents",
+//	};
+//
+//	int			array_count = (int)ARRAY_COUNT(slist);
+//
+//	for (int idx = 0; idx < array_count; idx ++) {
+//		const char *sxy =  slist[idx];
+//		if (String_Does_Start_With_Caseless (sxy, s_prefix) == false)
+//			continue;
+//
+//		SPARTIAL_EVAL_
+//
+//		num_matches ++;
+//	} // idx
+//	return num_matches;
+//}
 
 int GetEdictsCmd_Count (const char *s_prefix)
 {

@@ -253,7 +253,7 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 	if (fail)
 	{
 		if (!quiet)
-			Con_Printf ("Can't setinfo \"%s\" \"%s\"\n", key, value);
+			Con_PrintLinef ("Can't setinfo " QUOTED_S " " QUOTED_S, key, value);
 		return;
 	}
 	InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), key, value);
@@ -262,22 +262,22 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 		if (cls.protocol == PROTOCOL_QUAKEWORLD)
 		{
 			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "setinfo \"%s\" \"%s\"", key, value));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "setinfo " QUOTED_S " " QUOTED_S, key, value));
 		}
 		else if (String_Does_Match_Caseless(key, "name"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "name \"%s\"", value));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "name " QUOTED_S, value));
 		}
 		else if (String_Does_Match_Caseless(key, "playermodel"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "playermodel \"%s\"", value));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "playermodel " QUOTED_S, value));
 		}
 		else if (String_Does_Match_Caseless(key, "playerskin"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "playerskin \"%s\"", value));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "playerskin " QUOTED_S, value));
 		}
 		else if (String_Does_Match_Caseless(key, "topcolor"))
 		{
@@ -292,12 +292,12 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 		else if (String_Does_Match_Caseless(key, "rate"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate \"%s\"", value));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate " QUOTED_S, value));
 		}
 		else if (String_Does_Match_Caseless(key, "rate_burstsize"))
 		{
 			MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate_burstsize \"%s\"", value));
+			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate_burstsize " QUOTED_S, value));
 		}
 	}
 }
@@ -452,7 +452,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 		cls.netcon = NULL;
 		if (fmt) {
 			// Baker r1481: Reduce spam in this case if there is no reason, it may just be a new map
-			if (reason && reason[0]) {
+			if (/*reason &&*/ reason[0]) {
 				Con_PrintLinef ("Disconnect: %s", reason);
 			}
 		}
@@ -495,7 +495,7 @@ static void CL_Reconnect_f(cmd_state_t *cmd)
 #if 1 // Baker: reconnect console hide
 	extern int scr_skip_once;
 	scr_skip_once = true;
-#endif 
+#endif
 
 	if (!cls.netcon) {
 		// if we have connected to a server recently, the userinfo
@@ -2076,7 +2076,7 @@ void CL_UpdateWorld(void)
 	r_refdef.scene.numlights = 0;
 	r_refdef.view.matrix = identitymatrix;
 	r_refdef.view.quality = 1;
-		
+
 	cl.num_brushmodel_entities = 0;
 
 	if (cls.state == ca_connected && cls.signon == SIGNONS_4)
@@ -2151,7 +2151,7 @@ static void CL_Fog_f(cmd_state_t *cmd)
 		r_refdef.fog_alpha = atof(Cmd_Argv(cmd, 5));
 	}
 
-	// Baker r1201: FitzQuake r_skyfog		
+	// Baker r1201: FitzQuake r_skyfog
 	if (is_fog_alpha_requested == false && r_skyfog.value) {
 		float a = bound(0.0, r_skyfog.value, 1.0);
 		r_refdef.fog_density = r_refdef.fog_density0 / (a * a);
@@ -2159,7 +2159,7 @@ static void CL_Fog_f(cmd_state_t *cmd)
 	} else {
 		r_refdef.fog_density = r_refdef.fog_density0;
 	}
-		
+
 	if (Cmd_Argc(cmd) > 6)
 		r_refdef.fog_start = atof(Cmd_Argv(cmd, 6));
 	if (Cmd_Argc(cmd) > 7)
@@ -2594,7 +2594,7 @@ void CL_MeshEntities_Init(void)
 		ent = cl_meshentities + i;
 		ent->state_current.active = true;
 		ent->render.model = cl_meshentitymodels + i;
-		Mod_Mesh_Create(ent->render.model, cl_meshentitynames[i]);	
+		Mod_Mesh_Create(ent->render.model, cl_meshentitynames[i]);
 		ent->render.alpha = 1;
 		ent->render.crflags = RENDER_SHADOW | RENDER_LIGHT;
 		ent->render.framegroupblend[0].lerp = 1;
@@ -2767,12 +2767,12 @@ lightme:
 			ent->render_lightgrid = true;
 			// no need to call R_CompleteLightPoint as we base it on render_lightmap_*
 		}
-		else if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit && 
+		else if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit &&
 			r_refdef.scene.worldmodel->brush.LightPoint) {
 lightme2:
 traditional:
 				R_CompleteLightPoint(a, c, dir, shadingorigin, LP_LIGHTMAP, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
-				
+
 				// Baker r1490: minlight
 				extern cvar_t r_suppress_minlight;
 				extern cvar_t r_minlight;
@@ -2891,8 +2891,8 @@ double CL_Frame (double time)
 
 		if (!vid_activewindow && cl_maxidlefps.value >= 1 && !cls.timedemo) {
 			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxidlefps.value);
-		} else if ( (!vid_activewindow || key_consoleactive || key_dest == key_menu) && 
-			is_hosting_multiplayer_server == false && 
+		} else if ( (!vid_activewindow || key_consoleactive || key_dest == key_menu) &&
+			is_hosting_multiplayer_server == false &&
 			!cls.timedemo && cl_maxconsole_menu_fps.value >= 1) {
 			// Baker r8192: throttle engine in low intensity situations
 			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxconsole_menu_fps.value);
@@ -3026,10 +3026,10 @@ void CL_Shutdown (void)
 {
 	// be quiet while shutting down
 	S_StopAllSounds();
-	
+
 	// disconnect client from server if active
 	CL_Disconnect();
-	
+
 	CL_Video_Shutdown();
 
 #ifdef CONFIG_MENU
@@ -3040,7 +3040,7 @@ void CL_Shutdown (void)
 
 	CDAudio_Shutdown ();
 	S_Terminate ();
-	
+
 	R_Modules_Shutdown();
 	VID_Shutdown();
 
@@ -3184,7 +3184,7 @@ void CL_Init (void)
 		Cmd_AddCommand(CF_CLIENT, "locs_clear", CL_Locs_Clear_f, "remove all loc points/boxes");
 		Cmd_AddCommand(CF_CLIENT, "locs_reload", CL_Locs_Reload_f, "reload .loc file for this map");
 		Cmd_AddCommand(CF_CLIENT, "locs_save", CL_Locs_Save_f, "save .loc file for this map containing currently defined points and boxes");
-			
+
 		Cvar_RegisterVariable (&cl_minfps);
 		Cvar_RegisterVariable (&cl_minfps_fade);
 		Cvar_RegisterVariable (&cl_minfps_qualitymax);
@@ -3197,7 +3197,7 @@ void CL_Init (void)
 		Cvar_RegisterVariable (&cl_maxfps_alwayssleep);
 		Cvar_RegisterVariable (&cl_maxidlefps);
 		Cvar_RegisterVariable (&cl_maxconsole_menu_fps); // Baker r8192: thottle
-		
+
 		Cvar_RegisterVariable(&csqc_polygons_defaultmaterial_nocullface);
 		Cvar_RegisterVariable (&cl_areagrid_link_SOLID_NOT);
 #if 111

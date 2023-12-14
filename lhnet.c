@@ -193,7 +193,7 @@ static int LHNETADDRESS_Resolve(lhnetaddressnative_t *address, const char *name,
 		memcpy(&address->addr.in, addrinf->ai_addr, sizeof(address->addr.in));
 	}
 	address->port = port;
-	
+
 	freeaddrinfo (addrinf);
 	return 1;
 }
@@ -370,7 +370,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 #endif
 		namecache[namecacheposition].address.addresstype = LHNETADDRESSTYPE_NONE;
 	}
-	
+
 	namecacheposition = (namecacheposition + 1) % MAX_NAMECACHE;
 	return resolved;
 }
@@ -724,12 +724,12 @@ typedef struct lhnetpacket_s
 lhnetpacket_t;
 
 static int lhnet_active;
-static lhnetsocket_t lhnet_socketlist;
+static lhnetsocket_t lhnet_socketlist; // Baker: The socket list equiv of netv4_broadcastsocket
 static lhnetpacket_t lhnet_packetlist;
 static int lhnet_default_dscp = 0;
 #ifdef _WIN32
-static int lhnet_didWSAStartup = 0;
-static WSADATA lhnet_winsockdata;
+	static int lhnet_didWSAStartup = 0;
+	static WSADATA lhnet_winsockdata;
 #endif
 
 void LHNET_Init(void)
@@ -935,6 +935,7 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 #else
 					char _true = 1;
 #endif
+					// Baker: FIONBIO sets blocking, non-zero means Non-Blocking
 					if (ioctlsocket(lhnetsocket->inetsocket, FIONBIO, &_true) != -1)
 #endif
 					{
@@ -1002,9 +1003,20 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 							if (bindresult != -1)
 							{
 								int i = 1;
+								// int setsockopt(int socket, int level,
+								// int option_name,
+								// const void *option_value, socklen_t option_len);
 								// enable broadcast on this socket
-								setsockopt(lhnetsocket->inetsocket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i));
-#ifdef IP_TOS
+								//static void UDP4_GetLocalAddress (void)
+								//{
+								//	if (myAddrv4 == INADDR_ANY) {
+								//		myAddrv4 = UDP4_GetHostNameIP (NULL, 0, my_ipv4_address, sizeof(my_ipv4_address));
+								//	}
+								//}
+
+								int res = setsockopt(lhnetsocket->inetsocket,
+									SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i));
+#ifdef IP_TOS // Baker: This is the default
 								{
 									// enable DSCP for ToS support
 									int tos = lhnet_default_dscp << 2;
@@ -1055,7 +1067,9 @@ void LHNET_CloseSocket(lhnetsocket_t *lhnetsocket)
 	{
 		List_Delete(&lhnetsocket->list);
 		// no special close code for loopback, just inet
-		if (lhnetsocket->address.addresstype == LHNETADDRESSTYPE_INET4 || lhnetsocket->address.addresstype == LHNETADDRESSTYPE_INET6)
+		// Baker: LHNETADDRESSTYPE_LOOP is the loopback type
+		if (lhnetsocket->address.addresstype == LHNETADDRESSTYPE_INET4 ||
+			lhnetsocket->address.addresstype == LHNETADDRESSTYPE_INET6)
 		{
 			closesocket(lhnetsocket->inetsocket);
 		}
@@ -1414,5 +1428,255 @@ int main(int argc, char **argv)
 	return -1;
 #endif
 }
+#endif // STANDALONETEST
+
+#define MAXHOSTNAMELEN_256	256
+#define NET_NAMELEN_64		64
+#ifndef in_addr_t
+	#define in_addr_t u_long
 #endif
+
+
+
+
+int UDP4_GetHostNameIP (char *namebuf, size_t namebuf_size, char * ipbuf, size_t ipbuf_size)
+{
+	char buff[MAXHOSTNAMELEN_256];
+
+    if (gethostname(buff, sizeof(buff)) == -1 /*SOCKET_ERROR*/) {
+		int err = SOCKETERRNO;
+		Con_PrintLinef ("UDP4_GetHostName: gethostname failed (%d)", err); //socketerror(err));
+		return false;
+	}
+
+	buff[sizeof(buff) - 1] = 0;
+
+
+	do {
+		struct hostent *local = gethostbyname(buff);
+		in_addr_t netaddr;
+		if (local == NULL) {
+			int errcode = SOCKETERRNO;
+			Con_PrintLinef ("UDP4_GetHostName: gethostbyname failed for hostname [%s](%d)", buff, errcode /*socketerror(err)*/); // This probably never happens.
+			return 0;
+		}
+		else if (local->h_addrtype != AF_INET) {
+			Con_PrintLinef ("UDP4_GetHostName: address from gethostbyname not IPv4");
+			return 0;
+		}
+
+		// Success
+		netaddr = *(in_addr_t *)local->h_addr_list[0];
+
+		if (namebuf) {
+			// Copy out the name buf if we have one
+			strlcpy (namebuf, buff, namebuf_size);
+		}
+
+		if (ipbuf) {
+			// If ip address, fill that in.
+	//		alert ("%p: %d", ipbuf, (int)ipbuf_size);
+			in_addr_t	haddr = ntohl(netaddr); // Net byte order to host order
+			// int is the right tool for this job.
+			//c_snprintfc (ipbuf, ipbuf_size,  "%ld.%ld.%ld.%ld", (haddr >> 24) & 0xff, (haddr >> 16) & 0xff, (haddr >> 8) & 0xff, haddr & 0xff);
+			dpsnprintf (ipbuf, ipbuf_size,  "%d.%d.%d.%d", (int)((haddr >> 24) & 0xff), (int)((haddr >> 16) & 0xff), (int)((haddr >> 8) & 0xff), (int)(haddr & 0xff));
+		}
+		return netaddr; // In network form.
+	} while (0);
+}
+
+struct qsockaddr
+{
+#if defined(HAVE_SA_LEN)
+	unsigned char qsa_len;
+	unsigned char qsa_family;
+#else
+	short qsa_family;
+#endif	/* BSD, sockaddr */
+	unsigned char qsa_data[NET_NAMELEN_64]; // NETQ 3.1 NET_NAMELEN instead?
+};
+
+
+#if defined(__GNUC__) // && defined(_WIN32) //&& !defined(PLATFORM_OSX) // Fuck you mingw headers
+    #define WIN32_LEAN_AND_MEAN
+    #define IDE_COMES_WITH_GOOD_IPV6_HEADERS 0
+	#pragma message ("Hello IPV6 hax")
+    // Sadly, MinGW version that comes with CodeBlocks the headers are not good
+    // I want things to compile nice and easy out of the box, without errands and other foolishness.
+#ifndef ULONG
+	#define ULONG unsigned int
+#endif
+#ifndef USHORT
+	#define USHORT unsigned short
+#endif
+#ifndef UCHAR
+	#define UCHAR unsigned char
+#endif
+
+#ifndef _WIN32 // Baker: Jeez
+    typedef struct {
+        union {
+            struct {
+                ULONG Zone : 28;
+                ULONG Level : 4;
+            };
+            ULONG Value;
+        };
+    } SCOPE_ID, *PSCOPE_ID;
+#endif
+
+  // This is what comes with mingw for CodeBlocks 13.12
+	struct sockaddr_in6_mingw {
+	    short   sin6_family;        /* AF_INET6 */
+	    u_short sin6_port;          /* Transport level port number */
+	    u_long  sin6_flowinfo;      /* IPv6 flow information */
+	    struct in6_addr sin6_addr;  /* IPv6 address */
+	    u_long sin6_scope_id;       /* set of interfaces for a scope */
+	};
+
+
+
+    typedef struct in6_addr_correctly {
+        union {
+            UCHAR       Byte[16];
+            USHORT      Word[8];
+        } u;
+    } IN6_ADDR_EX; // , *PIN6_ADDR, FAR *LPIN6_ADDR;
+
+    struct sockaddr_in6_EX {
+        USHORT sin6_family; // AF_INET6.
+        USHORT sin6_port;           // Transport level port number.
+        ULONG  sin6_flowinfo;       // IPv6 flow information.
+        IN6_ADDR_EX sin6_addr;         // IPv6 address.
+        union {
+            ULONG sin6_scope_id;     // Set of interfaces for a scope.
+            SCOPE_ID sin6_scope_struct;
+        };
+    }; // SOCKADDR_IN6_LH, *PSOCKADDR_IN6_LH, FAR *LPSOCKADDR_IN6_LH;
+
+    #define sockaddr_in6_HAX sockaddr_in6_EX
+#else // !s6_addr
+
+	#define IDE_COMES_WITH_GOOD_IPV6_HEADERS 1
+	#define sockaddr_in6_HAX sockaddr_in6 // 'struct in6_addr' has no member named 'u'|
+#endif
+
+const char *UDP_AddrToString (struct qsockaddr *addr, int masked)
+{
+	//static char buffer[22]; // 192.168.100.100:26001 is 21 chars
+	static char buffer[64];
+	int		haddr;
+
+	if (addr->qsa_family == AF_INET6)
+	{
+		if (masked)
+		{
+			c_dpsnprintf4 (buffer, "[%x:%x:%x:%x::]/64",
+						ntohs((
+             (struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[0]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[1]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[2]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[3]));
+		}
+		else
+		{
+			if (((struct sockaddr_in6 *)addr)->sin6_scope_id)
+			{
+				c_dpsnprintf10 (buffer, "[%x:%x:%x:%x:%x:%x:%x:%x%%%d]:%d",
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[0]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[1]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[2]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[3]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[4]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[5]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[6]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[7]),
+						(int)((struct sockaddr_in6_HAX *)addr)->sin6_scope_id,
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_port));
+			}
+			else
+			{
+				c_dpsnprintf9 (buffer, "[%x:%x:%x:%x:%x:%x:%x:%x]:%d",
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[0]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[1]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[2]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[3]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[4]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[5]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[6]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_addr.u.Word[7]),
+						ntohs(((struct sockaddr_in6_HAX *)addr)->sin6_port));
+			}
+		}
+	}
+	else
+	{
+		haddr = ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr);
+		if (masked)
+		{
+			c_dpsnprintf3 (buffer, "%d.%d.%d.0/24", (haddr >> 24) & 0xff,
+					  (haddr >> 16) & 0xff, (haddr >> 8) & 0xff);
+		}
+		else
+		{
+			c_dpsnprintf5 (buffer, "%d.%d.%d.%d:%d", (haddr >> 24) & 0xff,
+					  (haddr >> 16) & 0xff, (haddr >> 8) & 0xff, haddr & 0xff,
+					  ntohs(((struct sockaddr_in *)addr)->sin_port));
+		}
+	}
+
+	return buffer;
+}
+
+
+
+int UDP6_GetHostNameIP (char *namebuf, size_t namebuf_size, char *ipbuf, size_t ipbuf_size)
+{
+	char		buff[MAXHOSTNAMELEN_256];
+	struct addrinfo hints, *local = NULL;
+
+//	if (myAddrv6 != IN6ADDR_ANY)
+//		return;
+
+	if (gethostname(buff, MAXHOSTNAMELEN_256) == -1 /*SOCKET_ERROR*/) {
+		int	errcode = SOCKETERRNO;
+		Con_PrintLinef ("UDP6_GetLocalAddress: gethostname failed (%d)", errcode /*socketerror(err)*/);
+		return false;
+	}
+	buff[MAXHOSTNAMELEN_256 - 1] = 0;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET6;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+	if (getaddrinfo(buff, NULL, &hints, &local) == 0) {
+		lhnetaddress_t addy;
+		memset (&addy, 0, sizeof(addy));
+		addy.addresstype = LHNETADDRESSTYPE_INET6;
+		addy.port = 0;
+		int sz = sizeof(addy.storage);
+		memcpy (addy.storage, local, sizeof(addy.storage));
+		int length;
+		strlcpy (ipbuf, UDP_AddrToString((struct qsockaddr*)local->ai_addr, false), ipbuf_size);
+#if 1
+		length = (int)strlen(ipbuf);
+		if (length > 2 && String_Does_Match(ipbuf + length - 2, ":0"))
+			ipbuf[length - 2] = 0;
+#endif
+		freeaddrinfo(local);
+	}
+
+	if (local == NULL) {
+		int	errcode = SOCKETERRNO;
+		if (errcode) { // Linux returns SOCKET_ERROR with error code 0 (success) for anything that resolves to 127.0.0.1
+            Con_PrintLinef ("UDP6_GetLocalAddress: gethostbyname failed (#%d: %d)", errcode, errcode/* socketerror(err)*/);
+            return false;
+		}
+	}
+	return true;
+}
+
+
+
+
 

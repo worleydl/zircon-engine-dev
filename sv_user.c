@@ -444,10 +444,11 @@ void SV_NoClip_Move (void)
 	VectorCopy(PRVM_serveredictvector(host_client->edict, v_angle), v_angle);
 	AngleVectors(v_angle, forward, right, up);
 
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3 ; i ++) {
 		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
+	}
 
-		wishvel[2] += usercmd.upmove;
+    wishvel[2] += usercmd.upmove;
 
 	fwishspeed = VectorLength(wishvel);
 	if (fwishspeed > sv_maxspeed.value)
@@ -660,7 +661,7 @@ void SV_PlayerPhysics (void)
 
 	// Baker r0085: FitzQuake noclipping
 	if ((PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_NOCLIP) && sv_altnoclipmove.integer) {
-		SV_NoClip_Move (); 
+		SV_NoClip_Move ();
 		SV_CheckVelocity(host_client->edict);
 		return;
 	}

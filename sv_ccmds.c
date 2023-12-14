@@ -945,11 +945,12 @@ void SV_Name(int clientnum)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	PRVM_serveredictstring(host_client->edict, netname) = PRVM_SetEngineString(prog, host_client->name);
-	if (strcmp(host_client->old_name, host_client->name))
+	if (String_Does_Not_Match(host_client->old_name, host_client->name))
 	{
+		// Baker: CON_WHITE because name may have color
 		if (host_client->begun)
-			SV_BroadcastPrintf("\003%s ^7changed name to ^3%s\n", host_client->old_name, host_client->name);
-		strlcpy(host_client->old_name, host_client->name, sizeof(host_client->old_name));
+			SV_BroadcastPrintf("\003%s" CON_WHITE " changed name to ^3%s" NEWLINE, host_client->old_name, host_client->name);
+		c_strlcpy(host_client->old_name, host_client->name);
 		// send notification to all clients
 		MSG_WriteByte (&sv.reliable_datagram, svc_updatename);
 		MSG_WriteByte (&sv.reliable_datagram, clientnum);
@@ -985,23 +986,22 @@ static void SV_Name_f(cmd_state_t *cmd)
 
 	if (host.realtime < host_client->nametime && strcmp(newName, host_client->name))
 	{
-		SV_ClientPrintf("You can't change name more than once every %.1f seconds!\n", max(0.0f, sv_namechangetimer.value));
+		SV_ClientPrintf ("You can't change name more than once every %.1f seconds!" NEWLINE, max(0.0f, sv_namechangetimer.value));
 		return;
 	}
 
 	host_client->nametime = host.realtime + max(0.0f, sv_namechangetimer.value);
 
 	// point the string back at updateclient->name to keep it safe
-	strlcpy (host_client->name, newName, sizeof (host_client->name));
+	c_strlcpy (host_client->name, newName);
 
 	for (i = 0, j = 0;host_client->name[i];i++)
 		if (host_client->name[i] != '\r' && host_client->name[i] != '\n')
 			host_client->name[j++] = host_client->name[i];
 	host_client->name[j] = 0;
 
-	if (host_client->name[0] == 1 || host_client->name[0] == 2)
-	// may interfere with chat area, and will needlessly beep; so let's add a ^7
-	{
+	if (host_client->name[0] == 1 || host_client->name[0] == 2) {
+		// may interfere with chat area, and will needlessly beep; so let's add a ^7
 		memmove(host_client->name + 2, host_client->name, sizeof(host_client->name) - 2);
 		host_client->name[sizeof(host_client->name) - 1] = 0;
 		host_client->name[0] = STRING_COLOR_TAG;

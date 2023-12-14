@@ -121,6 +121,11 @@ cvar_t sv_gameplayfix_nudgeoutofsolid = {CF_SERVER, "sv_gameplayfix_nudgeoutofso
 #else
 cvar_t sv_gameplayfix_nudgeoutofsolid = {CF_SERVER, "sv_gameplayfix_nudgeoutofsolid", "1", "attempts to fix physics errors where an object ended up in solid for some reason, supersedes sv_gameplayfix_unstickentities"};
 #endif
+
+
+cvar_t sv_gameplayfix_fiendjumpfix = {CF_SERVER, "sv_gameplayfix_fiendjumpfix", "1", "DarkPlaces Beta fiend or dog stuck in air during jump fix [Zircon]"};
+
+
 cvar_t sv_gameplayfix_nudgeoutofsolid_separation = {CF_SERVER, "sv_gameplayfix_nudgeoutofsolid_separation", "0.03125", "keep objects this distance apart to prevent collision issues on seams"};
 cvar_t sv_gameplayfix_q2airaccelerate = {CF_SERVER, "sv_gameplayfix_q2airaccelerate", "0", "Quake2-style air acceleration"};
 cvar_t sv_gameplayfix_nogravityonground = {CF_SERVER, "sv_gameplayfix_nogravityonground", "0", "turn off gravity when on ground (to get rid of sliding)  Requires sv_gameplayfix_downtracesupportsongroundflag 1 to function right with Quake."};
@@ -2996,6 +3001,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_gameplayfix_nogravityonground);
 	Cvar_RegisterVariable (&sv_gameplayfix_setmodelrealbox);
 	Cvar_RegisterVariable (&sv_gameplayfix_slidemoveprojectiles);
+	Cvar_RegisterVariable (&sv_gameplayfix_fiendjumpfix);
 	Cvar_RegisterVariable (&sv_gameplayfix_stepdown);
 	Cvar_RegisterVariable (&sv_gameplayfix_stepmultipletimes);
 	Cvar_RegisterVariable (&sv_gameplayfix_nostepmoveonsteepslopes);

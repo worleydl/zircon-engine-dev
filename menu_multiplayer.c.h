@@ -11,12 +11,18 @@ static int	m_multiplayer_cursor;
 #define	MULTIPLAYER_ITEMS	3
 
 
+char my_ipv4_address[256];
+char my_ipv6_address[256];
 
 void M_Menu_MultiPlayer_f(cmd_state_t *cmd)
 {
 	key_dest = key_menu;
 	menu_state_set_nova (m_multiplayer);
 	m_entersound = true;
+
+	UDP4_GetHostNameIP (NULL, 0, my_ipv4_address, sizeof(my_ipv4_address));
+	UDP6_GetHostNameIP (NULL, 0, my_ipv6_address, sizeof(my_ipv6_address));
+
 }
 
 

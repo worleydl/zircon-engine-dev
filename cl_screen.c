@@ -2093,15 +2093,13 @@ void CL_Tool_Marker (void)
 	int conwidth_2d_phase = scale_width_360;
 	int conheight_2d_phase = scale_height_360;
 
-	//vector markpos = 
-	//VectorCopy (tool_marker.vector, markpos);
 	vec3_t v_screen2d = {0};
 	vec3_t mark_origin = {0};
 
 	Math_atov (tool_marker.string, mark_origin);
 
 	if (!mark_origin[1] && !mark_origin[2]) {
-		Con_PrintLinef (CON_RED, "Tool marker needs x y z where x and y are non-zero");
+		Con_PrintLinef (CON_RED "Tool marker needs x y z where x and y are non-zero");
 		Con_PrintLinef (CON_BRONZE "Make sure you put the origin in quotes");
 		Con_PrintLinef (CON_BRONZE "Example: " CON_WHITE "tool_marker " QUOTED_STR("120 -3600 24") );
 		Con_PrintLinef (CON_BRONZE "and ensure X and Y are not zero");

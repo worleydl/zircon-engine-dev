@@ -141,6 +141,18 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_outcolor_null					NULL
 #define q_ignore_color_codes_true		true
 
+#define qnfo_send_true					true
+#define qnfo_send_false					false
+#define	qnfo_allowstar_true				true
+#define	qnfo_allowstar_false			false
+#define qnfo_allowmodel_true			true
+#define qnfo_allowmodel_false			false
+#define qnfo_quiet_true					true
+#define qnfo_quiet_false				false
+
+#define q_include_port_true				true
+#define q_include_port_false			false
+
 
 #include "common.h"
 #include "filematch.h"

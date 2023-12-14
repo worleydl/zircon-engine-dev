@@ -6,7 +6,7 @@
 /* LAN CONFIG MENU */
 
 static int		lanConfig_cursor = -1;
-static int		lanConfig_cursor_table [] = {56, 76, 84, 120};
+static int		lanConfig_cursor_table [] = {56 + 16, 76+ 16, 84+ 16, 120+ 16};
 #define NUM_LANCONFIG_CMDS	4
 
 static int 	lanConfig_port;
@@ -54,8 +54,17 @@ static void M_LanConfig_Draw (void)
 	else
 		startJoin = "Join Game";
 	protocol = "TCP/IP";
-	M_Print(basex, 32, va(vabuf, sizeof(vabuf), "%s - %s", startJoin, protocol));
+
+	drawcur_y = 32;
+
+	M_Print(basex, drawcur_y, va(vabuf, sizeof(vabuf), "%s - %s", startJoin, protocol));
 	basex += 8;
+	drawcur_y += 16;
+
+	M_PrintBronzey(basex, drawcur_y, "Address");
+	M_PrintBronzey(basex+9*8, drawcur_y, my_ipv4_address);
+	M_PrintBronzey(basex+9*8, drawcur_y + 8, my_ipv6_address);
+	drawcur_y += 16;
 
 	M_Print(basex, lanConfig_cursor_table[0], "Port");
 	M_DrawTextBox (basex+8*8, lanConfig_cursor_table[0]-8, sizeof(lanConfig_portname), 1);

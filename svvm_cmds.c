@@ -1766,7 +1766,7 @@ static void VM_SV_setspawnparms(prvm_prog_t *prog)
 	i = PRVM_NUM_FOR_EDICT(ent);
 	if (i < 1 || i > svs.maxclients || !svs.clients[i-1].active)
 	{
-		Con_Print("tried to setspawnparms on a non-client\n");
+		Con_PrintLinef ("tried to setspawnparms on a non-client");
 		return;
 	}
 
@@ -1981,7 +1981,7 @@ static void VM_SV_setcolor(prvm_prog_t *prog)
 
 	if (entnum < 1 || entnum > svs.maxclients || !svs.clients[entnum-1].active)
 	{
-		Con_Print("tried to setcolor a non-client\n");
+		Con_PrintLinef ("tried to setcolor a non-client");
 		return;
 	}
 

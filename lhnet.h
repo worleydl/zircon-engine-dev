@@ -51,5 +51,10 @@ lhnetaddress_t *LHNET_AddressFromSocket(lhnetsocket_t *sock);
 int LHNET_Read(lhnetsocket_t *lhnetsocket, void *content, int maxcontentlength, lhnetaddress_t *address);
 int LHNET_Write(lhnetsocket_t *lhnetsocket, const void *content, int contentlength, const lhnetaddress_t *address);
 
+// Baker:
+int UDP4_GetHostNameIP (char *namebuf, size_t namebuf_size, char *ipbuf, size_t ipbuf_size);
+int UDP6_GetHostNameIP (char *namebuf, size_t namebuf_size, char * ipbuf, size_t ipbuf_size);
+
+
 #endif
 
