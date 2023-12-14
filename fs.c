@@ -2103,7 +2103,7 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 
 #ifdef _WIN32
 	// historical behavior...
-	if (userdirmode == USERDIRMODE_NOHOME && strcmp(gamedirname1, "id1"))
+	if (userdirmode == USERDIRMODE_NOHOME && String_Does_Not_Match(gamedirname1, "id1"))
 		return 0; // don't bother checking if the basedir folder is writable, it's annoying...  unless it is Quake on Windows where NOHOME is the default preferred and we have to check for an error case
 #endif
 
@@ -4270,7 +4270,7 @@ static void FS_Init_Dir (void)
 	i = Sys_CheckParm ("-basedir");
 	if (i && i < sys.argc-1)
 	{
-		strlcpy (fs_basedir, sys.argv[i+1], sizeof (fs_basedir));
+		c_strlcpy (fs_basedir, sys.argv[i+1]);
 		i = (int)strlen (fs_basedir);
 		if (i > 0 && (fs_basedir[i-1] == '\\' || fs_basedir[i-1] == '/'))
 			fs_basedir[i-1] = 0;
@@ -4350,11 +4350,11 @@ static void FS_Init_Dir (void)
 		{
 			userdirstatus[dirmode] = FS_ChooseUserDir((userdirmode_t)dirmode, fs_userdir, sizeof(fs_userdir));
 			if (userdirstatus[dirmode] == 1)
-				Con_DPrintf ("userdir %d = %s (writable)\n", dirmode, fs_userdir);
+				Con_DPrintLinef ("userdir %d = %s (writable)", dirmode, fs_userdir);
 			else if (userdirstatus[dirmode] == 0)
-				Con_DPrintf ("userdir %d = %s (not writable or does not exist)\n", dirmode, fs_userdir);
+				Con_DPrintLinef ("userdir %d = %s (not writable or does not exist)", dirmode, fs_userdir);
 			else
-				Con_DPrintf ("userdir %d (not applicable)\n", dirmode);
+				Con_DPrintLinef ("userdir %d (not applicable)", dirmode);
 		}
 		// some games may prefer writing to basedir, but if write fails we
 		// have to search for a real userdir...
@@ -4371,7 +4371,7 @@ static void FS_Init_Dir (void)
 					break;
 		// and finally, we picked one...
 		FS_ChooseUserDir((userdirmode_t)dirmode, fs_userdir, sizeof(fs_userdir));
-		Con_DPrintf ("userdir %d is the winner\n", dirmode);
+		Con_DPrintLinef ("userdir %d is the winner", dirmode);
 #endif
 	}
 
@@ -4409,7 +4409,7 @@ static void FS_Init_Dir (void)
 
 	// Baker r0009: Use -data directory if no -game specified and id1 does not exist
 #if 1
-	if ( (!p || p == fs_checkgamedir_missing) && !Sys_CheckParm ("-game") ) {
+	if ( (!p || p == fs_checkgamedir_missing) && !Sys_CheckParm ("-game") && fs_is_zircon_galaxy == false) {
 		
 		p = FS_CheckGameDir("data");
 
@@ -4485,6 +4485,14 @@ void FS_Init(void)
 
 	// initialize the self-pack (must be before COM_InitGameType as it may add command line options)
 	FS_Init_SelfPack();
+
+	fs_is_zircon_galaxy = File_Is_Existing_File (
+#ifdef __ANDROID__
+	
+		"/sdcard/zircon/"
+#endif
+		"zircon/gfx/qplaque.png"
+	);
 
 	// detect gamemode from commandline options or executable name
 	COM_InitGameType();

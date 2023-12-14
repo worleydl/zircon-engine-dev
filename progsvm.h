@@ -130,6 +130,45 @@ typedef struct prvm_edict_s
 	} fields;
 } prvm_edict_t;
 
+#if 123
+#define VMPOLYGONS_MAXPOINTS 64
+
+typedef struct vmpolygons_triangle_s
+{
+	rtexture_t		*texture;
+	int				drawflag;
+	qbool hasalpha;
+	unsigned short	elements[3];
+} vmpolygons_triangle_t;
+
+typedef struct vmpolygons_s
+{
+	mempool_t		*pool;
+	qbool		initialized;
+
+	int				max_vertices;
+	int				num_vertices;
+	float			*data_vertex3f;
+	float			*data_color4f;
+	float			*data_texcoord2f;
+
+	int				max_triangles;
+	int				num_triangles;
+	vmpolygons_triangle_t *data_triangles;
+	unsigned short	*data_sortedelement3s;
+
+	qbool		begin_active;
+	int	begin_draw2d;
+	rtexture_t		*begin_texture;
+	int				begin_drawflag;
+	int				begin_vertices;
+	float			begin_vertex[VMPOLYGONS_MAXPOINTS][3];
+	float			begin_color[VMPOLYGONS_MAXPOINTS][4];
+	float			begin_texcoord[VMPOLYGONS_MAXPOINTS][2];
+	qbool		begin_texture_hasalpha;
+} vmpolygons_t;
+#endif // 123
+
 extern prvm_eval_t prvm_badvalue;
 
 #define PRVM_alledictfloat(ed, fieldname)    (PRVM_EDICTFIELDFLOAT(ed, prog->fieldoffsets.fieldname))
@@ -640,6 +679,12 @@ typedef struct prvm_prog_s
 
 	// buffer for storing all tempstrings created during one invocation of ExecuteProgram
 	sizebuf_t			tempstringsbuf;
+
+#if 123
+	// LadyHavoc: moved this here to clean up things that relied on prvm_prog_list too much
+	// FIXME: make VM_CL_R_Polygon functions use Debug_Polygon functions?
+	vmpolygons_t		vmpolygons;
+#endif // 123
 
 	// polygonbegin, polygonvertex, polygonend state
 	// the polygon is buffered here until polygonend commits it to the relevant

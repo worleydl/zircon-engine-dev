@@ -550,7 +550,6 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 // #34 float() droptofloor
 static void VM_CL_droptofloor (prvm_prog_t *prog)
 {
-//#pragma message ("Baker revert VM_CL_droptofloor")
 	prvm_edict_t		*ent;
 	vec3_t				start, end, mins, maxs;
 	trace_t				trace;
@@ -4068,6 +4067,11 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 {
 	qbool ismain = r_refdef.view.ismain;
 	double t = Sys_DirtyTime();
+
+#if 123
+	vmpolygons_t *polys = &prog->vmpolygons;
+#endif
+
 	VM_SAFEPARMCOUNT(0, VM_CL_R_RenderScene);
 
 	// update the views
@@ -4077,8 +4081,10 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 		csqc_main_r_refdef_view = r_refdef.view;
 	}
 
+#if 0 // 123 - We can't use these anymore
 	// now after all of the predraw we know the geometry in the scene mesh and can finalize it for rendering
 	CL_MeshEntities_Scene_FinalizeRenderEntity();
+#endif // !123
 
 	// we need to update any RENDER_VIEWMODEL entities at this point because
 	// csqc supplies its own view matrix
@@ -4087,6 +4093,10 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 
 	// now draw stuff!
 	R_RenderView(0, NULL, NULL, r_refdef.view.x, r_refdef.view.y, r_refdef.view.width, r_refdef.view.height);
+
+#if 123
+	polys->num_vertices = polys->num_triangles = 0;
+#endif // 123
 
 	// callprofile fixing hack: do not include this time in what is counted for CSQC_UpdateView
 	t = Sys_DirtyTime() - t;if (t < 0 || t >= 1800) t = 0;
@@ -4104,9 +4114,230 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 	}
 }
 
+#if 123
+static void VM_ResizePolygons(vmpolygons_t *polys)
+{
+	float *oldvertex3f = polys->data_vertex3f;
+	float *oldcolor4f = polys->data_color4f;
+	float *oldtexcoord2f = polys->data_texcoord2f;
+	vmpolygons_triangle_t *oldtriangles = polys->data_triangles;
+	unsigned short *oldsortedelement3s = polys->data_sortedelement3s;
+	polys->max_vertices = min(polys->max_triangles*3, 65536);
+	polys->data_vertex3f = (float *)Mem_Alloc(polys->pool, polys->max_vertices*sizeof(float[3]));
+	polys->data_color4f = (float *)Mem_Alloc(polys->pool, polys->max_vertices*sizeof(float[4]));
+	polys->data_texcoord2f = (float *)Mem_Alloc(polys->pool, polys->max_vertices*sizeof(float[2]));
+	polys->data_triangles = (vmpolygons_triangle_t *)Mem_Alloc(polys->pool, polys->max_triangles*sizeof(vmpolygons_triangle_t));
+	polys->data_sortedelement3s = (unsigned short *)Mem_Alloc(polys->pool, polys->max_triangles*sizeof(unsigned short[3]));
+	if (polys->num_vertices)
+	{
+		memcpy(polys->data_vertex3f, oldvertex3f, polys->num_vertices*sizeof(float[3]));
+		memcpy(polys->data_color4f, oldcolor4f, polys->num_vertices*sizeof(float[4]));
+		memcpy(polys->data_texcoord2f, oldtexcoord2f, polys->num_vertices*sizeof(float[2]));
+	}
+	if (polys->num_triangles)
+	{
+		memcpy(polys->data_triangles, oldtriangles, polys->num_triangles*sizeof(vmpolygons_triangle_t));
+		memcpy(polys->data_sortedelement3s, oldsortedelement3s, polys->num_triangles*sizeof(unsigned short[3]));
+	}
+	if (oldvertex3f)
+		Mem_Free(oldvertex3f);
+	if (oldcolor4f)
+		Mem_Free(oldcolor4f);
+	if (oldtexcoord2f)
+		Mem_Free(oldtexcoord2f);
+	if (oldtriangles)
+		Mem_Free(oldtriangles);
+	if (oldsortedelement3s)
+		Mem_Free(oldsortedelement3s);
+}
+
+static void VM_InitPolygons (vmpolygons_t* polys)
+{
+	memset(polys, 0, sizeof(*polys));
+	polys->pool = Mem_AllocPool("VMPOLY", 0, NULL);
+	polys->max_triangles = 1024;
+	VM_ResizePolygons(polys);
+	polys->initialized = true;
+}
+
+static void VM_DrawPolygonCallback (const entity_render_t *ent, const rtlight_t *rtlight, int numsurfaces, int *surfacelist)
+{
+	int surfacelistindex;
+	vmpolygons_t *polys = (vmpolygons_t *)ent;
+	R_EntityMatrix(&identitymatrix);
+	GL_CullFace(GL_NONE);
+	GL_DepthTest(true); // polys in 3D space shall always have depth test
+	GL_DepthRange(0, 1);
+	R_Mesh_PrepareVertices_Generic_Arrays(polys->num_vertices, polys->data_vertex3f, polys->data_color4f, polys->data_texcoord2f);
+
+	for (surfacelistindex = 0;surfacelistindex < numsurfaces;)
+	{
+		int numtriangles = 0;
+		rtexture_t *tex = polys->data_triangles[surfacelist[surfacelistindex]].texture;
+		int drawflag = polys->data_triangles[surfacelist[surfacelistindex]].drawflag;
+		
+		DrawQ_ProcessDrawFlag(drawflag, polys->data_triangles[surfacelist[surfacelistindex]].hasalpha);
+		R_SetupShader_Generic(tex, /*gamma trippy texalpha*/ false, false, false);
+		numtriangles = 0;
+		for (;surfacelistindex < numsurfaces;surfacelistindex++)
+		{
+			if (polys->data_triangles[surfacelist[surfacelistindex]].texture != tex || polys->data_triangles[surfacelist[surfacelistindex]].drawflag != drawflag)
+				break;
+			VectorCopy(polys->data_triangles[surfacelist[surfacelistindex]].elements, polys->data_sortedelement3s + 3*numtriangles);
+			numtriangles++;
+		}
+		R_Mesh_Draw(0, polys->num_vertices, 0, numtriangles, NULL, NULL, 0, polys->data_sortedelement3s, NULL, 0);
+	}
+}
+
+static void VMPolygons_Store(vmpolygons_t *polys)
+{
+	qbool hasalpha;
+	int i;
+
+	// detect if we have alpha
+	hasalpha = polys->begin_texture_hasalpha;
+	for(i = 0; !hasalpha && (i < polys->begin_vertices); ++i)
+		if (polys->begin_color[i][3] < 1)
+			hasalpha = true;
+
+	if (polys->begin_draw2d)
+	{
+		// draw the polygon as 2D immediately
+		drawqueuemesh_t mesh;
+		mesh.texture = polys->begin_texture;
+		mesh.num_vertices = polys->begin_vertices;
+		mesh.num_triangles = polys->begin_vertices-2;
+		mesh.data_element3i = polygonelement3i;
+		mesh.data_element3s = polygonelement3s;
+		mesh.data_vertex3f = polys->begin_vertex[0];
+		mesh.data_color4f = polys->begin_color[0];
+		mesh.data_texcoord2f = polys->begin_texcoord[0];
+		DrawQ_Mesh(&mesh, polys->begin_drawflag, hasalpha);
+	}
+	else
+	{
+		// queue the polygon as 3D for sorted transparent rendering later
+		if (polys->max_triangles < polys->num_triangles + polys->begin_vertices-2)
+		{
+			while (polys->max_triangles < polys->num_triangles + polys->begin_vertices-2)
+				polys->max_triangles *= 2;
+			VM_ResizePolygons(polys);
+		}
+		if (polys->num_vertices + polys->begin_vertices <= polys->max_vertices)
+		{
+			// needle in a haystack!
+			// polys->num_vertices was used for copying where we actually want to copy begin_vertices
+			// that also caused it to not render the first polygon that is added
+			// --blub
+			memcpy(polys->data_vertex3f + polys->num_vertices * 3, polys->begin_vertex[0], polys->begin_vertices * sizeof(float[3]));
+			memcpy(polys->data_color4f + polys->num_vertices * 4, polys->begin_color[0], polys->begin_vertices * sizeof(float[4]));
+			memcpy(polys->data_texcoord2f + polys->num_vertices * 2, polys->begin_texcoord[0], polys->begin_vertices * sizeof(float[2]));
+			for (i = 0;i < polys->begin_vertices-2;i++)
+			{
+				polys->data_triangles[polys->num_triangles].texture = polys->begin_texture;
+				polys->data_triangles[polys->num_triangles].drawflag = polys->begin_drawflag;
+				polys->data_triangles[polys->num_triangles].elements[0] = polys->num_vertices;
+				polys->data_triangles[polys->num_triangles].elements[1] = polys->num_vertices + i+1;
+				polys->data_triangles[polys->num_triangles].elements[2] = polys->num_vertices + i+2;
+				polys->data_triangles[polys->num_triangles].hasalpha = hasalpha;
+				polys->num_triangles++;
+			}
+			polys->num_vertices += polys->begin_vertices;
+		}
+	}
+	polys->begin_active = false;
+}
+
+// TODO: move this into the client code and clean-up everything else, too! [1/6/2008 Black]
+// LadyHavoc: agreed, this is a mess
+void VM_CL_AddPolygonsToMeshQueue (prvm_prog_t *prog)
+{
+	int i;
+	vmpolygons_t *polys = &prog->vmpolygons;
+	vec3_t center;
+
+	// only add polygons of the currently active prog to the queue - if there is none, we're done
+	if ( !prog )
+		return;
+
+	if (!polys->num_triangles)
+		return;
+
+	for (i = 0;i < polys->num_triangles;i++)
+	{
+		VectorMAMAM(1.0f / 3.0f, polys->data_vertex3f + 3*polys->data_triangles[i].elements[0], 1.0f / 3.0f, polys->data_vertex3f + 3*polys->data_triangles[i].elements[1], 1.0f / 3.0f, polys->data_vertex3f + 3*polys->data_triangles[i].elements[2], center);
+		R_MeshQueue_AddTransparent(TRANSPARENTSORT_DISTANCE, center, VM_DrawPolygonCallback, (entity_render_t *)polys, i, NULL);
+	}
+
+	/*polys->num_triangles = 0; // now done after rendering the scene,
+	  polys->num_vertices = 0;  // otherwise it's not rendered at all and prints an error message --blub */
+}
+
+#endif // 123
+
+static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
+{
+
+	const char		*picname;
+	skinframe_t     *sf;
+	vmpolygons_t *polys = &prog->vmpolygons;
+	int tf;
+
+	// TODO instead of using skinframes here (which provides the benefit of
+	// better management of flags, and is more suited for 3D rendering), what
+	// about supporting Q3 shaders?
+
+	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_R_PolygonBegin);
+
+	if (!polys->initialized)
+		VM_InitPolygons(polys);
+	if (polys->begin_active)
+	{
+		VM_Warning(prog, "VM_CL_R_PolygonBegin: called twice without VM_CL_R_PolygonBegin after first\n");
+		return;
+	}
+	picname = PRVM_G_STRING(OFS_PARM0);
+
+	sf = NULL;
+	if (*picname)
+	{
+		tf = TEXF_ALPHA;
+		if ((int)PRVM_G_FLOAT(OFS_PARM1) & DRAWFLAG_MIPMAP)
+			tf |= TEXF_MIPMAP;
+
+		do
+		{
+			sf = R_SkinFrame_FindNextByName(sf, picname);
+		}
+		while(sf && sf->textureflags != tf);
+
+		if (!sf || !sf->base)
+//new			skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain, qbool fallbacknotexture)
+//old         skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain)
+
+			sf = R_SkinFrame_LoadExternal(picname, tf, q_tx_complain_true, q_tx_fallback_notexture_false /*?*/);
+
+		if (sf)
+			R_SkinFrame_MarkUsed(sf);
+	}
+
+	polys->begin_texture = (sf && sf->base) ? sf->base : r_texture_white;
+	polys->begin_texture_hasalpha = (sf && sf->base) ? sf->hasalpha : false;
+	polys->begin_drawflag = (int)PRVM_G_FLOAT(OFS_PARM1) & DRAWFLAG_MASK;
+	polys->begin_vertices = 0;
+	polys->begin_active = true;
+	polys->begin_draw2d = (prog->argc >= 3 ? (int)PRVM_G_FLOAT(OFS_PARM2) : r_refdef.draw2dstage);
+}
+
 //void(string texturename, float flag[, float is2d]) R_BeginPolygon
 static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 {
+	// DarkPlaces Classic method (123)
+	if (prog->polygonbegin_guess2d == false) {
+		VM_CL_R_PolygonBegin_Classic (prog);
+		return;
+	}
 	const char *texname;
 	int drawflags;
 	qbool draw2d;
@@ -4133,14 +4364,50 @@ static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 	prog->polygonbegin_model = mod;
 	if (texname == NULL || texname[0] == 0)
 		texname = "$whiteimage";
-	strlcpy(prog->polygonbegin_texname, texname, sizeof(prog->polygonbegin_texname));
+	c_strlcpy (prog->polygonbegin_texname, texname);
 	prog->polygonbegin_drawflags = drawflags;
 	prog->polygonbegin_numvertices = 0;
+}
+
+static void VM_CL_R_PolygonVertex_Classic (prvm_prog_t *prog)
+{
+	vmpolygons_t *polys = &prog->vmpolygons;
+
+	VM_SAFEPARMCOUNT(4, VM_CL_R_PolygonVertex);
+
+	if (!polys->begin_active)
+	{
+		VM_Warning(prog, "VM_CL_R_PolygonVertex: VM_CL_R_PolygonBegin wasn't called\n");
+		return;
+	}
+
+	if (polys->begin_vertices >= VMPOLYGONS_MAXPOINTS)
+	{
+		VM_Warning(prog, "VM_CL_R_PolygonVertex: may have %d vertices max\n", VMPOLYGONS_MAXPOINTS);
+		return;
+	}
+
+	polys->begin_vertex[polys->begin_vertices][0] = PRVM_G_VECTOR(OFS_PARM0)[0];
+	polys->begin_vertex[polys->begin_vertices][1] = PRVM_G_VECTOR(OFS_PARM0)[1];
+	polys->begin_vertex[polys->begin_vertices][2] = PRVM_G_VECTOR(OFS_PARM0)[2];
+	polys->begin_texcoord[polys->begin_vertices][0] = PRVM_G_VECTOR(OFS_PARM1)[0];
+	polys->begin_texcoord[polys->begin_vertices][1] = PRVM_G_VECTOR(OFS_PARM1)[1];
+	polys->begin_color[polys->begin_vertices][0] = PRVM_G_VECTOR(OFS_PARM2)[0];
+	polys->begin_color[polys->begin_vertices][1] = PRVM_G_VECTOR(OFS_PARM2)[1];
+	polys->begin_color[polys->begin_vertices][2] = PRVM_G_VECTOR(OFS_PARM2)[2];
+	polys->begin_color[polys->begin_vertices][3] = PRVM_G_FLOAT(OFS_PARM3);
+	polys->begin_vertices++;
 }
 
 //void(vector org, vector texcoords, vector rgb, float alpha) R_PolygonVertex
 static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 {
+	// DarkPlaces Classic method (123)
+	if (prog->polygonbegin_guess2d == false) {
+		VM_CL_R_PolygonVertex_Classic (prog);
+		return;
+	}
+
 	const prvm_vec_t *v = PRVM_G_VECTOR(OFS_PARM0);
 	const prvm_vec_t *tc = PRVM_G_VECTOR(OFS_PARM1);
 	const prvm_vec_t *c = PRVM_G_VECTOR(OFS_PARM2);
@@ -4175,9 +4442,33 @@ static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 	o[9] = a;
 }
 
+
+static void VM_CL_R_PolygonEnd_Classic (prvm_prog_t *prog)
+{
+	vmpolygons_t *polys = &prog->vmpolygons;
+
+	VM_SAFEPARMCOUNT(0, VM_CL_R_PolygonEnd);
+	if (!polys->begin_active)
+	{
+		VM_Warning(prog, "VM_CL_R_PolygonEnd: VM_CL_R_PolygonBegin wasn't called\n");
+		return;
+	}
+	polys->begin_active = false;
+	if (polys->begin_vertices >= 3)
+		VMPolygons_Store(polys);
+	else
+		VM_Warning(prog, "VM_CL_R_PolygonEnd: %d vertices isn't a good choice\n", polys->begin_vertices);
+}
+
 //void() R_EndPolygon
 static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 {
+	// DarkPlaces Classic method (123)
+	if (prog->polygonbegin_guess2d == false) {
+		VM_CL_R_PolygonEnd_Classic (prog);
+		return;
+	}
+
 	int i;
 	qbool hascolor;
 	qbool hasalpha;
@@ -4237,6 +4528,66 @@ static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 	prog->polygonbegin_drawflags = 0;
 	prog->polygonbegin_numvertices = 0;
 }
+
+#if 0 // 123 stuff we don't want
+static vmpolygons_t debugPolys;
+
+void Debug_PolygonBegin(const char *picname, int drawflag)
+{
+	if (!debugPolys.initialized)
+		VM_InitPolygons(&debugPolys);
+	if (debugPolys.begin_active)
+	{
+		Con_PrintLinef ("Debug_PolygonBegin: called twice without Debug_PolygonEnd after first");
+		return;
+	}
+	//debugPolys.begin_texture = picname[0] ? Draw_CachePic_Flags (picname, CACHEPICFLAG_NOTPERSISTENT)->tex : r_texture_white;
+	debugPolys.begin_drawflag = drawflag;
+	debugPolys.begin_vertices = 0;
+	debugPolys.begin_active = true;
+}
+
+void Debug_PolygonVertex(float x, float y, float z, float s, float t, float r, float g, float b, float a)
+{
+	if (!debugPolys.begin_active)
+	{
+		Con_PrintLinef ("Debug_PolygonVertex: Debug_PolygonBegin wasn't called");
+		return;
+	}
+
+	if (debugPolys.begin_vertices >= VMPOLYGONS_MAXPOINTS)
+	{
+		Con_PrintLinef ("Debug_PolygonVertex: may have %d vertices max", VMPOLYGONS_MAXPOINTS);
+		return;
+	}
+
+	debugPolys.begin_vertex[debugPolys.begin_vertices][0] = x;
+	debugPolys.begin_vertex[debugPolys.begin_vertices][1] = y;
+	debugPolys.begin_vertex[debugPolys.begin_vertices][2] = z;
+	debugPolys.begin_texcoord[debugPolys.begin_vertices][0] = s;
+	debugPolys.begin_texcoord[debugPolys.begin_vertices][1] = t;
+	debugPolys.begin_color[debugPolys.begin_vertices][0] = r;
+	debugPolys.begin_color[debugPolys.begin_vertices][1] = g;
+	debugPolys.begin_color[debugPolys.begin_vertices][2] = b;
+	debugPolys.begin_color[debugPolys.begin_vertices][3] = a;
+	debugPolys.begin_vertices++;
+}
+
+void Debug_PolygonEnd(void)
+{
+	if (!debugPolys.begin_active)
+	{
+		Con_Printf("Debug_PolygonEnd: Debug_PolygonBegin wasn't called\n");
+		return;
+	}
+	debugPolys.begin_active = false;
+	if (debugPolys.begin_vertices >= 3)
+		VMPolygons_Store(&debugPolys);
+	else
+		Con_PrintLinef ("Debug_PolygonEnd: %d vertices isn't a good choice", debugPolys.begin_vertices);
+}
+#endif // 0 - 123 stuff we don't want
+
 
 /*
 =============
@@ -5635,17 +5986,44 @@ NULL
 
 const int vm_cl_numbuiltins = sizeof(vm_cl_builtins) / sizeof(prvm_builtin_t);
 
+#if 123
+void VM_Polygons_Reset(prvm_prog_t *prog)
+{
+	vmpolygons_t *polys = &prog->vmpolygons;
+
+	// TODO: replace vm_polygons stuff with a more general debugging polygon system, and make vm_polygons functions use that system
+	if (polys->initialized)
+	{
+		Mem_FreePool(&polys->pool);
+		polys->initialized = false;
+	}
+}
+#endif // 123
+
 void CLVM_init_cmd(prvm_prog_t *prog)
 {
 	VM_Cmd_Init(prog);
+
+#if 123
+	VM_Cmd_Init(prog);
+	VM_Polygons_Reset(prog);
+#endif
+
+	// DarkPlaces Beta way
 	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
+	prog->polygonbegin_guess2d = false;
 }
 
 void CLVM_reset_cmd(prvm_prog_t *prog)
 {
 	World_End(&cl.world);
 	VM_Cmd_Reset(prog);
+
+#if 123
+	VM_Polygons_Reset(prog);
+#endif // 123
+
+	// DarkPlaces Beta way
 	prog->polygonbegin_model = NULL;
 	prog->polygonbegin_guess2d = 0;
 }

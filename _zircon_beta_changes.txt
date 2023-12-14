@@ -3,6 +3,19 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 9 - November 26 2023
+1. Implemented DarkPlaces Classic method of rendering csqc 3d polygons
+   as the DarkPlaces Beta method, although it allows shaders, is incompatible
+   with DarkPlaces Classic R_BeginPolygon in 3D space.
+   TODO: Cvar control to decide method?
+
+2. AMD + Windows force gl_texturecompression_color to 0 to workaround driver bug (DarkPlaces Beta).
+3. Fix for Zircon Galaxy detection
+4. Better clearing on window creation (DarkPlaces Beta), may help odd effect I saw on Linux, plus
+   fix of gl context leak.
+5. Display (disconnected) in map menu if no map active
+
+
 // Zircon Beta Release 8 - November 24 2023
 
 1. Upgraded the SDL2 version zircon_beta_gcc.exe, which seems to resolve vid_restart weirdness.

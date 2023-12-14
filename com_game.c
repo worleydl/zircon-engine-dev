@@ -99,13 +99,6 @@ void COM_InitGameType (void)
 	char name [MAX_OSPATH];
 	int i;
 	int index = 0;
-	fs_is_zircon_galaxy = File_Is_Existing_File (
-#ifdef __ANDROID__
-	
-		"/sdcard/zircon/"
-#endif
-		"zircon/gfx/qplaque.png"
-	);
 
 #ifdef FORCEGAME
 	COM_ToLowerString(FORCEGAME, name, sizeof (name));

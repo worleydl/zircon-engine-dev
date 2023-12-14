@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct cachepic_s cachepic_t;
 
+
 typedef enum cachepicflags_e
 {
 	CACHEPICFLAG_NOTPERSISTENT = 1,
@@ -176,6 +177,12 @@ void DrawQ_SetClipArea(float x, float y, float width, float height);
 void DrawQ_ResetClipArea(void);
 // draw a line
 void DrawQ_Line(float width, float x1, float y1, float x2, float y2, float r, float g, float b, float alpha, int flags);
+
+#if 123
+	// draw a triangle mesh
+	void DrawQ_Mesh(drawqueuemesh_t *mesh, int flags, qbool hasalpha);
+	void DrawQ_ProcessDrawFlag(int flags, qbool alpha);
+#endif // 123
 
 const char *Draw_GetPicName(cachepic_t *pic);
 int Draw_GetPicWidth(cachepic_t *pic);

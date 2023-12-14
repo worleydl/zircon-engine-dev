@@ -998,6 +998,10 @@ int R_Shadow_GetRTLightInfo(unsigned int lightindex, float *origin, float *radiu
 dp_font_t *FindFont(const char *title, qbool allocate_new);
 void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, float voffset);
 
+#if 123
+	void VM_CL_AddPolygonsToMeshQueue(struct prvm_prog_s *prog);
+#endif // 123
+
 void Render_Init(void);
 
 // these are called by Render_Init

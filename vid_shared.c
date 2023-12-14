@@ -805,6 +805,17 @@ skip_spam2:
 // COMMANDLINEOPTION: GL: -notexturegather disables GL_ARB_texture_gather (which provides fetch4 sampling)
 // COMMANDLINEOPTION: GL: -nogldebugoutput disables GL_ARB_debug_output (which provides the gl_debug feature, if enabled)
 
+#ifdef _WIN32
+	// gl_texturecompression_color is somehow broken on AMD's Windows driver,
+	// see: https://gitlab.com/xonotic/darkplaces/-/issues/228
+	// HACK: force it off (less bad than adding hacky checks to the renderer)
+	if (String_Does_Start_With (gl_renderer, "AMD Radeon(TM)"))
+	{
+		Cvar_SetQuick(&gl_texturecompression_color, "0");
+		gl_texturecompression_color.flags |= CF_READONLY;
+	}
+#endif // _WIN32
+
 #ifdef GL_MAX_DRAW_BUFFERS
 	qglGetIntegerv(GL_MAX_DRAW_BUFFERS, (GLint*)&vid.maxdrawbuffers);
 	CHECKGLERROR

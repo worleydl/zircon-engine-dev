@@ -1707,7 +1707,6 @@ static void AdjustWindowBounds(viddef_mode_t *mode, RECT *rect)
 }
 #endif
 
-
 static qbool VID_InitModeGL(viddef_mode_t *mode)
 {
 	int windowflags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
@@ -1837,9 +1836,8 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 
 	SDL_GetWindowSize(window, &mode->width, &mode->height);
 	context = SDL_GL_CreateContext(window);
-	if (context == NULL)
-	{
-		Con_Printf (CON_ERROR "Failed to initialize OpenGL context: %s\n", SDL_GetError());
+	if (context == NULL) {
+		Con_PrintLinef (CON_ERROR "Failed to initialize OpenGL context: %s", SDL_GetError());
 		VID_Shutdown();
 		return false;
 	}
@@ -1849,7 +1847,17 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 
 	gl_platform = "SDL";
 
+	vid_hidden = false;
+	vid_activewindow = true;
+	vid_hasfocus = true; 
+	vid_usingmouse = false;
+	vid_usinghidecursor = false;
+
 	GL_Setup();
+
+	// clear to black (loading plaque will be seen over this)
+	GL_Clear(GL_COLOR_BUFFER_BIT, NULL, 1.0f, 0);
+	VID_Finish(); // checks vid_hidden
 
 	// VorteX: set other info
 	Cvar_SetQuick(&gl_info_vendor, gl_vendor);
@@ -1870,14 +1878,6 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	Con_DPrintf ("\n");
 #endif
 
-	// clear to black (loading plaque will be seen over this)
-	GL_Clear(GL_COLOR_BUFFER_BIT, NULL, 1.0f, 0);
-
-	vid_hidden = false;
-	vid_activewindow = false;
-	vid_hasfocus = true; 
-	vid_usingmouse = false;
-	vid_usinghidecursor = false;
 		
 	vid.restart_count++;
 	return true;
@@ -1908,6 +1908,9 @@ void VID_Shutdown (void)
 {
 	VID_EnableJoystick	(false);
 	VID_SetMouse		(q_mouse_relative_false, q_mouse_hidecursor_false);
+
+	SDL_GL_DeleteContext(context);
+	context = NULL;
 
 	SDL_DestroyWindow(window);
 	window = NULL;

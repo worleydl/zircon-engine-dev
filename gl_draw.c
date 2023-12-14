@@ -42,7 +42,7 @@ struct cachepic_s
 	// used for hash lookups
 	struct cachepic_s *chain;
 	// flags - CACHEPICFLAG_NEWPIC for example
-	unsigned int flags;
+	unsigned int cacheflags;
 	// name of pic
 	char name[MAX_QPATH_128];
 };
@@ -107,12 +107,13 @@ cachepic_t *Draw_CachePic_Flags(const char *path, unsigned int cachepicflags)
 	// check whether the picture has already been cached
 	crc = CRC_Block((unsigned char *)path, strlen(path));
 	hashkey = ((crc >> 8) ^ crc) % CACHEPICHASHSIZE;
+
 	for (pic = cachepichash[hashkey];pic;pic = pic->chain)
 	{
 		if (String_Does_Match(path, pic->name))
 		{
 			// if it was created (or replaced) by Draw_NewPic, just return it
-			if (!(pic->flags & CACHEPICFLAG_NEWPIC))
+			if (!(pic->cacheflags & CACHEPICFLAG_NEWPIC))
 			{
 				// reload the pic if texflags changed in important ways
 				// ignore TEXF_COMPRESS when comparing, because fallback pics remove the flag, and ignore TEXF_MIPMAP because QC specifies that
@@ -123,7 +124,7 @@ cachepic_t *Draw_CachePic_Flags(const char *path, unsigned int cachepicflags)
 				}
 				if (!pic->skinframe || !pic->skinframe->base)
 				{
-					if (pic->flags & CACHEPICFLAG_FAILONMISSING_256)
+					if (pic->cacheflags & CACHEPICFLAG_FAILONMISSING_256)
 						return NULL;
 					Con_DPrintf ("Draw_CachePic(\"%s\"): frame %d: reloading pic\n", path, draw_frame);
 					goto reload;
@@ -156,7 +157,7 @@ reload:
 	if (pic->skinframe)
 		R_SkinFrame_PurgeSkinFrame(pic->skinframe);
 
-	pic->flags = cachepicflags;
+	pic->cacheflags = cachepicflags;
 	pic->texflags = texflags;
 	pic->autoload = (cachepicflags & CACHEPICFLAG_NOTPERSISTENT) != 0;
 	pic->lastusedframe = draw_frame;
@@ -269,7 +270,7 @@ cachepic_t *Draw_NewPic(const char *picname, int width, int height, unsigned cha
 
 	if (pic)
 	{
-		if (pic->flags & CACHEPICFLAG_NEWPIC && pic->skinframe && pic->skinframe->base && pic->width == width && pic->height == height)
+		if (pic->cacheflags & CACHEPICFLAG_NEWPIC && pic->skinframe && pic->skinframe->base && pic->width == width && pic->height == height)
 		{
 			Con_DPrintLinef ("Draw_NewPic(" QUOTED_S "): frame %d: updating texture", picname, draw_frame);
 			R_UpdateTexture(pic->skinframe->base, pixels_bgra, 0, 0, 0, width, height, 1, 0);
@@ -299,9 +300,9 @@ cachepic_t *Draw_NewPic(const char *picname, int width, int height, unsigned cha
 	R_SkinFrame_PurgeSkinFrame(pic->skinframe);
 
 	pic->autoload = false;
-	pic->flags = CACHEPICFLAG_NEWPIC; // disable texflags checks in Draw_CachePic
-	pic->flags |= (texflags & TEXF_CLAMP) ? 0 : CACHEPICFLAG_NOCLAMP;
-	pic->flags |= (texflags & TEXF_FORCENEAREST) ? CACHEPICFLAG_NEAREST : 0;
+	pic->cacheflags = CACHEPICFLAG_NEWPIC; // disable texflags checks in Draw_CachePic
+	pic->cacheflags |= (texflags & TEXF_CLAMP) ? 0 : CACHEPICFLAG_NOCLAMP;
+	pic->cacheflags |= (texflags & TEXF_FORCENEAREST) ? CACHEPICFLAG_NEAREST : 0;
 	pic->width = width;
 	pic->height = height;
 	pic->skinframe = R_SkinFrame_LoadInternalBGRA(picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, 0, 0, 0, vid.sRGB2D, /*q1skyload*/ false);
@@ -786,6 +787,58 @@ void DrawQ_Start(void)
 }
 
 qbool r_draw2d_force = false;
+
+#if 123
+
+void DrawQ_ProcessDrawFlag(int flags, qbool alpha)
+{
+	if(flags == DRAWFLAG_ADDITIVE)
+	{
+		GL_DepthMask(false);
+		GL_BlendFunc(alpha ? GL_SRC_ALPHA : GL_ONE, GL_ONE);
+	}
+	else if(flags == DRAWFLAG_MODULATE)
+	{
+		GL_DepthMask(false);
+		GL_BlendFunc(GL_DST_COLOR, GL_ZERO);
+	}
+	else if(flags == DRAWFLAG_2XMODULATE)
+	{
+		GL_DepthMask(false);
+		GL_BlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+	}
+	else if(flags == DRAWFLAG_SCREEN)
+	{
+		GL_DepthMask(false);
+		GL_BlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
+	}
+	else if(alpha)
+	{
+		GL_DepthMask(false);
+		GL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else
+	{
+		GL_DepthMask(true);
+		GL_BlendFunc(GL_ONE, GL_ZERO);
+	}
+}
+
+void DrawQ_Mesh (drawqueuemesh_t *mesh, int flags, qbool hasalpha)
+{
+	DrawQ_Start ();
+
+	if(!r_draw2d.integer && !r_draw2d_force)
+		return;
+	DrawQ_ProcessDrawFlag(flags, hasalpha);
+
+	R_SetupShader_Generic(mesh->texture, /*gamma trippy texalpha*/ (flags & DRAWFLAGS_BLEND) ? false : true, true, false);
+
+	R_Mesh_PrepareVertices_Generic_Arrays(mesh->num_vertices, mesh->data_vertex3f, mesh->data_color4f, mesh->data_texcoord2f);
+	R_Mesh_Draw(0, mesh->num_vertices, 0, mesh->num_triangles, mesh->data_element3i, NULL, 0, mesh->data_element3s, NULL, 0);
+}
+
+#endif // 123
 
 void DrawQ_Pic(float x, float y, cachepic_t *pic, float width, float height, float red, float green, float blue, float alpha, int flags)
 {

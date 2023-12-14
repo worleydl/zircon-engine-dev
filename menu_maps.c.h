@@ -86,7 +86,7 @@ static void M_Maps_Draw (void)
 
 		// Print current map
 		if (1) {
-			const char *s = "";
+			const char *s = "(disconnected)";
 			if (cls.state == ca_connected && cls.signon == SIGNONS_4) // MAPS MENU
 				s = cl.worldbasename;
 			int slen = (int)strlen(s);

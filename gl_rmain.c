@@ -5834,6 +5834,11 @@ void R_RenderScene(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *viewco
 #endif 
 	}
 
+#if 123
+	if (cl.csqc_loaded)
+		VM_CL_AddPolygonsToMeshQueue(CLVM_prog);
+#endif // 123
+
 	if (r_refdef.view.showdebug)
 	{
 		if (cl_locs_show.integer)
