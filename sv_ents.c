@@ -418,12 +418,12 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 			else if (sv.sendentities[i].active == ACTIVE_SHARED)
 				sv.writeentitiestoclient_csqcsendstates[numcsqcsendstates++] = s->number;
 			else
-				Con_Printf("entity %d is in sv.sendentities and marked, but not active, please breakpoint me\n", s->number);
+				Con_PrintLinef ("entity %d is in sv.sendentities and marked, but not active, please breakpoint me", s->number);
 		}
 	}
 
 	if (sv_cullentities_stats.integer)
-		Con_Printf("client \"%s\" entities: %d total, %d visible, %d culled by: %d pvs %d trace\n", client->name, sv.writeentitiestoclient_stats_totalentities, sv.writeentitiestoclient_stats_visibleentities, sv.writeentitiestoclient_stats_culled_pvs + sv.writeentitiestoclient_stats_culled_trace, sv.writeentitiestoclient_stats_culled_pvs, sv.writeentitiestoclient_stats_culled_trace);
+		Con_PrintLinef ("client " QUOTED_S " entities: %d total, %d visible, %d culled by: %d pvs %d trace", client->name, sv.writeentitiestoclient_stats_totalentities, sv.writeentitiestoclient_stats_visibleentities, sv.writeentitiestoclient_stats_culled_pvs + sv.writeentitiestoclient_stats_culled_trace, sv.writeentitiestoclient_stats_culled_pvs, sv.writeentitiestoclient_stats_culled_trace);
 
 	if (client->entitydatabase5)
 		need_empty = EntityFrameCSQC_WriteFrame(msg, maxsize, numcsqcsendstates, sv.writeentitiestoclient_csqcsendstates, client->entitydatabase5->latestframenum + 1);
@@ -442,19 +442,20 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 		need_empty = true;
 	client->lastmovesequence = client->movesequence;
 
-	if (client->entitydatabase5)
+	// Baker: Explain which path is taken when.
+	if (client->entitydatabase5) // DP7 and Quakeworld
 		success = EntityFrame5_WriteFrame(msg, maxsize, client->entitydatabase5, numsendstates, sv.writeentitiestoclient_sendstates, client - svs.clients + 1, client->movesequence, need_empty);
-	else if (client->entitydatabase4)
+	else if (client->entitydatabase4) // DP4
 	{
 		success = EntityFrame4_WriteFrame(msg, maxsize, client->entitydatabase4, numsendstates, sv.writeentitiestoclient_sendstates);
 		Protocol_WriteStatsReliable();
 	}
-	else if (client->entitydatabase)
+	else if (client->entitydatabase) // DP1 to DP3
 	{
 		success = EntityFrame_WriteFrame(msg, maxsize, client->entitydatabase, numsendstates, sv.writeentitiestoclient_sendstates, client - svs.clients + 1);
 		Protocol_WriteStatsReliable();
 	}
-	else
+	else // Everything else QUAKE, FITZ666
 	{
 		success = EntityFrameQuake_WriteFrame(msg, maxsize, numsendstates, sv.writeentitiestoclient_sendstates);
 		Protocol_WriteStatsReliable();

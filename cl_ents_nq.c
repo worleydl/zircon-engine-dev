@@ -1,33 +1,138 @@
 #include "quakedef.h"
 #include "protocol.h"
 
+void CL_ParseUpdate_Fitz (entity_t *ent, entity_state_t *s, int bits)
+{
+	// Baker: Everything reset to baseline already
+	int		i;
+	int		modnum;
+	int		skin;
+	int		modread = false;
+
+	if (bits & U_MODEL) {
+		modnum = MSG_ReadByte (&cl_message);
+		if (modnum >= QUAKESPASM_MAXMODELS_2048)
+			Host_Error_Line ("CL_ParseModel: bad modnum");
+		modread = true;
+	}
+
+	if (bits & U_FRAME)					s->frame = MSG_ReadByte (&cl_message);
+	if (bits & U_COLORMAP)				s->colormap = MSG_ReadByte(&cl_message);
+	if (bits & U_SKIN)					s->skin = MSG_ReadByte(&cl_message);
+	if (bits & U_EFFECTS)				s->effects = MSG_ReadByte(&cl_message);
+	if (bits & U_ORIGIN1)				s->origin[0] = MSG_ReadCoord(&cl_message, cls.protocol);
+	if (bits & U_ANGLE1)				s->angles[0] = MSG_ReadAngle(&cl_message, cls.protocol);
+	if (bits & U_ORIGIN2)				s->origin[1] = MSG_ReadCoord(&cl_message, cls.protocol);
+	if (bits & U_ANGLE2)				s->angles[1] = MSG_ReadAngle(&cl_message, cls.protocol);
+	if (bits & U_ORIGIN3)				s->origin[2] = MSG_ReadCoord(&cl_message, cls.protocol);
+	if (bits & U_ANGLE3)				s->angles[2] = MSG_ReadAngle(&cl_message, cls.protocol);
+
+	//johnfitz -- lerping for movetype_step entities
+	//if (bits & U_STEP)
+	//{
+	//	ent->lerpflags |= LERP_MOVESTEP;
+	//	ent->forcelink = true;
+	//}
+	//else
+	//	ent->lerpflags &= ~LERP_MOVESTEP;
+	//johnfitz
+
+	//johnfitz -- PROTOCOL_FITZQUAKE and PROTOCOL_NEHAHRA
+	if (bits & U_FITZALPHA_S16) {
+		s->alpha = MSG_ReadByte(&cl_message);
+		if (s->alpha == 0) s->alpha = 255;
+	}
+	if (bits & U_RMQ_SCALE_S20) {
+			s->scale = MSG_ReadByte(&cl_message);
+			if (s->scale == 0) s->scale = 16;
+	}
+	if (bits & U_FITZFRAME2_S17)
+		s->frame = (s->frame & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
+	if (bits & U_FITZMODEL2_S18) {
+		modnum = (modnum & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
+		modread = true;
+	}
+	if (modread)
+		s->modelindex = modnum;
+	if (bits & U_FITZLERPFINISH_S19) {
+		int lerpfinish = ((float)(MSG_ReadByte(&cl_message)) / 255);
+		//ent->lerpflags |= LERP_FINISH;
+	}	
+	//johnfitz
+
+	////johnfitz -- moved here from above
+	//model = cl.model_precache[modnum];
+	//if (model != ent->model)
+	//{
+	//	ent->model = model;
+	//// automatic animation (torches, etc) can be either all together
+	//// or randomized
+	//	if (model)
+	//	{
+	//		if (model->synctype == ST_RAND)
+	//			ent->syncbase = (float)(rand()&0x7fff) / 0x7fff;
+	//		else
+	//			ent->syncbase = 0.0;
+	//	}
+	//	else
+	//		forcelink = true;	// hack to make null model players work
+	//	if (num > 0 && num <= cl.maxclients)
+	//		R_TranslateNewPlayerSkin (num - 1); //johnfitz -- was R_TranslatePlayerSkin
+
+	//	ent->lerpflags |= LERP_RESETANIM; //johnfitz -- don't lerp animation across model changes
+	//}
+	////johnfitz
+
+	//if ( forcelink )
+	//{	// didn't have an update last message
+	//	VectorCopy (ent->msg_origins[0], ent->msg_origins[1]);
+	//	VectorCopy (ent->msg_origins[0], ent->origin);
+	//	VectorCopy (ent->msg_angles[0], ent->msg_angles[1]);
+	//	VectorCopy (ent->msg_angles[0], ent->angles);
+	//	ent->forcelink = true;
+	//}
+
+}
+
+// FITZQUAKE EQUIVALENT: CL_ParseUpdate ?
+WARP_X_ (EntityFrameQuake_WriteFrame)
 void EntityFrameQuake_ReadEntity(int bits)
 {
 	int num;
 	entity_t *ent;
 	entity_state_t s;
 
-	if (bits & U_MOREBITS)
+	if (Have_Flag (bits, U_MOREBITS_1))
 		bits |= (MSG_ReadByte(&cl_message)<<8);
-	if ((bits & U_EXTEND1) && cls.protocol != PROTOCOL_NEHAHRAMOVIE)
-	{
+
+
+	// FITZQUAKE LOOKS EQUIVALENT
+	if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
+		// Baker: These might be equivalent but the logic is not the same.
+		if (bits & U_EXTEND1_S15)
+			bits |= MSG_ReadByte(&cl_message) << 16;
+
+		if (bits & U_EXTEND2_S23)
+			bits |= MSG_ReadByte(&cl_message) << 24;
+	} 
+	else 
+	if (Have_Flag (bits, U_EXTEND1_S15) && cls.protocol != PROTOCOL_NEHAHRAMOVIE) {
 		bits |= MSG_ReadByte(&cl_message) << 16;
-		if (bits & U_EXTEND2)
+		if (bits & U_EXTEND2_S23)
 			bits |= MSG_ReadByte(&cl_message) << 24;
 	}
 
-	if (bits & U_LONGENTITY)
+	if (Have_Flag (bits, U_LONGENTITY))
 		num = (unsigned short) MSG_ReadShort(&cl_message);
 	else
 		num = MSG_ReadByte(&cl_message);
 
-	if (num >= MAX_EDICTS)
-		Host_Error_Line ("EntityFrameQuake_ReadEntity: entity number (%d) >= MAX_EDICTS (%d)", num, MAX_EDICTS);
+	if (num >= MAX_EDICTS_32768)
+		Host_Error_Line ("EntityFrameQuake_ReadEntity: entity number (%d) >= MAX_EDICTS_32768 (%d)", num, MAX_EDICTS_32768);
 	if (num < 1)
 		Host_Error_Line ("EntityFrameQuake_ReadEntity: invalid entity number (%d)", num);
 
-	if (cl.num_entities <= num)
-	{
+	if (cl.num_entities <= num) {
 		cl.num_entities = num + 1;
 		if (num >= cl.max_entities)
 			CL_ExpandEntities(num);
@@ -38,8 +143,12 @@ void EntityFrameQuake_ReadEntity(int bits)
 	// note: this inherits the 'active' state of the baseline chosen
 	// (state_baseline is always active, state_current may not be active if
 	// the entity was missing in the last frame)
-	if (bits & U_DELTA)
+
+	// Baker: FitzQuake bits here can collide with U_DELTA
+	if (Have_Flag (bits, U_DELTA_S16) && 
+			 false == isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 		s = ent->state_current;
+	}
 	else
 	{
 		s = ent->state_baseline;
@@ -52,9 +161,19 @@ void EntityFrameQuake_ReadEntity(int bits)
 	s.number = num;
 	s.time = cl.mtime[0];
 	s.flags = 0;
-	if (bits & U_MODEL)
-	{
-		if (cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3)
+
+	// FITZQUAKE has lerp flag here
+	// if (ent->msgtime + 0.2 < cl.mtime[0]) //more than 0.2 seconds since the last message (most entities think every 0.1 sec)
+	//	ent->lerpflags |= LERP_RESETANIM; //if we missed a think, we'd be lerping from the wrong frame
+
+	if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
+		CL_ParseUpdate_Fitz (ent, &s, bits);
+		goto fitzquake_bypass;
+	}
+
+	// FitzQuake does not come here ...
+	if (Have_Flag (bits, U_MODEL)) {
+		if (isin3(cls.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 							s.modelindex = (unsigned short) MSG_ReadShort(&cl_message);
 		else
 							s.modelindex = (s.modelindex & 0xFF00) | MSG_ReadByte(&cl_message);
@@ -69,22 +188,25 @@ void EntityFrameQuake_ReadEntity(int bits)
 	if (bits & U_ANGLE2)	s.angles[1] = MSG_ReadAngle(&cl_message, cls.protocol);
 	if (bits & U_ORIGIN3)	s.origin[2] = MSG_ReadCoord(&cl_message, cls.protocol);
 	if (bits & U_ANGLE3)	s.angles[2] = MSG_ReadAngle(&cl_message, cls.protocol);
+
 	if (bits & U_STEP)		s.flags |= RENDER_STEP;
-	if (bits & U_ALPHA)		s.alpha = MSG_ReadByte(&cl_message);
-	if (bits & U_SCALE)		s.scale = MSG_ReadByte(&cl_message);
-	if (bits & U_EFFECTS2)	s.effects = (s.effects & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
-	if (bits & U_GLOWSIZE)	s.glowsize = MSG_ReadByte(&cl_message);
-	if (bits & U_GLOWCOLOR)	s.glowcolor = MSG_ReadByte(&cl_message);
-	if (bits & U_COLORMOD)	{int c = MSG_ReadByte(&cl_message);s.colormod[0] = (unsigned char)(((c >> 5) & 7) * (32.0f / 7.0f));s.colormod[1] = (unsigned char)(((c >> 2) & 7) * (32.0f / 7.0f));s.colormod[2] = (unsigned char)((c & 3) * (32.0f / 3.0f));}
-	if (bits & U_GLOWTRAIL) s.flags |= RENDER_GLOWTRAIL;
-	if (bits & U_FRAME2)	s.frame = (s.frame & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
-	if (bits & U_MODEL2)	s.modelindex = (s.modelindex & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
-	if (bits & U_VIEWMODEL)	s.flags |= RENDER_VIEWMODEL;
+
+	// Baker: FitzQuake collides with U_DELTA_S16, U_ALPHA_S17, U_SCALE_S18, U_EFFECTS2_S19
+	if (bits & U_ALPHA_S17)		s.alpha = MSG_ReadByte(&cl_message);
+	if (bits & U_SCALE_S18)		s.scale = MSG_ReadByte(&cl_message);
+	if (bits & U_EFFECTS2_S19)	s.effects = (s.effects & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
+
+	if (bits & U_GLOWSIZE_S20)	s.glowsize = MSG_ReadByte(&cl_message);
+	if (bits & U_GLOWCOLOR)		s.glowcolor = MSG_ReadByte(&cl_message);
+	if (bits & U_COLORMOD)		{int c = MSG_ReadByte(&cl_message);s.colormod[0] = (unsigned char)(((c >> 5) & 7) * (32.0f / 7.0f));s.colormod[1] = (unsigned char)(((c >> 2) & 7) * (32.0f / 7.0f));s.colormod[2] = (unsigned char)((c & 3) * (32.0f / 3.0f));}
+	if (bits & U_GLOWTRAIL)		s.flags |= RENDER_GLOWTRAIL;
+	if (bits & U_FRAME2_S26)	s.frame = (s.frame & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
+	if (bits & U_MODEL2_S27)	s.modelindex = (s.modelindex & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
+	if (bits & U_VIEWMODEL)		s.flags |= RENDER_VIEWMODEL;
 	if (bits & U_EXTERIORMODEL)	s.flags |= RENDER_EXTERIORMODEL;
 
 	// LadyHavoc: to allow playback of the Nehahra movie
-	if (cls.protocol == PROTOCOL_NEHAHRAMOVIE && (bits & U_EXTEND1))
-	{
+	if (cls.protocol == PROTOCOL_NEHAHRAMOVIE && Have_Flag(bits, U_EXTEND1_S15)) {
 		// LadyHavoc: evil format
 		int i = (int)MSG_ReadFloat(&cl_message);
 		int j = (int)(MSG_ReadFloat(&cl_message) * 255.0f);
@@ -101,7 +223,7 @@ void EntityFrameQuake_ReadEntity(int bits)
 		else
 			s.alpha = j;
 	}
-
+fitzquake_bypass:
 	ent->state_previous = ent->state_current;
 	ent->state_current = s;
 	if (ent->state_current.active == ACTIVE_NETWORK)

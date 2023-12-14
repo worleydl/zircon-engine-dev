@@ -125,7 +125,7 @@ trace_t SV_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int clipgroup;
 
 	//return SV_TraceBox(start, vec3_origin, vec3_origin, end, type, passedict, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
@@ -182,12 +182,12 @@ trace_t SV_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	// clip to entities
 	// because this uses World_EntitiestoBox, we know all entity boxes overlap
 	// the clip region, so we can skip culling checks in the loop below
-	numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0;i < numtouchedicts;i++)
 	{
@@ -277,7 +277,7 @@ trace_t SV_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int clipgroup;
 	if (VectorCompare(start, end))
 		return SV_TracePoint(start, type, passedict, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
@@ -337,12 +337,12 @@ trace_t SV_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	// clip to entities
 	// because this uses World_EntitiestoBox, we know all entity boxes overlap
 	// the clip region, so we can skip culling checks in the loop below
-	numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0;i < numtouchedicts;i++)
 	{
@@ -440,7 +440,7 @@ trace_t SV_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int clipgroup;
 	if (VectorCompare(mins, maxs))
 	{
@@ -521,12 +521,12 @@ trace_t SV_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	// clip to entities
 	// because this uses World_EntitiestoBox, we know all entity boxes overlap
 	// the clip region, so we can skip culling checks in the loop below
-	numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0;i < numtouchedicts;i++)
 	{
@@ -622,7 +622,7 @@ int SV_PointSuperContents(const vec3_t point)
 	int frame;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 
 	// get world supercontents at this point
 	if (sv.worldmodel && sv.worldmodel->PointSuperContents)
@@ -633,12 +633,12 @@ int SV_PointSuperContents(const vec3_t point)
 		return supercontents;
 
 	// get list of entities at this point
-	numtouchedicts = SV_EntitiesInBox(point, point, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(point, point, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0;i < numtouchedicts;i++)
 	{
@@ -729,7 +729,7 @@ void SV_LinkEdict_TouchAreaGrid(prvm_edict_t *ent)
 	prvm_prog_t *prog = SVVM_prog;
 	int i, numtouchedicts, old_self, old_other;
 	prvm_edict_t *touch;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 
 	if (ent == prog->edicts)
 		return;		// don't add the world
@@ -742,12 +742,12 @@ void SV_LinkEdict_TouchAreaGrid(prvm_edict_t *ent)
 
 	// build a list of edicts to touch, because the link loop can be corrupted
 	// by IncreaseEdicts called during touch functions
-	numtouchedicts = SV_EntitiesInBox(ent->priv.server->areamins, ent->priv.server->areamaxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(ent->priv.server->areamins, ent->priv.server->areamaxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 
 	old_self = PRVM_serverglobaledict(self);
@@ -815,7 +815,7 @@ void SV_LinkEdict (prvm_edict_t *ent)
 		return;
 
 	modelindex = (int)PRVM_serveredictfloat(ent, modelindex);
-	if (modelindex < 0 || modelindex >= MAX_MODELS)
+	if (modelindex < 0 || modelindex >= MAX_MODELS_8192)
 	{
 		Con_Printf ("edict %d: SOLID_BSP with invalid modelindex!\n", PRVM_NUM_FOR_EDICT(ent));
 		modelindex = 0;
@@ -1089,13 +1089,33 @@ static qbool SV_RunThink (prvm_edict_t *ent)
 	if (PRVM_serveredictfloat(ent, nextthink) <= 0 || PRVM_serveredictfloat(ent, nextthink) > sv.time + sv.frametime)
 		return true;
 
-	for (iterations = 0; iterations < 128  && !ent->free; iterations++)
-	{
+	for (iterations = 0; iterations < 128  && !ent->free; iterations++) {
+
+#if 0000 // DPD2 - Some FitzQuake sendinterval stuff here
+		oldframe = ent->v.frame; //johnfitz
+#endif
+
 		PRVM_serverglobalfloat(time) = max(sv.time, PRVM_serveredictfloat(ent, nextthink));
 		PRVM_serveredictfloat(ent, nextthink) = 0;
 		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(ent);
 		PRVM_serverglobaledict(other) = PRVM_EDICT_TO_PROG(prog->edicts);
 		prog->ExecuteProgram(prog, PRVM_serveredictfunction(ent, think), "QC function self.think is missing");
+
+#if 0000 // DPD2 - Some FitzQuake sendinterval stuff here
+		//johnfitz -- PROTOCOL_FITZQUAKE
+		//capture interval to nextthink here and send it to client for better
+		//lerp timing, but only if interval is not 0.1 (which client assumes)
+			ent->sendinterval = false;
+			if (!ent->free && ent->v.nextthink && (ent->v.movetype == MOVETYPE_STEP 
+				|| ent->v.frame != oldframe))
+			{
+				i = Q_rint((ent->v.nextthink-thinktime)*255);
+				if (i >= 0 && i < 256 && i != 25 && i != 26) //25 and 26 are close enough to 0.1 to not send
+					ent->sendinterval = true;
+			}
+		//johnfitz
+#endif
+
 		// mods often set nextthink to time to cause a think every frame,
 		// we don't want to loop in that case, so exit if the new nextthink is
 		// <= the time the qc was told, also exit if it is past the end of the
@@ -1776,11 +1796,11 @@ static void SV_PushMove (prvm_edict_t *pusher, float movetime)
 	vec3_t mins, maxs, move, move1, moveangle, pushorig, pushang, a, forward, left, up, org, pushermins, pushermaxs, checkorigin, checkmins, checkmaxs;
 	int num_moved;
 	int numcheckentities;
-	static prvm_edict_t *checkentities[MAX_EDICTS];
+	static prvm_edict_t *checkentities[MAX_EDICTS_32768];
 	model_t *pushermodel;
 	trace_t trace, trace2;
 	matrix4x4_t pusherfinalmatrix, pusherfinalimatrix;
-	static unsigned short moved_edicts[MAX_EDICTS];
+	static unsigned short moved_edicts[MAX_EDICTS_32768];
 	vec3_t pivot;
 
 	if (!PRVM_serveredictvector(pusher, velocity)[0] && !PRVM_serveredictvector(pusher, velocity)[1] && !PRVM_serveredictvector(pusher, velocity)[2] && !PRVM_serveredictvector(pusher, avelocity)[0] && !PRVM_serveredictvector(pusher, avelocity)[1] && !PRVM_serveredictvector(pusher, avelocity)[2])
@@ -1813,7 +1833,7 @@ static void SV_PushMove (prvm_edict_t *pusher, float movetime)
 		return;
 	}
 	index = (int) PRVM_serveredictfloat(pusher, modelindex);
-	if (index < 1 || index >= MAX_MODELS)
+	if (index < 1 || index >= MAX_MODELS_8192)
 	{
 		Con_Printf ("SV_PushMove: entity #%d has an invalid modelindex %f\n", PRVM_NUM_FOR_EDICT(pusher), PRVM_serveredictfloat(pusher, modelindex));
 		return;
@@ -1902,7 +1922,7 @@ static void SV_PushMove (prvm_edict_t *pusher, float movetime)
 	if (PRVM_serveredictfloat(pusher, movetype) == MOVETYPE_FAKEPUSH) // Tenebrae's MOVETYPE_PUSH variant that doesn't push...
 		numcheckentities = 0;
 	else // MOVETYPE_PUSH
-	        numcheckentities = SV_EntitiesInBox(mins, maxs, MAX_EDICTS, checkentities);
+	        numcheckentities = SV_EntitiesInBox(mins, maxs, MAX_EDICTS_32768, checkentities);
 	for (e = 0;e < numcheckentities;e++)
 	{
 		prvm_edict_t *check = checkentities[e];

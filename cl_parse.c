@@ -204,7 +204,7 @@ static void QW_CL_StopUpload_f(cmd_state_t *cmd);
 CL_ParseStartSoundPacket
 ==================
 */
-static void CL_ParseStartSoundPacket(int largesoundindex)
+static void CL_ParseStartSoundPacket(int is_largesoundindex)
 {
 	vec3_t  pos;
 	int 	channel, ent;
@@ -215,8 +215,7 @@ static void CL_ParseStartSoundPacket(int largesoundindex)
 	float	speed;
 	int		fflags = CHANNELFLAG_NONE;
 
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-	{
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 		channel = MSG_ReadShort(&cl_message);
 
 		if (channel & (1<<15))
@@ -227,7 +226,7 @@ static void CL_ParseStartSoundPacket(int largesoundindex)
 		if (channel & (1<<14))
 			attenuation = MSG_ReadByte(&cl_message) / 64.0;
 		else
-			attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
+			attenuation = DEFAULT_SOUND_PACKET_ATTENUATION_1_0;
 
 		speed = 1.0f;
 
@@ -235,27 +234,28 @@ static void CL_ParseStartSoundPacket(int largesoundindex)
 		channel &= 7;
 
 		sound_num = MSG_ReadByte(&cl_message);
-	}
-	else
-	{
+	} else {
 		field_mask = MSG_ReadByte(&cl_message);
 
-		if (field_mask & SND_VOLUME)
+		if (Have_Flag (field_mask, SND_VOLUME_1))
 			nvolume = MSG_ReadByte(&cl_message);
 		else
 			nvolume = DEFAULT_SOUND_PACKET_VOLUME;
 
-		if (field_mask & SND_ATTENUATION)
+		// PROTOCOL_FITZQUAKE looks ok
+		if (Have_Flag (field_mask, SND_ATTENUATION_2))
 			attenuation = MSG_ReadByte(&cl_message) / 64.0;
 		else
-			attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
+			attenuation = DEFAULT_SOUND_PACKET_ATTENUATION_1_0;
 
-		if (field_mask & SND_SPEEDUSHORT4000)
+		// PROTOCOL_FITZQUAKE looks ok
+		if (Have_Flag (field_mask, SND_SPEEDUSHORT4000_32))
 			speed = ((unsigned short)MSG_ReadShort(&cl_message)) / 4000.0f;
 		else
 			speed = 1.0f;
 
-		if (field_mask & SND_LARGEENTITY)
+		// PROTOCOL_FITZQUAKE looks ok
+		if (Have_Flag (field_mask, SND_LARGEENTITY_8))
 		{
 			ent = (unsigned short) MSG_ReadShort(&cl_message);
 			channel = MSG_ReadChar(&cl_message);
@@ -267,22 +267,38 @@ static void CL_ParseStartSoundPacket(int largesoundindex)
 			channel &= 7;
 		}
 
-		if (largesoundindex || (field_mask & SND_LARGESOUND) || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3)
+		if (is_largesoundindex || Have_Flag(field_mask, SND_LARGESOUND_16) || 
+			isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 			sound_num = (unsigned short) MSG_ReadShort(&cl_message);
 		else
 			sound_num = MSG_ReadByte(&cl_message);
-	}
+
+		//if (isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
+		//	if (Have_Flag (field_mask, SND_LARGESOUND_16))
+		//		sound_num = (unsigned short) MSG_ReadShort ();
+		//	else
+		//		sound_num = MSG_ReadByte ();
+		//	//johnfitz
+
+		//	//johnfitz -- check soundnum
+		//	//johnfitz
+		//	// Readcoord
+		//}
+
+		if (isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999))
+			if (sound_num >= FITZQUAKE_MAX_SOUNDS_2048)
+				Host_Error_Line ("CL_ParseStartSoundPacket: %d > FITZQUAKE_MAX_SOUNDS_2048", sound_num);
+
+	} // if ! Quakeworld
 
 	MSG_ReadVector(&cl_message, pos, cls.protocol);
 
-	if (sound_num < 0 || sound_num >= MAX_SOUNDS)
-	{
-		Con_PrintLinef ("CL_ParseStartSoundPacket: sound_num (%d) >= MAX_SOUNDS (%d)", sound_num, MAX_SOUNDS);
+	if (sound_num < 0 || sound_num >= MAX_SOUNDS_4096) {
+		Con_PrintLinef ("CL_ParseStartSoundPacket: sound_num (%d) >= MAX_SOUNDS_4096 (%d)", sound_num, MAX_SOUNDS_4096);
 		return;
 	}
 
-	if (ent >= MAX_EDICTS)
-	{
+	if (ent >= MAX_EDICTS_32768) {
 		Con_PrintLinef ("CL_ParseStartSoundPacket: ent = %d", ent);
 		return;
 	}
@@ -650,7 +666,7 @@ static void QW_CL_RequestNextDownload(void)
 			cls.qw_downloadnumber = 1;
 		}
 
-		for (;cls.qw_downloadnumber < MAX_MODELS && cl.model_name[cls.qw_downloadnumber][0];cls.qw_downloadnumber++)
+		for (;cls.qw_downloadnumber < MAX_MODELS_8192 && cl.model_name[cls.qw_downloadnumber][0];cls.qw_downloadnumber++)
 		{
 			// skip submodels
 			if (cl.model_name[cls.qw_downloadnumber][0] == '*')
@@ -675,7 +691,7 @@ static void QW_CL_RequestNextDownload(void)
 		if (!sv.active)
 			Mod_ClearUsed();
 
-		for (j = 1; j < MAX_MODELS && cl.model_name[j][0]; j++)
+		for (j = 1; j < MAX_MODELS_8192 && cl.model_name[j][0]; j++)
 			Mod_FindName(cl.model_name[j], cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL);
 		// precache any models used by the client (this also marks them used)
 		cl.model_bolt = Mod_ForName("progs/bolt.mdl", false, false, NULL);
@@ -695,7 +711,7 @@ static void QW_CL_RequestNextDownload(void)
 			Con_Printf ("Map %s could not be found or downloaded\n", cl.model_name[1]);
 
 		// normal models
-		for (j = 2;j < MAX_MODELS && cl.model_name[j][0];j++)
+		for (j = 2;j < MAX_MODELS_8192 && cl.model_name[j][0];j++)
 			if ((cl.model_precache[j] = Mod_ForName(cl.model_name[j], false, false, cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL))->Draw == NULL)
 				Con_Printf ("Model %s could not be found or downloaded\n", cl.model_name[j]);
 
@@ -752,7 +768,7 @@ static void QW_CL_RequestNextDownload(void)
 		cl.sfx_r_exp3 = S_PrecacheSound(cl_sound_r_exp3.string, false, true);
 
 		// sounds used by the game
-		for (j = 1;j < MAX_SOUNDS && cl.sound_name[j][0];j++)
+		for (j = 1;j < MAX_SOUNDS_4096 && cl.sound_name[j][0];j++)
 			cl.sound_precache[j] = S_PrecacheSound(cl.sound_name[j], true, true);
 
 		// we purge the models and sounds later in CL_SignonReply
@@ -852,7 +868,7 @@ static void QW_CL_ParseModelList(void)
 		if (!str[0])
 			break;
 		nummodels++;
-		if (nummodels==MAX_MODELS)
+		if (nummodels==MAX_MODELS_8192)
 			Host_Error_Line ("Server sent too many model precaches");
 		if (strlen(str) >= MAX_QPATH_128)
 			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
@@ -887,7 +903,7 @@ static void QW_CL_ParseSoundList(void)
 		if (!str[0])
 			break;
 		numsounds++;
-		if (numsounds==MAX_SOUNDS)
+		if (numsounds==MAX_SOUNDS_4096)
 			Host_Error_Line ("Server sent too many sound precaches");
 		if (strlen(str) >= MAX_QPATH_128)
 			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
@@ -1732,8 +1748,7 @@ static void CL_ParseServerInfo (void)
 // parse protocol version number
 	j = MSG_ReadLong(&cl_message);
 	protocol = Protocol_EnumForNumber(j);
-	if (protocol == PROTOCOL_UNKNOWN)
-	{
+	if (protocol == PROTOCOL_UNKNOWN) {
 		Host_Error_Line ("CL_ParseServerInfo: Server is unrecognized protocol number (%d)", j);
 		return;
 	}
@@ -1745,6 +1760,20 @@ static void CL_ParseServerInfo (void)
 	// Baker: For reasons unclear, this happens late in single player and early with demos
 	// or at least it seems to.
 	Con_DPrintLinef ("Server protocol is %s", Protocol_NameForEnum(cls.protocol));
+
+	cls.protocol_flags_rmq = 0;
+	if (isin1(cls.protocol, PROTOCOL_FITZQUAKE999)) {
+		const unsigned int supportedflags = (PRFL_RMQ_SHORTANGLE_USED | PRFL_RMQ_INT32COORD_USED);
+			//PRFL_RMQ_FLOATANGLE_UNUSED | PRFL_RMQ_24BITCOORD_UNUSED | PRFL_RMQ_FLOATCOORD_UNUSED | PRFL_RMQ_EDICTSCALE_UNUSED | 
+			//PRFL_RMQ_INT32COORD_USED);
+		
+		// mh - read protocol flags from server so that we know what protocol features to expect
+		cls.protocol_flags_rmq = (unsigned int) MSG_ReadLong (&cl_message);
+		
+		if (0 != (cls.protocol_flags_rmq & (~supportedflags))) {
+			Con_PrintLinef (CON_WARN "PROTOCOL_RMQ protocol_flags_rmq %d contains unsupported flags", cls.protocol_flags_rmq);
+		}	
+	} // if rmq
 
 	cl.num_entities = 1;
 
@@ -1870,7 +1899,7 @@ static void CL_ParseServerInfo (void)
 			str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
 			if (!str[0])
 				break;
-			if (nummodels==MAX_MODELS)
+			if (nummodels==MAX_MODELS_8192)
 				Host_Error_Line ("Server sent too many model precaches");
 			if (strlen(str) >= MAX_QPATH_128)
 				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
@@ -1882,7 +1911,7 @@ static void CL_ParseServerInfo (void)
 			str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
 			if (!str[0])
 				break;
-			if (numsounds==MAX_SOUNDS)
+			if (numsounds==MAX_SOUNDS_4096)
 				Host_Error_Line ("Server sent too many sound precaches");
 			if (strlen(str) >= MAX_QPATH_128)
 				Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
@@ -1928,7 +1957,7 @@ static void CL_ParseServerInfo (void)
 		cl.sfx_r_exp3 = S_PrecacheSound(cl_sound_r_exp3.string, false, true);
 
 		// sounds used by the game
-		for (j = 1;j < MAX_SOUNDS && cl.sound_name[j][0];j++)
+		for (j = 1;j < MAX_SOUNDS_4096 && cl.sound_name[j][0];j++)
 			cl.sound_precache[j] = S_PrecacheSound(cl.sound_name[j], true, true);
 
 		// now we try to load everything that is new
@@ -1993,8 +2022,8 @@ void CL_ValidateState(entity_state_t *s)
 	if (!s->active)
 		return;
 
-	if (s->modelindex >= MAX_MODELS)
-		Host_Error_Line ("CL_ValidateState: modelindex (%d) >= MAX_MODELS (%d)", s->modelindex, MAX_MODELS);
+	if (s->modelindex >= MAX_MODELS_8192)
+		Host_Error_Line ("CL_ValidateState: modelindex (%d) >= MAX_MODELS_8192 (%d)", s->modelindex, MAX_MODELS_8192);
 
 	// these warnings are only warnings, no corrections are made to the state
 	// because states are often copied for decoding, which otherwise would
@@ -2128,20 +2157,32 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 CL_ParseBaseline
 ==================
 */
-static void CL_ParseBaseline (entity_t *ent, int large)
-{
+WARP_X_ (svcfitz_spawnbaseline2)
+static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_version)
+{ // DPD 999 - Stuff goes here
 	int j;
+	int fitz_bits = 0;
 
 	ent->state_baseline = defaultstate;
 	// FIXME: set ent->state_baseline.number?
 	ent->state_baseline.active = true;
-	if (large)
-	{
+
+	// Baker: large model index
+	if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
+		fitz_bits = (fitz_version == 2) ? MSG_ReadByte(&cl_message) : 0;
+		ent->state_baseline.modelindex = Have_Flag(fitz_bits, B_FITZ_LARGEMODEL_1) ? 
+			MSG_ReadShort(&cl_message) : 
+			MSG_ReadByte(&cl_message);
+		ent->state_baseline.frame = Have_Flag(fitz_bits, B_FITZ_LARGEFRAME_2) ? 
+			MSG_ReadShort(&cl_message) : 
+			MSG_ReadByte(&cl_message);
+	}
+	else 
+	if (is_large_model_index) {
 		ent->state_baseline.modelindex = (unsigned short) MSG_ReadShort(&cl_message);
 		ent->state_baseline.frame = (unsigned short) MSG_ReadShort(&cl_message);
 	}
-	else if (cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3)
-	{
+	else if (isin3 (cls.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3)) {
 		ent->state_baseline.modelindex = (unsigned short) MSG_ReadShort(&cl_message);
 		ent->state_baseline.frame = MSG_ReadByte(&cl_message);
 	}
@@ -2152,11 +2193,24 @@ static void CL_ParseBaseline (entity_t *ent, int large)
 	}
 	ent->state_baseline.colormap = MSG_ReadByte(&cl_message);
 	ent->state_baseline.skin = MSG_ReadByte(&cl_message);
-	for (j = 0; j < 3; j++)
-	{
+	for (j = 0; j < 3; j++) {
 		ent->state_baseline.origin[j] = MSG_ReadCoord(&cl_message, cls.protocol);
 		ent->state_baseline.angles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 	}
+
+	if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
+		ent->state_baseline.alpha = Have_Flag (fitz_bits, B_FITZ_ALPHA_4) ? 
+			MSG_ReadByte(&cl_message) : 255;//FITZ_ENTALPHA_DEFAULT_0; //johnfitz -- PROTOCOL_FITZQUAKE
+		if (Have_Flag (fitz_bits, B_FITZ_SCALE_8)) {
+			// Baker: I'm not convinced DarkPlaces and FitzQuake scales are compatible
+			// However, AFAIK ... Quakespasm does not use scale at all?
+			ent->state_baseline.scale = Have_Flag (fitz_bits, B_FITZ_SCALE_8) ? MSG_ReadByte(&cl_message) : 
+				FITZ_ENTSCALE_DEFAULT_16;
+		} else {
+			ent->state_baseline.scale = FITZ_ENTSCALE_DEFAULT_16;
+		}
+	} // fitz alpha and scale
+
 	ent->state_previous = ent->state_current = ent->state_baseline;
 }
 
@@ -2168,6 +2222,8 @@ CL_ParseClientdata
 Server information pertaining to this client only
 ==================
 */
+
+WARP_X_ (svc_clientdata)
 static void CL_ParseClientdata (void)
 {
 	int j, bits;
@@ -2177,7 +2233,12 @@ static void CL_ParseClientdata (void)
 	VectorCopy (cl.mvelocity[0], cl.mvelocity[1]);
 	cl.mviewzoom[1] = cl.mviewzoom[0];
 
-	if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4 || cls.protocol == PROTOCOL_DARKPLACES5) {
+	// Baker: These protocols don't support viewzoom
+	if (isin13 (cls.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,			
+								PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,	
+								PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	
+								PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	
+								PROTOCOL_DARKPLACES5)) {
 		cl.stats[STAT_VIEWHEIGHT] = DEFAULT_VIEWHEIGHT;
 		cl.stats[STAT_ITEMS] = 0;
 		cl.stats[STAT_VIEWZOOM] = 255;
@@ -2195,9 +2256,11 @@ static void CL_ParseClientdata (void)
 	cl.mviewzoom[0] = 1;
 
 	bits = (unsigned short) MSG_ReadShort(&cl_message);
-	if (bits & SU_EXTEND1)
+
+	// Baker: Fitz Ok
+	if (bits & SU_EXTEND1_S15)
 		bits |= (MSG_ReadByte(&cl_message) << 16);
-	if (bits & SU_EXTEND2)
+	if (bits & SU_EXTEND2_S23)
 		bits |= (MSG_ReadByte(&cl_message) << 24);
 
 	if (bits & SU_VIEWHEIGHT)
@@ -2206,18 +2269,19 @@ static void CL_ParseClientdata (void)
 	if (bits & SU_IDEALPITCH)
 		cl.idealpitch = MSG_ReadChar(&cl_message);
 
-	for (j = 0;j < 3;j++)
-	{
-		if (bits & (SU_PUNCH1<<j) )
-		{
-			if (isin6 (cls.protocol,	PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE, PROTOCOL_NEHAHRABJP,
-										PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3))
+	for (j = 0;j < 3;j++) {
+		if (bits & (SU_PUNCH1 << j) ) {
+			if (isin8 (cls.protocol,	
+						PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	 PROTOCOL_QUAKE,			
+						PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
+						PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3))
 				cl.mpunchangle[0][j] = MSG_ReadChar(&cl_message);
 			else
 				cl.mpunchangle[0][j] = MSG_ReadAngle16i(&cl_message);
 		}
-		if (bits & (SU_PUNCHVEC1<<j))
-		{
+		// Baker: fitz collides with SU_FITZ_WEAPON2_S16
+		if ( (bits & (SU_PUNCHVEC1_S16 << j)) && 
+			false == isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 			if (isin4 (cls.protocol, PROTOCOL_DARKPLACES1, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
 				cl.mpunchvector[0][j] = MSG_ReadCoord16i(&cl_message);
 			else
@@ -2225,9 +2289,11 @@ static void CL_ParseClientdata (void)
 		}
 		if (bits & (SU_VELOCITY1<<j) )
 		{
-			if (isin10 (cls.protocol,	PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
-										PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,
-										PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4))
+			if (isin12 (cls.protocol,	
+						PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,			
+						PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
+						PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	
+						PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4))
 				cl.mvelocity[0][j] = MSG_ReadChar(&cl_message)*16;
 			else
 				cl.mvelocity[0][j] = MSG_ReadCoord32f(&cl_message);
@@ -2235,11 +2301,13 @@ static void CL_ParseClientdata (void)
 	}
 
 	// LadyHavoc: hipnotic demos don't have this bit set but should
-	if (bits & SU_ITEMS || 
-		isin11 (cls.protocol, 
-				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
-				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2, 
-				PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5) )
+	if (Have_Flag (bits, SU_ITEMS) || 
+		isin13 (cls.protocol, 
+				PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,			
+				PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
+				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	
+				PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	
+				PROTOCOL_DARKPLACES5) )
 		cl.stats[STAT_ITEMS] = MSG_ReadLong(&cl_message);
 
 	cl.onground = (bits & SU_ONGROUND) != 0;
@@ -2257,10 +2325,11 @@ static void CL_ParseClientdata (void)
 		cl.stats[STAT_CELLS] = MSG_ReadShort(&cl_message);
 		cl.stats[STAT_ACTIVEWEAPON] = (unsigned short) MSG_ReadShort(&cl_message);
 	}
-	else if (isin10 (cls.protocol,
-							PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,		PROTOCOL_NEHAHRABJP,
-							PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,		PROTOCOL_DARKPLACES2,
-							PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4)) {
+	else if (isin12 (cls.protocol, PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	
+				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	
+				PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	
+				PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	
+				PROTOCOL_DARKPLACES4)) {
 		cl.stats[STAT_WEAPONFRAME] = (bits & SU_WEAPONFRAME) ? MSG_ReadByte(&cl_message) : 0;
 		cl.stats[STAT_ARMOR] = (bits & SU_ARMOR) ? MSG_ReadByte(&cl_message) : 0;
 		if (isin3 (cls.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
@@ -2277,10 +2346,41 @@ static void CL_ParseClientdata (void)
 			cl.stats[STAT_ACTIVEWEAPON] = (1<<MSG_ReadByte(&cl_message));
 		else
 			cl.stats[STAT_ACTIVEWEAPON] = MSG_ReadByte(&cl_message);
+
+		if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999)) {
+			//johnfitz -- PROTOCOL_FITZQUAKE
+ 			// DPD 999 CL_ParseClientdata 3
+			if (bits & SU_FITZ_WEAPON2_S16)
+				cl.stats[STAT_WEAPON] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_ARMOR2_S17)
+				cl.stats[STAT_ARMOR] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_AMMO2_S18)
+				cl.stats[STAT_AMMO] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_SHELLS2_S19)
+				cl.stats[STAT_SHELLS] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_NAILS2_S20)
+				cl.stats[STAT_NAILS] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_ROCKETS2_S21)
+				cl.stats[STAT_ROCKETS] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_CELLS2_S22)
+				cl.stats[STAT_CELLS] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_WEAPONFRAME2_24)
+				cl.stats[STAT_WEAPONFRAME] |= (MSG_ReadByte(&cl_message) << 8);
+			if (bits & SU_FITZ_WEAPONALPHA_S25) {
+				int gunalpha = MSG_ReadByte(&cl_message);
+				//cl.viewent.alpha = gunalpha; // FITZ TODO
+			}
+			else {
+				//cl.viewent.alpha = FITZ_ENTALPHA_DEFAULT_0;
+			}
+			//johnfitz
+			
+		}
 	}
 
-	if (bits & SU_VIEWZOOM)
-	{
+	// Baker: SU_VIEWZOOM_S19 collides with SU_FITZ_SHELLS2_S19
+	if (Have_Flag (bits, SU_VIEWZOOM_S19) && 
+		false == isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 		if (isin3 (cls.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4) )
 			cl.stats[STAT_VIEWZOOM] = MSG_ReadByte(&cl_message);
 		else
@@ -2296,18 +2396,18 @@ static void CL_ParseClientdata (void)
 CL_ParseStatic
 =====================
 */
-static void CL_ParseStatic (int large)
+static void CL_ParseStatic (int is_large_model_index, int fitz_version)
 {
+	// Baker: Fitz supports static and scale on these.
 	entity_t *ent;
-
+// HEREON
 	if (cl.num_static_entities >= cl.max_static_entities)
 		Host_Error_Line ("Too many static entities");
 	ent = &cl.static_entities[cl.num_static_entities++];
-	CL_ParseBaseline (ent, large);
+	CL_ParseBaseline (ent, is_large_model_index, fitz_version);
 
-	if (ent->state_baseline.modelindex == 0)
-	{
-		Con_DPrintf ("svc_parsestatic: static entity without model at %f %f %f\n", ent->state_baseline.origin[0], ent->state_baseline.origin[1], ent->state_baseline.origin[2]);
+	if (ent->state_baseline.modelindex == 0) {
+		Con_DPrintLinef ("svc_parsestatic: static entity without model at %f %f %f", ent->state_baseline.origin[0], ent->state_baseline.origin[1], ent->state_baseline.origin[2]);
 		cl.num_static_entities--;
 		// This is definitely a cheesy way to conserve resources...
 		return;
@@ -2323,6 +2423,9 @@ static void CL_ParseStatic (int large)
 	ent->render.effects = ent->state_baseline.effects;
 	ent->render.alpha = 1;
 
+	// Baker: alpha and scale?  At least for FitzQuake?   What about colormap?
+	// Have we investigated Flint Ridge and the Hotel?
+
 	//VectorCopy (ent->state_baseline.origin, ent->render.origin);
 	//VectorCopy (ent->state_baseline.angles, ent->render.angles);
 
@@ -2336,20 +2439,20 @@ static void CL_ParseStatic (int large)
 CL_ParseStaticSound
 ===================
 */
-static void CL_ParseStaticSound (int large)
+static void CL_ParseStaticSound (int is_large_soundindex, int fitz_version)
 {
 	vec3_t		org;
 	int			sound_num, vol, atten;
 
 	MSG_ReadVector(&cl_message, org, cls.protocol);
-	if (large)
+	if (is_large_soundindex || fitz_version == 2)
 		sound_num = (unsigned short) MSG_ReadShort(&cl_message);
 	else
 		sound_num = MSG_ReadByte(&cl_message);
 
-	if (sound_num < 0 || sound_num >= MAX_SOUNDS)
+	if (sound_num < 0 || sound_num >= MAX_SOUNDS_4096)
 	{
-		Con_Printf ("CL_ParseStaticSound: sound_num(%d) >= MAX_SOUNDS (%d)\n", sound_num, MAX_SOUNDS);
+		Con_PrintLinef ("CL_ParseStaticSound: sound_num(%d) >= MAX_SOUNDS_4096 (%d)", sound_num, MAX_SOUNDS_4096);
 		return;
 	}
 
@@ -2392,9 +2495,9 @@ void CL_NewBeam (int ent, vec3_t start, vec3_t end, model_t *m, int lightning)
 	int j;
 	beam_t *b = NULL;
 
-	if (ent >= MAX_EDICTS)
+	if (ent >= MAX_EDICTS_32768)
 	{
-		Con_Printf ("CL_NewBeam: invalid entity number %d\n", ent);
+		Con_PrintLinef ("CL_NewBeam: invalid entity number %d", ent);
 		ent = 0;
 	}
 
@@ -2435,7 +2538,7 @@ static void CL_ParseBeam (model_t *m, int lightning)
 	MSG_ReadVector(&cl_message, start, cls.protocol);
 	MSG_ReadVector(&cl_message, end, cls.protocol);
 
-	if (ent >= MAX_EDICTS)
+	if (ent >= MAX_EDICTS_32768)
 	{
 		Con_Printf ("CL_ParseBeam: invalid entity number %d\n", ent);
 		ent = 0;
@@ -2457,147 +2560,9 @@ static void CL_ParseTempEntity(void)
 	unsigned char *tempcolor;
 	matrix4x4_t tempmatrix;
 
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-	{
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 		type = MSG_ReadByte(&cl_message);
-		switch (type)
-		{
-		case QW_TE_WIZSPIKE:
-			// spike hitting wall
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			CL_ParticleEffect(EFFECT_TE_WIZSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_wizhit, pos, 1, 1);
-			break;
-
-		case QW_TE_KNIGHTSPIKE:
-			// spike hitting wall
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			CL_ParticleEffect(EFFECT_TE_KNIGHTSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_knighthit, pos, 1, 1);
-			break;
-
-		case QW_TE_SPIKE:
-			// spike hitting wall
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			CL_ParticleEffect(EFFECT_TE_SPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
-			else
-			{
-				rnd = rand() & 3;
-				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
-				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
-				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
-			}
-			break;
-		case QW_TE_SUPERSPIKE:
-			// super spike hitting wall
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			CL_ParticleEffect(EFFECT_TE_SUPERSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
-			else
-			{
-				rnd = rand() & 3;
-				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
-				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
-				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
-			}
-			break;
-
-		case QW_TE_EXPLOSION:
-			// rocket explosion
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 10);
-			CL_ParticleEffect(EFFECT_TE_EXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
-			CL_Effect(pos, CL_GetModelByIndex(cl.qw_modelindex_s_explod), 0, 6, 10);
-			break;
-
-		case QW_TE_TAREXPLOSION:
-			// tarbaby explosion
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 10);
-			CL_ParticleEffect(EFFECT_TE_TAREXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
-			break;
-
-		case QW_TE_LIGHTNING1:
-			// lightning bolts
-			CL_ParseBeam(cl.model_bolt, true);
-			break;
-
-		case QW_TE_LIGHTNING2:
-			// lightning bolts
-			CL_ParseBeam(cl.model_bolt2, true);
-			break;
-
-		case QW_TE_LIGHTNING3:
-			// lightning bolts
-			CL_ParseBeam(cl.model_bolt3, false);
-			break;
-
-		case QW_TE_LAVASPLASH:
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_ParticleEffect(EFFECT_TE_LAVASPLASH, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			break;
-
-		case QW_TE_TELEPORT:
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_ParticleEffect(EFFECT_TE_TELEPORT, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			break;
-
-		case QW_TE_GUNSHOT:
-			// bullet hitting wall
-			radius = MSG_ReadByte(&cl_message);
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			VectorSet(pos2, pos[0] + radius, pos[1] + radius, pos[2] + radius);
-			VectorSet(pos, pos[0] - radius, pos[1] - radius, pos[2] - radius);
-			CL_ParticleEffect(EFFECT_TE_GUNSHOT, radius, pos, pos2, vec3_origin, vec3_origin, NULL, 0);
-			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
-			{
-				if (rand() % 5)
-					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
-				else
-				{
-					rnd = rand() & 3;
-					if (rnd == 1)
-						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
-					else if (rnd == 2)
-						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
-					else
-						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
-				}
-			}
-			break;
-
-		case QW_TE_BLOOD:
-			count = MSG_ReadByte(&cl_message);
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			CL_ParticleEffect(EFFECT_TE_BLOOD, count, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			break;
-
-		case QW_TE_LIGHTNINGBLOOD:
-			MSG_ReadVector(&cl_message, pos, cls.protocol);
-			CL_FindNonSolidLocation(pos, pos, 4);
-			CL_ParticleEffect(EFFECT_TE_BLOOD, 2.5, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			break;
-
-		default:
-			Host_Error_Line ("CL_ParseTempEntity: bad type %d (hex %02X)", type, type);
-		}
+		#include "cl_parse_temp_quakeworld.c.h"
 	}
 	else
 	{
@@ -2982,7 +2947,7 @@ static void CL_ParseTrailParticles(void)
 	int effectindex;
 	vec3_t start, end;
 	entityindex = (unsigned short)MSG_ReadShort(&cl_message);
-	if (entityindex >= MAX_EDICTS)
+	if (entityindex >= MAX_EDICTS_32768)
 		entityindex = 0;
 	if (entityindex >= cl.max_entities)
 		CL_ExpandEntities(entityindex);
@@ -3442,25 +3407,25 @@ static void CL_NetworkTimeReceived(double newtime)
 	}
 }
 
-#define SHOWNET(x) if (cl_shownet.integer==2)Con_PrintLinef ("%3i:%s(%d)", cl_message.readcount-1, x, cmd);
+#define SHOWNET(x) if (cl_shownet.integer==2)Con_PrintLinef ("%3d:%s(%d)", cl_message.readcount-1, x, cmd);
 
 /*
 ==================
 CL_ParseLocalSound - for 2021 rerelease
 ==================
 */
-void CL_ParseLocalSound(void) // AURA 1.0
+void CL_ParseLocalSound (void) // AURA 1.0
 {
 	int field_mask, sound_num;
 
 	field_mask = MSG_ReadByte(&cl_message);
 
-	sound_num = (field_mask & SND_LARGESOUND) ? 
+	sound_num = Have_Flag(field_mask, SND_LARGESOUND_16) ? 
 		(unsigned short) MSG_ReadShort(&cl_message) :
 		MSG_ReadByte(&cl_message);
 
-	if (sound_num >= MAX_SOUNDS) {
-		Con_PrintLinef ("CL_ParseLocalSound: sound_num (%d) >= MAX_SOUNDS (%d)", sound_num, MAX_SOUNDS);
+	if (sound_num >= MAX_SOUNDS_4096) {
+		Con_PrintLinef ("CL_ParseLocalSound: sound_num (%d) >= MAX_SOUNDS_4096 (%d)", sound_num, MAX_SOUNDS_4096);
 		return;
 	}
 
@@ -3510,6 +3475,22 @@ void CL_ParseHint (const char *str)
 	}
 }
 
+// Baker: We read but do nothing with it
+// We don't expect to find this in the wild.
+void Fog_ParseServerMessage (void)
+{
+	float density, red, green, blue, time;
+
+	density = MSG_ReadByte(&cl_message) / 255.0;
+	red = MSG_ReadByte(&cl_message) / 255.0;
+	green = MSG_ReadByte(&cl_message) / 255.0;
+	blue = MSG_ReadByte(&cl_message) / 255.0;
+	time = MSG_ReadShort(&cl_message) / 100.0;
+//	if (time < 0.0f) time = 0.0f;
+
+//	Fog_Update (density, red, green, blue, time);
+}
+
 // Baker r8191
 /*
 =====================
@@ -3520,7 +3501,7 @@ int parsingerror = false;
 void CL_ParseServerMessage(void)
 {
 	int			cmd;
-	int			j;
+	int			j, ent_num;
 	protocolversion_t protocol;
 	unsigned char		cmdlog[32];
 	const char		*cmdlogname[32], *str;
@@ -3554,893 +3535,571 @@ void CL_ParseServerMessage(void)
 
 	parsingerror = true;
 
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-	{
-		CL_NetworkTimeReceived(host.realtime); // qw has no clock
-
-		// kill all qw nails
-		cl.qw_num_nails = 0;
-
-		// fade weapon view kick
-		cl.qw_weaponkick = min(cl.qw_weaponkick + 10 * bound(0, cl.time - cl.oldtime, 0.1), 0);
-
-		cls.servermovesequence = cls.netcon->qw.incoming_sequence;
-
-		qwplayerupdatereceived = false;
-
-		while (1)
-		{
-			if (cl_message.badread)
-				Host_Error_Line ("CL_ParseServerMessage: Bad QW server message");
-
-			cmd = MSG_ReadByte(&cl_message);
-
-			if (cmd == -1)
-			{
-				SHOWNET("END OF MESSAGE");
-				break;		// end of message
-			}
-
-			cmdindex = cmdcount & 31;
-			cmdcount++;
-			cmdlog[cmdindex] = cmd;
-
-			SHOWNET(qw_svc_strings[cmd]);
-			cmdlogname[cmdindex] = qw_svc_strings[cmd];
-			if (!cmdlogname[cmdindex])
-			{
-				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
-				const char *d = "<unknown>";
-				cmdlogname[cmdindex] = d;
-			}
-
-			// other commands
-			switch (cmd)
-			{
-			default:
-				{
-					char description[32*64], logtemp[64];
-					int count;
-					strlcpy(description, "packet dump: ", sizeof(description));
-					j = cmdcount - 32;
-					if (j < 0)
-						j = 0;
-					count = cmdcount - j;
-					j &= 31;
-					while(count > 0)
-					{
-						dpsnprintf(logtemp, sizeof(logtemp), "%3i:%s ", cmdlog[j], cmdlogname[j]);
-						strlcat(description, logtemp, sizeof(description));
-						count--;
-						j++;
-						j &= 31;
-					}
-					description[strlen(description)-1] = '\n'; // replace the last space with a newline
-					Con_Print(description);
-					Host_Error_Line ("CL_ParseServerMessage: Illegible server message");
-				}
-				break;
-
-			case qw_svc_nop:
-				//Con_Printf ("qw_svc_nop\n");
-				break;
-
-			case qw_svc_disconnect:
-				if (cls.demonum != -1)
-					CL_NextDemo();
-				else
-					CL_DisconnectEx(true, "Server disconnected");
-				break;
-
-			case qw_svc_print:
-				j = MSG_ReadByte(&cl_message);
-				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(str)) // look for anything interesting like player IP addresses or ping reports
-				{
-					if (j == 3) // chat
-						CSQC_AddPrintText(va(vabuf, sizeof(vabuf), "\1%s", str));	//[515]: csqc
-					else
-						CSQC_AddPrintText(str);
-				}
-				break;
-
-			case qw_svc_centerprint:
-				CL_VM_Parse_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));	//[515]: csqc
-				break;
-
-			case qw_svc_stufftext:
-				CL_VM_Parse_StuffCmd(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));	//[515]: csqc
-				break;
-
-			case qw_svc_damage:
-				// svc_damage protocol is identical to nq
-				V_ParseDamage ();
-				break;
-
-			case qw_svc_serverdata:
-				//Cbuf_Execute(); // make sure any stuffed commands are done
-				CL_ParseServerInfo();
-				break;
-
-			case qw_svc_setangle:
-				for (j = 0 ; j < 3 ; j ++)
-					cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
-				if (!cls.demoplayback)
-				{
-					cl.fixangle[0] = true;
-					VectorCopy(cl.viewangles, cl.mviewangles[0]);
-					// disable interpolation if this is new
-					if (!cl.fixangle[1])
-						VectorCopy(cl.viewangles, cl.mviewangles[1]);
-				}
-				break;
-
-			case qw_svc_lightstyle:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.max_lightstyle)
-				{
-					Con_PrintLinef ("svc_lightstyle >= MAX_LIGHTSTYLES");
-					break;
-				}
-				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
-				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
-				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
-				break;
-
-			case qw_svc_sound:
-				CL_ParseStartSoundPacket(false);
-				break;
-
-			case qw_svc_stopsound:
-				j = (unsigned short) MSG_ReadShort(&cl_message);
-				S_StopSound(j>>3, j&7);
-				break;
-
-			case qw_svc_updatefrags:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
-				cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
-				break;
-
-			case qw_svc_updateping:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updateping >= cl.maxclients");
-				cl.scores[j].qw_ping = MSG_ReadShort(&cl_message);
-				break;
-
-			case qw_svc_updatepl:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updatepl >= cl.maxclients");
-				cl.scores[j].qw_packetloss = MSG_ReadByte(&cl_message);
-				break;
-
-			case qw_svc_updateentertime:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updateentertime >= cl.maxclients");
-				// seconds ago
-				cl.scores[j].qw_entertime = cl.time - MSG_ReadFloat(&cl_message);
-				break;
-
-			case qw_svc_spawnbaseline:
-				j = (unsigned short) MSG_ReadShort(&cl_message);
-				if (j < 0 || j >= MAX_EDICTS)
-					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
-				if (j >= cl.max_entities)
-					CL_ExpandEntities(j);
-				CL_ParseBaseline(cl.entities + j, false);
-				break;
-			case qw_svc_spawnstatic:
-				CL_ParseStatic(false);
-				break;
-			case qw_svc_temp_entity:
-				if (!CL_VM_Parse_TempEntity())
-					CL_ParseTempEntity ();
-				break;
-
-			case qw_svc_killedmonster:
-				cl.stats[STAT_MONSTERS]++;
-				break;
-
-			case qw_svc_foundsecret:
-				cl.stats[STAT_SECRETS]++;
-				break;
-
-			case qw_svc_updatestat:
-				j = MSG_ReadByte(&cl_message);
-				if (j < 0 || j >= MAX_CL_STATS)
-					Host_Error_Line ("svc_updatestat: %d is invalid", j);
-				cl.stats[j] = MSG_ReadByte(&cl_message);
-				break;
-
-			case qw_svc_updatestatlong:
-				j = MSG_ReadByte(&cl_message);
-				if (j < 0 || j >= MAX_CL_STATS)
-					Host_Error_Line ("svc_updatestatlong: %d is invalid", j);
-				cl.stats[j] = MSG_ReadLong(&cl_message);
-				break;
-
-			case qw_svc_spawnstaticsound:
-				CL_ParseStaticSound (false);
-				break;
-
-			case qw_svc_cdtrack:
-				cl.cdtrack = cl.looptrack = MSG_ReadByte(&cl_message);
-
-				if ( (cls.demoplayback || cls.demorecording) && (cls.forcetrack != -1) )
-					CDAudio_Play ((unsigned char)cls.forcetrack, true);
-				else
-					CDAudio_Play ((unsigned char)cl.cdtrack, true);
-
-				break;
-
-			case qw_svc_intermission:
-				if (!cl.intermission)
-					cl.completed_time = cl.time;
-				cl.intermission = 1;
-				MSG_ReadVector(&cl_message, cl.qw_intermission_origin, cls.protocol);
-				for (j = 0; j < 3; j++)
-					cl.qw_intermission_angles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
-				break;
-
-			case qw_svc_finale:
-				if (!cl.intermission)
-					cl.completed_time = cl.time;
-				cl.intermission = 2;
-				SCR_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
-				break;
-
-			case qw_svc_sellscreen:
-				Cmd_ExecuteString(cmd_local, "help", src_local, true);
-				break;
-
-			case qw_svc_smallkick:
-				cl.qw_weaponkick = -2;
-				break;
-			case qw_svc_bigkick:
-				cl.qw_weaponkick = -4;
-				break;
-
-			case qw_svc_muzzleflash:
-				j = (unsigned short) MSG_ReadShort(&cl_message);
-				// NOTE: in QW this only worked on clients
-				if (j < 0 || j >= MAX_EDICTS)
-					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
-				if (j >= cl.max_entities)
-					CL_ExpandEntities(j);
-				cl.entities[j].persistent.muzzleflash = 1.0f;
-				break;
-
-			case qw_svc_updateuserinfo:
-				QW_CL_UpdateUserInfo();
-				break;
-
-			case qw_svc_setinfo:
-				QW_CL_SetInfo();
-				break;
-
-			case qw_svc_serverinfo:
-				QW_CL_ServerInfo();
-				break;
-
-			case qw_svc_download:
-				QW_CL_ParseDownload();
-				break;
-
-			case qw_svc_playerinfo:
-				// slightly kill qw player entities now that we know there is
-				// an update of player entities this frame...
-				if (!qwplayerupdatereceived)
-				{
-					qwplayerupdatereceived = true;
-					for (j = 1; j < cl.maxclients; j++)
-						cl.entities_active[j] = false;
-				}
-				EntityStateQW_ReadPlayerUpdate();
-				break;
-
-			case qw_svc_nails:
-				QW_CL_ParseNails();
-				break;
-
-			case qw_svc_chokecount:
-				(void) MSG_ReadByte(&cl_message);
-				// FIXME: apply to netgraph
-				//for (j = 0;j < j;j++)
-				//	cl.frames[(cls.netcon->qw.incoming_acknowledged-1-j)&QW_UPDATE_MASK].receivedtime = -2;
-				break;
-
-			case qw_svc_modellist:
-				QW_CL_ParseModelList();
-				break;
-
-			case qw_svc_soundlist:
-				QW_CL_ParseSoundList();
-				break;
-
-			case qw_svc_packetentities:
-				EntityFrameQW_CL_ReadFrame(false);
-				// first update is the final signon stage
-				if (cls.signon == SIGNONS_4 - 1) {
-					cls.signon = SIGNONS_4; // QUAKEWORLD
-					CL_SignonReply ();
-				}
-				break;
-
-			case qw_svc_deltapacketentities:
-				EntityFrameQW_CL_ReadFrame(true);
-				// first update is the final signon stage
-				if (cls.signon == SIGNONS_4 - 1) {
-					cls.signon = SIGNONS_4; // QUAKEWORLD
-					CL_SignonReply ();
-				}
-				break;
-
-			case qw_svc_maxspeed:
-				cl.movevars_maxspeed = MSG_ReadFloat(&cl_message);
-				break;
-
-			case qw_svc_entgravity:
-				cl.movevars_entgravity = MSG_ReadFloat(&cl_message);
-				if (!cl.movevars_entgravity)
-					cl.movevars_entgravity = 1.0f;
-				break;
-
-			case qw_svc_setpause:
-				cl.paused = MSG_ReadByte(&cl_message) != 0;
-				if (cl.paused && snd_cdautopause.integer)
-					CDAudio_Pause ();
-				else if (bgmvolume.value > 0.0f)
-					CDAudio_Resume ();
-
-				S_PauseGameSounds (cl.paused);
-				break;
-			}
-		}
-
-		if (qwplayerupdatereceived)
-		{
-			// fully kill any player entities that were not updated this frame
-			for (j = 1; j <= cl.maxclients; j++)
-				if (!cl.entities_active[j])
-					cl.entities[j].state_current.active = false;
-		}
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
+		#include "cl_parse_quakeworld.c.h"
+		goto quakeworld_skip;
 	}
-	else
-	{
-		while (1)
-		{
-			if (cl_message.badread)
-				Host_Error_Line ("CL_ParseServerMessage: Bad server message");
 
-			cmd = MSG_ReadByte(&cl_message);
+	// Baker: How does this loop exit? cmd == -1
+	while (1) {
+		if (cl_message.badread)
+			Host_Error_Line ("CL_ParseServerMessage: Bad server message");
 
-			if (cmd == -1)
-			{
-//				R_TimeReport("END OF MESSAGE");
-				SHOWNET("END OF MESSAGE");
-				break;		// end of message
-			}
+		cmd = MSG_ReadByte(&cl_message);
 
-			cmdindex = cmdcount & 31;
-			cmdcount++;
-			cmdlog[cmdindex] = cmd;
+		if (cmd == -1) {
+//			R_TimeReport("END OF MESSAGE");
+			SHOWNET("END OF MESSAGE");
+			break;		// end of message
+		}
 
-			// if the high bit of the command byte is set, it is a fast update (Baker: and that is what?)
-			if (cmd & U_SIGNAL_128) { // just differentiates from other updates
-// Baker: hit test here (demo play hits here immed Q start)  Does not happen on start map.
-				// I only get this for the Quake demos, my own demo record does not hit here.
-				//
-				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
-				str = "entity";
-				cmdlogname[cmdindex] = str;
-				SHOWNET("fast update");
-				if (cls.signon == SIGNONS_4 - 1) {
-					// first update is the final signon stage
-					cls.signon = SIGNONS_4; // NORMAL QUAKE
-					CL_SignonReply ();
-				}
-				EntityFrameQuake_ReadEntity (cmd&127);
-				continue;
-			}
+		cmdindex = cmdcount & 31;
+		cmdcount++;
+		cmdlog[cmdindex] = cmd;
 
-			SHOWNET(svc_strings[cmd]);
-			cmdlogname[cmdindex] = svc_strings[cmd];
-			if (!cmdlogname[cmdindex])
-			{
-				// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
-				const char *d = "<unknown>";
-				cmdlogname[cmdindex] = d;
-			}
-
-			// other commands
-			switch (cmd) {
-			default:
-				{
-					char description[32*64], tempdesc[64];
-					int count;
-					c_strlcpy (description, "packet dump: ");
-					j = cmdcount - 32;
-					if (j < 0)
-						j = 0;
-					count = cmdcount - j;
-					j &= 31;
-					while(count > 0)
-					{
-						dpsnprintf (tempdesc, sizeof (tempdesc), "%3d:%s ", cmdlog[j], cmdlogname[j]);
-						c_strlcat (description, tempdesc);
-						count--;
-						j++;
-						j &= 31;
-					}
-					description[strlen(description)-1] = '\n'; // replace the last space with a newline
-					Con_Print(description);
-					Host_Error_Line ("CL_ParseServerMessage: Illegible server message");
-				}
-				break;
-
-			case svc_nop:
-				if (cls.signon < SIGNONS_4)
-					Con_Print("<-- server to client keepalive\n");
-				break;
-
-			case svc_time:
-				CL_NetworkTimeReceived(MSG_ReadFloat(&cl_message));
-				break;
-
-			case svc_clientdata:
-				CL_ParseClientdata();
-				break;
-
-			case svc_version:
-				j = MSG_ReadLong(&cl_message);
-				protocol = Protocol_EnumForNumber(j);
-				if (protocol == PROTOCOL_UNKNOWN)
-					Host_Error_Line ("CL_ParseServerMessage: Server is unrecognized protocol number (%d)", j);
-				// hack for unmarked Nehahra movie demos which had a custom protocol
-				if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback && gamemode == GAME_NEHAHRA)
-					protocol = PROTOCOL_NEHAHRAMOVIE;
-				cls.protocol = protocol;
-				break;
-
-			case svc_disconnect:
-				if (cls.demonum != -1)
-					CL_NextDemo();
-				else
-					CL_DisconnectEx(true, cls.protocol == PROTOCOL_DARKPLACES8 ? MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)) : "Server disconnected");
-				break;
-
-			case svc_print:
-				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-
-				if (cl.is_qex && str[0] == '$') { // AURA 1.2
-					str = LOC_GetString (str);
-					CSQC_AddPrintText (str);	//[515]: csqc
-				} else
-					if (CL_ExaminePrintString(str)) // au21 - look for anything interesting like player IP addresses or ping reports
-					CSQC_AddPrintText(str);	//[515]: csqc
-				break;
-
-			case svc_centerprint:
-				str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));					
-				if (cl.is_qex && str[0] == '$') { // AURA 1.3
-					str = LOC_GetString (str);
-				}
-
-				CL_VM_Parse_CenterPrint(str);	//[515]: csqc
-				break;
-
-			case svc_stufftext:
-				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-
-				/* if (utf8_enable.integer)
-				{
-					strip_pqc = true;
-					// we can safely strip and even
-					// interpret these in utf8 mode
-				}
-				else */ switch(cls.protocol)
-				{
-					case PROTOCOL_QUAKE:
-					case PROTOCOL_QUAKEDP:
-						// maybe add other protocols if
-						// so desired, but not DP7
-						strip_pqc = true;
-						break;
-					case PROTOCOL_DARKPLACES7:
-					default:
-						// ProQuake does not support
-						// these protocols
-						strip_pqc = false;
-						break;
-				}
-				if (strip_pqc)
-				{
-					// skip over ProQuake messages,
-					// TODO actually interpret them
-					// (they are sbar team score
-					// updates), see proquake cl_parse.c
-					if (*str == 0x01)
-					{
-						++str;
-						while(*str >= 0x01 && *str <= 0x1F)
-							++str;
-					}
-				}
-
-				// Baker r8191
-				if (String_Does_Start_With (str, HINT_MESSAGE_PREFIX)) {
-					Con_DPrintLinef ("Received server hint: %s", str);
-					str += strlen (HINT_MESSAGE_PREFIX);
-					CL_ParseHint (str);
-					break; // Do not continue.
-				}
-
-				CL_VM_Parse_StuffCmd(str);	//[515]: csqc
-				break;
-
-			case svc_damage:
-				V_ParseDamage ();
-				break;
-
-			case svc_serverinfo:
-				CL_ParseServerInfo ();
-				break;
-
-			case svc_setangle:
-				for (j = 0 ; j < 3 ; j ++)
-					cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
-				if (!cls.demoplayback)
-				{
-					cl.fixangle[0] = true;
-					VectorCopy(cl.viewangles, cl.mviewangles[0]);
-					// disable interpolation if this is new
-					if (!cl.fixangle[1])
-						VectorCopy(cl.viewangles, cl.mviewangles[1]);
-				}
-				break;
-
-			case svc_setview:
-				cl.viewentity = (unsigned short)MSG_ReadShort(&cl_message);
-				if (cl.viewentity >= MAX_EDICTS)
-					Host_Error_Line ("svc_setview >= MAX_EDICTS");
-				if (cl.viewentity >= cl.max_entities)
-					CL_ExpandEntities(cl.viewentity);
-				// LadyHavoc: assume first setview recieved is the real player entity
-				if (!cl.realplayerentity)
-					cl.realplayerentity = cl.viewentity;
-				// update cl.playerentity to this one if it is a valid player
-				if (cl.viewentity >= 1 && cl.viewentity <= cl.maxclients)
-					cl.playerentity = cl.viewentity;
-				break;
-
-			case svc_lightstyle:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.max_lightstyle)
-				{
-					Con_Printf ("svc_lightstyle >= MAX_LIGHTSTYLES");
-					break;
-				}
-				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
-				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
-				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
-				break;
-
-			case svc_sound:
-				CL_ParseStartSoundPacket(cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 ? true : false);
-				break;
-
-			case svc_precache:
-				if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3)
-				{
-					// was svc_sound2 in protocols 1, 2, 3, removed in 4, 5, changed to svc_precache in 6
-					CL_ParseStartSoundPacket(true);
-				}
-				else
-				{
-					char *s;
-					j = (unsigned short)MSG_ReadShort(&cl_message);
-					s = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-					if (j < 32768)
-					{
-						if (j >= 1 && j < MAX_MODELS)
-						{
-							model_t *model = Mod_ForName(s, false, false, s[0] == '*' ? cl.model_name[1] : NULL);
-							if (!model)
-								Con_DPrintf ("svc_precache: Mod_ForName(\"%s\") failed\n", s);
-							cl.model_precache[j] = model;
-						}
-						else
-							Con_PrintLinef ("svc_precache: index %d outside range %d...%d", j, 1, MAX_MODELS);
-					}
-					else
-					{
-						j -= 32768;
-						if (j >= 1 && j < MAX_SOUNDS)
-						{
-							sfx_t *sfx = S_PrecacheSound (s, true, true);
-							if (!sfx && snd_initialized.integer)
-								Con_DPrintf ("svc_precache: S_PrecacheSound(\"%s\") failed\n", s);
-							cl.sound_precache[j] = sfx;
-						}
-						else
-							Con_PrintLinef ("svc_precache: index %d outside range %d...%d", j, 1, MAX_SOUNDS);
-					}
-				}
-				break;
-
-			case svc_stopsound:
-				j = (unsigned short) MSG_ReadShort(&cl_message);
-				S_StopSound(j>>3, j&7);
-				break;
-
-			case svc_updatename:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updatename >= cl.maxclients");
-				strlcpy (cl.scores[j].name, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.scores[j].name));
-				break;
-
-			case svc_updatefrags:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
-				cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
-				break;
-
-			case svc_updatecolors:
-				j = MSG_ReadByte(&cl_message);
-				if (j >= cl.maxclients)
-					Host_Error_Line ("CL_ParseServerMessage: svc_updatecolors >= cl.maxclients");
-				cl.scores[j].colors = MSG_ReadByte(&cl_message);
-				break;
-
-			case svc_particle:
-				CL_ParseParticleEffect ();
-				break;
-
-			case svc_effect:
-				if (cl.is_qex) { // AURA 1.5
-					// case  svc_achievement_fights_effect_52 AURA
-					str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-					Con_DPrintLinef ("Ignoring svc_achievement (%s)", str);
-					break;
-				}
-				CL_ParseEffect ();
-				break;
-
-			case svc_effect2:
-				CL_ParseEffect2 ();
-				break;
-
-			case svc_spawnbaseline:
-				j = (unsigned short) MSG_ReadShort(&cl_message);
-				if (j < 0 || j >= MAX_EDICTS)
-					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
-				if (j >= cl.max_entities)
-					CL_ExpandEntities(j);
-				CL_ParseBaseline (cl.entities + j, false);
-				break;
-			case svc_spawnbaseline2:
-				j = (unsigned short) MSG_ReadShort(&cl_message);
-				if (j < 0 || j >= MAX_EDICTS)
-					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %d", j);
-				if (j >= cl.max_entities)
-					CL_ExpandEntities(j);
-				CL_ParseBaseline (cl.entities + j, true);
-				break;
-			case svc_spawnstatic:
-				CL_ParseStatic (false);
-				break;
-
-			case svc_spawnstatic2:
-				if (cl.is_qex) { // AURA 1.6
-					// svc_qex_localsound_fights_spawnstatic2_56
-					CL_ParseLocalSound();
-					break;
-				}
-svc_spawnstatic2_ugly: // AURA 13.2
-				CL_ParseStatic (true);
-				break;
-
-			case svc_temp_entity:
-				if (!CL_VM_Parse_TempEntity())
-					CL_ParseTempEntity ();
-				break;
-
-			case svc_setpause:
-				cl.paused = MSG_ReadByte(&cl_message) != 0;
-
-				if (cl.paused && snd_cdautopause.integer)
-					CDAudio_Pause ();
-				else if (bgmvolume.value > 0.0f)
-					CDAudio_Resume ();
-
-				S_PauseGameSounds (cl.paused);
-				break;
-
-			case svc_signonnum:
-				j = MSG_ReadByte(&cl_message);
-				// LadyHavoc: it's rude to kick off the client if they missed the
-				// reconnect somehow, so allow signon 1 even if at signon 1
-				if (j <= cls.signon && j != SIGNON_1)
-					Host_Error_Line ("Received signon %d when at %d", j, cls.signon);
-				cls.signon = j; // NORMAL QUAKE / DARKPLACES
-				//if (cls.signon == SIGNON_1) {
-				//	// Baker: Save the time here
-				//	// we are going to use this to detect "slow loads hopefully".
-				//	cls.signon_1_time = Sys_DirtyTime();
-				//} else 
-				if (cls.signon == 3 /*SIGNONS_4*/) {
-					// Baker: Slow load end
-					// Baker: Demo playback never hits 4
-					cl_signon_start_time = 0;
-				}
+		// if the high bit of the command byte is set, it is a fast update (Baker: and that is what?)
+		if (cmd & U_SIGNAL_128) { // just differentiates from other updates
+			// Baker: This happens a lot when entities are updated for
+			// Quake protocol and FitzQuake protocols.  May not happen with DP7
+			// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
+			str = "entity";
+			cmdlogname[cmdindex] = str;
+			SHOWNET("fast update");
+			if (cls.signon == SIGNONS_4 - 1) {
+				// first update is the final signon stage
+				cls.signon = SIGNONS_4; // NORMAL QUAKE
+				cls.world_frames = 0; cls.world_start_realtime = 0; 
 				CL_SignonReply ();
-				break;
-
-			case svc_killedmonster:
-				cl.stats[STAT_MONSTERS]++;
-				break;
-
-			case svc_foundsecret:
-				cl.stats[STAT_SECRETS]++;
-				break;
-
-			case svc_updatestat:
-				j = MSG_ReadByte(&cl_message);
-				if (j < 0 || j >= MAX_CL_STATS)
-					Host_Error_Line ("svc_updatestat: %d is invalid", j);
-				cl.stats[j] = MSG_ReadLong(&cl_message);
-				break;
-
-			case svc_updatestatubyte:
-				j = MSG_ReadByte(&cl_message);
-				if (j < 0 || j >= MAX_CL_STATS)
-					Host_Error_Line ("svc_updatestat: %d is invalid", j);
-				cl.stats[j] = MSG_ReadByte(&cl_message);
-				break;
-
-			case svc_spawnstaticsound:
-				CL_ParseStaticSound (cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 ? true : false);
-				break;
-
-			case svc_spawnstaticsound2:
-				CL_ParseStaticSound (true);
-				break;
-
-			case svc_cdtrack:
-				cl.cdtrack = MSG_ReadByte(&cl_message);
-				cl.looptrack = MSG_ReadByte(&cl_message);
-
-				if ( (cls.demoplayback || cls.demorecording) && (cls.forcetrack != -1) )
-					CDAudio_Play ((unsigned char)cls.forcetrack, true);
-				else
-					CDAudio_Play ((unsigned char)cl.cdtrack, true);
-
-				break;
-
-			case svc_intermission:
-				if (!cl.intermission)
-					cl.completed_time = cl.time;
-				cl.intermission = 1;
-				CL_VM_UpdateIntermissionState(cl.intermission);
-				break;
-
-			case svc_finale:
-				if (!cl.intermission)
-					cl.completed_time = cl.time;
-				cl.intermission = 2;
-				CL_VM_UpdateIntermissionState(cl.intermission);
-
-				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (cl.is_qex && str[0] == '$') { // AURA 1.7
-					str = LOC_GetString (str);
-				}
-
-				SCR_CenterPrint(str);
-				break;
-
-			case svc_cutscene:
-				if (!cl.intermission)
-					cl.completed_time = cl.time;
-				cl.intermission = 3;
-				CL_VM_UpdateIntermissionState(cl.intermission);
-
-				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (cl.is_qex && str[0] == '$') { // AURA 1.8
-					str = LOC_GetString (str);
-				}
-
-				SCR_CenterPrint (str);
-				break;
-
-			case svc_sellscreen:
-				Cmd_ExecuteString(cmd_local, "help", src_local, true);
-				break;
-
-			case svc_hidelmp:
-				if (gamemode == GAME_TENEBRAE)
-				{
-					// repeating particle effect
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					(void) MSG_ReadByte(&cl_message);
-					MSG_ReadLong(&cl_message);
-					MSG_ReadLong(&cl_message);
-					MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				}
-				else
-					SHOWLMP_decodehide();
-				break;
-			case svc_showlmp: // 35
-				if (cl.is_qex) { // AURA 13.1
-					// svc_zirc_qex_svc_spawnstatic2_35
-					// Baker: we are using this as svc_spawnstatic2 if sv.is_qex
-					// AFAIK GAME_NEHAHRA is sole user of this goofy svc that LadyHavoc describes as junk
-					goto svc_spawnstatic2_ugly;
-				}
-				if (gamemode == GAME_TENEBRAE)
-				{
-					// particle effect
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					MSG_ReadCoord(&cl_message, cls.protocol);
-					(void) MSG_ReadByte(&cl_message);
-					MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				}
-				else
-					SHOWLMP_decodeshow();
-				break;
-
-			case svc_skybox:
-				R_SetSkyBox(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
-				break;
-
-			case svc_entities:
-				if (cls.signon == SIGNONS_4 - 1)
-				{
-					// first update is the final signon stage
-					cls.signon = SIGNONS_4;
-					CL_SignonReply ();
-				}
-				if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3)
-					EntityFrame_CL_ReadFrame();
-				else if (cls.protocol == PROTOCOL_DARKPLACES4)
-					EntityFrame4_CL_ReadFrame();
-				else
-					EntityFrame5_CL_ReadFrame();
-				break;
-
-			case svc_csqcentities:
-				CSQC_ReadEntities();
-				break;
-
-			case svc_downloaddata:
-				CL_ParseDownload();
-				break;
-			case svc_trailparticles:
-				CL_ParseTrailParticles();
-				break;
-			case svc_pointparticles:
-				CL_ParsePointParticles();
-				break;
-			case svc_pointparticles1:
-				CL_ParsePointParticles1();
-				break;
-
 			}
-//			R_TimeReport(svc_strings[cmd]);
+			EntityFrameQuake_ReadEntity (cmd&127);
+			continue;
 		}
-	}
 
+		SHOWNET(svc_strings[cmd]);
+		cmdlogname[cmdindex] = svc_strings[cmd];
+		if (!cmdlogname[cmdindex])
+		{
+			// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
+			const char *d = "<unknown>";
+			cmdlogname[cmdindex] = d;
+		}
+
+		// other commands
+		switch (cmd) {
+		default:
+			{
+				char description[32*64], tempdesc[64];
+				int count;
+				c_strlcpy (description, "packet dump: ");
+				j = cmdcount - 32;
+				if (j < 0)
+					j = 0;
+				count = cmdcount - j;
+				j &= 31;
+				while(count > 0)
+				{
+					dpsnprintf (tempdesc, sizeof (tempdesc), "%3d:%s ", cmdlog[j], cmdlogname[j]);
+					c_strlcat (description, tempdesc);
+					count--;
+					j++;
+					j &= 31;
+				}
+				description[strlen(description)-1] = '\n'; // replace the last space with a newline
+				Con_Print(description);
+				Host_Error_Line ("CL_ParseServerMessage: Illegible server message");
+			}
+			break;
+
+		case svc_nop:
+			if (cls.signon < SIGNONS_4)
+				Con_PrintLinef ("<-- server to client keepalive");
+			break;
+
+		case svc_time:
+			CL_NetworkTimeReceived(MSG_ReadFloat(&cl_message));
+			break;
+
+		case svc_clientdata:
+			CL_ParseClientdata();
+			break;
+
+		case svc_version:
+			j = MSG_ReadLong(&cl_message);
+			protocol = Protocol_EnumForNumber(j);
+			if (protocol == PROTOCOL_UNKNOWN)
+				Host_Error_Line ("CL_ParseServerMessage: Server is unrecognized protocol number (%d)", j);
+			// hack for unmarked Nehahra movie demos which had a custom protocol
+			if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback && gamemode == GAME_NEHAHRA)
+				protocol = PROTOCOL_NEHAHRAMOVIE;
+			cls.protocol = protocol; // Quakespasm does nothing with protocol flags here
+			break;
+
+		case svc_disconnect:
+			if (cls.demonum != -1)
+				CL_NextDemo();
+			else
+				CL_DisconnectEx(q_is_kicked_true, cls.protocol == PROTOCOL_DARKPLACES8 ? MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)) : "Server disconnected");
+			break;
+
+		case svc_print:
+			str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+
+			if (cl.is_qex && str[0] == '$') { // AURA 1.2
+				str = LOC_GetString (str);
+				CSQC_AddPrintText (str);	//[515]: csqc
+			} else
+				if (CL_ExaminePrintString(str)) // au21 - look for anything interesting like player IP addresses or ping reports
+				CSQC_AddPrintText(str);	//[515]: csqc
+			break;
+
+		case svc_centerprint:
+			str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));					
+			if (cl.is_qex && str[0] == '$') { // AURA 1.3
+				str = LOC_GetString (str);
+			}
+
+			CL_VM_Parse_CenterPrint(str);	//[515]: csqc
+			break;
+
+		case svc_stufftext:
+			str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+
+			/* if (utf8_enable.integer)
+			{
+				strip_pqc = true;
+				// we can safely strip and even
+				// interpret these in utf8 mode
+			}
+			else */ switch(cls.protocol)
+			{
+				case PROTOCOL_QUAKE:
+				case PROTOCOL_QUAKEDP:
+					// maybe add other protocols if
+					// so desired, but not DP7
+					strip_pqc = true;
+					break;
+				case PROTOCOL_DARKPLACES7:
+				default:
+					// ProQuake does not support
+					// these protocols
+					strip_pqc = false;
+					break;
+			}
+			if (strip_pqc)
+			{
+				// skip over ProQuake messages,
+				// TODO actually interpret them
+				// (they are sbar team score
+				// updates), see proquake cl_parse.c
+				if (*str == 0x01)
+				{
+					++str;
+					while(*str >= 0x01 && *str <= 0x1F)
+						++str;
+				}
+			}
+
+			// Baker r8191
+			if (String_Does_Start_With (str, HINT_MESSAGE_PREFIX)) {
+				Con_DPrintLinef ("Received server hint: %s", str);
+				str += strlen (HINT_MESSAGE_PREFIX);
+				CL_ParseHint (str);
+				break; // Do not continue.
+			}
+
+			CL_VM_Parse_StuffCmd(str);	//[515]: csqc
+			break;
+
+		case svc_damage:
+			V_ParseDamage ();
+			break;
+
+		case svc_serverinfo:
+			CL_ParseServerInfo ();
+			break;
+
+		case svc_setangle:
+			for (j = 0 ; j < 3 ; j ++)
+				cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
+			if (!cls.demoplayback)
+			{
+				cl.fixangle[0] = true;
+				VectorCopy(cl.viewangles, cl.mviewangles[0]);
+				// disable interpolation if this is new
+				if (!cl.fixangle[1])
+					VectorCopy(cl.viewangles, cl.mviewangles[1]);
+			}
+			break;
+
+		case svc_setview:
+			cl.viewentity = (unsigned short)MSG_ReadShort(&cl_message);
+			if (cl.viewentity >= MAX_EDICTS_32768)
+				Host_Error_Line ("svc_setview >= MAX_EDICTS_32768");
+			if (cl.viewentity >= cl.max_entities)
+				CL_ExpandEntities(cl.viewentity);
+			// LadyHavoc: assume first setview recieved is the real player entity
+			if (!cl.realplayerentity)
+				cl.realplayerentity = cl.viewentity;
+			// update cl.playerentity to this one if it is a valid player
+			if (cl.viewentity >= 1 && cl.viewentity <= cl.maxclients)
+				cl.playerentity = cl.viewentity;
+			break;
+
+		case svc_lightstyle:
+			j = MSG_ReadByte(&cl_message);
+			if (j >= cl.max_lightstyle) {
+				Con_Printf ("svc_lightstyle >= MAX_LIGHTSTYLES_256");
+				break;
+			}
+			strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
+			cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+			cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
+			break;
+
+		case svc_sound:
+			CL_ParseStartSoundPacket (
+				isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3) ? 
+						q_is_large_soundindex_true : q_is_large_soundindex_false
+			);
+			break;
+
+		case svc_precache:
+			if (isin3 (cls.protocol, PROTOCOL_DARKPLACES1, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3)) {
+				// was svc_sound2 in protocols 1, 2, 3, removed in 4, 5, changed to svc_precache in 6
+				CL_ParseStartSoundPacket(q_is_large_soundindex_true);
+			}
+			else
+			{
+				char *s;
+				j = (unsigned short)MSG_ReadShort(&cl_message);
+				s = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				if (j < 32768) {
+					if (j >= 1 && j < MAX_MODELS_8192) {
+						model_t *model = Mod_ForName(s, false, false, s[0] == '*' ? cl.model_name[1] : NULL);
+						if (!model)
+							Con_DPrintLinef ("svc_precache: Mod_ForName(" QUOTED_S ") failed", s);
+						cl.model_precache[j] = model;
+					}
+					else
+						Con_PrintLinef ("svc_precache: index %d outside range %d...%d", j, 1, MAX_MODELS_8192);
+				}
+				else
+				{
+					j -= 32768;
+					if (j >= 1 && j < MAX_SOUNDS_4096) {
+						sfx_t *sfx = S_PrecacheSound (s, true, true);
+						if (!sfx && snd_initialized.integer)
+							Con_DPrintLinef ("svc_precache: S_PrecacheSound(" QUOTED_S ") failed", s);
+						cl.sound_precache[j] = sfx;
+					}
+					else
+						Con_PrintLinef ("svc_precache: index %d outside range %d...%d", j, 1, MAX_SOUNDS_4096);
+				}
+			}
+			break;
+
+		case svc_stopsound:
+			j = (unsigned short) MSG_ReadShort(&cl_message);
+			S_StopSound(j>>3, j&7);
+			break;
+
+		case svc_updatename:
+			j = MSG_ReadByte(&cl_message);
+			if (j >= cl.maxclients)
+				Host_Error_Line ("CL_ParseServerMessage: svc_updatename >= cl.maxclients");
+			strlcpy (cl.scores[j].name, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.scores[j].name));
+			break;
+
+		case svc_updatefrags:
+			j = MSG_ReadByte(&cl_message);
+			if (j >= cl.maxclients)
+				Host_Error_Line ("CL_ParseServerMessage: svc_updatefrags >= cl.maxclients");
+			cl.scores[j].frags = (signed short) MSG_ReadShort(&cl_message);
+			break;
+
+		case svc_updatecolors:
+			j = MSG_ReadByte(&cl_message);
+			if (j >= cl.maxclients)
+				Host_Error_Line ("CL_ParseServerMessage: svc_updatecolors >= cl.maxclients");
+			cl.scores[j].colors = MSG_ReadByte(&cl_message);
+			break;
+
+		case svc_particle:
+			CL_ParseParticleEffect ();
+			break;
+
+		case svc_effect:
+			if (cl.is_qex) { // AURA 1.5
+				// case  svc_achievement_fights_effect_52 AURA
+				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+				Con_DPrintLinef ("Ignoring svc_achievement (%s)", str);
+				break;
+			}
+			CL_ParseEffect ();
+			break;
+
+		case svc_effect2:
+			CL_ParseEffect2 ();
+			break;
+
+		case svc_spawnbaseline:
+			ent_num = (unsigned short) MSG_ReadShort(&cl_message);
+			if (ent_num < 0 || ent_num >= MAX_EDICTS_32768)
+				Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", ent_num);
+			if (ent_num >= cl.max_entities)
+				CL_ExpandEntities(ent_num);
+			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_false, q_fitz_version_1);
+			break;
+
+		case svcfitz_spawnbaseline2: // DPD 999 - Looks compat
+			ent_num = (unsigned short) MSG_ReadShort(&cl_message);
+			if (ent_num < 0 || ent_num >= MAX_EDICTS_32768)
+				Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", ent_num);
+			if (ent_num >= cl.max_entities)
+				CL_ExpandEntities(ent_num);
+			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_false, q_fitz_version_2);
+			break;
+
+		case svc_spawnbaseline2: // 55 - Not used by Fitz666
+			ent_num = (unsigned short) MSG_ReadShort(&cl_message);
+			if (ent_num < 0 || ent_num >= MAX_EDICTS_32768)
+				Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %d", ent_num);
+			if (ent_num >= cl.max_entities)
+				CL_ExpandEntities(ent_num);
+			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_true, q_fitz_version_none_0);
+			break;
+		case svc_spawnstatic:
+			CL_ParseStatic (q_is_large_modelindex_false, q_fitz_version_1);
+			break;
+
+		case svcfitz_spawnstatic2: // DPD 999 
+			CL_ParseStatic (q_is_large_modelindex_false, q_fitz_version_2);
+			break;
+
+		case svc_spawnstatic2:
+			if (cl.is_qex) { // AURA 1.6
+				// svc_qex_localsound_fights_spawnstatic2_56
+				CL_ParseLocalSound();
+				break;
+			}
+svc_spawnstatic2_ugly: // AURA 13.2
+			CL_ParseStatic (q_is_large_modelindex_true, q_fitz_version_none_0);
+			break;
+
+		case svc_temp_entity:
+			if (!CL_VM_Parse_TempEntity())
+				CL_ParseTempEntity ();
+			break;
+
+		case svc_setpause:
+			cl.paused = MSG_ReadByte(&cl_message) != 0;
+
+			if (cl.paused && snd_cdautopause.integer)
+				CDAudio_Pause ();
+			else if (bgmvolume.value > 0.0f)
+				CDAudio_Resume ();
+
+			S_PauseGameSounds (cl.paused);
+			break;
+
+		case svc_signonnum:
+			j = MSG_ReadByte(&cl_message);
+			// LadyHavoc: it's rude to kick off the client if they missed the
+			// reconnect somehow, so allow signon 1 even if at signon 1
+			if (j <= cls.signon && j != SIGNON_1)
+				Host_Error_Line ("Received signon %d when at %d", j, cls.signon);
+			cls.signon = j; // NORMAL QUAKE / DARKPLACES
+			//if (cls.signon == SIGNON_1) {
+			//	// Baker: Save the time here
+			//	// we are going to use this to detect "slow loads hopefully".
+			//	cls.signon_1_time = Sys_DirtyTime();
+			//} else 
+			if (cls.signon == 3 /*SIGNONS_4*/) {
+				// Baker: Slow load end
+				// Baker: Demo playback never hits 4
+				cl_signon_start_time = 0;
+			}
+			CL_SignonReply ();
+			break;
+
+		case svc_killedmonster:
+			cl.stats[STAT_MONSTERS]++;
+			break;
+
+		case svc_foundsecret:
+			cl.stats[STAT_SECRETS]++;
+			break;
+
+		case svc_updatestat:
+			j = MSG_ReadByte(&cl_message);
+			if (j < 0 || j >= MAX_CL_STATS)
+				Host_Error_Line ("svc_updatestat: %d is invalid", j);
+			cl.stats[j] = MSG_ReadLong(&cl_message);
+			break;
+
+		case svc_updatestatubyte:
+			j = MSG_ReadByte(&cl_message);
+			if (j < 0 || j >= MAX_CL_STATS)
+				Host_Error_Line ("svc_updatestat: %d is invalid", j);
+			cl.stats[j] = MSG_ReadByte(&cl_message);
+			break;
+
+		case svc_spawnstaticsound:
+			CL_ParseStaticSound (isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3) 
+				? q_is_large_soundindex_true : q_is_large_soundindex_false
+				, q_fitz_version_1
+			);
+			break;
+
+		case svcfitz_spawnstaticsound2:
+			//CL_ParseStaticSound (2);
+			CL_ParseStaticSound (q_is_large_soundindex_true, q_fitz_version_2); // DPD 999
+			break;
+
+		case svc_spawnstaticsound2:
+			CL_ParseStaticSound (q_is_large_soundindex_true, q_fitz_version_none_0);
+			break;
+
+		case svc_cdtrack:
+			cl.cdtrack = MSG_ReadByte(&cl_message);
+			cl.looptrack = MSG_ReadByte(&cl_message);
+
+			if ( (cls.demoplayback || cls.demorecording) && (cls.forcetrack != -1) )
+				CDAudio_Play ((unsigned char)cls.forcetrack, true);
+			else
+				CDAudio_Play ((unsigned char)cl.cdtrack, true);
+
+			break;
+
+		case svc_intermission:
+			if (!cl.intermission)
+				cl.completed_time = cl.time;
+			cl.intermission = 1;
+			CL_VM_UpdateIntermissionState(cl.intermission);
+			break;
+
+		case svc_finale:
+			if (!cl.intermission)
+				cl.completed_time = cl.time;
+			cl.intermission = 2;
+			CL_VM_UpdateIntermissionState(cl.intermission);
+
+			str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+			if (cl.is_qex && str[0] == '$') { // AURA 1.7
+				str = LOC_GetString (str);
+			}
+
+			SCR_CenterPrint(str);
+			break;
+
+		case svc_cutscene:
+			if (!cl.intermission)
+				cl.completed_time = cl.time;
+			cl.intermission = 3;
+			CL_VM_UpdateIntermissionState(cl.intermission);
+
+			str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+			if (cl.is_qex && str[0] == '$') { // AURA 1.8
+				str = LOC_GetString (str);
+			}
+
+			SCR_CenterPrint (str);
+			break;
+
+		case svc_sellscreen:
+			Cmd_ExecuteString(cmd_local, "help", src_local, true);
+			break;
+
+		case svc_hidelmp:
+			if (gamemode == GAME_TENEBRAE)
+			{
+				// repeating particle effect
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				(void) MSG_ReadByte(&cl_message);
+				MSG_ReadLong(&cl_message);
+				MSG_ReadLong(&cl_message);
+				MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+			}
+			else
+				SHOWLMP_decodehide();
+			break;
+		case svc_showlmp: // 35
+			if (cl.is_qex) { // AURA 13.1
+				// svc_zirc_qex_svc_spawnstatic2_35
+				// Baker: we are using this as svc_spawnstatic2 if sv.is_qex
+				// AFAIK GAME_NEHAHRA is sole user of this goofy svc that LadyHavoc describes as junk
+				goto svc_spawnstatic2_ugly;
+			}
+			if (gamemode == GAME_TENEBRAE)
+			{
+				// particle effect
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				MSG_ReadCoord(&cl_message, cls.protocol);
+				(void) MSG_ReadByte(&cl_message);
+				MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
+			}
+			else
+				SHOWLMP_decodeshow();
+			break;
+
+		case svc_skybox:
+			R_SetSkyBox(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
+			break;
+
+		// DPD 999 Baker: svc_bf from FitzQuake would need to be sent by a mod
+		case svcfitz_bf: // Possibility this does not exist in any mod
+			//Cmd_ExecuteString ("bf", src_command);
+			break;
+
+		// DPD 999 Baker: svc_fog from FitzQuake would need to be sent by a mod
+		case svcfitz_fog: // Possibility this does not exist in any mod
+			Fog_ParseServerMessage ();
+			break;
+
+		case svc_entities:
+			if (cls.signon == SIGNONS_4 - 1)
+			{
+				// first update is the final signon stage
+				cls.signon = SIGNONS_4;
+				CL_SignonReply ();
+			}
+			if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3)
+				EntityFrame_CL_ReadFrame();
+			else if (cls.protocol == PROTOCOL_DARKPLACES4)
+				EntityFrame4_CL_ReadFrame();
+			else
+				EntityFrame5_CL_ReadFrame();
+			break;
+
+		case svc_csqcentities:
+			CSQC_ReadEntities();
+			break;
+
+		case svc_downloaddata:
+			CL_ParseDownload();
+			break;
+		case svc_trailparticles:
+			CL_ParseTrailParticles();
+			break;
+		case svc_pointparticles:
+			CL_ParsePointParticles();
+			break;
+		case svc_pointparticles1:
+			CL_ParsePointParticles1();
+			break;
+
+		} // switch svc
+//		R_TimeReport(svc_strings[cmd]);
+	} // while 1
+
+
+quakeworld_skip:
 	if (cls.signon == SIGNONS_4)
 		CL_UpdateItemsAndWeapon();
 //	R_TimeReport("UpdateItems");

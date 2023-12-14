@@ -2966,6 +2966,7 @@ exit_possible:
 			else if (String_Isin2 (command, "bind","unbind") /**/)					ac->searchtype = 17;
 			else if (String_Isin3 (command, "folder","dir","ls") /**/)				ac->searchtype = 18;
 			else if (String_Isin1 (command, "cvarlist") /**/)						ac->searchtype = 20;
+			else if (String_Isin1 (command, "sv_protocolname") /**/)				ac->searchtype = 21;
 		} 
 		else if (ac->s_command0_a) {
 			// We are 2nd argument or further down (or someone typed multiple spaces that's on them)
@@ -3017,6 +3018,7 @@ autocomplete_go:
 		case 18: GetFolderList_Count	(s);	break; // "dir", "ls", "folder"
 		case 19: GetTexGeneric_Count	(s);	break; // r_replacemaptexture arg2 general textures
 		case 20: GetAny1_Count			(s, "changed"); break; // cvarlist "changed"
+		case 21: GetCommad_Count		(s, "666,999,dp7,quake"); break; // sv_protocolname
 		} // switch
 
 		if (ac->s_match_alphatop_a == NULL) {

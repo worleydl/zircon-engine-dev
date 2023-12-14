@@ -207,7 +207,6 @@ char *Sys_ConsoleInput_WinQuake (void)
 	static char text[MAX_INPUTLINE_16384];
 	static int len;
 	INPUT_RECORD recs[1024];
-	int ch;
 	DWORD numread, numevents, dummy;
 
 	// Baker: We are 100% dedicated here
@@ -235,48 +234,67 @@ char *Sys_ConsoleInput_WinQuake (void)
 			Sys_Error ("Couldn't read console input (error code %x)", (unsigned int)GetLastError());
 		}
 
-		if (recs[0].EventType == KEY_EVENT)
-		{
-			if (!recs[0].Event.KeyEvent.bKeyDown)
-			{
-				ch = recs[0].Event.KeyEvent.uChar.AsciiChar;
+		if (recs[0].EventType == KEY_EVENT ) {
+			int ch = recs[0].Event.KeyEvent.uChar.AsciiChar;
+			int dws = recs[0].Event.KeyEvent.dwControlKeyState; 
+			// LEFT_CTRL_PRESSED 0x0008 RIGHT_CTRL_PRESSED 0x0004
 
-				switch (ch)
-				{
-					case '\r':
-						WriteFile(houtput, "\r\n", 2, &dummy, NULL);
+			if (recs[0].Event.KeyEvent.bKeyDown == 0) {
+				if ( (ch == 22 || ch == 118) && (dws & LEFT_CTRL_PRESSED /*0x0008*/)) {
+					int slen; const char *s; // CTRL-V hack
+					s = Clipboard_Get_Text_Line_Static ();
+					//logc ("Pasting %d", s);
+					slen = strlen(s);
+					if (slen) {
+						// We need to jam it into the text buffer
+						int n; for (n = 0; n < slen; n ++) {
+							ch = s[n];
+							WriteFile (houtput, &ch, 1, &dummy, NULL);
+							text[len] = ch, len = (len + 1) & 0xff; // Wrap
+						} // end for
+					} // if slen
 
-						if (len)
-						{
-							text[len] = 0;
-							len = 0;
-							return text;
-						}
-
-						break;
-
-					case '\b':
-						WriteFile(houtput, "\b \b", 3, &dummy, NULL);
-						if (len)
-						{
-							len--;
-						}
-						break;
-
-					default:
-						if (ch >= (int) (unsigned char) ' ')
-						{
-							WriteFile(houtput, &ch, 1, &dummy, NULL);
-							text[len] = ch;
-							len = (len + 1) & 0xff;
-						}
-
-						break;
-
-				}
+					break;
+				} // Pastey - Jan 27 2020 - CTRL-V paste hack
+				continue;
 			}
-		}
-	}
+			
+			switch (ch)
+			{
+			case '\r': // Enter via carriage return character
+				WriteFile (houtput, "\r\n", 2, &dummy, NULL); // We need a carriage return?
+
+				if (len) {
+					text[len] = 0, len = 0;
+
+					return text; // Strip trailing newline, reset length to 0.
+				}
+				else if (1) // sc_return_on_enter)
+				{
+				// special case to allow exiting from the error handler on Enter
+					text[0] = '\r';
+					text[1] = 0;
+					len = 0;
+					return text;
+				}
+				break;
+
+			case '\b': // Backspace character
+				WriteFile (houtput, "\b \b", 3, &dummy, NULL);
+				if (len)
+					len--;
+				break;
+
+			default:
+				if (ch >= 32) {
+					WriteFile (houtput, &ch, 1, &dummy, NULL);
+					text[len] = ch, len = (len + 1) & 0xff; // Wrap
+				}
+				break;
+			} // End switch
+		} // Endif
+
+	} // End of for
 
 	return NULL;
 }
@@ -340,14 +358,17 @@ char *Sys_ConsoleInput (void) // CONSOLUS
 	return NULL;
 }
 
-WARP_X_ (Sys_GetClipboardData)
+WARP_X_ (Sys_GetClipboardData_Alloc)
 // Returns 1 on success, 0 on failure
 int Sys_SetClipboardData(const char *text_to_clipboard)
 {
 	return !SDL_SetClipboardText(text_to_clipboard);
 }
 
-char *Sys_GetClipboardData (void)
+
+
+
+char *Sys_GetClipboardData_Alloc (void)
 {
 	char *data = NULL;
 	char *cliptext;

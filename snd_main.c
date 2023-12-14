@@ -1026,7 +1026,7 @@ sfx_t *S_FindName (const char *name)
 	if (name[0] == '#' && name[1])
 	{
 		int soundindex = atoi(name + 1);
-		if (soundindex > 0 && soundindex < MAX_SOUNDS)
+		if (soundindex > 0 && soundindex < MAX_SOUNDS_4096)
 			if (cl.sound_precache[soundindex]->name[0])
 				return cl.sound_precache[soundindex];
 	}
@@ -1329,13 +1329,13 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	// update sound origin if we know about the entity
 	if (ch->entnum > 0 && cls.state == ca_connected && cl_gameplayfix_soundsmovewithentities.integer)
 	{
-		if (ch->entnum >= MAX_EDICTS)
+		if (ch->entnum >= MAX_EDICTS_32768)
 		{
 			//Con_Printf ("-- entnum %d origin %f %f %f neworigin %f %f %f\n", ch->entnum, ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 
-			if (ch->entnum > MAX_EDICTS)
+			if (ch->entnum > MAX_EDICTS_32768)
 				if (!CL_VM_GetEntitySoundOrigin(ch->entnum, ch->origin))
-					ch->entnum = MAX_EDICTS; // entity was removed, disown sound
+					ch->entnum = MAX_EDICTS_32768; // entity was removed, disown sound
 		}
 		else if (cl.entities[ch->entnum].state_current.active)
 		{
@@ -1351,8 +1351,8 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 		{
 			//Con_Printf ("-- entnum %d (client %d) origin %f %f %f neworigin %f %f %f\n", ch->entnum, cl.csqc_server2csqcentitynumber[ch->entnum], ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 
-			if (!CL_VM_GetEntitySoundOrigin(cl.csqc_server2csqcentitynumber[ch->entnum] + MAX_EDICTS, ch->origin))
-				ch->entnum = MAX_EDICTS; // entity was removed, disown sound
+			if (!CL_VM_GetEntitySoundOrigin(cl.csqc_server2csqcentitynumber[ch->entnum] + MAX_EDICTS_32768, ch->origin))
+				ch->entnum = MAX_EDICTS_32768; // entity was removed, disown sound
 		}
 	}
 
@@ -1367,7 +1367,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	else if (!(ch->flags & CHANNELFLAG_FULLVOLUME)) // same as SND_PaintChannel uses
 	{
 		// old legacy separated cvars
-		if (ch->entnum >= MAX_EDICTS)
+		if (ch->entnum >= MAX_EDICTS_32768)
 		{
 			switch(ch->entchannel)
 			{
@@ -1679,8 +1679,9 @@ static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int
 	// If it's a static sound
 	if (isstatic)
 	{
-		if (sfx->loopstart >= sfx->total_length && (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEWORLD))
-			Con_DPrintf ("Quake compatibility warning: Static sound \"%s\" is not looped\n", sfx->name);
+		if (sfx->loopstart >= sfx->total_length && 
+			isin4(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999, PROTOCOL_QUAKE, PROTOCOL_QUAKEWORLD))
+			Con_DPrintLinef ("Quake compatibility warning: Static sound " QUOTED_S " is not looped", sfx->name);
 		target_chan->distfade = attenuation / (64.0f * snd_soundradius.value);
 	}
 	else

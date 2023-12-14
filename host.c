@@ -882,8 +882,8 @@ static void Host_Init (void)
 
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying) {
 #ifdef CONFIG_MENU
-		extern cvar_t nostartdemos;
-		if (!nostartdemos.value)
+		extern cvar_t cl_startdemos;
+		if (cl_startdemos.value)
 			Cbuf_AddTextLine (cmd_local, "togglemenu 1");
 #endif
 		Cbuf_Execute(cmd_local->cbuf);

@@ -21,8 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef CSPROGS_H
 #define CSPROGS_H
 
-// LadyHavoc: changed to match MAX_EDICTS
-#define CL_MAX_EDICTS MAX_EDICTS
+// LadyHavoc: changed to match MAX_EDICTS_32768
+#define CL_MAX_EDICTS MAX_EDICTS_32768
 
 #define ENTMASK_ENGINE				1
 #define ENTMASK_ENGINEVIEWMODELS	2
@@ -98,7 +98,7 @@ extern cvar_t csqc_progname;	//[515]: csqc crc check and right csprogs name acco
 extern cvar_t csqc_progcrc;
 extern cvar_t csqc_progsize;
 extern cvar_t csqc_polygons_defaultmaterial_nocullface;
-
+extern cvar_t csqc_polygons_darkplaces_classic_3d;
 
 
 void CL_VM_PreventInformationLeaks(void);

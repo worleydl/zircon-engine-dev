@@ -272,7 +272,7 @@ const char **Cvar_CompleteBuildList(cvar_state_t *cvars, const char *partial, in
 			for (char **alias = cvar->aliases; alias && *alias; alias++)
 				if (!strncasecmp(partial, *alias, len) && (cvar->flags & neededflags))
 					buf[bpos++] = *alias;
-		
+
 
 	buf[bpos] = NULL;
 	return buf;
@@ -304,7 +304,7 @@ void Cvar_CompleteCvarPrint(cvar_state_t *cvars, const char *partial, int needed
 				if (!strncasecmp (partial, *alias, len) && (cvar->flags & neededflags))
 					Cvar_PrintHelp(cvar, *alias, true);
 
-		
+
 }
 
 // check if a cvar is held by some progs
@@ -873,10 +873,7 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 				const char *s_copy_str = NULL;
 				const char *s_copy_defstr = NULL;
 
-				if (c == &scr_fov) {
-					int j = 5;
-				}
-				// Baker: I doubt c->initstate->string can be trusted		
+				// Baker: I doubt c->initstate->string can be trusted
 				if (c->string)		s_copy_str = Mem_strdup(zonemempool, c->initstate->defstring); // Baker r9061: don't trust c->initstate->string ever
 				if (c->defstring)	s_copy_defstr = Mem_strdup(zonemempool, c->initstate->defstring);
 				if (c->defstring)
@@ -893,15 +890,12 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 				if (String_Does_Match (c->string, c->defstring) == false) {
 					#pragma message ("Baker: Ran into situation where default string and string didn't match after this process")
 					Z_Free((char *)c->string);
-					c->string = Mem_strdup(zonemempool, c->defstring); 
+					c->string = Mem_strdup(zonemempool, c->defstring);
 				}
 			}
 			c->flags = c->initstate->flags;
 			c->value = c->initstate->value;
 			c->integer = c->initstate->integer;
-			if ((int)c->value != c->integer) {
-				int j = 5;
-			}
 			VectorCopy(c->initstate->fvector, c->fvector);
 			cp = &c->next;
 		}
@@ -964,7 +958,7 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 // Baker: I'm not sure if this is right, we no check hash table head
 					if (cvars->hashtable[hashindex]->next)
 					*cp2 = cvars->hashtable[hashindex]->next->cvar;
-					else 
+					else
 						cvars->hashtable[hashindex] = NULL; // Baker: there is no next ..
 					break;
 				}
@@ -994,35 +988,35 @@ void Cvar_Reset_f(cmd_state_t *cmd)
 	int numargs = Cmd_Argc(cmd);
 	cvar_t *cvCVar;
 	switch (numargs) {
-		
+
 	default:// no args or such
-			Con_PrintLinef ("cvar_reset - Usage" NEWLINE 
+			Con_PrintLinef ("cvar_reset - Usage" NEWLINE
 							"  cvar_reset <variable> - reset to default value");
 			break;
 
-	case 2:	cvCVar = Cvar_FindVar(cvars, Cmd_Argv(cmd, 1), ALL_FLAGS_ANTIZERO );  
-			if (!cvCVar) { 
-				Con_PrintLinef ("Variable %s not found",  Cmd_Argv(cmd, 1) ); 
-				break; 
+	case 2:	cvCVar = Cvar_FindVar(cvars, Cmd_Argv(cmd, 1), ALL_FLAGS_ANTIZERO );
+			if (!cvCVar) {
+				Con_PrintLinef ("Variable %s not found",  Cmd_Argv(cmd, 1) );
+				break;
 			}
 
 			if (Have_Flag (cvCVar->flags, CF_PERSISTENT)) {
 				// msg
 				Con_PrintLinef ("%s is CF_PERSISTENT, no reset possible", Cmd_Argv(cmd, 1));
-				break; 
-			} 
+				break;
+			}
 
 			if (Have_Flag (cvCVar->flags, CF_READONLY)) {
 				// msg
 				Con_PrintLinef ("%s is CF_READONLY, no reset possible", Cmd_Argv(cmd, 1));
-				break; 
-			} 
+				break;
+			}
 
 			Cvar_SetQuick(cvCVar, cvCVar->defstring);
 			break;
 	} // sw
 
-	
+
 	// fail comes here
 }
 
@@ -1084,7 +1078,7 @@ void Cvar_WriteVariables (cvar_state_t *cvars, qfile_t *f)
 		// If the string value is different, save
 		int shall_save = String_Does_Not_Match (var->string, var->defstring);
 
-		// If string value is same 
+		// If string value is same
 		// and it is allocated without a default (SETA), save it anyway
 		if (shall_save == false) {
 			// Baker we have a saved allocated cvar (SETA) and the default it not set?
@@ -1092,7 +1086,7 @@ void Cvar_WriteVariables (cvar_state_t *cvars, qfile_t *f)
 				shall_save = true;
 			} // if
 		} // if
-	
+
 		if (shall_save == false)
 			continue;
 
@@ -1113,7 +1107,7 @@ void Cvar_WriteVariables_All_Changed (cvar_state_t *cvars, qfile_t *f)
 
 		// If the string value is different, save
 		int shall_write = String_Does_Not_Match (var->string, var->defstring);
-	
+
 		if (shall_write == false)
 			continue;
 
@@ -1248,8 +1242,8 @@ void Cvar_SetA_f(cmd_state_t *cmd)
 		Con_DPrint("SetA: ");
 
 	// all looks ok, create/modify the cvar
-	Cvar_Get(cvars, 
-		Cmd_Argv(cmd, 1),								// name 
+	Cvar_Get(cvars,
+		Cmd_Argv(cmd, 1),								// name
 		Cmd_Argv(cmd, 2),								// value
 		cmd->cvars_flagsmask | CF_ARCHIVE,				// flags
 		Cmd_Argc(cmd) > 3 ? Cmd_Argv(cmd, 3) : NULL		// description

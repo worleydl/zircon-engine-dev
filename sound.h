@@ -30,7 +30,7 @@ struct cmd_state_s;
 // ====================================================================
 
 #define DEFAULT_SOUND_PACKET_VOLUME 255
-#define DEFAULT_SOUND_PACKET_ATTENUATION 1.0
+#define DEFAULT_SOUND_PACKET_ATTENUATION_1_0 1.0
 
 // Channel flags
 // These channel flags can be used for sound() builtins, with SOUNDFLAG_* names

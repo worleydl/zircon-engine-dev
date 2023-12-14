@@ -26,7 +26,7 @@ extern cvar_t cl_capturevideo_demo_stop;
 #endif
 int old_vsync = 0;
 
-cvar_t nostartdemos = {CF_CLIENT | CF_ARCHIVE , "nostartdemos", "0", "Do not play start demos on startup [Zircon change]"}; // Baker r3172: nostartdemos
+cvar_t cl_startdemos = {CF_CLIENT | CF_ARCHIVE , "cl_startdemos", "1", "Play start demos on startup [Zircon change]"}; // Baker r3172: nostartdemos
 
 cvar_t cl_autodemo = {CF_CLIENT | CF_ARCHIVE, "cl_autodemo", "0", "records every game played, using the date/time and map name to name the demo file" };
 cvar_t cl_autodemo_nameformat = {CF_CLIENT | CF_ARCHIVE, "cl_autodemo_nameformat", "autodemos/%Y-%m-%d_%H-%M", "The format of the cl_autodemo filename, followed by the map name (the date is encoded using strftime escapes)" };
@@ -463,7 +463,7 @@ void CL_PlayDemo(const char *demo)
 	// update networking ports (this is mainly just needed at startup)
 	NetConn_UpdateSockets();
 
-	cls.protocol = PROTOCOL_QUAKE;
+	cls.protocol = PROTOCOL_QUAKE; cls.protocol_flags_rmq = 0;
 
 	Con_PrintLinef ("Playing demo %s.", name);
 	cls.demofile = f;
@@ -677,7 +677,7 @@ static void CL_Startdemos_f(cmd_state_t *cmd)
 	if (cls.state == ca_dedicated || Sys_CheckParm("-listen") || Sys_CheckParm("-benchmark") || Sys_CheckParm("-demo") || Sys_CheckParm("-capturedemo"))
 		return;
 
-	if (nostartdemos.value) {
+	if (cl_startdemos.value == 0) {
 		// Baker: What this is trying to do is close the menu and the console
 		// and set key_game.  Now .. why are we doing this though?
 //		key_dest = key_game;
@@ -731,7 +731,7 @@ static void CL_Demos_f(cmd_state_t *cmd)
 ==================
 CL_Stopdemo_f
 
-Return to looping demos
+Return to looping demos (Baker: NO!)
 ==================
 */
 static void CL_Stopdemo_f(cmd_state_t *cmd)
@@ -765,7 +765,7 @@ void CL_Demo_Init(void)
 	Cvar_RegisterVariable (&cl_autodemo);
 	Cvar_RegisterVariable (&cl_autodemo_nameformat);
 	Cvar_RegisterVariable (&cl_autodemo_delete);
-	Cvar_RegisterVariable (&nostartdemos);
+	Cvar_RegisterVariable (&cl_startdemos);
 	
 }
 

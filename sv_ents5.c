@@ -623,7 +623,7 @@ void EntityFrame5_LostFrame(entityframe5_database_t *d, int framenum)
 	entityframe5_changestate_t *s;
 	entityframe5_packetlog_t *p;
 	static unsigned char statsdeltabits[(MAX_CL_STATS+7)/8];
-	static int deltabits[MAX_EDICTS];
+	static int deltabits[MAX_EDICTS_32768];
 	entityframe5_packetlog_t *packetlogs[ENTITYFRAME5_MAXPACKETLOGS];
 
 	for (i = 0, p = d->packetlog;i < ENTITYFRAME5_MAXPACKETLOGS;i++, p++)

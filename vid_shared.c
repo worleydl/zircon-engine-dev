@@ -1368,6 +1368,9 @@ static int VID_Mode(int fullscreen, int width, int height, int bpp, float refres
 			Cvar_SetValueQuick(&vid_window_height, height);
 		}
 
+		// Baker: We decided against this.
+		//cls.world_frames = 0; cls.world_start_realtime = 0; 
+
 		old_vid_kickme ++;
 
 		Cvar_SetValueQuick(&vid_width, vid.mode.width);

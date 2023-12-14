@@ -1209,7 +1209,7 @@ qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, mdef_t *key, cons
 			s++;
 		i = atoi(s);
 		if (i >= prog->limit_edicts)
-			Con_Printf ("PRVM_ED_ParseEpair: ev_entity reference too large (edict %u >= MAX_EDICTS %u) on %s\n", (unsigned int)i, prog->limit_edicts, prog->name);
+			Con_Printf ("PRVM_ED_ParseEpair: ev_entity reference too large (edict %u >= MAX_EDICTS_32768 %u) on %s\n", (unsigned int)i, prog->limit_edicts, prog->name);
 		while (i >= prog->max_edicts)
 			PRVM_MEM_IncreaseEdicts(prog);
 		// if IncreaseEdicts was called the base pointer needs to be updated

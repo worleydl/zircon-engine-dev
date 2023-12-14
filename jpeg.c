@@ -1070,7 +1070,7 @@ qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *
 	}
 
 	// load the image
-	imagedata = loadimagepixelsbgra(imagename, true, false, false, NULL);
+	imagedata = loadimagepixelsbgra(imagename, q_tx_complain_true, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL);
 	if (!imagedata)
 		return false;
 

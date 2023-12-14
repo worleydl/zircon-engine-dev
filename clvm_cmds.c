@@ -102,7 +102,7 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 
 	m = PRVM_G_STRING(OFS_PARM1);
 	mod = NULL;
-	for (i = 0; i < MAX_MODELS && cl.csqc_model_precache[i]; i++) {
+	for (i = 0; i < MAX_MODELS_8192 && cl.csqc_model_precache[i]; i++) {
 		if (String_Does_Match(cl.csqc_model_precache[i]->model_name, m)) {
 			mod = cl.csqc_model_precache[i];
 			PRVM_clientedictstring(e, model) = PRVM_SetEngineString(prog, mod->model_name);
@@ -112,7 +112,7 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 	}
 
 	if ( !mod ) {
-		for (i = 0;i < MAX_MODELS;i++)
+		for (i = 0;i < MAX_MODELS_8192;i++)
 		{
 			mod = cl.model_precache[i];
 			if (mod && String_Does_Match(mod->model_name, m)) {
@@ -222,8 +222,8 @@ static void VM_CL_sound (prvm_prog_t *prog)
 		return;
 	}
 
-	CL_VM_GetEntitySoundOrigin(MAX_EDICTS + PRVM_NUM_FOR_EDICT(entity), org);
-	S_StartSound_StartPosition_Flags(MAX_EDICTS + PRVM_NUM_FOR_EDICT(entity), channel, S_FindName(sample), org, fvolume, attenuation, startposition, flags, pitchchange > 0.0f ? pitchchange * 0.01f : 1.0f);
+	CL_VM_GetEntitySoundOrigin(MAX_EDICTS_32768 + PRVM_NUM_FOR_EDICT(entity), org);
+	S_StartSound_StartPosition_Flags(MAX_EDICTS_32768 + PRVM_NUM_FOR_EDICT(entity), channel, S_FindName(sample), org, fvolume, attenuation, startposition, flags, pitchchange > 0.0f ? pitchchange * 0.01f : 1.0f);
 }
 
 // #483 void(vector origin, string sample, float volume, float attenuation) pointsound
@@ -253,8 +253,8 @@ static void VM_CL_pointsound(prvm_prog_t *prog)
 		return;
 	}
 
-	// Send World Entity as Entity to Play Sound (for CSQC, that is MAX_EDICTS)
-	S_StartSound(MAX_EDICTS, 0, S_FindName(sample), org, fvolume, attenuation);
+	// Send World Entity as Entity to Play Sound (for CSQC, that is MAX_EDICTS_32768)
+	S_StartSound(MAX_EDICTS_32768, 0, S_FindName(sample), org, fvolume, attenuation);
 }
 
 // #14 entity() spawn
@@ -422,7 +422,7 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT(1, VM_CL_precache_model);
 
 	name = PRVM_G_STRING(OFS_PARM0);
-	for (i = 0;i < MAX_MODELS && cl.csqc_model_precache[i];i++) {
+	for (i = 0;i < MAX_MODELS_8192 && cl.csqc_model_precache[i];i++) {
 		if (String_Does_Match(cl.csqc_model_precache[i]->model_name, name)) {
 			PRVM_G_FLOAT(OFS_RETURN) = -(i+1);
 			return;
@@ -431,7 +431,7 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 	m = Mod_ForName(name, false, false, name[0] == '*' ? cl.model_name[1] : NULL);
 	if (m && m->loaded) {
-		for (i = 0;i < MAX_MODELS;i++) {
+		for (i = 0;i < MAX_MODELS_8192;i++) {
 			if (!cl.csqc_model_precache[i]) {
 				cl.csqc_model_precache[i] = (model_t*)m;
 				PRVM_G_FLOAT(OFS_RETURN) = -(i+1);
@@ -451,7 +451,7 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 	vec_t			radius, radius2;
 	vec3_t			org, eorg, mins, maxs;
 	int				i, numtouchedicts;
-	static prvm_edict_t	*touchedicts[MAX_EDICTS];
+	static prvm_edict_t	*touchedicts[MAX_EDICTS_32768];
 	int             chainfield;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_findradius);
@@ -475,12 +475,12 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 	maxs[0] = org[0] + (radius + 1);
 	maxs[1] = org[1] + (radius + 1);
 	maxs[2] = org[2] + (radius + 1);
-	numtouchedicts = World_EntitiesInBox(&cl.world, mins, maxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = World_EntitiesInBox(&cl.world, mins, maxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens	//[515]: for what then ?
-		Con_Printf ("CSQC_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("CSQC_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0;i < numtouchedicts;i++)
 	{
@@ -517,7 +517,7 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 {
 	prvm_edict_t *chain;
 	int i, numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int chainfield;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_findbox);
@@ -531,12 +531,12 @@ static void VM_CL_findbox (prvm_prog_t *prog)
 
 	chain = (prvm_edict_t *)prog->edicts;
 
-	numtouchedicts = World_EntitiesInBox(&cl.world, PRVM_G_VECTOR(OFS_PARM0), PRVM_G_VECTOR(OFS_PARM1), MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = World_EntitiesInBox(&cl.world, PRVM_G_VECTOR(OFS_PARM0), PRVM_G_VECTOR(OFS_PARM1), MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens	//[515]: for what then ?
-		Con_Printf ("World_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("World_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0; i < numtouchedicts; ++i)
 	{
@@ -610,7 +610,7 @@ static void VM_CL_lightstyle (prvm_prog_t *prog)
 	c = PRVM_G_STRING(OFS_PARM1);
 	if (i >= cl.max_lightstyle)
 	{
-		VM_Warning(prog, "VM_CL_lightstyle >= MAX_LIGHTSTYLES\n");
+		VM_Warning(prog, "VM_CL_lightstyle >= MAX_LIGHTSTYLES_256\n");
 		return;
 	}
 	strlcpy (cl.lightstyle[i].map, c, sizeof (cl.lightstyle[i].map));
@@ -1157,7 +1157,7 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 	if (prog->argc >= 4)
 	{
 		style = (int)PRVM_G_FLOAT(OFS_PARM3);
-		if (style >= MAX_LIGHTSTYLES)
+		if (style >= MAX_LIGHTSTYLES_256)
 		{
 			Con_DPrintf ("VM_CL_R_AddDynamicLight: out of bounds lightstyle index %d\n", style);
 			style = -1;
@@ -4081,7 +4081,8 @@ static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 		csqc_main_r_refdef_view = r_refdef.view;
 	}
 
-#if 0 // 123 - We can't use these anymore
+#if 1 // 123 - We can't use these anymore
+	if (csqc_polygons_darkplaces_classic_3d.integer == 0)
 	// now after all of the predraw we know the geometry in the scene mesh and can finalize it for rendering
 	CL_MeshEntities_Scene_FinalizeRenderEntity();
 #endif // !123
@@ -4334,7 +4335,7 @@ static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
 static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 {
 	// DarkPlaces Classic method (123)
-	if (prog->polygonbegin_guess2d == false) {
+	if (csqc_polygons_darkplaces_classic_3d.integer && prog->polygonbegin_guess2d == false) {
 		VM_CL_R_PolygonBegin_Classic (prog);
 		return;
 	}
@@ -4403,7 +4404,7 @@ static void VM_CL_R_PolygonVertex_Classic (prvm_prog_t *prog)
 static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 {
 	// DarkPlaces Classic method (123)
-	if (prog->polygonbegin_guess2d == false) {
+	if (csqc_polygons_darkplaces_classic_3d.integer && prog->polygonbegin_guess2d == false) {
 		VM_CL_R_PolygonVertex_Classic (prog);
 		return;
 	}
@@ -4464,7 +4465,7 @@ static void VM_CL_R_PolygonEnd_Classic (prvm_prog_t *prog)
 static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 {
 	// DarkPlaces Classic method (123)
-	if (prog->polygonbegin_guess2d == false) {
+	if (csqc_polygons_darkplaces_classic_3d.integer && prog->polygonbegin_guess2d == false) {
 		VM_CL_R_PolygonEnd_Classic (prog);
 		return;
 	}
@@ -4528,66 +4529,6 @@ static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 	prog->polygonbegin_drawflags = 0;
 	prog->polygonbegin_numvertices = 0;
 }
-
-#if 0 // 123 stuff we don't want
-static vmpolygons_t debugPolys;
-
-void Debug_PolygonBegin(const char *picname, int drawflag)
-{
-	if (!debugPolys.initialized)
-		VM_InitPolygons(&debugPolys);
-	if (debugPolys.begin_active)
-	{
-		Con_PrintLinef ("Debug_PolygonBegin: called twice without Debug_PolygonEnd after first");
-		return;
-	}
-	//debugPolys.begin_texture = picname[0] ? Draw_CachePic_Flags (picname, CACHEPICFLAG_NOTPERSISTENT)->tex : r_texture_white;
-	debugPolys.begin_drawflag = drawflag;
-	debugPolys.begin_vertices = 0;
-	debugPolys.begin_active = true;
-}
-
-void Debug_PolygonVertex(float x, float y, float z, float s, float t, float r, float g, float b, float a)
-{
-	if (!debugPolys.begin_active)
-	{
-		Con_PrintLinef ("Debug_PolygonVertex: Debug_PolygonBegin wasn't called");
-		return;
-	}
-
-	if (debugPolys.begin_vertices >= VMPOLYGONS_MAXPOINTS)
-	{
-		Con_PrintLinef ("Debug_PolygonVertex: may have %d vertices max", VMPOLYGONS_MAXPOINTS);
-		return;
-	}
-
-	debugPolys.begin_vertex[debugPolys.begin_vertices][0] = x;
-	debugPolys.begin_vertex[debugPolys.begin_vertices][1] = y;
-	debugPolys.begin_vertex[debugPolys.begin_vertices][2] = z;
-	debugPolys.begin_texcoord[debugPolys.begin_vertices][0] = s;
-	debugPolys.begin_texcoord[debugPolys.begin_vertices][1] = t;
-	debugPolys.begin_color[debugPolys.begin_vertices][0] = r;
-	debugPolys.begin_color[debugPolys.begin_vertices][1] = g;
-	debugPolys.begin_color[debugPolys.begin_vertices][2] = b;
-	debugPolys.begin_color[debugPolys.begin_vertices][3] = a;
-	debugPolys.begin_vertices++;
-}
-
-void Debug_PolygonEnd(void)
-{
-	if (!debugPolys.begin_active)
-	{
-		Con_Printf("Debug_PolygonEnd: Debug_PolygonBegin wasn't called\n");
-		return;
-	}
-	debugPolys.begin_active = false;
-	if (debugPolys.begin_vertices >= 3)
-		VMPolygons_Store(&debugPolys);
-	else
-		Con_PrintLinef ("Debug_PolygonEnd: %d vertices isn't a good choice", debugPolys.begin_vertices);
-}
-#endif // 0 - 123 stuff we don't want
-
 
 /*
 =============
@@ -4935,10 +4876,10 @@ static void VM_CL_skel_create(prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 	if (!model || !model->num_bones)
 		return;
-	for (i = 0;i < MAX_EDICTS;i++)
+	for (i = 0;i < MAX_EDICTS_32768;i++)
 		if (!prog->skeletons[i])
 			break;
-	if (i == MAX_EDICTS)
+	if (i == MAX_EDICTS_32768)
 		return;
 	prog->skeletons[i] = skeleton = (skeleton_t *)Mem_Alloc(cls.levelmempool, sizeof(skeleton_t) + model->num_bones * sizeof(matrix4x4_t));
 	PRVM_G_FLOAT(OFS_RETURN) = i + 1;
@@ -4968,7 +4909,7 @@ static void VM_CL_skel_build(prvm_prog_t *prog)
 	matrix4x4_t bonematrix;
 	matrix4x4_t matrix;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	firstbone = max(0, firstbone);
 	lastbone = min(lastbone, model->num_bones - 1);
@@ -4997,7 +4938,7 @@ static void VM_CL_skel_get_numbones(prvm_prog_t *prog)
 	int skeletonindex = (int)PRVM_G_FLOAT(OFS_PARM0) - 1;
 	skeleton_t *skeleton;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	PRVM_G_FLOAT(OFS_RETURN) = skeleton->model->num_bones;
 }
@@ -5009,7 +4950,7 @@ static void VM_CL_skel_get_bonename(prvm_prog_t *prog)
 	int bonenum = (int)PRVM_G_FLOAT(OFS_PARM1) - 1;
 	skeleton_t *skeleton;
 	PRVM_G_INT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -5023,7 +4964,7 @@ static void VM_CL_skel_get_boneparent(prvm_prog_t *prog)
 	int bonenum = (int)PRVM_G_FLOAT(OFS_PARM1) - 1;
 	skeleton_t *skeleton;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -5037,7 +4978,7 @@ static void VM_CL_skel_find_bone(prvm_prog_t *prog)
 	const char *tagname = PRVM_G_STRING(OFS_PARM1);
 	skeleton_t *skeleton;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	PRVM_G_FLOAT(OFS_RETURN) = Mod_Alias_GetTagIndexForName(skeleton->model, 0, tagname);
 }
@@ -5054,7 +4995,7 @@ static void VM_CL_skel_get_bonerel(prvm_prog_t *prog)
 	VectorClear(PRVM_clientglobalvector(v_forward));
 	VectorClear(PRVM_clientglobalvector(v_right));
 	VectorClear(PRVM_clientglobalvector(v_up));
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -5079,7 +5020,7 @@ static void VM_CL_skel_get_boneabs(prvm_prog_t *prog)
 	VectorClear(PRVM_clientglobalvector(v_forward));
 	VectorClear(PRVM_clientglobalvector(v_right));
 	VectorClear(PRVM_clientglobalvector(v_up));
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -5105,7 +5046,7 @@ static void VM_CL_skel_set_bone(prvm_prog_t *prog)
 	vec3_t forward, left, up, origin;
 	skeleton_t *skeleton;
 	matrix4x4_t matrix;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -5126,7 +5067,7 @@ static void VM_CL_skel_mul_bone(prvm_prog_t *prog)
 	skeleton_t *skeleton;
 	matrix4x4_t matrix;
 	matrix4x4_t temp;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -5150,7 +5091,7 @@ static void VM_CL_skel_mul_bones(prvm_prog_t *prog)
 	skeleton_t *skeleton;
 	matrix4x4_t matrix;
 	matrix4x4_t temp;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM3), origin);
 	VectorCopy(PRVM_clientglobalvector(v_forward), forward);
@@ -5176,9 +5117,9 @@ static void VM_CL_skel_copybones(prvm_prog_t *prog)
 	int bonenum;
 	skeleton_t *skeletondst;
 	skeleton_t *skeletonsrc;
-	if (skeletonindexdst < 0 || skeletonindexdst >= MAX_EDICTS || !(skeletondst = prog->skeletons[skeletonindexdst]))
+	if (skeletonindexdst < 0 || skeletonindexdst >= MAX_EDICTS_32768 || !(skeletondst = prog->skeletons[skeletonindexdst]))
 		return;
-	if (skeletonindexsrc < 0 || skeletonindexsrc >= MAX_EDICTS || !(skeletonsrc = prog->skeletons[skeletonindexsrc]))
+	if (skeletonindexsrc < 0 || skeletonindexsrc >= MAX_EDICTS_32768 || !(skeletonsrc = prog->skeletons[skeletonindexsrc]))
 		return;
 	firstbone = max(0, firstbone);
 	lastbone = min(lastbone, skeletondst->model->num_bones - 1);
@@ -5192,7 +5133,7 @@ static void VM_CL_skel_delete(prvm_prog_t *prog)
 {
 	int skeletonindex = (int)PRVM_G_FLOAT(OFS_PARM0) - 1;
 	skeleton_t *skeleton;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	Mem_Free(skeleton);
 	prog->skeletons[skeletonindex] = NULL;

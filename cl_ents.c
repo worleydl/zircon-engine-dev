@@ -251,8 +251,8 @@ void EntityFrame_CL_ReadFrame(void)
 			Host_Error_Line ("EntityFrame_Read: read error");
 		removed = number & 0x8000;
 		number &= 0x7FFF;
-		if (number >= MAX_EDICTS)
-			Host_Error_Line ("EntityFrame_Read: number (%d) >= MAX_EDICTS (%d)", number, MAX_EDICTS);
+		if (number >= MAX_EDICTS_32768)
+			Host_Error_Line ("EntityFrame_Read: number (%d) >= MAX_EDICTS_32768 (%d)", number, MAX_EDICTS_32768);
 
 		// seek to entity, while copying any skipped entities (assume unchanged)
 		while (old < oldend && old->number < number)

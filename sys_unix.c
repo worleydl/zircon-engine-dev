@@ -102,7 +102,7 @@ int Sys_SetClipboardData(const char *text_to_clipboard)
 	return false; // Dedicated server, this fails
 }
 
-char *Sys_GetClipboardData (void)
+char *Sys_GetClipboardData_Alloc (void)
 {
 	return NULL;
 }

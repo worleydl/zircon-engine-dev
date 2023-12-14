@@ -118,89 +118,138 @@ void Protocol_Names(char *buffer, size_t buffersize);
 #define PFLAGS_FULLDYNAMIC		128 // must be set or the light fields are ignored
 
 // if the high bit of the servercmd is set, the low bits are fast update flags:
-#define U_MOREBITS		(1<<0)
-#define U_ORIGIN1		(1<<1)
-#define U_ORIGIN2		(1<<2)
-#define U_ORIGIN3		(1<<3)
-#define U_ANGLE2		(1<<4)
+#define U_MOREBITS_1				(1<<0)		// 1
+#define U_ORIGIN1					(1<<1)		// 2
+#define U_ORIGIN2					(1<<2)		// 4
+#define U_ORIGIN3					(1<<3)		// 8
+#define U_ANGLE2					(1<<4)		// 16
 // LadyHavoc: U_NOLERP was only ever used for monsters, so I renamed it U_STEP
-#define U_STEP			(1<<5)
-#define U_FRAME			(1<<6)
+#define U_STEP						(1<<5)		// 32
+#define U_FRAME						(1<<6)		// 64
 // just differentiates from other updates
-#define U_SIGNAL_128	(1<<7)
+#define U_SIGNAL_128				(1<<7)		// 128
 
-#define U_ANGLE1		(1<<8)
-#define U_ANGLE3		(1<<9)
-#define U_MODEL			(1<<10)
-#define U_COLORMAP		(1<<11)
-#define U_SKIN			(1<<12)
-#define U_EFFECTS		(1<<13)
-#define U_LONGENTITY	(1<<14)
+#define U_ANGLE1					(1<<8)		// 256
+#define U_ANGLE3					(1<<9)		// 512
+#define U_MODEL						(1<<10)		// 1024
+#define U_COLORMAP					(1<<11)		// 2048
+#define U_SKIN						(1<<12)		// 4096
+#define U_EFFECTS					(1<<13)		// 8192
+#define U_LONGENTITY				(1<<14)		// 16384
 
-// LadyHavoc: protocol extension
-#define U_EXTEND1		(1<<15)
+#define QUAKESPASM_MAX_EFFECTS_15	15
+// Baker: Quakespasm supports EF_BRIGHTFIELD_1, EF_MUZZLEFLASH_2, EF_BRIGHTLIGHT_4, EF_DIMLIGHT_8
+
+// LadyHavoc: protocol extension	
+#define U_EXTEND1_S15				(1<<15)		// 32768
 // LadyHavoc: first extend byte
-#define U_DELTA			(1<<16) // no data, while this is set the entity is delta compressed (uses previous frame as a baseline, meaning only things that have changed from the previous frame are sent, except for the forced full update every half second)
-#define U_ALPHA			(1<<17) // 1 byte, 0.0-1.0 maps to 0-255, not sent if exactly 1, and the entity is not sent if <=0 unless it has effects (model effects are checked as well)
-#define U_SCALE			(1<<18) // 1 byte, scale / 16 positive, not sent if 1.0
-#define U_EFFECTS2		(1<<19) // 1 byte, this is .effects & 0xFF00 (second byte)
-#define U_GLOWSIZE		(1<<20) // 1 byte, encoding is float/4.0, unsigned, not sent if 0
-#define U_GLOWCOLOR		(1<<21) // 1 byte, palette index, default is 254 (white), this IS used for darklight (allowing colored darklight), however the particles from a darklight are always black, not sent if default value (even if glowsize or glowtrail is set)
-#define U_COLORMOD		(1<<22) // 1 byte, 3 bit red, 3 bit green, 2 bit blue, this lets you tint an object artifically, so you could make a red rocket, or a blue fiend...
-#define U_EXTEND2		(1<<23) // another byte to follow
-// LadyHavoc: second extend byte
-#define U_GLOWTRAIL		(1<<24) // leaves a trail of particles (of color .glowcolor, or black if it is a negative glowsize)
-#define U_VIEWMODEL		(1<<25) // attachs the model to the view (origin and angles become relative to it), only shown to owner, a more powerful alternative to .weaponmodel and such
-#define U_FRAME2		(1<<26) // 1 byte, this is .frame & 0xFF00 (second byte)
-#define U_MODEL2		(1<<27) // 1 byte, this is .modelindex & 0xFF00 (second byte)
-#define U_EXTERIORMODEL	(1<<28) // causes this model to not be drawn when using a first person view (third person will draw it, first person will not)
-#define U_UNUSED29		(1<<29) // future expansion
-#define U_UNUSED30		(1<<30) // future expansion
-#define U_EXTEND3		(1<<31) // another byte to follow, future expansion
+#define U_DELTA_S16					(1<<16) // no data, while this is set the entity is delta compressed (uses previous frame as a baseline, meaning only things that have changed from the previous frame are sent, except for the forced full update every half second)
+#define U_ALPHA_S17					(1<<17) // 1 byte, 0.0-1.0 maps to 0-255, not sent if exactly 1, and the entity is not sent if <=0 unless it has effects (model effects are checked as well)
 
-#define	SU_VIEWHEIGHT	(1<<0)
-#define	SU_IDEALPITCH	(1<<1)
-#define	SU_PUNCH1		(1<<2)
-#define	SU_PUNCH2		(1<<3)
-#define	SU_PUNCH3		(1<<4)
-#define	SU_VELOCITY1	(1<<5)
-#define	SU_VELOCITY2	(1<<6)
-#define	SU_VELOCITY3	(1<<7)
-//define	SU_AIMENT		(1<<8)  AVAILABLE BIT
-#define	SU_ITEMS		(1<<9)
-#define	SU_ONGROUND		(1<<10)		// no data follows, the bit is it
-#define	SU_INWATER		(1<<11)		// no data follows, the bit is it
-#define	SU_WEAPONFRAME	(1<<12)
-#define	SU_ARMOR		(1<<13)
-#define	SU_WEAPON		(1<<14)
-#define SU_EXTEND1		(1<<15)
+#define U_FITZALPHA_S16				(1<<16) // 
+#define U_FITZFRAME2_S17			(1<<17) //
+#define U_FITZMODEL2_S18			(1<<18) //
+#define U_FITZLERPFINISH_S19		(1<<19)
+#define U_RMQ_SCALE_S20				(1<<20) //
+
+WARP_X_ (MAX_MODELS_8192)
+#define QUAKESPASM_MAXMODELS_2048	2048
+
+// Baker: PRFL_INT32COORD | PRFL_SHORTANGLE are always enabled with 999 for Quakespasm
+// and none of the others are.
+#define PRFL_RMQ_SHORTANGLE_USED	(1 << 1)
+#define PRFL_RMQ_FLOATANGLE_UNUSED	(1 << 2)
+#define PRFL_RMQ_24BITCOORD_UNUSED	(1 << 3)
+#define PRFL_RMQ_FLOATCOORD_UNUSED	(1 << 4)
+#define PRFL_RMQ_EDICTSCALE_UNUSED	(1 << 5)
+#define PRFL_RMQ_ALPHASANITY_UNUSED	(1 << 6)	// cleanup insanity with alpha
+#define PRFL_RMQ_INT32COORD_USED	(1 << 7)
+#define PRFL_RMQ_MOREFLAGS_UNUSED	(1 << 31)	// not supported
+
+// Baker: FitzQuake collides with U_DELTA_S16, U_ALPHA_S17, U_SCALE_S18, U_EFFECTS2_S19
+
+#define U_SCALE_S18					(1<<18) // 1 byte, scale / 16 positive, not sent if 1.0
+#define U_EFFECTS2_S19				(1<<19) // 1 byte, this is .effects & 0xFF00 (second byte)
+#define U_GLOWSIZE_S20				(1<<20) // 1 byte, encoding is float/4.0, unsigned, not sent if 0
+#define U_GLOWCOLOR					(1<<21) // 1 byte, palette index, default is 254 (white), this IS used for darklight (allowing colored darklight), however the particles from a darklight are always black, not sent if default value (even if glowsize or glowtrail is set)
+#define U_COLORMOD					(1<<22) // 1 byte, 3 bit red, 3 bit green, 2 bit blue, this lets you tint an object artifically, so you could make a red rocket, or a blue fiend...
+#define U_EXTEND2_S23				(1<<23) // another byte to follow
+// LadyHavoc: second extend byte	
+#define U_GLOWTRAIL					(1<<24) // leaves a trail of particles (of color .glowcolor, or black if it is a negative glowsize)
+#define U_VIEWMODEL					(1<<25) // attachs the model to the view (origin and angles become relative to it), only shown to owner, a more powerful alternative to .weaponmodel and such
+#define U_FRAME2_S26				(1<<26) // 1 byte, this is .frame & 0xFF00 (second byte)
+#define U_MODEL2_S27				(1<<27) // 1 byte, this is .modelindex & 0xFF00 (second byte)
+#define U_EXTERIORMODEL				(1<<28) // causes this model to not be drawn when using a first person view (third person will draw it, first person will not)
+#define U_UNUSED29					(1<<29) // future expansion
+#define U_UNUSED30					(1<<30) // future expansion
+#define U_EXTEND3					(1<<31) // another byte to follow, future expansion
+
+#define	SU_VIEWHEIGHT				(1<<0)
+#define	SU_IDEALPITCH				(1<<1)
+#define	SU_PUNCH1					(1<<2)
+#define	SU_PUNCH2					(1<<3)
+#define	SU_PUNCH3					(1<<4)
+#define	SU_VELOCITY1				(1<<5)
+#define	SU_VELOCITY2				(1<<6)
+#define	SU_VELOCITY3				(1<<7)
+//define SU_AIMENT					(1<<8)  AVAILABLE BIT
+#define	SU_ITEMS					(1<<9)
+#define	SU_ONGROUND					(1<<10)		// no data follows, the bit is it
+#define	SU_INWATER					(1<<11)		// no data follows, the bit is it
+#define	SU_WEAPONFRAME				(1<<12)
+#define	SU_ARMOR					(1<<13)
+#define	SU_WEAPON					(1<<14)
+// END QUAKE
+
+//johnfitz -- PROTOCOL_FITZQUAKE -- new bits
+#define SU_FITZ_WEAPON2_S16			(1<<16) // 1 byte, this is .weaponmodel & 0xFF00 (second byte)
+#define SU_FITZ_ARMOR2_S17			(1<<17) // 1 byte, this is .armorvalue & 0xFF00 (second byte)
+#define SU_FITZ_AMMO2_S18			(1<<18) // 1 byte, this is .currentammo & 0xFF00 (second byte)
+#define SU_FITZ_SHELLS2_S19			(1<<19) // 1 byte, this is .ammo_shells & 0xFF00 (second byte)
+#define SU_FITZ_NAILS2_S20			(1<<20) // 1 byte, this is .ammo_nails & 0xFF00 (second byte)
+#define SU_FITZ_ROCKETS2_S21		(1<<21) // 1 byte, this is .ammo_rockets & 0xFF00 (second byte)
+#define SU_FITZ_CELLS2_S22			(1<<22) // 1 byte, this is .ammo_cells & 0xFF00 (second byte)
+#define SU_FITZ_WEAPONFRAME2_24		(1<<24) // 1 byte, this is .weaponframe & 0xFF00 (second byte)
+#define SU_FITZ_WEAPONALPHA_S25		(1<<25) // 1 byte, this is alpha for weaponmodel, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
+//johnfitz
+
+#define FITZ_ENTALPHA_DEFAULT_0		0
+#define FITZ_ENTSCALE_DEFAULT_16	16	// Equivalent to float 1.0f due to byte packing 
+
+#define SU_EXTEND1_S15				(1<<15) // FitzQuake and DarkPlaces do not collide
 // first extend byte
-#define SU_PUNCHVEC1	(1<<16)
-#define SU_PUNCHVEC2	(1<<17)
-#define SU_PUNCHVEC3	(1<<18)
-#define SU_VIEWZOOM		(1<<19) // byte factor (0 = 0.0 (not valid), 255 = 1.0)
-#define SU_UNUSED20		(1<<20)
-#define SU_UNUSED21		(1<<21)
-#define SU_UNUSED22		(1<<22)
-#define SU_EXTEND2		(1<<23) // another byte to follow, future expansion
+#define SU_PUNCHVEC1_S16			(1<<16)
+#define SU_PUNCHVEC2_S17			(1<<17)
+#define SU_PUNCHVEC3_S18			(1<<18)
+#define SU_VIEWZOOM_S19				(1<<19) // byte factor (0 = 0.0 (not valid), 255 = 1.0)
+#define SU_UNUSED20_S20				(1<<20)
+#define SU_UNUSED21_S21				(1<<21)
+#define SU_UNUSED22_S22				(1<<22)
+#define SU_EXTEND2_S23				(1<<23) // another byte to follow, future expansion, FitzQuake and DarkPlaces do not collide
 // second extend byte
-#define SU_UNUSED24		(1<<24)
-#define SU_UNUSED25		(1<<25)
-#define SU_UNUSED26		(1<<26)
-#define SU_UNUSED27		(1<<27)
-#define SU_UNUSED28		(1<<28)
-#define SU_UNUSED29		(1<<29)
-#define SU_UNUSED30		(1<<30)
-#define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
+#define SU_UNUSED24_S24				(1<<24)
+#define SU_UNUSED25_S25				(1<<25)
+#define SU_UNUSED26					(1<<26)
+#define SU_UNUSED27					(1<<27)
+#define SU_UNUSED28					(1<<28)
+#define SU_UNUSED29					(1<<29)
+#define SU_UNUSED30					(1<<30)
+#define SU_EXTEND3					(1<<31) // another byte to follow, future expansion
 
 // a sound with no channel is a local only sound
-#define	SND_VOLUME		(1<<0)		// a byte
-#define	SND_ATTENUATION	(1<<1)		// a byte
-#define	SND_LOOPING		(1<<2)		// a long
-#define	SND_LARGEENTITY	(1<<3)		// a short and a byte (instead of a short)
-#define	SND_LARGESOUND	(1<<4)		// a short (instead of a byte)						// 16
-#define	SND_SPEEDUSHORT4000	(1<<5)		// ushort speed*4000 (speed is usually 1.0, a value of 0.0 is the same as 1.0)
+#define	SND_VOLUME_1				(1<<0)		// 1 a byte
+#define	SND_ATTENUATION_2			(1<<1)		// 2 a byte
+#define	SND_LOOPING_4				(1<<2)		// 4 a long
+#define	SND_LARGEENTITY_8			(1<<3)		// 8 a short and a byte (instead of a short)
+#define	SND_LARGESOUND_16			(1<<4)		// 16 a short (instead of a byte)						// 16
+#define	SND_SPEEDUSHORT4000_32		(1<<5)		// 32 ushort speed*4000 (speed is usually 1.0, a value of 0.0 is the same as 1.0)
 
+//johnfitz -- PROTOCOL_FITZQUAKE -- flags for entity baseline messages
+#define B_FITZ_LARGEMODEL_1			(1<<0)		// modelindex is short instead of byte
+#define B_FITZ_LARGEFRAME_2			(1<<1)		// frame is short instead of byte
+#define B_FITZ_ALPHA_4				(1<<2)		// 1 byte, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
+#define B_FITZ_SCALE_8				(1<<3)		// 
+//johnfitz
 
 // defaults for clientinfo messages
 #define	DEFAULT_VIEWHEIGHT	22
@@ -294,6 +343,13 @@ void Protocol_Names(char *buffer, size_t buffersize);
 	//"svc_backtolobby", // 55
 	//"svc_localsound" // 56
 
+// Baker:
+// svcfitz_skybox 37 is same as DarkPlaces
+#define svcfitz_bf					40	// nothing?
+#define svcfitz_fog					41	// nothing?
+#define svcfitz_spawnbaseline2		42	// nothing?
+#define svcfitz_spawnstatic2		43	// nothing?
+#define svcfitz_spawnstaticsound2	44	// nothing?
 
 // LadyHavoc: my svc_ range, 50-69
 #define svc_downloaddata	50		// [int] start [short] size
@@ -542,7 +598,7 @@ to make a commit the server performs these steps:
 2. write an entity change to packet and modify new frame accordingly
    (this repeats until packet is sufficiently full or new frame is complete)
 3. write terminator (0xFFFF) to network packet
-   (FIXME: this terminator value conflicts with MAX_EDICTS 32768...)
+   (FIXME: this terminator value conflicts with MAX_EDICTS_32768 32768...)
 
 to read a commit the client performs these steps:
 1. reads frame numbers from packet and duplicates baseline frame as new frame,
@@ -582,7 +638,7 @@ server updates entities in looping ranges, a frame consists of a range of visibl
 */
 
 #define MAX_ENTITY_HISTORY 64
-#define MAX_ENTITY_DATABASE (MAX_EDICTS * 2)
+#define MAX_ENTITY_DATABASE (MAX_EDICTS_32768 * 2)
 
 // build entity data in this, to pass to entity read/write functions
 typedef struct entity_frame_s
@@ -904,14 +960,14 @@ typedef struct entityframe5_database_s
 
 	// this is used to decide which changestates to set each frame
 	//int numvisiblestates;
-	//entity_state_t visiblestates[MAX_EDICTS];
+	//entity_state_t visiblestates[MAX_EDICTS_32768];
 
 	// sorted changing states that need to be sent to the client
 	// kept sorted in lowest to highest priority order, because this allows
 	// the numchangestates to simply be decremented whenever an state is sent,
 	// rather than a memmove to remove them from the start.
 	//int numchangestates;
-	//entityframe5_changestate_t changestates[MAX_EDICTS];
+	//entityframe5_changestate_t changestates[MAX_EDICTS_32768];
 
 	// buffers for building priority info
 	int prioritychaincounts[ENTITYFRAME5_PRIORITYLEVELS];

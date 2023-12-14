@@ -110,7 +110,7 @@ int jpeg_supported = false;
 
 qbool	scr_initialized;		// ready to draw
 
-static qbool scr_loading = false;  // we are in a loading screen
+int scr_loading = false;  // we are in a loading screen
 
 unsigned int        scr_con_current;
 static unsigned int scr_con_margin_bottom;

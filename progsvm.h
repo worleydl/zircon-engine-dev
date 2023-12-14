@@ -674,7 +674,7 @@ typedef struct prvm_prog_s
 	const char *         openfiles_origin[PRVM_MAX_OPENFILES];
 	struct fssearch_s			*opensearches[PRVM_MAX_OPENSEARCHES];
 	const char *         opensearches_origin[PRVM_MAX_OPENSEARCHES];
-	struct skeleton_s	*skeletons[MAX_EDICTS];
+	struct skeleton_s	*skeletons[MAX_EDICTS_32768];
 	struct cmd_state_s	*console_cmd; // points to the relevant console command interpreter for this vm (cmd_local or &cmd_server), also used to access cvars
 
 	// buffer for storing all tempstrings created during one invocation of ExecuteProgram
@@ -714,7 +714,7 @@ typedef struct prvm_prog_s
 	int					num_edicts;
 	// number of edicts for which space has been (should be) allocated
 	int					max_edicts; // [INIT]
-	// used instead of the constant MAX_EDICTS
+	// used instead of the constant MAX_EDICTS_32768
 	int					limit_edicts; // [INIT]
 
 	// number of reserved edicts (allocated from 1)

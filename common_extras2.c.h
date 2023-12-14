@@ -941,7 +941,7 @@ char *String_Find_Char_Nth_Instance (const char *s, int ch_findchar, int nth_ins
 }
 
 // Human friendly.  First instance = 1
-char *String_Instance (const char *s, int ch_delim, int nth_instance, replyx int *len)
+char *String_Instance_Base1 (const char *s, int ch_delim, int nth_instance, replyx int *len)
 {
 	// If we want the nth instance, we want the nth - 1 delimiter or the string itself.
 	char *found = nth_instance > 1 ? String_Find_Char_Nth_Instance (s, ch_delim, nth_instance - 1) : (/*unconstanting*/ char *)s;
@@ -986,9 +986,10 @@ char *dpstrndup (const char *s, size_t n)
 }
 
 // Returns length of the match, not length of the copy
-char *String_Instance_Alloc (const char *s, int ch_delim, int nth_instance, replyx int *len)
+// This thing is 1 based?
+char *String_Instance_Alloc_Base1 (const char *s, int ch_delim, int nth_instance, replyx int *len)
 {
-	int slen = -1; char *found = String_Instance (s, ch_delim, nth_instance, &slen);
+	int slen = -1; char *found = String_Instance_Base1 (s, ch_delim, nth_instance, &slen);
 	if (!found) return NULL;
 	else {
 		NOT_MISSING_ASSIGN (len, slen);
@@ -1722,3 +1723,56 @@ void String_Command_String_To_Argv (char *s_cmdline, int *numargc, char **argvz,
 	} // end of while (*cmd_line && (*numargc < maxargs)
 }
 
+// Returns new length.
+	/*
+	\e	Write an <escape> character.
+	\a	Write a <bell> character.
+	\b	Write a <backspace> character.
+	\f	Write a <form-feed> character.
+	\n	Write a <new-line> character.
+	\r	Write a <carriage return> character.
+	\t	Write a <tab> character.
+	\v	Write a <vertical tab> character.
+	\'	Write a <single quote> character.
+	\\	Write a backslash character.
+	*/
+
+// Strips newlines, carriage returns and backspaces,
+void String_Edit_To_Single_Line (char *s_edit)
+{
+	int length = strlen(s_edit);
+
+	const char *temp_a = strdup(s_edit);
+	int remaining = length;
+
+	const char *src = temp_a;
+	char *dst = s_edit;			// Yes we rewrite
+
+	// Truncate at any new line or carriage return or backspace character
+	// BUT convert any whitespace characters that are not actual spaces into spaces.
+	//while (*src && dst - cliptext < sizeof out - 1 && *src != '\n' && *src != '\r' && *src != '\b')
+	while (*src && remaining > 0 && *src != '\n' && *src != '\r' && *src != '\b')
+	{
+		if (*src < ' ')
+			*dst++ = ' ';
+		else *dst++ = *src;
+		src++;
+		remaining --;
+	}
+	*dst = 0;
+}
+
+char *Clipboard_Get_Text_Line_Static (void)
+{
+	static char out[SYSTEM_STRING_SIZE_1024];
+	char *cliptext_a = Sys_GetClipboardData_Alloc();
+
+	out[0] = 0; // In case cliptext_a is NULL
+	if (cliptext_a) {
+		c_strlcpy (out, cliptext_a);
+		Z_Free(cliptext_a); cliptext_a = NULL; 
+		String_Edit_To_Single_Line (out); // spaces < 32 except for newline, cr, backspace which it kills.
+	}
+
+	return out;
+}

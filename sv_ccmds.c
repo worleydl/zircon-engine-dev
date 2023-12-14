@@ -1197,11 +1197,11 @@ static void SV_Kick_f(cmd_state_t *cmd)
 				message++;
 		}
 		if (message)
-			SV_DropClient (false, va(reason, sizeof(reason), "Kicked by %s: %s", who, message)); // kicked
+			SV_DropClient (q_is_leaving_false, va(reason, sizeof(reason), "Kicked by %s: %s", who, message)); // kicked
 			//SV_ClientPrintf("Kicked by %s: %s\n", who, message);
 		else
 			//SV_ClientPrintf("Kicked by %s\n", who);
-			SV_DropClient (false, va(reason, sizeof(reason), "Kicked by %s", who)); // kicked
+			SV_DropClient (q_is_leaving_false, va(reason, sizeof(reason), "Kicked by %s", who)); // kicked
 	}
 
 	host_client = save;

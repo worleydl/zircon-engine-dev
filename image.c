@@ -1247,7 +1247,7 @@ rtexture_t *loadtextureimage (rtexturepool_t *pool, const char *filename, qbool 
 	unsigned char *data;
 	rtexture_t *rt;
 	int miplevel = R_PicmipForFlags(flags);
-	if (!(data = loadimagepixelsbgra (filename, complain, allowFixtrans, false, &miplevel)))
+	if (!(data = loadimagepixelsbgra (filename, complain, allowFixtrans, q_tx_convertsrgb_false, &miplevel)))
 		return 0;
 	rt = R_LoadTexture2D(pool, filename, image_width, image_height, data, sRGB ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, flags, miplevel, NULL);
 	Mem_Free(data);
@@ -1395,7 +1395,7 @@ void Image_FixTransparentPixels_f(cmd_state_t *cmd)
 		Con_Printf ("Processing %s... ", filename);
 		Image_StripImageExtension(filename, buf, sizeof(buf));
 		dpsnprintf(outfilename, sizeof(outfilename), "fixtrans/%s.tga", buf);
-		if (!(data = loadimagepixelsbgra(filename, true, false, false, NULL)))
+		if (!(data = loadimagepixelsbgra(filename, q_tx_complain_true, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
 			return;
 		if ((n = fixtransparentpixels(data, image_width, image_height)))
 		{

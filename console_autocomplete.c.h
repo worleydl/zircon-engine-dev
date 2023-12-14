@@ -471,6 +471,27 @@ int GetModList_Count(const char *s_prefix)
 	return num_matches;
 }
 
+int GetCommad_Count (const char *s_prefix, const char *s_singleton)
+{
+	int			comma_items_count = String_Count_Char (s_singleton, ',') + 1;
+	int			num_matches = 0;
+
+
+	for (int idx = 0; idx < comma_items_count; idx ++) {
+		char *sxy =  String_Instance_Alloc_Base1 (s_singleton, ',' , idx + 1, NULL);
+		if (String_Does_Start_With_Caseless (sxy, s_prefix) == false) {
+			goto continuey; // For free
+		}
+
+		SPARTIAL_EVAL_
+
+
+		num_matches ++;
+continuey:
+		freenull_ (sxy);
+	} // idx
+	return num_matches;
+}
 
 int GetAny1_Count (const char *s_prefix, const char *s_singleton)
 {

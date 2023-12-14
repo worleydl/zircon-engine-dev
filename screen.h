@@ -93,5 +93,7 @@ scr_touchscreenarea_t;
 extern int scr_numtouchscreenareas;
 extern scr_touchscreenarea_t scr_touchscreenareas[128];
 
+extern int scr_loading;
+
 #endif // ! SCREEN_H
 

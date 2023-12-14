@@ -143,7 +143,7 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	}
 
 	// send all current light styles
-	for (i=0 ; i<MAX_LIGHTSTYLES ; i++)
+	for (i=0 ; i<MAX_LIGHTSTYLES_256 ; i++)
 	{
 		if (sv.lightstyles[i][0])
 		{
@@ -694,8 +694,12 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 
 	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
 
-	// read ping time
-	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3 && sv.protocol != PROTOCOL_DARKPLACES1 && sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5 && sv.protocol != PROTOCOL_DARKPLACES6)
+	// read ping time - Baker: DP7 and Quakeworld
+	if (false == isin14 (sv.protocol,				PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999, 
+							PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE, 
+							PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+							PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+							PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5,	PROTOCOL_DARKPLACES6))
 		move->sequence = MSG_ReadLong(&sv_message);
 	move->time = MSG_ReadFloat(&sv_message);
 	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
@@ -709,13 +713,18 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 	move->time = min(move->time, sv.time + sv.frametime);
 
 	// read current angles
-	for (i = 0;i < 3;i++)
-	{
-		if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+	for (i = 0;i < 3;i++) {
+		// sv999#1 - FitzQuake 666 client sends short angles always so we MSG_ReadAngle16
+		if (isin2(sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999))
+			move->viewangles[i] = MSG_ReadAngle16f(&sv_message);
+		else 
+		if (isin6(sv.protocol, PROTOCOL_QUAKE, 
+							PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE,
+							PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 			move->viewangles[i] = MSG_ReadAngle8i(&sv_message);
 		else if (sv.protocol == PROTOCOL_DARKPLACES1)
 			move->viewangles[i] = MSG_ReadAngle16i(&sv_message);
-		else if (sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3)
+		else if (isin2 (sv.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3))
 			move->viewangles[i] = MSG_ReadAngle32f(&sv_message);
 		else
 			move->viewangles[i] = MSG_ReadAngle16i(&sv_message);
@@ -741,7 +750,11 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 	// read buttons
 	// be sure to bitwise OR them into the move->buttons because we want to
 	// accumulate button presses from multiple packets per actual move
-	if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5)
+	if (isin13 (sv.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
+		PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+		PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+		PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+		PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5))
 		move->buttons = MSG_ReadByte(&sv_message);
 	else
 		move->buttons = MSG_ReadLong(&sv_message);
@@ -752,7 +765,11 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
 
 	// PRYDON_CLIENTCURSOR
-	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3 && sv.protocol != PROTOCOL_DARKPLACES1 && sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5)
+	if (false == isin13 (sv.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
+				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+				PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	
+				PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+				PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5))
 	{
 		// 30 bytes
 		move->cursor_screen[0] = MSG_ReadShort(&sv_message) * (1.0f / 32767.0f);

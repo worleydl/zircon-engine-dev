@@ -492,7 +492,7 @@ static void SV_ServerOptions (void)
 	else if (cl_available)
 	{
 		// client exists and not dedicated, check if -listen is specified
-		cls.state = ca_disconnected;
+		cls.state = ca_disconnected; cls.demopaused = false;
 		i = Sys_CheckParm ("-listen");
 		if (i)
 		{
@@ -611,9 +611,12 @@ void SV_SendServerinfo (client_t *client)
 	memset(client->stats, 0, sizeof(client->stats));
 	memset(client->statsdeltabits, 0, sizeof(client->statsdeltabits));
 
-	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3)
+	if (false == isin8 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999,
+		PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+		PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3
+		))
 	{
-		if (sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3)
+		if (isin3 (sv.protocol, PROTOCOL_DARKPLACES1, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3))
 			client->entitydatabase = EntityFrame_AllocDatabase(sv_mempool);
 		else if (sv.protocol == PROTOCOL_DARKPLACES4)
 			client->entitydatabase4 = EntityFrame4_AllocDatabase(sv_mempool);
@@ -711,6 +714,11 @@ void SV_SendServerinfo (client_t *client)
 
 	MSG_WriteByte (&client->netconnection->message, svc_serverinfo);
 	MSG_WriteLong (&client->netconnection->message, Protocol_NumberForEnum(sv.protocol));
+	
+	if (sv.protocol == PROTOCOL_FITZQUAKE999) { // DPD99
+		// mh - now send protocol flags so that the client knows the protocol features to expect
+		MSG_WriteLong (&client->netconnection->message, PRFL_RMQ_SHORTANGLE_USED | PRFL_RMQ_INT32COORD_USED);
+	}
 	MSG_WriteByte (&client->netconnection->message, svs.maxclients);
 
 	if (!coop.integer && deathmatch.integer)
@@ -720,11 +728,11 @@ void SV_SendServerinfo (client_t *client)
 
 	MSG_WriteString (&client->netconnection->message,PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)));
 
-	for (i = 1;i < MAX_MODELS && sv.model_precache[i][0];i++)
+	for (i = 1;i < MAX_MODELS_8192 && sv.model_precache[i][0];i++)
 		MSG_WriteString (&client->netconnection->message, sv.model_precache[i]);
 	MSG_WriteByte (&client->netconnection->message, 0);
 
-	for (i = 1;i < MAX_SOUNDS && sv.sound_precache[i][0];i++)
+	for (i = 1;i < MAX_SOUNDS_4096 && sv.sound_precache[i][0];i++)
 		MSG_WriteString (&client->netconnection->message, sv.sound_precache[i]);
 	MSG_WriteByte (&client->netconnection->message, 0);
 
@@ -1253,7 +1261,8 @@ SV_ModelIndex
 */
 int SV_ModelIndex(const char *s, int precachemode)
 {
-	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE) ? 256 : MAX_MODELS);
+	// Baker: This is a low model index support check
+	int i, limit = (isin3 (sv.protocol, PROTOCOL_QUAKE, PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE) ? 256 : MAX_MODELS_8192);
 	char filename[MAX_QPATH_128];
 	if (!s || !*s)
 		return 0;
@@ -1267,7 +1276,12 @@ int SV_ModelIndex(const char *s, int precachemode)
 		{
 			if (precachemode)
 			{
-				if (sv.state != ss_loading && (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5))
+				if (sv.state != ss_loading && 
+					isin13(sv.protocol, 	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
+					PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+					PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+					PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+					PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5))
 				{
 					Con_Printf ("SV_ModelIndex(\"%s\"): precache_model can only be done in spawn functions\n", filename);
 					return 0;
@@ -1304,14 +1318,14 @@ int SV_ModelIndex(const char *s, int precachemode)
 		if (String_Does_Match(sv.model_precache[i], filename))
 			return i;
 	}
-	Con_Printf ("SV_ModelIndex(\"%s\"): i (%d) == MAX_MODELS (%d)\n", filename, i, MAX_MODELS);
+	Con_Printf ("SV_ModelIndex(\"%s\"): i (%d) == MAX_MODELS_8192 (%d)\n", filename, i, MAX_MODELS_8192);
 	return 0;
 }
 
  // Baker r9067: loadgame precaches "precache at any time models and sounds"
 int SV_ModelIndex_Count(void)
 {
-	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_MODELS);
+	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_MODELS_8192);
 	for (i = 2;i < limit;i++) {
 		if (!sv.model_precache[i][0]) {
 			return i;
@@ -1329,7 +1343,7 @@ SV_SoundIndex
  // Baker r9067: loadgame precaches "precache at any time models and sounds"
 int SV_SoundIndex_Count(void)
 {
-	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_SOUNDS);
+	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_SOUNDS_4096);
 	
 	for (i = 1;i < limit;i++) {
 		if (!sv.sound_precache[i][0]) {
@@ -1342,43 +1356,48 @@ int SV_SoundIndex_Count(void)
 
 int SV_SoundIndex(const char *s, int precachemode)
 {
-	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP) ? 256 : MAX_SOUNDS);
+	// Baker: FitzQuake limit is 2048 FITZQUAKE_MAX_SOUNDS_2048
+#define is_small_limit isin4 (sv.protocol, PROTOCOL_QUAKE, PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE, PROTOCOL_NEHAHRABJP)
+	int i, limit = is_small_limit ? MAX_SOUNDS_QUAKE_256 : MAX_SOUNDS_4096;
 	char filename[MAX_QPATH_128];
+	
 	if (!s || !*s)
 		return 0;
 	// testing
 	//if (precachemode == 2)
 	//	return 0;
-	strlcpy(filename, s, sizeof(filename));
-	for (i = 1;i < limit;i++)
-	{
-		if (!sv.sound_precache[i][0])
-		{
-			if (precachemode)
-			{
-				if (sv.state != ss_loading && (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5))
+	c_strlcpy(filename, s);
+	for (i = 1;i < limit;i++) {
+		if (!sv.sound_precache[i][0]) {
+			if (precachemode) {
+				if (sv.state != ss_loading && 
+					isin13 (sv.protocol, PROTOCOL_FITZQUAKE666, 	PROTOCOL_FITZQUAKE999, 	
+						PROTOCOL_QUAKE, 
+						PROTOCOL_QUAKEDP, 		PROTOCOL_NEHAHRAMOVIE, 	PROTOCOL_NEHAHRABJP, 
+						PROTOCOL_NEHAHRABJP2, 	PROTOCOL_NEHAHRABJP3, 	PROTOCOL_DARKPLACES1, 
+						PROTOCOL_DARKPLACES2, 	PROTOCOL_DARKPLACES3, 	PROTOCOL_DARKPLACES4, 
+						PROTOCOL_DARKPLACES5))
 				{
-					Con_Printf ("SV_SoundIndex(\"%s\"): precache_sound can only be done in spawn functions\n", filename);
+					Con_PrintLinef ("SV_SoundIndex(" QUOTED_S "): precache_sound can only be done in spawn functions", filename);
 					return 0;
 				}
 				if (precachemode == 1)
-					Con_Printf ("SV_SoundIndex(\"%s\"): not precached (fix your code), precaching anyway\n", filename);
-				strlcpy(sv.sound_precache[i], filename, sizeof(sv.sound_precache[i]));
-				if (sv.state != ss_loading)
-				{
+					Con_PrintLinef ("SV_SoundIndex(" QUOTED_S "): not precached (fix your code), precaching anyway", filename);
+				c_strlcpy (sv.sound_precache[i], filename);
+				if (sv.state != ss_loading) {
 					MSG_WriteByte(&sv.reliable_datagram, svc_precache);
 					MSG_WriteShort(&sv.reliable_datagram, i + 32768);
 					MSG_WriteString(&sv.reliable_datagram, filename);
 				}
 				return i;
 			}
-			Con_Printf ("SV_SoundIndex(\"%s\"): not precached\n", filename);
+			Con_PrintLinef ("SV_SoundIndex(" QUOTED_S "): not precached", filename);
 			return 0;
 		}
 		if (String_Does_Match(sv.sound_precache[i], filename))
 			return i;
 	}
-	Con_Printf ("SV_SoundIndex(\"%s\"): i (%d) == MAX_SOUNDS (%d)\n", filename, i, MAX_SOUNDS);
+	Con_PrintLinef ("SV_SoundIndex(" QUOTED_S "): i (%d) == MAX_SOUNDS_4096 (%d)", filename, i, MAX_SOUNDS_4096);
 	return 0;
 }
 
@@ -1454,9 +1473,8 @@ int SV_ParticleEffectIndex(const char *name)
 							}
 						}
 						// if we run out of names, abort
-						if (effectnameindex == MAX_PARTICLEEFFECTNAME)
-						{
-							Con_Printf ("%s:%d: too many effects!\n", filename, linenumber);
+						if (effectnameindex == MAX_PARTICLEEFFECTNAME) {
+							Con_PrintLinef ("%s:%d: too many effects!", filename, linenumber);
 							break;
 						}
 					}
@@ -1475,7 +1493,7 @@ int SV_ParticleEffectIndex(const char *name)
 
 model_t *SV_GetModelByIndex(int modelindex)
 {
-	return (modelindex > 0 && modelindex < MAX_MODELS) ? sv.models[modelindex] : NULL;
+	return (modelindex > 0 && modelindex < MAX_MODELS_8192) ? sv.models[modelindex] : NULL;
 }
 
 model_t *SV_GetModelFromEdict(prvm_edict_t *ed)
@@ -1485,7 +1503,7 @@ model_t *SV_GetModelFromEdict(prvm_edict_t *ed)
 	if (!ed || ed->free)
 		return NULL;
 	modelindex = (int)PRVM_serveredictfloat(ed, modelindex);
-	return (modelindex > 0 && modelindex < MAX_MODELS) ? sv.models[modelindex] : NULL;
+	return (modelindex > 0 && modelindex < MAX_MODELS_8192) ? sv.models[modelindex] : NULL;
 }
 
 /*
@@ -1499,10 +1517,10 @@ static void SV_CreateBaseline (void)
 	prvm_prog_t *prog = SVVM_prog;
 	int i, entnum, large;
 	prvm_edict_t *svent;
-
+	int			is_fitz = isin2 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999); 
+	int			is_rmq	= isin1 (sv.protocol, PROTOCOL_FITZQUAKE999);
 	// LadyHavoc: clear *all* baselines (not just active ones)
-	for (entnum = 0;entnum < prog->max_edicts;entnum++)
-	{
+	for (entnum = 0; entnum < prog->max_edicts; entnum++) {
 		// get the current server version
 		svent = PRVM_EDICT_NUM(entnum);
 
@@ -1519,55 +1537,137 @@ static void SV_CreateBaseline (void)
 		VectorCopy (PRVM_serveredictvector(svent, angles), svent->priv.server->baseline.angles);
 		svent->priv.server->baseline.frame = (int)PRVM_serveredictfloat(svent, frame);
 		svent->priv.server->baseline.skin = (int)PRVM_serveredictfloat(svent, skin);
-		if (entnum > 0 && entnum <= svs.maxclients)
-		{
+
+		if (entnum > 0 && entnum <= svs.maxclients) {
+			// PLAYER
 			svent->priv.server->baseline.colormap = entnum;
 			svent->priv.server->baseline.modelindex = SV_ModelIndex("progs/player.mdl", 1);
-		}
-		else
-		{
+
+			if (is_fitz) {
+			svent->priv.server->baseline.alpha = FITZ_ENTALPHA_DEFAULT_0;// .colormap = entnum;
+			}
+			if (is_rmq) {
+			svent->priv.server->baseline.scale = FITZ_ENTSCALE_DEFAULT_16;// .colormap = entnum;
+			}
+#if 000
+			// Baker: I see no evidence this is needed, it'll be zero anyway and DarkPlaces doesn't separately set 
+			if (is_fitz) {
+				svent->priv.server->baseline.alpha = FITZ_ENTALPHA_DEFAULT_0; //johnfitz -- alpha support
+			}
+			if (is_rmq) {
+				// scale 16
+			}
+#endif
+
+		} else {
+			// NON-PLAYER
 			svent->priv.server->baseline.colormap = 0;
 			svent->priv.server->baseline.modelindex = (int)PRVM_serveredictfloat(svent, modelindex);
+
+		
+			if (is_fitz) {
+			svent->priv.server->baseline.alpha = PRVM_serveredictfloat(svent, alpha);// .colormap = entnum;
+			}
+			if (is_rmq) {
+			svent->priv.server->baseline.scale = FITZ_ENTSCALE_DEFAULT_16;// .colormap = entnum;
+			}
+
+		
+#if 000
+			svent->baseline.alpha = svent->alpha; //johnfitz -- alpha support
+			svent->baseline.scale = ENTSCALE_DEFAULT;
+
+#endif
 		}
 
 		large = false;
-		if (svent->priv.server->baseline.modelindex & 0xFF00 || svent->priv.server->baseline.frame & 0xFF00)
-		{
+		if (svent->priv.server->baseline.modelindex & 0xFF00 || svent->priv.server->baseline.frame & 0xFF00) {
 			large = true;
-			if (sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+			if (isin3 (sv.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 				large = false;
 		}
 
+		int fitz_bits = 0;
+
 		// add to the message
+		if (is_fitz) {
+			int fitz_bits = 0;
+			if (svent->priv.server->baseline.modelindex & 0xFF00)
+				fitz_bits |= B_FITZ_LARGEMODEL_1;
+			if (svent->priv.server->baseline.frame & 0xFF00)
+				fitz_bits |= B_FITZ_LARGEFRAME_2;
+#if 000
+			if (svent->baseline.alpha != FITZ_ENTALPHA_DEFAULT_0)
+				bits |= B_FITZ_ALPHA_4;
+#endif
+			if (is_rmq && svent->priv.server->baseline.scale != FITZ_ENTSCALE_DEFAULT_16)
+				fitz_bits |= B_FITZ_SCALE_8;
+
+			if (fitz_bits)
+				MSG_WriteByte (&sv.signon, svcfitz_spawnbaseline2);
+			else 
+				MSG_WriteByte (&sv.signon, svc_spawnbaseline);
+
+			MSG_WriteShort (&sv.signon, entnum);
+
+			//johnfitz -- PROTOCOL_FITZQUAKE
+			if (fitz_bits)
+				MSG_WriteByte (&sv.signon, fitz_bits);
+
+			if (fitz_bits & B_FITZ_LARGEMODEL_1)
+				MSG_WriteShort (&sv.signon, svent->priv.server->baseline.modelindex);
+			else
+				MSG_WriteByte (&sv.signon, svent->priv.server->baseline.modelindex);
+
+			if (fitz_bits & B_FITZ_LARGEFRAME_2)
+				MSG_WriteShort (&sv.signon, svent->priv.server->baseline.frame);
+			else
+				MSG_WriteByte (&sv.signon, svent->priv.server->baseline.frame);
+			//johnfitz
+
+			// Write the colormap, skin, origins, angles ...
+			goto fitzquake_bypass;
+		}
+		
+
 		if (large)
 			MSG_WriteByte (&sv.signon, svc_spawnbaseline2);
 		else
 			MSG_WriteByte (&sv.signon, svc_spawnbaseline);
+
 		MSG_WriteShort (&sv.signon, entnum);
 
-		if (large)
-		{
+		if (large) {
 			MSG_WriteShort (&sv.signon, svent->priv.server->baseline.modelindex);
 			MSG_WriteShort (&sv.signon, svent->priv.server->baseline.frame);
-		}
-		else if (sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
-		{
+		} else if (isin3 (sv.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3)) {
 			MSG_WriteShort (&sv.signon, svent->priv.server->baseline.modelindex);
 			MSG_WriteByte (&sv.signon, svent->priv.server->baseline.frame);
-		}
-		else
-		{
+		} else {
 			MSG_WriteByte (&sv.signon, svent->priv.server->baseline.modelindex);
 			MSG_WriteByte (&sv.signon, svent->priv.server->baseline.frame);
 		}
+
+fitzquake_bypass:
 		MSG_WriteByte (&sv.signon, svent->priv.server->baseline.colormap);
 		MSG_WriteByte (&sv.signon, svent->priv.server->baseline.skin);
-		for (i=0 ; i<3 ; i++)
-		{
+		for (i = 0 ; i < 3 ; i++) {
 			MSG_WriteCoord(&sv.signon, svent->priv.server->baseline.origin[i], sv.protocol);
 			MSG_WriteAngle(&sv.signon, svent->priv.server->baseline.angles[i], sv.protocol);
+		} // for
+
+		if (is_fitz) {
+			//johnfitz -- PROTOCOL_FITZQUAKE
+			if (fitz_bits & B_FITZ_ALPHA_4)
+				MSG_WriteByte (&sv.signon, svent->priv.server->baseline.alpha);
+			//johnfitz
+
+			if (fitz_bits & B_FITZ_SCALE_8)
+				MSG_WriteByte (&sv.signon, svent->priv.server->baseline.scale);
+
+
 		}
-	}
+	} // for entnum < prog->max_edicts
 }
 
 /*
@@ -1880,12 +1980,12 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 
 	strlcpy(sv.model_precache[0], "", sizeof(sv.model_precache[0]));
 	strlcpy(sv.model_precache[1], sv.worldname, sizeof(sv.model_precache[1]));
-	for (i = 1;i < sv.worldmodel->brush.numsubmodels && i+1 < MAX_MODELS;i++) {
+	for (i = 1;i < sv.worldmodel->brush.numsubmodels && i+1 < MAX_MODELS_8192;i++) {
 		dpsnprintf(sv.model_precache[i+1], sizeof(sv.model_precache[i+1]), "*%d", i);
 		sv.models[i+1] = Mod_ForName (sv.model_precache[i+1], false, false, sv.worldname);
 	}
 	if (i < sv.worldmodel->brush.numsubmodels)
-		Con_PrintLinef ("Too many submodels (MAX_MODELS is %d)", MAX_MODELS);
+		Con_PrintLinef ("Too many submodels (MAX_MODELS_8192 is %d)", MAX_MODELS_8192);
 
 //
 // load the rest of the entities
@@ -1965,7 +2065,10 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 		Mod_PurgeUnused();
 
 // create a baseline for more efficient communications
-	if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+	if (isin8 (sv.protocol,		PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999,
+		PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+		PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3
+		))
 		SV_CreateBaseline ();
 
 	sv.state = ss_active; // LadyHavoc: workaround for svc_precache bug
@@ -1997,7 +2100,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	} // for host_client
 
 	// update the map title cvar
-	strlcpy(sv.worldmessage, PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)), sizeof(sv.worldmessage)); // map title (not related to filename)
+	c_strlcpy (sv.worldmessage, PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)) ); // map title (not related to filename)
 	Cvar_SetQuick(&sv_worldmessage, sv.worldmessage);
 
 	Con_DPrintLinef ("Server spawned.");
@@ -2314,10 +2417,10 @@ static void SV_VM_Setup(void)
 		prog->limit_edicts = 2048; // guessing
 	else if (sv.protocol == PROTOCOL_NEHAHRAMOVIE)
 		prog->limit_edicts = 2048; // guessing!
-	else if (sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+	else if (isin3 (sv.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 		prog->limit_edicts = 4096; // guessing!
 	else
-		prog->limit_edicts = MAX_EDICTS;
+		prog->limit_edicts = MAX_EDICTS_32768;
 	prog->reserved_edicts = svs.maxclients;
 	prog->edictprivate_size = sizeof(edict_engineprivate_t);
 	prog->name = "server";

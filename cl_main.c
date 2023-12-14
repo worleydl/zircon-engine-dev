@@ -38,6 +38,8 @@ cvar_t csqc_progcrc = {CF_CLIENT | CF_READONLY, "csqc_progcrc","-1","CRC of cspr
 cvar_t csqc_progsize = {CF_CLIENT | CF_READONLY, "csqc_progsize","-1","file size of csprogs.dat file to load (-1 is none), only used during level changes and then reset to -1"};
 cvar_t csqc_usedemoprogs = {CF_CLIENT, "csqc_usedemoprogs","1","use csprogs stored in demos"};
 cvar_t csqc_polygons_defaultmaterial_nocullface = {CF_CLIENT, "csqc_polygons_defaultmaterial_nocullface", "0", "use 'cull none' behavior in the default shader for rendering R_PolygonBegin - warning: enabling this is not consistent with FTEQW behavior on this feature"};
+cvar_t csqc_polygons_darkplaces_classic_3d = {CF_CLIENT, "csqc_polygons_darkplaces_classic_3d", "1", "use DarkPlaces polygon 3d polygon drawing [Zircon]"};
+
 
 cvar_t cl_shownet = {CF_CLIENT, "cl_shownet","0","1 = print packet size, 2 = print packet message list"};
 cvar_t cl_nolerp = {CF_CLIENT, "cl_nolerp", "0","network update smoothing"};
@@ -163,8 +165,8 @@ void CL_ClearState(void)
 	cl.max_effects = MAX_EFFECTS;
 	cl.max_beams = MAX_BEAMS;
 	cl.max_dlights = MAX_DLIGHTS;
-	cl.max_lightstyle = MAX_LIGHTSTYLES;
-	cl.max_brushmodel_entities = MAX_EDICTS;
+	cl.max_lightstyle = MAX_LIGHTSTYLES_256;
+	cl.max_brushmodel_entities = MAX_EDICTS_32768;
 	cl.max_particles = MAX_PARTICLES_INITIAL; // grows dynamically
 	cl.max_showlmps = 0;
 
@@ -310,8 +312,8 @@ void CL_ExpandEntities(int num)
 	{
 		if (!cl.entities)
 			Sys_Error ("CL_ExpandEntities: cl.entities not initialized");
-		if (num >= MAX_EDICTS)
-			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS);
+		if (num >= MAX_EDICTS_32768)
+			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS_32768);
 		oldmaxentities = cl.max_entities;
 		oldentities = cl.entities;
 		cl.max_entities = (num & ~255) + 256;
@@ -334,8 +336,8 @@ void CL_ExpandCSQCRenderEntities(int num)
 	entity_render_t *oldcsqcrenderentities;
 	if (num >= cl.max_csqcrenderentities)
 	{
-		if (num >= MAX_EDICTS)
-			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS);
+		if (num >= MAX_EDICTS_32768)
+			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS_32768);
 		oldmaxcsqcrenderentities = cl.max_csqcrenderentities;
 		oldcsqcrenderentities = cl.csqcrenderentities;
 		cl.max_csqcrenderentities = (num & ~255) + 256;
@@ -412,6 +414,8 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 	cl.cshifts[3].percent = 0;
 
 	cl.worldmodel = NULL;
+	cls.demonum = -1; // Baker
+	cls.world_frames = 0; cls.world_start_realtime = 0; 
 
 	CL_Parse_ErrorCleanUp();
 
@@ -459,7 +463,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 		else
 			Con_PrintLinef ("Disconnected");
 	}
-	cls.state = ca_disconnected;
+	cls.state = ca_disconnected; cls.demopaused = false;
 	cl.islocalgame = false;
 
 	cls.demoplayback = cls.timedemo = host.restless = false;
@@ -476,7 +480,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 
 void CL_Disconnect(void)
 {
-	CL_DisconnectEx(false, NULL);
+	CL_DisconnectEx(q_is_kicked_false, NULL);
 }
 
 /*
@@ -678,7 +682,7 @@ static void CL_ModelIndexList_f(cmd_state_t *cmd)
 	// Print Header
 	Con_Printf ("%3s: %-30s %-8s %-8s\n", "ID", "Name", "Type", "Triangles");
 
-	for (i = -MAX_MODELS;i < MAX_MODELS;i++)
+	for (i = -MAX_MODELS_8192;i < MAX_MODELS_8192;i++)
 	{
 		model = CL_GetModelByIndex(i);
 		if (!model)
@@ -702,7 +706,7 @@ static void CL_SoundIndexList_f(cmd_state_t *cmd)
 {
 	int i = 1;
 
-	while(cl.sound_precache[i] && i != MAX_SOUNDS)
+	while(cl.sound_precache[i] && i != MAX_SOUNDS_4096)
 	{ // Valid Sound
 		Con_Printf ("%d : %s\n", i, cl.sound_precache[i]->name);
 		i++;
@@ -3091,7 +3095,7 @@ void CL_Init (void)
 
 		memset(&r_refdef, 0, sizeof(r_refdef));
 		// max entities sent to renderer per frame
-		r_refdef.scene.maxentities = MAX_EDICTS + 256 + 512;
+		r_refdef.scene.maxentities = MAX_EDICTS_32768 + 256 + 512;
 		r_refdef.scene.entities = (entity_render_t **)Mem_Alloc(cls.permanentmempool, sizeof(entity_render_t *) * r_refdef.scene.maxentities);
 
 		// max temp entities
@@ -3199,6 +3203,8 @@ void CL_Init (void)
 		Cvar_RegisterVariable (&cl_maxconsole_menu_fps); // Baker r8192: thottle
 
 		Cvar_RegisterVariable(&csqc_polygons_defaultmaterial_nocullface);
+		Cvar_RegisterVariable(&csqc_polygons_darkplaces_classic_3d);
+		
 		Cvar_RegisterVariable (&cl_areagrid_link_SOLID_NOT);
 #if 111
 #else

@@ -257,7 +257,7 @@ int Sys_SetClipboardData(const char *text_to_clipboard)
 
 }
 
-char *Sys_GetClipboardData (void)
+char *Sys_GetClipboardData_Alloc (void)
 {
 	static char sbuf[MAX_INPUTLINE_16384 /*16384*/];
 	char *data = NULL;

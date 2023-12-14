@@ -975,7 +975,7 @@ static void NetConn_OpenClientPort(const char *addressstring, lhnetaddresstype_t
 		}
 	}
 	else
-		Con_Printf (CON_ERROR "Client unable to parse address %s\n", addressstring);
+		Con_PrintLinef (CON_ERROR "Client unable to parse address %s", addressstring);
 }
 
 void NetConn_OpenClientPorts(void)
@@ -1031,19 +1031,19 @@ static qbool NetConn_OpenServerPort(const char *addressstring, lhnetaddresstype_
 				if (addresstype != LHNETADDRESSTYPE_LOOP) {
 					// Baker r1481: Reduce spam .. I like this message ... yet it is rather spammy, especially since
 					// it prints twice (once for ip4 and again for ip6)
-					Con_DPrintLinef("Server listening on address %s", addressstring2);
+					Con_DPrintLinef ("Server listening on address %s", addressstring2);
 				}
 				return true;
 			}
 			else
 			{
 				LHNETADDRESS_ToString(&address, addressstring2, sizeof(addressstring2), true);
-				Con_Printf (CON_ERROR "Server failed to open socket on address %s\n", addressstring2);
+				Con_PrintLinef (CON_ERROR "Server failed to open socket on address %s", addressstring2);
 			}
 		}
 		else
 		{
-			Con_Printf (CON_ERROR "Server unable to parse address %s\n", addressstring);
+			Con_PrintLinef (CON_ERROR "Server unable to parse address %s", addressstring);
 			// if it cant parse one address, it wont be able to parse another for sure
 			return false;
 		}
@@ -1560,7 +1560,9 @@ static void NetConn_ConnectionEstablished(lhnetsocket_t *mysocket, lhnetaddress_
 	cls.servermovesequence = 0;
 	if (cls.protocol == PROTOCOL_QUAKEWORLD)
 		CL_ForwardToServer("new");
-	if (cls.protocol == PROTOCOL_QUAKE)
+	if (isin3 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999,
+		PROTOCOL_QUAKE
+		))
 	{
 		// write a keepalive (clc_nop) as it seems to greatly improve the
 		// chances of connecting to a netquake server
@@ -1595,8 +1597,7 @@ static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *address
 			break;
 	}
 
-	if (n == serverlist_cachecount)
-	{
+	if (n == serverlist_cachecount) {
 		// LAN search doesnt require an answer from the master server so we wont
 		// know the ping nor will it be initialized already...
 
@@ -1604,8 +1605,7 @@ static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *address
 		if (serverlist_cachecount == SERVERLIST_TOTALSIZE)
 			return -1;
 
-		if (serverlist_maxcachecount <= serverlist_cachecount)
-		{
+		if (serverlist_maxcachecount <= serverlist_cachecount) {
 			serverlist_maxcachecount += 64;
 			serverlist_cache = (serverlist_entry_t *)Mem_Realloc(netconn_mempool, (void *)serverlist_cache, sizeof(serverlist_entry_t) * serverlist_maxcachecount);
 		}
@@ -1619,7 +1619,7 @@ static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *address
 		// if not in the slist menu we should print the server to console
 		if (serverlist_consoleoutput)
 			Con_Printf ("querying %s\n", addressstring);
-		++serverlist_cachecount;
+		serverlist_cachecount ++;
 	}
 	// if this is the first reply from this server, count it as having replied
 	pingtime = (int)((host.realtime - entry->querytime) * 1000.0 + 0.5);
@@ -1997,6 +1997,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				if (n < 0)
 					return true;
 
+			// Update the server
 				info = &serverlist_cache[n].info;
 				info->game[0] = 0;
 				info->mod[0]  = 0;
@@ -2011,13 +2012,13 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				info->gameversion = 0;
 
 				p = strchr(string, '\n');
-				if (p)
-				{
+				if (p) {
 					*p = 0; // cut off the string there
 					++p;
 				}
-				else
-					Con_Printf ("statusResponse without players block?\n");
+				else {
+					Con_PrintLinef ("statusResponse without players block?");
+				}
 
 				if ((s = InfoString_GetValue(string, "gamename"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->game, s, sizeof (info->game));
 				if ((s = InfoString_GetValue(string, "modname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));
@@ -2512,7 +2513,7 @@ void NetConn_ClientFrame(void)
 	NetConn_QueryQueueFrame();
 #endif
 	if (cls.netcon && host.realtime > cls.netcon->timeout && !sv.active)
-		CL_DisconnectEx(true, "Connection timed out");
+		CL_DisconnectEx (q_is_kicked_true, "Connection timed out");
 }
 
 static void NetConn_BuildChallengeString(char *buffer, int bufferlength)
@@ -3345,7 +3346,12 @@ static int NetConn_ServerParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 	// protocol
 	// (this protects more modern protocols against being used for
 	//  Quake packet flood Denial Of Service attacks)
-	if (length >= 5 && (i = BuffBigLong(data)) && (i & (~NETFLAG_LENGTH_MASK)) == (int)NETFLAG_CTL && (i & NETFLAG_LENGTH_MASK) == length && (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3) && !ENCRYPTION_REQUIRED)
+	if (length >= 5 && (i = BuffBigLong(data)) && (i & (~NETFLAG_LENGTH_MASK)) == (int)NETFLAG_CTL && (i & NETFLAG_LENGTH_MASK) == length && 
+		isin11 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999,
+				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+				PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+				PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3
+		) && !ENCRYPTION_REQUIRED)
 	{
 		int c;
 		int protocolnumber;
@@ -3717,56 +3723,45 @@ void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 
 					// search LAN for DarkPlaces servers
 					NetConn_WriteString(cl_sockets[i], "\377\377\377\377getstatus", &broadcastaddress);
-				}
+				} // if
 
 				// build the getservers message to send to the dpmaster master servers
-				if (LHNETADDRESS_GetAddressType(LHNET_AddressFromSocket(cl_sockets[i])) == LHNETADDRESSTYPE_INET6)
-				{
+				if (LHNETADDRESS_GetAddressType(LHNET_AddressFromSocket(cl_sockets[i])) == LHNETADDRESSTYPE_INET6) {
 					cmdname = "getserversExt";
 					extraoptions = " ipv4 ipv6";  // ask for IPv4 and IPv6 servers
-				}
-				else
-				{
+				} else {
 					cmdname = "getservers";
 					extraoptions = "";
-				}
+				} // if  LHNETADDRESSTYPE_INET6
 				memcpy(request, "\377\377\377\377", 4);
 				dpsnprintf(request+4, sizeof(request)-4, "%s %s %u empty full%s", cmdname, gamenetworkfiltername, NET_PROTOCOL_VERSION, extraoptions);
 
 				// search internet
-				for (masternum = 0;sv_masters[masternum].name;masternum++)
-				{
-					if (sv_masters[masternum].string && sv_masters[masternum].string[0] && LHNETADDRESS_FromString(&masteraddress, sv_masters[masternum].string, DPMASTER_PORT) && LHNETADDRESS_GetAddressType(&masteraddress) == af)
-					{
+				for (masternum = 0;sv_masters[masternum].name;masternum++) {
+					if (sv_masters[masternum].string && sv_masters[masternum].string[0] && LHNETADDRESS_FromString(&masteraddress, sv_masters[masternum].string, DPMASTER_PORT) && LHNETADDRESS_GetAddressType(&masteraddress) == af) {
 						masterquerycount++;
 						NetConn_WriteString(cl_sockets[i], request, &masteraddress);
 					}
 				}
 
 				// search favorite servers
-				for(j = 0; j < nFavorites; ++j)
-				{
-					if (LHNETADDRESS_GetAddressType(&favorites[j]) == af)
-					{
+				for(j = 0; j < nFavorites; ++j) {
+					if (LHNETADDRESS_GetAddressType(&favorites[j]) == af) {
 						if (LHNETADDRESS_ToString(&favorites[j], request, sizeof(request), true))
 							NetConn_ClientParsePacket_ServerList_PrepareQuery( PROTOCOL_DARKPLACES7, request, true );
-					}
-				}
-			}
-		}
-	}
+					} // if
+				} // for j
+			} // cl_sockets[i]
+		} // for (cl_sockets[i])
+	} // if (querydp)
 
 	// only query QuakeWorld servers when the user wants to
-	if (queryqw)
-	{
-		for (i = 0;i < cl_numsockets;i++)
-		{
-			if (cl_sockets[i])
-			{
+	if (queryqw) {
+		for (i = 0;i < cl_numsockets;i++) {
+			if (cl_sockets[i]) {
 				int af = LHNETADDRESS_GetAddressType(LHNET_AddressFromSocket(cl_sockets[i]));
 
-				if (LHNETADDRESS_GetAddressType(&broadcastaddress) == af)
-				{
+				if (LHNETADDRESS_GetAddressType(&broadcastaddress) == af) {
 					// search LAN for QuakeWorld servers
 					NetConn_WriteString(cl_sockets[i], "\377\377\377\377status\n", &broadcastaddress);
 
@@ -3792,12 +3787,9 @@ void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 				}
 
 				// search favorite servers
-				for(j = 0; j < nFavorites; ++j)
-				{
-					if (LHNETADDRESS_GetAddressType(&favorites[j]) == af)
-					{
-						if (LHNETADDRESS_ToString(&favorites[j], request, sizeof(request), true))
-						{
+				for(j = 0; j < nFavorites; ++j) {
+					if (LHNETADDRESS_GetAddressType(&favorites[j]) == af) {
+						if (LHNETADDRESS_ToString(&favorites[j], request, sizeof(request), true)) {
 							NetConn_WriteString(cl_sockets[i], "\377\377\377\377status\n", &favorites[j]);
 							NetConn_ClientParsePacket_ServerList_PrepareQuery( PROTOCOL_QUAKEWORLD, request, true );
 						}
@@ -3806,9 +3798,8 @@ void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 			}
 		}
 	}
-	if (!masterquerycount)
-	{
-		Con_Print(CON_ERROR "Unable to query master servers, no suitable network sockets active.\n");
+	if (!masterquerycount) {
+		Con_PrintLinef (CON_ERROR "Unable to query master servers, no suitable network sockets active.");
 		M_Update_Return_Reason("No network");
 	}
 }

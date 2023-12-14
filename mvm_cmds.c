@@ -1753,7 +1753,7 @@ void MVM_init_cmd(prvm_prog_t *prog)
 	scene->maxtempentities = 128;
 	scene->tempentities = (entity_render_t*) Mem_Alloc(prog->progs_mempool, sizeof(entity_render_t) * scene->maxtempentities);
 
-	scene->maxentities = MAX_EDICTS + 256 + 512;
+	scene->maxentities = MAX_EDICTS_32768 + 256 + 512;
 	scene->entities = (entity_render_t **)Mem_Alloc(prog->progs_mempool, sizeof(entity_render_t *) * scene->maxentities);
 
 	// LadyHavoc: what is this for?

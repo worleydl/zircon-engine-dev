@@ -79,8 +79,10 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 
 //#define fs_loadinfo_in_null			NULL
 //#define fs_loadinfo_out_null			NULL
-
-
+#define q_is_large_modelindex_true		true
+#define q_is_large_modelindex_false		false
+#define q_is_large_soundindex_false		false
+#define q_is_large_soundindex_true		true
 #define q_undo_action_normal_0			0
 #define q_undo_action_add_1				1
 #define q_undo_action_delete_neg_1		-1
@@ -118,13 +120,19 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_mouse_relative_false			false
 #define q_mouse_hidecursor_false		false
 
+#define q_is_kicked_true				true
+#define q_is_kicked_false				false
+#define q_is_leaving_false				false
 
 #define q_tx_complain_false				false
 #define q_tx_complain_true				true
 #define q_tx_fallback_notexture_false	false
 #define q_tx_fallback_notexture_true	true
+#define q_tx_do_external_true			true
+#define q_tx_do_external_false			false
 #define q_tx_is_sRGB_false				false
 #define q_tx_allowfixtrans_false		false
+#define q_tx_allowfixtrans_true			true
 #define q_tx_convertsrgb_false			false
 #define q_tx_miplevel_null				NULL
 #define q_tx_warn_missing_true			true
@@ -153,6 +161,9 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_include_port_true				true
 #define q_include_port_false			false
 
+#define q_fitz_version_none_0			0
+#define q_fitz_version_1				1
+#define q_fitz_version_2				2
 
 #include "common.h"
 #include "filematch.h"

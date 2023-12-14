@@ -90,12 +90,12 @@ model_t *CL_GetModelByIndex(int modelindex)
 	if (modelindex < 0)
 	{
 		modelindex = -(modelindex+1);
-		if (modelindex < MAX_MODELS)
+		if (modelindex < MAX_MODELS_8192)
 			return cl.csqc_model_precache[modelindex];
 	}
 	else
 	{
-		if (modelindex < MAX_MODELS)
+		if (modelindex < MAX_MODELS_8192)
 			return cl.model_precache[modelindex];
 	}
 	return NULL;
@@ -225,7 +225,7 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int clipgroup;
 
 	if (hitnetworkentity)
@@ -355,12 +355,12 @@ skipnetworkplayers:
 	numtouchedicts = 0;
 	if (hitcsqcentities && prog != NULL)
 	{
-		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-		if (numtouchedicts > MAX_EDICTS)
+		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+		if (numtouchedicts > MAX_EDICTS_32768)
 		{
 			// this never happens
-			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-			numtouchedicts = MAX_EDICTS;
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+			numtouchedicts = MAX_EDICTS_32768;
 		}
 	}
 	for (i = 0;i < numtouchedicts;i++)
@@ -446,7 +446,7 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int clipgroup;
 	if (VectorCompare(start, end))
 		return CL_TracePoint(start, type, passedict, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities);
@@ -579,12 +579,12 @@ skipnetworkplayers:
 	numtouchedicts = 0;
 	if (hitcsqcentities && prog != NULL)
 	{
-		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-		if (numtouchedicts > MAX_EDICTS)
+		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+		if (numtouchedicts > MAX_EDICTS_32768)
 		{
 			// this never happens
-			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-			numtouchedicts = MAX_EDICTS;
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+			numtouchedicts = MAX_EDICTS_32768;
 		}
 	}
 	for (i = 0;i < numtouchedicts;i++)
@@ -674,7 +674,7 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int clipgroup;
 	if (VectorCompare(mins, maxs))
 	{
@@ -830,12 +830,12 @@ skipnetworkplayers:
 	numtouchedicts = 0;
 	if (hitcsqcentities && prog != NULL)
 	{
-		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-		if (numtouchedicts > MAX_EDICTS)
+		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+		if (numtouchedicts > MAX_EDICTS_32768)
 		{
 			// this never happens
-			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-			numtouchedicts = MAX_EDICTS;
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+			numtouchedicts = MAX_EDICTS_32768;
 		}
 	}
 	for (i = 0;i < numtouchedicts;i++)
@@ -916,7 +916,7 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 	model_t *model;
 	// list of entities to test for collisions
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 
 	VectorCopy(start, clipstart);
 	VectorCopy(end, clipend);
@@ -960,12 +960,12 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 	numtouchedicts = 0;
 	if (prog != NULL)
 	{
-		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-		if (numtouchedicts > MAX_EDICTS)
+		numtouchedicts = World_EntitiesInBox(&cl.world, clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+		if (numtouchedicts > MAX_EDICTS_32768)
 		{
 			// this never happens
-			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-			numtouchedicts = MAX_EDICTS;
+			Con_Printf ("CL_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+			numtouchedicts = MAX_EDICTS_32768;
 		}
 	}
 	for (i = 0;i < numtouchedicts;i++)

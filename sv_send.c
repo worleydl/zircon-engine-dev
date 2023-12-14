@@ -233,27 +233,25 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 
 	dest = (reliable ? &sv.reliable_datagram : &sv.datagram);
 
-	if (nvolume < 0 || nvolume > 255)
-	{
-		Con_Printf ("SV_StartSound: volume = %d\n", nvolume);
+	if (nvolume < 0 || nvolume > 255) {
+		Con_PrintLinef ("SV_StartSound: volume = %d", nvolume);
 		return;
 	}
 
-	if (attenuation < 0 || attenuation > 4)
-	{
-		Con_Printf ("SV_StartSound: attenuation = %f\n", attenuation);
+	if (attenuation < 0 || attenuation > 4) {
+		Con_PrintLinef ("SV_StartSound: attenuation = %f", attenuation);
 		return;
 	}
 
 	if (!IS_CHAN(channel))
 	{
-		Con_Printf ("SV_StartSound: channel = %d\n", channel);
+		Con_PrintLinef ("SV_StartSound: channel = %d", channel);
 		return;
 	}
 
 	channel = CHAN_ENGINE2NET(channel);
 
-	if (sv.datagram.cursize > MAX_PACKETFRAGMENT-21)
+	if (sv.datagram.cursize > MAX_PACKETFRAGMENT - 21)
 		return;
 
 // find precache number for sound
@@ -263,41 +261,88 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 
 	ent = PRVM_NUM_FOR_EDICT(entity);
 
+	if (isin2 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
+		// SV_StartSound_FitzQuake
+		field_mask = 0;
+		if (nvolume != DEFAULT_SOUND_PACKET_VOLUME)
+			field_mask |= SND_VOLUME_1;
+		if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION_1_0)
+			field_mask |= SND_ATTENUATION_2;
+
+		//johnfitz -- PROTOCOL_FITZQUAKE
+		if (ent >= 8192)
+				field_mask |= SND_LARGEENTITY_8;
+		if (sound_num >= 256 || channel >= 8)
+				field_mask |= SND_LARGESOUND_16;
+		//johnfitz
+
+	// directed messages go only to the entity the are targeted on
+		MSG_WriteByte (dest, svc_sound);
+		MSG_WriteByte (dest, field_mask);
+		if (field_mask & SND_VOLUME_1)
+			MSG_WriteByte (dest, nvolume);
+		if (field_mask & SND_ATTENUATION_2)
+			MSG_WriteByte (dest, attenuation*64);
+
+		//johnfitz -- PROTOCOL_FITZQUAKE
+		if (field_mask & SND_LARGEENTITY_8)
+		{
+			MSG_WriteShort (dest, ent);
+			MSG_WriteByte (dest, channel);
+		}
+		else
+			MSG_WriteShort (dest, (ent<<3) | channel);
+		if (field_mask & SND_LARGESOUND_16)
+			MSG_WriteShort (dest, sound_num);
+		else
+			MSG_WriteByte (dest, sound_num);
+		//johnfitz
+
+		for (i=0 ; i<3 ; i++)
+			//MSG_WriteCoord (dest, entity->v.origin[i]+0.5*(entity->v.mins[i]+entity->v.maxs[i]));
+			MSG_WriteCoord (dest, PRVM_serveredictvector(entity, origin)[i]+0.5*(PRVM_serveredictvector(entity, mins)[i]+PRVM_serveredictvector(entity, maxs)[i]), sv.protocol);
+
+		goto fitz_bypass;
+	}
+
 	speed4000 = (int)floor(speed * 4000.0f + 0.5f);
 	field_mask = 0;
 	if (nvolume != DEFAULT_SOUND_PACKET_VOLUME)
-		field_mask |= SND_VOLUME;
-	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION)
-		field_mask |= SND_ATTENUATION;
+		field_mask |= SND_VOLUME_1;
+	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION_1_0)
+		field_mask |= SND_ATTENUATION_2;
 	if (speed4000 && speed4000 != 4000)
-		field_mask |= SND_SPEEDUSHORT4000;
+		field_mask |= SND_SPEEDUSHORT4000_32;
 	if (ent >= 8192 || channel < 0 || channel > 7)
-		field_mask |= SND_LARGEENTITY;
+		field_mask |= SND_LARGEENTITY_8;
 	if (sound_num >= 256)
-		field_mask |= SND_LARGESOUND;
+		field_mask |= SND_LARGESOUND_16;
 
 // directed messages go only to the entity they are targeted on
 	MSG_WriteByte (dest, svc_sound);
 	MSG_WriteByte (dest, field_mask);
-	if (field_mask & SND_VOLUME)
+	if (field_mask & SND_VOLUME_1)
 		MSG_WriteByte (dest, nvolume);
-	if (field_mask & SND_ATTENUATION)
+	if (field_mask & SND_ATTENUATION_2)
 		MSG_WriteByte (dest, (int)(attenuation*64));
-	if (field_mask & SND_SPEEDUSHORT4000)
+	if (field_mask & SND_SPEEDUSHORT4000_32)
 		MSG_WriteShort (dest, speed4000);
-	if (field_mask & SND_LARGEENTITY)
-	{
+	if (field_mask & SND_LARGEENTITY_8) {
 		MSG_WriteShort (dest, ent);
 		MSG_WriteChar (dest, channel);
 	}
 	else
 		MSG_WriteShort (dest, (ent<<3) | channel);
-	if ((field_mask & SND_LARGESOUND) || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+
+	if (Have_Flag(field_mask, SND_LARGESOUND_16) || 
+		isin2 (sv.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3) )
 		MSG_WriteShort (dest, sound_num);
 	else
 		MSG_WriteByte (dest, sound_num);
 	for (i = 0;i < 3;i++)
 		MSG_WriteCoord (dest, PRVM_serveredictvector(entity, origin)[i]+0.5*(PRVM_serveredictvector(entity, mins)[i]+PRVM_serveredictvector(entity, maxs)[i]), sv.protocol);
+
+fitz_bypass:
 
 	// TODO do we have to do anything here when dest is &sv.reliable_datagram?
 	if (!reliable)
@@ -312,7 +357,7 @@ Nearly the same logic as SV_StartSound, except an origin
 instead of an entity is provided and channel is omitted.
 
 The entity sent to the client is 0 (world) and the channel
-is 0 (CHAN_AUTO).  SND_LARGEENTITY will never occur in this
+is 0 (CHAN_AUTO).  SND_LARGEENTITY_8 will never occur in this
 function, therefore the check for it is omitted.
 
 ==================
@@ -344,26 +389,26 @@ void SV_StartPointSound (vec3_t origin, const char *sample, int nvolume, float a
 	speed4000 = (int)(speed * 40.0f);
 	field_mask = 0;
 	if (nvolume != DEFAULT_SOUND_PACKET_VOLUME)
-		field_mask |= SND_VOLUME;
-	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION)
-		field_mask |= SND_ATTENUATION;
+		field_mask |= SND_VOLUME_1;
+	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION_1_0)
+		field_mask |= SND_ATTENUATION_2;
 	if (sound_num >= 256)
-		field_mask |= SND_LARGESOUND;
+		field_mask |= SND_LARGESOUND_16;
 	if (speed4000 && speed4000 != 4000)
-		field_mask |= SND_SPEEDUSHORT4000;
+		field_mask |= SND_SPEEDUSHORT4000_32;
 
 // directed messages go only to the entity they are targeted on
 	MSG_WriteByte (&sv.datagram, svc_sound);
 	MSG_WriteByte (&sv.datagram, field_mask);
-	if (field_mask & SND_VOLUME)
+	if (Have_Flag (field_mask, SND_VOLUME_1) )
 		MSG_WriteByte (&sv.datagram, nvolume);
-	if (field_mask & SND_ATTENUATION)
+	if (Have_Flag (field_mask, SND_ATTENUATION_2) )
 		MSG_WriteByte (&sv.datagram, (int)(attenuation*64));
-	if (field_mask & SND_SPEEDUSHORT4000)
+	if (Have_Flag (field_mask, SND_SPEEDUSHORT4000_32) )
 		MSG_WriteShort (&sv.datagram, speed4000);
 	// Always write entnum 0 for the world entity
 	MSG_WriteShort (&sv.datagram, (0<<3) | 0);
-	if (field_mask & SND_LARGESOUND)
+	if (Have_Flag (field_mask, SND_LARGESOUND_16))
 		MSG_WriteShort (&sv.datagram, sound_num);
 	else
 		MSG_WriteByte (&sv.datagram, sound_num);
@@ -424,7 +469,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	// LadyHavoc: this could kill tags attached to an invisible entity, I
 	// just hope we never have to support that case
 	i = (int)PRVM_serveredictfloat(ent, modelindex);
-	modelindex = (i >= 1 && i < MAX_MODELS && PRVM_serveredictstring(ent, model) && *PRVM_GetString(prog, PRVM_serveredictstring(ent, model)) && sv.models[i]) ? i : 0;
+	modelindex = (i >= 1 && i < MAX_MODELS_8192 && PRVM_serveredictstring(ent, model) && *PRVM_GetString(prog, PRVM_serveredictstring(ent, model)) && sv.models[i]) ? i : 0;
 
 	erendflags = 0;
 	i = (int)(PRVM_serveredictfloat(ent, glow_size) * 0.25f);
@@ -744,7 +789,7 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 	matrix4x4_t matrix, imatrix;
 	model_t *model;
 	prvm_edict_t *touch;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	vec3_t eyemins, eyemaxs, start;
 	vec3_t boxmins, boxmaxs;
 	vec3_t clipboxmins, clipboxmaxs;
@@ -786,12 +831,12 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 
 	// get the list of entities in the sweep box
 	if (sv_cullentities_trace_entityocclusion.integer)
-		numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+		numtouchedicts = SV_EntitiesInBox(clipboxmins, clipboxmaxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	// iterate the entities found in the sweep box and filter them
 	originalnumtouchedicts = numtouchedicts;
@@ -924,18 +969,25 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 		// always send world submodels in newer protocols because they don't
 		// generate much traffic (in old protocols they hog bandwidth)
 		// but only if sv_cullentities_nevercullbmodels is off
-		else if (!(s->effects & EF_NODEPTHTEST) && (!isbmodel || !sv_cullentities_nevercullbmodels.integer || sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE))
+		else if (!(s->effects & EF_NODEPTHTEST) && (!isbmodel || !sv_cullentities_nevercullbmodels.integer || 
+			isin5(sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999, 
+					PROTOCOL_QUAKE, PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE
+			)))
 		{
 			// entity has survived every check so far, check if visible
 			ed = PRVM_EDICT_NUM(s->number);
 
 			// if not touching a visible leaf
-			if (sv_cullentities_pvs.integer && !r_novis.integer && !r_trippy.integer && sv.writeentitiestoclient_pvsbytes)
+			// sv_cullentities_trace defaults 1.
+			if (sv_cullentities_pvs.integer && !r_novis.integer && !r_trippy.integer && 
+				sv.writeentitiestoclient_pvsbytes)
 			{
 				if (ed->priv.server->pvs_numclusters < 0)
 				{
 					// entity too big for clusters list
-					if (sv.worldmodel && sv.worldmodel->brush.BoxTouchingPVS && !sv.worldmodel->brush.BoxTouchingPVS(sv.worldmodel, sv.writeentitiestoclient_pvs, ed->priv.server->cullmins, ed->priv.server->cullmaxs))
+					if (sv.worldmodel && sv.worldmodel->brush.BoxTouchingPVS && 
+						!sv.worldmodel->brush.BoxTouchingPVS(sv.worldmodel, 
+						sv.writeentitiestoclient_pvs, ed->priv.server->cullmins, ed->priv.server->cullmaxs))
 					{
 						sv.writeentitiestoclient_stats_culled_pvs++;
 						return;
@@ -957,6 +1009,7 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 			}
 
 			// or not seen by random tracelines
+			// Baker: sv_cullentities_trace defaults 0 -- is not the norm
 			if (sv_cullentities_trace.integer && !isbmodel && sv.worldmodel && sv.worldmodel->brush.TraceLineOfSight && !r_trippy.integer && (client->frags != -666 || sv_cullentities_trace_spectators.integer))
 			{
 				int samples =
@@ -1098,6 +1151,128 @@ SV_WriteClientdataToMessage
 
 ==================
 */
+void SV_FitzQuake (int fitz_bits, prvm_edict_t *ent, sizebuf_t *msg, int *stats)
+{
+	prvm_prog_t *prog = SVVM_prog;
+
+	// Baker: Some bits already set
+	
+	// SU_ONGROUND;
+	// SU_INWATER;
+	// SU_IDEALPITCH;
+	// SU_PUNCH1
+	// SU_VELOCITY1
+
+	if (stats[STAT_VIEWHEIGHT] != DEFAULT_VIEWHEIGHT)		fitz_bits |= SU_VIEWHEIGHT;
+	
+	// IDEALPITCH is inherited
+	// ITEMS IS FREE
+	// ONGROUND
+	// IN WATER
+	// PUNCH
+	// VEL
+
+	fitz_bits |= SU_ITEMS;
+
+	if (stats[STAT_WEAPONFRAME])							fitz_bits |= SU_WEAPONFRAME;
+	if (stats[STAT_ARMOR])									fitz_bits |= SU_ARMOR;
+	
+	// Weapon is free
+	fitz_bits |= SU_WEAPON;
+
+	if (fitz_bits & SU_WEAPON && stats[STAT_WEAPON] /*client->weaponmodelindex SV_ModelIndex(PR_GetString(ent->v.weaponmodel))*/ & 0xFF00) 
+															fitz_bits |= SU_FITZ_WEAPON2_S16;
+	if (stats[STAT_ARMOR]		/*(int)ent->v.armorvalue*/ & 0xFF00)		fitz_bits |= SU_FITZ_ARMOR2_S17;
+	if (stats[STAT_AMMO]		/*(int)ent->v.currentammo*/ & 0xFF00)		fitz_bits |= SU_FITZ_AMMO2_S18;
+	if (stats[STAT_SHELLS]		/*(int)ent->v.ammo_shells*/ & 0xFF00)		fitz_bits |= SU_FITZ_SHELLS2_S19;
+	if (stats[STAT_NAILS]		/*(int)ent->v.ammo_nails*/ & 0xFF00)		fitz_bits |= SU_FITZ_NAILS2_S20;
+	if (stats[STAT_ROCKETS]		/*(int)ent->v.ammo_rockets*/ & 0xFF00)		fitz_bits |= SU_FITZ_ROCKETS2_S21;
+	if (stats[STAT_CELLS]		/*(int)ent->v.ammo_cells*/ & 0xFF00)		fitz_bits |= SU_FITZ_CELLS2_S22;
+	if (fitz_bits & SU_WEAPONFRAME && stats[STAT_WEAPONFRAME] & 0xFF00)		fitz_bits |= SU_FITZ_WEAPONFRAME2_24;
+	// Baker: 
+	// SU_FITZ_WEAPONALPHA_S25 should be consider the same as a player's alpha
+	// Mercifully, there is SU_SCALE in Quakespasm
+	if (fitz_bits >= 65536)
+																			fitz_bits |= SU_EXTEND1_S15;
+	if (fitz_bits >= 16777216)
+																			fitz_bits |= SU_EXTEND2_S23;
+
+#if 000 
+			if (fitz_bits & SU_WEAPON && ent->alpha != ENTALPHA_DEFAULT) fitz_bits |= SU_FITZ_WEAPONALPHA_S25; //for now, weaponalpha = client entity alpha
+#endif
+
+write_it:
+	// send the data
+	MSG_WriteByte (msg, svc_clientdata);
+	MSG_WriteShort (msg, fitz_bits);
+
+	if (fitz_bits & SU_EXTEND1_S15)
+																			MSG_WriteByte(msg, fitz_bits >> 16);
+	if (fitz_bits & SU_EXTEND2_S23)
+																			MSG_WriteByte(msg, fitz_bits >> 24);
+
+
+	if (fitz_bits & SU_VIEWHEIGHT)
+														MSG_WriteChar (msg, stats[STAT_VIEWHEIGHT]);
+
+	if (fitz_bits & SU_IDEALPITCH)
+														MSG_WriteChar (msg, (int)PRVM_serveredictfloat(ent, idealpitch));
+
+	for (int i = 0 ; i < 3 ; i ++) {
+		if (fitz_bits & (SU_PUNCH1<<i))
+			// Baker: Quakespasm is doing char here so ok ...
+			MSG_WriteChar(msg, (int)PRVM_serveredictvector(ent, punchangle)[i]);
+		
+		if (fitz_bits & (SU_VELOCITY1 << i))
+			MSG_WriteChar(msg, (int)(PRVM_serveredictvector(ent, velocity)[i] * (1.0f / 16.0f)));
+	} // for
+
+	// always sent
+	if (fitz_bits & SU_ITEMS)
+		MSG_WriteLong (msg, stats[STAT_ITEMS]);
+
+	if (Have_Flag (fitz_bits, SU_WEAPONFRAME))
+														MSG_WriteByte (msg, stats[STAT_WEAPONFRAME]);
+	if (Have_Flag (fitz_bits, SU_ARMOR))
+														MSG_WriteByte (msg, stats[STAT_ARMOR]);
+
+	// Weapon is always written?
+	if (Have_Flag (fitz_bits, SU_WEAPON))
+														MSG_WriteByte (msg, stats[STAT_WEAPON]);
+	
+	// Always written ...
+	MSG_WriteShort (msg, stats[STAT_HEALTH]);
+	MSG_WriteByte (msg, stats[STAT_AMMO]);
+	MSG_WriteByte (msg, stats[STAT_SHELLS]);
+	MSG_WriteByte (msg, stats[STAT_NAILS]);
+	MSG_WriteByte (msg, stats[STAT_ROCKETS]);
+	MSG_WriteByte (msg, stats[STAT_CELLS]);
+
+	if (isin3 (gamemode, GAME_HIPNOTIC, GAME_ROGUE, GAME_QUOTH)) {
+		for (int i = 0;i < 32;i++) {
+			if (stats[STAT_ACTIVEWEAPON] & (1<<i)) {
+				MSG_WriteByte (msg, i);
+				break;
+			}
+		} // for										
+	}
+	else
+		MSG_WriteByte (msg, stats[STAT_ACTIVEWEAPON]); // Standard Quake
+
+		//johnfitz -- PROTOCOL_FITZQUAKE
+	if (fitz_bits & SU_FITZ_WEAPON2_S16)		MSG_WriteByte (msg, stats[STAT_WEAPON]		/*SV_ModelIndex(PR_GetString(ent->v.weaponmodel))*/ >> 8);
+	if (fitz_bits & SU_FITZ_ARMOR2_S17)			MSG_WriteByte (msg, stats[STAT_ARMOR]		/*(int)ent->v.armorvalue*/ >> 8);
+	if (fitz_bits & SU_FITZ_AMMO2_S18)			MSG_WriteByte (msg, stats[STAT_AMMO]		/*(int)ent->v.currentammo*/ >> 8);
+	if (fitz_bits & SU_FITZ_SHELLS2_S19)		MSG_WriteByte (msg, stats[STAT_SHELLS]		/*(int)ent->v.ammo_shells*/ >> 8);
+	if (fitz_bits & SU_FITZ_NAILS2_S20)			MSG_WriteByte (msg, stats[STAT_NAILS]		/*(int)ent->v.ammo_nails*/ >> 8);
+	if (fitz_bits & SU_FITZ_ROCKETS2_S21)		MSG_WriteByte (msg, stats[STAT_ROCKETS]		/*(int)ent->v.ammo_rockets*/ >> 8);
+	if (fitz_bits & SU_FITZ_CELLS2_S22)			MSG_WriteByte (msg, stats[STAT_CELLS]		/*(int)ent->v.ammo_cells*/ >> 8);
+	if (fitz_bits & SU_FITZ_WEAPONFRAME2_24)	MSG_WriteByte (msg, stats[STAT_WEAPONFRAME]	/*(int)ent->v.weaponframe*/ >> 8);
+#if 000
+	if (fitz_bits & SU_FITZ_WEAPONALPHA_S25)		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha
+#endif
+}
+
 void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t *msg, int *stats)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -1110,12 +1285,14 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	const char *s;
 	float	*statsf = (float *)stats;
 	float gravity;
+	int is_fitz2 = isin2(sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999);
+//	int is_rmq	= isin1(sv.protocol, PROTOCOL_FITZQUAKE999);
+
 
 //
 // send a damage message
 //
-	if (PRVM_serveredictfloat(ent, dmg_take) || PRVM_serveredictfloat(ent, dmg_save))
-	{
+	if (PRVM_serveredictfloat(ent, dmg_take) || PRVM_serveredictfloat(ent, dmg_save)) {
 		other = PRVM_PROG_TO_EDICT(PRVM_serveredictedict(ent, dmg_inflictor));
 		MSG_WriteByte (msg, svc_damage);
 		MSG_WriteByte (msg, (int)PRVM_serveredictfloat(ent, dmg_save));
@@ -1162,9 +1339,8 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	// cache weapon model name and index in client struct to save time
 	// (this search can be almost 1% of cpu time!)
 	s = PRVM_GetString(prog, PRVM_serveredictstring(ent, weaponmodel));
-	if (strcmp(s, client->weaponmodel))
-	{
-		strlcpy(client->weaponmodel, s, sizeof(client->weaponmodel));
+	if (String_Does_Not_Match(s, client->weaponmodel)) {
+		c_strlcpy(client->weaponmodel, s);
 		client->weaponmodelindex = SV_ModelIndex(s, 1);
 	}
 
@@ -1181,13 +1357,21 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	if (PRVM_serveredictfloat(ent, idealpitch))
 		bits |= SU_IDEALPITCH;
 
-	for (i=0 ; i<3 ; i++)
-	{
+	for (i=0 ; i<3 ; i++) {
 		if (PRVM_serveredictvector(ent, punchangle)[i])
 			bits |= (SU_PUNCH1<<i);
-		if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3)
-			if (punchvector[i])
-				bits |= (SU_PUNCHVEC1<<i);
+
+		// Baker: These protocols are EXCLUDED from SU_PUNCHVEC1_S16
+		// So FitzQuake 666 999 and Quake do not do this part ...
+		if (false == isin8 (sv.protocol, 
+							PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,	PROTOCOL_NEHAHRAMOVIE, 
+							PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3, 
+							PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999) ) 
+		{
+			if (punchvector[i]) {
+				bits |= (SU_PUNCHVEC1_S16 << i);
+			}
+		}
 		if (PRVM_serveredictvector(ent, velocity)[i])
 			bits |= (SU_VELOCITY1<<i);
 	}
@@ -1215,7 +1399,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	//stats[STAT_SECRETS] = PRVM_serverglobalfloat(found_secrets);
 	//stats[STAT_MONSTERS] = PRVM_serverglobalfloat(killed_monsters);
 
-// Baker: This defaults 0.  Xonotic uses it.
+// Baker: sv_gameplayfix_customstats defaults 0.  Xonotic uses it.
 // Baker: Custom stats disables stats above 220
 
 	if (sv_gameplayfix_customstats.integer == 0 /*defaults 0, XONOTIC*/) {
@@ -1274,7 +1458,18 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		statsf[STAT_MOVEVARS_AIRACCEL_SIDEWAYS_FRICTION] = sv_airaccel_sideways_friction.value;
 	}
 
-	if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5)
+	if (is_fitz2) {
+		//goto fitzquake_bypass;
+		SV_FitzQuake (bits, ent, msg, stats);
+		return;
+	}
+
+	if (isin11 (sv.protocol, 
+			PROTOCOL_QUAKE, 
+			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
+			PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1, 
+			PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4, 
+			PROTOCOL_DARKPLACES5)) 
 	{
 		if (stats[STAT_VIEWHEIGHT] != DEFAULT_VIEWHEIGHT) bits |= SU_VIEWHEIGHT;
 		bits |= SU_ITEMS;
@@ -1282,22 +1477,25 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		if (stats[STAT_ARMOR]) bits |= SU_ARMOR;
 		bits |= SU_WEAPON;
 		// FIXME: which protocols support this?  does PROTOCOL_DARKPLACES3 support viewzoom?
-		if (sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5)
+		if (isin4 (sv.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, 
+								PROTOCOL_DARKPLACES4, PROTOCOL_DARKPLACES5)) {
 			if (viewzoom != 255)
-				bits |= SU_VIEWZOOM;
+				bits |= SU_VIEWZOOM_S19;
+		} // viewzoom
+
 	}
 
 	if (bits >= 65536)
-		bits |= SU_EXTEND1;
+		bits |= SU_EXTEND1_S15;
 	if (bits >= 16777216)
-		bits |= SU_EXTEND2;
+		bits |= SU_EXTEND2_S23;
 
 	// send the data
 	MSG_WriteByte (msg, svc_clientdata);
 	MSG_WriteShort (msg, bits);
-	if (bits & SU_EXTEND1)
+	if (bits & SU_EXTEND1_S15)
 		MSG_WriteByte(msg, bits >> 16);
-	if (bits & SU_EXTEND2)
+	if (bits & SU_EXTEND2_S23)
 		MSG_WriteByte(msg, bits >> 24);
 
 	if (bits & SU_VIEWHEIGHT)
@@ -1306,25 +1504,30 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	if (bits & SU_IDEALPITCH)
 		MSG_WriteChar (msg, (int)PRVM_serveredictfloat(ent, idealpitch));
 
-	for (i=0 ; i<3 ; i++)
-	{
-		if (bits & (SU_PUNCH1<<i))
-		{
-			if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+	for (i = 0 ; i < 3 ; i ++) {
+		if (bits & (SU_PUNCH1<<i)) {
+			// Baker: Quakespasm is doing char here so ok ...
+			if (isin6 (sv.protocol, 
+				PROTOCOL_QUAKE, 
+				PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE, PROTOCOL_NEHAHRABJP,
+				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3))
 				MSG_WriteChar(msg, (int)PRVM_serveredictvector(ent, punchangle)[i]);
 			else
 				MSG_WriteAngle16i(msg, PRVM_serveredictvector(ent, punchangle)[i]);
 		}
-		if (bits & (SU_PUNCHVEC1<<i))
-		{
-			if (sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4)
+		// Baker: SU_PUNCHVEC1_S16 collides with SU_FITZ_WEAPON2_S16
+		if (bits & (SU_PUNCHVEC1_S16 << i)) {
+			if (isin4 (sv.protocol, PROTOCOL_DARKPLACES1, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
 				MSG_WriteCoord16i(msg, punchvector[i]);
 			else
 				MSG_WriteCoord32f(msg, punchvector[i]);
 		}
-		if (bits & (SU_VELOCITY1<<i))
-		{
-			if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4)
+		if (bits & (SU_VELOCITY1 << i)) {
+			if (isin10 (sv.protocol, 
+				PROTOCOL_QUAKE, 
+				PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
+				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,
+				PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4))
 				MSG_WriteChar(msg, (int)(PRVM_serveredictvector(ent, velocity)[i] * (1.0f / 16.0f)));
 			else
 				MSG_WriteCoord32f(msg, PRVM_serveredictvector(ent, velocity)[i]);
@@ -1334,8 +1537,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	if (bits & SU_ITEMS)
 		MSG_WriteLong (msg, stats[STAT_ITEMS]);
 
-	if (sv.protocol == PROTOCOL_DARKPLACES5)
-	{
+	if (sv.protocol == PROTOCOL_DARKPLACES5) {
 		if (bits & SU_WEAPONFRAME)
 			MSG_WriteShort (msg, stats[STAT_WEAPONFRAME]);
 		if (bits & SU_ARMOR)
@@ -1349,18 +1551,21 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		MSG_WriteShort (msg, stats[STAT_ROCKETS]);
 		MSG_WriteShort (msg, stats[STAT_CELLS]);
 		MSG_WriteShort (msg, stats[STAT_ACTIVEWEAPON]);
-		if (bits & SU_VIEWZOOM)
+		if (bits & SU_VIEWZOOM_S19)
 			MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM], 65535));
 	}
-	else if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4)
+	else if (isin10 (sv.protocol, 
+				PROTOCOL_QUAKE, 
+				PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
+				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1, 
+				PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4))
 	{
-		if (bits & SU_WEAPONFRAME)
+		if (Have_Flag (bits, SU_WEAPONFRAME))
 			MSG_WriteByte (msg, stats[STAT_WEAPONFRAME]);
-		if (bits & SU_ARMOR)
+		if (Have_Flag (bits, SU_ARMOR))
 			MSG_WriteByte (msg, stats[STAT_ARMOR]);
-		if (bits & SU_WEAPON)
-		{
-			if (sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+		if (Have_Flag (bits, SU_WEAPON)) {
+			if (isin3 (sv.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 				MSG_WriteShort (msg, stats[STAT_WEAPON]);
 			else
 				MSG_WriteByte (msg, stats[STAT_WEAPON]);
@@ -1371,8 +1576,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		MSG_WriteByte (msg, stats[STAT_NAILS]);
 		MSG_WriteByte (msg, stats[STAT_ROCKETS]);
 		MSG_WriteByte (msg, stats[STAT_CELLS]);
-		if (gamemode == GAME_HIPNOTIC || gamemode == GAME_ROGUE || gamemode == GAME_QUOTH || IS_OLDNEXUIZ_DERIVED(gamemode))
-		{
+		if (isin3 (gamemode, GAME_HIPNOTIC, GAME_ROGUE, GAME_QUOTH) || IS_OLDNEXUIZ_DERIVED(gamemode)) {
 			for (i = 0;i < 32;i++)
 				if (stats[STAT_ACTIVEWEAPON] & (1<<i))
 					break;
@@ -1380,14 +1584,18 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		}
 		else
 			MSG_WriteByte (msg, stats[STAT_ACTIVEWEAPON]);
-		if (bits & SU_VIEWZOOM)
-		{
-			if (sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4)
+
+		// Baker: collision with SU_FITZ_SHELLS2_S19
+		if (Have_Flag (bits, SU_VIEWZOOM_S19)) {
+			if (isin3 (sv.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
 				MSG_WriteByte (msg, bound(0, stats[STAT_VIEWZOOM], 255));
 			else
 				MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM], 65535));
 		}
-	}
+
+
+
+	} // 13 protocols
 }
 
 void SV_FlushBroadcastMessages(void)
@@ -1482,6 +1690,12 @@ static void SV_SendClientDatagram (client_t *client)
 		maxsize = 1024;
 		maxsize2 = 1024;
 		break;
+	case PROTOCOL_FITZQUAKE666:
+	case PROTOCOL_FITZQUAKE999:
+		maxsize = 65536;
+		maxsize2 = 65536;
+		break;
+
 	case PROTOCOL_DARKPLACES1:
 	case PROTOCOL_DARKPLACES2:
 	case PROTOCOL_DARKPLACES3:

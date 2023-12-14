@@ -326,7 +326,7 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 			return false;
 		entrender = cl.csqcrenderentities + edictnum;
 		r_refdef.scene.entities[r_refdef.scene.numentities++] = entrender;
-		entrender->entitynumber = edictnum + MAX_EDICTS;
+		entrender->entitynumber = edictnum + MAX_EDICTS_32768;
 		//entrender->shadertime = 0; // shadertime was set by spawn()
 		entrender->crflags = 0;
 		entrender->effects = 0;
@@ -1046,7 +1046,7 @@ void CL_VM_Init (void)
 			else
 			{
 				Mem_Free(csprogsdata);
-				CL_DisconnectEx(false, "Your %s is not the same version as the server (CRC is %d/%d but should be %d/%d)" NEWLINE, csqc_progname.string, csprogsdatacrc, (int)csprogsdatasize, requiredcrc, requiredsize);
+				CL_DisconnectEx(q_is_kicked_false, "Your %s is not the same version as the server (CRC is %d/%d but should be %d/%d)" NEWLINE, csqc_progname.string, csprogsdatacrc, (int)csprogsdatasize, requiredcrc, requiredsize);
 				return;
 			}
 		}
@@ -1054,7 +1054,7 @@ void CL_VM_Init (void)
 	else
 	{
 		if (requiredcrc >= 0) {
-			CL_DisconnectEx(false, CON_ERROR "CL_VM_Init: %s requires CSQC, but \"%s\" wasn't found\n", cls.demoplayback ? "demo" : "server", csqc_progname.string);
+			CL_DisconnectEx(q_is_kicked_false, CON_ERROR "CL_VM_Init: %s requires CSQC, but " QUOTED_S " wasn't found" NEWLINE, cls.demoplayback ? "demo" : "server", csqc_progname.string);
 		}
 		return;
 	}
@@ -1196,7 +1196,7 @@ qbool CL_VM_GetEntitySoundOrigin(int entnum, vec3_t out)
 
 	CSQC_BEGIN;
 
-	ed = PRVM_EDICT_NUM(entnum - MAX_EDICTS);
+	ed = PRVM_EDICT_NUM(entnum - MAX_EDICTS_32768);
 
 	if (!ed->free)
 	{
@@ -1261,6 +1261,6 @@ qbool CL_VM_TransformView(int entnum, matrix4x4_t *viewmatrix, mplane_t *clippla
 int CL_VM_GetViewEntity(void)
 {
 	if (cl.csqc_server2csqcentitynumber[cl.viewentity])
-		return cl.csqc_server2csqcentitynumber[cl.viewentity] + MAX_EDICTS;
+		return cl.csqc_server2csqcentitynumber[cl.viewentity] + MAX_EDICTS_32768;
 	return cl.viewentity;
 }

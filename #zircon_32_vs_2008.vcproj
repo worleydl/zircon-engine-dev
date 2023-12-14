@@ -324,10 +324,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\cl_parse.c"
-				>
-			</File>
-			<File
 				RelativePath=".\cl_particles.c"
 				>
 			</File>
@@ -1377,6 +1373,18 @@
 			</File>
 			<File
 				RelativePath=".\cl_demo.c"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_parse.c"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_parse_quakeworld.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_parse_temp_quakeworld.c.h"
 				>
 			</File>
 			<File

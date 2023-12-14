@@ -2026,7 +2026,7 @@ static void R_Shadow_BounceGrid_AssignPhotons_Task(taskqueue_task_t *t)
 		// skipped entirely (it may just be a corona)
 		if (rtlight->radius == 0.0f || VectorLength2(rtlight->color) == 0.0f)
 			continue;
-		w *= ((rtlight->style >= 0 && rtlight->style < MAX_LIGHTSTYLES) ? r_refdef.scene.rtlightstylevalue[rtlight->style] : 1);
+		w *= ((rtlight->style >= 0 && rtlight->style < MAX_LIGHTSTYLES_256) ? r_refdef.scene.rtlightstylevalue[rtlight->style] : 1);
 		VectorScale(rtlight->color, w, rtlight->bouncegrid_photoncolor);
 		// skip lights that will emit no photons
 		if (!VectorLength2(rtlight->bouncegrid_photoncolor))
@@ -3412,10 +3412,10 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 	int numshadowentities;
 	int numshadowentities_noselfshadow;
 	// FIXME: bounds check lightentities and shadowentities, etc.
-	static entity_render_t *lightentities[MAX_EDICTS];
-	static entity_render_t *lightentities_noselfshadow[MAX_EDICTS];
-	static entity_render_t *shadowentities[MAX_EDICTS];
-	static entity_render_t *shadowentities_noselfshadow[MAX_EDICTS];
+	static entity_render_t *lightentities[MAX_EDICTS_32768];
+	static entity_render_t *lightentities_noselfshadow[MAX_EDICTS_32768];
+	static entity_render_t *shadowentities[MAX_EDICTS_32768];
+	static entity_render_t *shadowentities_noselfshadow[MAX_EDICTS_32768];
 	qbool nolight;
 	qbool castshadows;
 
@@ -3450,7 +3450,7 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 	rtlight->currentcubemap = rtlight->cubemapname[0] ? R_GetCubemap(rtlight->cubemapname) : r_texture_whitecube;
 
 	// look up the light style value at this time
-	f = ((rtlight->style >= 0 && rtlight->style < MAX_LIGHTSTYLES) ? r_refdef.scene.rtlightstylevalue[rtlight->style] : 1) * r_shadow_lightintensityscale.value;
+	f = ((rtlight->style >= 0 && rtlight->style < MAX_LIGHTSTYLES_256) ? r_refdef.scene.rtlightstylevalue[rtlight->style] : 1) * r_shadow_lightintensityscale.value;
 	VectorScale(rtlight->color, f, rtlight->currentcolor);
 	/*
 	if (rtlight->selected)
@@ -3711,8 +3711,8 @@ static void R_Shadow_DrawLightShadowMaps(rtlight_t *rtlight)
 	entity_render_t **shadowentities;
 	entity_render_t **shadowentities_noselfshadow;
 	int *surfacelist;
-	static unsigned char entitysides[MAX_EDICTS];
-	static unsigned char entitysides_noselfshadow[MAX_EDICTS];
+	static unsigned char entitysides[MAX_EDICTS_32768];
+	static unsigned char entitysides_noselfshadow[MAX_EDICTS_32768];
 	float borderbias;
 	int side;
 	int size;
@@ -4141,7 +4141,7 @@ void R_Shadow_PrepareLights(void)
 		for (lnum = 0; lnum < r_refdef.scene.numlights; lnum++)
 		{
 			rtlight_t *rtlight = r_refdef.scene.lights[lnum];
-			f = ((rtlight->style >= 0 && rtlight->style < MAX_LIGHTSTYLES) ? r_refdef.scene.lightstylevalue[rtlight->style] : 1) * r_shadow_lightintensityscale.value;
+			f = ((rtlight->style >= 0 && rtlight->style < MAX_LIGHTSTYLES_256) ? r_refdef.scene.lightstylevalue[rtlight->style] : 1) * r_shadow_lightintensityscale.value;
 			VectorScale(rtlight->color, f, rtlight->currentcolor);
 		}
 	}
@@ -4653,7 +4653,7 @@ static void R_Shadow_UpdateWorldLight(dlight_t *light, vec3_t origin, vec3_t ang
 {
 	matrix4x4_t matrix;
 
-	// note that style is no longer validated here, -1 is used for unstyled lights and >= MAX_LIGHTSTYLES is accepted for sake of editing rtlights files that might be out of bounds but perfectly formatted
+	// note that style is no longer validated here, -1 is used for unstyled lights and >= MAX_LIGHTSTYLES_256 is accepted for sake of editing rtlights files that might be out of bounds but perfectly formatted
 
 	// validate parameters
 	if (!cubemapname)

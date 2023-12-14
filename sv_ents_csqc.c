@@ -31,7 +31,7 @@ void EntityFrameCSQC_LostFrame(client_t *client, int framenum)
 	int i, j;
 	qbool valid;
 	int ringfirst, ringlast;
-	static int recoversendflags[MAX_EDICTS]; // client only
+	static int recoversendflags[MAX_EDICTS_32768]; // client only
 	csqcentityframedb_t *d;
 
 	if (client->csqcentityframe_lastreset < 0)

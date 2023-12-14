@@ -183,7 +183,7 @@ void MSG_WriteUnterminatedString (sizebuf_t *sb, const char *s)
 
 void MSG_WriteCoord13i (sizebuf_t *sb, float f)
 {
-	MSG_WriteShort (sb, Q_rint(f*8));
+	MSG_WriteShort (sb, Q_rint(f*8)); // Quake and Fitz 13.3
 }
 
 void MSG_WriteCoord16i (sizebuf_t *sb, float f)
@@ -198,11 +198,18 @@ void MSG_WriteCoord32f (sizebuf_t *sb, float f)
 
 void MSG_WriteCoord (sizebuf_t *sb, float f, protocolversion_t protocol)
 {
-	if (protocol == PROTOCOL_QUAKE || protocol == PROTOCOL_QUAKEDP || protocol == PROTOCOL_NEHAHRAMOVIE || protocol == PROTOCOL_NEHAHRABJP || protocol == PROTOCOL_NEHAHRABJP2 || protocol == PROTOCOL_NEHAHRABJP3 || protocol == PROTOCOL_QUAKEWORLD)
+	if (isin8 (protocol, PROTOCOL_FITZQUAKE666, 
+				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+				PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+				PROTOCOL_QUAKEWORLD))
 		MSG_WriteCoord13i (sb, f);
-	else if (protocol == PROTOCOL_DARKPLACES1)
+	else if (isin1 (protocol, PROTOCOL_FITZQUAKE999)) {
+		// Int32Coord
+		MSG_WriteLong (sb, Q_rint (f * 16));
+	}
+	else if (isin1 (protocol, PROTOCOL_DARKPLACES1))
 		MSG_WriteCoord32f (sb, f);
-	else if (protocol == PROTOCOL_DARKPLACES2 || protocol == PROTOCOL_DARKPLACES3 || protocol == PROTOCOL_DARKPLACES4)
+	else if (isin3 (protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
 		MSG_WriteCoord16i (sb, f);
 	else
 		MSG_WriteCoord32f (sb, f);
@@ -221,6 +228,8 @@ void MSG_WriteAngle8i (sizebuf_t *sb, float f)
 	MSG_WriteByte (sb, (int)Q_rint(f*(256.0/360.0)) & 255);
 }
 
+// DPD 999 - MSG_WriteAngle16i - This is compatible with FitzQuake 666
+WARP_X_ (CL_SendMove) // CL to SV FitzQuake and ProQuake angles
 void MSG_WriteAngle16i (sizebuf_t *sb, float f)
 {
 	MSG_WriteShort (sb, (int)Q_rint(f*(65536.0/360.0)) & 65535);
@@ -231,12 +240,21 @@ void MSG_WriteAngle32f (sizebuf_t *sb, float f)
 	MSG_WriteFloat (sb, f);
 }
 
+// Baker: Server to client
 void MSG_WriteAngle (sizebuf_t *sb, float f, protocolversion_t protocol)
 {
-	if (protocol == PROTOCOL_QUAKE || protocol == PROTOCOL_QUAKEDP || protocol == PROTOCOL_NEHAHRAMOVIE || protocol == PROTOCOL_NEHAHRABJP || protocol == PROTOCOL_NEHAHRABJP2 || protocol == PROTOCOL_NEHAHRABJP3 || protocol == PROTOCOL_DARKPLACES1 || protocol == PROTOCOL_DARKPLACES2 || protocol == PROTOCOL_DARKPLACES3 || protocol == PROTOCOL_DARKPLACES4 || protocol == PROTOCOL_QUAKEWORLD)
-		MSG_WriteAngle8i (sb, f);
+	if (isin12 (protocol, PROTOCOL_FITZQUAKE666,
+			PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+			PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+			PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+			PROTOCOL_DARKPLACES4,	PROTOCOL_QUAKEWORLD
+			))
+		MSG_WriteAngle8i (sb, f); // Byte angle
 	else
-		MSG_WriteAngle16i (sb, f);
+	if (isin1( protocol, PROTOCOL_FITZQUAKE999 /*PRFL_RMQ_SHORTANGLE_USED*/))
+		MSG_WriteAngle16i (sb, f); // Same as MSG_WriteShort (sb, Q_rint(f * 65536.0 / 360.0) & 65535);
+	else
+		MSG_WriteAngle16i (sb, f); // Short angle
 }
 
 //
@@ -372,11 +390,20 @@ float MSG_ReadCoord32f (sizebuf_t *sb)
 
 float MSG_ReadCoord (sizebuf_t *sb, protocolversion_t protocol)
 {
-	if (protocol == PROTOCOL_QUAKE || protocol == PROTOCOL_QUAKEDP || protocol == PROTOCOL_NEHAHRAMOVIE || protocol == PROTOCOL_NEHAHRABJP || protocol == PROTOCOL_NEHAHRABJP2 || protocol == PROTOCOL_NEHAHRABJP3 || protocol == PROTOCOL_QUAKEWORLD)
+	if (isin1 (protocol, PROTOCOL_FITZQUAKE999)) {
+		// > PRFL_INT32COORD
+		return MSG_ReadLong (sb) * (1.0 / 16.0);
+	}
+	else 
+	if (isin8 (protocol, PROTOCOL_FITZQUAKE666,
+			PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE, 
+			PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3, 
+			PROTOCOL_QUAKEWORLD)
+		)
 		return MSG_ReadCoord13i(sb);
-	else if (protocol == PROTOCOL_DARKPLACES1)
+	else if (isin1 (protocol, PROTOCOL_DARKPLACES1))
 		return MSG_ReadCoord32f(sb);
-	else if (protocol == PROTOCOL_DARKPLACES2 || protocol == PROTOCOL_DARKPLACES3 || protocol == PROTOCOL_DARKPLACES4)
+	else if (isin3 (protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
 		return MSG_ReadCoord16i(sb);
 	else
 		return MSG_ReadCoord32f(sb);
@@ -400,6 +427,11 @@ float MSG_ReadAngle16i (sizebuf_t *sb)
 	return (signed short)MSG_ReadShort (sb) * (360.0/65536.0);
 }
 
+float MSG_ReadAngle16f (sizebuf_t *sb)
+{
+	return MSG_ReadShort(sb) * (360.0 / 65536); // 999
+}
+
 float MSG_ReadAngle32f (sizebuf_t *sb)
 {
 	return MSG_ReadFloat (sb);
@@ -407,7 +439,16 @@ float MSG_ReadAngle32f (sizebuf_t *sb)
 
 float MSG_ReadAngle (sizebuf_t *sb, protocolversion_t protocol)
 {
-	if (protocol == PROTOCOL_QUAKE || protocol == PROTOCOL_QUAKEDP || protocol == PROTOCOL_NEHAHRAMOVIE || protocol == PROTOCOL_NEHAHRABJP || protocol == PROTOCOL_NEHAHRABJP2 || protocol == PROTOCOL_NEHAHRABJP3 || protocol == PROTOCOL_DARKPLACES1 || protocol == PROTOCOL_DARKPLACES2 || protocol == PROTOCOL_DARKPLACES3 || protocol == PROTOCOL_DARKPLACES4 || protocol == PROTOCOL_QUAKEWORLD)
+	if (isin1 (protocol, PROTOCOL_FITZQUAKE999)) { // PRFL_SHORTANGLE
+		return MSG_ReadShort (sb) * (360.0 / 65536);
+	}
+	else 
+	if (isin12 (protocol,	PROTOCOL_FITZQUAKE666,	
+			PROTOCOL_QUAKE, 		PROTOCOL_QUAKEDP,		
+			PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	
+			PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	
+			PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	PROTOCOL_QUAKEWORLD
+		))
 		return MSG_ReadAngle8i (sb);
 	else
 		return MSG_ReadAngle16i (sb);

@@ -320,7 +320,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 			Partial_Reset_Undo_Normal_Selection_Reset (); // SEL/UNDO CTRL-V paste, reset partial 
 		}
 
-		if ((cbd = Sys_GetClipboardData()) != 0) {
+		if ((cbd = Sys_GetClipboardData_Alloc()) != 0) {
 			int i;
 #if 1
 			p = cbd;

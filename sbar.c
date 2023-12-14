@@ -676,6 +676,7 @@ levtime:
 	Sbar_DrawString (8 + 26 * 8, 12, va(vabuf, sizeof(vabuf), "Secrets: %d/%d", cl.stats[STAT_SECRETS], cl.stats[STAT_TOTALSECRETS]));
 
 	if (!cl.islocalgame && sbar_showprotocol.integer) {
+		// Baker: Nehahra movie is Nehahra demo format
 		if (isin2 (cls.protocol, PROTOCOL_QUAKE, PROTOCOL_QUAKEDP)) {
 			Sbar_DrawString (8, 4, "Q15");
 		} else if (isin1 (cls.protocol, PROTOCOL_DARKPLACES7)) {
@@ -1695,7 +1696,13 @@ void Sbar_DeathmatchOverlay (void)
 			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
 			MSG_WriteString(&cls.netcon->message, "pings");
 		}
-		else if (cls.protocol == PROTOCOL_QUAKE || cls.protocol == PROTOCOL_QUAKEDP || cls.protocol == PROTOCOL_NEHAHRAMOVIE || cls.protocol == PROTOCOL_NEHAHRABJP || cls.protocol == PROTOCOL_NEHAHRABJP2 || cls.protocol == PROTOCOL_NEHAHRABJP3 || cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3 || cls.protocol == PROTOCOL_DARKPLACES4 || cls.protocol == PROTOCOL_DARKPLACES5 || cls.protocol == PROTOCOL_DARKPLACES6/* || cls.protocol == PROTOCOL_DARKPLACES7*/)
+		else if (isin15 (cls.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
+			PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP, 		PROTOCOL_NEHAHRAMOVIE,
+			PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+			PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+			PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5,	PROTOCOL_DARKPLACES6,
+			PROTOCOL_DARKPLACES7
+			))
 		{
 			// these servers usually lack the pings command and so a less efficient "ping" command must be sent, which on modern DP servers will also reply with a pingplreport command after the ping listing
 			static int ping_anyway_counter = 0;

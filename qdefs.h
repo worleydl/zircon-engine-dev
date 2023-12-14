@@ -34,12 +34,15 @@
 #define	CMDBUFSIZE				655360 ///< maximum script size that can be loaded by the exec command (8192 in Quake)
 #define	MAX_ARGS_80				80 ///< maximum number of parameters to a console command or alias
 
+#define FITZQUAKE_MAX_SOUNDS_2048	2048
+#define	MAX_SOUNDS_QUAKE_256		256 ///< max number of sounds loaded at once
+
 #define	NET_MAXMESSAGE			65536 ///< max reliable packet size (sent as multiple fragments of MAX_PACKETFRAGMENT)
 #define	MAX_PACKETFRAGMENT		1024 ///< max length of packet fragment
-#define	MAX_EDICTS				32768 ///< max number of objects in game world at once (32768 protocol limit)
-#define	MAX_MODELS				8192 ///< max number of models loaded at once (including during level transitions)
-#define	MAX_SOUNDS				4096 ///< max number of sounds loaded at once
-#define	MAX_LIGHTSTYLES			256 ///< max flickering light styles in level (note: affects savegame format)
+#define	MAX_EDICTS_32768		32768 ///< max number of objects in game world at once (32768 protocol limit)
+#define	MAX_MODELS_8192			8192 ///< max number of models loaded at once (including during level transitions)
+#define	MAX_SOUNDS_4096			4096 ///< max number of sounds loaded at once
+#define	MAX_LIGHTSTYLES_256		256 ///< max flickering light styles in level (note: affects savegame format)
 #define	MAX_STYLESTRING			64 ///< max length of flicker pattern for light style
 #define	MAX_SCOREBOARD			255 ///< max number of players in game at once (255 protocol limit)
 #define	MAX_SCOREBOARDNAME_128	128 ///< max length of player name in game

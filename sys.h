@@ -251,7 +251,7 @@ void Sys_Sleep(int microseconds);
 /// Perform Key_Event () callbacks until the input que is empty
 void Sys_SendKeyEvents (void);
 
-char *Sys_GetClipboardData (void);
+char *Sys_GetClipboardData_Alloc (void);
 int Sys_SetClipboardData(const char *text_to_clipboard);
 
 extern qbool sys_supportsdlgetticks;

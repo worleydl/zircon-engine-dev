@@ -621,7 +621,7 @@ void R_Mod_DrawAddWaterPlanes(entity_render_t *ent)
 	}
 	else
 	{
-		if (ent->entitynumber >= MAX_EDICTS) // && CL_VM_TransformView(ent->entitynumber - MAX_EDICTS, NULL, NULL, NULL))
+		if (ent->entitynumber >= MAX_EDICTS_32768) // && CL_VM_TransformView(ent->entitynumber - MAX_EDICTS_32768, NULL, NULL, NULL))
 			n = ent->entitynumber;
 		else
 			n = 0;

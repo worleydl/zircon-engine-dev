@@ -462,6 +462,28 @@ void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bi
 
 void VID_Alt_Enter_f (void) // Baker: ALT-ENTER
 {
+	if (cls.state == ca_disconnected) 
+		goto ok_to_restart;
+	
+	if (!scr_loading && cls.signon == SIGNONS_4 && cls.world_frames && cls.world_start_realtime) {
+		// Baker: Not working so far ...
+		double dirtytime = Sys_DirtyTime ();
+		double delta_time = dirtytime - cls.world_start_realtime;
+		if (delta_time > 2) {
+			goto ok_to_restart;
+		}
+		
+		Con_DPrintLinef ("Ignored ALT-ENTER because loading state or not fully connected");
+
+		return; // Not ok
+	}
+
+	Con_DPrintLinef ("Ignored ALT-ENTER because loading state or not fully connected");
+
+	return; // Not ok
+
+ok_to_restart:
+
 #ifdef __ANDROID__
 	Con_PrintLinef ("vid_restart not supported for this build");
 
@@ -554,7 +576,7 @@ void Key_Event (int key, int ascii, qbool down)
 #if 1 // ALT-ENTER
 	if (key == K_ENTER) {
 		if (keydown[K_ALT] && down) { // Baker 2000
-			VID_Alt_Enter_f();
+				VID_Alt_Enter_f();
 			ignore_enter_up = true;
 			return; // Didn't happen!
 		}

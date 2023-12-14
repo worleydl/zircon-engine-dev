@@ -1751,7 +1751,9 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 		if (name[0] && String_Does_Start_With(name, "sky") == false &&
 				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name,
 				loadmodel->data_textures + i,
-				name, q_tx_complain_false, q_tx_fallback_notexture_false, TXFLAGS1, MATERIALFLAG_WALL
+				name, q_tx_complain_false, q_tx_fallback_notexture_false,
+				q_tx_do_external_false,
+				TXFLAGS1, MATERIALFLAG_WALL
 				) )
 		{
 			// set the width/height fields which are used for parsing texcoords in this bsp format
@@ -4373,7 +4375,7 @@ static void Mod_Q2BSP_LoadTexinfo(sizebuf_t *sb)
 				int q2flags = out->q2flags;
 				unsigned char *walfile = NULL;
 				fs_offset_t walfilesize = 0;
-				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, tx, filename, q_tx_warn_missing_true, q_tx_fallback_notexture_true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+				Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, tx, filename, q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, TEXF_ALPHA | TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 				// now read the .wal file to get metadata (even if a .tga was overriding it, we still need the wal data)
 				walfile = FS_LoadFile(filename, tempmempool, fs_quiet_true, &walfilesize);
 				if (walfile)
@@ -5186,7 +5188,7 @@ static void Mod_Q3BSP_LoadTextures(lump_t *l)
 	for (i = 0; i < count; i++) {
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
-		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, out + i, in[i].name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, out + i, in[i].name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 		// restore the surfaceflags and supercontents
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
@@ -5529,11 +5531,13 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 		// no internal lightmaps
 		// try external lightmaps
 		FS_StripExtension(loadmodel->model_name, mapname, sizeof(mapname));
-		inpixels[0] = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s/lm_%04d", mapname, 0), false, false, false, NULL);
+		inpixels[0] = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s/lm_%04d", mapname, 0), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL);
 		if (!inpixels[0])
 			return;
-		else
-			Con_PrintLinef ("Using external lightmaps");
+		else {
+			if (developer_loading.integer)
+				Con_PrintLinef ("Using external lightmaps");
+		}
 
 		// using EXTERNAL lightmaps instead
 		if (image_width != (int) CeilPowerOf2(image_width) || image_width != image_height) {
@@ -5549,7 +5553,7 @@ static void Mod_Q3BSP_LoadLightmaps(lump_t *l, lump_t *faceslump)
 
 		for(count = 1; ; ++count)
 		{
-			inpixels[count] = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s/lm_%04d", mapname, count), false, false, false, NULL);
+			inpixels[count] = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s/lm_%04d", mapname, count), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL);
 			if (!inpixels[count])
 				break; // we got all of them
 			if (image_width != size || image_height != size)
@@ -7502,7 +7506,6 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	loadmodel->brush.numsubmodels = loadmodel->brushq3.num_models;
 
 	// the MakePortals code works fine on the q3bsp data as well
-	#pragma message ("Baker: mod_bsp_portalize how detect no vis data q3?")
 	if (mod_bsp_portalize.integer) {
 		// Baker r0100: Only do Mod_BSP_MakePortals when it would be used.
 		if (mod_bsp_portalize.integer >= 2 || mod->brush.num_pvsclusters == 0 || r_novis.integer) {

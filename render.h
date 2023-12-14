@@ -381,10 +381,10 @@ typedef struct r_refdef_scene_s {
 	int numlights;
 
 	// intensities for light styles right now, controls rtlights
-	float rtlightstylevalue[MAX_LIGHTSTYLES];	// float fraction of base light value
+	float rtlightstylevalue[MAX_LIGHTSTYLES_256];	// float fraction of base light value
 	// 8.8bit fixed point intensities for light styles
 	// controls intensity lightmap layers
-	unsigned short lightstylevalue[MAX_LIGHTSTYLES];	// 8.8 fraction of base light value
+	unsigned short lightstylevalue[MAX_LIGHTSTYLES_256];	// 8.8 fraction of base light value
 
 	// adds brightness to the whole scene, separate from lightmapintensity
 	// see CL_UpdateEntityShading

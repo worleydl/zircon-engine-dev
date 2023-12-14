@@ -64,28 +64,16 @@ protocolversioninfo[] =
 	{10000, PROTOCOL_NEHAHRABJP  , "NEHAHRABJP"},
 	{10001, PROTOCOL_NEHAHRABJP2 , "NEHAHRABJP2"},
 	{10002, PROTOCOL_NEHAHRABJP3 , "NEHAHRABJP3"},
+	{  666, PROTOCOL_FITZQUAKE666, "666"},
+	{  999, PROTOCOL_FITZQUAKE999, "999"},
 	{    0, PROTOCOL_UNKNOWN     , NULL}
 };
-
-#pragma message ("nehstart nehahra?  is it an issue yes or no")
-#pragma message ("neh movie ok -- use -nehahra")
-#pragma message ("does nehahra use special textures like bump? no")
-
-#pragma message ("nehahra somehow uses the right start map")
-
-#pragma message ("demo play hides mouse")
-
-
-#pragma message ("quakeworld server list issue with cursor and stuff")
-#pragma message ("pausedemo must clear on new map")
-
-#pragma message ("less warning: new portal was clipped away happens in nehahra demo")
 
 
 protocolversion_t Protocol_EnumForName(const char *s)
 {
 	int i;
-	for (i = 0;protocolversioninfo[i].name;i++)
+	for (i = 0; protocolversioninfo[i].name; i++)
 		if (String_Does_Match_Caseless(s, protocolversioninfo[i].name))
 			return protocolversioninfo[i].version;
 	return PROTOCOL_UNKNOWN;

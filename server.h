@@ -117,13 +117,13 @@ typedef struct server_s
 	// NULL terminated
 	// LadyHavoc: precaches are now MAX_QPATH_128 rather than a pointer
 	// updated by SV_ModelIndex
-	char model_precache[MAX_MODELS][MAX_QPATH_128];
-	struct model_s *models[MAX_MODELS];
+	char model_precache[MAX_MODELS_8192][MAX_QPATH_128];
+	struct model_s *models[MAX_MODELS_8192];
 	// NULL terminated
 	// LadyHavoc: precaches are now MAX_QPATH_128 rather than a pointer
 	// updated by SV_SoundIndex
-	char sound_precache[MAX_SOUNDS][MAX_QPATH_128];
-	char lightstyles[MAX_LIGHTSTYLES][64];
+	char sound_precache[MAX_SOUNDS_4096][MAX_QPATH_128];
+	char lightstyles[MAX_LIGHTSTYLES_256][64];
 	/// some actions are only valid during load
 	server_state_t state;
 
@@ -158,19 +158,19 @@ typedef struct server_s
 	int writeentitiestoclient_numeyes;
 	int writeentitiestoclient_pvsbytes;
 	unsigned char writeentitiestoclient_pvs[MAX_MAP_LEAFS/8];
-	const entity_state_t *writeentitiestoclient_sendstates[MAX_EDICTS];
-	unsigned short writeentitiestoclient_csqcsendstates[MAX_EDICTS];
+	const entity_state_t *writeentitiestoclient_sendstates[MAX_EDICTS_32768];
+	unsigned short writeentitiestoclient_csqcsendstates[MAX_EDICTS_32768];
 
 	int numsendentities;
-	entity_state_t sendentities[MAX_EDICTS];
-	entity_state_t *sendentitiesindex[MAX_EDICTS];
+	entity_state_t sendentities[MAX_EDICTS_32768];
+	entity_state_t *sendentitiesindex[MAX_EDICTS_32768];
 
 	int sententitiesmark;
-	int sententities[MAX_EDICTS];
-	int sententitiesconsideration[MAX_EDICTS];
+	int sententities[MAX_EDICTS_32768];
+	int sententitiesconsideration[MAX_EDICTS_32768];
 
 	/// legacy support for self.Version based csqc entity networking
-	unsigned char csqcentityversion[MAX_EDICTS]; // legacy
+	unsigned char csqcentityversion[MAX_EDICTS_32768]; // legacy
 } server_t;
 
 #define NUM_CSQCENTITIES_PER_FRAME 256
@@ -247,14 +247,14 @@ typedef struct client_s
 	char netaddress[MAX_QPATH_128];
 
 	/// visibility state
-	float visibletime[MAX_EDICTS];
+	float visibletime[MAX_EDICTS_32768];
 
 	// scope is whether an entity is currently being networked to this client
 	// sendflags is what properties have changed on the entity since the last
 	// update that was sent
 	int csqcnumedicts;
-	unsigned char csqcentityscope[MAX_EDICTS];
-	unsigned int csqcentitysendflags[MAX_EDICTS];
+	unsigned char csqcentityscope[MAX_EDICTS_32768];
+	unsigned int csqcentitysendflags[MAX_EDICTS_32768];
 
 #define NUM_CSQCENTITYDB_FRAMES 256
 	csqcentityframedb_t csqcentityframehistory[NUM_CSQCENTITYDB_FRAMES];

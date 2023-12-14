@@ -634,7 +634,9 @@ void Mod_CreateCollisionMesh(model_t *mod);
 void Mod_FreeQ3Shaders(void);
 void Mod_LoadQ3Shaders(void);
 shader_t *Mod_LookupQ3Shader(const char *name);
-qbool Mod_LoadTextureFromQ3Shader(struct mempool_s *mempool, const char *modelname, texture_t *texture, const char *name, qbool warnmissing, qbool fallback, int defaulttexflags, int defaultmaterialflags);
+qbool Mod_LoadTextureFromQ3Shader(struct mempool_s *mempool, const char *modelname, texture_t *texture, 
+					const char *name, qbool warnmissing, qbool fallback, int shall_do_external, 
+					int defaulttexflags, int defaultmaterialflags);
 texture_shaderpass_t *Mod_CreateShaderPass(struct mempool_s *mempool, struct skinframe_s *skinframe);
 texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(struct mempool_s *mempool, const char *modelname, q3shaderinfo_layer_t *layer, int layerindex, int texflags, const char *texturename);
 /// Sets up a material to render the provided skinframe.  See also R_SkinFrame_LoadInternalBGRA.

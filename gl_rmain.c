@@ -550,7 +550,7 @@ static void R_BuildFogHeightTexture(void)
 	inpixels = NULL;
 	strlcpy(r_refdef.fogheighttexturename, r_refdef.fog_height_texturename, sizeof(r_refdef.fogheighttexturename));
 	if (r_refdef.fogheighttexturename[0])
-		inpixels = loadimagepixelsbgra(r_refdef.fogheighttexturename, true, false, false, NULL);
+		inpixels = loadimagepixelsbgra(r_refdef.fogheighttexturename, q_tx_complain_true, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL);
 	if (!inpixels)
 	{
 		r_refdef.fog_height_tablesize = 0;
@@ -2411,7 +2411,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	// check for DDS texture file first
 	if (!r_loaddds || !(ddsbase = R_LoadTextureDDSFile(r_main_texturepool, va(vabuf, sizeof(vabuf), "dds/%s.dds", basename), vid.sRGB3D, textureflags, &ddshasalpha, ddsavgcolor, miplevel, false)))
 	{
-		basepixels = loadimagepixelsbgra(name, complain, true, false, &miplevel);
+		basepixels = loadimagepixelsbgra(name, complain, q_tx_allowfixtrans_true, q_tx_convertsrgb_false, &miplevel);
 		if (basepixels == NULL && fallbacknotexture)
 			basepixels = Image_GenerateNoTexture();
 		if (basepixels == NULL)
@@ -2506,13 +2506,13 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	if (r_loadnormalmap && skinframe->nmap == NULL)
 	{
 		mymiplevel = savemiplevel;
-		if ((pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_norm", skinframe->basename), false, false, false, &mymiplevel)) != NULL)
+		if ((pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_norm", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)) != NULL)
 		{
 			skinframe->nmap = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_nmap", skinframe->basename), image_width, image_height, pixels, TEXTYPE_BGRA, (TEXF_ALPHA | textureflags) & (r_mipnormalmaps.integer ? ~0 : ~TEXF_MIPMAP) & (gl_texturecompression_normal.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 			Mem_Free(pixels);
 			pixels = NULL;
 		}
-		else if (r_shadow_bumpscale_bumpmap.value > 0 && (bumppixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_bump", skinframe->basename), false, false, false, &mymiplevel)) != NULL)
+		else if (r_shadow_bumpscale_bumpmap.value > 0 && (bumppixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_bump", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)) != NULL)
 		{
 			pixels = (unsigned char *)Mem_Alloc(tempmempool, image_width * image_height * 4);
 			Image_HeightmapToNormalmap_BGRA(bumppixels, pixels, image_width, image_height, false, r_shadow_bumpscale_bumpmap.value);
@@ -2537,7 +2537,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	// _blend and .blend are supported only for Q3 & QL compatibility, this hack can be removed if better Q3 shader support is implemented
 	// _glow is the preferred name
 	mymiplevel = savemiplevel;
-	if (skinframe->glow == NULL && ((pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_glow", skinframe->basename), false, false, false, &mymiplevel)) || (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s.blend", skinframe->basename), false, false, false, &mymiplevel)) || (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_blend", skinframe->basename), false, false, false, &mymiplevel)) || (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_luma", skinframe->basename), false, false, false, &mymiplevel))))
+	if (skinframe->glow == NULL && ((pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_glow", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)) || (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s.blend", skinframe->basename), false, false, false, &mymiplevel)) || (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_blend", skinframe->basename), false, false, false, &mymiplevel)) || (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_luma", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel))))
 	{
 		skinframe->glow = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_glow", skinframe->basename), image_width, image_height, pixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags & (gl_texturecompression_glow.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 #ifndef USE_GLES2
@@ -2548,7 +2548,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	}
 
 	mymiplevel = savemiplevel;
-	if (skinframe->gloss == NULL && r_loadgloss && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_gloss", skinframe->basename), false, false, false, &mymiplevel)))
+	if (skinframe->gloss == NULL && r_loadgloss && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_gloss", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)))
 	{
 		skinframe->gloss = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_gloss", skinframe->basename), image_width, image_height, pixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, (TEXF_ALPHA | textureflags) & (gl_texturecompression_gloss.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 #ifndef USE_GLES2
@@ -2560,7 +2560,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	}
 
 	mymiplevel = savemiplevel;
-	if (skinframe->pants == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_pants", skinframe->basename), false, false, false, &mymiplevel)))
+	if (skinframe->pants == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_pants", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)))
 	{
 		skinframe->pants = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_pants", skinframe->basename), image_width, image_height, pixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags & (gl_texturecompression_color.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 #ifndef USE_GLES2
@@ -2572,7 +2572,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	}
 
 	mymiplevel = savemiplevel;
-	if (skinframe->shirt == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_shirt", skinframe->basename), false, false, false, &mymiplevel)))
+	if (skinframe->shirt == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_shirt", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)))
 	{
 		skinframe->shirt = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_shirt", skinframe->basename), image_width, image_height, pixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags & (gl_texturecompression_color.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 #ifndef USE_GLES2
@@ -2584,7 +2584,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	}
 
 	mymiplevel = savemiplevel;
-	if (skinframe->reflect == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_reflect", skinframe->basename), false, false, false, &mymiplevel)))
+	if (skinframe->reflect == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_reflect", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)))
 	{
 		skinframe->reflect = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_reflect", skinframe->basename), image_width, image_height, pixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, textureflags & (gl_texturecompression_reflectmask.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 #ifndef USE_GLES2
@@ -3025,7 +3025,7 @@ static rtexture_t *R_LoadCubemap(const char *basename)
 			// generate an image name based on the base and and suffix
 			dpsnprintf(name, sizeof(name), "%s%s", basename, suffix[j][i].suffix);
 			// load it
-			if ((image_buffer = loadimagepixelsbgra(name, false, false, false, NULL)))
+			if ((image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
 			{
 				// an image loaded, make sure width and height are equal
 				if (image_width == image_height && (!cubemappixels || image_width == cubemapsize))
@@ -4800,7 +4800,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			{
 				// we need to perform a matrix transform to render the view... so let's get the transformation matrix
 				r_fb.water.hideplayer = false; // we don't want to hide the player model from these ones
-				CL_VM_TransformView(p->camera_entity - MAX_EDICTS, &r_refdef.view.matrix, &r_refdef.view.clipplane, visorigin);
+				CL_VM_TransformView(p->camera_entity - MAX_EDICTS_32768, &r_refdef.view.matrix, &r_refdef.view.clipplane, visorigin);
 				R_RenderView_UpdateViewVectors();
 				if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->brush.FatPVS)
 				{
@@ -4848,7 +4848,7 @@ static void R_Water_ProcessPlanes(int fbo, rtexture_t *depthtexture, rtexture_t 
 			if (p->camera_entity)
 			{
 				// we need to perform a matrix transform to render the view... so let's get the transformation matrix
-				CL_VM_TransformView(p->camera_entity - MAX_EDICTS, &r_refdef.view.matrix, &r_refdef.view.clipplane, visorigin);
+				CL_VM_TransformView(p->camera_entity - MAX_EDICTS_32768, &r_refdef.view.matrix, &r_refdef.view.clipplane, visorigin);
 			}
 
 			// note: all of the view is used for displaying... so
@@ -5509,6 +5509,12 @@ extern cvar_t v_isometric;
 extern void V_MakeViewIsometric(void);
 void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, int x, int y, int width, int height)
 {
+	if (cls.world_frames == 0) {
+		// Baker: Only occurs once per map typically
+		cls.world_start_realtime = Sys_DirtyTime ();
+	}
+	cls.world_frames ++;
+
 	matrix4x4_t originalmatrix = r_refdef.view.matrix, offsetmatrix;
 	int viewfbo = 0;
 	rtexture_t *viewdepthtexture = NULL;
@@ -5835,7 +5841,7 @@ void R_RenderScene(int viewfbo, rtexture_t *viewdepthtexture, rtexture_t *viewco
 	}
 
 #if 123
-	if (cl.csqc_loaded)
+	if (cl.csqc_loaded && csqc_polygons_darkplaces_classic_3d.integer)
 		VM_CL_AddPolygonsToMeshQueue(CLVM_prog);
 #endif // 123
 
@@ -6458,7 +6464,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	t->update_lastrenderframe = r_textureframe;
 	t->update_lastrenderentity = (void *)ent;
 
-	if (ent->entitynumber >= MAX_EDICTS && ent->entitynumber < 2 * MAX_EDICTS)
+	if (ent->entitynumber >= MAX_EDICTS_32768 && ent->entitynumber < 2 * MAX_EDICTS_32768)
 		t->tcamera_entity = ent->entitynumber;
 	else
 		t->tcamera_entity = 0;

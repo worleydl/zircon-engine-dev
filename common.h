@@ -163,7 +163,9 @@ typedef enum protocolversion_e
 	PROTOCOL_QUAKEWORLD, ///< quakeworld protocol
 	PROTOCOL_NEHAHRABJP, ///< same as QUAKEDP but with 16bit modelindex
 	PROTOCOL_NEHAHRABJP2, ///< same as NEHAHRABJP but with 16bit soundindex
-	PROTOCOL_NEHAHRABJP3 ///< same as NEHAHRABJP2 but with some changes
+	PROTOCOL_NEHAHRABJP3, ///< same as NEHAHRABJP2 but with some changes
+	PROTOCOL_FITZQUAKE999,
+	PROTOCOL_FITZQUAKE666,
 }
 protocolversion_t;
 
@@ -205,6 +207,8 @@ int MSG_ReadBytes (sizebuf_t *sb, int numbytes, unsigned char *out);
 #define MSG_ReadShort MSG_ReadLittleShort
 #define MSG_ReadLong MSG_ReadLittleLong
 #define MSG_ReadFloat MSG_ReadLittleFloat
+
+float MSG_ReadAngle16f (sizebuf_t *sb); // FitzQuake 666 / RMQ 999
 
 float MSG_ReadAngle8i (sizebuf_t *sb);
 float MSG_ReadAngle16i (sizebuf_t *sb);
@@ -412,6 +416,8 @@ char *String_Replace_Alloc (const char *s, const char *s_find, const char *s_rep
 char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit);
 
 char *String_Edit_RemoveTrailingUnixSlash (char *s_edit);
+void String_Edit_To_Single_Line (char *s_edit);
+char *Clipboard_Get_Text_Line_Static (void);
 
 int String_Does_End_With (const char *s, const char *s_suffix);
 
@@ -456,6 +462,8 @@ int File_Is_Existing_File (const char *path_to_file);
 
 #define File_To_String_Alloc(FILENAME, REPLY_BYTES_OPTIONAL_SIZE_T) File_To_Memory_Alloc (FILENAME, REPLY_BYTES_OPTIONAL_SIZE_T) // Reply is a blob.
 
+int String_Count_Char (const char *s, int ch_findchar);
+char *String_Instance_Alloc_Base1 (const char *s, int ch_delim, int nth_instance, replyx int *len);
 
 int Folder_Open (const char *path_to_file);
 

@@ -614,7 +614,7 @@ void M_GameOptions_Draw (void)
 			m_serverInfoMessage = false;
 	}
 
-#pragma message ("This is very dubious")
+//#pragma message ("This is very dubious")
 	drawsel_idx = gameoptions_cursor; // DUBIOUS!
 	PPX_DrawSel_End ();
 }
@@ -764,7 +764,7 @@ static void M_GameOptions_Key(cmd_state_t *cmd, int key, int ascii)
 		M_NetStart_Change (1);
 		break;
 
-	case K_HOME: 
+	case K_HOME:
 		gameoptions_cursor = 0;
 		break;
 

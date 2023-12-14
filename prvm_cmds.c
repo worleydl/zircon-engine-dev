@@ -136,7 +136,7 @@ void VM_FrameBlendFromFrameGroupBlend(frameblend_t *frameblend, const framegroup
 		return;
 	}
 
-	nolerp = ((model->type == mod_sprite) ? !r_lerpsprites.integer : !r_lerpmodels.integer) || (model->nolerp == true);
+	nolerp = ((model->type == mod_sprite) ? !r_lerpsprites.integer : !r_lerpmodels.integer) || (model->nolerp == (qbool)true);
 	numframes = model->numframes;
 	for (k = 0, g = framegroupblend;k < MAX_FRAMEGROUPBLENDS;k++, g++)
 	{
@@ -235,7 +235,7 @@ void VM_UpdateEdictSkeleton(prvm_prog_t *prog, prvm_edict_t *ed, const model_t *
 		int skeletonindex = -1;
 		skeleton_t *skeleton;
 		skeletonindex = (int)PRVM_gameedictfloat(ed, skeletonindex) - 1;
-		if (skeletonindex >= 0 && skeletonindex < MAX_EDICTS && (skeleton = prog->skeletons[skeletonindex]) && skeleton->model->num_bones == ed->priv.server->skeleton.model->num_bones)
+		if (skeletonindex >= 0 && skeletonindex < MAX_EDICTS_32768 && (skeleton = prog->skeletons[skeletonindex]) && skeleton->model->num_bones == ed->priv.server->skeleton.model->num_bones)
 		{
 			// custom skeleton controlled by the game (FTE_CSQC_SKELETONOBJECTS)
 			if (!ed->priv.server->skeleton.relativetransforms)
@@ -2954,7 +2954,7 @@ void VM_getsoundtime (prvm_prog_t *prog)
 	if (prog == SVVM_prog)
 		entnum = PRVM_NUM_FOR_EDICT(PRVM_G_EDICT(OFS_PARM0));
 	else if (prog == CLVM_prog)
-		entnum = MAX_EDICTS + PRVM_NUM_FOR_EDICT(PRVM_G_EDICT(OFS_PARM0));
+		entnum = MAX_EDICTS_32768 + PRVM_NUM_FOR_EDICT(PRVM_G_EDICT(OFS_PARM0));
 	else
 	{
 		VM_Warning(prog, "VM_getsoundtime: %s: not supported on this progs\n", prog->name);
@@ -6100,7 +6100,7 @@ static void animatemodel(prvm_prog_t *prog, model_t *model, prvm_edict_t *ed)
 	VM_FrameBlendFromFrameGroupBlend(ed->priv.server->frameblend, ed->priv.server->framegroupblend, model, PRVM_serverglobalfloat(time));
 	need |= (memcmp(&animatemodel_cache->frameblend, &ed->priv.server->frameblend, sizeof(ed->priv.server->frameblend))) != 0;
 	skeletonindex = (int)PRVM_gameedictfloat(ed, skeletonindex) - 1;
-	if (!(skeletonindex >= 0 && skeletonindex < MAX_EDICTS && (skeleton = prog->skeletons[skeletonindex]) && skeleton->model->num_bones == ed->priv.server->skeleton.model->num_bones))
+	if (!(skeletonindex >= 0 && skeletonindex < MAX_EDICTS_32768 && (skeleton = prog->skeletons[skeletonindex]) && skeleton->model->num_bones == ed->priv.server->skeleton.model->num_bones))
 		skeleton = NULL;
 	need |= (animatemodel_cache->skeleton_p != skeleton);
 	if (skeleton)

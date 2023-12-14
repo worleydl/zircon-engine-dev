@@ -236,7 +236,7 @@ const char *vm_sv_extensions[] = {
 	"ZQ_PAUSE",
 	"DP_RM_CLIPGROUP",
 
-// Baker r7084: 
+// Baker r7084:
 	"ZIRCON_RTLIGHT_BAKE",
 	"ZIRCON_GAMECOMMANDS",
 
@@ -481,7 +481,8 @@ static void VM_SV_ambientsound(prvm_prog_t *prog)
 	const char	*samp;
 	vec3_t		pos;
 	prvm_vec_t	vol, attenuation;
-	int			soundnum, large;
+	int			soundnum, is_large_soundindex;
+	int			is_fitz = isin2 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999);
 
 	VM_SAFEPARMCOUNT(4, VM_SV_ambientsound);
 
@@ -495,23 +496,26 @@ static void VM_SV_ambientsound(prvm_prog_t *prog)
 	if (!soundnum)
 		return;
 
-	large = false;
+	is_large_soundindex = false;
 	if (soundnum >= 256)
-		large = true;
+		is_large_soundindex = true;
 
 	if (sv.protocol == PROTOCOL_NEHAHRABJP)
-		large = false;
+		is_large_soundindex = false;
 
 	// add an svc_spawnambient command to the level signon packet
 
-	if (large)
-		MSG_WriteByte (&sv.signon, svc_spawnstaticsound2);
+	if (is_large_soundindex)
+		if (is_fitz)
+			MSG_WriteByte (&sv.signon, svcfitz_spawnstaticsound2);
+		else
+			MSG_WriteByte (&sv.signon, svc_spawnstaticsound2);
 	else
 		MSG_WriteByte (&sv.signon, svc_spawnstaticsound);
 
 	MSG_WriteVector(&sv.signon, pos, sv.protocol);
 
-	if (large || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
+	if (is_large_soundindex || isin2(sv.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 		MSG_WriteShort (&sv.signon, soundnum);
 	else
 		MSG_WriteByte (&sv.signon, soundnum);
@@ -1006,7 +1010,7 @@ static void VM_SV_findradius(prvm_prog_t *prog)
 	vec3_t org, eorg, mins, maxs;
 	int i;
 	int numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int chainfield;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_SV_findradius);
@@ -1030,12 +1034,12 @@ static void VM_SV_findradius(prvm_prog_t *prog)
 	maxs[0] = org[0] + (radius + 1);
 	maxs[1] = org[1] + (radius + 1);
 	maxs[2] = org[2] + (radius + 1);
-	numtouchedicts = SV_EntitiesInBox(mins, maxs, MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(mins, maxs, MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0;i < numtouchedicts;i++)
 	{
@@ -1080,7 +1084,7 @@ static void VM_SV_findbox(prvm_prog_t *prog)
 {
 	prvm_edict_t *chain;
 	int i, numtouchedicts;
-	static prvm_edict_t *touchedicts[MAX_EDICTS];
+	static prvm_edict_t *touchedicts[MAX_EDICTS_32768];
 	int chainfield;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_SV_findbox);
@@ -1094,12 +1098,12 @@ static void VM_SV_findbox(prvm_prog_t *prog)
 
 	chain = (prvm_edict_t *)prog->edicts;
 
-	numtouchedicts = SV_EntitiesInBox(PRVM_G_VECTOR(OFS_PARM0), PRVM_G_VECTOR(OFS_PARM1), MAX_EDICTS, touchedicts);
-	if (numtouchedicts > MAX_EDICTS)
+	numtouchedicts = SV_EntitiesInBox(PRVM_G_VECTOR(OFS_PARM0), PRVM_G_VECTOR(OFS_PARM1), MAX_EDICTS_32768, touchedicts);
+	if (numtouchedicts > MAX_EDICTS_32768)
 	{
 		// this never happens
-		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS);
-		numtouchedicts = MAX_EDICTS;
+		Con_Printf ("SV_EntitiesInBox returned %d edicts, max was %d\n", numtouchedicts, MAX_EDICTS_32768);
+		numtouchedicts = MAX_EDICTS_32768;
 	}
 	for (i = 0; i < numtouchedicts; ++i)
 	{
@@ -1391,7 +1395,7 @@ static void VM_SV_lightstyle(prvm_prog_t *prog)
 	style = (int)PRVM_G_FLOAT(OFS_PARM0);
 	val = PRVM_G_STRING(OFS_PARM1);
 
-	if ( (unsigned) style >= MAX_LIGHTSTYLES ) {
+	if ( (unsigned) style >= MAX_LIGHTSTYLES_256 ) {
 		prog->error_cmd( "PF_lightstyle: style: %d >= 64", style );
 	}
 
@@ -1691,7 +1695,9 @@ static void VM_SV_WritePicture(prvm_prog_t *prog)
 static void VM_SV_makestatic(prvm_prog_t *prog)
 {
 	prvm_edict_t *ent;
-	int i, large;
+	int			i, large;
+	int			is_fitz = isin2 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999);
+	int			is_rmq	= isin1 (sv.protocol, PROTOCOL_FITZQUAKE999);
 
 	// allow 0 parameters due to an id1 qc bug in which this function is used
 	// with no parameters (but directly after setmodel with self in OFS_PARM0)
@@ -1703,28 +1709,94 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 		ent = PRVM_PROG_TO_EDICT(PRVM_serverglobaledict(self));
 	if (ent == prog->edicts)
 	{
-		VM_Warning(prog, "makestatic: can not modify world entity\n");
+		VM_Warning(prog, "makestatic: can not modify world entity" NEWLINE);
 		return;
 	}
 	if (ent->free)
 	{
-		VM_Warning(prog, "makestatic: can not modify free entity\n");
+		VM_Warning(prog, "makestatic: can not modify free entity" NEWLINE);
 		return;
+	}
+
+	if (is_fitz) {
+		// Baker: This is radically different
+		WARP_X_ (CL_ParseStatic)
+		int fitz_bits = 0;
+
+		if ((int)PRVM_serveredictfloat(ent, modelindex) & 0xFF00)
+			fitz_bits |= B_FITZ_LARGEMODEL_1;
+
+		if ((int)PRVM_serveredictfloat(ent, frame) & 0xFF00)
+			fitz_bits |= B_FITZ_LARGEFRAME_2;
+#if 111
+		if ((int)PRVM_serveredictfloat(ent, alpha) != FITZ_ENTALPHA_DEFAULT_0)
+			fitz_bits |= B_FITZ_ALPHA_4;
+#endif
+
+		if (is_rmq) // DPD99
+		{
+			//eval_t* val;
+			//val = GetEdictFieldValue(ent, "scale");
+			//if (val)
+			//	ent->scale = ENTSCALE_ENCODE(val->_float);
+			//else
+#if 000
+				ent->scale = FITZ_ENTSCALE_DEFAULT_16;
+
+			if (ent->scale != FITZ_ENTSCALE_DEFAULT_16)
+				fitz_bits |= B_FITZ_SCALE_8;
+#endif
+		}
+
+		if (fitz_bits) {
+			MSG_WriteByte (&sv.signon, svcfitz_spawnstatic2);
+			MSG_WriteByte (&sv.signon, fitz_bits);
+		}
+		else
+			MSG_WriteByte (&sv.signon, svc_spawnstatic);
+
+		if (fitz_bits & B_FITZ_LARGEMODEL_1)
+			MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, modelindex));
+		else
+			MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, modelindex));
+
+		if (fitz_bits & B_FITZ_LARGEFRAME_2)
+			MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, frame));
+		else
+			MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, frame));
+		//johnfitz
+
+		MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, colormap));
+		MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, skin));
+		for (i = 0; i < 3; i++) {
+			MSG_WriteCoord(&sv.signon, PRVM_serveredictvector(ent, origin)[i], sv.protocol);
+			MSG_WriteAngle(&sv.signon, PRVM_serveredictvector(ent, angles)[i], sv.protocol);
+		}
+
+#if 000
+		//johnfitz -- PROTOCOL_FITZQUAKE
+		if (fitz_bits & B_FITZ_ALPHA_4)
+			MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, alpha));
+		//johnfitz
+
+		if (fitz_bits & B_FITZ_SCALE_8)
+			MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, scale));
+#endif
+
+		goto fitzquake_bypass;
 	}
 
 	large = false;
 	if (PRVM_serveredictfloat(ent, modelindex) >= 256 || PRVM_serveredictfloat(ent, frame) >= 256)
 		large = true;
-
-	if (sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
-	{
+// 999
+	if (isin3 (sv.protocol, PROTOCOL_NEHAHRABJP, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3)) {
 		MSG_WriteByte (&sv.signon,svc_spawnstatic);
 		MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, modelindex));
 		MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, frame));
 	}
-	else if (large)
-	{
-		MSG_WriteByte (&sv.signon,svc_spawnstatic2);
+	else if (large) {
+		MSG_WriteByte (&sv.signon, svc_spawnstatic2);
 		MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, modelindex));
 		MSG_WriteShort (&sv.signon, (int)PRVM_serveredictfloat(ent, frame));
 	}
@@ -1743,6 +1815,7 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 		MSG_WriteAngle(&sv.signon, PRVM_serveredictvector(ent, angles)[i], sv.protocol);
 	}
 
+fitzquake_bypass:
 // throw the entity away now
 	PRVM_ED_Free(prog, ent);
 }
@@ -2584,7 +2657,7 @@ static int SV_GetTagIndex (prvm_prog_t *prog, prvm_edict_t *e, const char *tagna
 	int i;
 
 	i = (int)PRVM_serveredictfloat(e, modelindex);
-	if (i < 1 || i >= MAX_MODELS)
+	if (i < 1 || i >= MAX_MODELS_8192)
 		return -1;
 
 	return Mod_Alias_GetTagIndexForName(SV_GetModelByIndex(i), (int)PRVM_serveredictfloat(e, skin), tagname);
@@ -2620,7 +2693,7 @@ void SV_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out,
 	scale = PRVM_serveredictfloat(ent, scale);
 	if (!scale)
 		scale = 1.0f;
-	
+
 	if (viewmatrix)
 		Matrix4x4_CreateFromQuakeEntity(out, PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2] + PRVM_serveredictvector(ent, view_ofs)[2], PRVM_serveredictvector(ent, v_angle)[0], PRVM_serveredictvector(ent, v_angle)[1], PRVM_serveredictvector(ent, v_angle)[2], scale * cl_viewmodel_scale.value);
 	else
@@ -2666,7 +2739,7 @@ static int SV_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *e
 		return 2;
 
 	modelindex = (int)PRVM_serveredictfloat(ent, modelindex);
-	if (modelindex <= 0 || modelindex >= MAX_MODELS)
+	if (modelindex <= 0 || modelindex >= MAX_MODELS_8192)
 		return 3;
 
 	model = SV_GetModelByIndex(modelindex);
@@ -2906,7 +2979,7 @@ static void VM_SV_setmodelindex(prvm_prog_t *prog)
 		return;
 	}
 	i = (int)PRVM_G_FLOAT(OFS_PARM1);
-	if (i <= 0 || i >= MAX_MODELS)
+	if (i <= 0 || i >= MAX_MODELS_8192)
 	{
 		VM_Warning(prog, "setmodelindex: invalid modelindex\n");
 		return;
@@ -2942,7 +3015,7 @@ static void VM_SV_modelnameforindex(prvm_prog_t *prog)
 	PRVM_G_INT(OFS_RETURN) = OFS_NULL;
 
 	i = (int)PRVM_G_FLOAT(OFS_PARM0);
-	if (i <= 0 || i >= MAX_MODELS)
+	if (i <= 0 || i >= MAX_MODELS_8192)
 	{
 		VM_Warning(prog, "modelnameforindex: invalid modelindex\n");
 		return;
@@ -3023,7 +3096,7 @@ static void VM_SV_pointparticles(prvm_prog_t *prog)
 qbool SV_VM_ConsoleCommand (const char *text)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	return PRVM_ConsoleCommand(prog, text, &prog->funcoffsets.ConsoleCmd, true, PRVM_EDICT_TO_PROG(sv.world.prog->edicts), sv.time,  !(!sv.active || !prog || !prog->loaded), "QC function ConsoleCmd is missing"); 
+	return PRVM_ConsoleCommand(prog, text, &prog->funcoffsets.ConsoleCmd, true, PRVM_EDICT_TO_PROG(sv.world.prog->edicts), sv.time,  !(!sv.active || !prog || !prog->loaded), "QC function ConsoleCmd is missing");
 }
 
 // #352 void(string cmdname) registercommand (EXT_CSQC)
@@ -3061,10 +3134,10 @@ static void VM_SV_skel_create(prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
 	if (!model || !model->num_bones)
 		return;
-	for (i = 0;i < MAX_EDICTS;i++)
+	for (i = 0;i < MAX_EDICTS_32768;i++)
 		if (!prog->skeletons[i])
 			break;
-	if (i == MAX_EDICTS)
+	if (i == MAX_EDICTS_32768)
 		return;
 	prog->skeletons[i] = skeleton = (skeleton_t *)Mem_Alloc(prog->progs_mempool, sizeof(skeleton_t) + model->num_bones * sizeof(matrix4x4_t));
 	PRVM_G_FLOAT(OFS_RETURN) = i + 1;
@@ -3094,7 +3167,7 @@ static void VM_SV_skel_build(prvm_prog_t *prog)
 	matrix4x4_t bonematrix;
 	matrix4x4_t matrix;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	firstbone = max(0, firstbone);
 	lastbone = min(lastbone, model->num_bones - 1);
@@ -3123,7 +3196,7 @@ static void VM_SV_skel_get_numbones(prvm_prog_t *prog)
 	int skeletonindex = (int)PRVM_G_FLOAT(OFS_PARM0) - 1;
 	skeleton_t *skeleton;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	PRVM_G_FLOAT(OFS_RETURN) = skeleton->model->num_bones;
 }
@@ -3135,7 +3208,7 @@ static void VM_SV_skel_get_bonename(prvm_prog_t *prog)
 	int bonenum = (int)PRVM_G_FLOAT(OFS_PARM1) - 1;
 	skeleton_t *skeleton;
 	PRVM_G_INT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -3149,7 +3222,7 @@ static void VM_SV_skel_get_boneparent(prvm_prog_t *prog)
 	int bonenum = (int)PRVM_G_FLOAT(OFS_PARM1) - 1;
 	skeleton_t *skeleton;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -3163,7 +3236,7 @@ static void VM_SV_skel_find_bone(prvm_prog_t *prog)
 	const char *tagname = PRVM_G_STRING(OFS_PARM1);
 	skeleton_t *skeleton;
 	PRVM_G_FLOAT(OFS_RETURN) = 0;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	PRVM_G_FLOAT(OFS_RETURN) = Mod_Alias_GetTagIndexForName(skeleton->model, 0, tagname) + 1;
 }
@@ -3180,7 +3253,7 @@ static void VM_SV_skel_get_bonerel(prvm_prog_t *prog)
 	VectorClear(PRVM_clientglobalvector(v_forward));
 	VectorClear(PRVM_clientglobalvector(v_right));
 	VectorClear(PRVM_clientglobalvector(v_up));
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -3205,7 +3278,7 @@ static void VM_SV_skel_get_boneabs(prvm_prog_t *prog)
 	VectorClear(PRVM_clientglobalvector(v_forward));
 	VectorClear(PRVM_clientglobalvector(v_right));
 	VectorClear(PRVM_clientglobalvector(v_up));
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -3231,7 +3304,7 @@ static void VM_SV_skel_set_bone(prvm_prog_t *prog)
 	vec3_t forward, left, up, origin;
 	skeleton_t *skeleton;
 	matrix4x4_t matrix;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -3252,7 +3325,7 @@ static void VM_SV_skel_mul_bone(prvm_prog_t *prog)
 	skeleton_t *skeleton;
 	matrix4x4_t matrix;
 	matrix4x4_t temp;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	if (bonenum < 0 || bonenum >= skeleton->model->num_bones)
 		return;
@@ -3276,7 +3349,7 @@ static void VM_SV_skel_mul_bones(prvm_prog_t *prog)
 	skeleton_t *skeleton;
 	matrix4x4_t matrix;
 	matrix4x4_t temp;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM3), origin);
 	VectorCopy(PRVM_clientglobalvector(v_forward), forward);
@@ -3302,9 +3375,9 @@ static void VM_SV_skel_copybones(prvm_prog_t *prog)
 	int bonenum;
 	skeleton_t *skeletondst;
 	skeleton_t *skeletonsrc;
-	if (skeletonindexdst < 0 || skeletonindexdst >= MAX_EDICTS || !(skeletondst = prog->skeletons[skeletonindexdst]))
+	if (skeletonindexdst < 0 || skeletonindexdst >= MAX_EDICTS_32768 || !(skeletondst = prog->skeletons[skeletonindexdst]))
 		return;
-	if (skeletonindexsrc < 0 || skeletonindexsrc >= MAX_EDICTS || !(skeletonsrc = prog->skeletons[skeletonindexsrc]))
+	if (skeletonindexsrc < 0 || skeletonindexsrc >= MAX_EDICTS_32768 || !(skeletonsrc = prog->skeletons[skeletonindexsrc]))
 		return;
 	firstbone = max(0, firstbone);
 	lastbone = min(lastbone, skeletondst->model->num_bones - 1);
@@ -3318,7 +3391,7 @@ static void VM_SV_skel_delete(prvm_prog_t *prog)
 {
 	int skeletonindex = (int)PRVM_G_FLOAT(OFS_PARM0) - 1;
 	skeleton_t *skeleton;
-	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS || !(skeleton = prog->skeletons[skeletonindex]))
+	if (skeletonindex < 0 || skeletonindex >= MAX_EDICTS_32768 || !(skeleton = prog->skeletons[skeletonindex]))
 		return;
 	Mem_Free(skeleton);
 	prog->skeletons[skeletonindex] = NULL;

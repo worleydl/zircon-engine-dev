@@ -539,7 +539,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 			if ((loader[i].extension && String_Does_Match_Caseless(ext, loader[i].extension) && !loader[i].header) ||
 			   (loader[i].header && !memcmp(buf, loader[i].header, loader[i].headersize)))
 			{
-				// Matched. Load it.
+				// Matched. Load it.			
 				loader[i].Load(mod, buf, bufend);
 				Mem_Free(buf);
 
@@ -557,8 +557,9 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 				break;
 			}
 		}
-		if (!loader[i].Load)
+		if (!loader[i].Load) {
 			Con_PrintLinef (CON_ERROR "Mod_LoadModel: model " QUOTED_S " is of unknown/unsupported type", mod->model_name);
+		}
 	}
 	else if (crash) {
 		
@@ -2134,7 +2135,8 @@ texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(mempool_t *mempool, 
 	return shaderpass;
 }
 
-qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, texture_t *texture, const char *name, qbool warnmissing, qbool fallback, int defaulttexflags, int defaultmaterialflags)
+qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, texture_t *texture, const char *name, qbool warnmissing, 
+								  qbool fallback, int shall_do_external, int defaulttexflags, int defaultmaterialflags)
 {
 	int texflagsmask, texflagsor;
 	qbool success = true;
@@ -2491,7 +2493,7 @@ nothing                GL_ZERO GL_ONE
 		else
 		{
 #if 1				
-			if (fallback)
+			if (fallback || shall_do_external)
 			{
 				skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
 				if (skinframe)
@@ -4377,7 +4379,7 @@ texture_t *Mod_Mesh_GetTexture(model_t *mod, const char *name, int defaultdrawfl
 			mod->data_surfaces[i].texture = mod->data_textures + (mod->data_surfaces[i].texture - oldtextures);
 	}
 	t = &mod->data_textures[mod->num_textures++];
-	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, defaulttexflags, defaultmaterialflags);
+	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, defaulttexflags, defaultmaterialflags);
 	t->mesh_drawflag = drawflag;
 	t->mesh_defaulttexflags = defaulttexflags;
 	t->mesh_defaultmaterialflags = defaultmaterialflags;

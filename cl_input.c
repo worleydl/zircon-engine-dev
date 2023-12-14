@@ -1886,6 +1886,8 @@ void CL_SendMove(void)
 	cl.cmd.crouch = 0;
 	switch (cls.protocol)
 	{
+	case PROTOCOL_FITZQUAKE666:
+	case PROTOCOL_FITZQUAKE999:
 	case PROTOCOL_QUAKEWORLD:
 	case PROTOCOL_QUAKE:
 	case PROTOCOL_QUAKEDP:
@@ -1987,8 +1989,7 @@ void CL_SendMove(void)
 	// set prydon cursor info
 	CL_UpdatePrydonCursor();
 
-	if (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS_4)
-	{
+	if (cls.protocol == PROTOCOL_QUAKEWORLD || cls.signon == SIGNONS_4) {
 		switch (cls.protocol)
 		{
 		case PROTOCOL_QUAKEWORLD:
@@ -2027,17 +2028,20 @@ void CL_SendMove(void)
 		case PROTOCOL_NEHAHRABJP:
 		case PROTOCOL_NEHAHRABJP2:
 		case PROTOCOL_NEHAHRABJP3:
+		case PROTOCOL_FITZQUAKE666:
+		case PROTOCOL_FITZQUAKE999:
 			// 5 bytes
 			MSG_WriteByte (&buf, clc_move);
 			MSG_WriteFloat (&buf, cl.cmd.time); // last server packet time
 			// 3 bytes (6 bytes in proquake)
-			if (cls.proquake_servermod == 1) // MOD_PROQUAKE
-			{
+			if (cls.proquake_servermod == 1) { // MOD_PROQUAKE
 				for (i = 0;i < 3;i++)
 					MSG_WriteAngle16i (&buf, cl.cmd.viewangles[i]);
-			}
-			else
-			{
+			} else if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999) ) {
+				for (i = 0;i < 3;i++)
+					MSG_WriteAngle16i (&buf, cl.cmd.viewangles[i]); // Baker DPD 999 same as ProQuake
+			} else {
+				// NetQuake
 				for (i = 0;i < 3;i++)
 					MSG_WriteAngle8i (&buf, cl.cmd.viewangles[i]);
 			}
@@ -2218,7 +2222,7 @@ void CL_SendMove(void)
 	in_impulse = 0;
 
 	if (cls.netcon->message.overflowed)
-		CL_DisconnectEx(true, "Lost connection to server");
+		CL_DisconnectEx(q_is_kicked_true, "Lost connection to server");
 }
 
 /*

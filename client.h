@@ -600,6 +600,9 @@ typedef struct client_static_s
 	int forcetrack;
 	qfile_t *demofile;
 	// realtime at second frame of timedemo (LadyHavoc: changed to double)
+	double world_start_realtime;
+	double world_frames;
+
 	double td_starttime;
 	int td_frames; // total frames parsed
 	double td_onesecondnexttime;
@@ -624,6 +627,7 @@ typedef struct client_static_s
 	// protocol version of the server we're connected to
 	// (kept outside client_state_t because it's used between levels)
 	protocolversion_t protocol;
+	int protocol_flags_rmq; // U_SCALE
 
 #define MAX_RCONS 16
 	int rcon_trying;
@@ -844,7 +848,7 @@ typedef struct client_state_s
 	float sensitivityscale;
 	csqc_vidvars_t csqc_vidvars;	//[515]: these parms must be set to true by default
 	qbool csqc_wantsmousemove;
-	struct model_s *csqc_model_precache[MAX_MODELS];
+	struct model_s *csqc_model_precache[MAX_MODELS_8192];
 
 	// local amount for smoothing stepups
 	//float crouch;
@@ -897,12 +901,12 @@ typedef struct client_state_s
 	float last_received_message;
 
 // information that is static for the entire time connected to a server
-	struct model_s *model_precache[MAX_MODELS];
-	struct sfx_s *sound_precache[MAX_SOUNDS];
+	struct model_s *model_precache[MAX_MODELS_8192];
+	struct sfx_s *sound_precache[MAX_SOUNDS_4096];
 
 	// FIXME: this is a lot of memory to be keeping around, this really should be dynamically allocated and freed somehow
-	char model_name[MAX_MODELS][MAX_QPATH_128];
-	char sound_name[MAX_SOUNDS][MAX_QPATH_128];
+	char model_name[MAX_MODELS_8192][MAX_QPATH_128];
+	char sound_name[MAX_SOUNDS_4096][MAX_QPATH_128];
 
 	// for display on solo scoreboard
 	char worldmessage[40]; // map title (not related to filename)
@@ -979,7 +983,7 @@ typedef struct client_state_s
 
 	// keep track of quake entities because they need to be killed if they get stale
 	int lastquakeentity;
-	unsigned char isquakeentity[MAX_EDICTS];
+	unsigned char isquakeentity[MAX_EDICTS_32768];
 
 	// bounding boxes for clientside movement
 	vec3_t playerstandmins;
@@ -1118,7 +1122,7 @@ typedef struct client_state_s
 
 	// csqc stuff:
 	// server entity number corresponding to a clientside entity
-	unsigned short csqc_server2csqcentitynumber[MAX_EDICTS];
+	unsigned short csqc_server2csqcentitynumber[MAX_EDICTS_32768];
 	qbool csqc_loaded;
 	vec3_t csqc_vieworigin;
 	vec3_t csqc_viewangles;

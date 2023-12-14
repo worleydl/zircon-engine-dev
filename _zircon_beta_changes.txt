@@ -3,6 +3,62 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 15 - December 5 2023
+
+1. Support for protocol 666 and 999 that Quakespasm and related engines use.  This means that
+   Zircon can play Quakespasm demos and connect to a coop game hosted by Quakespasm.
+   
+   Zircon can play single player using protocol 666 or 999 or host games in protocol 666 and 999,
+   but that typical DarkPlaces potential differences would still apply because of the subtle 
+   differences in DarkPlaces physics and interpretation of Quake and related factors.
+
+2. cl_startdemos 0 to not play demos mirroring Quakespasm (previously cvar name was nostartdemos).
+
+3. Dedicated server (zircon_beta.exe -dedicated 8) now supports the shift key and CTRL-V pasting.
+
+4. Resolved an issue with external texture loading for .mdl and probably other formats.  It was a
+   bug introduced in Beta #4 that improved external texture loading for maps, but changed 
+   external texture loading enough that replacement textures for .mdl and others were affected.
+   
+5. Disallowed ALT-ENTER during map loading phase, complications can arise from only partially
+	loading a model and then reloading its content.
+
+6. Con_Print "Using external lightmaps" for Quake 3 map format is restored to requiring "developer_loading 1"
+   which was the DarkPlaces classic behavior.  External lightmaps is somewhat normal for the Quake 3 map format
+   depending on the compiler options used and it didn't print in classic DarkPlaces and having it print suggests 
+   something out of the usual is occurring.
+
+7. As a past precaution, entering the menu released all keys to ensure no keyboard keys could be stuck.
+   The issue with stuck keys in DarkPlaces Beta was fixed in Zircon several versions ago and entering the
+   menu no longer releases key ups (since the bug no longer exists).
+
+MINOR: zircon_beta_gcc.exe (but not zircon_beta.exe) as server oddness with letting classic clients connect. 
+MINOR: DarkPlaces Beta bug .. the player setup menu, the colors of the image do not change.  
+TODO: Lan Config menu could use some "refinement".
+TODO: Floating island Quake Remaster investigation.
+
+// Zircon Beta Release 10 - November 26 2023
+	
+I don't feel this is hardened enough yet to release a binary.  Close but more needs to be done.
+
+1. Client side support for protocol 666 and 999.  Demos recorded with either of those protocols
+   in a compliant engine like Quakespasm should play back in Zircon.
+   
+   The server side support for 666/999 is incomplete and --- although that will probably happen
+   -- that isn't the end game here.  The end game is something else.
+   
+   It is likely that Zircon can coop when connected to a 666/999 compliant engine like Quakespasm,
+   although more testing is required.
+   
+2. sv_protocolname autocompletes
+3. zircon_beta_gcc.exe -- for reasons unclear -- neither shows up in LAN slist for regular Quake clients nor allows connections
+   for regular Quake clients (but other DarkPlaces clients work ok and it shows for them).
+   This is a bizarre puzzle.
+   DarkPlaces clients do not have "test" and "test2" ... ?  Rainy day todo?
+4. disconnect and stopdemo clear pausedemo state.
+5. Noticed that startdemos resume upon disconnect from a server or "stopdemo".
+   Resolved.
+
 // Zircon Beta Release 9 - November 26 2023
 1. Implemented DarkPlaces Classic method of rendering csqc 3d polygons
    as the DarkPlaces Beta method, although it allows shaders, is incompatible

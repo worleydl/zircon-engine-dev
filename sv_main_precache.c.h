@@ -62,7 +62,7 @@
                             COM_ParseToken_Simple(&tm, false, false, true);
                             jj = atoi(com_token);
                             COM_ParseToken_Simple(&tm, false, false, true);
-                            if (jj >= 0 && jj < MAX_MODELS) {
+                            if (jj >= 0 && jj < MAX_MODELS_8192) {
                                 if (jj >= mc) {
                                     Con_PrintLinef (CON_CYAN "Precaching %s", com_token);
                                     c_strlcpy (sv.model_precache[jj], com_token);
@@ -73,7 +73,7 @@
                             COM_ParseToken_Simple(&tm, false, false, true);
                             jj = atoi(com_token);
                             COM_ParseToken_Simple(&tm, false, false, true);
-                            if (jj >= 0 && jj < MAX_SOUNDS) {
+                            if (jj >= 0 && jj < MAX_SOUNDS_4096) {
                                 if (jj >= sc) {
                                     Con_PrintLinef (CON_CYAN "Precaching %s", com_token);
                                     c_strlcpy (sv.sound_precache[jj], com_token);

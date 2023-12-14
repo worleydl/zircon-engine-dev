@@ -186,7 +186,7 @@ static void EntityState5_ReadUpdate(entity_state_t *s, int number)
 			break;
 		case 4:
 			if (!cl.engineskeletonobjects)
-				cl.engineskeletonobjects = (skeleton_t *) Mem_Alloc(cls.levelmempool, sizeof(*cl.engineskeletonobjects) * MAX_EDICTS);
+				cl.engineskeletonobjects = (skeleton_t *) Mem_Alloc(cls.levelmempool, sizeof(*cl.engineskeletonobjects) * MAX_EDICTS_32768);
 			skeleton = &cl.engineskeletonobjects[number];
 			modelindex = MSG_ReadShort(&cl_message);
 			model = CL_GetModelByIndex(modelindex);
@@ -294,7 +294,11 @@ void EntityFrame5_CL_ReadFrame(void)
 	// read the number of this frame to echo back in next input packet
 	framenum = MSG_ReadLong(&cl_message);
 	CL_NewFrameReceived(framenum);
-	if (cls.protocol != PROTOCOL_QUAKE && cls.protocol != PROTOCOL_QUAKEDP && cls.protocol != PROTOCOL_NEHAHRAMOVIE && cls.protocol != PROTOCOL_DARKPLACES1 && cls.protocol != PROTOCOL_DARKPLACES2 && cls.protocol != PROTOCOL_DARKPLACES3 && cls.protocol != PROTOCOL_DARKPLACES4 && cls.protocol != PROTOCOL_DARKPLACES5 && cls.protocol != PROTOCOL_DARKPLACES6)
+	if (false == isin11 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999,
+		PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+		PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
+		PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5,	PROTOCOL_DARKPLACES6
+		))
 		cls.servermovesequence = MSG_ReadLong(&cl_message);
 	// read entity numbers until we find a 0x8000
 	// (which would be remove world entity, but is actually a terminator)

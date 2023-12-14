@@ -366,7 +366,7 @@ typedef struct {
 // So for collision identification we need to use
 // the trueidx to find the proper array index
 // for a list item.
-	int				trueidx;	// Set to not_found_neg1 (-1) for non-list elements.			
+	int				trueidx;	// Set to not_found_neg1 (-1) for non-list elements.
 	hotspottype_e	hotspottype;
 } hotspotx_s;
 
@@ -575,7 +575,7 @@ static void M_ToggleMenu(int mode)
 			return; // the menu is off, and we want it off
 		} else {
 
-#if 1
+#if 0 // Baker: Done with this now?  December 5 2023
 	#pragma message ("Baker: Until the key release issue can never-ever happen, make opening the menu do it")
 			Key_ReleaseAll ();
 #endif
@@ -797,7 +797,7 @@ void M_KeyEvent (int key, int ascii, qbool downevent)
 	if (!downevent)
 		return;
 
-	switch (m_state){ 
+	switch (m_state){
 	case m_none: return;
 	case m_main: M_Main_Key(cmd, key, ascii); return;
 	case m_demo: M_Demo_Key(cmd, key, ascii); return;
@@ -832,12 +832,12 @@ WARP_X_ (M_Options_Draw M_Options_Nova_Draw)
 
 void M_Draw (void)
 {
-	if (key_dest != key_menu && 
+	if (key_dest != key_menu &&
 			key_dest != key_menu_grabbed) {
 		// Does this happen? During demo play at startup only.
-		menu_state_set_nova (m_none); 
+		menu_state_set_nova (m_none);
 	}
-	
+
 	if (m_state == m_none)
 		return;
 
@@ -919,10 +919,10 @@ static int M_GetServerListEntryCategory(const serverlist_entry_t *entry)
 
 	#include "menu_options_nova.c.h"
 		#include "menu_keys.c.h"
-			#include "menu_video_classic.c.h"	
+			#include "menu_video_classic.c.h"
 		#include "menu_video_nova.c.h"
 		#include "menu_options_classic.c.h"
-			
+
 			#include "menu_color.c.h"
 			#include "menu_effects.c.h"
 			#include "menu_lighting.c.h"
