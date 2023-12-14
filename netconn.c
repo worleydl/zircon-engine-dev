@@ -85,6 +85,7 @@ cvar_t net_getstatusfloodblockingtimeout = {CF_SERVER, "net_getstatusfloodblocki
 cvar_t net_sourceaddresscheck = {CF_CLIENT, "net_sourceaddresscheck", "1", "compare the source IP address for replies (more secure, may break some bad multihoming setups"};
 cvar_t hostname = {CF_SERVER | CF_ARCHIVE, "hostname", "UNNAMED", "server message to show in server browser"};
 cvar_t developer_networking = {CF_CLIENT | CF_SERVER, "developer_networking", "0", "prints all received and sent packets (recommended only for debugging)"};
+cvar_t developer_qw = {CF_CLIENT | CF_SERVER, "developer_qw", "0", "prints all Quakeworld download events (recommended only for debugging)"};
 
 cvar_t net_fakelag = {CF_CLIENT, "net_fakelag","0", "lags local loopback connection by this much ping time (useful to play more fairly on your own server with people with higher pings)"};
 static cvar_t net_fakeloss_send = {CF_CLIENT, "net_fakeloss_send","0", "drops this percentage of outgoing packets, useful for testing network protocol robustness (jerky movement, prediction errors, etc)"};
@@ -94,7 +95,19 @@ static cvar_t net_slist_queriesperframe = {CF_CLIENT, "net_slist_queriesperframe
 static cvar_t net_slist_timeout = {CF_CLIENT, "net_slist_timeout", "4", "how long to listen for a server information response before giving up"};
 static cvar_t net_slist_pause = {CF_CLIENT, "net_slist_pause", "0", "when set to 1, the server list won't update until it is set back to 0"};
 static cvar_t net_slist_maxtries = {CF_CLIENT, "net_slist_maxtries", "3", "how many times to ask the same server for information (more times gives better ping reports but takes longer)"};
+
+// Baker: This is delimited by?  Can we include shmack?
 static cvar_t net_slist_favorites = {CF_CLIENT | CF_ARCHIVE, "net_slist_favorites", "", "contains a list of IP addresses and ports to always query explicitly"};
+
+cvar_t net_slist_filter_word = {CF_CLIENT, "net_slist_filter_word", "", "desc"};
+cvar_t net_slist_filter_players_only = {CF_CLIENT, "net_slist_filter_players_only", "", "desc"};
+cvar_t net_slist_sort_by = {CF_CLIENT, "net_slist_sort_by", "1", "0 is ping, 1 is players, 2 server name, 3 game 4 map"};
+cvar_t net_slist_sort_ascending = {CF_CLIENT, "net_slist_sort_ascending", "0", "0 is big first"};
+
+
+
+
+
 static cvar_t net_tos_dscp = {CF_CLIENT | CF_ARCHIVE, "net_tos_dscp", "32", "DiffServ Codepoint for network sockets (may need game restart to apply)"};
 static cvar_t gameversion = {CF_SERVER, "gameversion", "0", "version of game data (mod-specific) to be sent to querying clients"};
 static cvar_t gameversion_min = {CF_CLIENT | CF_SERVER, "gameversion_min", "-1", "minimum version of game data (mod-specific), when client and server gameversion mismatch in the server browser the server is shown as incompatible; if -1, gameversion is used alone"};
@@ -116,7 +129,7 @@ challenge_t challenges[MAX_CHALLENGES];
 #ifdef CONFIG_MENU
 /// this is only false if there are still servers left to query
 static qbool serverlist_querysleep = true;
-static qbool serverlist_paused = false;
+static qbool serverlist_paused = false; // Baker: No evidence this is ever set to true.
 /// this is pushed a second or two ahead of realtime whenever a master server
 /// reply is received, to avoid issuing queries while master replies are still
 /// flooding in (which would make a mess of the ping times)
@@ -153,8 +166,9 @@ serverlist_mask_t serverlist_ormasks[SERVERLIST_ORMASKCOUNT];
 serverlist_infofield_t serverlist_sortbyfield;
 int serverlist_sortflags;
 
-int serverlist_viewcount = 0;
-unsigned short serverlist_viewlist[SERVERLIST_VIEWLISTSIZE];
+
+int serverlist_viewlist_count = 0;
+unsigned short serverlist_viewlist[SERVERLIST_VIEWLISTSIZE_2048];
 
 int serverlist_maxcachecount = 0;
 int serverlist_cachecount = 0;
@@ -195,40 +209,41 @@ void NetConn_UpdateFavorites_c(cvar_t *var)
 static void _ServerList_ViewList_Helper_InsertBefore( int index, serverlist_entry_t *entry )
 {
     int i;
-	if ( serverlist_viewcount < SERVERLIST_VIEWLISTSIZE ) {
-		i = serverlist_viewcount++;
+	if ( serverlist_viewlist_count < SERVERLIST_VIEWLISTSIZE_2048 ) {
+		i = serverlist_viewlist_count ++;
 	} else {
-		i = SERVERLIST_VIEWLISTSIZE - 1;
+		i = SERVERLIST_VIEWLISTSIZE_2048 - 1;
 	}
 
 	for( ; i > index ; i-- )
-		serverlist_viewlist[ i ] = serverlist_viewlist[ i - 1 ];
+		serverlist_viewlist[i] = serverlist_viewlist[ i - 1 ];
 
-	serverlist_viewlist[index] = (int)(entry - serverlist_cache);
+	CHANGE___ serverlist_viewlist[index] = (int)(entry - serverlist_cache); serverlist_viewx_dirty = true;
 }
 
-/// we suppose serverlist_viewcount to be valid, ie > 0
+/// we suppose serverlist_viewlist_count to be valid, ie > 0
+WARP_X_CALLERS_ (ServerList_ViewList_Remove entry->query == SQS_QUERIED entry->query == SQS_REFRESHING)
+
+// Baker: This seems to rely on the idea that index is the last item?
 static void _ServerList_ViewList_Helper_Remove( int index )
 {
-	serverlist_viewcount--;
-	for( ; index < serverlist_viewcount ; index++ )
+	CHANGE___ serverlist_viewlist_count--; serverlist_viewx_dirty = true;
+	for( ; index < serverlist_viewlist_count ; index++ )
 		serverlist_viewlist[index] = serverlist_viewlist[index + 1];
 }
 
-/// \returns true if A should be inserted before B
+// returns true if A should be inserted before B
 static qbool _ServerList_Entry_Compare( serverlist_entry_t *A, serverlist_entry_t *B )
 {
 	int result = 0; // > 0 if for numbers A > B and for text if A < B
 
-	if ( serverlist_sortflags & SLSF_CATEGORIES )
-	{
+	if ( serverlist_sortflags & SLSF_CATEGORIES ) {
 		result = A->info.category - B->info.category;
 		if (result != 0)
 			return result < 0;
 	}
 
-	if ( serverlist_sortflags & SLSF_FAVORITES )
-	{
+	if ( serverlist_sortflags & SLSF_FAVORITES ) {
 		if (A->info.isfavorite != B->info.isfavorite)
 			return A->info.isfavorite;
 	}
@@ -410,6 +425,7 @@ static qbool _ServerList_Entry_Mask( serverlist_mask_t *mask, serverlist_info_t 
 	return true;
 }
 
+WARP_X_CALLERS_ ()
 static void ServerList_ViewList_Insert( serverlist_entry_t *entry )
 {
 	int start, end, mid, i;
@@ -433,20 +449,15 @@ static void ServerList_ViewList_Insert( serverlist_entry_t *entry )
 	if (LHNETADDRESS_FromString(&addr, entry->info.cname, 26000))
 	{
 		char idfp[FP64_SIZE+1];
-		for(i = 0; i < nFavorites; ++i)
-		{
-			if (LHNETADDRESS_Compare(&addr, &favorites[i]) == 0)
-			{
+		for(i = 0; i < nFavorites; ++i) {
+			if (LHNETADDRESS_Compare(&addr, &favorites[i]) == 0) {
 				entry->info.isfavorite = true;
 				break;
 			}
 		}
-		if (Crypto_RetrieveHostKey(&addr, 0, NULL, 0, idfp, sizeof(idfp), NULL, NULL))
-		{
-			for(i = 0; i < nFavorites_idfp; ++i)
-			{
-				if (String_Does_Match(idfp, favorites_idfp[i]))
-				{
+		if (Crypto_RetrieveHostKey(&addr, 0, NULL, 0, idfp, sizeof(idfp), NULL, NULL)) {
+			for(i = 0; i < nFavorites_idfp; ++i) {
+				if (String_Does_Match(idfp, favorites_idfp[i])) {
 					entry->info.isfavorite = true;
 					break;
 				}
@@ -469,8 +480,8 @@ static void ServerList_ViewList_Insert( serverlist_entry_t *entry )
 	if ( start == SERVERLIST_ORMASKCOUNT || (start > 0 && !serverlist_ormasks[start].active) )
 		return;
 
-	if ( !serverlist_viewcount ) {
-		_ServerList_ViewList_Helper_InsertBefore( 0, entry );
+	if ( !serverlist_viewlist_count ) {
+		_ServerList_ViewList_Helper_InsertBefore( 0, entry ); // change covered
 		return;
 	}
 	// ok, insert it, we just need to find out where exactly:
@@ -478,15 +489,15 @@ static void ServerList_ViewList_Insert( serverlist_entry_t *entry )
 	// two special cases
 	// check whether to insert it as new first item
 	if ( _ServerList_Entry_Compare( entry, ServerList_GetViewEntry(0) ) ) {
-		_ServerList_ViewList_Helper_InsertBefore( 0, entry );
+		_ServerList_ViewList_Helper_InsertBefore (0, entry ); // change covered
 		return;
 	} // check whether to insert it as new last item
-	else if ( !_ServerList_Entry_Compare( entry, ServerList_GetViewEntry(serverlist_viewcount - 1) ) ) {
-		_ServerList_ViewList_Helper_InsertBefore( serverlist_viewcount, entry );
+	else if ( !_ServerList_Entry_Compare( entry, ServerList_GetViewEntry(serverlist_viewlist_count - 1) ) ) {
+		_ServerList_ViewList_Helper_InsertBefore (serverlist_viewlist_count, entry );
 		return;
 	}
 	start = 0;
-	end = serverlist_viewcount - 1;
+	end = serverlist_viewlist_count - 1;
 	while( end > start + 1 )
 	{
 		mid = (start + end) / 2;
@@ -498,13 +509,13 @@ static void ServerList_ViewList_Insert( serverlist_entry_t *entry )
 			// the item has to be in the lower half
 			start = mid;
 	}
-	_ServerList_ViewList_Helper_InsertBefore( start + 1, entry );
+	CHANGE___ _ServerList_ViewList_Helper_InsertBefore( start + 1, entry );
 }
 
 static void ServerList_ViewList_Remove( serverlist_entry_t *entry )
 {
 	int i;
-	for( i = 0; i < serverlist_viewcount; i++ )
+	for( i = 0; i < serverlist_viewlist_count; i++ )
 	{
 		if (ServerList_GetViewEntry(i) == entry)
 		{
@@ -514,11 +525,12 @@ static void ServerList_ViewList_Remove( serverlist_entry_t *entry )
 	}
 }
 
+WARP_X_CALLERS_ (VM_M_resortserverlist menu qc #618 ServerList_RebuildViewList)
 void ServerList_RebuildViewList(void)
 {
 	int i;
 
-	serverlist_viewcount = 0;
+	CHANGE___ serverlist_viewlist_count = 0;  serverlist_viewx_dirty = true;
 	for( i = 0 ; i < serverlist_cachecount ; i++ ) {
 		serverlist_entry_t *entry = &serverlist_cache[i];
 		// also display entries that are currently being refreshed [11/8/2007 Black]
@@ -575,7 +587,7 @@ static void _ServerList_Test(void)
 		serverlist_cachecount++;
 	}
 }
-#endif
+#endif // 0
 
 void ServerList_QueryList(qbool resetcache, qbool querydp, qbool queryqw, qbool consoleoutput)
 {
@@ -586,14 +598,15 @@ void ServerList_QueryList(qbool resetcache, qbool querydp, qbool queryqw, qbool 
 		serverquerycount = 0;
 		serverreplycount = 0;
 		serverlist_cachecount = 0;
-		serverlist_viewcount = 0;
+		CHANGE___ serverlist_viewlist_count = 0;  serverlist_viewx_dirty = true;
 		serverlist_maxcachecount = 0;
-		serverlist_cache = (serverlist_entry_t *)Mem_Realloc(netconn_mempool, (void *)serverlist_cache, sizeof(serverlist_entry_t) * serverlist_maxcachecount);
+		serverlist_cache = (serverlist_entry_t *)Mem_Realloc(netconn_mempool, 
+			(void *)serverlist_cache, sizeof(serverlist_entry_t) * serverlist_maxcachecount);
 	} else {
 		// refresh all entries
 		int n;
 		for( n = 0 ; n < serverlist_cachecount ; n++ ) {
-			serverlist_entry_t *entry = &serverlist_cache[ n ];
+			serverlist_entry_t *entry = &serverlist_cache[n];
 			entry->query = SQS_REFRESHING;
 			entry->querycounter = 0;
 		}
@@ -1584,6 +1597,7 @@ int NetConn_IsLocalGame(void)
 }
 
 #ifdef CONFIG_MENU
+// Baker: This returns -1 on failure
 static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *addressstring)
 {
 	int n;
@@ -1602,7 +1616,7 @@ static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *address
 		// know the ping nor will it be initialized already...
 
 		// find a slot
-		if (serverlist_cachecount == SERVERLIST_TOTALSIZE)
+		if (serverlist_cachecount == SERVERLIST_TOTALSIZE_2048)
 			return -1;
 
 		if (serverlist_maxcachecount <= serverlist_cachecount) {
@@ -1618,7 +1632,7 @@ static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *address
 		entry->querytime = host.realtime;
 		// if not in the slist menu we should print the server to console
 		if (serverlist_consoleoutput)
-			Con_Printf ("querying %s\n", addressstring);
+			Con_PrintLinef ("querying %s", addressstring);
 		serverlist_cachecount ++;
 	}
 	// if this is the first reply from this server, count it as having replied
@@ -1652,6 +1666,9 @@ static void NetConn_ClientParsePacket_ServerList_UpdateCache(int n)
 	char humanscolor = (info->numhumans > 0 && info->numhumans < info->maxplayers) ? 
 								(info->numhumans >= 4 ? /*white*/ '7' : '3' /*yellow*/) : /*red*/ '1';
 #if 1
+	if (!info->map[0]) {
+		int j = 5;
+	}
 	dpsnprintf(entry->line1, 
 		sizeof(serverlist_cache[n].line1), "^%c%5d^7 ^%c%3u^7/%3u   %-24.24s %-10.10s %-12.12s", 
 		 pingcolor, 
@@ -1701,7 +1718,7 @@ static qbool NetConn_ClientParsePacket_ServerList_PrepareQuery( int protocol, co
 	serverlist_entry_t *entry;
 
 	//	ignore the rest of the message if the serverlist is full
-	if ( serverlist_cachecount == SERVERLIST_TOTALSIZE )
+	if ( serverlist_cachecount == SERVERLIST_TOTALSIZE_2048 )
 		return false;
 	//	also ignore	it	if	we	have already queried	it	(other master server	response)
 	for( n =	0 ; n	< serverlist_cachecount	; n++	)
@@ -1816,11 +1833,38 @@ static void NetConn_ClientParsePacket_ServerList_ParseDPList(lhnetaddress_t *sen
 }
 #endif
 
+
+unsigned int QW_CL_SupportedFTEExtensions (void)
+{
+	unsigned int fteprotextsupported = 0;
+
+	if (!cl_pext.value)
+		return 0;
+
+	if (cl_pext_chunkeddownloads.value)
+		fteprotextsupported |= PEXT_CHUNKEDDOWNLOADS;
+
+	if (cl_pext_qw_256packetentities.value)
+		fteprotextsupported |= PEXT_256PACKETENTITIES;
+
+#if 0 // Baker: Maybe later
+	if (cl_pext_qw_limits.value) {
+		fteprotextsupported |= PEXT_MODELDBL;
+		fteprotextsupported |= PEXT_ENTITYDBL;
+		fteprotextsupported |= PEXT_ENTITYDBL2;
+		//fteprotextsupported |= PEXT_SPAWNSTATIC2;
+	}
+#endif
+
+	return fteprotextsupported;
+}
+
+
 static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *data, int length, lhnetaddress_t *peeraddress)
 {
 	qbool fromserver;
 	int ret, c;
-	char *string, addressstring2[128];
+	char *mystring, addressstring2[128];
 	char stringbuf[16384];
 	char senddata[NET_HEADERSIZE+NET_MAXMESSAGE+CRYPTO_HEADERSIZE];
 	size_t sendlength;
@@ -1831,13 +1875,14 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 #endif
 
 	// quakeworld ingame packet
-	fromserver = cls.netcon && mysocket == cls.netcon->mysocket && !LHNETADDRESS_Compare(&cls.netcon->peeraddress, peeraddress);
+	fromserver = cls.netcon && mysocket == cls.netcon->mysocket && 
+		!LHNETADDRESS_Compare(&cls.netcon->peeraddress, peeraddress);
 
 	// convert the address to a string incase we need it
 	LHNETADDRESS_ToString(peeraddress, addressstring2, sizeof(addressstring2), true);
 
-	if (length >= 5 && data[0] == 255 && data[1] == 255 && data[2] == 255 && data[3] == 255)
-	{
+	// Baker: We received a -1 (QW)
+	if (length >= 5 && data[0] == 255 && data[1] == 255 && data[2] == 255 && data[3] == 255) {
 		// received a command string - strip off the packaging and put it
 		// into our string buffer with NULL termination
 		data += 4;
@@ -1845,17 +1890,15 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 		length = min(length, (int)sizeof(stringbuf) - 1);
 		memcpy(stringbuf, data, length);
 		stringbuf[length] = 0;
-		string = stringbuf;
+		mystring = stringbuf;
 
-		if (developer_networking.integer)
-		{
+		if (developer_networking.integer) {
 			Con_Printf ("NetConn_ClientParsePacket: %s sent us a command:\n", addressstring2);
 			Com_HexDumpToConsole(data, length);
 		}
 
 		sendlength = sizeof(senddata) - 4;
-		switch(Crypto_ClientParsePacket(string, length, senddata+4, &sendlength, peeraddress))
-		{
+		switch(Crypto_ClientParsePacket(mystring, length, senddata+4, &sendlength, peeraddress)) {
 			case CRYPTO_NOMATCH:
 				// nothing to do
 				break;
@@ -1875,13 +1918,12 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				return true;
 				break;
 			case CRYPTO_REPLACE:
-				string = senddata+4;
+				mystring = senddata+4;
 				length = (int)sendlength;
 				break;
-		}
+		} // sw
 
-		if (length >= 10 && !memcmp(string, "challenge ", 10) && cls.rcon_trying)
-		{
+		if (length >= 10 && !memcmp(mystring, "challenge ", 10) && cls.rcon_trying) {
 			int i = 0, j;
 			for (j = 0;j < MAX_RCONS;j++)
 			{
@@ -1891,20 +1933,18 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 					if (!LHNETADDRESS_Compare(peeraddress, &cls.rcon_addresses[i]))
 						break;
 			}
-			if (j < MAX_RCONS)
-			{
+			if (j < MAX_RCONS) {
 				char buf[1500];
 				char argbuf[1500];
 				const char *e;
 				int n;
-				dpsnprintf(argbuf, sizeof(argbuf), "%s %s", string + 10, cls.rcon_commands[i]);
+				dpsnprintf(argbuf, sizeof(argbuf), "%s %s", mystring + 10, cls.rcon_commands[i]);
 				memcpy(buf, "\377\377\377\377srcon HMAC-MD4 CHALLENGE ", 29);
 
 				e = strchr(rcon_password.string, ' ');
 				n = e ? e-rcon_password.string : (int)strlen(rcon_password.string);
 
-				if (HMAC_MDFOUR_16BYTES((unsigned char *) (buf + 29), (unsigned char *) argbuf, (int)strlen(argbuf), (unsigned char *) rcon_password.string, n))
-				{
+				if (HMAC_MDFOUR_16BYTES((unsigned char *) (buf + 29), (unsigned char *) argbuf, (int)strlen(argbuf), (unsigned char *) rcon_password.string, n)) {
 					int k;
 					buf[45] = ' ';
 					strlcpy(buf + 46, argbuf, sizeof(buf) - 46);
@@ -1931,11 +1971,11 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				}
 			}
 		}
-		if (length >= 10 && !memcmp(string, "challenge ", 10) && cls.connect_trying)
+		if (length >= 10 && !memcmp(mystring, "challenge ", 10) && cls.connect_trying)
 		{
 			// darkplaces or quake3
 			char protocolnames[1400];
-			Con_DPrintf ("\"%s\" received, sending connect request back to %s\n", string, addressstring2);
+			Con_DPrintf ("\"%s\" received, sending connect request back to %s\n", mystring, addressstring2);
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address)) {
 				Con_DPrintf ("challenge message from wrong server %s\n", addressstring2);
 				return true;
@@ -1948,11 +1988,11 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), "*ip", addressstring2);
 			// TODO: add userinfo stuff here instead of using NQ commands?
 			memcpy(senddata, "\377\377\377\377", 4);
-			dpsnprintf(senddata+4, sizeof(senddata)-4, "connect\\protocol\\darkplaces 3\\protocols\\%s%s\\challenge\\%s", protocolnames, cls.connect_userinfo, string + 10);
+			dpsnprintf(senddata+4, sizeof(senddata)-4, "connect\\protocol\\darkplaces 3\\protocols\\%s%s\\challenge\\%s", protocolnames, cls.connect_userinfo, mystring + 10);
 			NetConn_WriteString(mysocket, senddata, peeraddress);
 			return true;
 		}
-		if (length == 6 && !memcmp(string, "accept", 6) && cls.connect_trying)
+		if (length == 6 && !memcmp(mystring, "accept", 6) && cls.connect_trying)
 		{
 			// darkplaces or quake3
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address)) {
@@ -1965,7 +2005,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			NetConn_ConnectionEstablished(mysocket, peeraddress, PROTOCOL_DARKPLACES3);
 			return true;
 		}
-		if (length > 7 && !memcmp(string, "reject ", 7) && cls.connect_trying)
+		if (length > 7 && !memcmp(mystring, "reject ", 7) && cls.connect_trying)
 		{
 			char rejectreason[128];
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address)) {
@@ -1973,9 +2013,9 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				return true;
 			}
 			cls.connect_trying = false;
-			string += 7;
+			mystring += 7;
 			length = min(length - 7, (int)sizeof(rejectreason) - 1);
-			memcpy(rejectreason, string, length);
+			memcpy(rejectreason, mystring, length);
 			rejectreason[length] = 0;
 #ifdef CONFIG_MENU
 			M_Update_Return_Reason(rejectreason);
@@ -1985,13 +2025,13 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 #ifdef CONFIG_MENU
 		if (key_dest != key_game)
 		{
-			if (length >= 15 && !memcmp(string, "statusResponse\x0A", 15))
+			if (length >= 15 && !memcmp(mystring, "statusResponse\x0A", 15))
 			{
 				serverlist_info_t *info;
 				char *p;
 				int n;
 
-				string += 15;
+				mystring += 15;
 				// search the cache for this server and update it
 				n = NetConn_ClientParsePacket_ServerList_ProcessReply(addressstring2);
 				if (n < 0)
@@ -2011,7 +2051,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				info->maxplayers  = 0;
 				info->gameversion = 0;
 
-				p = strchr(string, '\n');
+				p = strchr(mystring, '\n');
 				if (p) {
 					*p = 0; // cut off the string there
 					++p;
@@ -2020,16 +2060,17 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 					Con_PrintLinef ("statusResponse without players block?");
 				}
 
-				if ((s = InfoString_GetValue(string, "gamename"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->game, s, sizeof (info->game));
-				if ((s = InfoString_GetValue(string, "modname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));
-				if ((s = InfoString_GetValue(string, "mapname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->map , s, sizeof (info->map ));
-				if ((s = InfoString_GetValue(string, "hostname"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->name, s, sizeof (info->name));
-				if ((s = InfoString_GetValue(string, "protocol"     , infostringvalue, sizeof(infostringvalue))) != NULL) info->protocol = atoi(s);
-				if ((s = InfoString_GetValue(string, "clients"      , infostringvalue, sizeof(infostringvalue))) != NULL) info->numplayers = atoi(s);
-				if ((s = InfoString_GetValue(string, "bots"         , infostringvalue, sizeof(infostringvalue))) != NULL) info->numbots = atoi(s);
-				if ((s = InfoString_GetValue(string, "sv_maxclients", infostringvalue, sizeof(infostringvalue))) != NULL) info->maxplayers = atoi(s);
-				if ((s = InfoString_GetValue(string, "gameversion"  , infostringvalue, sizeof(infostringvalue))) != NULL) info->gameversion = atoi(s);
-				if ((s = InfoString_GetValue(string, "qcstatus"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->qcstatus, s, sizeof(info->qcstatus));
+				// DarkPlaces
+				if ((s = InfoString_GetValue(mystring, "gamename"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->game, s, sizeof (info->game));
+				if ((s = InfoString_GetValue(mystring, "modname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));
+				if ((s = InfoString_GetValue(mystring, "mapname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->map , s, sizeof (info->map ));
+				if ((s = InfoString_GetValue(mystring, "hostname"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->name, s, sizeof (info->name));
+				if ((s = InfoString_GetValue(mystring, "protocol"     , infostringvalue, sizeof(infostringvalue))) != NULL) info->protocol = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "clients"      , infostringvalue, sizeof(infostringvalue))) != NULL) info->numplayers = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "bots"         , infostringvalue, sizeof(infostringvalue))) != NULL) info->numbots = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "sv_maxclients", infostringvalue, sizeof(infostringvalue))) != NULL) info->maxplayers = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "gameversion"  , infostringvalue, sizeof(infostringvalue))) != NULL) info->gameversion = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "qcstatus"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->qcstatus, s, sizeof(info->qcstatus));
 				if (p                                                                                         != NULL) strlcpy(info->players, p, sizeof(info->players));
 				info->numhumans = info->numplayers - max(0, info->numbots);
 				info->freeslots = info->maxplayers - info->numplayers;
@@ -2038,12 +2079,12 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 
 				return true;
 			}
-			if (length >= 13 && !memcmp(string, "infoResponse\x0A", 13))
+			if (length >= 13 && !memcmp(mystring, "infoResponse\x0A", 13))
 			{
 				serverlist_info_t *info;
 				int n;
 
-				string += 13;
+				mystring += 13;
 				// search the cache for this server and update it
 				n = NetConn_ClientParsePacket_ServerList_ProcessReply(addressstring2);
 				if (n < 0)
@@ -2062,16 +2103,16 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				info->maxplayers  = 0;
 				info->gameversion = 0;
 
-				if ((s = InfoString_GetValue(string, "gamename"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->game, s, sizeof (info->game));
-				if ((s = InfoString_GetValue(string, "modname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));
-				if ((s = InfoString_GetValue(string, "mapname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->map , s, sizeof (info->map ));
-				if ((s = InfoString_GetValue(string, "hostname"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->name, s, sizeof (info->name));
-				if ((s = InfoString_GetValue(string, "protocol"     , infostringvalue, sizeof(infostringvalue))) != NULL) info->protocol = atoi(s);
-				if ((s = InfoString_GetValue(string, "clients"      , infostringvalue, sizeof(infostringvalue))) != NULL) info->numplayers = atoi(s);
-				if ((s = InfoString_GetValue(string, "bots"         , infostringvalue, sizeof(infostringvalue))) != NULL) info->numbots = atoi(s);
-				if ((s = InfoString_GetValue(string, "sv_maxclients", infostringvalue, sizeof(infostringvalue))) != NULL) info->maxplayers = atoi(s);
-				if ((s = InfoString_GetValue(string, "gameversion"  , infostringvalue, sizeof(infostringvalue))) != NULL) info->gameversion = atoi(s);
-				if ((s = InfoString_GetValue(string, "qcstatus"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->qcstatus, s, sizeof(info->qcstatus));
+				if ((s = InfoString_GetValue(mystring, "gamename"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->game, s, sizeof (info->game));
+				if ((s = InfoString_GetValue(mystring, "modname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));
+				if ((s = InfoString_GetValue(mystring, "mapname"      , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->map , s, sizeof (info->map ));
+				if ((s = InfoString_GetValue(mystring, "hostname"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->name, s, sizeof (info->name));
+				if ((s = InfoString_GetValue(mystring, "protocol"     , infostringvalue, sizeof(infostringvalue))) != NULL) info->protocol = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "clients"      , infostringvalue, sizeof(infostringvalue))) != NULL) info->numplayers = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "bots"         , infostringvalue, sizeof(infostringvalue))) != NULL) info->numbots = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "sv_maxclients", infostringvalue, sizeof(infostringvalue))) != NULL) info->maxplayers = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "gameversion"  , infostringvalue, sizeof(infostringvalue))) != NULL) info->gameversion = atoi(s);
+				if ((s = InfoString_GetValue(mystring, "qcstatus"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->qcstatus, s, sizeof(info->qcstatus));
 				info->numhumans = info->numplayers - max(0, info->numbots);
 				info->freeslots = info->maxplayers - info->numplayers;
 
@@ -2079,7 +2120,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 
 				return true;
 			}
-			if (!strncmp(string, "getserversResponse\\", 19) && serverlist_cachecount < SERVERLIST_TOTALSIZE)
+			if (!strncmp(mystring, "getserversResponse\\", 19) && serverlist_cachecount < SERVERLIST_TOTALSIZE_2048)
 			{
 				// Extract the IP addresses
 				data += 18;
@@ -2087,7 +2128,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				NetConn_ClientParsePacket_ServerList_ParseDPList(peeraddress, data, length, false);
 				return true;
 			}
-			if (!strncmp(string, "getserversExtResponse", 21) && serverlist_cachecount < SERVERLIST_TOTALSIZE)
+			if (!strncmp(mystring, "getserversExtResponse", 21) && serverlist_cachecount < SERVERLIST_TOTALSIZE_2048)
 			{
 				// Extract the IP addresses
 				data += 21;
@@ -2095,7 +2136,8 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				NetConn_ClientParsePacket_ServerList_ParseDPList(peeraddress, data, length, true);
 				return true;
 			}
-			if (!memcmp(string, "d\n", 2) && serverlist_cachecount < SERVERLIST_TOTALSIZE)
+			// Baker: M2C_MASTER_REPLY 'd'	// + \n + qw server port list
+			if (!memcmp(mystring, "d\n", 2) && serverlist_cachecount < SERVERLIST_TOTALSIZE_2048)
 			{
 				// Extract the IP addresses
 				data += 2;
@@ -2124,33 +2166,35 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			}
 		}
 #endif
-		if (!strncmp(string, "extResponse ", 12))
+		if (!strncmp(mystring, "extResponse ", 12))
 		{
 			++cl_net_extresponse_count;
 			if (cl_net_extresponse_count > NET_EXTRESPONSE_MAX)
 				cl_net_extresponse_count = NET_EXTRESPONSE_MAX;
 			cl_net_extresponse_last = (cl_net_extresponse_last + 1) % NET_EXTRESPONSE_MAX;
-			dpsnprintf(cl_net_extresponse[cl_net_extresponse_last], sizeof(cl_net_extresponse[cl_net_extresponse_last]), "\"%s\" %s", addressstring2, string + 12);
+			dpsnprintf(cl_net_extresponse[cl_net_extresponse_last], sizeof(cl_net_extresponse[cl_net_extresponse_last]), "\"%s\" %s", addressstring2, mystring + 12);
 			return true;
 		}
-		if (!strncmp(string, "ping", 4))
+		if (!strncmp(mystring, "ping", 4))
 		{
 			if (developer_extra.integer)
 				Con_DPrintf ("Received ping from %s, sending ack\n", addressstring2);
 			NetConn_WriteString(mysocket, "\377\377\377\377ack", peeraddress);
 			return true;
 		}
-		if (!strncmp(string, "ack", 3))
+		if (!strncmp(mystring, "ack", 3))
 			return true;
+
 		// QuakeWorld compatibility
-		if (length > 1 && string[0] == 'c' && (string[1] == '-' || (string[1] >= '0' && string[1] <= '9')) && cls.connect_trying)
-		{
+		// Baker: QW_S2C_CHALLENGE_char_c			'c'
+		if (length > 1 && mystring[0] == QW_S2C_CHALLENGE_char_c && 
+			(mystring[1] == '-' || (mystring[1] >= '0' && mystring[1] <= '9')) && cls.connect_trying) {
 			// challenge message
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address)) {
 				Con_DPrintf ("c message from wrong server %s\n", addressstring2);
 				return true;
 			}
-			Con_Printf ("challenge %s received, sending QuakeWorld connect request back to %s\n", string + 1, addressstring2);
+			Con_Printf ("challenge %s received, sending QuakeWorld connect request back to %s\n", mystring + 1, addressstring2);
 #ifdef CONFIG_MENU
 			M_Update_Return_Reason("Got QuakeWorld challenge response");
 #endif
@@ -2158,12 +2202,27 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			// update the server IP in the userinfo (QW servers expect this, and it is used by the reconnect command)
 			InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), "*ip", addressstring2);
 			memcpy(senddata, "\377\377\377\377", 4);
-			dpsnprintf(senddata+4, sizeof(senddata)-4, "connect %d %d %d \"%s%s\"\n", 28, cls.qw_qport, atoi(string + 1), cls.userinfo, cls.connect_userinfo);
+			dpsnprintf(senddata+4, sizeof(senddata)-4, "connect %d %d %d \"%s%s\"\n", 28, 
+				cls.qw_qport, /*challenge reply*/ atoi(mystring + 1), cls.userinfo, cls.connect_userinfo);
+
+			// ezQuake send cl extensions with challenge 
+			// Baker: This is where we tell server what extensions we have
+			cls.fteprotocolextensions = QW_CL_SupportedFTEExtensions();
+
+			if (1) {
+				char tmp[128];
+				int ext_supported = QW_CL_SupportedFTEExtensions ();
+				c_dpsnprintf2 (tmp, "0x%x 0x%x" NEWLINE, PROTOCOL_VERSION_FTE1, ext_supported );
+				Con_PrintLinef ("FTE: 0x%x is fte protocol ver and 0x%x is fteprotocolextensions", 
+					PROTOCOL_VERSION_FTE1, 
+					ext_supported);
+				c_strlcat (senddata, tmp); 
+			}
 			NetConn_WriteString(mysocket, senddata, peeraddress);
 			return true;
 		}
-		if (length >= 1 && string[0] == 'j' && cls.connect_trying)
-		{
+		// Baker: QW_S2C_CONNECTION		'j'
+		if (length >= 1 && mystring[0] == QW_S2C_CONNECTION_char_j && cls.connect_trying) {
 			// accept message
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address)) {
 				Con_DPrintf ("j message from wrong server %s\n", addressstring2);
@@ -2175,17 +2234,38 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			NetConn_ConnectionEstablished(mysocket, peeraddress, PROTOCOL_QUAKEWORLD);
 			return true;
 		}
-		if (length > 2 && !memcmp(string, "n\\", 2))
-		{
+		
+		// ezQuake receive chunk
+		// Baker: A2C_PRINT			'n'	// print a message on client
+		if (length >= 1 && mystring[0] == QW_A2C_PRINT_char_n) {
+
+			if (length > 100 && !strncmp(&mystring[1], "\\chunk", sizeof("\\chunk")-1)) {
+				SZ_Clear(&cl_message);
+				SZ_Write(&cl_message, data, length);
+				MSG_BeginReading(&cl_message); // reset
+				int cmdx = MSG_ReadByte (&cl_message);
+				if (cmdx == QW_A2C_PRINT_char_n /*110*/) {
+					QW_CL_Parse_OOB_ChunkedDownload();
+					SZ_Clear(&cl_message);
+					return true;
+				} else {
+					// Can this even happen?
+					Con_PrintLinef ("Unexpected chunk");
+				}
+			}
+		} // QW_A2C_PRINT_char_n
+
+		// Baker: A2C_PRINT			'n'	// print a message on client
+		if (length > 2 && !memcmp(mystring, "n\\", 2)) {
 #ifdef CONFIG_MENU
 			serverlist_info_t *info;
 			int n;
 
 			// qw server status
 			if (serverlist_consoleoutput && developer_networking.integer >= 2)
-				Con_Printf ("QW server status from server at %s:\n%s\n", addressstring2, string + 1);
+				Con_PrintLinef ("QW server status from server at %s:" NEWLINE "%s", addressstring2, mystring + 1);
 
-			string += 1;
+			mystring += 1;
 			// search the cache for this server and update it
 			n = NetConn_ClientParsePacket_ServerList_ProcessReply(addressstring2);
 			if (n < 0)
@@ -2193,26 +2273,31 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 
 			info = &serverlist_cache[n].info;
 			strlcpy(info->game, "QuakeWorld", sizeof(info->game));
-			if ((s = InfoString_GetValue(string, "*gamedir"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));else info->mod[0]  = 0;
-			if ((s = InfoString_GetValue(string, "map"          , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->map , s, sizeof (info->map ));else info->map[0]  = 0;
-			if ((s = InfoString_GetValue(string, "hostname"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->name, s, sizeof (info->name));else info->name[0] = 0;
+			if ((s = InfoString_GetValue(mystring, "*gamedir"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->mod , s, sizeof (info->mod ));else info->mod[0]  = 0;
+			if ((s = InfoString_GetValue(mystring, "map"          , infostringvalue, sizeof(infostringvalue))) != NULL) 
+				c_strlcpy (info->map, s);
+			else {
+				// Baker: There are servers I think are qizmo forwards or something
+				// DarkPlaces doesn't seem to be able to use them.
+				info->map[0]  = 0;
+			}
+			if ((s = InfoString_GetValue(mystring, "hostname"     , infostringvalue, sizeof(infostringvalue))) != NULL) strlcpy(info->name, s, sizeof (info->name));else info->name[0] = 0;
 			info->protocol = 0;
 			info->numplayers = 0; // updated below
 			info->numhumans = 0; // updated below
-			if ((s = InfoString_GetValue(string, "maxclients"   , infostringvalue, sizeof(infostringvalue))) != NULL) info->maxplayers = atoi(s);else info->maxplayers  = 0;
-			if ((s = InfoString_GetValue(string, "gameversion"  , infostringvalue, sizeof(infostringvalue))) != NULL) info->gameversion = atoi(s);else info->gameversion = 0;
+			if ((s = InfoString_GetValue(mystring, "maxclients"   , infostringvalue, sizeof(infostringvalue))) != NULL) info->maxplayers = atoi(s);else info->maxplayers  = 0;
+			if ((s = InfoString_GetValue(mystring, "gameversion"  , infostringvalue, sizeof(infostringvalue))) != NULL) info->gameversion = atoi(s);else info->gameversion = 0;
 
 			// count active players on server
 			// (we could gather more info, but we're just after the number)
-			s = strchr(string, '\n');
-			if (s)
-			{
+			s = strchr(mystring, '\n');
+			if (s) {
 				s++;
-				while (s < string + length)
+				while (s < mystring + length)
 				{
-					for (;s < string + length && *s != '\n';s++)
+					for (;s < mystring + length && *s != '\n';s++)
 						;
-					if (s >= string + length)
+					if (s >= mystring + length)
 						break;
 					info->numplayers++;
 					info->numhumans++;
@@ -2220,18 +2305,19 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				}
 			}
 
-			NetConn_ClientParsePacket_ServerList_UpdateCache(n);
+			NetConn_ClientParsePacket_ServerList_UpdateCache(n); // QUAKEWORLD
 #endif
 			return true;
 		}
-		if (string[0] == 'n')
-		{
+
+		// Baker: A2C_PRINT			'n'	// print a message on client
+		if (mystring[0] == 'n') {
 			// qw print command, used by rcon replies too
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address) && LHNETADDRESS_Compare(peeraddress, &cls.rcon_address)) {
-				Con_DPrintf ("n message from wrong server %s\n", addressstring2);
+				Con_DPrintLinef ("n message from wrong server %s", addressstring2);
 				return true;
 			}
-			Con_Printf ("QW print command from server at %s:\n%s\n", addressstring2, string + 1);
+			Con_PrintLinef ("QW print command from server at %s:" NEWLINE "%s", addressstring2, mystring + 1);
 		}
 		// we may not have liked the packet, but it was a command packet, so
 		// we're done processing this packet now
@@ -2262,12 +2348,12 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 		{
 		case CCREP_ACCEPT:
 			if (developer_extra.integer)
-				Con_DPrintf ("Datagram_ParseConnectionless: received CCREP_ACCEPT from %s.\n", addressstring2);
+				Con_DPrintLinef ("Datagram_ParseConnectionless: received CCREP_ACCEPT from %s.", addressstring2);
 			if (cls.connect_trying)
 			{
 				lhnetaddress_t clientportaddress;
 				if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address)) {
-					Con_DPrintf ("CCREP_ACCEPT message from wrong server %s\n", addressstring2);
+					Con_DPrintLinef ("CCREP_ACCEPT message from wrong server %s", addressstring2);
 					break;
 				}
 				clientportaddress = *peeraddress;
@@ -2286,7 +2372,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 				else
 					cls.proquake_serverflags = 0;
 				if (cls.proquake_servermod == 1)
-					Con_Printf ("Connected to ProQuake %.1f server, enabling precise aim\n", cls.proquake_serverversion / 10.0f);
+					Con_PrintLinef ("Connected to ProQuake %.1f server, enabling precise aim", cls.proquake_serverversion / 10.0f);
 				// update the server IP in the userinfo (QW servers expect this, and it is used by the reconnect command)
 				InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), "*ip", addressstring2);
 #ifdef CONFIG_MENU
@@ -2297,7 +2383,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			break;
 		case CCREP_REJECT:
 			if (developer_extra.integer) {
-				Con_DPrintf ("CCREP_REJECT message from wrong server %s\n", addressstring2);
+				Con_DPrintLinef ("CCREP_REJECT message from wrong server %s", addressstring2);
 				break;
 			}
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.connect_address))
@@ -2309,7 +2395,7 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			break;
 		case CCREP_SERVER_INFO:
 			if (developer_extra.integer)
-				Con_DPrintf ("Datagram_ParseConnectionless: received CCREP_SERVER_INFO from %s.\n", addressstring2);
+				Con_DPrintLinef ("Datagram_ParseConnectionless: received CCREP_SERVER_INFO from %s.", addressstring2);
 #ifdef CONFIG_MENU
 			// LadyHavoc: because the quake server may report weird addresses
 			// we just ignore it and keep the real address
@@ -2333,23 +2419,23 @@ static int NetConn_ClientParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			break;
 		case CCREP_RCON: // RocketGuy: ProQuake rcon support
 			if (net_sourceaddresscheck.integer && LHNETADDRESS_Compare(peeraddress, &cls.rcon_address)) {
-				Con_DPrintf ("CCREP_RCON message from wrong server %s\n", addressstring2);
+				Con_DPrintLinef ("CCREP_RCON message from wrong server %s", addressstring2);
 				break;
 			}
 			if (developer_extra.integer)
-				Con_DPrintf ("Datagram_ParseConnectionless: received CCREP_RCON from %s.\n", addressstring2);
+				Con_DPrintLinef ("Datagram_ParseConnectionless: received CCREP_RCON from %s.", addressstring2);
 
-			Con_Printf ("%s\n", MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
+			Con_PrintLinef ("%s", MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));
 			break;
 		case CCREP_PLAYER_INFO:
 			// we got a CCREP_PLAYER_INFO??
 			//if (developer_extra.integer)
-				Con_Printf ("Datagram_ParseConnectionless: received CCREP_PLAYER_INFO from %s.\n", addressstring2);
+				Con_PrintLinef ("Datagram_ParseConnectionless: received CCREP_PLAYER_INFO from %s.", addressstring2);
 			break;
 		case CCREP_RULE_INFO:
 			// we got a CCREP_RULE_INFO??
 			//if (developer_extra.integer)
-				Con_Printf ("Datagram_ParseConnectionless: received CCREP_RULE_INFO from %s.\n", addressstring2);
+				Con_PrintLinef ("Datagram_ParseConnectionless: received CCREP_RULE_INFO from %s.", addressstring2);
 			break;
 		default:
 			break;
@@ -2454,7 +2540,7 @@ void NetConn_QueryQueueFrame(void)
 		}
 	}
 }
-#endif
+#endif // CONFIG_MENU
 
 void NetConn_ClientFrame(void)
 {
@@ -2462,8 +2548,7 @@ void NetConn_ClientFrame(void)
 	lhnetaddress_t peeraddress;
 	unsigned char readbuffer[NET_HEADERSIZE+NET_MAXMESSAGE];
 	NetConn_UpdateSockets();
-	if (cls.connect_trying && cls.connect_nextsendtime < host.realtime)
-	{
+	if (cls.connect_trying && cls.connect_nextsendtime < host.realtime) {
 #ifdef CONFIG_MENU
 		if (cls.connect_remainingtries == 0)
 			M_Update_Return_Reason("Connect: Waiting 10 seconds for reply");
@@ -2500,8 +2585,7 @@ void NetConn_ClientFrame(void)
 		NetConn_Write(cls.connect_mysocket, cl_message.data, cl_message.cursize, &cls.connect_address);
 		SZ_Clear(&cl_message);
 	}
-	for (i = 0;i < cl_numsockets;i++)
-	{
+	for (i = 0;i < cl_numsockets;i++) {
 		while (cl_sockets[i] && (length = NetConn_Read(cl_sockets[i], readbuffer, sizeof(readbuffer), &peeraddress)) > 0)
 		{
 //			R_TimeReport("clientreadnetwork");
@@ -3499,8 +3583,7 @@ static int NetConn_ServerParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 			if (NetConn_PreventFlood(peeraddress, sv.getstatusfloodaddresses, sizeof(sv.getstatusfloodaddresses) / sizeof(sv.getstatusfloodaddresses[0]), net_getstatusfloodblockingtimeout.value, false))
 				break;
 
-			if (sv.active && String_Does_Match(MSG_ReadString(&sv_message, sv_readstring, sizeof(sv_readstring)), "QUAKE"))
-			{
+			if (sv.active && String_Does_Match(MSG_ReadString(&sv_message, sv_readstring, sizeof(sv_readstring)), "QUAKE")) {
 				int numclients;
 				char myaddressstring[128];
 				if (developer_extra.integer)
@@ -3626,8 +3709,8 @@ static int NetConn_ServerParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 	}
 	if (host_client)
 	{
-		if ((ret = NetConn_ReceivedMessage(host_client->netconnection, data, length, sv.protocol, host_client->begun ? net_messagetimeout.value : net_connecttimeout.value)) == 2)
-		{
+		if ((ret = NetConn_ReceivedMessage(host_client->netconnection, data, length, sv.protocol, host_client->begun ? 
+			net_messagetimeout.value : net_connecttimeout.value)) == 2) {
 			SV_ReadClientMessage();
 			return ret;
 		}
@@ -3690,7 +3773,7 @@ void NetConn_QueryMasters(qbool querydp, qbool queryqw)
 	lhnetaddress_t broadcastaddress;
 	char request[256];
 
-	if (serverlist_cachecount >= SERVERLIST_TOTALSIZE)
+	if (serverlist_cachecount >= SERVERLIST_TOTALSIZE_2048)
 		return;
 
 	// 26000 is the default quake server port, servers on other ports will not
@@ -3882,32 +3965,34 @@ void Net_Refresh_f(cmd_state_t *cmd)
 
 void Net_Slist_f(cmd_state_t *cmd)
 {
-	ServerList_ResetMasks();
+	ServerList_ResetMasks(); last_nav_cname[0] = 0;
 	serverlist_sortbyfield = SLIF_PING;
 	serverlist_sortflags = 0;
     if (m_state != m_slist) {
 		Con_PrintLinef ("Sending requests to master servers");
-		ServerList_QueryList(true, true, false, true);
+		ServerList_QueryList(qsv_resetcache_true, qsv_querydp_true, qsv_queryqw_false, qsv_consoleoutput_true);
 		Con_PrintLinef ("Listening for replies...");
-	} else
-		ServerList_QueryList(true, true, false, false);
+	} else {
+		ServerList_QueryList(qsv_resetcache_true, qsv_querydp_true, qsv_queryqw_false, qsv_consoleoutput_false);
+	}
 }
 
 void Net_SlistQW_f(cmd_state_t *cmd)
 {
-	ServerList_ResetMasks();
+	ServerList_ResetMasks(); last_nav_cname[0] = 0;
 	serverlist_sortbyfield = SLIF_PING;
 	serverlist_sortflags = 0;
     if (m_state != m_slist) {
-		Con_Print("Sending requests to master servers\n");
-		ServerList_QueryList(true, false, true, true);
+		Con_PrintLinef ("Sending requests to master servers");
+		ServerList_QueryList(qsv_resetcache_true, qsv_querydp_false, qsv_queryqw_true, qsv_consoleoutput_true);
 		serverlist_consoleoutput = true;
-		Con_Print("Listening for replies...\n");
+		Con_PrintLinef("Listening for replies...");
 	} else
-		ServerList_QueryList(true, false, true, false);
+		ServerList_QueryList(qsv_resetcache_true, qsv_querydp_false, qsv_queryqw_true, qsv_consoleoutput_false);
 }
-#endif
+#endif // CONFIG_MENU
 
+void SList_Filter_Sort_Changed_c(cvar_t *var);
 void NetConn_Init(void)
 {
 	int i;
@@ -3919,7 +4004,7 @@ void NetConn_Init(void)
 	Cmd_AddCommand(CF_CLIENT, "net_slistqw", Net_SlistQW_f, "query qw master servers and print all server information");
 	Cmd_AddCommand(CF_CLIENT, "net_refresh", Net_Refresh_f, "query dp master servers and refresh all server information");
 	Cmd_AddCommand(CF_CLIENT, "net_socketprint", Net_SocketPrint_f, "prints a list of socket addreses [Zircon]");
-#endif
+#endif // CONFIG_MENU
 	Cmd_AddCommand(CF_SERVER, "heartbeat", Net_Heartbeat_f, "send a heartbeat to the master server (updates your server information)");
 	Cvar_RegisterVariable(&net_test);
 	Cvar_RegisterVariable(&net_usesizelimit);
@@ -3931,6 +4016,20 @@ void NetConn_Init(void)
 	Cvar_RegisterVariable(&net_slist_queriesperframe);
 	Cvar_RegisterVariable(&net_slist_timeout);
 	Cvar_RegisterVariable(&net_slist_maxtries);
+
+	{
+		
+		Cvar_RegisterVariable(&net_slist_filter_word);
+		Cvar_RegisterVariable(&net_slist_filter_players_only);
+		Cvar_RegisterVariable(&net_slist_sort_by);
+		Cvar_RegisterVariable(&net_slist_sort_ascending);
+		Cvar_RegisterCallback(&net_slist_filter_word, SList_Filter_Sort_Changed_c);
+		Cvar_RegisterCallback(&net_slist_filter_players_only, SList_Filter_Sort_Changed_c);
+		Cvar_RegisterCallback(&net_slist_sort_by, SList_Filter_Sort_Changed_c);
+		Cvar_RegisterCallback(&net_slist_sort_ascending, SList_Filter_Sort_Changed_c);
+	}
+
+
 	Cvar_RegisterVariable(&net_slist_favorites);
 #ifdef CONFIG_MENU
 	Cvar_RegisterCallback(&net_slist_favorites, NetConn_UpdateFavorites_c);
@@ -3953,6 +4052,8 @@ void NetConn_Init(void)
 	Cvar_RegisterVirtual(&net_fakeloss_receive, "cl_netpacketloss_receive");
 	Cvar_RegisterVariable(&hostname);
 	Cvar_RegisterVariable(&developer_networking);
+	Cvar_RegisterVariable(&developer_qw);
+	
 	Cvar_RegisterVariable(&cl_netport);
 	Cvar_RegisterCallback(&cl_netport, NetConn_CL_UpdateSockets_Callback);
 	Cvar_RegisterVariable(&sv_netport);

@@ -559,7 +559,8 @@ qbool CL_VM_Parse_TempEntity (void)
 	return r;
 }
 
-void CL_VM_Parse_StuffCmd (const char *msg)
+WARP_X_ (svc_stufftext qw_svc_stufftext)
+void CL_VM_Parse_StuffCmd (const char *msg, int is_qw)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int restorevm_tempstringsbuf_cursize;
@@ -579,44 +580,68 @@ void CL_VM_Parse_StuffCmd (const char *msg)
 		return;
 	}
 
-	if (cls.demoplayback)
-	if (!strncmp(msg, "curl --clear_autodownload\ncurl --pak --forthismap --as ", 55))
-	{
-		// special handling for map download commands
-		// run these commands IMMEDIATELY, instead of waiting for a client frame
-		// that way, there is no black screen when playing back demos
-		// I know this is a really ugly hack, but I can't think of any better way
-		// FIXME find the actual CAUSE of this, and make demo playback WAIT
-		// until all maps are loaded, then remove this hack
+	// Baker: In practice, I have yet to see this hit?
+	// Hit @ connect "50.116.17.172:28501" // unnamed
+	// *version             MVDSV 0.35
+	// *z_ext               511
 
-		char buf[MAX_INPUTLINE_16384];
-		const char *p, *q;
-		size_t l;
+	// Baker: Does not hit on fte or 
+	//*version             MVDSV 0.28 cXE
+	//*z_ext               235
 
-		p = msg;
+	// ezQuake send cl extensions (stuffcmd)  !strcmp(msg, "cmd pext\n"
+	if (is_qw && String_Does_Start_With (msg, "cmd pext")) {
+		// If someone requested protocol extensions we support - reply.
+		// PROTOCOL_VERSION_FTE		
+		char vabuf[1024];
 
-		for(;;)
-		{
-			q = strchr(p, '\n');
-			if (q)
-				l = q - p;
-			else
-				l = strlen(p);
-			if (l > sizeof(buf) - 1)
-				l = sizeof(buf) - 1;
-			strlcpy(buf, p, l + 1); // strlcpy needs a + 1 as it includes the newline!
-
-			Cmd_ExecuteString(cmd_local, buf, src_local, true);
-
-			p += l;
-			if (*p == '\n')
-				++p; // skip the newline and continue
-			else
-				break; // end of string or overflow
-		}
-		Cmd_ExecuteString(cmd_local, "curl --clear_autodownload", src_local, true); // don't inhibit CSQC loading
+		int ext_supported = cls.fteprotocolextensions ? cls.fteprotocolextensions : QW_CL_SupportedFTEExtensions();
+		Con_PrintLinef ("StuffCmd cmd pext: PEXT: 0x%x is fte protocol ver and 0x%x is fteprotocolextensions", 
+			PROTOCOL_VERSION_FTE1, ext_supported);
+		
+		Cbuf_AddTextLine (cmd_local, va(vabuf, sizeof(vabuf), "cmd pext 0x%x 0x%x", PROTOCOL_VERSION_FTE1, ext_supported) );
 		return;
 	}
+
+
+	if (cls.demoplayback)		
+		if (!strncmp(msg, "curl --clear_autodownload\ncurl --pak --forthismap --as ", 55))
+		{
+			// special handling for map download commands
+			// run these commands IMMEDIATELY, instead of waiting for a client frame
+			// that way, there is no black screen when playing back demos
+			// I know this is a really ugly hack, but I can't think of any better way
+			// FIXME find the actual CAUSE of this, and make demo playback WAIT
+			// until all maps are loaded, then remove this hack
+
+			char buf[MAX_INPUTLINE_16384];
+			const char *p, *q;
+			size_t l;
+
+			p = msg;
+
+			for(;;)
+			{
+				q = strchr(p, '\n');
+				if (q)
+					l = q - p;
+				else
+					l = strlen(p);
+				if (l > sizeof(buf) - 1)
+					l = sizeof(buf) - 1;
+				strlcpy(buf, p, l + 1); // strlcpy needs a + 1 as it includes the newline!
+
+				Cmd_ExecuteString(cmd_local, buf, src_local, true);
+
+				p += l;
+				if (*p == '\n')
+					++p; // skip the newline and continue
+				else
+					break; // end of string or overflow
+			}
+			Cmd_ExecuteString(cmd_local, "curl --clear_autodownload", src_local, true); // don't inhibit CSQC loading
+			return;
+		}
 
 	if (!cl.csqc_loaded)
 	{

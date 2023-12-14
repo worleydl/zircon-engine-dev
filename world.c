@@ -907,7 +907,7 @@ void            (ODE_API *dSpaceDestroy)(dSpaceID);
 //int             (ODE_API *dSpaceGetClass)(dSpaceID space);
 //
 void            (ODE_API *dGeomDestroy)(dGeomID geom);
-void            (ODE_API *dGeomSetData)(dGeomID geom, void* data);
+void            (ODE_API *dGeomSetData)(dGeomID geom, void *data);
 void *          (ODE_API *dGeomGetData)(dGeomID geom);
 void            (ODE_API *dGeomSetBody)(dGeomID geom, dBodyID body);
 dBodyID         (ODE_API *dGeomGetBody)(dGeomID geom);
@@ -998,14 +998,14 @@ typedef int dTriTriMergeCallback(dGeomID TriMesh, int FirstTriangleIndex, int Se
 
 dTriMeshDataID  (ODE_API *dGeomTriMeshDataCreate)(void);
 void            (ODE_API *dGeomTriMeshDataDestroy)(dTriMeshDataID g);
-//void            (ODE_API *dGeomTriMeshDataSet)(dTriMeshDataID g, int data_id, void* in_data);
-//void*           (ODE_API *dGeomTriMeshDataGet)(dTriMeshDataID g, int data_id);
+//void            (ODE_API *dGeomTriMeshDataSet)(dTriMeshDataID g, int data_id, void *in_data);
+//void *          (ODE_API *dGeomTriMeshDataGet)(dTriMeshDataID g, int data_id);
 //void            (*dGeomTriMeshSetLastTransform)( (ODE_API *dGeomID g, dMatrix4 last_trans );
 //dReal*          (*dGeomTriMeshGetLastTransform)( (ODE_API *dGeomID g );
-void            (ODE_API *dGeomTriMeshDataBuildSingle)(dTriMeshDataID g, const void* Vertices, int VertexStride, int VertexCount,  const void* Indices, int IndexCount, int TriStride);
-//void            (ODE_API *dGeomTriMeshDataBuildSingle1)(dTriMeshDataID g, const void* Vertices, int VertexStride, int VertexCount,  const void* Indices, int IndexCount, int TriStride, const void* Normals);
-//void            (ODE_API *dGeomTriMeshDataBuildDouble)(dTriMeshDataID g,  const void* Vertices,  int VertexStride, int VertexCount,  const void* Indices, int IndexCount, int TriStride);
-//void            (ODE_API *dGeomTriMeshDataBuildDouble1)(dTriMeshDataID g,  const void* Vertices,  int VertexStride, int VertexCount,  const void* Indices, int IndexCount, int TriStride, const void* Normals);
+void            (ODE_API *dGeomTriMeshDataBuildSingle)(dTriMeshDataID g, const void *Vertices, int VertexStride, int VertexCount,  const void *Indices, int IndexCount, int TriStride);
+//void            (ODE_API *dGeomTriMeshDataBuildSingle1)(dTriMeshDataID g, const void *Vertices, int VertexStride, int VertexCount,  const void *Indices, int IndexCount, int TriStride, const void *Normals);
+//void            (ODE_API *dGeomTriMeshDataBuildDouble)(dTriMeshDataID g,  const void *Vertices,  int VertexStride, int VertexCount,  const void *Indices, int IndexCount, int TriStride);
+//void            (ODE_API *dGeomTriMeshDataBuildDouble1)(dTriMeshDataID g,  const void *Vertices,  int VertexStride, int VertexCount,  const void *Indices, int IndexCount, int TriStride, const void *Normals);
 //void            (ODE_API *dGeomTriMeshDataBuildSimple)(dTriMeshDataID g, const dReal* Vertices, int VertexCount, const dTriIndex* Indices, int IndexCount);
 //void            (ODE_API *dGeomTriMeshDataBuildSimple1)(dTriMeshDataID g, const dReal* Vertices, int VertexCount, const dTriIndex* Indices, int IndexCount, const int* Normals);
 //void            (ODE_API *dGeomTriMeshDataPreprocess)(dTriMeshDataID g);

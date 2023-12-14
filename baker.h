@@ -181,6 +181,7 @@ typedef struct _crect_t_s {
 #define setstr(x,y)						freenull_ (x) x = strdup(y);
 
 #define SET___
+#define CHANGE___
 
 #ifndef c_strlcpy
 	#define c_strlcpy(_dest, _source) \

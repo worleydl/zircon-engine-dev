@@ -46,10 +46,10 @@
 #define	MAX_STYLESTRING			64 ///< max length of flicker pattern for light style
 #define	MAX_SCOREBOARD			255 ///< max number of players in game at once (255 protocol limit)
 #define	MAX_SCOREBOARDNAME_128	128 ///< max length of player name in game
-#define	MAX_USERINFO_STRING		1280 ///< max length of infostring for PROTOCOL_QUAKEWORLD (196 in QuakeWorld)
-#define	MAX_SERVERINFO_STRING	1280 ///< max length of server infostring for PROTOCOL_QUAKEWORLD (512 in QuakeWorld)
+#define	MAX_USERINFO_STRING_1280		1280 ///< max length of infostring for PROTOCOL_QUAKEWORLD (196 in QuakeWorld)
+#define	MAX_SERVERINFO_STRING_1280	1280 ///< max length of server infostring for PROTOCOL_QUAKEWORLD (512 in QuakeWorld)
 #define	MAX_LOCALINFO_STRING	32768 ///< max length of server-local infostring for PROTOCOL_QUAKEWORLD (32768 in QuakeWorld)
-#define	CL_MAX_USERCMDS			128 ///< max number of predicted input packets in queue
+#define	CL_MAX_USERCMDS_128			128 ///< max number of predicted input packets in queue
 #define	CVAR_HASHSIZE			65536 ///< number of hash buckets for accelerating cvar name lookups
 #define	M_MAX_EDICTS			32768 ///< max objects in menu vm
 #define	MAX_DEMOS				8 ///< max demos provided to demos command
@@ -95,7 +95,7 @@
 #define	MAX_EFFECTS				256 ///< limit on size of cl.effects
 #define	MAX_BEAMS				256 ///< limit on size of cl.beams
 #define	MAX_TEMPENTITIES		4096 ///< max number of temporary models visible per frame (certain sprite effects, certain types of CSQC entities also use this)
-#define SERVERLIST_TOTALSIZE		2048 ///< max servers in the server list
+#define SERVERLIST_TOTALSIZE_2048		2048 ///< max servers in the server list
 #define SERVERLIST_ANDMASKCOUNT		16 ///< max items in server list AND mask
 #define SERVERLIST_ORMASKCOUNT		16 ///< max items in server list OR mask
 

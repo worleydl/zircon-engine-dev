@@ -175,6 +175,20 @@ void MSG_WriteString (sizebuf_t *sb, const char *s)
 		SZ_Write (sb, (unsigned char *)s, (int)strlen(s)+1);
 }
 
+// your_clc is like qw_clc_stringcmd or clc_stringcmd
+void Msg_WriteByte_WriteStringf (sizebuf_t *sb, int your_clc, char *fmt, ...)
+{
+	va_list		argptr;
+	char		msg[2048];
+
+	va_start(argptr, fmt);
+	dpvsnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
+
+	MSG_WriteByte	(&cls.netcon->message, your_clc);	// qw_clc_stringcmd or whatever
+	MSG_WriteString	(&cls.netcon->message, msg);
+}
+
 void MSG_WriteUnterminatedString (sizebuf_t *sb, const char *s)
 {
 	if (s && *s)

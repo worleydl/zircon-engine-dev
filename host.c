@@ -407,7 +407,7 @@ void Host_LockSession(void)
 		char vabuf[1024];
 		char *p = va(vabuf, sizeof(vabuf), "%slock%s", *fs_userdir ? fs_userdir : fs_basedir, sessionid.string);
 		FS_CreatePath(p);
-		locksession_fh = FS_SysOpen(p, "wl", false);
+		locksession_fh = FS_SysOpen(p, "wl", fs_nonblocking_false);
 		// TODO maybe write the pid into the lockfile, while we are at it? may help server management tools
 		if (!locksession_fh)
 		{

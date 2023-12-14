@@ -259,12 +259,12 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 		return;
 	}
 	InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), key, value);
-	if (cls.state == ca_connected && cls.netcon)
-	{
-		if (cls.protocol == PROTOCOL_QUAKEWORLD)
+	if (cls.state == ca_connected && cls.netcon) {
+		if (cls.protocol == PROTOCOL_QUAKEWORLD) 
 		{
-			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "setinfo " QUOTED_S " " QUOTED_S, key, value));
+			Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "setinfo " QUOTED_S " " QUOTED_S, key, value);
+			//MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
+			//MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "setinfo " QUOTED_S " " QUOTED_S, key, value));
 		}
 		else if (String_Does_Match_Caseless(key, "name"))
 		{
@@ -406,6 +406,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 	FS_UnloadPacks_dlcache();
 
 	cl.parsingtextexpectingpingforscores = 0; // just in case no reply has come yet
+	cls.fteprotocolextensions = 0;
 
 	// clear contents blends
 	cl.cshifts[0].percent = 0;
@@ -434,11 +435,11 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 			memset(&buf, 0, sizeof(buf));
 			buf.data = bufdata;
 			buf.maxsize = sizeof(bufdata);
-			if (cls.protocol == PROTOCOL_QUAKEWORLD)
-			{
+			if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 				Con_DPrintLinef ("Sending drop command");
-				MSG_WriteByte(&buf, qw_clc_stringcmd);
-				MSG_WriteString(&buf, "drop");
+				Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "drop");
+				//MSG_WriteByte(&buf, qw_clc_stringcmd);
+				//MSG_WriteString(&buf, "drop");
 			}
 			else
 			{
@@ -480,7 +481,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 
 void CL_Disconnect(void)
 {
-	CL_DisconnectEx(q_is_kicked_false, NULL);
+	CL_DisconnectEx(q_is_kicked_false, q_disconnect_message_NULL);
 }
 
 /*
@@ -524,8 +525,9 @@ static void CL_Reconnect_f(cmd_state_t *cmd)
 
 		if (cls.state == ca_connected) {
 			Con_PrintLinef ("Server is changing level...");
-			MSG_WriteChar(&cls.netcon->message, qw_clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, "new");
+			Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "new");
+			//MSG_WriteChar(&cls.netcon->message, qw_clc_stringcmd);
+			//MSG_WriteString(&cls.netcon->message, "new");
 		}
 	}
 	else
@@ -564,12 +566,12 @@ static void CL_Connect_f(cmd_state_t *cmd)
 	if (rcon_secure.integer <= 0)
 		Cvar_SetQuick(&rcon_password, "");
 
-	CL_EstablishConnection (Cmd_Argv(cmd, 1), 2);
+	CL_EstablishConnection (Cmd_Argv(cmd, 1), /*first arg #*/ 2);
 }
 
 void CL_Disconnect_f(cmd_state_t *cmd)
 {
-	Cmd_Argc(cmd) < 1 ? CL_Disconnect() : CL_DisconnectEx(false, Cmd_Argv(cmd, 1));
+	Cmd_Argc(cmd) < 1 ? CL_Disconnect() : CL_DisconnectEx (q_is_kicked_false, Cmd_Argv(cmd, 1));
 }
 
 /*

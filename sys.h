@@ -155,7 +155,7 @@ typedef HMODULE dllhandle_t;
 
 // Other platforms
 #else
-  typedef void* dllhandle_t;
+  typedef void *dllhandle_t;
 #endif
 
 typedef struct dllfunction_s
@@ -182,7 +182,7 @@ qbool Sys_LoadDependency (const char **dllnames, dllhandle_t* handle, const dllf
 qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle);
 
 void Sys_FreeLibrary (dllhandle_t* handle);
-void* Sys_GetProcAddress (dllhandle_t handle, const char *name);
+void *Sys_GetProcAddress (dllhandle_t handle, const char *name);
 
 int Sys_CheckParm (const char *parm);
 

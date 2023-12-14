@@ -492,7 +492,7 @@ typedef struct scoreboard_s
 	int		colors; // two 4 bit fields
 	// QW fields:
 	int		qw_userid;
-	char	qw_userinfo[MAX_USERINFO_STRING];
+	char	qw_userinfo[MAX_USERINFO_STRING_1280];
 	float	qw_entertime;
 	int		qw_ping;
 	int		qw_packetloss;
@@ -660,12 +660,28 @@ typedef struct client_static_s
 
 	// current file download buffer (only saved when file is completed)
 	char qw_downloadname[MAX_QPATH_128];
+
+	FILE		*qw_download_f; // OOF
+	char		qw_downloadtempname[MAX_PATH];
+
 	unsigned char *qw_downloadmemory;
 	int qw_downloadmemorycursize;
 	int qw_downloadmemorymaxsize;
 	int qw_downloadnumber;
+
+	WARP_X_ ()
 	int qw_downloadpercent;
+	double qw_downloadstarttime;
+
+	int fteprotocolextensions;	// Set to 0.  Read from server where?
+
+	#define DL_NONE_0				0
+	#define DL_QW_1					1
+	#define DL_QWCHUNKS_2			2
+
+	int qw_downloadmethod; // DL_NONE 0 DL_QW_1 DL_QWCHUNKS_2 ez: cls.downloadmethod
 	qw_downloadtype_t qw_downloadtype;
+
 	// transfer rate display
 	double qw_downloadspeedtime;
 	int qw_downloadspeedcount;
@@ -680,10 +696,10 @@ typedef struct client_static_s
 	// user infostring
 	// this normally contains the following keys in quakeworld:
 	// password spectator name team skin topcolor bottomcolor rate noaim msg *ver *ip
-	char userinfo[MAX_USERINFO_STRING];
+	char userinfo[MAX_USERINFO_STRING_1280];
 
 	// extra user info for the "connect" command
-	char connect_userinfo[MAX_USERINFO_STRING];
+	char connect_userinfo[MAX_USERINFO_STRING_1280];
 
 #ifdef CONFIG_VIDEO_CAPTURE
 	// video capture stuff
@@ -766,7 +782,7 @@ typedef struct client_state_s
 	// current input being accumulated by mouse/joystick/etc input
 	usercmd_t cmd;
 	// latest moves sent to the server that have not been confirmed yet
-	usercmd_t movecmd[CL_MAX_USERCMDS];
+	usercmd_t movecmd[CL_MAX_USERCMDS_128];
 
 // information for local display
 	// health, etc
@@ -1047,7 +1063,7 @@ typedef struct client_state_s
 	// quakeworld stuff
 
 	// local copy of the server infostring
-	char qw_serverinfo[MAX_SERVERINFO_STRING];
+	char qw_serverinfo[MAX_SERVERINFO_STRING_1280];
 
 	// time of last qw "pings" command sent to server while showing scores
 	double last_ping_request;
@@ -1397,6 +1413,28 @@ void CL_RelinkLightFlashes(void);
 //void CL_Beam_AddPolygons(const beam_t *b); // Baker r0105: classic DarkPlaces lightning
 void CL_UpdateMoveVars(void);
 void CL_Locs_Reload_f(cmd_state_t *cmd);
+
+
+extern cvar_t cl_pext;
+extern cvar_t cl_chunksperframe;
+extern cvar_t cl_pext_chunkeddownloads;
+extern cvar_t cl_pext_qw_256packetentities;
+//extern cvar_t cl_pext_qw_limits;
+
+unsigned int QW_CL_SupportedFTEExtensions (void);
+void QW_CL_Parse_OOB_ChunkedDownload(void);
+void QW_CL_SendChunkDownloadReq(void);
+void QW_CL_SendClientCommand(int is_reliable, char *fmt, ...) DP_FUNC_PRINTF(2);
+void QW_CL_ParseDownload(int q_is_oob);
+void QW_CL_FinishDownload(void);
+
+#define QW_S2C_CONNECTION_char_j		'j'
+#define QW_A2C_PRINT_char_n				'n'
+#define QW_S2C_CHALLENGE_char_c			'c'
+
+#define QW_C2M_MASTER_REQUEST_char_c	'c'
+
+
 
 #endif // CLIENT_H
 

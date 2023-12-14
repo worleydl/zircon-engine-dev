@@ -65,6 +65,8 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define fs_pakfile_null					NULL
 #define fs_package_index_reply_null		NULL
 
+#define fs_nonblocking_false			false	// Baker: I haven't seen a blocking one yet ...
+
 #define fs_all_files_empty_string		""
 #define fs_make_unique_true				true
 #define fs_make_unique_false			false
@@ -98,6 +100,12 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_vm_printfree_true				true
 #define q_vm_printfree_false			false
 #define q_is_console_true				true
+
+#define q_is_quakeworld_true			true
+#define q_is_quakeworld_false			false
+
+#define q_is_doublewidth_true			true
+#define q_is_doublewidth_false			false
 
 #define q_was_a_space_false				false
 #define q_was_a_space_true				true
@@ -138,6 +146,10 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_tx_warn_missing_true			true
 #define q_tx_warn_missing_false			false
 
+#define q_fail_on_missing_false			false
+#define q_fail_on_missing_true			true
+
+
 #define q_write_depth_false				false		// GL_DepthMask
 #define q_write_depth_true				true		// GL_DepthMask
 #define q_prepass_false					false
@@ -148,6 +160,8 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_text_maxlen_0					0
 #define q_outcolor_null					NULL
 #define q_ignore_color_codes_true		true
+#define q_ignore_color_codes_false		false
+
 
 #define qnfo_send_true					true
 #define qnfo_send_false					false
@@ -158,8 +172,24 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define qnfo_quiet_true					true
 #define qnfo_quiet_false				false
 
+#define qsv_resetcache_true				true
+#define qsv_querydp_true				true
+#define qsv_queryqw_true				true
+#define qsv_querydp_false				false
+#define qsv_queryqw_false				false
+#define qsv_consoleoutput_true			true
+#define qsv_consoleoutput_false			false
+
 #define q_include_port_true				true
 #define q_include_port_false			false
+#define q_is_oob_true					true
+#define q_is_oob_false					false
+
+#define q_is_reliable_true				true
+#define q_is_reliable_false				false
+
+
+#define q_disconnect_message_NULL		NULL
 
 #define q_fitz_version_none_0			0
 #define q_fitz_version_1				1

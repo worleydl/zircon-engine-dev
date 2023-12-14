@@ -988,52 +988,57 @@ extern struct cvar_s developer_networkentities;
 
 // QUAKEWORLD
 // server to client
-#define qw_svc_bad				0
-#define qw_svc_nop				1
-#define qw_svc_disconnect		2
-#define qw_svc_updatestat		3	// [byte] [byte]
-#define qw_svc_setview			5	// [short] entity number
-#define qw_svc_sound			6	// <see code>
-#define qw_svc_print			8	// [byte] id [string] null terminated string
-#define qw_svc_stufftext		9	// [string] stuffed into client's console buffer
-#define qw_svc_setangle			10	// [angle3] set the view angle to this absolute value
-#define qw_svc_serverdata		11	// [long] protocol ...
-#define qw_svc_lightstyle		12	// [byte] [string]
-#define qw_svc_updatefrags		14	// [byte] [short]
-#define qw_svc_stopsound		16	// <see code>
-#define qw_svc_damage			19
-#define qw_svc_spawnstatic		20
-#define qw_svc_spawnbaseline	22
-#define qw_svc_temp_entity		23	// variable
-#define qw_svc_setpause			24	// [byte] on / off
-#define qw_svc_centerprint		26	// [string] to put in center of the screen
-#define qw_svc_killedmonster	27
-#define qw_svc_foundsecret		28
-#define qw_svc_spawnstaticsound	29	// [coord3] [byte] samp [byte] vol [byte] aten
-#define qw_svc_intermission		30		// [vec3_t] origin [vec3_t] angle
-#define qw_svc_finale			31		// [string] text
-#define qw_svc_cdtrack			32		// [byte] track
-#define qw_svc_sellscreen		33
-#define qw_svc_smallkick		34		// set client punchangle to 2
-#define qw_svc_bigkick			35		// set client punchangle to 4
-#define qw_svc_updateping		36		// [byte] [short]
-#define qw_svc_updateentertime	37		// [byte] [float]
-#define qw_svc_updatestatlong	38		// [byte] [long]
-#define qw_svc_muzzleflash		39		// [short] entity
-#define qw_svc_updateuserinfo	40		// [byte] slot [long] uid
-#define qw_svc_download			41		// [short] size [size bytes]
-#define qw_svc_playerinfo		42		// variable
-#define qw_svc_nails			43		// [byte] num [48 bits] xyzpy 12 12 12 4 8
-#define qw_svc_chokecount		44		// [byte] packets choked
-#define qw_svc_modellist		45		// [strings]
-#define qw_svc_soundlist		46		// [strings]
-#define qw_svc_packetentities	47		// [...]
-#define qw_svc_deltapacketentities	48		// [...]
-#define qw_svc_maxspeed			49		// maxspeed change, for prediction
-#define qw_svc_entgravity		50		// gravity change, for prediction
-#define qw_svc_setinfo			51		// setinfo on a client
-#define qw_svc_serverinfo		52		// serverinfo
-#define qw_svc_updatepl			53		// [byte] [byte]
+#define qw_svc_bad						0
+#define qw_svc_nop						1
+#define qw_svc_disconnect				2
+#define qw_svc_updatestat				3	// [byte] [byte]
+#define qw_svc_setview					5	// [short] entity number
+#define qw_svc_sound					6	// <see code>
+#define qw_svc_print					8	// [byte] id [string] null terminated string
+#define qw_svc_stufftext				9	// [string] stuffed into client's console buffer
+#define qw_svc_setangle					10	// [angle3] set the view angle to this absolute value
+#define qw_svc_serverdata				11	// [long] protocol ...
+#define qw_svc_lightstyle				12	// [byte] [string]
+#define qw_svc_updatefrags				14	// [byte] [short]
+#define qw_svc_stopsound				16	// <see code>
+#define qw_svc_damage					19
+#define qw_svc_spawnstatic				20
+#define qw_svc_spawnbaseline			22
+#define qw_svc_temp_entity				23	// variable
+#define qw_svc_setpause					24	// [byte] on / off
+#define qw_svc_centerprint				26	// [string] to put in center of the screen
+#define qw_svc_killedmonster			27
+#define qw_svc_foundsecret				28
+#define qw_svc_spawnstaticsound			29	// [coord3] [byte] samp [byte] vol [byte] aten
+#define qw_svc_intermission				30		// [vec3_t] origin [vec3_t] angle
+#define qw_svc_finale					31		// [string] text
+#define qw_svc_cdtrack					32		// [byte] track
+#define qw_svc_sellscreen				33
+#define qw_svc_smallkick				34		// set client punchangle to 2
+#define qw_svc_bigkick					35		// set client punchangle to 4
+#define qw_svc_updateping				36		// [byte] [short]
+#define qw_svc_updateentertime			37		// [byte] [float]
+#define qw_svc_updatestatlong			38		// [byte] [long]
+#define qw_svc_muzzleflash				39		// [short] entity
+#define qw_svc_updateuserinfo			40		// [byte] slot [long] uid
+#define qw_svc_download					41		// [short] size [size bytes]
+#define qw_svc_playerinfo				42		// variable
+#define qw_svc_nails					43		// [byte] num [48 bits] xyzpy 12 12 12 4 8
+#define qw_svc_chokecount				44		// [byte] packets choked
+#define qw_svc_modellist				45		// [strings]
+#define qw_svc_soundlist				46		// [strings]
+#define qw_svc_packetentities			47		// [...]
+#define qw_svc_deltapacketentities		48		// [...]
+#define qw_svc_maxspeed					49		// maxspeed change, for prediction
+#define qw_svc_entgravity				50		// gravity change, for prediction
+#define qw_svc_setinfo					51		// setinfo on a client
+#define qw_svc_serverinfo				52		// serverinfo
+#define qw_svc_updatepl					53		// [byte] [byte]
+
+// FTE
+
+#define	qw_svc_fte_modellistshort		60		// [strings]
+
 // QUAKEWORLD
 // client to server
 #define qw_clc_bad			0
@@ -1117,7 +1122,31 @@ extern struct cvar_s developer_networkentities;
 
 #define QW_UPDATE_BACKUP 64
 #define QW_UPDATE_MASK (QW_UPDATE_BACKUP - 1)
-#define QW_MAX_PACKET_ENTITIES 64
+#define QW_MAX_PACKET_ENTITIES_64 64
+
+#define QW_MAX_PACKET_ENTITIES_FTE_256 256
+
+WARP_X_ (PROTOCOL_VERSION_FTE1, PROTOCOL_VERSION_QW_28, FTE_EXTENSIONS_SUPPORTED_CL)
+
+#define PEXT_256PACKETENTITIES	0x01000000	//Client can recieve 256 packet entities.
+#define PEXT_CHUNKEDDOWNLOADS	0x20000000	//alternate file download method. Hopefully it'll give quadroupled download speed, especially on higher pings.
+#define PEXT_SCALE				0x00000002
+#define PEXT_LIGHTSTYLECOL		0x00000004
+#define PEXT_TRANS				0x00000008
+#define PEXT_VIEW2_				0x00000010
+//#define PEXT_BULLETENS		0x00000020 //obsolete
+#define PEXT_ACCURATETIMINGS	0x00000040
+#define PEXT_SOUNDDBL			0x00000080	//revised startsound protocol
+#define PEXT_FATNESS			0x00000100	//GL only (or servers)
+#define PEXT_HLBSP				0x00000200
+#define PEXT_TE_BULLET			0x00000400
+#define PEXT_HULLSIZE			0x00000800
+#define PEXT_MODELDBL			0x00001000
+#define PEXT_ENTITYDBL			0x00002000	//max of 1024 ents instead of 512
+#define PEXT_ENTITYDBL2			0x00004000	//max of 1024 ents instead of 512
+#define PEXT_FLOATCOORDS		0x00008000	//supports floating point origins.
+#define PEXT_SPAWNSTATIC2		0x00400000	//Sends an entity delta instead of a baseline.
+
 
 // note: QW stats are directly compatible with NQ
 // (but FRAGS, WEAPONFRAME, and VIEWHEIGHT are unused)
@@ -1146,13 +1175,13 @@ typedef struct entityframeqw_snapshot_s
 	double time;
 	qbool invalid;
 	int num_entities;
-	entity_state_t entities[QW_MAX_PACKET_ENTITIES];
+	entity_state_t entities[QW_MAX_PACKET_ENTITIES_FTE_256];
 }
 entityframeqw_snapshot_t;
 
 typedef struct entityframeqw_database_s
 {
-	entityframeqw_snapshot_t snapshot[QW_UPDATE_BACKUP];
+	entityframeqw_snapshot_t snapshotz[QW_UPDATE_BACKUP];
 }
 entityframeqw_database_t;
 

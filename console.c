@@ -471,7 +471,7 @@ char log_dest_buffer[1400]; // UDP packet
 size_t log_dest_buffer_pos;
 unsigned int log_dest_buffer_appending;
 char crt_log_file [MAX_OSPATH] = "";
-qfile_t* logfile = NULL;
+qfile_t *logfile = NULL;
 
 unsigned char *logqueue = NULL;
 size_t logq_ind = 0;
@@ -2278,6 +2278,7 @@ Draws the console with the solid background
 The typing input line at the bottom should only be drawn if typing is allowed
 ================
 */
+WARP_X_ (CL_UpdateScreen_SCR_DrawScreen -> SCR_DrawConsole)
 void Con_DrawConsole (int lines)
 {
 	float alpha, alpha0;
@@ -2967,6 +2968,7 @@ exit_possible:
 			else if (String_Isin3 (command, "folder","dir","ls") /**/)				ac->searchtype = 18;
 			else if (String_Isin1 (command, "cvarlist") /**/)						ac->searchtype = 20;
 			else if (String_Isin1 (command, "sv_protocolname") /**/)				ac->searchtype = 21;
+			else if (String_Isin1 (command, "loadfont"))							ac->searchtype = 22;
 		} 
 		else if (ac->s_command0_a) {
 			// We are 2nd argument or further down (or someone typed multiple spaces that's on them)
@@ -3019,6 +3021,7 @@ autocomplete_go:
 		case 19: GetTexGeneric_Count	(s);	break; // r_replacemaptexture arg2 general textures
 		case 20: GetAny1_Count			(s, "changed"); break; // cvarlist "changed"
 		case 21: GetCommad_Count		(s, "666,999,dp7,quake"); break; // sv_protocolname
+		case 22: GetCommad_Count		(s, "centerprint,chat,console,default,infobar,menu,notify,sbar"); break;
 		} // switch
 
 		if (ac->s_match_alphatop_a == NULL) {

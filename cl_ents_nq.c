@@ -4,9 +4,9 @@
 void CL_ParseUpdate_Fitz (entity_t *ent, entity_state_t *s, int bits)
 {
 	// Baker: Everything reset to baseline already
-	int		i;
-	int		modnum;
-	int		skin;
+//	int		i;
+	int		modnum = -1;
+//	int		skin;
 	int		modread = false;
 
 	if (bits & U_MODEL) {
@@ -54,8 +54,12 @@ void CL_ParseUpdate_Fitz (entity_t *ent, entity_state_t *s, int bits)
 	}
 	if (modread)
 		s->modelindex = modnum;
-	if (bits & U_FITZLERPFINISH_S19) {
+	if (Have_Flag (bits, U_FITZLERPFINISH_S19)) {
+#if 0
 		int lerpfinish = ((float)(MSG_ReadByte(&cl_message)) / 255);
+#else
+		MSG_ReadByte(&cl_message); // Discard, we don't use it
+#endif
 		//ent->lerpflags |= LERP_FINISH;
 	}	
 	//johnfitz

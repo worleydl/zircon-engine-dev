@@ -2272,7 +2272,7 @@ static void VM_CL_getinputstate (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT(1, VM_CL_getinputstate);
 	frame = (unsigned int)PRVM_G_FLOAT(OFS_PARM0);
 	PRVM_G_FLOAT(OFS_RETURN) = false;
-	for (i = 0;i < CL_MAX_USERCMDS;i++)
+	for (i = 0;i < CL_MAX_USERCMDS_128; i++)
 	{
 		if (cl.movecmd[i].sequence == frame)
 		{
@@ -3620,7 +3620,7 @@ static void VM_CL_InitParticleSpawner (prvm_prog_t *prog)
 	VM_InitParticleSpawner(prog, (int)PRVM_G_FLOAT(OFS_PARM0));
 	vmpartspawner.themes[0].initialized = true;
 	VM_ResetParticleTheme(&vmpartspawner.themes[0]);
-	PRVM_G_FLOAT(OFS_RETURN) = (vmpartspawner.verified == true) ? 1 : 0;
+	PRVM_G_FLOAT(OFS_RETURN) = (vmpartspawner.verified == (int)true) ? 1 : 0;
 }
 
 // void() resetparticle

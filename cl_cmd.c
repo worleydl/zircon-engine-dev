@@ -68,16 +68,15 @@ void CL_ForwardToServer (const char *s)
 		MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
 	else
 		MSG_WriteByte(&cls.netcon->message, clc_stringcmd);
-	if ((!strncmp(s, "say ", 4) || !strncmp(s, "say_team ", 9)) && cl_locs_enable.integer)
-	{
+
+	if (cl_locs_enable.integer &&
+		(String_Does_Start_With_PRE(s, "say ") || String_Does_Start_With_PRE(s, "say_team ")) ) {
 		// say/say_team commands can replace % character codes with status info
 		while (*s) {
-			if (*s == '%' && s[1])
-			{
+			if (*s == '%' && s[1]) {
 				// handle proquake message macros
 				temp[0] = 0;
-				switch (s[1])
-				{
+				switch (s[1]) {
 				case 'l': // current location
 					CL_Locs_FindLocationName(temp, sizeof(temp), cl.movement_origin);
 					break;

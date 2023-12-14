@@ -1014,10 +1014,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\menu_lan.c.h"
-				>
-			</File>
-			<File
 				RelativePath=".\menu_lighting.c.h"
 				>
 			</File>
@@ -1039,10 +1035,6 @@
 			</File>
 			<File
 				RelativePath=".\menu_modlist.c.h"
-				>
-			</File>
-			<File
-				RelativePath=".\menu_multiplayer.c.h"
 				>
 			</File>
 			<File
@@ -1075,10 +1067,6 @@
 			</File>
 			<File
 				RelativePath=".\menu_single_player.c.h"
-				>
-			</File>
-			<File
-				RelativePath=".\menu_slist.c.h"
 				>
 			</File>
 			<File
@@ -1380,6 +1368,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cl_parse_chunked.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\cl_parse_quakeworld.c.h"
 				>
 			</File>
@@ -1437,6 +1429,18 @@
 			</File>
 			<File
 				RelativePath=".\makefile.inc"
+				>
+			</File>
+			<File
+				RelativePath=".\menu_lan.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\menu_multiplayer.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\menu_slist.c.h"
 				>
 			</File>
 			<File

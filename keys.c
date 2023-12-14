@@ -723,6 +723,7 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 		// force an update, because the command may take some time
 		if (cls.state == ca_disconnected)
 			CL_UpdateScreen ();
+		con_backscroll = 0;
 		return;
 	}
 
@@ -862,7 +863,8 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 
 	if (keydown[K_CTRL]) {
 		// text zoom in
-		if ((key == '+' || key == K_KP_PLUS) && KM_CTRL) {
+		// Baker: '+' is '=' when unshifted!
+		if ((key == '=' /*plus but unshifted*/ || key == K_KP_PLUS) && KM_CTRL) {
 			// (X) kx: CTRL-PLUS - inert
 			if (con_textsize.integer < 128)
 				Cvar_SetValueQuick(&con_textsize, con_textsize.integer + 1);

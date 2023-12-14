@@ -92,7 +92,7 @@
 				break;
 
 			case qw_svc_stufftext:
-				CL_VM_Parse_StuffCmd(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));	//[515]: csqc
+				CL_VM_Parse_StuffCmd(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), q_is_quakeworld_true);	//[515]: csqc
 				break;
 
 			case qw_svc_damage:
@@ -100,9 +100,11 @@
 				V_ParseDamage ();
 				break;
 
+			// Baker: FS_ChangeGameDirs occurs here.
 			case qw_svc_serverdata:
 				//Cbuf_Execute(); // make sure any stuffed commands are done
-				CL_ParseServerInfo();
+				CL_ParseServerInfo(q_is_quakeworld_true);
+gamedir_change:
 				break;
 
 			case qw_svc_setangle:
@@ -270,7 +272,7 @@
 				break;
 
 			case qw_svc_download:
-				QW_CL_ParseDownload();
+				QW_CL_ParseDownload(q_is_oob_false);
 				break;
 
 			case qw_svc_playerinfo:
@@ -297,7 +299,11 @@
 				break;
 
 			case qw_svc_modellist:
-				QW_CL_ParseModelList();
+				QW_CL_ParseModelList (q_is_doublewidth_false);
+				break;
+
+			case qw_svc_fte_modellistshort:
+				QW_CL_ParseModelList (q_is_doublewidth_true);
 				break;
 
 			case qw_svc_soundlist:

@@ -1611,7 +1611,7 @@ static void Mod_Q1BSP_LoadTextures(sizebuf_t *sb)
 			for (j = (int)strlen(name); j < 16; j++)
 				name[j] = 0;
 
-			if (String_Does_Start_With (name, "sky") /*!strncmp(name, "sky", 3)*/) // Q1SKY
+			if (String_Does_Start_With_PRE (name, "sky") /*!strncmp(name, "sky", 3)*/) // Q1SKY
 				numsky++;
 		}
 

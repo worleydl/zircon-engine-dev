@@ -71,7 +71,7 @@ lodepng source code. Don't forget to remove "static" if you copypaste them
 from here.*/
 
 #ifdef LODEPNG_COMPILE_ALLOCATORS
-static void* lodepng_malloc(size_t size) {
+static void *lodepng_malloc(size_t size) {
 #ifdef LODEPNG_MAX_ALLOC
   if (size > LODEPNG_MAX_ALLOC) return 0;
 #endif
@@ -79,21 +79,21 @@ static void* lodepng_malloc(size_t size) {
 }
 
 /* NOTE: when realloc returns NULL, it leaves the original memory untouched */
-static void* lodepng_realloc(void* ptr, size_t new_size) {
+static void *lodepng_realloc(void *ptr, size_t new_size) {
 #ifdef LODEPNG_MAX_ALLOC
   if (new_size > LODEPNG_MAX_ALLOC) return 0;
 #endif
   return realloc(ptr, new_size);
 }
 
-static void lodepng_free(void* ptr) {
+static void lodepng_free(void *ptr) {
   free(ptr);
 }
 #else /*LODEPNG_COMPILE_ALLOCATORS*/
-/* TODO: support giving additional void* payload to the custom allocators */
-void* lodepng_malloc(size_t size);
-void* lodepng_realloc(void* ptr, size_t new_size);
-void lodepng_free(void* ptr);
+/* TODO: support giving additional void *payload to the custom allocators */
+void *lodepng_malloc(size_t size);
+void *lodepng_realloc(void *ptr, size_t new_size);
+void lodepng_free(void *ptr);
 #endif /*LODEPNG_COMPILE_ALLOCATORS*/
 
 /* convince the compiler to inline a function, for use when this measurably improves performance */
@@ -117,13 +117,13 @@ void lodepng_free(void* ptr);
 where a full C library is not available. The compiler can recognize them and compile
 to something as fast. */
 
-static void lodepng_memcpy(void* LODEPNG_RESTRICT dst,
-                           const void* LODEPNG_RESTRICT src, size_t size) {
+static void lodepng_memcpy(void *LODEPNG_RESTRICT dst,
+                           const void *LODEPNG_RESTRICT src, size_t size) {
   size_t i;
   for(i = 0; i < size; i++) ((char *)dst)[i] = ((const char *)src)[i];
 }
 
-static void lodepng_memset(void* LODEPNG_RESTRICT dst,
+static void lodepng_memset(void *LODEPNG_RESTRICT dst,
                            int value, size_t num) {
   size_t i;
   for(i = 0; i < num; i++) ((char *)dst)[i] = (char)value;
@@ -220,7 +220,7 @@ typedef struct uivector {
   size_t allocsize; /*allocated size in bytes*/
 } uivector;
 
-static void uivector_cleanup(void* p) {
+static void uivector_cleanup(void *p) {
   ((uivector*)p)->size = ((uivector*)p)->allocsize = 0;
   lodepng_free(((uivector*)p)->data);
   ((uivector*)p)->data = NULL;
@@ -231,7 +231,7 @@ static unsigned uivector_resize(uivector* p, size_t size) {
   size_t allocsize = size * sizeof(unsigned);
   if (allocsize > p->allocsize) {
     size_t newsize = allocsize + (p->allocsize >> 1u);
-    void* data = lodepng_realloc(p->data, newsize);
+    void *data = lodepng_realloc(p->data, newsize);
     if (data) {
       p->allocsize = newsize;
       p->data = (unsigned*)data;
@@ -269,7 +269,7 @@ typedef struct ucvector {
 static unsigned ucvector_reserve(ucvector* p, size_t size) {
   if (size > p->allocsize) {
     size_t newsize = size + (p->allocsize >> 1u);
-    void* data = lodepng_realloc(p->data, newsize);
+    void *data = lodepng_realloc(p->data, newsize);
     if (data) {
       p->allocsize = newsize;
       p->data = (unsigned char *)data;

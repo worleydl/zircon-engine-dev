@@ -887,7 +887,7 @@ void PRVM_ED_PrintEdicts_Either (cmd_state_t *cmd, prvm_prog_t *prog)
 	
 	if (Cmd_Argc(cmd) == 3) {
 		const char *s_arg1 = Cmd_Argv(cmd, 1);
-		int isnumeric = isdigit(s_arg1[0]);
+		//int isnumeric = isdigit(s_arg1[0]);
 		s_fieldname_partial = Cmd_Argv(cmd, 1);
 		s_fieldvalue_partial = Cmd_Argv(cmd, 2);
 	}

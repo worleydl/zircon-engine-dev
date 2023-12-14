@@ -579,12 +579,21 @@ static void M_ToggleMenu(int mode)
 	#pragma message ("Baker: Until the key release issue can never-ever happen, make opening the menu do it")
 			Key_ReleaseAll ();
 #endif
-			if (menu_state_reenter) {
+			switch (menu_state_reenter) {
+			default:
 				menu_state_reenter = 0;
-				M_Menu_Maps_f (cmd_local);
-			} else {
 				M_Menu_Main_f (cmd_local);
-			}
+				break;
+			case 1: // maps
+				M_Menu_Maps_f (cmd_local); // Will set menu_state_reenter 0
+				break;
+			case 2: // Darkplaces slist
+				M_Menu_ServerList_f (cmd_local); // Will set menu_state_reenter 0
+				break;
+			case 3: // qw slist
+				M_Menu_ServerList_f (cmd_local); // Will set menu_state_reenter 0
+				break;
+			} // sw
 		} // mode
 	} // keydest
 	else

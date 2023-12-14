@@ -682,7 +682,7 @@ SV_ReadClientMessage_ReadClientMove
 ===================
 */
 int sv_numreadmoves = 0;
-usercmd_t sv_readmoves[CL_MAX_USERCMDS];
+usercmd_t sv_readmoves[CL_MAX_USERCMDS_128];
 static void SV_ReadClientMessage_ReadClientMove (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -804,7 +804,7 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 
 	// now store this move for later execution
 	// (we have to buffer the moves because of old ones being repeated)
-	if (sv_numreadmoves < CL_MAX_USERCMDS)
+	if (sv_numreadmoves < CL_MAX_USERCMDS_128)
 		sv_readmoves[sv_numreadmoves++] = *move;
 
 	// movement packet loss tracking
@@ -844,7 +844,7 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 	}
 }
 
-static void SV_ExecuteClientMoves(void)
+static void SV_ReadClientMessage_ExecuteClientMoves(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int moveindex;
@@ -864,7 +864,13 @@ static void SV_ExecuteClientMoves(void)
 	if (ceil(max(sv_readmoves[sv_numreadmoves-1].receivetime - sv_readmoves[sv_numreadmoves-1].time, 0) * 1000.0) < sv_clmovement_minping.integer)
 		host_client->clmovement_disabletimeout = host.realtime + sv_clmovement_minping_disabletime.value / 1000.0;
 	// several conditions govern whether clientside movement prediction is allowed
-	if (sv_readmoves[sv_numreadmoves-1].sequence && sv_clmovement_enable.integer && sv_clmovement_inputtimeout.value > 0 && host_client->clmovement_disabletimeout <= host.realtime && (PRVM_serveredictfloat(host_client->edict, disableclientprediction) == -1 || (PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_WALK && (!PRVM_serveredictfloat(host_client->edict, disableclientprediction)))))
+	if (sv_readmoves[sv_numreadmoves-1].sequence && 
+		sv_clmovement_enable.integer && 
+		sv_clmovement_inputtimeout.value > 0 && 
+		host_client->clmovement_disabletimeout <= host.realtime && 
+		(PRVM_serveredictfloat(host_client->edict, disableclientprediction) == -1 || 
+		(PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_WALK && 
+		(!PRVM_serveredictfloat(host_client->edict, disableclientprediction)))))
 	{
 		// process the moves in order and ignore old ones
 		// but always trust the latest move
@@ -1054,6 +1060,7 @@ static void SV_FrameAck(int framenum)
 SV_ReadClientMessage
 ===================
 */
+WARP_X_ (NetConn_ServerParsePacket)
 void SV_ReadClientMessage(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -1075,8 +1082,7 @@ void SV_ReadClientMessage(void)
 			return;
 		}
 
-		if (sv_message.badread)
-		{
+		if (sv_message.badread) {
 			Con_Print("SV_ReadClientMessage: badread\n");
 			SV_DropClient (false, "An internal server error occurred");
 			return;
@@ -1087,7 +1093,7 @@ void SV_ReadClientMessage(void)
 		{
 			// end of message
 			// apply the moves that were read this frame
-			SV_ExecuteClientMoves();
+			SV_ReadClientMessage_ExecuteClientMoves();
 			break;
 		}
 

@@ -51,8 +51,7 @@ unsigned char *SZ_GetSpace (sizebuf_t *buf, int length)
 {
 	unsigned char *data;
 
-	if (buf->cursize + length > buf->maxsize)
-	{
+	if (buf->cursize + length > buf->maxsize) {
 		if (!buf->allowoverflow)
 			Host_Error_Line ("SZ_GetSpace: overflow without allowoverflow set");
 

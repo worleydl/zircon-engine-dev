@@ -119,7 +119,7 @@ void CL_VM_UpdateDmgGlobals(int dmg_take, int dmg_save, vec3_t dmg_origin);
 void CL_VM_UpdateIntermissionState(int intermission);
 qbool CL_VM_Event_Sound(int sound_num, float volume, int channel, float attenuation, int ent, vec3_t pos, int flags, float speed);
 qbool CL_VM_Parse_TempEntity(void);
-void CL_VM_Parse_StuffCmd(const char *msg);
+void CL_VM_Parse_StuffCmd (const char *msg, int is_qw);
 void CL_VM_Parse_CenterPrint(const char *msg);
 int CL_GetPitchSign(prvm_prog_t *prog, prvm_edict_t *ent);
 int CL_GetTagMatrix(prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int tagindex, prvm_vec_t *shadingorigin);

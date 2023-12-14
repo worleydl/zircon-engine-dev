@@ -100,7 +100,7 @@ static void ModList_Enable (void)
 		return;
 	}
 
-	FS_ChangeGameDirs (modlist_numenabled, gamedirs, true, true);
+	FS_ChangeGameDirs (modlist_numenabled, gamedirs, q_tx_complain_true, q_fail_on_missing_true);
 }
 
 void M_Menu_ModList_f(cmd_state_t *cmd)

@@ -244,7 +244,7 @@ float	getserverliststat(float type)
 */
 /*
 	type:
-0	serverlist_viewcount
+0	serverlist_viewlist_count
 1   serverlist_totalcount
 2	masterquerycount
 3	masterreplycount
@@ -264,7 +264,7 @@ static void VM_M_getserverliststat(prvm_prog_t *prog)
 	switch(type)
 	{
 	case 0:
-		PRVM_G_FLOAT ( OFS_RETURN ) = serverlist_viewcount;
+		PRVM_G_FLOAT ( OFS_RETURN ) = serverlist_viewlist_count;
 		return;
 	case 1:
 		PRVM_G_FLOAT ( OFS_RETURN ) = serverlist_cachecount;
@@ -476,7 +476,7 @@ static void VM_M_getserverliststring(prvm_prog_t *prog)
 	}
 	else
 	{
-		if (hostnr < 0 || hostnr >= serverlist_viewcount)
+		if (hostnr < 0 || hostnr >= serverlist_viewlist_count)
 		{
 			Con_Print("VM_M_getserverliststring: bad hostnr passed!\n");
 			return;
@@ -541,7 +541,7 @@ static void VM_M_getserverlistnumber(prvm_prog_t *prog)
 	}
 	else
 	{
-		if (hostnr < 0 || hostnr >= serverlist_viewcount)
+		if (hostnr < 0 || hostnr >= serverlist_viewlist_count)
 		{
 			Con_Print("VM_M_getserverliststring: bad hostnr passed!\n");
 			return;

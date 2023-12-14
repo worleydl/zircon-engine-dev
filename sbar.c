@@ -1691,10 +1691,10 @@ void Sbar_DeathmatchOverlay (void)
 	if (cl.last_ping_request < host.realtime - 2 && cls.netcon)
 	{
 		cl.last_ping_request = host.realtime;
-		if (cls.protocol == PROTOCOL_QUAKEWORLD)
-		{
-			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
-			MSG_WriteString(&cls.netcon->message, "pings");
+		if (cls.protocol == PROTOCOL_QUAKEWORLD) {
+			Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "pings");
+			//MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
+			//MSG_WriteString(&cls.netcon->message, "pings");
 		}
 		else if (isin15 (cls.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
 			PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP, 		PROTOCOL_NEHAHRAMOVIE,

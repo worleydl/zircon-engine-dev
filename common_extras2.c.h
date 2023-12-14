@@ -1776,3 +1776,47 @@ char *Clipboard_Get_Text_Line_Static (void)
 
 	return out;
 }
+
+// Weaknesses?  Buf size.  Can't handle double.  Can't handle atoi64.  15 digit limit
+// 2 000 000 000 (10) 2,000,000,000 13  minus sign 14.
+// Strengths?  Think it can handle negative ok.
+// Returns strlen
+// Stack overflow says needs something like 1077 digits for super small fractional double.
+// http://stackoverflow.com/questions/1701055/what-is-the-maximum-length-in-chars-needed-to-represent-any-double-value
+// But we are mostly talking
+
+size_t str_format_int_grouped(char dst[16], int num)
+{
+    char src[16];
+    char *p_src = src;
+    char *p_dst = dst;
+
+    const char separator = ',';
+    int num_len, commas;
+
+    num_len = dpsnprintf (src, sizeof(src), "%d", num);
+
+    if (*p_src == '-') {
+        *p_dst++ = *p_src++;
+        num_len--;
+    }
+
+#define DIGIT_GROUP_3 3// Thousands
+    for (commas = 2 - num_len % DIGIT_GROUP_3; *p_src; commas = (commas + 1) % DIGIT_GROUP_3) {
+        *p_dst++ = *p_src++;
+        if (commas == 1) {
+            *p_dst++ = separator;
+        }
+    }
+    *--p_dst = '\0';
+
+    return (size_t)(p_dst - dst);
+}
+
+char *String_Num_To_Thousands (int num)
+{
+	static char sbuf[64];
+	size_t result = str_format_int_grouped(sbuf, num);
+
+	return sbuf;
+}

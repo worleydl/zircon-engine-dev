@@ -391,9 +391,9 @@ static size_t Crypto_LoadFile(const char *path, char *buf, size_t nmax, qbool in
 	qfile_t *f = NULL;
 	fs_offset_t n;
 	if (inuserdir)
-		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%s%s", *fs_userdir ? fs_userdir : fs_basedir, path), "rb", false);
+		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%s%s", *fs_userdir ? fs_userdir : fs_basedir, path), "rb", fs_nonblocking_false);
 	else
-		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%s%s", fs_basedir, path), "rb", false);
+		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%s%s", fs_basedir, path), "rb", fs_nonblocking_false);
 	if (!f)
 		return 0;
 	n = FS_Read(f, buf, nmax);
@@ -818,7 +818,7 @@ static qbool Crypto_SavePubKeyTextFile(int i)
 
 	if (!pubkeys_havepriv[i])
 		return false;
-	f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d-public-fp%s.txt", *fs_userdir ? fs_userdir : fs_basedir, i, sessionid.string), "w", false);
+	f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d-public-fp%s.txt", *fs_userdir ? fs_userdir : fs_basedir, i, sessionid.string), "w", fs_nonblocking_false);
 	if (!f)
 		return false;
 
@@ -1193,7 +1193,7 @@ static void Crypto_KeyGen_Finished(int code, size_t length_received, unsigned ch
 	}
 
 	FS_CreatePath(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string));
-	f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string), "wb", false);
+	f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string), "wb", fs_nonblocking_false);
 	if (!f)
 	{
 		Con_Printf ("Cannot open key_%d.d0si%s\n", keygen_i, sessionid.string);
@@ -1315,7 +1315,7 @@ static void Crypto_KeyGen_f(cmd_state_t *cmd)
 		}
 
 		FS_CreatePath(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string));
-		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string), "wb", false);
+		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string), "wb", fs_nonblocking_false);
 		if (!f)
 		{
 			Con_Printf ("Cannot open key_%d.d0si%s\n", keygen_i, sessionid.string);

@@ -465,6 +465,12 @@ void VID_Alt_Enter_f (void) // Baker: ALT-ENTER
 	if (cls.state == ca_disconnected) 
 		goto ok_to_restart;
 	
+	// Baker: If there is no map loaded, never block ALT-ENTER.
+	if (!cl.worldmodel) {
+		goto ok_to_restart;
+	}
+
+	// Baker: This is to prevent crash that can occur during map load if ALT-ENTER is hit early in map load.
 	if (!scr_loading && cls.signon == SIGNONS_4 && cls.world_frames && cls.world_start_realtime) {
 		// Baker: Not working so far ...
 		double dirtytime = Sys_DirtyTime ();

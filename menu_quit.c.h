@@ -99,10 +99,12 @@ static void M_Quit_Draw (void)
 		M_Print(8 + 4 * (linelength - strlen(m_quit_message[l])), 8 + 8 * i, m_quit_message[l]);
 }
 
+#if 0 // Unreferenced
 static int M_ChooseNoSaveMessage()
 {
 	return M_QuitMessage("Nothing to save!","OK",NULL,NULL,NULL,NULL,NULL,NULL);
 }
+#endif
 
 //void M_Menu_NoSave_f(cmd_state_t *cmd)
 //{

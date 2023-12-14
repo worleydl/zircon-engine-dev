@@ -1,5 +1,7 @@
 // keys_history.c.h
 
+// Baker: 
+WARP_X_CALLERS_ (Host_Init -> CL_Init (blocks dedicated from coming here) -> Key_Init )
 static void Key_History_Init(void)
 {
 	qfile_t *historyfile;
@@ -7,7 +9,7 @@ static void Key_History_Init(void)
 
 // not necessary for mobile
 // #ifndef DP_MOBILETOUCH Baker: say yes we want!
-	historyfile = FS_OpenRealFile("zircon_history.txt", "rb", false); // rb to handle unix line endings on windows too
+	historyfile = FS_SysOpen("zircon_history.txt", "rb", fs_nonblocking_false); // rb to handle unix line endings on windows too
 	if (historyfile)
 	{
 		char buf[MAX_INPUTLINE_16384];
@@ -44,13 +46,16 @@ static void Key_History_Init(void)
 }
 
 // Baker r1485: close missing history loophole by writing history during gamedir change process
+WARP_X_CALLERS_ (Key_History_Shutdown, FS_ChangeGameDirs)
 void Key_History_Write (void)
 {
 	// TODO write history to a file
 
 // not necessary for mobile
 //#ifndef DP_MOBILETOUCH
-	qfile_t *historyfile = FS_OpenRealFile("zircon_history.txt", "w", false);
+	//qfile_t *historyfile = FS_OpenRealFile("zircon_history.txt", "w", false);
+	qfile_t *historyfile = FS_SysOpen("zircon_history.txt", "w", fs_nonblocking_false);
+
 	if (historyfile) {
 		int i;
 		for(i = 0; i < CONBUFFER_LINES_COUNT(&history); ++i)
@@ -60,6 +65,7 @@ void Key_History_Write (void)
 //#endif
 }
 
+// Host_Shutdown prevents dedicated from coming here
 static void Key_History_Shutdown(void)
 {
 	Key_History_Write ();

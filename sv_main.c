@@ -1055,8 +1055,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	const char *whichpack, *whichpack2, *extension;
 	qbool is_csqc; // so we need to check only once
 
-	if (Cmd_Argc(cmd) < 2)
-	{
+	if (Cmd_Argc(cmd) < 2) {
 		SV_ClientPrintf("usage: download <filename> {<extensions>}*\n");
 		SV_ClientPrintf("       supported extensions: deflate\n");
 		return;
@@ -1068,10 +1067,9 @@ static void SV_Download_f(cmd_state_t *cmd)
 		return;
 	}
 
-	if (host_client->download_file)
-	{
+	if (host_client->download_file) {
 		// at this point we'll assume the previous download should be aborted
-		Con_DPrintf ("Download of %s aborted by %s starting a new download\n", host_client->download_name, host_client->name);
+		Con_DPrintLinef ("Download of %s aborted by %s starting a new download", host_client->download_name, host_client->name);
 		SV_ClientCommands("\nstopdownload\n");
 
 		// close the file and reset variables
@@ -1933,7 +1931,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	Cvar_SetQuick(&sv_worldbasename, sv.worldbasename);
 
 	sv.protocol = Protocol_EnumForName(sv_protocolname.string);
-	if (sv.protocol == PROTOCOL_UNKNOWN) {
+	if (sv.protocol == PROTOCOL_UNKNOWN_0) {
 		char buffer[1024];
 		Protocol_Names(buffer, sizeof(buffer));
 		Con_PrintLinef (CON_ERROR "Unknown sv_protocolname " QUOTED_S ", valid values are:" NEWLINE "%s", sv_protocolname.string, buffer);

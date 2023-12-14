@@ -159,10 +159,8 @@ static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 
 		Cvar_SetValue(&cvars_all, "port", lanConfig_port);
 
-		if (lanConfig_cursor == 1 || lanConfig_cursor == 2)
-		{
-			if (StartingGame)
-			{
+		if (lanConfig_cursor == 1 || lanConfig_cursor == 2) {
+			if (StartingGame) {
 				M_Menu_GameOptions_f(cmd);
 				break;
 			}

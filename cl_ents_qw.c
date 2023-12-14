@@ -179,6 +179,7 @@ static void EntityStateQW_ReadEntityUpdate(entity_state_t *s, int bits)
 	int qweffects = 0;
 	s->active = ACTIVE_NETWORK;
 	s->number = bits & 511;
+
 	bits &= ~511;
 	if (bits & QW_U_MOREBITS)
 		bits |= MSG_ReadByte(&cl_message);
@@ -270,7 +271,7 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 	// read the number of this frame to echo back in next input packet
 	cl.qw_validsequence = cls.qw_incoming_sequence;
 	newsnapindex = cl.qw_validsequence & QW_UPDATE_MASK;
-	newsnap = d->snapshot + newsnapindex;
+	newsnap = d->snapshotz + newsnapindex;
 	memset(newsnap, 0, sizeof(*newsnap));
 	oldsnap = NULL;
 	if (delta)
@@ -287,7 +288,7 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 				newsnap->invalid = invalid = true; // too old
 				delta = false;
 			}
-			oldsnap = d->snapshot + (oldsnapindex & QW_UPDATE_MASK);
+			oldsnap = d->snapshotz + (oldsnapindex & QW_UPDATE_MASK);
 		}
 		else
 			delta = false;
@@ -315,8 +316,14 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 			if (developer_networkentities.integer >= 2)
 				Con_Printf ("copy %d\n", oldnum);
 			// copy one of the old entities
-			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES)
-				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == MAX_PACKETENTITIES");
+#if 1
+			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES_FTE_256) {
+				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == QW_MAX_PACKET_ENTITIES_FTE_256");
+			}
+#else
+			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES_64)
+				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == QW_MAX_PACKET_ENTITIES_64");
+#endif
 			newsnap->entities[newsnap->num_entities] = oldsnap->entities[oldindex++];
 			newsnap->num_entities++;
 			oldnum = oldindex >= oldsnap->num_entities ? 9999 : oldsnap->entities[oldindex].number;
@@ -345,8 +352,13 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 		}
 		else
 		{
-			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES)
-				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == MAX_PACKETENTITIES");
+#if 1
+			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES_FTE_256)
+				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == QW_MAX_PACKET_ENTITIES_FTE_256");
+#else
+			if (newsnap->num_entities >= QW_MAX_PACKET_ENTITIES_64)
+				Host_Error_Line ("EntityFrameQW_CL_ReadFrame: newsnap->num_entities == QW_MAX_PACKET_ENTITIES_64");
+#endif
 			newsnap->entities[newsnap->num_entities] = (newnum == oldnum) ? oldsnap->entities[oldindex] : cl.entities[newnum].state_baseline;
 			EntityStateQW_ReadEntityUpdate(newsnap->entities + newsnap->num_entities, word);
 			newsnap->num_entities++;

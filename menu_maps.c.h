@@ -34,6 +34,7 @@ void M_Menu_Maps_f(cmd_state_t *cmd)
 		local_cursor = local_count - 1;
 	if (local_cursor < 0)
 		local_cursor = 0;
+	menu_state_reenter = 0;
 }
 
 static void M_Maps_Draw (void)

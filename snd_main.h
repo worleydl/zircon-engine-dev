@@ -158,7 +158,7 @@ qbool S_LoadSound (struct sfx_s *sfx, qbool complain);
 
 // If "buffer" is NULL, the function allocates one buffer of "sampleframes" sample frames itself
 // (if "sampleframes" is 0, the function chooses the size).
-snd_ringbuffer_t *Snd_CreateRingBuffer (const snd_format_t* format, unsigned int sampleframes, void* buffer);
+snd_ringbuffer_t *Snd_CreateRingBuffer (const snd_format_t* format, unsigned int sampleframes, void *buffer);
 
 
 // ====================================================================

@@ -503,28 +503,38 @@ static int SCR_DrawQWDownload(int offset)
 	float size = scr_infobar_height.value;
 	char temp[256];
 
-	if (!cls.qw_downloadname[0])
-	{
+	if (!cls.qw_downloadname[0]) {
 		cls.qw_downloadspeedrate = 0;
 		cls.qw_downloadspeedtime = host.realtime;
 		cls.qw_downloadspeedcount = 0;
 		return 0;
 	}
-	if (host.realtime >= cls.qw_downloadspeedtime + 1)
-	{
+	if (host.realtime >= cls.qw_downloadspeedtime + 1) {
 		cls.qw_downloadspeedrate = cls.qw_downloadspeedcount;
 		cls.qw_downloadspeedtime = host.realtime;
 		cls.qw_downloadspeedcount = 0;
 	}
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-		dpsnprintf(temp, sizeof(temp), "Downloading %s %3i%% (%d) at %d bytes/s", cls.qw_downloadname, cls.qw_downloadpercent, cls.qw_downloadmemorycursize, cls.qw_downloadspeedrate);
+	if (cls.protocol == PROTOCOL_QUAKEWORLD && cls.qw_downloadmethod == DL_QWCHUNKS_2) {
+		extern int chunked_receivedbytes;
+		double dur = Sys_DirtyTime () - cls.qw_downloadstarttime;
+		cls.qw_downloadspeedrate = chunked_receivedbytes / dur;
+
+		c_dpsnprintf4(temp, CON_CYAN "(FTE) Downloading " CON_WHITE "%s %3d%% (%d) at %d bytes/s", cls.qw_downloadname, 
+		cls.qw_downloadpercent, 
+		chunked_receivedbytes, cls.qw_downloadspeedrate);
+	} else
+	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
+		c_dpsnprintf4(temp, "Downloading %s %3d%% (%d) at %d bytes/s", cls.qw_downloadname, 
+			cls.qw_downloadpercent, cls.qw_downloadmemorycursize, cls.qw_downloadspeedrate);
+	}
 	else
-		dpsnprintf(temp, sizeof(temp), "Downloading %s %3i%% (%d/%d) at %d bytes/s", cls.qw_downloadname, cls.qw_downloadpercent, cls.qw_downloadmemorycursize, cls.qw_downloadmemorymaxsize, cls.qw_downloadspeedrate);
+		c_dpsnprintf5(temp, "Downloading %s %3d%% (%d/%d) at %d bytes/s", cls.qw_downloadname, cls.qw_downloadpercent, 
+		cls.qw_downloadmemorycursize, cls.qw_downloadmemorymaxsize, cls.qw_downloadspeedrate);
 	len = (int)strlen(temp);
 	x = (vid_conwidth.integer - DrawQ_TextWidth(temp, len, size, size, true, FONT_INFOBAR)) / 2;
 	y = vid_conheight.integer - size - offset;
 	DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, cls.signon == SIGNONS_4 ? 0.5 : 1, 0);
-	DrawQ_String(x, y, temp, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
+	DrawQ_String(x, y, temp, len, size, size, 1, 1, 1, 1, 0, NULL, q_ignore_color_codes_false, FONT_INFOBAR);
 	return size;
 }
 /*
@@ -714,6 +724,7 @@ SCR_DrawConsole
 */
 int scr_skip_once;
 
+WARP_X_ (CL_UpdateScreen_SCR_DrawScreen)
 void SCR_DrawConsole (void)
 {
 	static int mfirst;
@@ -742,7 +753,9 @@ void SCR_DrawConsole (void)
 		#if 1
 			if (cls.state == ca_connected && in_range (2, cls.signon, 3) && 
 				scr_loading) {
-				goto no_draw_0;
+					if (!cls.qw_downloadname[0])
+						goto no_draw_0;
+					// Baker: TODO curl ... hmmm
 			}
 		#endif
 		Con_DrawConsole (vid_conheight.integer - scr_con_margin_bottom);

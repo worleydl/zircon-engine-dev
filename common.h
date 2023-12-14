@@ -144,11 +144,13 @@ void StoreLittleShort (unsigned char *buffer, unsigned short i);
 
 //============================================================================
 
+#define PROTOCOL_VERSION_FTE1		(('F'<<0) + ('T'<<8) + ('E'<<16) + ('X' << 24))	//fte extensions.
+#define PROTOCOL_VERSION_QW_28		28
+
 // these versions are purely for internal use, never sent in network protocol
 // (use Protocol_EnumForNumber and Protocol_NumberToEnum to convert)
-typedef enum protocolversion_e
-{
-	PROTOCOL_UNKNOWN,
+typedef enum protocolversion_e {
+	PROTOCOL_UNKNOWN_0 = 0,
 	PROTOCOL_DARKPLACES8, ///< added parting messages. WIP
 	PROTOCOL_DARKPLACES7, ///< added QuakeWorld-style movement protocol to allow more consistent prediction
 	PROTOCOL_DARKPLACES6, ///< various changes
@@ -191,6 +193,9 @@ void MSG_WriteCoord32f (sizebuf_t *sb, vec_t f);
 void MSG_WriteCoord (sizebuf_t *sb, vec_t f, protocolversion_t protocol);
 void MSG_WriteVector (sizebuf_t *sb, const vec3_t v, protocolversion_t protocol);
 void MSG_WriteAngle (sizebuf_t *sb, vec_t f, protocolversion_t protocol);
+
+void Msg_WriteByte_WriteStringf (sizebuf_t *sb, int your_clc, char *fmt, ...) DP_FUNC_PRINTF(3);
+
 
 void MSG_BeginReading (sizebuf_t *sb);
 int MSG_ReadLittleShort (sizebuf_t *sb);
@@ -281,8 +286,8 @@ char *va(char *buf, size_t buflen, const char *format, ...) DP_FUNC_PRINTF(3);
 
 extern int dpsnprintf (char *buffer, size_t buffersize, const char *format, ...) DP_FUNC_PRINTF(3);
 extern int dpvsnprintf (char *buffer, size_t buffersize, const char *format, va_list args);
-extern char *dpstrrstr(const char *s1, const char *s2); // Baker: 10000 
-extern char *dpstrcasestr(const char *s, const char *find); // Baker: 10001 
+extern char *dpstrrstr(const char *s1, const char *s2); // Baker: 10000
+extern char *dpstrcasestr(const char *s, const char *find); // Baker: 10001
 extern char *dpreplacechar (char *s_edit, int ch_find, int ch_replace); // Baker: 10002
 
 // A bunch of functions are forbidden for security reasons (and also to please MSVS 2005, for some of them)
@@ -374,7 +379,7 @@ float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angl
 // Baker dogma ... human friendly source code, especially for strings
 // Say clearly what you are doing ... even a hardcore code can miss punctuation
 // when reading a line.  This has a cost.  Efficient source code must be reader
-// friendly to extent time permits and is reasonable.  Most source code is 
+// friendly to extent time permits and is reasonable.  Most source code is
 // written once, read many times.  Pay it forward by optimizing the "read many
 // times" part.  Future productivity is part of productivity.
 
@@ -400,6 +405,9 @@ float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angl
 #define String_Does_Start_With(s,s_prefix)				(!strncmp(s, s_prefix, strlen(s_prefix)))
 #define String_Does_Start_With_Caseless(s,s_prefix)		(!strncasecmp(s, s_prefix, strlen(s_prefix)))
 
+#define String_Does_Start_With_PRE(s,s_prefix)	(!strncmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+#define String_Does_Start_With_Caseless_PRE(s,s_prefix)	(!strncasecmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+
 // FN ...
 
 int String_Range_Count_Char (const char *s_start, const char *s_end, int ch_findchar);
@@ -418,6 +426,8 @@ char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit);
 char *String_Edit_RemoveTrailingUnixSlash (char *s_edit);
 void String_Edit_To_Single_Line (char *s_edit);
 char *Clipboard_Get_Text_Line_Static (void);
+
+char *String_Num_To_Thousands (int num);
 
 int String_Does_End_With (const char *s, const char *s_suffix);
 

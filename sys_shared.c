@@ -255,7 +255,7 @@ void Sys_FreeLibrary (dllhandle_t* handle)
 #endif
 }
 
-void* Sys_GetProcAddress (dllhandle_t handle, const char *name)
+void *Sys_GetProcAddress (dllhandle_t handle, const char *name)
 {
 #ifdef SUPPORTDLL
 #ifdef _WIN32
@@ -368,8 +368,7 @@ double Sys_DirtyTime(void)
 		return benchmark_time * 0.000001;
 	}
 #if HAVE_QUERYPERFORMANCECOUNTER
-	if (sys_usequeryperformancecounter.integer)
-	{
+	if (sys_usequeryperformancecounter.integer) {
 		// LadyHavoc: note to people modifying this code, DWORD is specifically defined as an unsigned 32bit number, therefore the 65536.0 * 65536.0 is fine.
 		// QueryPerformanceCounter
 		// platform:
@@ -383,16 +382,14 @@ double Sys_DirtyTime(void)
 		LARGE_INTEGER PerformanceFreq;
 		LARGE_INTEGER PerformanceCount;
 
-		if (QueryPerformanceFrequency (&PerformanceFreq))
-		{
+		if (QueryPerformanceFrequency (&PerformanceFreq)) {
 			QueryPerformanceCounter (&PerformanceCount);
 	
 			timescale = 1.0 / ((double) PerformanceFreq.LowPart + (double) PerformanceFreq.HighPart * 65536.0 * 65536.0);
 			return ((double) PerformanceCount.LowPart + (double) PerformanceCount.HighPart * 65536.0 * 65536.0) * timescale;
 		}
-		else
-		{
-			Con_Printf ("No hardware timer available\n");
+		else {
+			Con_PrintLinef ("No hardware timer available");
 			// fall back to other clock sources
 			Cvar_SetValueQuick(&sys_usequeryperformancecounter, false);
 		}

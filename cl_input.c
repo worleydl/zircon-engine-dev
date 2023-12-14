@@ -383,10 +383,10 @@ cvar_t cl_pitchspeed = {CF_CLIENT | CF_ARCHIVE, "cl_pitchspeed","150","keyboard 
 
 cvar_t cl_anglespeedkey = {CF_CLIENT | CF_ARCHIVE, "cl_anglespeedkey","1.5","how much +speed multiplies keyboard turning speed"};
 
-cvar_t cl_movement = {CF_CLIENT | CF_ARCHIVE, "cl_movement", "0", "enables clientside prediction of your player movement on DP servers (use cl_nopred for QWSV servers)"};
+cvar_t cl_movement = {CF_CLIENT | CF_ARCHIVE, "cl_movement", "1", "enables clientside prediction of your player movement on DP servers (use cl_nopred for QWSV servers) [Zircon]"};
 cvar_t cl_movement_replay = {CF_CLIENT, "cl_movement_replay", "1", "use engine prediction"};
 cvar_t cl_movement_nettimeout = {CF_CLIENT | CF_ARCHIVE, "cl_movement_nettimeout", "0.3", "stops predicting moves when server is lagging badly (avoids major performance problems), timeout in seconds"};
-cvar_t cl_movement_minping = {CF_CLIENT | CF_ARCHIVE, "cl_movement_minping", "0", "whether to use prediction when ping is lower than this value in milliseconds"};
+cvar_t cl_movement_minping = {CF_CLIENT | CF_ARCHIVE, "cl_movement_minping", "0", "whether to use prediction when ping is lower than this value in milliseconds[Zircon]" }; // [Zircon] 75
 cvar_t cl_movement_track_canjump = {CF_CLIENT | CF_ARCHIVE, "cl_movement_track_canjump", "1", "track if the player released the jump key between two jumps to decide if he is able to jump or not; when off, this causes some \"sliding\" slightly above the floor when the jump key is held too long; if the mod allows repeated jumping by holding space all the time, this has to be set to zero too"};
 cvar_t cl_movement_maxspeed = {CF_CLIENT, "cl_movement_maxspeed", "320", "how fast you can move (should match sv_maxspeed)"};
 cvar_t cl_movement_maxairspeed = {CF_CLIENT, "cl_movement_maxairspeed", "30", "how fast you can move while in the air (should match sv_maxairspeed)"};
@@ -1635,7 +1635,7 @@ void CL_ClientMovement_Replay(void)
 	//Con_Printf ("movement replay starting org %f %f %f vel %f %f %f\n", s.origin[0], s.origin[1], s.origin[2], s.velocity[0], s.velocity[1], s.velocity[2]);
 
 	totalmovemsec = 0;
-	for (i = 0;i < CL_MAX_USERCMDS;i++)
+	for (i = 0;i < CL_MAX_USERCMDS_128;i++)
 		if (cl.movecmd[i].sequence > cls.servermovesequence)
 			totalmovemsec += cl.movecmd[i].msec;
 	cl.movement_predicted = totalmovemsec >= cl_movement_minping.value && cls.servermovesequence && (cl_movement.integer && !cls.demoplayback && cls.signon == SIGNONS_4 && cl.stats[STAT_HEALTH] > 0 && !cl.intermission);
@@ -1648,14 +1648,14 @@ void CL_ClientMovement_Replay(void)
 		// note: this relies on the fact there's always one queue item at the end
 
 		// find how many are still valid
-		for (i = 0;i < CL_MAX_USERCMDS;i++)
+		for (i = 0;i < CL_MAX_USERCMDS_128;i++)
 			if (cl.movecmd[i].sequence <= cls.servermovesequence)
 				break;
 		// now walk them in oldest to newest order
 		for (i--;i >= 0;i--)
 		{
 			s.cmd = cl.movecmd[i];
-			if (i < CL_MAX_USERCMDS - 1)
+			if (i < CL_MAX_USERCMDS_128 - 1)
 				s.cmd.canjump = cl.movecmd[i+1].canjump;
 
 			CL_ClientMovement_PlayerMove_Frame(&s);
@@ -1758,7 +1758,7 @@ void CL_RotateMoves(const matrix4x4_t *m)
 	vec3_t v;
 	vec3_t f, r, u;
 	int i;
-	for (i = 0;i < CL_MAX_USERCMDS;i++)
+	for (i = 0;i < CL_MAX_USERCMDS_128;i++)
 	{
 		if (cl.movecmd[i].sequence > cls.servermovesequence)
 		{
@@ -1770,6 +1770,46 @@ void CL_RotateMoves(const matrix4x4_t *m)
 		}
 	}
 }
+
+// Equivalent to ezQuake QW_CL_SendClientCommand
+// Use ONLY as that direct equivalent 
+void QW_CL_SendClientCommand(int is_reliable, char *fmt, ...)
+{
+	va_list		argptr;
+	char		msg[2048];
+
+	if (cls.demoplayback || cls.state == ca_disconnected) {
+		return;	// no point.
+	}
+
+	va_start(argptr, fmt);
+	dpvsnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
+
+	if (developer_qw.integer)
+		Con_PrintLinef ("CL -> SV: %s", msg);
+
+	if (is_reliable) {
+		MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
+		MSG_WriteString(&cls.netcon->message, msg);
+	}
+	else {
+		// Baker: Reliable for now ...
+		int size_needed = 4 + strlen (msg) + 1;
+		if (cls.netcon->message.cursize + size_needed > 1400) {
+			Con_PrintLinef ("DISCARD! Unreliable message discarded %s", msg);
+		}
+		else {
+			MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
+			MSG_WriteString(&cls.netcon->message, msg);
+		}
+		// ezQuake does this ..
+		// MSG_WriteByte(&cls.cmdmsg, clc_qw_stringcmd);
+		// MSG_WriteString(&cls.cmdmsg, msg);
+	}
+}
+
+
 
 /*
 ==============
@@ -1793,6 +1833,10 @@ void CL_SendMove(void)
 	// if playing a demo, do nothing
 	if (!cls.netcon)
 		return;
+
+	
+	// ezQuake 1 CL_SendCmd
+	QW_CL_SendChunkDownloadReq();
 
 	// we don't que moves during a lag spike (potential network timeout)
 	quemove = host.realtime - cl.last_received_message < cl_movement_nettimeout.value;
@@ -1861,8 +1905,7 @@ void CL_SendMove(void)
 		cl.cmd.frametime = 0.1;
 	cl.cmd.msec = (unsigned char)floor(cl.cmd.frametime * 1000);
 
-	switch(cls.protocol)
-	{
+	switch(cls.protocol) {
 	case PROTOCOL_QUAKEWORLD:
 		// quakeworld uses a different cvar with opposite meaning, for compatibility
 		cl.cmd.predicted = cl_nopred.integer == 0;
@@ -1875,7 +1918,7 @@ void CL_SendMove(void)
 	default:
 		cl.cmd.predicted = false;
 		break;
-	}
+	} // protocol
 
 	// movement is set by input code (forwardmove/sidemove/upmove)
 	// always dump the first two moves, because they may contain leftover inputs from the last level
@@ -1884,8 +1927,7 @@ void CL_SendMove(void)
 
 	cl.cmd.jump = (cl.cmd.buttons & 2) != 0;
 	cl.cmd.crouch = 0;
-	switch (cls.protocol)
-	{
+	switch (cls.protocol) {
 	case PROTOCOL_FITZQUAKE666:
 	case PROTOCOL_FITZQUAKE999:
 	case PROTOCOL_QUAKEWORLD:
@@ -1907,9 +1949,9 @@ void CL_SendMove(void)
 		// FIXME: cl.cmd.buttons & 16 is +button5, Nexuiz/Xonotic specific
 		cl.cmd.crouch = (cl.cmd.buttons & 16) != 0;
 		break;
-	case PROTOCOL_UNKNOWN:
+	case PROTOCOL_UNKNOWN_0:
 		break;
-	}
+	} // sw protocol
 
 	if (quemove)
 		cl.movecmd[0] = cl.cmd;
@@ -1929,8 +1971,7 @@ void CL_SendMove(void)
 	// don't send too often or else network connections can get clogged by a
 	// high renderer framerate
 	packettime = 1.0f / bound(10.0f, cl_netfps.value, 1000.0f);
-	if (cl.movevars_timescale && cl.movevars_ticrate)
-	{
+	if (cl.movevars_timescale && cl.movevars_ticrate) {
 		// try to ensure at least 1 packet per server frame
 		// and apply soft limit of 2, hard limit < 4 (packettime reduced further below)
 		float maxtic = cl.movevars_ticrate / cl.movevars_timescale;
@@ -1951,8 +1992,7 @@ void CL_SendMove(void)
 	// bones_was_here: accumulate realframetime to prevent low packet rates
 	// previously with cl_maxfps == cl_netfps it did not send every frame as
 	// host.realtime - cl.lastpackettime was often well below (or above) packettime
-	if (!important && cl.timesincepacket < packettime * 0.99999f)
-	{
+	if (!important && cl.timesincepacket < packettime * 0.99999f) {
 		cl.timesincepacket += cl.realframetime;
 		return;
 	}
@@ -1993,6 +2033,7 @@ void CL_SendMove(void)
 		switch (cls.protocol)
 		{
 		case PROTOCOL_QUAKEWORLD:
+
 			MSG_WriteByte(&buf, qw_clc_move);
 			// save the position for a checksum byte
 			checksumindex = buf.cursize;
@@ -2013,8 +2054,7 @@ void CL_SendMove(void)
 			if (cls.netcon->outgoing_unreliable_sequence - cl.qw_validsequence >= QW_UPDATE_BACKUP-1)
 				cl.qw_validsequence = 0;
 			// request delta compression if appropriate
-			if (cl.qw_validsequence && !cl_nodelta.integer && cls.state == ca_connected && !cls.demorecording)
-			{
+			if (cl.qw_validsequence && !cl_nodelta.integer && cls.state == ca_connected && !cls.demorecording) {
 				cl.qw_deltasequence[cls.netcon->outgoing_unreliable_sequence & QW_UPDATE_MASK] = cl.qw_validsequence;
 				MSG_WriteByte(&buf, qw_clc_delta);
 				MSG_WriteByte(&buf, cl.qw_validsequence & 255);
@@ -2090,7 +2130,7 @@ void CL_SendMove(void)
 		case PROTOCOL_DARKPLACES7:
 		case PROTOCOL_DARKPLACES8:
 			// set the maxusercmds variable to limit how many should be sent
-			maxusercmds = bound(1, cl_netrepeatinput.integer + 1, min(3, CL_MAX_USERCMDS));
+			maxusercmds = bound(1, cl_netrepeatinput.integer + 1, min(3, CL_MAX_USERCMDS_128));
 			// when movement prediction is off, there's not much point in repeating old input as it will just be ignored
 			if (!cl.cmd.predicted)
 				maxusercmds = 1;
@@ -2142,7 +2182,7 @@ void CL_SendMove(void)
 				MSG_WriteShort (&buf, cmd->cursor_entitynumber);
 			}
 			break;
-		case PROTOCOL_UNKNOWN:
+		case PROTOCOL_UNKNOWN_0:
 			break;
 		}
 	}
@@ -2194,7 +2234,7 @@ void CL_SendMove(void)
 	{
 		// update the cl.movecmd array which holds the most recent moves,
 		// because we now need a new slot for the next input
-		for (i = CL_MAX_USERCMDS - 1;i >= 1;i--)
+		for (i = CL_MAX_USERCMDS_128 - 1;i >= 1;i--)
 			cl.movecmd[i] = cl.movecmd[i-1];
 		cl.movecmd[0].msec = 0;
 		cl.movecmd[0].frametime = 0;

@@ -3,6 +3,34 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 17
+
+1. FTE chunked downloads when connecting to Quakeworld servers.  It can be ten times faster.
+   Also added client support for FTE 256 visible entities (vanilla Quakeworld is 64 visible entities).
+2. Menu server list is re-entrant.
+3. Server list sorting is now deterministic sorting (means there are no ties when sorting, prevents server entries
+   with identical sort criteria from bouncing around randomly .. the super-key is the server connection address).
+4. Server list default sort is largest number of players, descending. 
+5. Submitting a command in the console will remove console backscroll.  I knew there was something
+   not "quite right" with the console backscroll sometimes but couldn't determine what it was.  That being said
+   submitting a command and not eliminating console backscroll was likely a deliberate choice by DarkPlaces.
+
+There are several supporting cvars like cl_pext, cl_chunksperframe, cl_pext_chunkeddownloads, 
+cl_pext_qw_256packetentities, developer_qw that can turn stuff off or print messages.
+
+// Zircon Beta Release 16
+
+1. In DarkPlaces, CTRL plus '-' shrinks console text size, CTRL plus '+' increases console text size and
+   CTRL plus '0' resets it, similar to the zoom keys in FireFox/Chrome.  Ctrl plus '+' was not working
+   because '+' is not a key (it is '=').  Fixed.
+2. Adjusted ALT-ENTER support to always allow when no map is loaded.
+3. "loadfont" autocompletes first parameter.
+4. Console was not drawing during map download when connected to server.  Fixed.
+5. cl_movement defaults 1
+6. Server browser improvements.  Phase 1.
+7. zircon_history.txt is now in the folder with the .exe, no more per gamedir history.
+8. Console displays while a download is occurring.
+
 // Zircon Beta Release 15 - December 5 2023
 
 1. Support for protocol 666 and 999 that Quakespasm and related engines use.  This means that

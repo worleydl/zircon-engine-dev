@@ -248,9 +248,10 @@ extern struct mempool_s *netconn_mempool;
 
 extern struct cvar_s hostname;
 extern struct cvar_s developer_networking;
+extern struct cvar_s developer_qw;
 
 #ifdef CONFIG_MENU
-#define SERVERLIST_VIEWLISTSIZE		SERVERLIST_TOTALSIZE
+#define SERVERLIST_VIEWLISTSIZE_2048		SERVERLIST_TOTALSIZE_2048
 
 typedef enum serverlist_maskop_e
 {
@@ -273,7 +274,7 @@ typedef enum serverlist_maskop_e
 typedef struct serverlist_info_s
 {
 	/// address for connecting
-	char cname[128];
+	char cname[128];					// IP address
 	/// ping time for sorting servers
 	int ping;
 	/// name of the game
@@ -283,7 +284,7 @@ typedef struct serverlist_info_s
 	/// name of the map
 	char map[32];
 	/// name of the session
-	char name[128];
+	char name[128];						// Server description
 	/// qc-defined short status string
 	char qcstatus[128];
 	/// frags/ping/name list (if they fit in the packet)
@@ -366,6 +367,8 @@ typedef struct serverlist_entry_s
 	char line2[128];
 } serverlist_entry_t;
 
+extern char last_nav_cname[128];
+
 typedef struct serverlist_mask_s
 {
 	qbool			active;
@@ -382,11 +385,16 @@ extern serverlist_mask_t serverlist_ormasks[SERVERLIST_ORMASKCOUNT];
 extern serverlist_infofield_t serverlist_sortbyfield;
 extern int serverlist_sortflags; // not using the enum, as it is a bitmask
 
-#if SERVERLIST_TOTALSIZE > 65536
+#if SERVERLIST_TOTALSIZE_2048 > 65536
 #error too many servers, change type of index array
 #endif
-extern int serverlist_viewcount;
-extern unsigned short serverlist_viewlist[SERVERLIST_VIEWLISTSIZE];
+
+#if 1111
+extern int serverlist_viewx_dirty;
+#endif
+
+extern int serverlist_viewlist_count;
+extern unsigned short serverlist_viewlist[SERVERLIST_VIEWLISTSIZE_2048];
 
 extern int serverlist_cachecount;
 extern serverlist_entry_t *serverlist_cache;

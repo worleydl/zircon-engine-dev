@@ -105,7 +105,7 @@ typedef unsigned int JDIMENSION;
 
 struct jpeg_memory_mgr
 {
-  void* (*alloc_small) (j_common_ptr cinfo, int pool_id, size_t sizeofobject);
+  void *(*alloc_small) (j_common_ptr cinfo, int pool_id, size_t sizeofobject);
   void (*_reserve_space_for_alloc_large) (void *dummy, ...);
   void (*_reserve_space_for_alloc_sarray) (void *dummy, ...);
   void (*_reserve_space_for_alloc_barray) (void *dummy, ...);
@@ -467,7 +467,7 @@ typedef struct
 {
 	struct jpeg_destination_mgr pub;
 
-	qfile_t* outfile;
+	qfile_t *outfile;
 	unsigned char *buffer;
 	size_t bufsize; // used if outfile is NULL
 } my_destination_mgr;
@@ -753,7 +753,7 @@ static void JPEG_TermDestination (j_compress_ptr cinfo)
 			longjmp(error_in_jpeg, 1);
 }
 
-static void JPEG_FileDest (j_compress_ptr cinfo, qfile_t* outfile)
+static void JPEG_FileDest (j_compress_ptr cinfo, qfile_t *outfile)
 {
 	my_dest_ptr dest;
 
@@ -789,7 +789,7 @@ static void JPEG_Mem_TermDestination (j_compress_ptr cinfo)
 	my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
 	dest->bufsize = dest->pub.next_output_byte - dest->buffer;
 }
-static void JPEG_MemDest (j_compress_ptr cinfo, void* buf, size_t bufsize)
+static void JPEG_MemDest (j_compress_ptr cinfo, void *buf, size_t bufsize)
 {
 	my_dest_ptr dest;
 
@@ -821,7 +821,7 @@ qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, un
 	struct jpeg_error_mgr jerr;
 	unsigned char *scanline;
 	unsigned int offset, linesize;
-	qfile_t* file;
+	qfile_t *file;
 
 	// No DLL = no JPEGs
 	if (!jpeg_dll)

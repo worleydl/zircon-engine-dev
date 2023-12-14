@@ -47,6 +47,9 @@ struct protocolversioninfo_s
 	protocolversion_t version;
 	const char *name;
 }
+
+
+
 protocolversioninfo[] =
 {
 	{ 3505, PROTOCOL_DARKPLACES8 , "DP8"},
@@ -59,14 +62,14 @@ protocolversioninfo[] =
 	{   96, PROTOCOL_DARKPLACES1 , "DP1"},
 	{   15, PROTOCOL_QUAKEDP     , "QUAKEDP"},
 	{   15, PROTOCOL_QUAKE       , "QUAKE"},
-	{   28, PROTOCOL_QUAKEWORLD  , "QW"},
+	{   PROTOCOL_VERSION_QW_28, PROTOCOL_QUAKEWORLD  , "QW"},				// PROTOCOL_VERSION_QW_28
 	{  250, PROTOCOL_NEHAHRAMOVIE, "NEHAHRAMOVIE"},
 	{10000, PROTOCOL_NEHAHRABJP  , "NEHAHRABJP"},
 	{10001, PROTOCOL_NEHAHRABJP2 , "NEHAHRABJP2"},
 	{10002, PROTOCOL_NEHAHRABJP3 , "NEHAHRABJP3"},
 	{  666, PROTOCOL_FITZQUAKE666, "666"},
 	{  999, PROTOCOL_FITZQUAKE999, "999"},
-	{    0, PROTOCOL_UNKNOWN     , NULL}
+	{    0, PROTOCOL_UNKNOWN_0     , NULL}
 };
 
 
@@ -76,7 +79,7 @@ protocolversion_t Protocol_EnumForName(const char *s)
 	for (i = 0; protocolversioninfo[i].name; i++)
 		if (String_Does_Match_Caseless(s, protocolversioninfo[i].name))
 			return protocolversioninfo[i].version;
-	return PROTOCOL_UNKNOWN;
+	return PROTOCOL_UNKNOWN_0;
 }
 
 const char *Protocol_NameForEnum(protocolversion_t p)
@@ -94,7 +97,7 @@ protocolversion_t Protocol_EnumForNumber(int n)
 	for (i = 0;protocolversioninfo[i].name;i++)
 		if (protocolversioninfo[i].number == n)
 			return protocolversioninfo[i].version;
-	return PROTOCOL_UNKNOWN;
+	return PROTOCOL_UNKNOWN_0;
 }
 
 int Protocol_NumberForEnum(protocolversion_t p)

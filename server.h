@@ -33,7 +33,7 @@ typedef struct server_static_s
 	/// cleared when at SV_SpawnServer
 	qbool changelevel_issued;
 	/// server infostring
-	char serverinfo[MAX_SERVERINFO_STRING];
+	char serverinfo[MAX_SERVERINFO_STRING_1280];
 
 	// csqc stuff
 	unsigned char *csqc_progdata;

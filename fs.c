@@ -1784,7 +1784,7 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 
 	// Baker r9003: Clear models/sounds on gamedir change
 	is_game_switch = true;   // This does what?  Clear models thoroughly.  As opposed to video restart which shouldn't?
-	FS_ChangeGameDirs(numgamedirs, gamedirs, true, true);
+	FS_ChangeGameDirs(numgamedirs, gamedirs, q_tx_complain_true, q_fail_on_missing_true);
 	// is_game_switch = false; // Baker r9062: This is not where to do this for DarkPlaces Beta
 }
 
@@ -1803,7 +1803,7 @@ static const char *FS_SysCheckGameDir(const char *gamedir, char *buf, size_t buf
 
 	if (success)
 	{
-		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%smodinfo.txt", gamedir), "r", false);
+		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%smodinfo.txt", gamedir), "r", fs_nonblocking_false);
 		if (f)
 		{
 			n = FS_Read (f, buf, buflength - 1);
@@ -2300,9 +2300,10 @@ FS_SysOpen
 Internal function used to create a qfile_t and open the relevant non-packed file on disk
 ====================
 */
-qfile_t* FS_SysOpen (const char *filepath, const char *mode, qbool nonblocking)
+WARP_X_CALLERS_ ()
+qfile_t *FS_SysOpen (const char *filepath, const char *mode, qbool nonblocking)
 {
-	qfile_t* file;
+	qfile_t *file;
 
 	file = (qfile_t *)Mem_Alloc (fs_mempool, sizeof (*file));
 	file->ungetc = EOF;
@@ -2337,7 +2338,7 @@ static qfile_t *FS_OpenPackedFile (pack_t* pack, int pack_ind)
 {
 	packfile_t *pfile;
 	filedesc_t dup_handle;
-	qfile_t* file;
+	qfile_t *file;
 
 	pfile = &pack->files[pack_ind];
 
@@ -2587,6 +2588,7 @@ FS_OpenReadFile
 Look for a file in the search paths and open it in read-only mode
 ===========
 */
+// Baker: This can recursively call itself for symlinks
 static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblocking, int symlinkLevels)
 {
 	searchpath_t *search;
@@ -2696,7 +2698,7 @@ Open a file in the userpath. The syntax is the same as fopen
 Used for savegame scanning in menu, and all file writing.
 ====================
 */
-qfile_t* FS_OpenRealFile (const char *filepath, const char *mode /*rb or what not*/, qbool quiet)
+qfile_t *FS_OpenRealFile (const char *filepath, const char *mode /*rb or what not*/, qbool quiet)
 {
 	char real_path [MAX_OSPATH];
 
@@ -2711,7 +2713,7 @@ qfile_t* FS_OpenRealFile (const char *filepath, const char *mode /*rb or what no
 	// create directories up to the file.
 	if (mode[0] == 'w' || mode[0] == 'a' || strchr (mode, '+'))
 		FS_CreatePath (real_path);
-	return FS_SysOpen (real_path, mode, false);
+	return FS_SysOpen (real_path, mode, fs_nonblocking_false);
 }
 
 
@@ -2722,7 +2724,7 @@ FS_OpenVirtualFile
 Open a file. The syntax is the same as fopen
 ====================
 */
-qfile_t* FS_OpenVirtualFile (const char *filepath, qbool quiet)
+qfile_t *FS_OpenVirtualFile (const char *filepath, qbool quiet)
 {
 	qfile_t *result = NULL;
 	if (FS_CheckNastyPath(filepath, false)) {
@@ -2731,7 +2733,7 @@ qfile_t* FS_OpenVirtualFile (const char *filepath, qbool quiet)
 	}
 
 	if (fs_mutex) Thread_LockMutex(fs_mutex);
-	result = FS_OpenReadFile (filepath, quiet, false, 16);
+	result = FS_OpenReadFile (filepath, quiet, fs_nonblocking_false, 16);
 	if (fs_mutex) Thread_UnlockMutex(fs_mutex);
 	return result;
 }
@@ -2743,9 +2745,9 @@ FS_FileFromData
 Open a file. The syntax is the same as fopen
 ====================
 */
-qfile_t* FS_FileFromData (const unsigned char *data, const size_t size, qbool quiet)
+qfile_t *FS_FileFromData (const unsigned char *data, const size_t size, qbool quiet)
 {
-	qfile_t* file;
+	qfile_t *file;
 	file = (qfile_t *)Mem_Alloc (fs_mempool, sizeof (*file));
 	memset (file, 0, sizeof (*file));
 	file->flags = QFILE_FLAG_DATA;
@@ -2762,7 +2764,7 @@ FS_Close
 Close a file
 ====================
 */
-int FS_Close (qfile_t* file)
+int FS_Close (qfile_t *file)
 {
 	if (file->flags & QFILE_FLAG_DATA)
 	{
@@ -2799,7 +2801,7 @@ int FS_Close (qfile_t* file)
 	return 0;
 }
 
-void FS_RemoveOnClose(qfile_t* file)
+void FS_RemoveOnClose(qfile_t *file)
 {
 	file->flags |= QFILE_FLAG_REMOVE;
 }
@@ -2811,7 +2813,7 @@ FS_Write
 Write "datasize" bytes into a file
 ====================
 */
-fs_offset_t FS_Write (qfile_t* file, const void* data, size_t datasize)
+fs_offset_t FS_Write (qfile_t *file, const void *data, size_t datasize)
 {
 	fs_offset_t written = 0;
 
@@ -2858,7 +2860,7 @@ FS_Read
 Read up to "buffersize" bytes from a file
 ====================
 */
-fs_offset_t FS_Read (qfile_t* file, void *buffer, size_t buffersize)
+fs_offset_t FS_Read (qfile_t *file, void *buffer, size_t buffersize)
 {
 	fs_offset_t count, done;
 
@@ -3053,7 +3055,7 @@ FS_Print
 Print a string into a file
 ====================
 */
-int FS_Print (qfile_t* file, const char *msg)
+int FS_Print (qfile_t *file, const char *msg)
 {
 	return (int)FS_Write (file, msg, strlen (msg));
 }
@@ -3065,7 +3067,7 @@ FS_Printf
 Print a string into a file
 ====================
 */
-int FS_Printf(qfile_t* file, const char *format, ...)
+int FS_Printf(qfile_t *file, const char *format, ...)
 {
 	int result;
 	va_list args;
@@ -3085,7 +3087,7 @@ FS_VPrintf
 Print a string into a file
 ====================
 */
-int FS_VPrintf (qfile_t* file, const char *format, va_list ap)
+int FS_VPrintf (qfile_t *file, const char *format, va_list ap)
 {
 	int len;
 	fs_offset_t buff_size = MAX_INPUTLINE_16384;
@@ -3115,7 +3117,7 @@ FS_Getc
 Get the next character of a file
 ====================
 */
-int FS_Getc (qfile_t* file)
+int FS_Getc (qfile_t *file)
 {
 	unsigned char c;
 
@@ -3133,7 +3135,7 @@ FS_UnGetc
 Put a character back into the read buffer (only supports one character!)
 ====================
 */
-int FS_UnGetc (qfile_t* file, unsigned char c)
+int FS_UnGetc (qfile_t *file, unsigned char c)
 {
 	// If there's already a character waiting to be read
 	if (file->ungetc != EOF)
@@ -3151,7 +3153,7 @@ FS_Seek
 Move the position index in a file
 ====================
 */
-int FS_Seek (qfile_t* file, fs_offset_t offset, int whence)
+int FS_Seek (qfile_t *file, fs_offset_t offset, int whence)
 {
 	ztoolkit_t *ztk;
 	unsigned char *buffer;
@@ -3253,7 +3255,7 @@ FS_Tell
 Give the current position in a file
 ====================
 */
-fs_offset_t FS_Tell (qfile_t* file)
+fs_offset_t FS_Tell (qfile_t *file)
 {
 	return file->position - file->buff_len + file->buff_ind;
 }
@@ -3266,7 +3268,7 @@ FS_FileSize
 Give the total size of a file
 ====================
 */
-fs_offset_t FS_FileSize (qfile_t* file)
+fs_offset_t FS_FileSize (qfile_t *file)
 {
 	return file->real_length;
 }
@@ -3279,7 +3281,7 @@ FS_Purge
 Erases any buffered input or output data
 ====================
 */
-void FS_Purge (qfile_t* file)
+void FS_Purge (qfile_t *file)
 {
 	file->buff_len = 0;
 	file->buff_ind = 0;
@@ -3349,7 +3351,7 @@ Always appends a 0 byte.
 */
 unsigned char *FS_SysLoadFile (const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer)
 {
-	qfile_t *file = FS_SysOpen(path, "rb", false);
+	qfile_t *file = FS_SysOpen(path, "rb", fs_nonblocking_false);
 	return FS_LoadAndCloseQFile(file, path, pool, quiet, filesizepointer);
 }
 
