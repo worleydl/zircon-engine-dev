@@ -432,13 +432,13 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 			buf.maxsize = sizeof(bufdata);
 			if (cls.protocol == PROTOCOL_QUAKEWORLD)
 			{
-				Con_DPrint("Sending drop command\n");
+				Con_DPrintLinef ("Sending drop command");
 				MSG_WriteByte(&buf, qw_clc_stringcmd);
 				MSG_WriteString(&buf, "drop");
 			}
 			else
 			{
-				Con_DPrint("Sending clc_disconnect\n");
+				Con_DPrintLinef ("Sending clc_disconnect");
 				MSG_WriteByte(&buf, clc_disconnect);
 				if (cls.protocol == PROTOCOL_DARKPLACES8)
 					MSG_WriteString(&buf, reason);
@@ -492,6 +492,11 @@ static void CL_Reconnect_f(cmd_state_t *cmd)
 {
 	char temp[128];
 	// if not connected, reconnect to the most recent server
+#if 1 // Baker: reconnect console hide
+	extern int scr_skip_once;
+	scr_skip_once = true;
+#endif 
+
 	if (!cls.netcon) {
 		// if we have connected to a server recently, the userinfo
 		// will still contain its IP address, so get the address...

@@ -105,6 +105,7 @@ static void M_Maps_Draw (void)
 #pragma message ("Check out what happens if no servers founds or no maps found and end up pgup hit")
 static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 {
+	int lcase_ascii;
 	switch (k) {
 	case K_MOUSE2: // fall thru
 	case K_ESCAPE:
@@ -194,7 +195,6 @@ static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 		break;
 
 	default:
-		int lcase_ascii;
 		lcase_ascii = tolower(ascii);
 		if (in_range ('a', lcase_ascii, 'z')) {
 			// Baker: This is a wraparound seek

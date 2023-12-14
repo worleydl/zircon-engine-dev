@@ -212,18 +212,20 @@ static void M_Video_Classic_Key(cmd_state_t *cmd, int key, int ascii)
 			goto leftus; 
 		}
 		// fall thru
-		case K_ESCAPE:
-			// vid_shared.c has a copy of the current video config. We restore it
-			Cvar_SetValueQuick(&vid_fullscreen, vid.fullscreen);
-			Cvar_SetValueQuick(&vid_bitsperpixel, vid.bitsperpixel);
-			Cvar_SetValueQuick(&vid_samples, vid.samples);
-			if (vid_supportrefreshrate)
-				Cvar_SetValueQuick(&vid_refreshrate, vid.refreshrate);
-			Cvar_SetValueQuick(&vid_userefreshrate, vid.userefreshrate);
+	case K_ESCAPE:
+		// vid_shared.c has a copy of the current video config. We restore it
+		Cvar_SetValueQuick(&vid_fullscreen, vid.fullscreen);
+		Cvar_SetValueQuick(&vid_bitsperpixel, vid.bitsperpixel);
+		Cvar_SetValueQuick(&vid_samples, vid.samples);
+		if (vid_supportrefreshrate)
+			Cvar_SetValueQuick(&vid_refreshrate, vid.refreshrate);
+		Cvar_SetValueQuick(&vid_userefreshrate, vid.userefreshrate);
 
-	//		S_LocalSound ("sound/misc/menu1.wav");
-			M_Menu_Options_Classic_f(cmd);
-			break;
+//		S_LocalSound ("sound/misc/menu1.wav");
+		if (m_video_prevstate == m_video_nova)
+			M_Menu_Video_Nova_f (cmd);
+		else M_Menu_Options_Classic_f(cmd);
+		break;
 
 	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else local_cursor = hotspotx_hover; // fall thru
 

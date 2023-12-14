@@ -1377,7 +1377,7 @@ void VM_drawcharacter(prvm_prog_t *prog)
 	rgb = PRVM_G_VECTOR(OFS_PARM3);
 	flag = (int)PRVM_G_FLOAT(OFS_PARM5);
 
-	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawcharacter: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
@@ -1424,7 +1424,7 @@ void VM_drawstring(prvm_prog_t *prog)
 	if (prog->argc >= 6)
 		flag = (int)PRVM_G_FLOAT(OFS_PARM5);
 
-	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawstring: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
@@ -1490,7 +1490,7 @@ void VM_drawcolorcodedstring(prvm_prog_t *prog)
 		flag = (int)PRVM_G_FLOAT(OFS_PARM4);
 	}
 
-	if (flag < DRAWFLAG_NORMAL || flag >= DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >= DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawcolorcodedstring: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
@@ -1774,7 +1774,7 @@ void VM_drawpic(prvm_prog_t *prog)
 	if (prog->argc >= 6)
 		flag = (int) PRVM_G_FLOAT(OFS_PARM5);
 
-	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawpic: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
@@ -1822,7 +1822,7 @@ void VM_drawrotpic(prvm_prog_t *prog)
 	rgb = PRVM_G_VECTOR(OFS_PARM5);
 	flag = (int) PRVM_G_FLOAT(OFS_PARM7);
 
-	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawrotpic: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
@@ -1873,7 +1873,7 @@ void VM_drawsubpic(prvm_prog_t *prog)
 	alpha = PRVM_G_FLOAT(OFS_PARM6);
 	flag = (int) PRVM_G_FLOAT(OFS_PARM7);
 
-	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawsubpic: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
@@ -1915,7 +1915,7 @@ void VM_drawfill(prvm_prog_t *prog)
 	rgb = PRVM_G_VECTOR(OFS_PARM2);
 	flag = (int) PRVM_G_FLOAT(OFS_PARM4);
 
-	if (flag < DRAWFLAG_NORMAL || flag >=DRAWFLAG_NUMFLAGS)
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
 		VM_Warning(prog, "VM_drawfill: %s: wrong DRAWFLAG %d !\n",prog->name,flag);

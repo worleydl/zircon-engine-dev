@@ -1,4 +1,4 @@
-#ifndef CORE_SDL
+#if !defined(_WIN32) && !defined(MACOSX) && !defined(CORE_SDL)
 
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
@@ -103,6 +103,10 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount)
 qbool GL_ExtensionSupported(const char *name)
 {
 	return false;
+}
+
+void VID_ListModes_f(cmd_state_t *cmd)
+{
 }
 
 #endif

@@ -607,7 +607,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 
 void VM_SV_MoveToGoal(prvm_prog_t *prog);
 
-void SV_ApplyClientMove (void);
+void SV_PlayerPhysics_ApplyClientMove (void);
 void SV_SaveSpawnparms (void);
 
 void SV_SpawnServer (const char *mapshortname, char *sloadgame);  // Baker r9067: loadgame precaches "precache at any time models and sounds"

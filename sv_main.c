@@ -1671,8 +1671,13 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	char vabuf[1024];
 
 	Cvar_SetValueQuick	(&sv_freezenonclients, 0); // Baker r0090: freezeall
-	Cvar_SetValueQuick	(&tool_inspector, 0); // Baker r0106: tool inspector
-	Cvar_SetValueQuick	(&tool_marker, 0); // Baker r0109: tool marker
+
+#ifdef CONFIG_MENU
+	if (cls.state != ca_dedicated) {
+		Cvar_SetValueQuick	(&tool_inspector, 0); // Baker r0106: tool inspector
+		Cvar_SetValueQuick	(&tool_marker, 0); // Baker r0109: tool marker
+	}
+#endif
 
 	Cvar_SetQuick		(&prvm_sv_gamecommands, "");  // Baker r7103 gamecommand autocomplete
 	Cvar_SetQuick		(&prvm_sv_progfields, "");  // Baker r7103 gamecommand autocomplete
@@ -1699,6 +1704,18 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	}
 
 	if (sv.active) {
+#if 1
+		// Baker: From Doombringer ...
+		client_t *client;
+		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++)
+		{
+			if (client->netconnection)
+			{
+				MSG_WriteByte(&client->netconnection->message, svc_stufftext);
+				MSG_WriteString(&client->netconnection->message, "reconnect"  NEWLINE);
+			}
+		}
+#endif
 		World_End(&sv.world);
 		if (PRVM_serverfunction(SV_Shutdown)) {
 			func_t s = PRVM_serverfunction(SV_Shutdown);
@@ -1739,16 +1756,20 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 //
 // tell all connected clients that we are going to a new level
 //
+				WARP_X_ (CL_Reconnect_f)
+#if 0 // Baker: Doombringer moved
 	if (sv.active) {
 		client_t *client;
 		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++) {
 			if (client->netconnection) {
-				WARP_X_ (CL_Reconnect_f)
 				MSG_WriteByte(&client->netconnection->message, svc_stufftext);
 				MSG_WriteString(&client->netconnection->message, "reconnect" NEWLINE);
 			} // if
 		} // for
 	} else {
+#else
+	if (!sv.active) {
+#endif
 		// open server port
 		NetConn_OpenServerPorts(true);
 	}
@@ -2738,7 +2759,7 @@ static int SV_ThreadFunc(void *voiddata)
 			}
 			if (sv.perf_lost > 0 && developer_extra.integer)
 				if (playing)
-					Con_DPrintf ("Server can't keep up: %s\n", SV_TimingReport(vabuf, sizeof(vabuf)));
+					Con_DPrintLinef ("Server can't keep up: %s", SV_TimingReport(vabuf, sizeof(vabuf)));
 			sv.perf_acc_realtime = sv.perf_acc_sleeptime = sv.perf_acc_lost = sv.perf_acc_offset = sv.perf_acc_offset_squared = sv.perf_acc_offset_max = sv.perf_acc_offset_samples = 0;
 		}
 

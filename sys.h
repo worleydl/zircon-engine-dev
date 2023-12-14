@@ -239,6 +239,12 @@ void Sys_ProvideSelfFD (void);
 
 char *Sys_ConsoleInput (void);
 
+#ifdef _WIN32
+void Sys_Console_Init_WinQuake (void);
+char *Sys_ConsoleInput_WinQuake (void);
+#endif
+
+
 /// called to yield for a little bit so as not to hog cpu when paused or debugging
 void Sys_Sleep(int microseconds);
 
@@ -257,5 +263,8 @@ void Sys_InitProcessNice (void);
 void Sys_MakeProcessNice (void);
 void Sys_MakeProcessMean (void);
 
-#endif
+#define MAX_OSPATH_EX_1024 1024 // Baker: Hopefully large enough
+
+
+#endif // !SYS_H
 

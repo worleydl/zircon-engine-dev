@@ -1806,10 +1806,10 @@ sky_skip:
 		}
 
 		if (cls.state != ca_dedicated) {
-regularo:
-		const char *s_mapname_texture;
-		const char *s_regular_texture;		
+			const char *s_mapname_texture;
+			const char *s_regular_texture;		
 			skinframe_t *skinframe;
+regularo:
 			if (gamemode == GAME_TENEBRAE) s_mapname_texture = tx->name;
 			else s_mapname_texture = va (vabuf2, sizeof(vabuf2), "textures/%s/%s", mapname, tx->name);
 

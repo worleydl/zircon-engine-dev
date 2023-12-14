@@ -4,7 +4,7 @@
 #define		local_cursor	options_effects_cursor
 #define 	visiblerows 	m_effects_visiblerows
 
-#define	OPTIONS_EFFECTS_ITEMS	35
+#define	OPTIONS_EFFECTS_ITEMS	36
 
 static int options_effects_cursor;
 int m_effects_visiblerows;

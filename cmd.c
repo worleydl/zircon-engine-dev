@@ -476,8 +476,16 @@ static void Cbuf_Frame_Input(void)
 {
 	char *line;
 
-	while ((line = Sys_ConsoleInput()))
-			Cbuf_AddText(cmd_local, line);
+#ifdef _WIN32
+	if (cls.state != ca_dedicated)
+		return;
+
+	while ((line = Sys_ConsoleInput_WinQuake())) // CONSOLUS
+		Cbuf_AddText(cmd_local, line);
+#else
+	while ((line = Sys_ConsoleInput())) // CONSOLUS
+		Cbuf_AddText(cmd_local, line);
+#endif
 }
 
 void Cbuf_Frame(cmd_buf_t *cbuf)
@@ -919,14 +927,14 @@ static void Cmd_Inc_f(cmd_state_t *cmd)
 		return;
 	}
 
-	float val;
+	float amt, val;
 
 	switch (numargs) {		
 	case 2:	val = cvCVar->value + 1;
 			Cvar_SetValueQuick(cvCVar, val);
 			break;
 	
-	case 3:	float amt = atof(Cmd_Argv(cmd, 2));
+	case 3:	amt = atof(Cmd_Argv(cmd, 2));
 			val = cvCVar->value + amt;
 			Cvar_SetValueQuick(cvCVar, val);
 			break;
@@ -962,14 +970,13 @@ static void Cmd_Dec_f(cmd_state_t *cmd)
 		return;
 	}
 
-	float val;
-
+	float amt, val;
 	switch (numargs) {
 	case 2:	val = cvCVar->value + 1;
 		Cvar_SetValueQuick(cvCVar, val);
 		break;
 
-	case 3:	float amt = atof(Cmd_Argv(cmd, 2));
+	case 3: amt = atof(Cmd_Argv(cmd, 2));
 		val = cvCVar->value - amt;
 		Cvar_SetValueQuick(cvCVar, val);
 		break;
@@ -2267,10 +2274,12 @@ void Cmd_ExecuteString (cmd_state_t *cmd, const char *text, cmd_source_t src, qb
 	if (!Cmd_Argc(cmd))
 		goto done; // no tokens
 
+	const char *s_command_wanted = Cmd_Argv(cmd, 0);
+
 // check functions
 	for (func = cmd->userdefined->qc_functions; func; func = func->next)
 	{
-		if (String_Does_Match_Caseless(func->name, cmd->argv[0]))
+		if (String_Does_Match_Caseless(func->name, s_command_wanted))
 		{
 			if (cmd->Handle(cmd, func, text, src))
 				goto done;
@@ -2279,7 +2288,7 @@ void Cmd_ExecuteString (cmd_state_t *cmd, const char *text, cmd_source_t src, qb
 
 	for (func = cmd->engine_functions; func; func=func->next)
 	{
-		if (String_Does_Match_Caseless (func->name, cmd->argv[0]))
+		if (String_Does_Match_Caseless (func->name, s_command_wanted))
 		{
 			if (cmd->Handle(cmd, func, text, src))
 				goto done;
@@ -2296,7 +2305,7 @@ void Cmd_ExecuteString (cmd_state_t *cmd, const char *text, cmd_source_t src, qb
 // check alias
 	for (a=cmd->userdefined->alias ; a ; a=a->next)
 	{
-		if (String_Does_Match_Caseless (a->name, cmd->argv[0]))
+		if (String_Does_Match_Caseless (a->name, s_command_wanted))
 		{
 			Cmd_ExecuteAlias(cmd, a);
 			goto done;
@@ -2304,8 +2313,15 @@ void Cmd_ExecuteString (cmd_state_t *cmd, const char *text, cmd_source_t src, qb
 	}
 
 // check cvars
-	if (!Cvar_Command(cmd) && host.framecount > 0)
-		Con_PrintLinef ("Unknown command " QUOTED_S, Cmd_Argv(cmd, 0));
+	if (!Cvar_Command(cmd) && host.framecount > 0) {
+		if (is_in_loadconfig && String_Does_Match (s_command_wanted, "gamma")) {
+			// Baker: Sick of "unknown command gamma" during Quake gamedir change startup
+			// Do not print
+			// Must be in loadconfig only
+		} else {
+			Con_PrintLinef ("Unknown command " QUOTED_S, s_command_wanted);
+		}
+	}
 done:
 	cmd->cbuf->tokenizebufferpos = oldpos;
 	if (lockmutex)

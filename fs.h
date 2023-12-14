@@ -140,9 +140,10 @@ qbool FS_WriteFile (const char *filename, const void *data, fs_offset_t len);
 void FS_StripExtension (const char *in, char *out, size_t size_out);
 void FS_DefaultExtension (char *path, const char *extension, size_t size_path);
 
-#define FS_FILETYPE_NONE 0
-#define FS_FILETYPE_FILE 1
-#define FS_FILETYPE_DIRECTORY 2
+#define FS_FILETYPE_NONE_0 0
+#define FS_FILETYPE_FILE_1 1
+#define FS_FILETYPE_DIRECTORY_2 2
+
 int FS_FileOrDirectoryType (const char *filename);		// the file can be into a package
 int FS_SysFileOrDirectoryType (const char *filename);		// only look for files outside of packages
 

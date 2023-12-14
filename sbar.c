@@ -451,7 +451,7 @@ static void Sbar_DrawNum2 (int x, int y, int lettersize, int num, int numdigits,
 			lettersize,								// w
 			lettersize,								// h
 			1,1,1, sbar_alpha_fg.value,					// color quad r
-			DRAWFLAG_NORMAL
+			DRAWFLAG_NORMAL_0
 		);
 
 		x += lettersize;
@@ -1360,7 +1360,7 @@ static void SBar_Quake()
 			sbar_pelz * 1,								// w
 			sbar_pelz * 1,								// h
 			1,1,1, sbar_alpha_fg.value,					// color quad r
-			DRAWFLAG_NORMAL
+			DRAWFLAG_NORMAL_0
 		);
 
 		Sbar_DrawNum2 (
@@ -1400,7 +1400,7 @@ static void SBar_Quake()
 			sbar_pelz * 1,								// w
 			sbar_pelz * 1,								// h
 			1,1,1, sbar_alpha_fg.value,					// color quad r
-			DRAWFLAG_NORMAL
+			DRAWFLAG_NORMAL_0
 		);
 		Sbar_DrawNum2 (
 			rcol0,										// x
@@ -1439,7 +1439,7 @@ no_ammo:
 			sbar_pelz * 1,								// w
 			sbar_pelz * 1,								// h
 			1,1,1, sbar_alpha_fg.value,					// color quad r
-			DRAWFLAG_NORMAL
+			DRAWFLAG_NORMAL_0
 		);
 
 		Sbar_DrawNum2 (

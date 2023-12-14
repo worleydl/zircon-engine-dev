@@ -209,7 +209,7 @@ void R_TimeReport(const char *desc)
 	r_timereport_current = Sys_DirtyTime();
 	t = (int) ((r_timereport_current - r_timereport_temp) * 1000000.0 + 0.5);
 
-	length = dpsnprintf(tempbuf, sizeof(tempbuf), "%8i %s", t, desc);
+	length = c_dpsnprintf2 (tempbuf, "%8d %s", t, desc);
 	if (length < 0)
 		length = (int)sizeof(tempbuf) - 1;
 	if (r_speeds_longestitem < length)
@@ -218,12 +218,11 @@ void R_TimeReport(const char *desc)
 		tempbuf[length] = ' ';
 	tempbuf[length] = 0;
 
-	if (speedstringcount + length > (vid_conwidth.integer / 8))
-	{
-		strlcat(r_speeds_timestring, "\n", sizeof(r_speeds_timestring));
+	if (speedstringcount + length > (vid_conwidth.integer / 8)) {
+		c_strlcat (r_speeds_timestring, "\n");
 		speedstringcount = 0;
 	}
-	strlcat(r_speeds_timestring, tempbuf, sizeof(r_speeds_timestring));
+	c_strlcat (r_speeds_timestring, tempbuf);
 	speedstringcount += length;
 }
 
@@ -232,7 +231,7 @@ void R_TimeReport_BeginFrame(void)
 	speedstringcount = 0;
 	r_speeds_timestring[0] = 0;
 	r_timereport_active = false;
-	memset(&r_refdef.stats, 0, sizeof(r_refdef.stats));
+	memset (&r_refdef.stats, 0, sizeof(r_refdef.stats));
 
 	if (r_speeds.integer >= 2)
 	{
@@ -515,5 +514,5 @@ void R_TimeReport_EndFrame(void)
 		r_draw2d_force = false;
 	}
 
-	memset(&r_refdef.stats, 0, sizeof(r_refdef.stats));
+	memset (&r_refdef.stats, 0, sizeof(r_refdef.stats));
 }

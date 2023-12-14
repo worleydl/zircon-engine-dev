@@ -1842,6 +1842,16 @@ void CL_SendMove(void)
 	// set viewangles
 	VectorCopy(cl.viewangles, cl.cmd.viewangles);
 
+#if 0 // PHYSICAL
+	if (cls.protocol == PROTOCOL_DARKPLACES8) {
+		// set viewangles
+		vec3_t pmove_org;
+		Matrix4x4_OriginFromMatrix(&cl.entities[cl.viewentity].render.matrix, pmove_org);
+		VectorCopy(pmove_org, cl.cmd.player_org);
+
+	}
+#endif
+
 	// bones_was_here: previously cl.cmd.frametime was floored to nearest millisec
 	// this meant the smoothest async movement required integer millisec
 	// client and server frame times (eg 125fps)
@@ -2064,6 +2074,7 @@ void CL_SendMove(void)
 			// 6 bytes
 			for (i = 0;i < 3;i++)
 				MSG_WriteAngle16i (&buf, cl.cmd.viewangles[i]);
+
 			// 6 bytes
 			MSG_WriteCoord16i (&buf, cl.cmd.forwardmove);
 			MSG_WriteCoord16i (&buf, cl.cmd.sidemove);
@@ -2098,6 +2109,15 @@ void CL_SendMove(void)
 				// 6 bytes
 				for (i = 0;i < 3;i++)
 					MSG_WriteAngle16i (&buf, cmd->viewangles[i]);
+ 
+#if 0 // PHYSICAL
+				if (cls.protocol == PROTOCOL_DARKPLACES8) {
+					for (i = 0;i < 3;i++)
+						MSG_WriteAngle16i (&buf, cl.cmd.player_org[i]);
+					
+
+				}
+#endif
 				// 6 bytes
 				MSG_WriteCoord16i (&buf, cmd->forwardmove);
 				MSG_WriteCoord16i (&buf, cmd->sidemove);

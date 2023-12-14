@@ -1424,6 +1424,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\makefile"
+				>
+			</File>
+			<File
+				RelativePath=".\makefile.inc"
+				>
+			</File>
+			<File
 				RelativePath=".\sv_main_precache.c.h"
 				>
 			</File>

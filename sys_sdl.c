@@ -26,7 +26,10 @@
 
 #include "darkplaces.h"
 
+
 #ifdef _WIN32
+//	#include "quakedef.h" // Baker: Need cls here.
+
 	#ifdef _MSC_VER
 		#pragma comment(lib, "sdl2.lib")
 		#pragma comment(lib, "sdl2main.lib")
@@ -101,74 +104,211 @@ void Sys_Error (const char *error, ...)
 	#endif
 #endif
 
-void Sys_PrintToTerminal(const char *text)
-{
 
+#ifdef _WIN32
 
-#ifdef __ANDROID__
-	#define CORE_ANDROID_LOG_TAG "CoreMain"
-	__android_log_print(ANDROID_LOG_INFO, CORE_ANDROID_LOG_TAG, "%s", text);
+	#ifdef CONFIG_MENU
+		// Client run as dedicated server with -dedicated (-dedicated)
+		void Sys_PrintToTerminal_WinQuake (const char *text)
+		{
+			DWORD dummy;
+			extern HANDLE houtput;
+
+			//OutputDebugString(text);
+			if ((houtput != 0) && (houtput != INVALID_HANDLE_VALUE))
+				WriteFile(houtput, text, (DWORD) strlen(text), &dummy, NULL);
+		}
+
+	#else
+		// For a theoretical Windows dedicated server
+		void Sys_PrintToTerminal_Win32 (const char *text)
+		{
+			if (sys.outfd < 0)
+				return;
+			
+			#define write _write
+
+			while (*text) {
+				fs_offset_t written = (fs_offset_t)write(sys.outfd, text, (int)strlen(text));
+				if (written <= 0)
+					break; // sorry, I cannot do anything about this error - without an output
+				text += written;
+			} // while
+		}
+	#endif
 #else
-	// !__ANDROID__
-	if (sys.outfd < 0)
-		return;
+	// Baker: Got sick of all the #ifdefs
+	void Sys_PrintToTerminal_Unix (const char *text)
+	{
+		if (sys.outfd < 0)
+			return;
 
-	#ifndef _WIN32
 		// BUG: for some reason, NDELAY also affects stdout (1) when used on stdin (0).
 		// this is because both go to /dev/tty by default!
-		{
-			int origflags = fcntl (sys.outfd, F_GETFL, 0);
-			fcntl (sys.outfd, F_SETFL, origflags & ~O_NONBLOCK);
-	#endif // !_WIN32
+		
+		int origflags = fcntl (sys.outfd, F_GETFL, 0);
+		fcntl (sys.outfd, F_SETFL, origflags & ~O_NONBLOCK);
 
-	#ifdef _WIN32
-		# define write _write
-	#endif // _WIN32
-		while(*text)
-		{
+		while (*text) {
 			fs_offset_t written = (fs_offset_t)write(sys.outfd, text, (int)strlen(text));
 			if (written <= 0)
 				break; // sorry, I cannot do anything about this error - without an output
 			text += written;
-		}
-	#ifndef _WIN32
-			fcntl (sys.outfd, F_SETFL, origflags);
-		}
-	#endif // !_WIN32
-	//fprintf(stdout, "%s", text);
-#endif // !__ANDROID__
+		} // while
+				
+		fcntl (sys.outfd, F_SETFL, origflags);
+	}
+
+#endif // Sys_PrintToTerminal_Win32 vs. Sys_PrintToTerminal_Unix
+
+void Sys_PrintToTerminal(const char *text)
+{
+	#ifdef _WIN32
+	#ifdef CONFIG_MENU
+		Sys_PrintToTerminal_WinQuake (text);
+	#else
+		Sys_PrintToTerminal_Win32 (text);
+	#endif
+	#elif defined(__ANDROID__)
+		#define CORE_ANDROID_LOG_TAG "CoreMain"
+		__android_log_print(ANDROID_LOG_INFO, CORE_ANDROID_LOG_TAG, "%s", text);
+	#else
+		Sys_PrintToTerminal_Unix (text);
+	#endif
 }
 
-char *Sys_ConsoleInput(void)
+HANDLE				hinput, houtput;
+
+void Sys_Console_Init_WinQuake (void)
+{
+	houtput = GetStdHandle (STD_OUTPUT_HANDLE);
+	hinput = GetStdHandle (STD_INPUT_HANDLE);
+
+	// LadyHavoc: can't check cls.state because it hasn't been initialized yet
+	// if (cls.state == ca_dedicated)
+	if (Sys_CheckParm("-dedicated")) {
+		//if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE)) // LadyHavoc: on Windows XP this is never 0 or invalid, but hinput is invalid
+		{
+			if (!AllocConsole ())
+				Sys_Error ("Couldn't create dedicated server console (error code %x)", (unsigned int)GetLastError());
+			houtput = GetStdHandle (STD_OUTPUT_HANDLE);
+			hinput = GetStdHandle (STD_INPUT_HANDLE);
+		}
+		if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE))
+			Sys_Error ("Couldn't create dedicated server console");
+
+	}
+}
+
+char *Sys_ConsoleInput_WinQuake (void)
+{
+	static char text[MAX_INPUTLINE_16384];
+	static int len;
+	INPUT_RECORD recs[1024];
+	int ch;
+	DWORD numread, numevents, dummy;
+
+	// Baker: We are 100% dedicated here
+	// if (cls.state != ca_dedicated)
+	//	return NULL;
+
+	for ( ;; )
+	{
+		if (!GetNumberOfConsoleInputEvents (hinput, &numevents))
+		{
+			// cls.state = ca_disconnected;
+			Sys_Error ("Error getting # of console events (error code %x)", (unsigned int)GetLastError());
+		}
+
+		if (numevents <= 0)
+			break;
+
+		if (!ReadConsoleInput(hinput, recs, 1, &numread)) {
+			//cls.state = ca_disconnected;
+			Sys_Error ("Error reading console input (error code %x)", (unsigned int)GetLastError());
+		}
+
+		if (numread != 1) {
+			//cls.state = ca_disconnected;
+			Sys_Error ("Couldn't read console input (error code %x)", (unsigned int)GetLastError());
+		}
+
+		if (recs[0].EventType == KEY_EVENT)
+		{
+			if (!recs[0].Event.KeyEvent.bKeyDown)
+			{
+				ch = recs[0].Event.KeyEvent.uChar.AsciiChar;
+
+				switch (ch)
+				{
+					case '\r':
+						WriteFile(houtput, "\r\n", 2, &dummy, NULL);
+
+						if (len)
+						{
+							text[len] = 0;
+							len = 0;
+							return text;
+						}
+
+						break;
+
+					case '\b':
+						WriteFile(houtput, "\b \b", 3, &dummy, NULL);
+						if (len)
+						{
+							len--;
+						}
+						break;
+
+					default:
+						if (ch >= (int) (unsigned char) ' ')
+						{
+							WriteFile(houtput, &ch, 1, &dummy, NULL);
+							text[len] = ch;
+							len = (len + 1) & 0xff;
+						}
+
+						break;
+
+				}
+			}
+		}
+	}
+
+	return NULL;
+}
+
+char *Sys_ConsoleInput (void) // CONSOLUS
 {
 	static char text[MAX_INPUTLINE_16384];
 	int len = 0;
+
 #ifdef _WIN32
 	int c;
 
 	// read a line out
-	while (_kbhit ())
-	{
+	while (_kbhit ()) {
 		c = _getch ();
 		_putch (c);
-		if (c == '\r')
-		{
+
+		if (c == '\r') {
 			text[len] = 0;
 			_putch ('\n');
 			len = 0;
 			return text;
-		}
-		if (c == 8)
-		{
-			if (len)
-			{
+		} // carriage return
+
+		if (c == CHAR_BACKSPACE_8) {
+			if (len) {
 				_putch (' ');
 				_putch (c);
 				len--;
 				text[len] = 0;
 			}
 			continue;
-		}
+		} // backspace
+
 		text[len] = c;
 		len++;
 		text[len] = 0;
@@ -197,6 +337,7 @@ char *Sys_ConsoleInput(void)
 }
 
 WARP_X_ (Sys_GetClipboardData)
+// Returns 1 on success, 0 on failure
 int Sys_SetClipboardData(const char *text_to_clipboard)
 {
 	return !SDL_SetClipboardText(text_to_clipboard);
@@ -382,7 +523,6 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
 }
 
 
-#define MAX_OSPATH_EX_1024 1024 // Hopefully large enough
 
 #ifdef _WIN32
 	// empty

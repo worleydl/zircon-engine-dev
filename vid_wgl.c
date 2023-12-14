@@ -135,7 +135,7 @@ static qbool vid_isfullscreen;
 
 LONG WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void AppActivate(BOOL fActive, BOOL minimize);
-static void ClearAllStates(void);
+//static void ClearAllStates(void);
 qbool VID_InitModeGL(viddef_mode_t *mode);
 qbool VID_InitModeSOFT(viddef_mode_t *mode);
 
@@ -958,7 +958,8 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam)
 
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
-			ClearAllStates ();
+			
+			Key_ReleaseAll (); // ClearAllStates ();
 
 			break;
 
@@ -1439,12 +1440,14 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 			return false;
 		}
 
+#if 0 // Baker: We really don't care about this
 		if (!GL_CheckExtension("wgl", wglfuncs, NULL, false))
 		{
 			VID_Shutdown();
-			Con_Print("wgl functions not found\n");
+			Con_PrintLinef ("wgl functions not found");
 			return false;
 		}
+#endif
 
 		baseRC = qwglCreateContext(baseDC);
 		if (!baseRC)
@@ -1536,12 +1539,14 @@ qbool VID_InitModeGL(viddef_mode_t *mode)
 	Sleep (100);
 
 	// fix the leftover Alt from any Alt-Tab or the like that switched us away
-	ClearAllStates ();
+	Key_ReleaseAll (); // ClearAllStates ();
 
+#if 0 // Baker: kick can on this for now
 // COMMANDLINEOPTION: Windows WGL: -novideosync disables WGL_EXT_swap_control
-	GL_CheckExtension("WGL_EXT_swap_control", wglswapintervalfuncs, "-novideosync", false);
+	GL_CheckExtension ("WGL_EXT_swap_control", wglswapintervalfuncs, "-novideosync", false);
+#endif
 
-	GL_Init ();
+	GL_Setup (); //GL_Init ();
 
 	//vid_menudrawfn = VID_MenuDraw;
 	//vid_menukeyfn = VID_MenuKey;
@@ -1629,8 +1634,7 @@ void VID_Shutdown (void)
 		return;
 
 	VID_EnableJoystick(false);
-	VID_SetMouse(false, false, false);
-	VID_RestoreSystemGamma();
+	VID_SetMouse	(q_mouse_relative_false, q_mouse_hidecursor_false);
 
 	vid_initialized = false;
 	isgl = gldll != NULL;

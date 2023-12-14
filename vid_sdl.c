@@ -1298,11 +1298,11 @@ void Sys_SendKeyEvents( void )
 					switch(event.window.event)
 					{
 					case SDL_WINDOWEVENT_SHOWN:
-						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						vid_hidden = false;
 						break;
 					case  SDL_WINDOWEVENT_HIDDEN:
-						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						vid_hidden = true;
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
@@ -1327,18 +1327,18 @@ void Sys_SendKeyEvents( void )
 						}
 						break;
 					case SDL_WINDOWEVENT_MINIMIZED:
-						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						break;
 					case SDL_WINDOWEVENT_MAXIMIZED:
-						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						break;
 					case SDL_WINDOWEVENT_RESTORED:
 						break;
 					case SDL_WINDOWEVENT_ENTER:
-						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						break;
 					case SDL_WINDOWEVENT_LEAVE:
-						Key_ReleaseAll(); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
 						break;
 					case SDL_WINDOWEVENT_FOCUS_GAINED:
 						IN_Keyboard_Acquire(); // Baker r1413: Disable windows key
@@ -1525,12 +1525,22 @@ void VID_Init (void)
 	R_RegisterModule("SDL", sdl_start, sdl_shutdown, sdl_newmap, NULL, NULL);
 #endif
 
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
 	// Baker: Returns -1 on an error or 0 on success.
 	vid_sdl_initjoysticksystem = SDL_InitSubSystem(SDL_INIT_JOYSTICK) >= 0;
 	if (!vid_sdl_initjoysticksystem)
 		Con_Printf (CON_ERROR "Failed to init SDL joystick subsystem: %s\n", SDL_GetError());
+
+#if defined(_WIN32) || defined(MACOSX)
+	SDL_DisplayMode my_desktop_mode;
+	SDL_GetCurrentDisplayMode(0, &my_desktop_mode);
+
+	vid.desktop_width = my_desktop_mode.w;
+	vid.desktop_height = my_desktop_mode.h;
+#endif
+
 	vid_isfullscreen = false;
 }
 
@@ -1896,8 +1906,8 @@ qbool VID_InitMode(viddef_mode_t *mode)
 
 void VID_Shutdown (void)
 {
-	VID_EnableJoystick(false);
-	VID_SetMouse(false, false);
+	VID_EnableJoystick	(false);
+	VID_SetMouse		(q_mouse_relative_false, q_mouse_hidecursor_false);
 
 	SDL_DestroyWindow(window);
 	window = NULL;

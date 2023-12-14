@@ -1,66 +1,62 @@
-#if 0
+#if !defined(_WIN32) && !defined(MACOSX) && !defined(CORE_SDL)
 
-
-#ifdef WIN32
-#include <windows.h>
-#include <mmsystem.h>
-#include <io.h>
-#include "conio.h"
-#else
-#include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
-#endif
+#include <sys/time.h>
 
 #include <signal.h>
 
 #include "darkplaces.h"
 
-sys_t sys;
+
 
 // =======================================================================
 // General routines
 // =======================================================================
+
 void Sys_Shutdown (void)
 {
-#ifndef WIN32
 	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~O_NONBLOCK);
-#endif
+
 	fflush(stdout);
 }
+
+/*
+===============================================================================
+
+SYSTEM IO
+
+===============================================================================
+*/
 
 void Sys_Error (const char *error, ...)
 {
 	va_list argptr;
-	char string[MAX_INPUTLINE_16384];
+	char text[MAX_INPUTLINE_16384];
 
 // change stdin to non blocking
-#ifndef WIN32
 	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~O_NONBLOCK);
-#endif
+
 	va_start (argptr,error);
-	dpvsnprintf (string, sizeof (string), error, argptr);
+	dpvsnprintf (text, sizeof (text), error, argptr);
 	va_end (argptr);
 
-	Con_Printf(CON_ERROR "Engine Error: %s\n", string);
+	Con_PrintLinef (CON_ERROR "Engine Error: %s", text);
 
 	//Host_Shutdown ();
 	exit (1);
 }
 
-void Sys_Print(const char *text)
+void Sys_PrintToTerminal(const char *text)
 {
 	if(sys.outfd < 0)
 		return;
 	// BUG: for some reason, NDELAY also affects stdout (1) when used on stdin (0).
 	// this is because both go to /dev/tty by default!
 	{
-#ifndef WIN32
 		int origflags = fcntl (sys.outfd, F_GETFL, 0);
 		fcntl (sys.outfd, F_SETFL, origflags & ~O_NONBLOCK);
-#else
-#define write _write
-#endif
+
 		while(*text)
 		{
 			fs_offset_t written = (fs_offset_t)write(sys.outfd, text, (int)strlen(text));
@@ -68,9 +64,7 @@ void Sys_Print(const char *text)
 				break; // sorry, I cannot do anything about this error - without an output
 			text += written;
 		}
-#ifndef WIN32
 		fcntl (sys.outfd, F_SETFL, origflags);
-#endif
 	}
 	//fprintf(stdout, "%s", text);
 }
@@ -79,39 +73,6 @@ char *Sys_ConsoleInput(void)
 {
 	static char text[MAX_INPUTLINE_16384];
 	static unsigned int len = 0;
-#ifdef WIN32
-	int c;
-
-	// read a line out
-	while (_kbhit ())
-	{
-		c = _getch ();
-		if (c == '\r')
-		{
-			text[len] = '\0';
-			_putch ('\n');
-			len = 0;
-			return text;
-		}
-		if (c == '\b')
-		{
-			if (len)
-			{
-				_putch (c);
-				_putch (' ');
-				_putch (c);
-				len--;
-			}
-			continue;
-		}
-		if (len < sizeof (text) - 1)
-		{
-			_putch (c);
-			text[len] = c;
-			len++;
-		}
-	}
-#else
 	fd_set fdset;
 	struct timeval timeout;
 	FD_ZERO(&fdset);
@@ -131,8 +92,14 @@ char *Sys_ConsoleInput(void)
 			return text;
 		}
 	}
-#endif
+
 	return NULL;
+}
+
+// Returns 1 on success, 0 on failure
+int Sys_SetClipboardData(const char *text_to_clipboard)
+{
+	return false; // Dedicated server, this fails
 }
 
 char *Sys_GetClipboardData (void)
@@ -156,9 +123,8 @@ int main (int argc, char **argv)
 		sys.outfd = 2;
 	else
 		sys.outfd = 1;
-#ifndef WIN32
+
 	fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | O_NONBLOCK);
-#endif
 
 	// used by everything
 	Memory_Init();
@@ -181,4 +147,32 @@ void Sys_SDL_Delay (unsigned int milliseconds)
 	Sys_Error("Called Sys_SDL_Delay on non-SDL target");
 }
 
-#endif
+SBUF___ char *Sys_Getcwd_SBuf (void) // No trailing slash
+
+{
+	static char workingdir[MAX_OSPATH_EX_1024];
+
+	if (getcwd (workingdir, sizeof(workingdir) - 1)) {
+		return workingdir;
+	} else return NULL;
+}
+
+// Folder must exist.  It must be a folder.
+int Sys_Folder_Open_Folder_Must_Exist (const char *path_to_file)
+{
+//  xdg-open is a desktop-independent tool for configuring the default applications of a user
+	if ( fork() == 0) {
+		execl ("/usr/bin/xdg-open", "xdg-open", path_to_file, (char *)0);
+		//cleanup_on_exit();  /* clean up before exiting */
+		exit(3);
+	}
+	return true;
+}
+
+// copies given text to clipboard.  Text can't be NULL
+int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
+{
+	return 0;
+}
+
+#endif  // !CORE_SDL

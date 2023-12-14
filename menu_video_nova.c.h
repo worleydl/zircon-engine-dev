@@ -1,23 +1,27 @@
 // menu_video_nova.c.h
 
-#define 	local_count		VIDEO2_ITEMS
+#define 	local_count		VID_MENU_COUNT_7
 #define		local_cursor	video2_cursor
 
 
 extern cvar_t cl_maxfps;
 
-#define VIDEO2_ITEMS 6
 static int video2_cursor = 0;
 
-static int video2_cursor_table[VIDEO2_ITEMS + 1] = {
-	68,
-	80,
-	96,
-	112,
-	144,
-	160,
-	172
-};
+
+typedef enum res_e_ {
+	VID_MENU_NEW_RES_0 = 0,
+	VID_MENU_FULLSCREEN_1 = 1,
+	VID_MENU_VSYNC_2 = 2,
+	VID_MENU_MAXFPS_3 = 3,
+	VID_MENU_FORCE_DESKTOP_FULLSCREEN_4 = 4,
+	VID_MENU_APPLY_5 = 5,
+	VID_MENU_ADVANCED_6 = 6,
+	VID_MENU_COUNT_7
+} res_e;
+
+#define MNU_VIDEO_TOP_ROW_36	36
+#define MNU_VIDEO_ROW_SIZE_16	16
 
 static ratetable_t fps_rates[] =
 {
@@ -49,7 +53,6 @@ void M_Menu_Video_Nova_f(cmd_state_t *cmd)
 
 static void M_Video_Nova_Draw (void)
 {
-	int t;
 	cachepic_t	*p0;
 	char vabuf[1024];
 	char *s;
@@ -67,54 +70,61 @@ static void M_Video_Nova_Draw (void)
 	M_DrawPic((320-Draw_GetPicWidth(p0))/2, 4, "gfx/vidmodes", NO_HOTSPOTS_0, NA0, NA0);
 
 	drawidx = 0; drawsel_idx = not_found_neg1;  // PPX_Start - does not have frame cursor
-	t = 0;
+	drawcur_y = MNU_VIDEO_TOP_ROW_36;
+
+	// Baker: The M_ functions add menux + and menuy + to coordinates
+	// the non- M_ functions need to add menu_x and menu_y to coordinates
+	// So yeah ...
 
 	// Current and Proposed Resolution
-	M_PrintBronzey(16, video2_cursor_table[t] - 24, "    Current Resolution");
+	M_PrintBronzey	(16, drawcur_y, "    Current Resolution");
 	if (vid_supportrefreshrate && vid.userefreshrate && vid.fullscreen)
-		M_PrintBronzey(220, video2_cursor_table[t] - 24, va(vabuf, sizeof(vabuf), "%dx%d %.2fhz", vid.width, vid.height, vid.refreshrate));
+		M_PrintBronzey(220, drawcur_y, va(vabuf, sizeof(vabuf), "%dx%d %.2fhz", vid.width, vid.height, vid.refreshrate));
 	else
-		M_PrintBronzey(220, video2_cursor_table[t] - 24, va(vabuf, sizeof(vabuf), "%dx%d", vid.width, vid.height));
+		M_PrintBronzey(220, drawcur_y, va(vabuf, sizeof(vabuf), "%dx%d", vid.width, vid.height));
 
-	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_slider);
-	M_Print(16, video2_cursor_table[t], "        New Resolution");
-	M_Print(220, video2_cursor_table[t], va(vabuf, sizeof(vabuf), "%dx%d", menu_video_resolutions[menu_video_resolution].width, menu_video_resolutions[menu_video_resolution].height));
-	//M_Print(96, video_cursor_table[t] + 8, va(vabuf, sizeof(vabuf), "Type: %s", menu_video_resolutions[menu_video_resolution].type));
-	t++;
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
+
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_slider);
+	M_Print			(16, drawcur_y, "        New Resolution");
+	M_Print			(220, drawcur_y, va(vabuf, sizeof(vabuf), "%dx%d", menu_video_resolutions[menu_video_resolution].width, menu_video_resolutions[menu_video_resolution].height));
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// Fullscreen
-	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_slider);
-	M_Print(16, video2_cursor_table[t], "            Fullscreen");
-	M_DrawCheckbox(220, video2_cursor_table[t], vid_fullscreen.integer);
-	t++;
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_slider);
+	M_Print			(16, drawcur_y, "            Fullscreen");
+	M_DrawCheckbox	(220, drawcur_y, vid_fullscreen.integer);
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// Vertical Sync
-	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_slider);
-	M_ItemPrint(16, video2_cursor_table[t], "         Vertical Sync", true);
-	M_DrawCheckbox(220, video2_cursor_table[t], vid_vsync.integer);
-	t++;
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_slider);
+	M_ItemPrint		(16, drawcur_y, "         Vertical Sync", true);
+	M_DrawCheckbox	(220, drawcur_y, vid_vsync.integer);
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// Maximum fps
-	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_slider);
-	M_ItemPrint(16, video2_cursor_table[t], "       Max Frames/Sec", true);
-	//M_DrawSlider(220, video2_cursor_table[t], cl_maxfps.integer, 0, 288 * 2);
-
-
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_slider);
+	M_ItemPrint		(16, drawcur_y, "        Max Frames/Sec", true);
 	va(vabuf, sizeof(vabuf), "%d %s", cl_maxfps.integer, cl_maxfps.integer ? "" : " (no limit, choppy?)" );
-	DrawQ_String(menu_x + 220, menu_y + video2_cursor_table[t], vabuf, 0, /*w*/ 8, 8, /*rgba*/ 1, 1, 1, 1, 0, /*outcolor*/ NULL, true, FONT_MENU);
-	t++;
+	DrawQ_String	(menu_x + 220, menu_y + drawcur_y, vabuf, q_text_maxlen_0, /*w*/ 8, 8, /*rgba*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_MENU);
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
+	// Force Desktop Resolution
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_slider);
+	M_ItemPrint		(16, drawcur_y,  "          Always Force", true);
+	DrawQ_String	(menu_x + 16, menu_y + drawcur_y + 8,  "    Desktop Resolution", q_text_maxlen_0, /*w*/ 8, 8, /*rgba*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_MENU);
+	M_DrawCheckbox	(220, drawcur_y, vid_desktopfullscreen.integer);
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// "Apply" button
-	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_button);
-	M_PrintRed(220, video2_cursor_table[t], "Apply");
-	t++;
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_button);
+	M_PrintRed		(220, drawcur_y, "Apply");
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// "Go Advanced" button
-	Hotspots_Add (menu_x + 48, menu_y + video2_cursor_table[t], 272, 8 + 1, 1, hotspottype_button);
-	M_Print(220, video2_cursor_table[t], "Go Advanced");
-	t++;
-
+	Hotspots_Add	(menu_x + 48, menu_y + drawcur_y, 272, 8 + 1, 1, hotspottype_button);
+	M_Print			(220, drawcur_y, "Go Advanced");
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// "Apply" button
 	if (vid.fullscreen) {
@@ -122,11 +132,12 @@ static void M_Video_Nova_Draw (void)
 	} else {
 		s = va(vabuf, sizeof(vabuf), "ALT-ENTER: Quick Set %dx%d fullscreen", (int)vid_fullscreen_width.value, (int)vid_fullscreen_height.value);
 	}
-	M_PrintBronzey (24, video2_cursor_table[t], s);
-	t++;
+	M_PrintBronzey	(24, drawcur_y, s);
+	drawcur_y += MNU_VIDEO_ROW_SIZE_16;
 
 	// Cursor
-	M_DrawCharacter(200, video2_cursor_table[local_cursor], 12+((int)(host.realtime*4)&1));
+	drawcur_y = MNU_VIDEO_TOP_ROW_36 + MNU_VIDEO_ROW_SIZE_16 + local_cursor * MNU_VIDEO_ROW_SIZE_16;
+	M_DrawCharacter	(200, drawcur_y, 12 + ((int)(host.realtime * 4) & 1));
 
 	PPX_DrawSel_End ();
 }
@@ -134,17 +145,12 @@ static void M_Video_Nova_Draw (void)
 
 static void M_Menu_VideoNova_AdjustSliders (int dir)
 {
-	int t;
-
 	S_LocalSound ("sound/misc/menu3.wav");
 
-	t = 0;
-	if (local_cursor == t++) // 1
-	{
+	switch (local_cursor) {
+	case VID_MENU_NEW_RES_0:
 		// Resolution
-		int r;
-		for(r = 0;r < menu_video_resolutions_count;r++)
-		{
+		for (int r = 0; r < menu_video_resolutions_count; r++) {
 			menu_video_resolution += dir;
 			if (menu_video_resolution >= menu_video_resolutions_count)
 				menu_video_resolution = 0;
@@ -152,18 +158,29 @@ static void M_Menu_VideoNova_AdjustSliders (int dir)
 				menu_video_resolution = menu_video_resolutions_count - 1;
 			if (menu_video_resolutions[menu_video_resolution].width < 600)
 				continue;
-#if 0 && (defined(_WIN32) && !defined(CORE_SDL)) || defined(MACOSX)
+#if defined(_WIN32) || defined(MACOSX)
 			if (menu_video_resolutions[menu_video_resolution].width > vid.desktop_width)
 				continue;
-#endif // defined(_WIN32) && !defined(CORE_SDL)
-			if (menu_video_resolutions[menu_video_resolution].width >= vid_minwidth.integer && menu_video_resolutions[menu_video_resolution].height >= vid_minheight.integer)
+#endif // _WIN32 || MACOSX
+			if (menu_video_resolutions[menu_video_resolution].width >= vid_minwidth.integer && 
+				menu_video_resolutions[menu_video_resolution].height >= vid_minheight.integer)
 				break;
-		}
-	}
-	else if (local_cursor == t++) // 2
+		} // for
+		break;
+
+	case VID_MENU_FULLSCREEN_1:
 		Cvar_SetValueQuick (&vid_fullscreen, !vid_fullscreen.integer);
-	else if (local_cursor == t++) // 3
+		break;
+
+	case VID_MENU_VSYNC_2: 
 		Cvar_SetValueQuick (&vid_vsync, !vid_vsync.integer);
+		break;
+
+	case VID_MENU_FORCE_DESKTOP_FULLSCREEN_4:
+		Cvar_SetValueQuick (&vid_desktopfullscreen, !vid_desktopfullscreen.integer);
+		break;
+
+	} // sw 
 }
 
 
@@ -185,6 +202,7 @@ static void M_Video_Nova_Key (cmd_state_t *cmd, int key, int ascii)
 		Cvar_SetValueQuick(&vid_fullscreen, vid.fullscreen);
 		Cvar_SetValueQuick(&vid_bitsperpixel, vid.bitsperpixel);
 		Cvar_SetValueQuick(&vid_samples, vid.samples);
+		// Baker: Surprising we aren't doing the cvars vid_width, etc.
 		if (vid_supportrefreshrate)
 			Cvar_SetValueQuick(&vid_refreshrate, vid.refreshrate);
 		Cvar_SetValueQuick(&vid_userefreshrate, vid.userefreshrate);
@@ -199,7 +217,7 @@ static void M_Video_Nova_Key (cmd_state_t *cmd, int key, int ascii)
 		m_entersound = true;
 
 		switch (local_cursor) {
-		case (local_count - 3):
+		case VID_MENU_MAXFPS_3:
 			 // Baker: fps
 			// increase get greater idx, if none use 0
 			for (j = 0; j < (int)fps_rates_count; j ++) {
@@ -211,7 +229,7 @@ static void M_Video_Nova_Key (cmd_state_t *cmd, int key, int ascii)
 			Cvar_SetValueQuick (&cl_maxfps, fps_rates[fpsidxup].rate);
 			break;
 
-		case (local_count - 2):
+		case VID_MENU_APPLY_5:
 			// Baker: APPLY
 
 #ifdef __ANDROID__
@@ -227,7 +245,7 @@ static void M_Video_Nova_Key (cmd_state_t *cmd, int key, int ascii)
 			Cbuf_AddTextLine (cmd, "vid_restart");
 			// We stay put
 			break;
-		case (local_count - 1): // ADVANCED
+		case VID_MENU_ADVANCED_6: // ADVANCED
 			m_video_prevstate = m_video_nova;
 			M_Menu_Video_Classic_f (cmd);
 			break;
@@ -261,7 +279,7 @@ static void M_Video_Nova_Key (cmd_state_t *cmd, int key, int ascii)
 
 leftus:
 	case K_LEFTARROW:
-		if (local_cursor == local_count - 3) {
+		if (local_cursor == VID_MENU_MAXFPS_3) {
 			// decrease get lesser fps idx
 			// if none, use hi
 			for (j = fps_rates_count - 1; j >= 0; j --) {
@@ -278,7 +296,7 @@ leftus:
 		break;
 
 	case K_RIGHTARROW:
-		if (local_cursor == local_count - 3) {
+		if (local_cursor == VID_MENU_MAXFPS_3) {
 			// we get greater fps idx
 			for (j = 0; j < (int)fps_rates_count; j ++) {
 				if (fps_rates[j].rate > cl_maxfps.integer) {

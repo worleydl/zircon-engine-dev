@@ -3,6 +3,61 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 7 - November 23 2023
+
+1. Video menu reworked and includes "Always force desktop resolution" ON/OFF, and rewired to make sure
+   that classic video mode returns to the correct menu that entered it.
+   
+2. Fixed effects menu not allowing last item to be selected by keyboard.
+
+3. Video menu will never offer video modes greater than what SDL2 reports as the desktop resolution.
+   This was added because I noticed getting offered large video modes that I don't believe are supported.
+   
+4.  writeconfig_all <configname> writes all cvars to a file.
+	writeconfig_all_changed <configname> writes all cvars that are not set to their default value to config
+
+5.  vid_width, vid_height, vid_fullscreen updated before write to config.cfg.  Those cvars can have stale
+    values often from using the video menu but not submitting the change or by other means.
+    
+6.  During load a config file, messages saying "command gamma not found" will not occur.
+
+7.  "game" or "gamedir" specifying an existing empty folder works.  If the user created a folder
+    and it happens to be empty, they should be able to use that as a gamedir without the engine
+    denying them because there are no files in that folder.
+    
+8.  If you startup DarkPlaces and type "gamedir" it says "gamedirs active: "
+    I have altered this to 
+    
+// Zircon Beta Release 6 - November 20 2023
+
+1. Linux with GCC 9.3 now compiles, so the Linux compile should be pretty easy.
+2. Linux dedicated server build is now functional "make sv-release"
+3. Server browser was not showing gamename and map column.  It does now.
+4. Connecting to a server in the server browser adds it the console history.
+
+   So for instance, you can press up in console and get
+   
+   connect "47.190.124.73:26001" // PART1CL3.NET_COOP
+   
+   Notice how the console history recall even has the server name!
+   
+5. utf8_enable was allowing selection of text using shift.  It wasn't supposed to.
+   Currently text selection does not work correctly with utf8 (or color codes like ^5)
+   and utf8 was not supposed to allow text selection.  Addressed.
+   
+6. "reconnect" -- the command that occurs on the client when a server changes map
+   was showing flashing console on-screen (ugly) *only* when the server was remote
+   (like your ping is 30 or higher).  "reconnect" now does not show console
+   during loading. (Follow up: Should it be timeout proofed to X seconds in the event
+   there is trouble connecting or lag or that even an issue here?)  
+
+7. Incorporated Doombringer DarkPlaces SV_SpawnServer logic that looks like it sends the
+   reconnect to client at a more appropriate time during map change and everything still
+   seems to work ok.
+
+Punt: r_speeds 1 display looks unorganized.  Thought about tidying it up.  Going to
+kick the can on that.
+
 // Zircon Beta Release 5 - November 16 2023
 
 1. Added r_waterwarp (winquake underwater effect) / r_waterdeform (twist water) to effects menu.

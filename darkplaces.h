@@ -115,6 +115,10 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_is_fence_model_false			false // Quake .mdl with MF_FENCE 16384 set means color 255 is transparent
 #define q_is_sky_load_false				false
 
+#define q_mouse_relative_false			false
+#define q_mouse_hidecursor_false		false
+
+
 #define q_tx_complain_false				false
 #define q_tx_complain_true				true
 #define q_tx_fallback_notexture_false	false
@@ -133,7 +137,7 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 													//   affecting certain elements
 
 
-
+#define q_text_maxlen_0					0
 #define q_outcolor_null					NULL
 #define q_ignore_color_codes_true		true
 

@@ -1737,10 +1737,16 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 	char gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
 
 	if (Cmd_Argc(cmd) < 2) {
-		Con_Printf ("gamedirs active:");
-		for (i = 0;i < fs_numgamedirs;i++)
-			Con_Printf (" %s", fs_gamedirs[i]);
-		Con_Printf ("\n");
+		if (fs_numgamedirs) {
+			Con_Printf ("gamedirs active:");
+			for (i = 0;i < fs_numgamedirs;i++)
+				Con_Printf (" %s", fs_gamedirs[i]);
+			Con_Printf ("\n");
+			Con_PrintLinef ("base game      : %s", gamedirname1);
+			return;
+		}
+		
+		Con_PrintLinef ("base game: %s", gamedirname1);
 		return;
 	}
 
@@ -1772,7 +1778,9 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 		// Shutdown?	
 	}
 	
+#ifdef CONFIG_MENU
 	Menu_Resets (); // Cursor to 0 for all the menus
+#endif
 
 	// Baker r9003: Clear models/sounds on gamedir change
 	is_game_switch = true;   // This does what?  Clear models thoroughly.  As opposed to video restart which shouldn't?
@@ -1818,6 +1826,9 @@ static const char *FS_SysCheckGameDir(const char *gamedir, char *buf, size_t buf
 FS_CheckGameDir
 ================
 */
+// Baker: What the hell is the return value of this?
+// Baker: It returns an empty string of "" almost all the time.
+// Or it returns a "missing" string or NULL
 const char *FS_CheckGameDir(const char *gamedir)
 {
 	const char *ret;
@@ -1844,6 +1855,21 @@ const char *FS_CheckGameDir(const char *gamedir)
 	ret = FS_SysCheckGameDir(va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, gamedir), buf, sizeof(buf));
 	if (ret)
 		return ret;
+
+#if 1 // Baker: Check for a empty existing folder.
+	char sgdwork[1024];
+	c_strlcpy (sgdwork, fs_gamedir);					// "id1/"
+	File_URL_Remove_Trailing_Unix_Slash (sgdwork);		// "id1"
+	File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (sgdwork); // Should be parent
+
+	char strydir[1024];
+	c_dpsnprintf2 (strydir, "%s%s", sgdwork, gamedir);
+	int result = FS_SysFileOrDirectoryType (strydir);
+
+	if (result == FS_FILETYPE_DIRECTORY_2) {
+		return "";
+	}
+#endif
 
 	return fs_checkgamedir_missing;
 }
@@ -3439,10 +3465,10 @@ int FS_FileOrDirectoryType (const char *filename)
 
 	search = FS_FindFile (filename, fs_package_index_reply_null, fs_quiet_true);
 	if (!search)
-		return FS_FILETYPE_NONE;
+		return FS_FILETYPE_NONE_0;
 
 	if (search->pack && !search->pack->vpack)
-		return FS_FILETYPE_FILE; // TODO can't check directories in paks yet, maybe later
+		return FS_FILETYPE_FILE_1; // TODO can't check directories in paks yet, maybe later
 
 	c_dpsnprintf2 (fullpath, "%s%s", search->filename, filename);
 	return FS_SysFileOrDirectoryType(fullpath);
@@ -3482,31 +3508,31 @@ int FS_SysFileOrDirectoryType (const char *path)
 	result = GetFileAttributesW(pathw);
 
 	if (result == INVALID_FILE_ATTRIBUTES)
-		return FS_FILETYPE_NONE;
+		return FS_FILETYPE_NONE_0;
 
 	if (result & FILE_ATTRIBUTE_DIRECTORY)
-		return FS_FILETYPE_DIRECTORY;
+		return FS_FILETYPE_DIRECTORY_2;
 
-	return FS_FILETYPE_FILE;
+	return FS_FILETYPE_FILE_1;
 #else
 	struct stat buf;
 
 	if (stat (path,&buf) == -1)
-		return FS_FILETYPE_NONE;
+		return FS_FILETYPE_NONE_0;
 
 #ifndef S_ISDIR
 #define S_ISDIR(a) (((a) & S_IFMT) == S_IFDIR)
 #endif
 	if (S_ISDIR(buf.st_mode))
-		return FS_FILETYPE_DIRECTORY;
+		return FS_FILETYPE_DIRECTORY_2;
 
-	return FS_FILETYPE_FILE;
+	return FS_FILETYPE_FILE_1;
 #endif
 }
 
 qbool FS_SysFileExists (const char *path)
 {
-	return FS_SysFileOrDirectoryType (path) != FS_FILETYPE_NONE;
+	return FS_SysFileOrDirectoryType (path) != FS_FILETYPE_NONE_0;
 }
 
 /*

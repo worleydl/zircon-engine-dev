@@ -604,7 +604,7 @@ void SV_PlayerPhysics (void)
 
 	//Con_Printf ("clientthink for %dms\n", (int) (sv.frametime * 1000));
 
-	SV_ApplyClientMove();
+	SV_PlayerPhysics_ApplyClientMove();
 	// make sure the velocity is sane (not a NaN)
 	SV_CheckVelocity(host_client->edict);
 
@@ -667,16 +667,22 @@ void SV_PlayerPhysics (void)
 
 	SV_AirMove ();
 	SV_CheckVelocity(host_client->edict);
+
+#if 0 // PHYSICAL
+	if (sv.protocol == PROTOCOL_DARKPLACES8) {
+		PRVM_serveredictvector(host_client->edict, origin)[0] = v_angle[YAW];
+	}
+#endif
 }
 
 /*
 ===================
-SV_ReadClientMove
+SV_ReadClientMessage_ReadClientMove
 ===================
 */
 int sv_numreadmoves = 0;
 usercmd_t sv_readmoves[CL_MAX_USERCMDS];
-static void SV_ReadClientMove (void)
+static void SV_ReadClientMessage_ReadClientMove (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int i;
@@ -713,6 +719,16 @@ static void SV_ReadClientMove (void)
 		else
 			move->viewangles[i] = MSG_ReadAngle16i(&sv_message);
 	}
+
+#if 0 // PHYSICAL
+	if (sv.protocol == PROTOCOL_DARKPLACES8) {
+		for (i = 0;i < 3;i++)
+		{
+			move->player_org[i] = MSG_ReadAngle16i(&sv_message);
+		}
+	}
+#endif
+
 	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
 
 	// read movement
@@ -928,7 +944,7 @@ static void SV_ExecuteClientMoves(void)
 	}
 }
 
-void SV_ApplyClientMove (void)
+void SV_PlayerPhysics_ApplyClientMove (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	usercmd_t *move = &host_client->cmd;
@@ -1120,7 +1136,7 @@ clc_stringcmd_invalid:
 			return;
 
 		case clc_move:
-			SV_ReadClientMove();
+			SV_ReadClientMessage_ReadClientMove();
 			break;
 
 		case clc_ackdownloaddata:

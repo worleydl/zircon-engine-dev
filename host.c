@@ -78,7 +78,7 @@ void Host_AbortCurrentFrame(void)
 
 /*
 ================
-Host_Error_Line
+Host_Error
 
 This shuts down both the client and server
 ================
@@ -98,7 +98,7 @@ void Host_Error_Line (const char *error, ...)
 	dpvsnprintf (hosterrorstring1,sizeof(hosterrorstring1),error,argptr);
 	va_end (argptr);
 
-	Con_Printf (CON_ERROR "Host_Error: %s\n", hosterrorstring1);
+	Con_PrintLinef (CON_ERROR "Host_Error: %s", hosterrorstring1);
 
 	// LadyHavoc: if crashing very early, or currently shutting down, do
 	// Sys_Error instead
@@ -131,7 +131,7 @@ void Host_Error_Line (const char *error, ...)
 		host.hook.SV_Shutdown();
 
 	if (cls.state == ca_dedicated)
-		Sys_Error ("Host_Error_Line: %s",hosterrorstring2);	// dedicated servers exit
+		Sys_Error ("Host_Error: %s",hosterrorstring2);	// dedicated servers exit
 
 	CL_Disconnect();
 	cls.demonum = -1;
@@ -149,14 +149,14 @@ Host_Quit_f
 static void Host_Quit_f(cmd_state_t *cmd)
 {
 	if (host.state == host_shutdown)
-		Con_Printf ("shutting down already!\n");
+		Con_PrintLinef ("shutting down already!");
 	else
 		host.state = host_shutdown;
 }
 
 static void Host_Version_f(cmd_state_t *cmd)
 {
-	Con_Printf ("Version: %s build %s\n", gamename, buildstring);
+	Con_PrintLinef ("Version: %s build %s", gamename, buildstring);
 }
 
 static void Host_Framerate_c(cvar_t *var)
@@ -196,10 +196,15 @@ void Host_SaveConfig(const char *file)
 	// LadyHavoc: don't save a config if it crashed in startup
 	if (host.framecount >= 3 && cls.state != ca_dedicated && !Sys_CheckParm("-benchmark") && !Sys_CheckParm("-capturedemo"))
 	{
-		f = FS_OpenRealFile(file, "wb", false);
+		// Baker 1024: Prevent stale values of vid_width or vid_height writing to config
+		Cvar_SetValueQuick (&vid_width, vid.width);
+		Cvar_SetValueQuick (&vid_height, vid.height);
+		Cvar_SetValueQuick (&vid_fullscreen, vid.fullscreen);
+
+		f = FS_OpenRealFile(file, "wb", fs_quiet_FALSE);
 		if (!f)
 		{
-			Con_Printf (CON_ERROR "Couldn't write %s.\n", file);
+			Con_PrintLinef (CON_ERROR "Couldn't write %s.", file);
 			return;
 		}
 
@@ -222,16 +227,71 @@ static void Host_SaveConfig_f(cmd_state_t* cmd)
 		c_strlcpy(vabuf, file);
 
 		// If does not end with .cfg, default it.
-		if (String_Does_End_With(vabuf, ".cfg") == 0) {
-			c_strlcat(vabuf, ".cfg");
+		if (String_Does_End_With(vabuf, ".cfg") == false) {
+			c_strlcat (vabuf, ".cfg");
 		}
 	} // if argc > 1
 
 	Con_PrintLinef ("Saving to %s", vabuf);
 
-	Host_SaveConfig(file);
+	Host_SaveConfig(vabuf);
 }
 
+void Host_WriteConfig_All_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("writeconfig_all <filename> requires a config name to save as");
+		return;
+	}
+
+	char vabuf[1024];
+	const char *s_file = Cmd_Argv(cmd, 1);
+	c_strlcpy (vabuf, s_file);
+
+	// If does not end with .cfg, default it.
+	if (String_Does_End_With (vabuf, ".cfg") == 0) {
+		c_strlcat (vabuf, ".cfg");
+	}
+	Con_PrintLinef ("Saving to %s", vabuf);
+
+	qfile_t *f = FS_OpenRealFile (vabuf, "wb", fs_quiet_FALSE);
+	if (!f) {
+		Con_PrintLinef (CON_ERROR "Couldn't write %s.", vabuf);
+		return;
+	}
+
+	Cvar_WriteVariables_All (&cvars_all, f);
+	FS_Close (f);
+}
+
+void Host_WriteConfig_All_Changed_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("writeconfig_all_changed <filename> requires a config name to save as");
+		return;
+	}
+
+	char vabuf[1024];
+	const char *s_file = Cmd_Argv(cmd, 1);
+	c_strlcpy (vabuf, s_file);
+
+	// If does not end with .cfg, default it.
+	if (String_Does_End_With (vabuf, ".cfg") == 0) {
+		c_strlcat (vabuf, ".cfg");
+	}
+	Con_PrintLinef ("Saving to %s", vabuf);
+
+	qfile_t *f = FS_OpenRealFile (vabuf, "wb", fs_quiet_FALSE);
+	if (!f) {
+		Con_PrintLinef (CON_ERROR "Couldn't write %s.", vabuf);
+		return;
+	}
+
+	Cvar_WriteVariables_All_Changed (&cvars_all, f);
+	FS_Close (f);
+}
+
+WARP_X_CALLERS_ (Host_Init, Host_LoadConfig_f)
 static void Host_AddConfigText(cmd_state_t *cmd)
 {
 	// set up the default startmap_sp and startmap_dm aliases (mods can
@@ -254,8 +314,11 @@ Host_LoadConfig_f
 Resets key bindings and cvars to defaults and then reloads scripts
 ===============
 */
+int is_in_loadconfig; // Baker: To not print certain "command not found messages" like "gamma" during gamedir change
 static void Host_LoadConfig_f(cmd_state_t *cmd)
 {
+	is_in_loadconfig = true;
+
 	// reset all cvars, commands and aliases to init values
 	Cmd_RestoreInitState();
 #ifdef CONFIG_MENU
@@ -264,6 +327,8 @@ static void Host_LoadConfig_f(cmd_state_t *cmd)
 #endif
 	// reset cvars to their defaults, and then exec startup scripts again
 	Host_AddConfigText(cmd_local);
+
+	is_in_loadconfig = false;
 }
 
 /*
@@ -281,6 +346,9 @@ static void Host_InitLocal (void)
 	Cmd_AddCommand(CF_SHARED, "sendcvar", SendCvar_f, "sends the value of a cvar to the server as a sentcvar command, for use by QuakeC");
 
 	Cmd_AddCommand(CF_SHARED, "writeconfig", Host_SaveConfig_f, "save settings to config.cfg (or a specified filename) immediately (also automatic when quitting) [Zircon]"); // Baker r1243: writeconfig 
+
+	Cmd_AddCommand(CF_SHARED, "writeconfig_all", Host_WriteConfig_All_f, "write all cvars to a specified filename [Zircon]");
+	Cmd_AddCommand(CF_SHARED, "writeconfig_all_changed", Host_WriteConfig_All_Changed_f, "write all changed cvars to a specified filename [Zircon]");
 
 	Cvar_RegisterVariable (&host_framerate);
 	Cvar_RegisterCallback (&host_framerate, Host_Framerate_c);
@@ -681,6 +749,12 @@ static void Host_Init (void)
 	// initialize filesystem (including fs_basedir, fs_gamedir, -game, scr_screenshot_name)
 	FS_Init();
 
+#if defined (_WIN32) && defined(CONFIG_MENU)
+	// SLASH DEDICATED (-dedicated)
+	if (cls.state == ca_dedicated)
+		Sys_Console_Init_WinQuake ();
+#endif
+
 	// construct a version string for the corner of the console
 	os = DP_OS_NAME;
 	dpsnprintf (engineversion, sizeof (engineversion), "%s %s %s", gamename, os, buildstring);
@@ -746,7 +820,10 @@ static void Host_Init (void)
 	// if quake.rc is missing, use default
 	if (!FS_FileExists("quake.rc"))
 	{
-		Cbuf_AddText(cmd_local, "exec default.cfg\nexec " CONFIGFILENAME "\nexec autoexec.cfg\n");
+		Cbuf_AddTextLine(cmd_local, 
+			"exec default.cfg" NEWLINE 
+			"exec " CONFIGFILENAME NEWLINE
+			"exec autoexec.cfg");
 		Cbuf_Execute(cmd_local->cbuf);
 	}
 
@@ -903,6 +980,8 @@ static double Host_Frame(double time)
 
 	// get new SDL events and add commands from keybindings to the cbuf
 	Sys_SendKeyEvents();
+
+	WARP_X_ (Sys_PrintfToTerminal)
 
 	// process console commands
 	Cbuf_Frame(host.cbuf);

@@ -739,6 +739,12 @@ void SCR_DrawConsole (void)
 
 	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4)) {
 		// full screen
+		#if 1
+			if (cls.state == ca_connected && in_range (2, cls.signon, 3) && 
+				scr_loading) {
+				goto no_draw_0;
+			}
+		#endif
 		Con_DrawConsole (vid_conheight.integer - scr_con_margin_bottom);
 	}
 	else if (scr_con_current)
@@ -2064,10 +2070,10 @@ void CL_Tool_Inspector (void)
 					int y1	= y0 + height_row;
 					int y2	= y1 + height_row;
 					
-					DrawQ_Fill		(x,y0, width_row, height_tot, /*rgba:*/ 0, 0, 0, 1.0, DRAWFLAG_NORMAL);
-					DrawQ_String	(x,y0, vuf,  0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
-					DrawQ_String	(x,y1, vuf2, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
-					DrawQ_String	(x,y2, vuf3, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+					DrawQ_Fill		(x,y0, width_row, height_tot, /*rgba:*/ 0, 0, 0, 1.0, DRAWFLAG_NORMAL_0);
+					DrawQ_String	(x,y0, vuf,  0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+					DrawQ_String	(x,y1, vuf2, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+					DrawQ_String	(x,y2, vuf3, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
 #endif
 
 
@@ -2116,10 +2122,10 @@ void CL_Tool_Marker (void)
 	int y1	= y0 + height_row;
 	//int y2	= y1 + height_row;
 	
-	DrawQ_Fill		(x, y0, width_row, height_tot, /*rgba:*/ 0, 0, 1.0, 1.0, DRAWFLAG_NORMAL);
+	DrawQ_Fill		(x, y0, width_row, height_tot, /*rgba:*/ 0, 0, 1.0, 1.0, DRAWFLAG_NORMAL_0);
 	DrawQ_String	(x + height_row, y1, "X", 0, /*scale x y*/ height_row, height_row, 
 		/*rgba:*/ 1, 1, 1, 1.0, 
-		DRAWFLAG_NORMAL, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
+		DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
 
 }
 
@@ -2599,20 +2605,21 @@ cldraw2d4:
 
 	if (!vid_activewindow || key_consoleactive) {
 		// Not active window or console shown
-		VID_SetMouse(/*relative?*/ false, /*hidecursor*/ false);
+		VID_SetMouse(q_mouse_relative_false, q_mouse_hidecursor_false);
 	}
 	else if (key_dest == key_menu || 
 			key_dest == key_menu_grabbed || 
 			scr_loading || 
 			(key_dest == key_game && cls.demoplayback)) { // Baker 8081 mouse cursor shows during demo playback.
+#ifdef CONFIG_MENU
 		if (menu_is_csqc == false) {
-			VID_SetMouse(/*relative?*/ false, /*hidecursor*/ false);
-		}
-		else {
+				VID_SetMouse(q_mouse_relative_false, q_mouse_hidecursor_false);
+		} else {
 			// Baker: Tends to be true in game
 			VID_SetMouse(vid_mouse.integer && !in_client_mouse && !vid_touchscreen.integer, !vid_touchscreen.integer);
 			// VID_SetMouse(is_relative true, mousegrab true); is typical key_menu behavior here
 		}
+#endif
 	}
 	else {
 		// Norm for in-game

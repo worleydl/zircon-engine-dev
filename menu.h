@@ -109,9 +109,10 @@ extern int video_resolutions_hardcoded_count;
 // netconn.c @ "Connection accepted" sets menu state
 void menu_state_set_nova(int ee); // Baker: allows nostartdemos to exit menu?
 
+#ifdef CONFIG_MENU
 extern qbool menu_is_csqc;
+#endif
 
-void VID_ListModes_f(cmd_state_t *cmd); // Mode list that video menu uses
 
 
 #endif // ! MENU_H

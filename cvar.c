@@ -284,7 +284,7 @@ void Cvar_PrintHelp(cvar_t *cvar, const char *name, qbool full)
 		Con_Printf (CON_BRONZE "%s" CON_WHITE " (alias of " CON_BRONZE "%s" CON_WHITE ")", name, cvar->name); // Baker: purple to bronze.
 	else
 		Con_Printf (CON_BRONZE "%s" CON_WHITE, name);
-	Con_Printf (" is \"%s" CON_WHITE " [\"%s" CON_WHITE "\"]", ((cvar->flags & CF_PRIVATE) ? "********"/*hunter2*/ : cvar->string), cvar->defstring);
+	Con_Printf (" is " QUOTED_S CON_WHITE " [" QUOTED_S CON_WHITE "]", ((cvar->flags & CF_PRIVATE) ? "********"/*hunter2*/ : cvar->string), cvar->defstring);
 	if (full)
 		Con_Printf (" %s", cvar->description);
 	Con_Print("\n");
@@ -826,16 +826,16 @@ void Cvar_LockDefaults_f(cmd_state_t *cmd)
 	// lock in the default values of all cvars
 	for (var = cvars->vars ; var ; var = var->next)
 	{
-		if (!(var->flags & CF_DEFAULTSET))
+		if (Have_Flag(var->flags, CF_DEFAULTSET) == false)
 		{
 			size_t alloclen;
 
 			//Con_Printf ("locking cvar %s (%s -> %s)\n", var->name, var->string, var->defstring);
-			var->flags |= CF_DEFAULTSET;
+			Flag_Add_To (var->flags, CF_DEFAULTSET); // |= CF_DEFAULTSET;
 			Z_Free((char *)var->defstring);
 			alloclen = strlen(var->string) + 1;
 			var->defstring = (char *)Z_Malloc(alloclen);
-			memcpy((char *)var->defstring, var->string, alloclen);
+			memcpy ((char *)var->defstring, var->string, alloclen);
 			if (var->initstate) {
 				var->initstate->defstring = var->defstring; // Baker r9061: Update pointer
 			}
@@ -1078,13 +1078,61 @@ void Cvar_WriteVariables (cvar_state_t *cvars, qfile_t *f)
 
 	// don't save cvars that match their default value
 	for (var = cvars->vars ; var ; var = var->next) {
-		if ((var->flags & CF_ARCHIVE) && (strcmp(var->string, var->defstring) || ((var->flags & CF_ALLOCATED) && !(var->flags & CF_DEFAULTSET))))
-		{
-			Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
-			Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
-			FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
-		}
-	}
+		if (Have_Flag (var->flags, CF_ARCHIVE) == false)
+			continue; // Not a saved cvar
+
+		// If the string value is different, save
+		int shall_save = String_Does_Not_Match (var->string, var->defstring);
+
+		// If string value is same 
+		// and it is allocated without a default (SETA), save it anyway
+		if (shall_save == false) {
+			// Baker we have a saved allocated cvar (SETA) and the default it not set?
+			if (Have_Flag(var->flags, CF_ALLOCATED) && Have_Flag(var->flags, CF_DEFAULTSET) == false) {
+				shall_save = true;
+			} // if
+		} // if
+	
+		if (shall_save == false)
+			continue;
+
+		Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
+		Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
+		FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
+	} // for each cvar
+}
+
+void Cvar_WriteVariables_All_Changed (cvar_state_t *cvars, qfile_t *f)
+{
+	cvar_t	*var;
+	char buf1[MAX_INPUTLINE_16384], buf2[MAX_INPUTLINE_16384];
+
+	for (var = cvars->vars ; var ; var = var->next) {
+		//if (Have_Flag (var->flags, CF_ARCHIVE) == false)
+		//	continue; // Not a saved cvar
+
+		// If the string value is different, save
+		int shall_write = String_Does_Not_Match (var->string, var->defstring);
+	
+		if (shall_write == false)
+			continue;
+
+		Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
+		Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
+		FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
+	} // for each cvar
+}
+
+void Cvar_WriteVariables_All (cvar_state_t *cvars, qfile_t *f)
+{
+	cvar_t	*var;
+	char buf1[MAX_INPUTLINE_16384], buf2[MAX_INPUTLINE_16384];
+
+	for (var = cvars->vars ; var ; var = var->next) {
+		Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
+		Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
+		FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
+	} // for each cvar
 }
 
 // Added by EvilTypeGuy eviltypeguy@qeradiant.com
@@ -1179,7 +1227,7 @@ void Cvar_SetA_f(cmd_state_t *cmd)
 	// make sure it's the right number of parameters
 	if (Cmd_Argc(cmd) < 3)
 	{
-		Con_Printf ("SetA: wrong number of parameters, usage: seta <variablename> <value> [<description>]\n");
+		Con_PrintLinef ("SetA: wrong number of parameters, usage: seta <variablename> <value> [<description>]");
 		return;
 	}
 
@@ -1193,7 +1241,12 @@ void Cvar_SetA_f(cmd_state_t *cmd)
 		Con_DPrint("SetA: ");
 
 	// all looks ok, create/modify the cvar
-	Cvar_Get(cvars, Cmd_Argv(cmd, 1), Cmd_Argv(cmd, 2), cmd->cvars_flagsmask | CF_ARCHIVE, Cmd_Argc(cmd) > 3 ? Cmd_Argv(cmd, 3) : NULL);
+	Cvar_Get(cvars, 
+		Cmd_Argv(cmd, 1),								// name 
+		Cmd_Argv(cmd, 2),								// value
+		cmd->cvars_flagsmask | CF_ARCHIVE,				// flags
+		Cmd_Argc(cmd) > 3 ? Cmd_Argv(cmd, 3) : NULL		// description
+	);
 }
 
 void Cvar_Del_f(cmd_state_t *cmd)

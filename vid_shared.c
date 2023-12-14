@@ -665,7 +665,7 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 
 	if (disableparm && (Sys_CheckParm(disableparm) || Sys_CheckParm("-safe")))
 	{
-		Con_DPrint("disabled by commandline\n");
+		Con_DPrintLinef ("disabled by commandline");
 		return false;
 	}
 
@@ -690,7 +690,7 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 	if (failed)
 		return false;
 	// VorteX: add to found extension list
-	dpsnprintf(extstr, sizeof(extstr), "%s %s ", gl_info_extensions.string, name);
+	c_dpsnprintf2 (extstr, "%s %s ", gl_info_extensions.string, name);
 	Cvar_SetQuick(&gl_info_extensions, extstr);
 
 	Con_DPrintLinef ("enabled");
@@ -727,9 +727,10 @@ void GL_Setup(void)
 
 	if (vid.restart_count > 0) // Baker r1481: Reduce ALT-ENTER video restart spam
 		goto skip_spam1;
-	Con_Printf ("GL_VENDOR: %s\n", gl_vendor);
-	Con_Printf ("GL_RENDERER: %s\n", gl_renderer);
-	Con_Printf ("GL_VERSION: %s\n", gl_version);
+
+	Con_PrintLinef ("GL_VENDOR:   %s", gl_vendor);
+	Con_PrintLinef ("GL_RENDERER: %s", gl_renderer);
+	Con_PrintLinef ("GL_VERSION:  %s", gl_version);
 
 skip_spam1:
 
@@ -737,7 +738,7 @@ skip_spam1:
 	qglGetIntegerv(GL_NUM_EXTENSIONS, &numextensions);
 	if (vid.restart_count > 0) // Baker r1481: Reduce ALT-ENTER video restart spam
 		goto skip_spam2;
-	Con_DPrint("GL_EXTENSIONS:\n");
+	Con_DPrintLinef ("GL_EXTENSIONS:");
 	for (j = 0; j < numextensions; j++)
 	{
 		const char *ext = (const char *)qglGetStringi(GL_EXTENSIONS, j);
@@ -1383,7 +1384,7 @@ static int VID_Mode(int fullscreen, int width, int height, int bpp, float refres
 
 static void VID_OpenSystems(void)
 {
-	Key_ReleaseAll();
+	Key_ReleaseAll ();
 	R_Modules_Start();
 	S_Startup();
 }
@@ -1392,7 +1393,7 @@ static void VID_CloseSystems(void)
 {
 	S_Shutdown();
 	R_Modules_Shutdown();
-	Key_ReleaseAll();
+	Key_ReleaseAll ();
 }
 
 qbool vid_commandlinecheck = true;

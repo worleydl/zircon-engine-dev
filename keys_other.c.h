@@ -712,7 +712,9 @@ void Key_Event (int key, int ascii, qbool down)
 			Con_ToggleConsole();
 
 		WARP_X_ (M_ToggleMenu) // Goes to M_ToggleMenu without CSQC 
+#ifdef CONFIG_MENU
 		MR_ToggleMenu(1);
+#endif
 		return;
 	}
 #endif
@@ -883,7 +885,7 @@ void Key_ReleaseAll(void)
 
 void Key_ReleaseAll_f(cmd_state_t* cmd)
 {
-	Key_ReleaseAll();
+	Key_ReleaseAll ();
 }
 
 void Key_Shutdown (void)

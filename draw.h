@@ -71,7 +71,7 @@ typedef struct drawqueuemesh_s
 drawqueuemesh_t;
 
 enum drawqueue_drawflag_e {
-DRAWFLAG_NORMAL,
+DRAWFLAG_NORMAL_0,
 DRAWFLAG_ADDITIVE,
 DRAWFLAG_MODULATE,
 DRAWFLAG_2XMODULATE,

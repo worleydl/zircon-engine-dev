@@ -165,15 +165,21 @@ void Key_Console_Cursor_Move(int netchange, cursor_e action)
 	// ^(DECIMAL)
 	// ^(X)
 	if (key_sellength) {
-		char *s = &key_line[1];
-		int slen = (int)strlen (s);
 		int is_pure = true;
-		for (int n = 1; n <  slen; n ++) {
-			if (s[n] == '^' || s[n] > CHAR_TILDE_126) {
-				is_pure = false;
-				break;
-			}
-		}
+		
+		if (utf8_enable.integer) {
+			is_pure = false;
+		} else {
+			char *s = &key_line[1];
+			int slen = (int)strlen (s);
+			
+			for (int n = 1; n <  slen; n ++) {
+				if (s[n] == '^' || s[n] > CHAR_TILDE_126) {
+					is_pure = false;
+					break;
+				} // if
+			} // for
+		} // if
 		if (is_pure == false) {
 baker_stupid_evasion:
 			key_sellength = 0;

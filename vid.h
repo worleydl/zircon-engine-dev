@@ -99,6 +99,11 @@ typedef struct viddef_s
 	int forcetextype; // always use GL_BGRA for D3D, always use GL_RGBA for GLES, etc
 
 	int restart_count; // Baker r1481: Reduce ALT-ENTER video restart spam
+
+#if defined(_WIN32) || defined(MACOSX)
+	int desktop_width, desktop_height;
+#endif
+
 } viddef_t;
 
 // global video state
@@ -214,6 +219,9 @@ extern const char *gl_version;
 extern const char *gl_extensions;
 // WGL, GLX, or AGL
 extern const char *gl_platform;
+// another extensions list, containing platform-specific extensions that are
+// not in the main list
+extern const char *gl_platformextensions;
 // name of driver library (opengl32.dll, libGL.so.1, or whatever)
 extern char gl_driver[256];
 
@@ -272,6 +280,8 @@ vid_mode_t *VID_GetDesktopMode(void);
 size_t VID_ListModes(vid_mode_t *modes, size_t maxcount);
 size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool userefreshrate, qbool useaspect);
 void VID_Soft_SharedSetup(void);
+void VID_ListModes_f(cmd_state_t *cmd); // Mode list that video menu uses
+
 
 #endif // ! VID_H
 

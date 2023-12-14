@@ -1638,13 +1638,35 @@ static int NetConn_ClientParsePacket_ServerList_ProcessReply(const char *address
 	return n;
 }
 
+// 1 red
+// 3 yellow
+// 7 
+
 static void NetConn_ClientParsePacket_ServerList_UpdateCache(int n)
 {
 	serverlist_entry_t *entry = &serverlist_cache[n];
 	serverlist_info_t *info = &entry->info;
 	// update description strings for engine menu and console output
-	dpsnprintf(entry->line1, sizeof(serverlist_cache[n].line1), "^%c%5d^7 ^%c%3u^7/%3u %-65.65s", info->ping >= 300 ? '1' : (info->ping >= 200 ? '3' : '7'), (int)info->ping, ((info->numhumans > 0 && info->numhumans < info->maxplayers) ? (info->numhumans >= 4 ? '7' : '3') : '1'), info->numplayers, info->maxplayers, info->name);
-	dpsnprintf(entry->line2, sizeof(serverlist_cache[n].line2), "^4%-21.21s %-19.19s ^%c%-17.17s^4 %-20.20s", info->cname, info->game,
+
+	char pingcolor = info->ping >= 300 ? '1' /*red*/ :  (info->ping >= 200 ? '3' /*yellow*/ : /*white*/ '7');
+	char humanscolor = (info->numhumans > 0 && info->numhumans < info->maxplayers) ? 
+								(info->numhumans >= 4 ? /*white*/ '7' : '3' /*yellow*/) : /*red*/ '1';
+#if 1
+	dpsnprintf(entry->line1, 
+		sizeof(serverlist_cache[n].line1), "^%c%5d^7 ^%c%3u^7/%3u   %-24.24s %-10.10s %-12.12s", 
+		 pingcolor, 
+		 (int)info->ping, 
+		 humanscolor, info->numplayers, info->maxplayers, info->name, info->mod, info->map);
+
+#else
+	dpsnprintf(entry->line1, sizeof(serverlist_cache[n].line1), "^%c%5d^7 ^%c%3u^7/%3u %-65.65s", 
+		 info->ping >= 300 ? '1' /*red*/ : 
+		(info->ping >= 200 ? '3' /*yellow*/ : /*white*/ '7'), (int)info->ping, ((info->numhumans > 0 && info->numhumans < info->maxplayers) ? 
+			(info->numhumans >= 4 ? /*white*/ '7' : '3' /*yellow*/) : /*red*/ '1'), info->numplayers, info->maxplayers, info->name);
+
+	dpsnprintf(entry->line2, sizeof(serverlist_cache[n].line2), "^7%-21.21s %-19.19s ^%c%-17.17s^7 %-20.20s", 
+		 info->cname, 
+		String_Does_Start_With_Caseless (info->game, "DarkPlaces-") ? &info->game[11] : info->game,
 			(
 			 info->gameversion != gameversion.integer
 			 &&
@@ -1654,8 +1676,10 @@ static void NetConn_ClientParsePacket_ServerList_UpdateCache(int n)
 				 && gameversion_min.integer <= info->gameversion // version of server in min/max range?
 				 && gameversion_max.integer >= info->gameversion
 			  )
-			) ? '1' : '4',
+			) ? '1' : '3' /*blue*/,
 			info->mod, info->map);
+#endif
+
 	if (entry->query == SQS_QUERIED)
 	{
 		if (!serverlist_paused)

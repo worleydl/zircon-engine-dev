@@ -141,7 +141,14 @@ static void M_ServerList_Key(cmd_state_t *cmd, int k, int ascii)
 		S_LocalSound ("sound/misc/menu2.wav");
 		if (local_count) {
 			char vabuf[1024];
-			Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "connect " QUOTED_S, ServerList_GetViewEntry(local_cursor)->info.cname));
+			char *s_ipaddy = ServerList_GetViewEntry(local_cursor)->info.cname;
+			char *s_name = ServerList_GetViewEntry(local_cursor)->info.name;
+			va(vabuf, sizeof(vabuf), "connect " QUOTED_S " // %s", s_ipaddy, s_name);
+			Cbuf_AddTextLine (cmd, vabuf);
+
+			// Baker r0072: Add maps menu map to command history for recall.
+			Key_History_Push_String (vabuf);
+
 		}
 
 		break;

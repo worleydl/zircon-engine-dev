@@ -413,7 +413,9 @@ void MR_SetRouting(qbool forceold)
 		MR_NewMap = M_NewMap;
 		MR_GetServerListEntryCategory = M_GetServerListEntryCategory;
 		M_Init();
+#ifdef CONFIG_MENU
 		menu_is_csqc = false;
+#endif
 	}
 	else
 	{
@@ -425,7 +427,9 @@ void MR_SetRouting(qbool forceold)
 		MR_NewMap = MP_NewMap;
 		MR_GetServerListEntryCategory = MP_GetServerListEntryCategory;
 		MP_Init();
+#ifdef CONFIG_MENU
 		menu_is_csqc = true;
+#endif
 	}
 }
 

@@ -24,7 +24,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "sv_demo.h"
 
 int current_skill;
-cvar_t sv_cheats = {CF_SERVER | CF_NOTIFY, "sv_cheats", "1", "enables cheat commands in any game, and cheat impulses in dpmod [Zircon default]"}; // Baker r1401 - sv_cheats defaults 1
+
+#ifdef CONFIG_MENU
+	// CLIENT
+	cvar_t sv_cheats = {CF_SERVER | CF_NOTIFY, "sv_cheats", "1", "enables cheat commands in any game, and cheat impulses in dpmod [Zircon default]"}; // Baker r1401 - sv_cheats defaults 1
+#else 
+	// DEDICATED SERVER - DEFAULTS 0
+	cvar_t sv_cheats = {CF_SERVER | CF_NOTIFY, "sv_cheats", "0", "enables cheat commands in any game, and cheat impulses in dpmod [Zircon default]"}; // Baker r1401 - sv_cheats defaults 1
+#endif
+
 cvar_t sv_adminnick = {CF_SERVER | CF_ARCHIVE, "sv_adminnick", "", "nick name to use for admin messages instead of host name"};
 cvar_t sv_status_privacy = {CF_SERVER | CF_ARCHIVE, "sv_status_privacy", "0", "do not show IP addresses in 'status' replies to clients"};
 cvar_t sv_status_show_qcstatus = {CF_SERVER | CF_ARCHIVE, "sv_status_show_qcstatus", "0", "show the 'qcstatus' field in status replies, not the 'frags' field. Turn this on if your mod uses this field, and the 'frags' field on the other hand has no meaningful value."};

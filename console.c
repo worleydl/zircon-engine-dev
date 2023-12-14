@@ -1020,9 +1020,9 @@ static void Con_Folder_f(cmd_state_t* cmd)
 
 	WARP_X_("dir", "folder", FS_AddGameHierarchy)
 
-		char sgdwork[1024];
-	c_strlcpy(sgdwork, fs_gamedir); // "id1/"
-	File_URL_Remove_Trailing_Unix_Slash(sgdwork); // "id1"
+	char sgdwork[1024];
+	c_strlcpy (sgdwork, fs_gamedir);					// "id1/"
+	File_URL_Remove_Trailing_Unix_Slash(sgdwork);		// "id1"
 
 	const char *slastcom = File_URL_SkipPath(sgdwork); // "id1"
 	char sgamedirlast[1024];
@@ -1893,7 +1893,7 @@ baker_font_setup_here:
 			DrawQ_Fill (text_start + xo + con_textsize.value * (1 / 8.0) /*hereo*/,									// x
 			con_vislines - con_textsize.value * 2 /*+ con_textsize.value * (1/8.0)*/,						// y
 			con_textsize.value * (1 / 8.0),															// w
-			con_textsize.value * 1/*(6/8.0)*/, /*rgb*/ 0.75, 0.75, 0.75, /*a*/ 1.0, DRAWFLAG_NORMAL);	// h
+			con_textsize.value * 1/*(6/8.0)*/, /*rgb*/ 0.75, 0.75, 0.75, /*a*/ 1.0, DRAWFLAG_NORMAL_0);	// h
 		} else {
 			// Baker: Is this always chat mode?  Yes
 			DrawQ_String (text_start + xo, v, text, 0, inputsize, 
@@ -3025,9 +3025,10 @@ exit_possible2:
 		goto search_completed;
 	} // searchtype
 
+	int c;
 unidentified:
 	// Unidentified completion - do cvars/commands/aliases -- count number of possible matches and print them
-	int c = Cmd_CompleteCountPossible(cmd, s, ac->is_from_nothing);
+	c = Cmd_CompleteCountPossible(cmd, s, ac->is_from_nothing);
 	if (c && is_quiet == false) {
 		Con_PrintLinef (NEWLINE "%d possible command%s", c, (c > 1) ? "s: " : ":");
 		Cmd_CompleteCommandPrint(cmd, s, ac->is_from_nothing);
@@ -3098,13 +3099,16 @@ search_completed:
 	}
 
 	// We may skip printing if we only had one match, we still do the completion
+	char *fill;
+	int actual_len;
+	int fill_len;
 one_match_skip:
 
 	// Baker: We are always adding a space after the autocomplete.
 
-	char *fill = ac->s_completion_a;
-	int actual_len = (int)strlen(fill);
-	int fill_len = actual_len + ONE_CHAR_1;
+	fill = ac->s_completion_a;
+	actual_len = (int)strlen(fill);
+ 	fill_len = actual_len + ONE_CHAR_1;
 
 	// prevent a buffer overrun by limiting cmd_len according to remaining space
 	fill_len = Smallest(fill_len, (int)sizeof(key_line) - ONE_CHAR_1 - ac->search_partial_offset);
@@ -3283,7 +3287,7 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 					{
 						for(i = 0; i < search->numfilenames; ++i)
 							if (!strncmp(search->filenames[i], s, strlen(s)))
-								if (FS_FileOrDirectoryType(search->filenames[i]) == FS_FILETYPE_FILE)
+								if (FS_FileOrDirectoryType(search->filenames[i]) == FS_FILETYPE_FILE_1)
 									stringlistappend(&resultbuf, search->filenames[i]);
 						FS_FreeSearch(search);
 					}
@@ -3305,7 +3309,7 @@ int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console)
 					{
 						for(i = 0; i < search->numfilenames; ++i)
 							if (!strncmp(search->filenames[i], s, strlen(s)))
-								if (FS_FileOrDirectoryType(search->filenames[i]) == FS_FILETYPE_DIRECTORY)
+								if (FS_FileOrDirectoryType(search->filenames[i]) == FS_FILETYPE_DIRECTORY_2)
 									stringlistappend(&dirbuf, search->filenames[i]);
 						FS_FreeSearch(search);
 					}
@@ -3582,11 +3586,17 @@ void Con_Init (void)
 	Cmd_AddCommand(CF_SHARED, "maps", Con_Maps_f, "list information about available maps");
 	Cmd_AddCommand(CF_SHARED, "condump", Con_ConDump_f, "output console history to a file (see also log_file)");
 
+#ifdef CONFIG_MENU
+	// Client
 	Cmd_AddCommand (CF_CLIENT, "copy", Con_Copy_f, "copy console history to clipboard scrubbing color colors based on condump_stripcolors.integer [Zircon]"); // Baker r3101: "copy" and "copy ents"
 	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command	
-	Cmd_AddCommand (CF_CLIENT, "pos", Con_Pos_f, "print pos and angles [Zircon]"); // Baker r3171: "pos" command
-
 	Cmd_AddCommand (CF_CLIENT, "jack_scripts", Con_Jack_Scripts_f, "Update scripts/shaderlist.txt and write .shader copies to gamedir/_jack_shaders folder [Zircon]"); // Baker r7105
+#else
+	// Dedicated server
+	// No folder, copy command
+#endif
+
+	Cmd_AddCommand (CF_CLIENT, "pos", Con_Pos_f, "print pos and angles [Zircon]"); // Baker r3171: "pos" command
 
 	con_initialized = true;
 	Con_DPrintLinef ("Console initialized."); // Baker: less console spam

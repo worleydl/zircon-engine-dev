@@ -451,7 +451,7 @@ int GetModList_Count(const char *s_prefix)
 
 		int file_directory_type = FS_SysFileOrDirectoryType (s_this_fullpath);
 
-		if (file_directory_type != FS_FILETYPE_DIRECTORY)
+		if (file_directory_type != FS_FILETYPE_DIRECTORY_2)
 			continue; // It is not a directory
 
 		// Baker: FS_CheckGameDir does so little AFAIK

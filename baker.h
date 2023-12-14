@@ -72,6 +72,7 @@ typedef struct _crect_t_s {
 #define CARRIAGE_RETURN_CHAR_13			13				// '\r'		//#define CARRIAGE_RETURN_CHAR_13		13
 #define	CHAR_TILDE_126					126
 #define	CHAR_BACKQUOTE_96				96
+#define	CHAR_BACKSPACE_8				8
 
 #define	CARRIAGE_RETURN					"\r"
 #define	NEWLINE							"\n"

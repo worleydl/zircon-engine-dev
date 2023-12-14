@@ -173,6 +173,11 @@ void Cvar_WriteVariables (cvar_state_t *cvars, struct qfile_s *f);
 // Writes lines containing "set variable value" for all variables
 // with the archive flag set to true.
 
+// Baker: Write all changed, write all cvars as options
+void Cvar_WriteVariables_All_Changed (cvar_state_t *cvars, qfile_t *f);
+void Cvar_WriteVariables_All (cvar_state_t *cvars, qfile_t *f);
+
+
 cvar_t *Cvar_FindVar(cvar_state_t *cvars, const char *var_name, int neededflags);
 cvar_t *Cvar_FindVarAfter(cvar_state_t *cvars, const char *prev_var_name, int neededflags);
 

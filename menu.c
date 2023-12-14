@@ -577,7 +577,7 @@ static void M_ToggleMenu(int mode)
 
 #if 1
 	#pragma message ("Baker: Until the key release issue can never-ever happen, make opening the menu do it")
-			Key_ReleaseAll();
+			Key_ReleaseAll ();
 #endif
 			if (menu_state_reenter) {
 				menu_state_reenter = 0;
@@ -853,9 +853,9 @@ void M_Draw (void)
 		float height	= r.height / ymag;
 
 		if (isin4 (m_state, m_maps, m_modlist, m_keys, m_slist)) {
-			DrawQ_Fill(left, top, width, height, /*bronzey*/ 0.5, 0.25, 0.1, 0.75, DRAWFLAG_NORMAL);
+			DrawQ_Fill(left, top, width, height, /*bronzey*/ 0.5, 0.25, 0.1, 0.75, DRAWFLAG_NORMAL_0);
 		} else {
-			DrawQ_Fill(left, top, width, height, /*bronzey*/ 0.5, 0.25, 0.1, 0.37, DRAWFLAG_NORMAL);
+			DrawQ_Fill(left, top, width, height, /*bronzey*/ 0.5, 0.25, 0.1, 0.37, DRAWFLAG_NORMAL_0);
 		}
 	} // if
 
@@ -933,7 +933,9 @@ static int M_GetServerListEntryCategory(const serverlist_entry_t *entry)
 	#include "menu_quit.c.h"
 #include "menu_qc.c.h"
 
+#ifdef CONFIG_MENU
 qbool menu_is_csqc; // Is menu csqc in effect, if so .. defer to it.
+#endif
 
 // Baker r1402: Reset menu cursor on gamedir change
 void Menu_Resets(void)

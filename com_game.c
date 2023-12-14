@@ -50,8 +50,12 @@ typedef struct gamemode_info_s
 } gamemode_info_t;
 
 static const gamemode_info_t gamemode_info [GAME_COUNT] =
-{// game						basegame					prog_name				cmdline						gamename					gamenetworkfilername		basegame	modgame			screenshot			userdir					   // commandline option
+{// game            basegame          prog_name        cmdline            gamename          gamenetworkfilername    basegame  modgame      screenshot      userdir             // commandline option
+#if 0
+{ GAME_NORMAL,          GAME_NORMAL,        "",            "-objectn",          "ObjectN",          "ObjectN",          "data",    NULL,      "ObjectN",      "ObjectN"      },
+#else
 { GAME_NORMAL,					GAME_NORMAL,				"",						"-quake",					"Zircon Beta-Quake",		"DarkPlaces-Quake",			"id1",		NULL,			"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -quake runs the game Quake (default)
+#endif
 { GAME_HIPNOTIC,				GAME_NORMAL,				"hipnotic",				"-hipnotic",				"Zircon Beta-Hipnotic",		"Darkplaces-Hipnotic",		"id1",		"hipnotic",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -hipnotic runs Quake mission pack 1: The Scourge of Armagon
 { GAME_ROGUE,					GAME_NORMAL,				"rogue",				"-rogue",					"Zircon Beta-Rogue",		"Darkplaces-Rogue",			"id1",		"rogue",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -rogue runs Quake mission pack 2: The Dissolution of Eternity
 { GAME_NEHAHRA,					GAME_NORMAL,				"nehahra",				"-nehahra",					"Zircon Beta-Nehahra",		"DarkPlaces-Nehahra",		"id1",		"nehahra",		"dp",				"zircon"			}, // COMMANDLINEOPTION: Game: -nehahra runs The Seal of Nehahra movie and game

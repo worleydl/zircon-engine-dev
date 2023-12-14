@@ -50,4 +50,6 @@ void Host_UnlockSession(void);
 void Host_AbortCurrentFrame(void) DP_FUNC_NORETURN;
 void Host_SaveConfig(const char *file);
 
+extern int is_in_loadconfig; // Baker: To not print certain "command not found messages" like "gamma" during gamedir change
+
 #endif

@@ -3084,7 +3084,7 @@ void SV_Physics_ClientMove(void)
 
 	// call player physics, this needs the proper frametime
 	PRVM_serverglobalfloat(frametime) = sv.frametime;
-	SV_PlayerPhysics();
+	SV_PlayerPhysics(); // PHYSICAL
 
 	// call standard client pre-think, with frametime = 0
 	PRVM_serverglobalfloat(time) = sv.time;
@@ -3132,7 +3132,7 @@ static void SV_Physics_ClientEntity_PreThink(prvm_edict_t *ent)
 	// don't run physics here if running asynchronously
 	if (host_client->clmovement_inputtimeout <= 0)
 	{
-		SV_PlayerPhysics();
+		SV_PlayerPhysics(); // PHYSICAL
 		//host_client->cmd.time = max(host_client->cmd.time, sv.time);
 	}
 
@@ -3310,6 +3310,7 @@ void SV_Physics (void)
 			if (!ent->free)
 				SV_LinkEdict_TouchAreaGrid(ent); // force retouch even for stationary
 
+	// Baker: Next cvar defaults 0 consistentplayerprethink
 	if (sv_gameplayfix_consistentplayerprethink.integer)
 	{
 		// run physics on the client entities in 3 stages
@@ -3326,12 +3327,13 @@ void SV_Physics (void)
 				SV_Physics_ClientEntity_PostThink(ent);
 	}
 	else
-	{
+	{ // Baker: This is the norm - PHYSICAL
 		// run physics on the client entities
 		for (i = 1, ent = PRVM_EDICT_NUM(i), host_client = svs.clients;i <= svs.maxclients;i++, ent = PRVM_NEXT_EDICT(ent), host_client++)
 		{
 			if (!ent->free)
 			{
+				// HEREO
 				SV_Physics_ClientEntity_PreThink(ent);
 				SV_Physics_ClientEntity(ent);
 				SV_Physics_ClientEntity_PostThink(ent);
