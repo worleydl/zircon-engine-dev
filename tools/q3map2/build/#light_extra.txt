@@ -1,0 +1,1 @@
+-lightmapsize 1024 -lightmapsearchpower 4 -deluxe -patchshadows -fast
