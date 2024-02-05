@@ -3,6 +3,419 @@
 Zircon is DarkPlaces with a mouse-driven menu, ALT-ENTER fullscreen/windowed switch,
 cut/copy/paste in console and enhancements mostly focusing on user-interface.
 
+// Zircon Beta Release 35
+
+1. A preprocessor macro had wrong punctuation, caused improper expansion of $macros in aliases and perhaps
+   other side effects.
+
+2. More thorough checking Q3 maps to determine if have light data.  Some q3map2 compilers produced maps that
+   DarkPlaces Beta report as having light data, yet do not.  Tested a number of Quake 3 maps.
+   
+   I am slightly concerned about an unusual Quake 3 map that may be affected by this change, such as possibly
+   a map without only .rtlights or perhaps lit in some manner permitted by DarkPlaces that I do not have a test
+   case for.
+
+3. Fixed builtin +zoom macro.
+
+// Zircon Beta Release 34
+
+1. Zero Ping Movement Option (sv_allow_zircon_move 1)
+   Requires cl_movement 2 in single player
+
+2. Quake Rerelease Improved.  There were missing
+   QuakeC builtins in Zircon.  There are more than one
+   version of the Quake Rerelease.  I hope Zircon is now able to play it regardless of version.
+
+3. New DarkPlaces Beta fix from github for certain real-time light situations that could cause memory corruption.
+
+4. Improvements and hardening of Zircon protocol extensions and refinement from extra compatibility testing.
+
+5. Improved makefile.
+
+// Zircon Beta Release 33
+
+1. Quake Rerelease addressed "unbound keys upon startup because there is no default.cfg".  If the
+   Quake Rerelease is detected and default.cfg is missing, use internal hardcoded default.cfg
+   which is identical to original Quake default.cfg with the following exceptions:
+   
+   - Movements keys are WASD
+   - "<" and ">" are next and previous weapon (impulse 10, impulse 12).  The actual keys are "." and ","
+   - Sensitivity is 9 instead of 3.
+   - Always run starts "on". (cl_forwardspeed 400, cl_backspeed 400)
+   
+2. "sv_players_walk_thru_players 1" -- players can walk through other players.  This is done by setting
+    each player to "clipgroup" "1" (a QuakeC field) when PutClientInServer occurs. 
+
+3. Adjusted built-in +zoom alias.  DarkPlaces preprocesses "$" and we needed 2 of them, not one.
+   -zoom had only 1 "$", this was causing "missing variable" to print to screen.
+   
+4. developer_keycode for debugging (will print keycode information when keys are pressed).
+
+5. developer_zext for debugging (prints Zircon protocol extension information).
+
+6. "sv_clmovement_soundreliable 1" -- will cause sound messages to client to be reliable.
+ 
+7. Communication of entity bounding boxes to clients with Zircon extension that supports it.
+
+// Zircon Beta Release 32
+
+1. French keyboard ...made "Superscript 2" key work on French keyboard.
+   Superscript 2 is AZERTY keyboard key that lives in the same place as "tilde" does and is expected to toggle the console.
+   (This problem is caused by SDL2.dll and the statically linked SDL2 behaving differently, SDL2.dll returns keycode 96
+   and statically linked SDL2 returns keycode 178).
+
+// Zircon Beta Release 31
+
+1. Fixed client-side collision against inactive entities.
+
+2. DarkPlaces server connections no longer collide against monsters
+   as this was causing collision against dead monster bodies as well.
+
+3. Zircon server enhanced communication of non-solid entity states
+   now includes MOVETYPE_FLY and MOVETYPE_FLYMISSILE when not marked
+   FL_MONSTER.
+
+4. "entities 2" print collision box sizes.
+
+5. "sv_pext 0" disables Zircon server protocol extensions.  Requires new map / restart level to take effect.
+   "cl_pext 0" disables Zircon client protocol extensions.
+
+6. "status" shows server extensions code.
+
+7. Fixed a crash scenario when a server contains "%0" or such in an alias.
+
+// Zircon Beta Release 30
+
+1. "showmodel" command displays a model with optional <frame number> <z origin adjust> <scale>
+
+   Example: showmodel progs/player.mdl
+   Example: showmodel progs/player.mdl 3 -20 2 // frame 3, move down 20 units, scale = 2 
+
+2. Pressing TAB in the sbar if cl_movement is activated in single player ("cl_movement 2") will show
+   prediction mode like "DP7"
+   
+3. Fixed Linux compile, the gcc compiler for Ubuntu did not like some of the function prototypes.
+
+// Zircon Beta Release 29
+
+1. Zircon now supports static entities (func_illusionary, torches, anything makestatic) with:
+   alpha, colormod, scale, EF_ADDITIVE, EF_FULLBRIGHT via a protocol extension 
+   (ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32) 
+
+2. Zircon now transmits render flags as 32-bit unsigned integer instead of 8-bit unsigned char, if the
+   client reports extension ZIRCON_EXT_32BIT_RENDER_FLAGS_16.
+   
+   And in the render flags, Zircon server will add NON_SOLID_256 flag that a client with ZIRCON_EXT_NONSOLID_FLAG_8
+   can use to collide against monsters, but not non-solids (SOLID_NOT, SOLID_TRIGGER, SOLID_CORPSE).
+
+3. "entities" console command .. includes non-solid flag column.
+
+4. svc_updateuserinfo >= cl.maxclients better message, it occurs when connecting to some Quakeworld servers,
+   and the new output indicates that cl.maxclients is not being allocated to 32 early enough during the connect.
+    
+5. Zircon protocol extension communication adjustments during connection.
+   
+6. "developer 1" will print Zircon protocol extension communication events to console (client tells server what
+   extension it has, server will check against own extensions --> server replies shared extensions that will be
+   in effect).
+
+7. "developer_stuffcmd 1" will print stuffcmd messages to the console, this was added in inspect maps or mods 
+   for development to see how something is working or for bug testing.
+
+8. "developer_svc 1" will print svc parse messages like svc_centerprint ignoring the common svc messages.
+   Set to 2 and it will print them all.
+   
+9. "cl_movement_collide_nonsolid_red 1" will make prediction non-colliding models glow red.  For development
+   purposes.
+   
+10. "r_drawentities 10" will only draw entity #10 (type "entities" to see what is an scene), it does not show
+    static entities like torches or func_illusionary.
+   
+TODO: Still no mechanism for collision against entities with no model, completely invisible and perhaps
+   other corner cases.
+
+// Zircon Beta Release 28
+
+1. Changed: the previous implementation of Quakeworld collision with monsters also collided with dead/dying
+   monsters.  Quakeworld identifies monsters with a hardcoded list like progs/soldier.mdl so added a table of
+   death frame numbers and during those frames, monsters are treated as non-solid.
+   
+2. cl_movement 2 will force prediction even in single player. 
+
+TODO: The implementation of Zircon client-side collide monsters missed a small but important detail, the RENDER
+flags are transmitted to the client as a byte (0-255 value range) stripping the NON_SOLID flag 256, making it
+not work.  Still looking for a non-intrusive backwards compatible way to convey this information without using
+a protocol extension.
+
+// Zircon Beta Release 27
+
+1. "showtex 2" now collides with water and sky surfaces and shows texture in a corner of screen.  "showtex 1"
+   "showtex 1" does not collide against translucent surfaces (water, lava, certain other types of textures).
+
+2. "copy tex" will copy the texturename of the current texture being pointed to (like showtex 1) does.
+
+2. Cheats like "give" and such were tied exclusively to the sv_cheats cvar.  Zircon now uses the same scheme
+   as Quake (if deathmatch, no cheats).  sv_cheats 2 will allow "give" and "god" to work in deathmatch.
+
+3. net_slist_queriespersecond increased from 20 to 200.  Make server list fill in way faster -- about 1 second
+   versus 7 seconds, ping times shown are less accurate.
+   
+4. Quake 3.  If a shader has "rgbGen exactVertex" (DarkPlaces does not have this implemented) Zircon will 
+	substitute "rgbGen vertex" which often look about the same.  TODO: Read the specs and see about implementing exactvertex
+
+5. Fixed a buffer overrun scenario in wad.h caused by DarkPlaces looking for textures exceeding 15 characters
+   in a .wad file (the cleaned up texture name does not get null terminated if length is 15+, solved by simply
+   returning "not found" if strlen is 16 or more.) 
+
+6. Prepared source code for clean implementation of Zircon "0 ping multiplayer", had to reorganize some code
+   and make some clarifications.
+
+// Zircon Beta Release 26
+
+1. Client-side prediction now blocks against monsters (cl_movement_collide_models 1) -- you don't want to walk
+   through monsters, feels wrong and this is normal behavior for DarkPlaces and Quakeworld.
+   
+   (What happens is that the server will correct your movement saying "no you didn't move that far", but
+   depending on the ping -- it can feel weird!) 
+
+	Server is DarkPlaces, the player will collide against MOVETYPE_STEP / RENDER_STEP entities (no collision vs. scrags).
+	Server is Quakeworld, the player will collide against monsters hardcoded into the engine (the Quaekworld tradition).
+	
+	Server is Zircon, the player will collide against entities model bounding box
+	  IF entity is NOT marked "SOLID_NOT".  (Or SOLID_TRIGGER or SOLID_CORPSE).
+
+	This data is transmitted via the RENDER_SOLID_NOT_BAKER_256 flag 
+	(funky name is so it can be found in source code).
+	
+	This means Zircon client to Zircon server clientside prediction collides based on the QuakeC solid flag.
+	Except that Zircon client does not know collision boxes set in QuakeC setsize that differ from
+	the model bounding box.
+	
+	Mods that use (sv_gameplayfix_setmodelrealbox 1) and do not setsize on models, the collision size should
+	be identical.  DarkPlaces with standard Quake does not use sv_gameplayfix_setmodelrealbox.
+	
+	Short version:  The Zircon to Zircon clientside collision is better, Zircon to Quakeworld coop collision
+	is better than Quakeworld's and Zircon to DarkPlaces collision is better than DarkPlaces (which doesn't 
+	collide against monster AND falsely collides against func_illusionary map models).
+
+2. Zircon was not asking for chunked downloads from the server when using DarkPlaces Protocol 7 (Zircon default).
+	Fixed.
+	
+3. "entity" command has a column header.
+
+4. cl_movement 2 .. to force cl_movement in single player.
+
+// Zircon Beta Release 25
+
+1. Zircon supports chunked downloads as a server.  In tests, the download speed was 17 times faster
+   than the maximum I can get DarkPlaces to do, and the top speed is over 100x faster than 
+   the DarkPlaces default settings.
+
+2. Quake 1 .LIT file download for Quakeworld.
+
+   Quakeworld map downloads attempt the map .lit file first for any missing map download.
+   Quake maps often come with a colored lights file, like e1m1.lit and this is part of the map
+   experience.
+   
+   This works because Quakeworld servers are very liberal about allowing downloads
+   from the maps/ folder.
+   
+   For the same reasons, trying to download skyboxes is likely futile because those are in
+   gfx/env folder and a typical Quakeworld server will disallow.
+   
+   Unfortunately, by default, DarkPlaces servers disallow many kinds of downloading (this is not true 
+   of Zircon).  Eventually I have the DarkPlaces protcol do similar.
+
+3. No more .tmp files when downloading via chunked downloads.  Downloads for chunked downloads are
+   written to memory as they process.
+   
+
+// Zircon Beta Release 24
+
+Updated the source to get the Linux compile to work, also supplying Linux SDL and dedicated server binaries.
+
+1. Zircon now supports FTE protocol extension for large entity counts for Quakeworld (2048 entities, the Quakeworld standard is 512).
+   On an FTE server running large coop maps, sometimes entities were invisible without this extension because they
+   exceed the Quaekworld limit of 512.  This isn't just more recent maps -- hip1m3 -- one of the more prominent mission pack levels
+   featuring a mining tunnel with train tracks leading down is one example of a map that requires large entity count support
+   for Quakeworld.
+   
+2. cl_movement does not affect locally hosted games (that means single player or if hosting a game !sv.active)
+   cl_movement 1 was interfering with, say, typing "impulse 9" in the console or "freezeall".
+
+3. Scrags are now movement interpolated.  All monsters (FL_MONSTER .flag in QuakeC) get RENDER_STEP which
+   causes DarkPlaces client to interpolate the movement.  This is sv_gameplayfix_monsterinterpolate 1,  Set to
+   0 to turn this off.  I know of no convenient way to test this, it mostly affects scrags and they don't
+   move very fast.  However, I saw this listed at an issue at the DarkPlaces github.
+
+4. Setting sv_protcolname will now disconnect first.  In DarkPlaces Beta, running a map in DP7 and typing "sv_protocolname Quake; kill" will crash the engine
+   as there is some confusion on the right method to shutdown the server.  Disconnecting was the cleanest way to solve the problem.
+   
+5. force_centerview sets roll to 0.  During testing on various coop servers, very rarely my roll angles from a telefrag could get tilted.
+   "force_centerview" will clear that situation now.
+
+6. ALT-ENTER limiter only prints "please wait 0.4 seconds" instead of having extra floating point digits.
+
+7. Console prints when "coop 1" sets "deathmatch 0" on start of a map.  It is standard Quake behavior
+   to set deathmatch to 0 if coop is non-zero.  It's a rareish situation and rather than mysteriously
+   do something silently, Zircon will at least print it to console.
+
+// Zircon Beta Release 23
+
+1. Fixed a typo that caused connection issues with DarkPlaces servers.
+
+// Zircon Beta Release 22
+
+1. Chunked downloads 4 times faster.  
+
+   Modified some of the network code for more flexible unreliable messages,
+   allowing Zircon to request more chunks at a time.
+
+2. Zircon clients connected a Zircon server will automatically perform gamedir change.  For reasons unknown,
+   DarkPlaces doesn't do that except when connecting to Quakeworld servers.
+
+3. Zircon supports protocol extensions for DarkPlaces Protocol 7 (the main DarkPlaces protocol).
+
+   This will allowing adding more capabilities in Zircon while remaining compatible with DarkPlaces.
+
+4. Quakeworld weapon switching behavior in single player should closely mirror regular Quake, added default
+   infokeys b_switch and w_switch with values of 9 to cause automatic weapon switch.
+
+5. "spectators" infokey set to 0 instead of "" to indicate "join" seems to work better with MVDSV servers.
+
+6. Tweaked definition of spectators to include 1000 health or more for CRx servers, a hack until
+   I discover why sometimes there is a spectator state that remains undetected.
+
+NOTE: hip1m3 rock doesn't show when playing on Let's Coop Quakeworld server.
+NOTE: Add a "join" hint to spectator overlay?
+NOTE: The multiplayer scoreboard could be nicer and more legible.   
+   
+// Zircon Beta Release 21
+
+1. Quakeworld monster movement interpolation.
+
+2. Improved Quakeworld spectator behavior, the movement is smooth and displays a status bar.  This required
+   adding new client side prediction code for spectators and working and some changes in view presentation
+   for spectators.  Although DarkPlaces doesn't strictly support spectators, it is possible to get spectator
+   status in DarkPlaces if no live player slots are available on a server.  A manual way to force this in DarkPlaces
+   is "setinfo spectator 1; connect 72.83.103.37:27504".
+   Zircon supports "join 72.83.103.37:27504" and "observe 72.83.103.37:27504" and "join" "observe" in-game commands.
+   These commands work additionally because Zircon reports the required z_ext for live switching from spectator to join.
+   
+3. cl_chatmode - When in a multiplayer game, text typed in the console will chat in-game if it isn't a known command/cvar/alias (cl_chatmode 0 is disable).
+
+4. Quakeworld "serverinfo" cmd.
+
+5. Hardened against trying to record a Quakeworld demo, DarkPlaces doesn't support recording them or playing them.  
+   Also fixed a infokey NULL pointer scenario that shouldn't happen, but somehow I encountered it during a server network handshake gone wrong.
+
+NON-ISSUE:	Issue with water jump and Quakeworld that also affected ezQuake.
+			Freewill, who runs the "Let's QW Coop" server says is MVDSV server bug.
+
+// Zircon Beta Release 20
+
+1. Server browser phase (4.1) - tiebreaker bias cvar: net_slist_tiebreaker defaults to "coop,crx,ffa @,ffa"
+   
+   The effect of this tiebreaker system is that in a list of 700 servers, this push servers with those words
+   to near the top of the list for the default sort.
+
+2. Using the maps menu puts "map dust // A Dusty Place" in the console history instead of just "map dust".
+
+3. Quakeworld colored text support.  
+
+  The console print messages are on-the-fly translated to the DarkPlaces color
+   method.  This allows red or blue or other colored text to correctly display when connected to a Quakeworld
+   server that uses it.
+
+4. Better support for Quakeworld "join" and "observe" including an extension to support live switching.
+
+   > join 72.83.103.37:27504 // You will connect to the Quakeworld server as a player
+   > observe 72.83.103.37:27504 // You will connect to the Quakeworld server as a spectator ghost
+   > join --> You will enter the game if you were a spectator
+   > observe -> You will leave the game if you were a spectator
+
+5. Server browser: DarkPlaces and Quakeworld servers are queried and rolled together.
+
+6. Added the Quakeworld "userinfo" command.
+
+TODO: CF_PERSISTENT does nothing!
+TODO: Shorten the 2 sec ALT-ENTER delay -- determine when it is too early in map load for ALT-ENTER by engine state
+
+// Zircon Beta Release 19	
+
+1. Server browser (phase 4) implementation.  The server browser is sortable by clicking
+   "player" or "pings" and can be sorted ascending or descending.
+   
+2. Server browsers shows player names and their scores and shirt/pants color.  Thanks to Spoike author of FTEQW 
+   for having code that parses the player data segment so I could examine it and learn.
+
+3. Server browser:  clicking a server selects it.  Double clicking connects to it.  This allows more meaningful
+   interaction with the server list, especially now that it shows players on the server and their scores.
+
+4. Windows key re-enabled, previously it was suppressed.  It was disabled early in Zircon Beta due to a stuck keys 
+   issue with DarkPlaces Beta.  The stuck keys issue has long been resolved.  (AllowWindowsShortcutKeys)
+   
+5. Menu navigation consistency everywhere: the up and down arrow wrap around on every menu that isn't 
+	maps list or server list.
+  
+6. Fixed a DarkPlaces Beta issue parsing Quakeworld map names from master server (needed to search for a newline character and terminate the string
+   there, then save the pointer for the players segment).  The bug would sometimes show map -> "dm4 0 33 3".
+   
+7. Hardened the alias model (Quake .mdl) loader against some unknown .mdl variant format that DarkPlaces
+   interprets as having -1838383 frame groups (netquakeworld.chickenkiller.com server), which explodes the engine.
+   Zircon detects this invalid framegroups scenario and will refuse model load unloadable, 
+   likely giving it the standard DarkPlaces missing model treatment.
+
+   Whatever "player_sleeper.mdl" is on that server, even Noesis model editor that is super Quake friendly and supports
+   tons of model formats cannot open that file.  So I don't know what that .mdl is or how one examines it.
+   
+8. Fixed oversight in deterministic server sorting.  Was using name for the unique key, not "cname" which is the unique key.
+   
+   DarkPlaces/Zircon live load the server list.   Determistic sorting means that there are "no ties" when sorting
+   the list of servers, which prevents the list from randomly re-ordering some entries as they fill in (bouncing around
+   all over the place).
+   
+   For Zircon, this matters more because you can navigate the list confidently while the list is updating because
+   Zircon locks the cursor to the entry.
+
+9. Menu total quality management --> refined LAN config menu and so other less used menus that had small issues
+   and fixed "Begin Game" menu to be more pleasing to the eye instead of having text print over the menu sidebar.
+
+// Zircon Beta Release 18
+
+1. DarkPlaces was tilting the view when a spectator in Quakeworld, so you would see things sideways.
+   This is because as a spectator your health < 0 so DarkPlaces thinks you are dead.
+   Fixed by also checking for spectator status.
+
+2. Tuned chunked downloads settings and prints.
+
+3. Fixed: Previous version broke non-chunked downloads by writing the file to wrong path.   
+
+4. Documented some "magic numbers" in the code.  DarkPlaces was checking for health of -666 and -2342.  So what
+   are those?  DarkPlaces placed a high value on Nexuiz, DPMod, Transfusion back in the day.  Turns out those
+   are magic health values in Nexuiz for observers and intermission.
+   
+   And adjusted the code to only check for those magic numbers if mode == NEXUIZ derived.
+   
+   This could prevent a future rare/weird where if you are dead and happen to be dead with
+   a "magic number" quantity of health, the display is different.
+
+5. Zircon now reports as "Zircon" in setinfo.  Previously it reported as "dp".
+
+6. When connected to a server, pressing TAB will display the map name plus title. "map: map title".
+   This keeps the traditional Quake behavior when playing single player of just saying "Introduction"
+   however when connected to a server, sometimes one wonders "What map is this?".
+   Sure you can type "map" or "status", but just pressing TAB is easier.
+   In single player, you always know what you are playing.
+
+TODO: Turn some cvars into commands.  There are many things that are annoying if they get reset on gamedir change
+and do not fall into any traditional settings category.  This is more obvious when using Quakeworld server as
+the gamedir may change, which DarkPlaces will reset many cvars.
+
+TODO: I don't trust what happens when a server changes map and a map is downloading in the non-chunked downloads
+method.  I also don't trust when this happens for chunked downloads, although they tend to occur fast enough that
+this rarely happens.  Maybe both of these are fine, but these scenarios need checked.
+
 // Zircon Beta Release 17
 
 1. FTE chunked downloads when connecting to Quakeworld servers.  It can be ten times faster.
@@ -592,6 +1005,6 @@ Unfixed or Unverified Bugs ...
 
 9511. Fixed vid_sdl.h so Windows get a titlebar icon consistently.  Sometimes it was there, sometimes not.
 
-
+Self note: Ubuntu WSL -> cd /mnt/c/zircs/_zirc_qualker
 
 

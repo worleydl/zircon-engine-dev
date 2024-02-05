@@ -1,4 +1,4 @@
-// cl_parse_temp_quakeworld.c.h
+// cl_parse_temp_particles_quakeworld.c.h
 	switch (type) {
 		case QW_TE_WIZSPIKE:
 			// spike hitting wall

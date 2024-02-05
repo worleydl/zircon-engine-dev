@@ -28,7 +28,7 @@ int current_skill;
 #ifdef CONFIG_MENU
 	// CLIENT
 	cvar_t sv_cheats = {CF_SERVER | CF_NOTIFY, "sv_cheats", "1", "enables cheat commands in any game, and cheat impulses in dpmod [Zircon default]"}; // Baker r1401 - sv_cheats defaults 1
-#else 
+#else
 	// DEDICATED SERVER - DEFAULTS 0
 	cvar_t sv_cheats = {CF_SERVER | CF_NOTIFY, "sv_cheats", "0", "enables cheat commands in any game, and cheat impulses in dpmod [Zircon default]"}; // Baker r1401 - sv_cheats defaults 1
 #endif
@@ -144,7 +144,7 @@ static void SV_Changelevel_f(cmd_state_t *cmd)
 	SV_SaveSpawnparms ();
 	c_strlcpy (level, Cmd_Argv(cmd, 1) );
 	SV_SpawnServer(level, q_s_loadgame_NULL);
-	
+
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
 }
@@ -177,7 +177,7 @@ static void SV_Restart_f(cmd_state_t *cmd)
 
 	strlcpy(mapname, sv.name, sizeof(mapname));
 	SV_SpawnServer(mapname, q_s_loadgame_NULL);
-	
+
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
 }
@@ -226,10 +226,10 @@ static void SV_God_f(cmd_state_t *cmd)
 	int was_on = Have_Flag (flagz, FL_GODMODE);
 	if (Cmd_Argc (cmd) > 1)	{ wants_on = atof(Cmd_Argv (cmd, 1)) != 0; }
 	else					{ wants_on = !was_on; }
-	
-	if (wants_on)	{ Flag_Add_To (flagz, FL_GODMODE);		} 
+
+	if (wants_on)	{ Flag_Add_To (flagz, FL_GODMODE);		}
 	else			{ Flag_Remove_From (flagz, FL_GODMODE); }
-	
+
 	PRVM_serveredictfloat(host_client->edict, flags) = flagz;
 
 	if (!((int)PRVM_serveredictfloat(host_client->edict, flags) & FL_GODMODE) )
@@ -424,10 +424,10 @@ static void SV_Notarget_f(cmd_state_t *cmd)
 	int was_on = Have_Flag (flagz, FL_NOTARGET);
 	if (Cmd_Argc (cmd) > 1)	{ wants_on = atof(Cmd_Argv (cmd, 1)) != 0; }
 	else					{ wants_on = !was_on; }
-	
-	if (wants_on)	{ Flag_Add_To (flagz, FL_NOTARGET);		} 
+
+	if (wants_on)	{ Flag_Add_To (flagz, FL_NOTARGET);		}
 	else			{ Flag_Remove_From (flagz, FL_NOTARGET); }
-	
+
 	PRVM_serveredictfloat(host_client->edict, flags) = flagz;
 
 	if (!((int)PRVM_serveredictfloat(host_client->edict, flags) & FL_NOTARGET) )
@@ -496,7 +496,7 @@ static void SV_SetPos_f(cmd_state_t *cmd)
 	}
 
 	// Baker: simulate teleport
-	PRVM_serveredictfloat(player_ed, fixangle) = 
+	PRVM_serveredictfloat(player_ed, fixangle) =
 		(int)true;
 
 	int flagz = PRVM_serveredictfloat(player_ed, flags);
@@ -504,7 +504,7 @@ static void SV_SetPos_f(cmd_state_t *cmd)
 		Flag_Remove_From (flagz, FL_ONGROUND);
 		PRVM_serveredictfloat(player_ed, flags) = (int)flagz;
 	}
-} 
+}
 
 
 /*
@@ -525,7 +525,7 @@ static void SV_Pause_f(cmd_state_t *cmd)
 		print("Pause not allowed." NEWLINE);
 		return;
 	}
-	
+
 	sv.paused ^= 1;
 	if (cmd->source != src_local)
 		SV_BroadcastPrintf("%s %spaused the game\n", host_client->name, sv.paused ? "" : "un");
@@ -783,15 +783,15 @@ static void SV_Pings_f(cmd_state_t *cmd)
 		movementloss = 0;
 		if (svs.clients[i].netconnection)
 		{
-			for (j = 0;j < NETGRAPH_PACKETS;j++)
-				if (svs.clients[i].netconnection->incoming_netgraph[j].unreliablebytes == NETGRAPH_LOSTPACKET)
+			for (j = 0;j < NETGRAPH_PACKETS_256;j++)
+				if (svs.clients[i].netconnection->incoming_netgraph[j].unreliablebytes == NETGRAPH_LOSTPACKET_NEG1)
 					packetloss++;
-			for (j = 0;j < NETGRAPH_PACKETS;j++)
+			for (j = 0;j < NETGRAPH_PACKETS_256;j++)
 				if (svs.clients[i].movement_count[j] < 0)
 					movementloss++;
 		}
-		packetloss = (packetloss * 100 + NETGRAPH_PACKETS - 1) / NETGRAPH_PACKETS;
-		movementloss = (movementloss * 100 + NETGRAPH_PACKETS - 1) / NETGRAPH_PACKETS;
+		packetloss = (packetloss * 100 + NETGRAPH_PACKETS_256 - 1) / NETGRAPH_PACKETS_256;
+		movementloss = (movementloss * 100 + NETGRAPH_PACKETS_256 - 1) / NETGRAPH_PACKETS_256;
 		ping = (int)floor(svs.clients[i].ping*1000+0.5);
 		ping = bound(0, ping, 9999);
 		if (sv.protocol == PROTOCOL_QUAKEWORLD)
@@ -821,6 +821,8 @@ static void SV_Pings_f(cmd_state_t *cmd)
 SV_Status_f
 ==================
 */
+
+// Baker: The format here has to conform to specification for qstat and other tools to work.
 static void SV_Status_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -854,7 +856,9 @@ static void SV_Status_f(cmd_state_t *cmd)
 		if (svs.clients[i].active)
 			players++;
 	print ("host:     %s" NEWLINE, Cvar_VariableString (&cvars_all, "hostname", CF_SERVER));
-	print ("version:  %s build %s (gamename %s)" NEWLINE, gamename, buildstring, gamenetworkfiltername);
+	print ("version:  %s build %s (gamename %s) (extensions %x) (zmove on? %d)" NEWLINE, 
+		gamename, buildstring, gamenetworkfiltername, sv.zirconprotcolextensions_sv, Have_Zircon_Ext_Flag_SV_Hard(ZIRCON_EXT_FREEMOVE_4)
+		);
 	print ("protocol: %d (%s) %s" NEWLINE, Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol), sv.is_qex ? "(remaster)" : "" ); // AURA 5.0
 	print ("map:      %s" NEWLINE, sv.name);
 	print ("timing:   %s" NEWLINE, SV_TimingReport(vabuf, sizeof(vabuf)));
@@ -882,13 +886,13 @@ static void SV_Status_f(cmd_state_t *cmd)
 			}
 			else
 				hours = 0;
-			
+
 			packetloss = 0;
 			if (client->netconnection)
-				for (j = 0;j < NETGRAPH_PACKETS;j++)
-					if (client->netconnection->incoming_netgraph[j].unreliablebytes == NETGRAPH_LOSTPACKET)
+				for (j = 0;j < NETGRAPH_PACKETS_256;j++)
+					if (client->netconnection->incoming_netgraph[j].unreliablebytes == NETGRAPH_LOSTPACKET_NEG1)
 						packetloss++;
-			packetloss = (packetloss * 100 + NETGRAPH_PACKETS - 1) / NETGRAPH_PACKETS;
+			packetloss = (packetloss * 100 + NETGRAPH_PACKETS_256 - 1) / NETGRAPH_PACKETS_256;
 			ping = bound(0, (int)floor(client->ping*1000+0.5), 9999);
 		}
 
@@ -914,7 +918,7 @@ static void SV_Status_f(cmd_state_t *cmd)
 					frags = atoi(qcstatus);
 			}
 		}
-		
+
 		if (in == 0) // default layout
 		{
 			if (sv.protocol == PROTOCOL_QUAKE && svs.maxclients <= 99)
@@ -956,7 +960,7 @@ void SV_Name(int clientnum)
 		MSG_WriteByte (&sv.reliable_datagram, clientnum);
 		MSG_WriteString (&sv.reliable_datagram, host_client->name);
 		SV_WriteNetnameIntoDemo(host_client);
-	}	
+	}
 }
 
 /*
@@ -984,8 +988,7 @@ static void SV_Name_f(cmd_state_t *cmd)
 	if (cmd->source == src_local)
 		return;
 
-	if (host.realtime < host_client->nametime && strcmp(newName, host_client->name))
-	{
+	if (host.realtime < host_client->nametime && String_Does_Not_Match (newName, host_client->name)) {
 		SV_ClientPrintf ("You can't change name more than once every %.1f seconds!" NEWLINE, max(0.0f, sv_namechangetimer.value));
 		return;
 	}
@@ -1029,8 +1032,7 @@ static void SV_Name_f(cmd_state_t *cmd)
 	}
 
 	// find the last color tag offset and decide if we need to add a reset tag
-	for (i = 0, j = -1;host_client->name[i];i++)
-	{
+	for (i = 0, j = -1;host_client->name[i]; i++) {
 		if (host_client->name[i] == STRING_COLOR_TAG)
 		{
 			if (host_client->name[i+1] >= '0' && host_client->name[i+1] <= '9')
@@ -1102,7 +1104,7 @@ static void SV_Color_f(cmd_state_t *cmd)
 
 	if (host_client->edict && PRVM_serverfunction(SV_ChangeTeam))
 	{
-		Con_DPrint("Calling SV_ChangeTeam\n");
+		Con_DPrintLinef ("Calling SV_ChangeTeam");
 		prog->globals.fp[OFS_PARM0] = playercolor;
 		PRVM_serverglobalfloat(time) = sv.time;
 		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
@@ -1148,7 +1150,7 @@ static void SV_Kick_f(cmd_state_t *cmd)
 
 	save = host_client;
 
-	if (Cmd_Argc(cmd) > 2 && strcmp(Cmd_Argv(cmd, 1), "#") == 0)
+	if (Cmd_Argc(cmd) > 2 && String_Does_Start_With(Cmd_Argv(cmd, 1), "#") )
 	{
 		i = (int)(atof(Cmd_Argv(cmd, 2)) - 1);
 		if (i < 0 || i >= svs.maxclients || !(host_client = svs.clients + i)->active)
@@ -1161,7 +1163,7 @@ static void SV_Kick_f(cmd_state_t *cmd)
 		{
 			if (!host_client->active)
 				continue;
-			if (strcasecmp(host_client->name, Cmd_Argv(cmd, 1)) == 0)
+			if (String_Does_Match_Caseless(host_client->name, Cmd_Argv(cmd, 1)) )
 				break;
 		}
 	}
@@ -1198,9 +1200,9 @@ static void SV_Kick_f(cmd_state_t *cmd)
 		}
 		if (message)
 			SV_DropClient (q_is_leaving_false, va(reason, sizeof(reason), "Kicked by %s: %s", who, message)); // kicked
-			//SV_ClientPrintf("Kicked by %s: %s\n", who, message);
+			//SV_ClientPrintf("Kicked by %s: %s" NEWLINE, who, message);
 		else
-			//SV_ClientPrintf("Kicked by %s\n", who);
+			//SV_ClientPrintf("Kicked by %s" NEWLINE, who);
 			SV_DropClient (q_is_leaving_false, va(reason, sizeof(reason), "Kicked by %s", who)); // kicked
 	}
 
@@ -1211,21 +1213,20 @@ static void SV_MaxPlayers_f(cmd_state_t *cmd)
 {
 	int n;
 
-	if (Cmd_Argc(cmd) != 2)
-	{
-		Con_Printf ("\"maxplayers\" is \"%u\"\n", svs.maxclients_next);
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef (QUOTED_STR ("maxplayers") " is \"%u\"" NEWLINE, svs.maxclients_next);
 		return;
 	}
 
 	if (sv.active)
 	{
-		Con_Print("maxplayers can not be changed while a server is running.\n");
-		Con_Print("It will be changed on next server startup (\"map\" command).\n");
+		Con_PrintLinef ("maxplayers can not be changed while a server is running.");
+		Con_PrintLinef ("It will be changed on next server startup (\"map\" command).");
 	}
 
 	n = atoi(Cmd_Argv(cmd, 1));
-	n = bound(1, n, MAX_SCOREBOARD);
-	Con_Printf ("\"maxplayers\" set to \"%u\"\n", n);
+	n = bound(1, n, MAX_SCOREBOARD_255);
+	Con_PrintLinef (QUOTED_STR ("maxplayers") " set to \"%u\"" NEWLINE, n);
 
 	svs.maxclients_next = n;
 	if (n == 1)
@@ -1262,7 +1263,7 @@ static void SV_Playermodel_f(cmd_state_t *cmd)
 	/*
 	if (host.realtime < host_client->nametime)
 	{
-		SV_ClientPrintf("You can't change playermodel more than once every 5 seconds!\n");
+		SV_ClientPrintf("You can't change playermodel more than once every 5 seconds!" NEWLINE);
 		return;
 	}
 
@@ -1309,7 +1310,7 @@ static void SV_Playerskin_f(cmd_state_t *cmd)
 	/*
 	if (host.realtime < host_client->nametime)
 	{
-		SV_ClientPrintf("You can't change playermodel more than once every 5 seconds!\n");
+		SV_ClientPrintf("You can't change playermodel more than once every 5 seconds!" NEWLINE);
 		return;
 	}
 
@@ -1338,6 +1339,7 @@ LadyHavoc: only supported for Nehahra, I personally think this is dumb, but Mind
 LadyHavoc: correction, Mindcrime will be removing pmodel in the future, but it's still stuck here for compatibility.
 ======================
 */
+// Baker: Tried this with Nehahra ... don't see anything happening?
 static void SV_PModel_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -1477,8 +1479,7 @@ static void SV_Viewprev_f(cmd_state_t *cmd)
 		return;
 
 	e = FindViewthing(prog);
-	if (e)
-	{
+	if (e) {
 		m = cl.model_precache[(int)PRVM_serveredictfloat(e, modelindex)];
 
 		PRVM_serveredictfloat(e, frame) = PRVM_serveredictfloat(e, frame) - 1;
@@ -1491,10 +1492,10 @@ static void SV_Viewprev_f(cmd_state_t *cmd)
 
 static void SV_SendCvar_f(cmd_state_t *cmd)
 {
-	int i;	
+	int i;
 	const char *cvarname;
 	client_t *old;
-	
+
 	if (Cmd_Argc(cmd) != 2)
 		return;
 
@@ -1508,14 +1509,114 @@ static void SV_SendCvar_f(cmd_state_t *cmd)
 		i = 1;
 	else
 		i = 0;
-	for(;i<svs.maxclients;i++)
-		if (svs.clients[i].active && svs.clients[i].netconnection)
-		{
+	for (; i < svs.maxclients; i++) {
+		if (svs.clients[i].active && svs.clients[i].netconnection) {
 			host_client = &svs.clients[i];
-			SV_ClientCommands("sendcvar %s\n", cvarname);
+			SV_ClientCommandsf("sendcvar %s" NEWLINE, cvarname);
 		}
+	}
+
 	host_client = old;
 }
+
+
+// Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "modelview", SV_ModelView_f, "Shows a model to look at with [model][scale][z_adjust]");
+static void SV_ShowModel_f (cmd_state_t *cmd)
+{
+	void (*print)(const char *, ...) = (cmd->source == src_client ? SV_ClientPrintf : Con_Printf);
+
+	prvm_prog_t *prog = SVVM_prog;
+	prvm_edict_t *ed;
+//	mdef_t *key;
+//	int i;
+	qbool haveorigin;
+
+	if (!cl.islocalgame) {
+		print (	"Requires local game" NEWLINE);
+		return;
+	}
+
+	if (Cmd_Argc(cmd) < 2) {
+		print (	"Usage: showmodel [model] [frame number] [z adjust] [scale]" NEWLINE
+				"Show a model by spawning an entity" NEWLINE
+				"Example: showmodel progs/player.mdl /*frame*/ 0 /*z adjust*/ -5 /*scale*/ 2" NEWLINE 
+		);
+		return;
+	}
+
+	const char *s_modelname		= Cmd_Argc(cmd) < 2 ? "progs/player.mdl" : Cmd_Argv(cmd, 1);
+	const char *s_frame			= Cmd_Argc(cmd) < 3 ? "0" : Cmd_Argv(cmd, 2);
+	const char *s_zadjust		= Cmd_Argc(cmd) < 4 ? "0" : Cmd_Argv(cmd, 3);
+	const char *s_scale			= Cmd_Argc(cmd) < 5 ? "1" : Cmd_Argv(cmd, 4);
+
+	// Baker: Spawn entity.
+	ed = PRVM_ED_Alloc (SVVM_prog);
+
+	const char *s_classname = "func_illusionary"; // Cmd_Argv(cmd, 1)
+	PRVM_ED_ParseEpair (prog, ed, PRVM_ED_FindField(prog, "classname"), s_classname, /*parse backslash*/ false);
+	PRVM_ED_ParseEpair (prog, ed, PRVM_ED_FindField(prog, "scale"), s_scale, /*parse backslash*/ false);
+	PRVM_ED_ParseEpair (prog, ed, PRVM_ED_FindField(prog, "frame"), s_frame, /*parse backslash*/ false);
+
+	// Spawn where the player is aiming. We need a view matrix first.
+	if (cmd->source == src_client) {
+		vec3_t org, temp; //, temp, dest;
+		matrix4x4_t view;
+		//trace_t trace;
+		char s_origin_buffer[128];
+		char s_angles_buffer[128];
+
+		SV_GetEntityMatrix(prog, host_client->edict, &view, true);
+
+		Matrix4x4_OriginFromMatrix	(&view, org);
+		VectorSet					(temp, 65536, 0, 0);
+
+		vec3_t forward;
+		vec3_t yawangles;
+		vec3_t spot;
+		VectorSet		(yawangles, cl.viewangles[PITCH], cl.viewangles[YAW], cl.viewangles[ROLL]);
+		AngleVectors	(yawangles, forward, NULL, NULL);
+		VectorMA		(org, 200, forward, spot);
+
+		float z_adjust = atoi(s_zadjust);
+
+		c_dpsnprintf3 (s_origin_buffer, "%g %g %g", spot[0], spot[1], spot[2] + z_adjust);
+		c_dpsnprintf3 (s_angles_buffer, "%g %g %g", cl.viewangles[0], -cl.viewangles[1], cl.viewangles[2]);
+
+		PRVM_ED_ParseEpair(prog, ed, PRVM_ED_FindField(prog, "origin"), s_origin_buffer, /*parse backslash*/ false);
+		PRVM_ED_ParseEpair(prog, ed, PRVM_ED_FindField(prog, "angles"), s_angles_buffer, /*parse backslash*/ false);		
+
+		haveorigin = true;
+	}
+	// Or spawn at a specified origin.
+	else
+	{
+		print = Con_Printf;
+		haveorigin = false;
+	}
+
+	if (!haveorigin) {
+		print ("Missing origin" NEWLINE);
+		PRVM_ED_Free(prog, ed);
+		return;
+	}
+
+	// precache_model
+	WARP_X_ (VMX_SV_precache_model, VMX_SV_setmodel)
+	void VMX_SV_precache_model (prvm_prog_t *prog, const char *s_model);
+	void VMX_SV_setmodel (prvm_prog_t *prog, prvm_edict_t *e, const char *s_model);
+	
+	VMX_SV_precache_model	(prog, s_modelname);
+	VMX_SV_setmodel			(prog, ed, s_modelname);
+	// Baker: The origin should be set.
+
+
+	// Make it appear in the world
+	SV_LinkEdict (ed);
+
+	if (cmd->source == src_client)
+		Con_Printf ("%s spawned a model " QUOTED_S NEWLINE, host_client->name, s_modelname);
+}
+
 
 static void SV_Ent_Create_f(cmd_state_t *cmd)
 {
@@ -1546,7 +1647,7 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 
 		Matrix4x4_OriginFromMatrix(&view, org);
 		VectorSet(temp, 65536, 0, 0);
-		Matrix4x4_Transform(&view, temp, dest);		
+		Matrix4x4_Transform(&view, temp, dest);
 
 		trace = SV_TraceLine(org, dest, MOVE_NORMAL, NULL, SUPERCONTENTS_SOLID, 0, 0, collision_extendmovelength.value);
 
@@ -1585,30 +1686,30 @@ static void SV_Ent_Create_f(cmd_state_t *cmd)
 
 	if (!haveorigin)
 	{
-		print("Missing origin\n");
+		print ("Missing origin" NEWLINE);
 		PRVM_ED_Free(prog, ed);
 		return;
 	}
 
 	// Spawn it
 	PRVM_ED_CallPrespawnFunction(prog, ed);
-	
+
 	if (!PRVM_ED_CallSpawnFunction(prog, ed, NULL, NULL))
 	{
-		print("Could not spawn a \"%s\". No such entity or it has no spawn function\n", Cmd_Argv(cmd, 1));
+		print ("Could not spawn a " QUOTED_S ". No such entity or it has no spawn function" NEWLINE, Cmd_Argv(cmd, 1));
 		if (cmd->source == src_client)
-			Con_Printf ("%s tried to spawn a \"%s\"\n", host_client->name, Cmd_Argv(cmd, 1));
+			Con_PrintLinef ("%s tried to spawn a " QUOTED_S, host_client->name, Cmd_Argv(cmd, 1));
 		// CallSpawnFunction already freed the edict for us.
 		return;
 	}
 
-	PRVM_ED_CallPostspawnFunction(prog, ed);	
+	PRVM_ED_CallPostspawnFunction(prog, ed);
 
 	// Make it appear in the world
 	SV_LinkEdict(ed);
 
 	if (cmd->source == src_client)
-		Con_Printf ("%s spawned a \"%s\"\n", host_client->name, Cmd_Argv(cmd, 1));
+		Con_PrintLinef ("%s spawned a " QUOTED_S, host_client->name, Cmd_Argv(cmd, 1));
 }
 
 static void SV_Ent_Remove_f(cmd_state_t *cmd)
@@ -1642,10 +1743,10 @@ static void SV_Ent_Remove_f(cmd_state_t *cmd)
 
 		Matrix4x4_OriginFromMatrix(&view, org);
 		VectorSet(temp, 65536, 0, 0);
-		Matrix4x4_Transform(&view, temp, dest);		
+		Matrix4x4_Transform(&view, temp, dest);
 
 		trace = SV_TraceLine(org, dest, MOVE_NORMAL, NULL, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY, 0, 0, collision_extendmovelength.value);
-		
+
 		if (trace.ent)
 			ednum = (int)PRVM_EDICT_TO_PROG(trace.ent);
 		if (!trace.ent || !ednum)
@@ -1672,7 +1773,7 @@ static void SV_Ent_Remove_f(cmd_state_t *cmd)
 
 		if (!ed->free)
 		{
-			print("Removed a \"%s\"\n", PRVM_GetString(prog, PRVM_serveredictstring(ed, classname)));
+			print ("Removed a " QUOTED_S NEWLINE, PRVM_GetString(prog, PRVM_serveredictstring(ed, classname)));
 			PRVM_ED_ClearEdict(prog, ed);
 			PRVM_ED_Free(prog, ed);
 		}
@@ -1680,7 +1781,7 @@ static void SV_Ent_Remove_f(cmd_state_t *cmd)
 	else
 	{
 		// This should only be reachable if an invalid edict number was given
-		print("No such entity\n");
+		print ("No such entity" NEWLINE);
 		return;
 	}
 }
@@ -1698,7 +1799,7 @@ static void SV_Ent_Remove_All_f(cmd_state_t *cmd)
 		{
 			if (!i)
 			{
-				print("Cannot remove the world\n");
+				print ("Cannot remove the world" NEWLINE);
 				return;
 			}
 			PRVM_ED_ClearEdict(prog, ed);
@@ -1708,9 +1809,9 @@ static void SV_Ent_Remove_All_f(cmd_state_t *cmd)
 	}
 
 	if (!rmcount)
-		print("No \"%s\" found\n", Cmd_Argv(cmd, 1));
+		print ("No " QUOTED_S " found" NEWLINE, Cmd_Argv(cmd, 1));
 	else
-		print("Removed %d of \"%s\"\n", rmcount, Cmd_Argv(cmd, 1));
+		print ("Removed %d of " QUOTED_S NEWLINE, rmcount, Cmd_Argv(cmd, 1));
 }
 
 void SV_InitOperatorCommands(void)
@@ -1721,7 +1822,7 @@ void SV_InitOperatorCommands(void)
 	Cvar_RegisterVariable(&sv_status_privacy);
 	Cvar_RegisterVariable(&sv_status_show_qcstatus);
 	Cvar_RegisterVariable(&sv_namechangetimer);
-	
+
 	Cmd_AddCommand(CF_SERVER | CF_SERVER_FROM_CLIENT, "status", SV_Status_f, "print server status information");
 	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "map", SV_Map_f, "kick everyone off the server and start a new level"); // Baker r1003: close console for map/load/etc.
 	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "restart", SV_Restart_f, "restart current level"); // Baker r1003: close console for map/load/etc.
@@ -1730,7 +1831,7 @@ void SV_InitOperatorCommands(void)
 	Cmd_AddCommand(CF_SERVER_FROM_CLIENT, "say_team", SV_Say_Team_f, "send a chat message to your team on the server");
 	Cmd_AddCommand(CF_SHARED | CF_SERVER_FROM_CLIENT, "tell", SV_Tell_f, "send a chat message to only one person on the server");
 	Cmd_AddCommand(CF_SERVER | CF_SERVER_FROM_CLIENT, "pause", SV_Pause_f, "pause the game (if the server allows pausing)");
-	Cmd_AddCommand(CF_SHARED, "kick", SV_Kick_f, "kick a player off the server by number or name");
+	Cmd_AddCommand(CF_SHARED, "kick", SV_Kick_f, "kick a player off the server by number or name (kick name or kick # 2)");
 	Cmd_AddCommand(CF_SHARED | CF_SERVER_FROM_CLIENT, "ping", SV_Ping_f, "print ping times of all players on the server");
 	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "load", SV_Loadgame_f, "load a saved game file"); // Baker r1003: close console for map/load/etc.
 	Cmd_AddCommand(CF_SHARED, "save", SV_Savegame_f, "save the game to a file");
@@ -1752,9 +1853,9 @@ void SV_InitOperatorCommands(void)
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "fly", SV_Fly_f, "fly mode (flight)");
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "noclip", SV_Noclip_f, "noclip mode (flight without collisions, move through walls)");
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "give", SV_Give_f, "alter inventory");
-	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "setpos", SV_SetPos_f, "set current origin <angles> [Zircon]"); // Baker r3174
+	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "setpos", SV_SetPos_f, "teleport/set current origin <angles> [Zircon]"); // Baker r3174
 	Cmd_AddCommand(CF_SERVER_FROM_CLIENT | CF_CLIENTCLOSECONSOLE, "kill", SV_Kill_f, "die instantly"); // Baker r1003: close console for map/load/etc.
-	
+
 	Cmd_AddCommand(CF_USERINFO, "color", SV_Color_f, "change your player shirt and pants colors");
 	Cmd_AddCommand(CF_USERINFO, "name", SV_Name_f, "change your player name");
 	Cmd_AddCommand(CF_USERINFO, "rate", SV_Rate_f, "change your network connection speed");
@@ -1764,6 +1865,7 @@ void SV_InitOperatorCommands(void)
 	Cmd_AddCommand(CF_USERINFO, "playerskin", SV_Playerskin_f, "change your player skin number");
 
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "ent_create", SV_Ent_Create_f, "Creates an entity at the specified coordinate, of the specified classname. If executed from a server, origin has to be specified manually.");
+	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "showmodel", SV_ShowModel_f, "Shows a model to look at with [model][scale][z_adjust]");
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "ent_remove_all", SV_Ent_Remove_All_f, "Removes all entities of the specified classname");
 	Cmd_AddCommand(CF_CHEAT | CF_SERVER_FROM_CLIENT, "ent_remove", SV_Ent_Remove_f, "Removes an entity by number, or the entity you're aiming at");
 }

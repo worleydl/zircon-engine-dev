@@ -263,7 +263,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 	loadmodel->radius2 = modelradius * modelradius;
 }
 
-void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int version;
 	const unsigned char *datapointer;
@@ -358,7 +358,7 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 			break;
 		default:
 			Host_Error_Line ("Mod_IDSP_Load: unknown texFormat (%d, should be 0, 1, 2, or 3)", i);
-			return;
+			return false;
 		}
 
 		Mod_Sprite_SharedSetup(datapointer, LittleLong (pinhlsprite->version), (unsigned int *)(&palette[0][0]), rendermode == SPRHL_ADDITIVE);
@@ -371,10 +371,11 @@ void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend)
 	// the animation. This may happen due to sprframe parameters changing.
 	// Mere texture chanegs OTOH shouldn't require isanimated to be 1.
 	loadmodel->surfmesh.isanimated = loadmodel->numframes > 1 || (loadmodel->animscenes && loadmodel->animscenes[0].framecount > 1);
+	return true;
 }
 
 
-void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i, version;
 	qbool fullbright;
@@ -478,4 +479,5 @@ void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend)
 	// the animation. This may happen due to sprframe parameters changing.
 	// Mere texture chanegs OTOH shouldn't require isanimated to be 1.
 	loadmodel->surfmesh.isanimated = loadmodel->numframes > 1 || (loadmodel->animscenes && loadmodel->animscenes[0].framecount > 1);
+	return true;
 }

@@ -203,7 +203,7 @@ void V_DriftPitch (void)
 // don't count small mouse motion
 	if (cl.nodrift)
 	{
-		if ( fabs(cl.cmd.forwardmove) < cl_forwardspeed.value)
+		if ( fabs(cl.mcmd.clx_forwardmove) < cl_forwardspeed.value)
 			cl.driftmove = 0;
 		else
 			cl.driftmove += cl.realframetime;
@@ -522,11 +522,10 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 	trace_t trace;
 
 	// react to clonground state changes (for gun bob)
-	if (clonground)
-	{
+	if (clonground) {
 		if (!cl.oldonground)
-			cl.hitgroundtime = cl.movecmd[0].time;
-		cl.lastongroundtime = cl.movecmd[0].time;
+			cl.hitgroundtime = cl.movecmd[0].clx_time;
+		cl.lastongroundtime = cl.movecmd[0].clx_time;
 	}
 	cl.oldonground = clonground;
 	cl.calcrefdef_prevtime = max(cl.calcrefdef_prevtime, cl.oldtime);
@@ -710,11 +709,12 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 				}
 
 				// bounded XY speed, used by several effects below
-				xyspeed = bound (0, sqrt(clvelocity[0]*clvelocity[0] + clvelocity[1]*clvelocity[1]), cl_bob_velocity_limit.value);
+				xyspeed = bound (0, sqrt(clvelocity[0]*clvelocity[0] + 
+					clvelocity[1]*clvelocity[1]), cl_bob_velocity_limit.value /*d: 400*/);
 
 				// vertical view bobbing code
-				if (cl_bob.value && cl_bobcycle.value)
-				{
+				float bobhere = (QW_TREAT_AS_SPECTATOR) ? 0 : cl_bob.value;
+				if (cl_bob.value && cl_bobcycle.value) {
 					float bob_limit = cl_bobmodel_classic.integer ? 4 : cl_bob_limit.value;
 
 					if (cl_bob_limit_heightcheck.integer)
@@ -752,7 +752,7 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 						cycle = M_PI + M_PI * (cycle-cl_bobup.value)/(1.0 - cl_bobup.value);
 					// bob is proportional to velocity in the xy plane
 					// (don't count Z, or jumping messes it up)
-					bob = xyspeed * cl_bob.value;
+					bob = xyspeed * bobhere;//cl_bob.value;
 					bob = bob*0.3 + bob*0.7*sin(cycle);
 					bob = bound(-7, bob, bob_limit);
 
@@ -842,7 +842,9 @@ void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewa
 					VectorAdd(viewangles, cl.punchangle, viewangles);
 					cl_punchangle_applied = 1;
 				}
-				viewangles[ROLL] += Com_CalcRoll(clviewangles, clvelocity, cl_rollangle.value, cl_rollspeed.value);
+				float rollanglehere = (QW_TREAT_AS_SPECTATOR) ? 0 : cl_rollangle.value;
+				float rollspeedhere = (QW_TREAT_AS_SPECTATOR) ? 0 : cl_rollspeed.value;
+				viewangles[ROLL] += Com_CalcRoll(clviewangles, clvelocity, rollanglehere, rollspeedhere);
 
 				if (v_dmg_time > 0)
 				{
@@ -959,16 +961,26 @@ void V_CalcRefdef (void)
 	entity_t *ent;
 	qbool cldead;
 
-	if (cls.state == ca_connected && cls.signon == SIGNONS_4 && !cl.csqc_server2csqcentitynumber[cl.viewentity])
-	{
+	if (cls.state == ca_connected && cls.signon == SIGNONS_4 && !cl.csqc_server2csqcentitynumber[cl.viewentity]) {
 		// ent is the view entity (visible when out of body)
 		ent = &cl.entities[cl.viewentity];
 
-		cldead = (cl.stats[STAT_HEALTH] <= 0 && cl.stats[STAT_HEALTH] != -666 && cl.stats[STAT_HEALTH] != -2342);
-		V_CalcRefdefUsing(&ent->render.matrix, cl.viewangles, !ent->persistent.trail_allowed, cl.onground, cl.cmd.jump, cl.stats[STAT_VIEWHEIGHT], cldead, cl.velocity); // FIXME use a better way to detect teleport/warp than trail_allowed
-	}
-	else
-	{
+		// Baker: -666 and -2342 health are from NEXUIZ 2.52 quakec source code
+		// -666 is observer. -2342 is an intermission fix and something to do with map voting.
+		cldead = cl.stats[STAT_HEALTH] <= 0 && cl.scores[cl.playerentity-1].qw_spectator == false;
+
+		// Baker: Special NEXIUZ observer and intermission values for health -666, -2342
+		if (cldead && IS_OLDNEXUIZ_DERIVED (gamemode) && 
+			(cl.stats[STAT_HEALTH] == NEXUIZ_OBS_NEG_666 || cl.stats[STAT_HEALTH] == -2342))
+			cldead = false;
+
+		// Baker: Zmove we get some jitter sometimes.
+		int velo_override = cl.movement_predicted == PRED_ZIRCON_MOVE_2 && VectorIsZeros (cl.movement_final_velocity);
+		static vec3_t zmove_velocity_zero;
+		V_CalcRefdefUsing (&ent->render.matrix, cl.viewangles, !ent->persistent.trail_allowed, 
+			cl.onground, cl.mcmd.clx_jump, cl.stats[STAT_VIEWHEIGHT], 
+			cldead, velo_override ? zmove_velocity_zero : cl.velocity); // FIXME use a better way to detect teleport/warp than trail_allowed
+	} else {
 		viewmodelmatrix_nobob = identitymatrix;
 		viewmodelmatrix_withbob = identitymatrix;
 		cl.csqc_viewmodelmatrixfromengine = identitymatrix;
@@ -1180,9 +1192,14 @@ void V_CalcViewBlend(void)
 		
 		// Samual: Ugly hack, I know. But it's the best we can do since
 		// there is no way to detect client states from the engine.
-		if (cl.stats[STAT_HEALTH] <= 0 && cl.stats[STAT_HEALTH] != -666 && 
-			cl.stats[STAT_HEALTH] != -2342 && cl_deathfade.value > 0)
-		{
+		int is_cldead = cl.stats[STAT_HEALTH] <= 0 && cl.scores[cl.playerentity-1].qw_spectator == false;
+
+		// Baker: Special NEXIUZ observer and intermission values for health -666, -2342
+		if (is_cldead && IS_OLDNEXUIZ_DERIVED (gamemode) && 
+			(cl.stats[STAT_HEALTH] == NEXUIZ_OBS_NEG_666 || cl.stats[STAT_HEALTH] == -2342))
+			is_cldead = false;
+
+		if (is_cldead && cl_deathfade.value > 0) {
 			cl.deathfade += cl_deathfade.value * max(0.00001, cl.time - cl.oldtime);
 			cl.deathfade = bound(0.0f, cl.deathfade, 0.9f);
 		}

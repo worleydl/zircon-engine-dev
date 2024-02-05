@@ -86,7 +86,8 @@ cvar_t showtime = {CF_CLIENT | CF_ARCHIVE, "showtime", "0", "shows current time 
 cvar_t showtime_format = {CF_CLIENT | CF_ARCHIVE, "showtime_format", "%H:%M:%S", "format string for time of day"};
 cvar_t showdate = {CF_CLIENT | CF_ARCHIVE, "showdate", "0", "shows current date (useful on screenshots)"};
 cvar_t showdate_format = {CF_CLIENT | CF_ARCHIVE, "showdate_format", "%Y-%m-%d", "format string for date"};
-cvar_t showtex = { CF_CLIENT, "showtex", "0", "shows the name of the texture on the crosshair (for map debugging), showtex 2 shows entity number also [Zircon change]" }; // Baker r7081 showtex 2 for entity information
+cvar_t showtex = { CF_CLIENT, "showtex", "0", "shows the name of the texture on the crosshair but not for translucent surfaces (for map debugging), showtex 2 will collide with translucent surfaces and shows entity number also [Zircon change]" }; // Baker r7081 showtex 2 for entity information
+cvar_t showzmove = { CF_CLIENT, "showzmove", "0", "shows zmove status [Zircon]" }; // Baker r7081 showtex 2 for entity information
 
 cvar_t showpos = { CF_CLIENT, "showpos", "0", "shows player origin [Zircon]" }; // Baker r7082 showpos showangles
 cvar_t showangles = { CF_CLIENT, "showangles", "0", "shows player angles [Zircon]" }; // Baker r7082 showpos showangles
@@ -521,7 +522,7 @@ static int Sbar_IsTeammatch(void)
 Sbar_SortFrags
 ===============
 */
-static int fragsort[MAX_SCOREBOARD];
+static int fragsort[MAX_SCOREBOARD_255];
 static int scoreboardlines;
 
 int Sbar_GetSortedPlayerIndex (int index)
@@ -529,8 +530,8 @@ int Sbar_GetSortedPlayerIndex (int index)
 	return index >= 0 && index < scoreboardlines ? fragsort[index] : -1;
 }
 
-static scoreboard_t teams[MAX_SCOREBOARD];
-static int teamsort[MAX_SCOREBOARD];
+static scoreboard_t teams[MAX_SCOREBOARD_255];
+static int teamsort[MAX_SCOREBOARD_255];
 static int teamlines;
 void Sbar_SortFrags (void)
 {
@@ -598,7 +599,7 @@ void Sbar_SortFrags (void)
 				teams[teamlines-1].colors = color + 16 * color;
 			}
 
-			if (cl.scores[fragsort[i]].frags != -666) {
+			if (cl.scores[fragsort[i]].frags != NEXUIZ_OBS_NEG_666) {
 				// do not add spedcators
 				// (ugly hack for nexuiz)
 				teams[teamlines-1].frags += cl.scores[fragsort[i]].frags;
@@ -628,13 +629,16 @@ Sbar_SoloScoreboard
 */
 static void Sbar_SoloScoreboard (void)
 {
+	extern cvar_t cl_worldbasename;
 	char	str[80];
 	char 	vabuf[1024];
 
 	int		max_32 = 32;
 
 mapname:
-	dpsnprintf(str, sizeof(str), "%s", cl.worldmessage);
+	if (cl.islocalgame)
+		c_dpsnprintf1 (str, "%s", cl.worldmessage);
+	else c_dpsnprintf2 (str, "%s: %s", cl_worldbasename.string, cl.worldmessage);
 
 	// if there's a newline character, terminate the string there
 	if (strchr(str, NEWLINE_CHAR_10))
@@ -675,16 +679,23 @@ levtime:
 	Sbar_DrawString (8, 12, va(vabuf, sizeof(vabuf), "Kills: %d/%d", cl.stats[STAT_MONSTERS], cl.stats[STAT_TOTALMONSTERS]));
 	Sbar_DrawString (8 + 26 * 8, 12, va(vabuf, sizeof(vabuf), "Secrets: %d/%d", cl.stats[STAT_SECRETS], cl.stats[STAT_TOTALSECRETS]));
 
-	if (!cl.islocalgame && sbar_showprotocol.integer) {
+	if (sbar_showprotocol.integer && (!cl.islocalgame || cl.movement_predicted) ) {
 		// Baker: Nehahra movie is Nehahra demo format
 		if (isin2 (cls.protocol, PROTOCOL_QUAKE, PROTOCOL_QUAKEDP)) {
 			Sbar_DrawString (8, 4, "Q15");
 		} else if (isin1 (cls.protocol, PROTOCOL_DARKPLACES7)) {
-			Sbar_DrawString (8, 4, "DP7");
+			if (cl.movement_predicted == PRED_ZIRCON_MOVE_2) {
+				Sbar_DrawString (8, 2, "ZIRCON");
+			} else {
+				Sbar_DrawString (8, 4, "DP7");
+			}
 		} else {
 			Sbar_DrawString (8, 4, (char *)Protocol_NameForEnum(cls.protocol));
 		}
-	} // if
+	} else {
+
+
+	}
 
 }
 
@@ -698,7 +709,8 @@ static void Sbar_DrawScoreboard (void)
 	Sbar_SoloScoreboard ();
 	// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
 	//if (cl.gametype == GAME_DEATHMATCH)
-	if ((cls.demoplayback && cl.gametype == GAME_DEATHMATCH) || (!cl.islocalgame && !cls.demoplayback) && key_dest == key_game)
+	if ((cls.demoplayback && cl.gametype == GAME_DEATHMATCH) || 
+		(!cl.islocalgame && !cls.demoplayback) && key_dest == key_game)
 		Sbar_DeathmatchOverlay ();
 }
 
@@ -985,6 +997,52 @@ void Sbar_ShowFPS_Update(void)
 	showfps_framecount++;
 }
 
+void SBar_DrawTexture (char *texstring) {
+	WARP_X_ (R_DebugLine)
+
+	model_t *mod = CL_Mesh_UI();
+	// int materialflags = MATERIALFLAG_WALL;
+	//qbool hascolor = false; // We are doing 1, 1,1, 
+	//qbool hasalpha = false; // We are doing alpha 1
+
+	// Baker: Try to load from q1 map
+	texture_t *tex = NULL;
+
+	for (int n = 0; n < cl.worldmodel->num_textures; n ++) {
+		texture_t *tx = &cl.worldmodel->data_textures[n];
+
+		if (String_Does_Match(tx->name, texstring)) {
+			tex = tx;
+			break;
+		} // if
+	} // for
+
+	// If Q1 map texture fails, use shader
+	if (!tex) {
+		tex = Mod_Mesh_GetTexture(mod, texstring, DRAWFLAG_NORMAL_0, /*texflags*/ 0, 
+			MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | 
+			MATERIALFLAG_ALPHA | 
+			MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW);
+	}
+
+	// Baker: Sometimes we can get nothing like looking at water with collision against translucents off
+	if (tex) {
+		msurface_t *surf = Mod_Mesh_AddSurface(mod, 
+			tex, /*batchwithprevsurface*/ false /*true*/);
+		int e0 = Mod_Mesh_IndexForVertex(mod, surf, 10, 10, 0, /*normals*/ 0, 0, -1, /*st*/ 0, 0, /*uv*/ 0, 0, /*rgba*/ 1, 1, 1, q_alpha_1);
+		int e1 = Mod_Mesh_IndexForVertex(mod, surf, 10 + vid_conwidth.value / 8, 10, 0, /*normals*/ 0, 0, -1, 
+			/*st*/ 1, 0, 0, 0, 1, 1, 1, q_alpha_1);
+		int e2 = Mod_Mesh_IndexForVertex(mod, surf, 10 + vid_conwidth.value / 8, 10 + vid_conheight.value / 8, 0,/*normals*/ 0, 0, -1, 
+			/*st*/ 1, 1, 0, 0, 1, 1, 1, q_alpha_1);
+		int e3 = Mod_Mesh_IndexForVertex(mod, surf, 10, 10 + vid_conheight.value / 8, 0, /*normals*/ 0, 0, -1, 
+			/*st*/ 0, 1, 0, 0, 1, 1, 1, q_alpha_1);
+		Mod_Mesh_AddTriangle(mod, surf, e0, e1, e2);
+		Mod_Mesh_AddTriangle(mod, surf, e0, e2, e3);
+	}
+
+	// DrawQ_Pic(10, 10, tex, vid_conwidth.value / 8, vid_conheight.value / 8, /*rgba*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0);
+}
+
 void Sbar_ShowFPS(void)
 {
 	float fps_x, fps_y, fps_scalex, fps_scaley, fps_strings = 0;
@@ -1119,6 +1177,7 @@ void Sbar_ShowFPS(void)
 			fps_strings++;
 		}
 	}
+
 	if (showtex.integer) {
 		vec3_t org;
 		vec3_t dest;
@@ -1132,11 +1191,24 @@ void Sbar_ShowFPS(void)
 		// clear the traces as we may or may not fill them out, and mark them with an invalid fraction so we know if we did
 		memset(&cltrace, 0, sizeof(cltrace));
 		cltrace.fraction = 2.0;
-		cltrace = CL_TraceLine(org, dest, MOVE_HITMODEL, NULL, SUPERCONTENTS_SOLID, 0, MATERIALFLAGMASK_TRANSLUCENT, collision_extendmovelength.value, true, false, &hitnetentity, true, true);
+		
+		cltrace = CL_TraceLine(org, dest, MOVE_HITMODEL, NULL, 
+				SUPERCONTENTS_SOLID | SUPERCONTENTS_WATER | SUPERCONTENTS_SLIME | 
+				SUPERCONTENTS_LAVA | SUPERCONTENTS_SKY
+			, 
+			0, 
+			showtex.integer >= 2 ? MATERIALFLAGMASK_TRANSLUCENT : 0, collision_extendmovelength.value, 
+			true, false, &hitnetentity, true, true);
 		if (cltrace.hittexture)
 			c_strlcpy(texstring, cltrace.hittexture->name);
 		else
 			c_strlcpy(texstring, "(no texture hit)");
+		
+
+		if (cltrace.hittexture) {
+			SBar_DrawTexture (texstring);
+		} // cltrace.hittexture
+
 		fps_strings++;
 
 		// Baker r7081: Entity information requires showtex 2
@@ -1144,9 +1216,11 @@ void Sbar_ShowFPS(void)
 			trace_t svtrace = {0};
 			svtrace.fraction = 2.0;
 			// ray hits models (even animated ones) and ignores translucent materials
-			if (sv.active)
-				svtrace = SV_TraceLine(org, dest, MOVE_HITMODEL, NULL, SUPERCONTENTS_SOLID, 0, MATERIALFLAGMASK_TRANSLUCENT, collision_extendmovelength.value);
-	
+			if (showtex.integer < 5 && sv.active) {
+				svtrace = SV_TraceLine(org, dest, MOVE_HITMODEL, NULL, SUPERCONTENTS_SOLID, 0, 
+				MATERIALFLAGMASK_TRANSLUCENT, collision_extendmovelength.value);
+			}
+
 			if (svtrace.fraction < cltrace.fraction) {
 				if (svtrace.ent != NULL) {
 					prvm_prog_t *prog = SVVM_prog;
@@ -1170,7 +1244,24 @@ void Sbar_ShowFPS(void)
 		} // showtex >= 2
 	}
 
-	if (fps_strings || showfps.integer < 0) {
+	int is_zmove_ike = showzmove.integer;
+	// Zircon move needs removed by server if not DP7
+	if (is_zmove_ike) {
+		char tbuf[1024];
+		fps_scalex = 12;
+		fps_scaley = 12;
+		const char *s = "NO EXIST";
+		if (Have_Zircon_Ext_Flag_CLS (ZIRCON_EXT_FREEMOVE_4)) {
+			if (cl.movement_predicted == PRED_ZIRCON_MOVE_2) 
+				s = "Z";
+			else s = va(tbuf, sizeof(tbuf), "DP7 (WARP @ %u) SV: %u SEQ: %u", cl.zircon_warp_sequence, cls.servermovesequence, cl.mcmd.clx_sequence);
+		}
+		//float tw = DrawQ_TextWidth(fpsstring, 0, fps_scalex, fps_scaley, true, FONT_CENTERPRINT);
+		//fps_x = vid_conwidth.integer - tw - fps_scalex * 2;
+		DrawQ_String (fps_scalex, fps_scaley, s, /*maxlen*/ 0, fps_scalex, fps_scaley, /*rgba*/ 1, 1, 1, 1, /*flags*/ 0, NULL, /*ig color codes*/ true, FONT_INFOBAR);
+	}
+
+	if (fps_strings || showfps.integer < 0 || is_zmove_ike) {
 		fps_scalex = 12;
 		fps_scaley = 12;
 		//fps_y = vid_conheight.integer - sb_lines; // yes this may draw over the sbar
@@ -1204,6 +1295,7 @@ void Sbar_ShowFPS(void)
 
 			r_draw2d_force = false;
 		}
+
 		if (posstring[0]) {
 			fps_x = vid_conwidth.integer - DrawQ_TextWidth(posstring, 0, fps_scalex, fps_scaley, true, FONT_INFOBAR);
 			DrawQ_Fill(fps_x, fps_y, vid_conwidth.integer - fps_x, fps_scaley, 0, 0, 0, 0.5, 0);
@@ -1316,7 +1408,20 @@ static void SBar_Quake()
 			sbar_x = (vid_conwidth.integer - 320)/2;
 			sbar_y = vid_conheight.integer - SBAR_HEIGHT;
 			// LadyHavoc: changed to draw the deathmatch overlays in any multiplayer mode
-	if (sbar_quake.integer == 1) {
+
+			if (cl.scores[cl.playerentity-1].qw_spectator) {
+				// 39 27 5
+					char	*str = "Spectator Mode";
+
+					WARP_X_ (mapname: )
+//					Sbar_DrawAlphaPic (0, 0, sb_sbar, q_alpha_1);
+					DrawQ_Fill (sbar_x, sbar_y, 320, 16, 39/255.0 * 0.3, 27/255.0* 0.3, 5/255.0* 0.3, /*alpha*/ 0.5, DRAWFLAG_NORMAL_0);
+
+					// print the filename and message
+					Sbar_DrawString (8 + 8 * (20 - strlen(str) / 2.0) , 4, str);
+
+
+			} else if (sbar_quake.integer == 1) {
 		float cols = ceil (vid_conwidth.integer / 64.0);
 
 		float col;
@@ -1454,6 +1559,11 @@ no_ammo:
 
 no_armor:
 		// Q64 armor over
+		if (cl.scores[cl.playerentity-1].qw_spectator) {
+			if (sb_showscores)
+				Sbar_DeathmatchOverlay ();
+			return;
+		} else
 		if (sb_showscores) {
 			if (sb_lines) {
 				//Sbar_DrawAlphaPic (0, 0, sb_scorebar, sbar_alpha_bg.value);
@@ -1463,6 +1573,7 @@ no_armor:
 			Sbar_DrawScoreboard ();
 		} else if (sb_showscores || (cl.stats[STAT_HEALTH] <= 0 && /*defaults 1*/ cl_deathscoreboard.integer)) {
 			// DEAD
+
 			//Sbar_DrawAlphaPic (0, 0, sb_scorebar, sbar_alpha_bg.value);
 			Sbar_DrawScoreboard ();
 		} else {
@@ -1490,6 +1601,11 @@ no_armor:
 	// UP
 	//
 	//
+		if (cl.scores[cl.playerentity-1].qw_spectator) {
+			if (sb_showscores)
+				Sbar_DeathmatchOverlay ();
+			return;
+		}
 
 			if (sb_lines > 24) {
 				Sbar_DrawInventory ();
@@ -1499,13 +1615,13 @@ no_armor:
 
 			if (sb_showscores || 
 				(cl.stats[STAT_HEALTH] <= 0 && 
-cl_deathscoreboard.integer)) {
+cl_deathscoreboard.integer && cl.scores[cl.playerentity-1].qw_spectator == false)) {
 		if (sb_lines) {
 			Sbar_DrawAlphaPic (0, 0, sb_scorebar, sbar_alpha_bg.value);
 		}
 
 		Sbar_DrawScoreboard ();
-	} else if (sb_showscores || (cl.stats[STAT_HEALTH] <= 0 && cl_deathscoreboard.integer)) {
+	} else if (sb_showscores || (cl.stats[STAT_HEALTH] <= 0 && cl_deathscoreboard.integer && cl.scores[cl.playerentity-1].qw_spectator == false)) {
 		// DEAD
 		Sbar_DrawAlphaPic (0, 0, sb_scorebar, sbar_alpha_bg.value);
 				Sbar_DrawScoreboard ();
@@ -1593,7 +1709,6 @@ void Sbar_Draw (void)
 		}
 		else if (cl.intermission == 1) {
 			if (IS_OLDNEXUIZ_DERIVED(gamemode)) { // display full scoreboard (that is, show scores + map name)
-
 				Sbar_DrawScoreboard();
 				return;
 			}
@@ -1610,7 +1725,7 @@ void Sbar_Draw (void)
 	}
 
 	if (cl_prydoncursor.integer > 0)
-		DrawQ_Pic((cl.cmd.cursor_screen[0] + 1) * 0.5 * vid_conwidth.integer, (cl.cmd.cursor_screen[1] + 1) * 0.5 * vid_conheight.integer, Draw_CachePic (va(vabuf, sizeof(vabuf), "gfx/prydoncursor%03i", cl_prydoncursor.integer)), 0, 0, 1, 1, 1, 1, 0);
+		DrawQ_Pic((cl.mcmd.cursor_screen[0] + 1) * 0.5 * vid_conwidth.integer, (cl.mcmd.cursor_screen[1] + 1) * 0.5 * vid_conheight.integer, Draw_CachePic (va(vabuf, sizeof(vabuf), "gfx/prydoncursor%03d", cl_prydoncursor.integer)), 0, 0, 1, 1, 1, 1, 0);
 }
 
 //=============================================================================
@@ -1631,7 +1746,7 @@ static float Sbar_PrintScoreboardItem(scoreboard_t *s, float x, float y)
 
 	if ((s - cl.scores) == cl.playerentity - 1)
 		myself = true;
-	if ((s - teams) >= 0 && (s - teams) < MAX_SCOREBOARD)
+	if ((s - teams) >= 0 && (s - teams) < MAX_SCOREBOARD_255)
 		if ((s->colors & 15) == (cl.scores[cl.playerentity - 1].colors & 15))
 			myself = true;
 
@@ -1863,6 +1978,8 @@ void Sbar_Init (void)
 	Cvar_RegisterVariable(&showdate);
 	Cvar_RegisterVariable(&showdate_format);
 	Cvar_RegisterVariable(&showtex);
+	Cvar_RegisterVariable(&showzmove);
+
 	Cvar_RegisterVariable(&showpos); // Baker r7082 showpos showangles
 	Cvar_RegisterVariable(&showangles); // Baker r7082 showpos showangles
 

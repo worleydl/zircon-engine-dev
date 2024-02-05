@@ -161,4 +161,6 @@ void FS_Init(void);
 void FS_Shutdown(void);
 void FS_Init_Commands(void);
 
+extern int fs_have_qex;
+
 #endif

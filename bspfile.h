@@ -186,12 +186,14 @@ typedef struct dplane_s
 #define CONTENTSQ3_BOTCLIP			0x00400000 // hint for Q3's bots
 #define CONTENTSQ3_ORIGIN			0x01000000 // used by origin brushes to indicate origin of bmodel (removed by map compiler)
 #define CONTENTSQ3_BODY				0x02000000 // used by bbox entities (should never be on a brush)
-#define CONTENTSQ3_CORPSE			0x04000000 // used by dead bodies (SOLID_CORPSE in darkplaces)
+#define CONTENTSQ3_CORPSE			0x04000000 // used by dead bodies (SOLID_CORPSE_5 in darkplaces)
 #define CONTENTSQ3_DETAIL			0x08000000 // brushes that do not split the bsp tree (decorations)
 #define CONTENTSQ3_STRUCTURAL		0x10000000 // brushes that split the bsp tree
 #define CONTENTSQ3_TRANSLUCENT		0x20000000 // leaves surfaces that are inside for rendering
 #define CONTENTSQ3_TRIGGER			0x40000000 // used by trigger entities
 #define CONTENTSQ3_NODROP			0x80000000 // remove items that fall into this brush
+
+#define SUPERCONTENTS_SKIP_NONE_0	0
 
 #define SUPERCONTENTS_SOLID			0x00000001
 #define SUPERCONTENTS_WATER			0x00000002

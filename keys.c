@@ -716,10 +716,33 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 	}
 
 	if ((key == K_ENTER || key == K_KP_ENTER) && KM_NONE) {
+#if 1
+		// Baker: We want to do this for multiplayer only
+		// cl.islocalgame
+		if (cl_chatmode.value && cls.state == ca_connected && cls.signon == SIGNONS_4) {
+			const char *s_check_line = &key_line[1]; // skip the "]"
+
+			// 1. Require a non-local game or having svs.maxclients > 1
+			if (cl.islocalgame == false || (sv.active && svs.maxclients > 1)) {
+				// 2. Require an unknown command
+				if (false == Cmd_Is_Lead_Word_A_Command_Cvar_Alias (cmd, s_check_line)) {
+					Cbuf_AddText (cmd, "say ");
+					Cbuf_AddTextLine (cmd, s_check_line);
+					Key_History_Push();
+					key_linepos = Key_ClearEditLine(q_is_console_true); // SEL/UNDO ENTER --> does a cleareditline
+					con_backscroll = 0;
+					return; // DONE!
+				} // 2.
+			} // 1.
+			
+			// If we are here, we didn't hit.
+		}
+#endif
+
 		// (X) kx: ENTER
 		Cbuf_AddTextLine (cmd, key_line+1);	// skip the ]
 		Key_History_Push();
-		key_linepos = Key_ClearEditLine(true); // SEL/UNDO ENTER --> does a cleareditline
+		key_linepos = Key_ClearEditLine(q_is_console_true); // SEL/UNDO ENTER --> does a cleareditline
 		// force an update, because the command may take some time
 		if (cls.state == ca_disconnected)
 			CL_UpdateScreen ();

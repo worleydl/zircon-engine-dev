@@ -182,12 +182,12 @@ static void M_Setup_Draw (void)
 }
 
 
-static void M_Setup_Key(cmd_state_t *cmd, int k, int ascii)
+static void M_Setup_Key(cmd_state_t *cmd, int key, int ascii)
 {
-	int			l;
+	int			slen;
 	char vabuf[1024];
 
-	switch (k) {
+	switch (key) {
 	case K_MOUSE2: if (Hotspots_DidHit_Slider()) { local_cursor = hotspotx_hover; goto leftus; } // PPX Key2 fall thru
 	case K_ESCAPE:
 		M_Menu_MultiPlayer_f(cmd);
@@ -225,14 +225,14 @@ static void M_Setup_Key(cmd_state_t *cmd, int k, int ascii)
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor--;
-		if (local_cursor < 0)
-			local_cursor = NUM_SETUP_CMDS-1;
+		if (local_cursor < 0) // K_UPARROW wraps around to end
+			local_cursor = local_count - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor++;
-		if (local_cursor >= NUM_SETUP_CMDS)
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
 			local_cursor = 0;
 		break;
 
@@ -245,14 +245,14 @@ leftus:
 			setup_top = setup_top - 1;
 		if (local_cursor == 2)
 			setup_bottom = setup_bottom - 1;
-		if (local_cursor == 3)
-		{
-			l = setup_rateindex(setup_rate) - 1;
-			if (l < 0)
-				l = RATES - 1;
-			setup_rate = setup_ratetable[l].rate;
+		if (local_cursor == 3) {
+			slen = setup_rateindex(setup_rate) - 1;
+			if (slen < 0)
+				slen = RATES - 1;
+			setup_rate = setup_ratetable[slen].rate;
 		}
 		break;
+
 	case K_RIGHTARROW:
 		if (local_cursor < 1)
 			return;
@@ -264,10 +264,10 @@ forward:
 			setup_bottom = setup_bottom + 1;
 		if (local_cursor == 3)
 		{
-			l = setup_rateindex(setup_rate) + 1;
-			if (l >= RATES)
-				l = 0;
-			setup_rate = setup_ratetable[l].rate;
+			slen = setup_rateindex(setup_rate) + 1;
+			if (slen >= RATES)
+				slen = 0;
+			setup_rate = setup_ratetable[slen].rate;
 		}
 		break;
 
@@ -282,16 +282,15 @@ forward:
 	default:
 		if (ascii < 32)
 			break;
-		if (local_cursor == 0)
-		{
-			l = (int)strlen(setup_myname);
-			if (l < 15)
+		if (local_cursor == 0) {
+			slen = (int)strlen(setup_myname);
+			if (slen < 15)
 			{
-				setup_myname[l+1] = 0;
-				setup_myname[l] = ascii;
+				setup_myname[slen+1] = 0;
+				setup_myname[slen] = ascii;
 			}
 		}
-	}
+	} // switch
 
 	if (setup_top > 15)
 		setup_top = 0;

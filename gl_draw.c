@@ -119,14 +119,14 @@ cachepic_t *Draw_CachePic_Flags(const char *path, unsigned int cachepicflags)
 				// ignore TEXF_COMPRESS when comparing, because fallback pics remove the flag, and ignore TEXF_MIPMAP because QC specifies that
 				if ((pic->texflags ^ texflags) & ~(TEXF_COMPRESS | TEXF_MIPMAP))
 				{
-					Con_DPrintf ("Draw_CachePic(\"%s\"): frame %d: reloading pic due to mismatch on flags\n", path, draw_frame);
+					Con_DPrintf ("Draw_CachePic(" QUOTED_S "): frame %d: reloading pic due to mismatch on flags\n", path, draw_frame);
 					goto reload;
 				}
 				if (!pic->skinframe || !pic->skinframe->base)
 				{
 					if (pic->cacheflags & CACHEPICFLAG_FAILONMISSING_256)
 						return NULL;
-					Con_DPrintf ("Draw_CachePic(\"%s\"): frame %d: reloading pic\n", path, draw_frame);
+					Con_DPrintf ("Draw_CachePic(" QUOTED_S "): frame %d: reloading pic\n", path, draw_frame);
 					goto reload;
 				}
 				if (!(cachepicflags & CACHEPICFLAG_NOTPERSISTENT))
@@ -374,7 +374,9 @@ void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, flo
 			Con_DPrintf ("Failed to load font-file for '%s', it will not support as many characters.\n", fnt->texpath);
 	}
 
-	fnt->pic = Draw_CachePic_Flags(fnt->texpath, CACHEPICFLAG_QUIET | CACHEPICFLAG_NOCOMPRESSION | (r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0) | CACHEPICFLAG_FAILONMISSING_256);
+	fnt->pic = Draw_CachePic_Flags(fnt->texpath, CACHEPICFLAG_QUIET | CACHEPICFLAG_NOCOMPRESSION | 
+		(r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0) | 
+		CACHEPICFLAG_FAILONMISSING_256);
 	if (!Draw_IsPicLoaded(fnt->pic))
 	{
 		for (i = 0; i < MAX_FONT_FALLBACKS; ++i)
@@ -1586,7 +1588,7 @@ void DrawQ_FlushUI(void)
 	GL_DepthMask(false);
 
 	Mod_Mesh_Finalize(mod);
-	R_DrawModelSurfaces(&cl_meshentities[MESH_UI].render, false, false, false, false, false, true);
+	R_DrawModelSurfaces(&cl_meshentities[MESH_UI_1].render, false, false, false, false, false, true);
 
 	Mod_Mesh_Reset(mod);
 }

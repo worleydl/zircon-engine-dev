@@ -131,7 +131,7 @@ static void M_Main_Key(cmd_state_t *cmd, int key, int ascii);
 		static void M_Reset_Key(cmd_state_t *cmd, int key, int ascii);
 		static void M_Video_Classic_Key(cmd_state_t *cmd, int key, int ascii);
 		static void M_Video_Nova_Key (cmd_state_t *cmd, int key, int ascii);
-		static void M_Maps_Key (cmd_state_t *cmd, int k, int ascii);
+		static void M_Maps_Key (cmd_state_t *cmd, int key, int ascii);
 	static void M_Help_Key(cmd_state_t *cmd, int key, int ascii);
 	static void M_Credits_Key(cmd_state_t *cmd, int key, int ascii);
 	static void M_Quit_Key(cmd_state_t *cmd, int key, int ascii);
@@ -141,6 +141,232 @@ static void M_ServerList_Key(cmd_state_t *cmd, int key, int ascii);
 static void M_ModList_Key(cmd_state_t *cmd, int key, int ascii);
 
 static qbool	m_entersound;		///< play after drawing a frame, so caching won't disrupt the sound
+
+double serverlist_list_query_time = 0;
+int serverlist_list_count = 0;
+int serverlist_list[SERVERLIST_VIEWLISTSIZE_2048];
+extern int slist_cursor;
+
+WARP_X_ (slist_sort_numplayers)
+int SList_CompareFrags_Ascending (const void *pa, const void *pb)
+{
+	server_player_info_t *paa = (server_player_info_t *)pa;
+	server_player_info_t *pbb = (server_player_info_t *)pb;
+	return - (paa->frags - pbb->frags); // We are negating for ascending
+}
+// Baker: Fires every time we set an index
+void Commit_To_Cname (void)
+{
+	int idx_nova = serverlist_list[slist_cursor];
+	serverlist_entry_t *my_entry= ServerList_GetViewEntry(idx_nova);
+	c_strlcpy (last_nav_cname, my_entry->info.cname);
+
+	// We can fill in the struct here
+	//server_player_info_t server_player_infos[32];
+	server_player_infos_count = 0;
+	if (my_entry->info.numplayers == 0)
+		return; // Nothing to parse
+	char *s_players = my_entry->info.players_data;
+	// 68 0 10 25 "expert" "" 13 13"
+	// 9 30 20 56 "UFIA" "tf_sold04" 4 42 20 27 67
+	// 28 0 28 666 "TDG" "" 0 0
+	// DP ping frags userid name
+	WARP_X_ (MAX_SCOREBOARD_255)
+
+	// Q: What happens if "\n" is in a name?
+	//int max_shown_32 = ARRAY_COUNT(server_player_infos);
+	char player_buf[MAX_INPUTLINE_16384];
+	char *msg;
+	c_strlcpy (player_buf, s_players);
+
+	msg = &player_buf[0];
+	//Clipboard_Set_Text (msg);
+	// QW:
+	//3 -1 46 17 "Sleeper" "player_sleeper" 13 13
+	//8 1 30 33 "(1)Sleeper" "player_sleeper" 13 13
+	// userid frags time ping name_in_quotes skin_in_quotes team_in_quotes top_color bottom_color
+	//Clipboard_Set_Text (msg);
+#ifdef WE_PRINT
+	Con_PrintLinef ("msg: " QUOTED_S, msg);
+#endif
+	int clnum, slen;
+	server_player_infos_count = 0;
+	for (clnum=0; clnum < QW_MAX_CLIENTS_32; clnum ++) {
+
+		char *nl = strchr(msg, '\n');
+		char *token;
+		if (!nl)
+			break;
+		*nl = '\0';
+
+		server_player_info_t *player = &server_player_infos[clnum];
+		server_player_infos_count++;
+		// qw: userid frags time
+		player->userid = 0;
+		player->frags = 0;
+		player->time = 0;
+		player->ping = 0;
+		player->name[0] = 0;
+		player->qw_skin[0]= 0;
+		player->qw_team[0]= 0;
+		player->top_color = 0;
+		player->bottom_color = 0;
+		player->is_specator = 0 ;
+		token = msg;
+		if (!token)
+			break;
+
+		if (my_entry->protocol != PROTOCOL_QUAKEWORLD) {
+			// DarkPlaces is score | ping | player
+			player->frags = atoi(token);
+			token = strchr(token+1, ' ');
+			if (!token)
+				break;
+
+			player->ping = atoi(token);
+			token = strchr(token+1, ' ');
+			if (!token)
+				break;
+
+			msg = token + 1;
+			//// Rest of line goes to name?
+			//c_strlcpy (player->name, msg);
+			//String_Edit_Unquote (player->name);
+
+			token = strchr(token + 1, '\"');
+			if (!token)
+				break;
+			msg = strchr(token + 1, '\"');
+			if (!msg)
+				break;
+			slen = msg - token - 1; // -1 to remove trail
+			if (slen >= (int)sizeof(player->name))
+				slen = (int)sizeof(player->name);
+			if (String_Does_Start_With_Caseless_PRE  (token, "\"\\s\\")) { // ---> "\s\  <----
+				player->is_specator = true;
+				memcpy (&player->name[0], token + 4, slen);
+			}
+			else {
+				memcpy (&player->name[0], token + 1, slen);
+			}
+			player->name[slen] = 0;
+
+			// DarkPlaces servers don't report color so make up something
+			// It must be deterministic (same result every time).
+			int val = player->name[0];
+			int val2 = 0;
+			if (player->name[1]) val2 += player->name[1];
+			if (player->name[2]) val2 += player->name[2];
+			if (player->name[3]) val2 += player->name[3];
+			if (player->name[4]) val2 += player->name[4];
+			if (player->name[5]) val2 += player->name[5];
+			player->top_color = val & 15;
+			player->bottom_color = val2 & 15;
+		} else {
+			// QUAKEWORLD
+			player->userid = atoi(token);
+			token = strchr(token+1, ' ');
+			if (!token)
+				break;
+
+			player->frags = atoi(token);
+			token = strchr(token+1, ' ');
+			if (!token)
+				break;
+
+			player->time = atoi(token);
+			msg = token;
+			char com_token[65536];
+			token = COM_Parse_FTE (token, com_token, sizeof(com_token)); // COM_Parse(token);  Baker: Is this close enough?
+
+			// QUAKEWORLD
+			player->ping = atoi(token);
+			msg = token;
+			token = strchr(msg+1, ' ');
+			if (!token)
+				break;
+// n0
+			token = strchr(token + 1, '\"');
+			if (!token)
+				break;
+			msg = strchr(token + 1, '\"');
+			if (!msg)
+				break;
+			slen = msg - token - 1; // -1 to remove trail
+			if (slen >= (int)sizeof(player->name))
+				slen = (int)sizeof(player->name);
+			if (String_Does_Start_With_Caseless_PRE  (token, "\"\\s\\")) { // ---> "\s\  <----
+				player->is_specator = true;
+				memcpy (&player->name[0], token + 4, slen);
+			}
+			else {
+				memcpy (&player->name[0], token + 1, slen);
+			}
+			player->name[slen] = 0;
+// n1
+			token = strchr(msg + 1, '\"');
+			if (!token)
+				break;
+			msg = strchr(token + 1, '\"');
+			if (!msg)
+				break;
+			slen = msg - token - 1; // -1 to remove trail
+			if (slen >= (int)sizeof(player->qw_skin))
+				slen = (int)sizeof(player->qw_skin);
+			memcpy (&player->qw_skin[0], token + 1, slen);
+			player->qw_skin[slen] = '\0';
+
+			token = strchr(msg+1, ' ');
+			if (!token)
+				break;
+			player->top_color = atoi(token);
+			token = strchr(token+1, ' ');
+			if (!token)
+				break;
+			player->bottom_color = atoi(token);
+
+			token = strchr(msg + 1, '\"');
+			if (token) {
+				msg = strchr(token + 1, '\"');
+				if (msg) {
+					slen = msg - token - 1; // -1 to remove trail
+					if (slen >= (int)sizeof(player->qw_team))
+						slen = (int)sizeof(player->qw_team);
+					memcpy (player->qw_team, token + 1, slen);
+					player->qw_team[slen] = '\0';
+				} // ms]g
+			} // token
+
+
+		} // QUAKEWORLD
+
+		msg = nl;
+		if (!msg)
+			break;	//erm...
+		msg++;
+#ifdef WE_PRINT
+		Con_PrintLinef ("Player %d", clnum);
+		Con_PrintLinef ("====", clnum);
+		Con_PrintLinef ("userid %d", player->userid);
+		Con_PrintLinef ("frags %d", player->frags);
+		Con_PrintLinef ("time %f", player->time);
+		Con_PrintLinef ("ping %d", player->ping);
+		Con_PrintLinef ("name %s", player->name);
+		Con_PrintLinef ("qw_skin %s", player->qw_skin);
+
+		Con_PrintLinef ("top_color %d", player->top_color);
+		Con_PrintLinef ("bottom_color %d", player->bottom_color);
+		Con_PrintLinef ("qw_team %s", player->qw_team);
+		Con_PrintLinef ("is_specator %d", player->is_specator);
+#endif
+	} // each player
+
+	if (server_player_infos_count) {
+		// SORT
+		qsort (server_player_infos, server_player_infos_count, sizeof(server_player_infos[0]), SList_CompareFrags_Ascending);
+	}
+}
+
 
 video_resolution_t video_resolutions_hardcoded[] =
 {
@@ -629,10 +855,10 @@ static void M_Menu_Demos_f(cmd_state_t *cmd)
 }
 
 
-static void M_Demo_Key (cmd_state_t *cmd, int k, int ascii)
+static void M_Demo_Key (cmd_state_t *cmd, int key, int ascii)
 {
 	char vabuf[1024];
-	switch (k)
+	switch (key)
 	{
 	case K_ESCAPE:	case K_MOUSE2:
 		M_Menu_Main_f (cmd);

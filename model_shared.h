@@ -567,7 +567,7 @@ typedef struct modloader_s
 	const char *extension;
 	const char *header;
 	size_t headersize; // The header might not be NULL terminated
-	void (*Load)(model_t *, void *, void *);
+	int (*Load)(model_t *, void *, void *);
 } modloader_t;
 
 // sky/water subdivision
@@ -750,23 +750,23 @@ void Mod_Skeletal_FreeBuffers(void);
 void Mod_SpriteInit(void);
 
 // loaders
-void Mod_2PSB_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_BSP2_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_HLBSP_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_MAP_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend);
-void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_2PSB_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_BSP2_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_HLBSP_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_Q1BSP_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_MAP_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_OBJ_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_IDSP_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_IDS2_Load(model_t *mod, void *buffer, void *bufferend);
+int Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend);
 
 #endif	// MODEL_SHARED_H
 

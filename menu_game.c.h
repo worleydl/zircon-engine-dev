@@ -1,5 +1,8 @@
 // menu_game.c.h
 
+#define 	local_count		NUM_GAMEOPTIONS
+#define		local_cursor	gameoptions_cursor
+
 // Baker: No use of local_cursor in this file
 
 //=============================================================================
@@ -450,7 +453,7 @@ void M_Menu_GameOptions_f(cmd_state_t *cmd)
 	if (maxplayers == 0)
 		maxplayers = svs.maxclients;
 	if (maxplayers < 2)
-		maxplayers = min(8, MAX_SCOREBOARD);
+		maxplayers = min(8, MAX_SCOREBOARD_255);
 	// pick game level list based on gamemode (use GAME_NORMAL if no matches)
 	gameoptions_levels = registered.integer ? gamelist[0].registered : gamelist[0].notregistered;
 	for (i = 0;i < (int)(sizeof(gamelist)/sizeof(gamelist[0]));i++)
@@ -459,7 +462,7 @@ void M_Menu_GameOptions_f(cmd_state_t *cmd)
 }
 
 
-static int gameoptions_cursor_table[] = {40, 56, 64, 72, 80, 88, 96, 104, 112, 140, 160, 168};
+static int gameoptions_cursor_table[] = {40, 56, 64, 72, 80, 88, 96, 104, 112, 128 /*140*/, 160, 168};
 #define	NUM_GAMEOPTIONS	12
 static int		gameoptions_cursor;
 
@@ -482,7 +485,7 @@ void M_GameOptions_Draw (void)
 	Hotspots_Add (menu_x + 48, menu_y + 40, (45 * 8) /*360*/, 8, 1, hotspottype_button);
 
 	M_Print(0, 56, "      Max players");
-	Hotspots_Add (menu_x + 48, menu_y + 96, (45 * 8) /*360*/, 8, 1, hotspottype_slider);
+	Hotspots_Add (menu_x + 48, menu_y + 56, (45 * 8) /*360*/, 8, 1, hotspottype_slider);
 
 	M_Print(160, 56, va(vabuf, sizeof(vabuf), "%d", maxplayers) );
 
@@ -490,8 +493,7 @@ void M_GameOptions_Draw (void)
 		M_Print(0, 64, "        Game Type");
 		Hotspots_Add (menu_x + 48, menu_y + 64, (45 * 8) /*360*/, 8, 1, hotspottype_slider);
 
-		if (gamemode == GAME_BATTLEMECH)
-		{
+		if (gamemode == GAME_BATTLEMECH) {
 			if (!deathmatch.integer)
 				Cvar_SetValue(&cvars_all, "deathmatch", 1);
 			if (deathmatch.integer == 2)
@@ -512,12 +514,10 @@ void M_GameOptions_Draw (void)
 		M_Print(0, 72, "        Teamplay");
 		Hotspots_Add (menu_x + 48, menu_y + 72, (45 * 8) /*360*/, 8, 1, hotspottype_slider);
 
-		if (gamemode == GAME_ROGUE)
-		{
+		if (gamemode == GAME_ROGUE) {
 			const char *msg;
 
-			switch((int)teamplay.integer)
-			{
+			switch((int)teamplay.integer) {
 				case 1: msg = "No Friendly Fire"; break;
 				case 2: msg = "Friendly Fire"; break;
 				case 3: msg = "Tag"; break;
@@ -568,19 +568,19 @@ void M_GameOptions_Draw (void)
 			M_Print(160, 96, va(vabuf, sizeof(vabuf), "%d minutes", timelimit.integer));
 	}
 
-	M_Print(0, 104, "    Public server");
+	M_Print(0, 104, "       Public?");
 	M_Print(160, 104, (sv_public.integer == 0) ? "no" : "yes");
 	Hotspots_Add (menu_x + 48, menu_y + 104, (45 * 8) /*360*/, 8, 1, hotspottype_slider);
 
-	M_Print(0, 112, "   Server maxrate");
+	M_Print(0, 112, "       dl rate");
 	M_Print(160, 112, va(vabuf, sizeof(vabuf), "%d", sv_maxrate.integer));
 	Hotspots_Add (menu_x + 48, menu_y + 112, (45 * 8) /*360*/, 8, 1, hotspottype_slider);
 
 	M_Print(0, 128, "      Server name");
 	Hotspots_Add (menu_x + 48, menu_y + 128, (45 * 8) /*360*/, 8 + 8 + 1, 1, hotspottype_slider);
-
-	M_DrawTextBox (0, 132, 38, 1);
-	M_Print(8, 140, hostname.string);
+#define M_GAME_MAX_SERVER_NAME_24 24
+	M_DrawTextBox (152, 132 - 12, M_GAME_MAX_SERVER_NAME_24, 1);
+	M_Print (160, 140 - 12, hostname.string);
 
 	M_Print(0, 160, "         Episode");
 	M_Print(160, 160, gameoptions_levels->episodes[startepisode].description);
@@ -593,10 +593,10 @@ void M_GameOptions_Draw (void)
 	Hotspots_Add (menu_x + 48, menu_y + 168, (45 * 8) /*360*/, 8 + 1, 1, hotspottype_slider);
 
 // line cursor
-	if (gameoptions_cursor == 9)
-		M_DrawCharacter (8 + 8 * strlen(hostname.string), gameoptions_cursor_table[gameoptions_cursor], 10+((int)(host.realtime*4)&1));
+	if (local_cursor == 9) // server name
+		M_DrawCharacter (160 + 8 * strlen(hostname.string), gameoptions_cursor_table[local_cursor], 10+((int)(host.realtime*4)&1));
 	else
-		M_DrawCharacter (144, gameoptions_cursor_table[gameoptions_cursor], 12+((int)(host.realtime*4)&1));
+		M_DrawCharacter (144, gameoptions_cursor_table[local_cursor], 12+((int)(host.realtime*4)&1));
 
 	if (m_serverInfoMessage)
 	{
@@ -615,7 +615,7 @@ void M_GameOptions_Draw (void)
 	}
 
 //#pragma message ("This is very dubious")
-	drawsel_idx = gameoptions_cursor; // DUBIOUS!
+//	drawsel_idx = gameoptions_cursor; // DUBIOUS!
 	PPX_DrawSel_End ();
 }
 
@@ -624,13 +624,11 @@ static void M_NetStart_Change (int dir)
 {
 	int count;
 
-	switch (gameoptions_cursor)
-	{
+	switch (local_cursor) {
 	case 1:
 		maxplayers += dir;
-		if (maxplayers > MAX_SCOREBOARD)
-		{
-			maxplayers = MAX_SCOREBOARD;
+		if (maxplayers > MAX_SCOREBOARD_255) {
+			maxplayers = MAX_SCOREBOARD_255;
 			m_serverInfoMessage = true;
 			m_serverInfoMessageTime = host.realtime;
 		}
@@ -639,8 +637,7 @@ static void M_NetStart_Change (int dir)
 		break;
 
 	case 2:
-		if (gamemode == GAME_BATTLEMECH)
-		{
+		if (gamemode == GAME_BATTLEMECH) {
 			if (deathmatch.integer == 2) // changing from Rambo to Deathmatch
 				Cvar_SetValueQuick (&deathmatch, 0);
 			else // changing from Deathmatch to Rambo
@@ -705,8 +702,8 @@ static void M_NetStart_Change (int dir)
 
 	case 8:
 		Cvar_SetValueQuick (&sv_maxrate, sv_maxrate.integer + dir*500);
-		if (sv_maxrate.integer < NET_MINRATE)
-			Cvar_SetValueQuick (&sv_maxrate, NET_MINRATE);
+		if (sv_maxrate.integer < NET_MINRATE_1000)
+			Cvar_SetValueQuick (&sv_maxrate, NET_MINRATE_1000);
 		break;
 
 	case 9:
@@ -738,21 +735,32 @@ static void M_NetStart_Change (int dir)
 
 static void M_GameOptions_Key(cmd_state_t *cmd, int key, int ascii)
 {
-	int l;
+	int slen;
 	char hostnamebuf[128];
 	char vabuf[1024];
 
 	switch (key) {
-	case K_MOUSE2: if (Hotspots_DidHit_Slider()) { gameoptions_cursor = hotspotx_hover; goto leftus; } // PPX Key2 fall thru
+	case K_MOUSE2: 
+		if (Hotspots_DidHit_Slider()) {
+			// Right click of slider
+			// changes an option, instead of exiting 
+			local_cursor = hotspotx_hover; 
+			goto leftus; 
+		} 
+		// fall thru
+
 	case K_ESCAPE:
 		M_Menu_MultiPlayer_f(cmd);
 		break;
 
-	case K_MOUSE1: if (!Hotspots_DidHit () ) { return;	}  gameoptions_cursor = hotspotx_hover; // PPX Key2 fall thru
+	case K_MOUSE1: 
+		if (!Hotspots_DidHit () ) { return;	}  
+		local_cursor = hotspotx_hover; 
+		// fall thru
 
 	case K_ENTER:
 		S_LocalSound ("sound/misc/menu2.wav");
-		if (gameoptions_cursor == 0) {
+		if (local_cursor == 0) {
 			if (sv.active)
 				Cbuf_AddTextLine (cmd, "disconnect");
 			Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "maxplayers %u", maxplayers) );
@@ -765,51 +773,57 @@ static void M_GameOptions_Key(cmd_state_t *cmd, int key, int ascii)
 		break;
 
 	case K_HOME:
-		gameoptions_cursor = 0;
+		local_cursor = 0;
 		break;
 
 	case K_END:
-		gameoptions_cursor = NUM_GAMEOPTIONS - 1;
+		local_cursor = local_count - 1;
 		break;
+
+	// If there are no visiblerows limitations
+	// in the menu, page and wheel do nothing.
+	// case K_PGUP:
+	// case K_MWHEELUP:
+	// case K_PGDN:
+	// case K_MWHEELDOWN:
 
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
-		gameoptions_cursor--;
-		if (gameoptions_cursor < 0)
-			gameoptions_cursor = NUM_GAMEOPTIONS-1;
+		local_cursor--;
+		if (local_cursor < 0) // K_UPARROW wraps around to end
+			local_cursor = local_count - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
-		gameoptions_cursor++;
-		if (gameoptions_cursor >= NUM_GAMEOPTIONS)
-			gameoptions_cursor = 0;
+		local_cursor++;
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
+			local_cursor = 0;
 		break;
 
-	case K_LEFTARROW:
 leftus:
-		if (gameoptions_cursor == 0)
+	case K_LEFTARROW:
+		if (local_cursor == 0)
 			break;
 		S_LocalSound ("sound/misc/menu3.wav");
 		M_NetStart_Change (-1);
 		break;
 
 	case K_RIGHTARROW:
-		if (gameoptions_cursor == 0)
+		if (local_cursor == 0)
 			break;
 		S_LocalSound ("sound/misc/menu3.wav");
 		M_NetStart_Change (1);
 		break;
 
 	case K_BACKSPACE:
-		if (gameoptions_cursor == 9)
-		{
-			l = (int)strlen(hostname.string);
-			if (l)
+		if (local_cursor == 9) {
+			slen = (int)strlen(hostname.string);
+			if (slen)
 			{
-				l = min(l - 1, 37);
-				memcpy(hostnamebuf, hostname.string, l);
-				hostnamebuf[l] = 0;
+				slen = min(slen - 1, (M_GAME_MAX_SERVER_NAME_24 - 1));
+				memcpy(hostnamebuf, hostname.string, slen);
+				hostnamebuf[slen] = 0;
 				Cvar_Set(&cvars_all, "hostname", hostnamebuf);
 			}
 		}
@@ -818,17 +832,17 @@ leftus:
 	default:
 		if (ascii < 32)
 			break;
-		if (gameoptions_cursor == 9)
-		{
-			l = (int)strlen(hostname.string);
-			if (l < 37)
-			{
-				memcpy(hostnamebuf, hostname.string, l);
-				hostnamebuf[l] = ascii;
-				hostnamebuf[l+1] = 0;
+		if (local_cursor == 9) {
+			slen = (int)strlen(hostname.string);
+			if (slen < (M_GAME_MAX_SERVER_NAME_24 - 1) ) {
+				memcpy(hostnamebuf, hostname.string, slen);
+				hostnamebuf[slen] = ascii;
+				hostnamebuf[slen+1] = 0;
 				Cvar_Set(&cvars_all, "hostname", hostnamebuf);
 			}
 		}
-	}
+	} // switch
 }
 
+#undef 	local_count
+#undef	local_cursor

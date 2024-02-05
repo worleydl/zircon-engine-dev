@@ -26,7 +26,7 @@ typedef struct trace_s
 	qbool startsolid;
 	// this is set to true in world.c if startsolid was set in a trace against world
 	qbool worldstartsolid;
-	// this is set to true in world.c if startsolid was set in a trace against a SOLID_BSP entity, in other words this is true if the entity is stuck in a door or wall, but not if stuck in another normal entity
+	// this is set to true in world.c if startsolid was set in a trace against a SOLID_BSP_4 entity, in other words this is true if the entity is stuck in a door or wall, but not if stuck in another normal entity
 	qbool bmodelstartsolid;
 	// if true, the trace passed through empty somewhere
 	// (set only by Q1BSP tracing)
@@ -166,7 +166,7 @@ void Collision_TraceBrushTriangleFloat(trace_t *trace, const colbrushf_t *thisbr
 // open area, and trace.startsolid will be set
 //
 // type is one of the MOVE_ values such as MOVE_NOMONSTERS which skips box
-// entities, only colliding with SOLID_BSP entities (doors, lifts)
+// entities, only colliding with SOLID_BSP_4 entities (doors, lifts)
 //
 // passedict is excluded from clipping checks
 struct frameblend_s;

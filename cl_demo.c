@@ -265,9 +265,8 @@ void CL_ReadDemoMessage(void)
 			cl_message.cursize = 0;
 			return;
 		}
-		VectorCopy(cl.mviewangles[0], cl.mviewangles[1]);
-		for (i = 0;i < 3;i++)
-		{
+		VectorCopy(cl.mviewangles[0], cl.mviewangles[1]); // demo
+		for (i = 0;i < 3;i++) {
 			FS_Read(cls.demofile, &f, 4);
 			cl.mviewangles[0][i] = LittleFloat(f);
 		}
@@ -309,7 +308,7 @@ void CL_Stop_f(cmd_state_t *cmd)
 	unsigned char bufdata[64];
 
 	if (!cls.demorecording) {
-		Con_Print("Not recording a demo.\n");
+		Con_PrintLinef ("Not recording a demo.");
 		return;
 	}
 
@@ -322,13 +321,12 @@ void CL_Stop_f(cmd_state_t *cmd)
 	CL_WriteDemoMessage(&buf);
 
 // finish up
-	if (cl_autodemo.integer && (cl_autodemo_delete.integer & 1))
-	{
+	if (cl_autodemo.integer && (cl_autodemo_delete.integer & 1)) {
 		FS_RemoveOnClose(cls.demofile);
-		Con_Print("Completed and deleted demo\n");
+		Con_PrintLinef ("Completed and deleted demo");
 	}
 	else
-		Con_Print("Completed demo\n");
+		Con_PrintLinef ("Completed demo");
 	FS_Close (cls.demofile);
 	cls.demofile = NULL;
 	cls.demorecording = false;
@@ -371,6 +369,10 @@ void CL_Record_f(cmd_state_t *cmd)
 		return;
 	}
 #endif
+	if (cls.state == ca_connected && cls.protocol == PROTOCOL_QUAKEWORLD) {
+		Con_PrintLinef ("Cannot record Quakeworld demos");
+		return;
+	}
 
 	if (c == 2 && cls.state == ca_connected) {
 #if 222 // Baker r0070 - create a temp.sav

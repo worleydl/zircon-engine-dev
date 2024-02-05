@@ -426,7 +426,7 @@ static void Mod_VBSP_LoadFaces(sizebuf_t *sb)
 
 // Valve BSP loader
 // Cloudwalk: Wasn't sober when I wrote this. I screamed and ran away at the face loader
-void Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	static cvar_t *testing = NULL; // TEMPORARY
 	int i;
@@ -511,4 +511,5 @@ void Mod_VBSP_Load(model_t *mod, void *buffer, void *bufferend)
 		// AHHHHHHH
 		Mod_VBSP_LoadFaces(&lumpsb[HL2LUMP_FACES]);
 	}
+	return false;
 }

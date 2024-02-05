@@ -91,7 +91,7 @@ static int EntityState5_Priority(entityframe5_database_t *d, int stateindex)
 	for (limit = 0;limit < 256;limit++)
 	{
 		s = d->states + stateindex;
-		if (s->flags & RENDER_VIEWMODEL)
+		if (s->sflags & RENDER_VIEWMODEL)
 			stateindex = d->viewentnum;
 		else if (s->tagentity)
 			stateindex = s->tagentity;
@@ -120,6 +120,10 @@ static int EntityState5_DeltaBits(const entity_state_t *o, const entity_state_t 
 			bits |= E5_ORIGIN;
 		if (!VectorCompare(o->angles, n->angles))
 			bits |= E5_ANGLES;
+#if 1
+		if (false == VectorCompare(o->bbx_mins, n->bbx_mins) || false == VectorCompare(o->bbx_maxs, n->bbx_maxs))
+			bits |= E5_BBOX_S27;
+#endif
 		if (o->modelindex != n->modelindex)
 			bits |= E5_MODEL;
 		if (o->frame != n->frame)
@@ -128,7 +132,7 @@ static int EntityState5_DeltaBits(const entity_state_t *o, const entity_state_t 
 			bits |= E5_SKIN;
 		if (o->effects != n->effects)
 			bits |= E5_EFFECTS;
-		if (o->flags != n->flags)
+		if (o->sflags != n->sflags) // Baker:
 			bits |= E5_FLAGS;
 		if (o->alpha != n->alpha)
 			bits |= E5_ALPHA;
@@ -146,7 +150,7 @@ static int EntityState5_DeltaBits(const entity_state_t *o, const entity_state_t 
 			bits |= E5_COLORMOD;
 		if (o->glowmod[0] != n->glowmod[0] || o->glowmod[1] != n->glowmod[1] || o->glowmod[2] != n->glowmod[2])
 			bits |= E5_GLOWMOD;
-		if (n->flags & RENDER_COMPLEXANIMATION)
+		if (n->sflags & RENDER_COMPLEXANIMATION)
 		{
 			if ((o->skeletonobject.model && o->skeletonobject.relativetransforms) != (n->skeletonobject.model && n->skeletonobject.relativetransforms))
 			{
@@ -193,7 +197,15 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 			return;
 
 		bits = changedbits;
-		if ((bits & E5_ORIGIN) && (!(s->flags & RENDER_LOWPRECISION) || s->exteriormodelforclient || s->tagentity || s->viewmodelforclient || (s->number >= 1 && s->number <= svs.maxclients) || s->origin[0] <= -4096.0625 || s->origin[0] >= 4095.9375 || s->origin[1] <= -4096.0625 || s->origin[1] >= 4095.9375 || s->origin[2] <= -4096.0625 || s->origin[2] >= 4095.9375))
+		if ((bits & E5_ORIGIN) && (!(s->sflags & RENDER_LOWPRECISION) || 
+			s->exteriormodelforclient || s->tagentity || s->viewmodelforclient 
+			|| (s->number >= 1 && s->number <= svs.maxclients) 
+			|| s->origin[0] <= -4096.0625 
+			|| s->origin[0] >= 4095.9375 
+			|| s->origin[1] <= -4096.0625 
+			|| s->origin[1] >= 4095.9375 
+			|| s->origin[2] <= -4096.0625 
+			|| s->origin[2] >= 4095.9375))
 		// maybe also add: ((model = SV_GetModelByIndex(s->modelindex)) != NULL && model->name[0] == '*')
 			bits |= E5_ORIGIN32;
 			// possible values:
@@ -205,7 +217,7 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 			//     (int)(f * 8 + 0.5) <=  32767
 			//          (f * 8 + 0.5) <   32768
 			//           f * 8 + 0.5) <   4095.9375
-		if ((bits & E5_ANGLES) && !(s->flags & RENDER_LOWPRECISION))
+		if ((bits & E5_ANGLES) && !(s->sflags & RENDER_LOWPRECISION))
 			bits |= E5_ANGLES16;
 		if ((bits & E5_MODEL) && s->modelindex >= 256)
 			bits |= E5_MODEL16;
@@ -218,6 +230,13 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 			else if (s->effects & 0xFFFFFF00)
 				bits |= E5_EFFECTS16;
 		}
+
+		// Baker: bits must be final here.  If HCL no have BBOX extension, remove the flag.
+		if (Have_Flag (bits, E5_BBOX_S27) &&
+			false == Have_Zircon_Ext_Flag_SV_HCL(ZIRCON_EXT_SERVER_SENDS_BBOX_TO_CLIENT_64))
+				Flag_Remove_From (bits, E5_BBOX_S27);
+bits_final:
+
 		if (bits >= 256)
 			bits |= E5_EXTEND1;
 		if (bits >= 65536)
@@ -234,8 +253,26 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 				MSG_WriteByte(msg, (bits >> 16) & 0xFF);
 			if (bits & E5_EXTEND3)
 				MSG_WriteByte(msg, (bits >> 24) & 0xFF);
-			if (bits & E5_FLAGS)
-				MSG_WriteByte(msg, s->flags);
+			if (bits & E5_FLAGS) {
+				if (Have_Zircon_Ext_Flag_SV_HCL(ZIRCON_EXT_32BIT_RENDER_FLAGS_16)) {
+					MSG_WriteLong(msg, s->sflags);
+				} else {
+					MSG_WriteByte(msg, s->sflags);
+				}
+			} // E5_FLAGS
+
+			// Baker: We removed this bit above if no HCL extension
+			if (Have_Flag (bits, E5_BBOX_S27)) {
+				// Short size
+				MSG_WriteCoord13i (msg, s->bbx_mins[0]);
+				MSG_WriteCoord13i (msg, s->bbx_mins[1]);
+				MSG_WriteCoord13i (msg, s->bbx_mins[2]);
+				MSG_WriteCoord13i (msg, s->bbx_maxs[0]);
+				MSG_WriteCoord13i (msg, s->bbx_maxs[1]);
+				MSG_WriteCoord13i (msg, s->bbx_maxs[2]);
+				// ZIRCON_EXT_SERVER_SENDS_BBOX_TO_CLIENT_64
+			}
+
 			if (bits & E5_ORIGIN)
 			{
 				if (bits & E5_ORIGIN32)
@@ -407,11 +444,12 @@ void EntityState5_WriteUpdate(int number, const entity_state_t *s, int changedbi
 	}
 }
 
-qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database_t *d, int numstates, const entity_state_t **states, int viewentnum, unsigned int movesequence, qbool need_empty)
+WARP_X_ (in_movesequence client->movesequence)
+qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database_t *d, int numstates, const entity_state_t **states, int viewentnum, unsigned int in_movesequence, qbool need_empty)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	const entity_state_t *n;
-	int i, num, l, framenum, packetlognumber, priority;
+	int i, num, lengtho, framenum, packetlognumber, priority;
 	sizebuf_t buf;
 	unsigned char data[128];
 	entityframe5_packetlog_t *packetlog;
@@ -427,8 +465,7 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 	for (packetlognumber = 0;packetlognumber < ENTITYFRAME5_MAXPACKETLOGS;packetlognumber++)
 		if (d->packetlog[packetlognumber].packetnumber == 0)
 			break;
-	if (packetlognumber == ENTITYFRAME5_MAXPACKETLOGS)
-	{
+	if (packetlognumber == ENTITYFRAME5_MAXPACKETLOGS) {
 		Con_DPrintf ("EntityFrame5_WriteFrame: packetlog overflow for a client, resetting\n");
 		EntityFrame5_LostFrame(d, framenum);
 		packetlognumber = 0;
@@ -441,15 +478,13 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 
 	// detect changes in states
 	num = 1;
-	for (i = 0;i < numstates;i++)
-	{
+	for (i = 0;i < numstates;i++) {
 		n = states[i];
 		// mark gaps in entity numbering as removed entities
-		for (;num < n->number;num++)
+		for (; num < n->number; num++)
 		{
 			// if the entity used to exist, clear it
-			if (CHECKPVSBIT(d->visiblebits, num))
-			{
+			if (CHECKPVSBIT(d->visiblebits, num)) {
 				CLEARPVSBIT(d->visiblebits, num);
 				d->deltabits[num] = E5_FULLUPDATE;
 				d->priorities[num] = max(d->priorities[num], 8); // removal is cheap
@@ -458,8 +493,7 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 			}
 		}
 		// update the entity state data
-		if (!CHECKPVSBIT(d->visiblebits, num))
-		{
+		if (!CHECKPVSBIT(d->visiblebits, num)) {
 			// entity just spawned in, don't let it completely hog priority
 			// because of being ancient on the first frame
 			d->updateframenum[num] = framenum;
@@ -476,10 +510,8 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 		num++;
 	}
 	// all remaining entities are dead
-	for (;num < d->maxedicts;num++)
-	{
-		if (CHECKPVSBIT(d->visiblebits, num))
-		{
+	for (;num < d->maxedicts;num++) {
+		if (CHECKPVSBIT(d->visiblebits, num)) {
 			CLEARPVSBIT(d->visiblebits, num);
 			d->deltabits[num] = E5_FULLUPDATE;
 			d->priorities[num] = max(d->priorities[num], 8); // removal is cheap
@@ -495,16 +527,13 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 
 	// build lists of entities by priority level
 	memset(d->prioritychaincounts, 0, sizeof(d->prioritychaincounts));
-	l = 0;
-	for (num = 0;num < d->maxedicts;num++)
-	{
-		if (d->priorities[num])
-		{
-			if (d->deltabits[num])
-			{
+	lengtho = 0;
+	for (num = 0;num < d->maxedicts;num++) {
+		if (d->priorities[num]) {
+			if (d->deltabits[num]) {
 				if (d->priorities[num] < (ENTITYFRAME5_PRIORITYLEVELS - 1))
 					d->priorities[num] = EntityState5_Priority(d, num);
-				l = num;
+				lengtho = num;
 				priority = d->priorities[num];
 				if (d->prioritychaincounts[priority] < ENTITYFRAME5_MAXSTATES)
 					d->prioritychains[priority][d->prioritychaincounts[priority]++] = num;
@@ -516,44 +545,53 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 
 	packetlog = NULL;
 	// write stat updates
-	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_NEHAHRABJP && sv.protocol != PROTOCOL_NEHAHRABJP2 && sv.protocol != PROTOCOL_NEHAHRABJP3 && sv.protocol != PROTOCOL_DARKPLACES1 && sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5)
+	if (sv.protocol != PROTOCOL_QUAKE && 
+		sv.protocol != PROTOCOL_QUAKEDP && 
+		sv.protocol != PROTOCOL_NEHAHRAMOVIE && 
+		sv.protocol != PROTOCOL_NEHAHRABJP && 
+		sv.protocol != PROTOCOL_NEHAHRABJP2 && 
+		sv.protocol != PROTOCOL_NEHAHRABJP3 && 
+		sv.protocol != PROTOCOL_DARKPLACES1 && 
+		sv.protocol != PROTOCOL_DARKPLACES2 && 
+		sv.protocol != PROTOCOL_DARKPLACES3 && 
+		sv.protocol != PROTOCOL_DARKPLACES4 && 
+		sv.protocol != PROTOCOL_DARKPLACES5)
 	{
 		for (i = 0;i < MAX_CL_STATS && msg->cursize + 6 + 11 <= maxsize;i++) {
 			if (host_client->statsdeltabits[i>>3] & (1<<(i&7))) {
 				host_client->statsdeltabits[i>>3] &= ~(1<<(i&7));
 				// add packetlog entry now that we have something for it
-				if (!packetlog)
-				{
+				if (!packetlog) {
 					packetlog = d->packetlog + packetlognumber;
 					packetlog->packetnumber = framenum;
 					packetlog->numstates = 0;
 					memset(packetlog->statsdeltabits, 0, sizeof(packetlog->statsdeltabits));
 				}
+
 				packetlog->statsdeltabits[i>>3] |= (1<<(i&7));
 				if (host_client->stats[i] >= 0 && host_client->stats[i] < 256) {
 					MSG_WriteByte(msg, svc_updatestatubyte);
 					MSG_WriteByte(msg, i);
 					MSG_WriteByte(msg, host_client->stats[i]);
-					l = 1;
+					lengtho = 1;
 				}
 				else
 				{
 					MSG_WriteByte(msg, svc_updatestat);
 					MSG_WriteByte(msg, i);
 					MSG_WriteLong(msg, host_client->stats[i]);
-					l = 1;
+					lengtho = 1;
 				}
 			}
 		}
 	}
 
 	// only send empty svc_entities frame if needed
-	if (!l && !need_empty)
+	if (!lengtho && !need_empty)
 		return false;
 
 	// add packetlog entry now that we have something for it
-	if (!packetlog)
-	{
+	if (!packetlog) {
 		packetlog = d->packetlog + packetlognumber;
 		packetlog->packetnumber = framenum;
 		packetlog->numstates = 0;
@@ -562,12 +600,22 @@ qbool EntityFrame5_WriteFrame(sizebuf_t *msg, int maxsize, entityframe5_database
 
 	// write state updates
 	if (developer_networkentities.integer >= 10)
-		Con_Printf ("send: svc_entities %d\n", framenum);
+		Con_PrintLinef ("send: svc_entities %d", framenum);
 	d->latestframenum = framenum;
 	MSG_WriteByte(msg, svc_entities);
 	MSG_WriteLong(msg, framenum);
-	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_DARKPLACES1 && sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5 && sv.protocol != PROTOCOL_DARKPLACES6)
-		MSG_WriteLong(msg, movesequence);
+
+	WARP_X_ (client->movesequence)
+	if (sv.protocol != PROTOCOL_QUAKE && sv.protocol != PROTOCOL_QUAKEDP && 
+		sv.protocol != PROTOCOL_NEHAHRAMOVIE && sv.protocol != PROTOCOL_DARKPLACES1 && 
+		sv.protocol != PROTOCOL_DARKPLACES2 && sv.protocol != PROTOCOL_DARKPLACES3 && 
+		sv.protocol != PROTOCOL_DARKPLACES4 && sv.protocol != PROTOCOL_DARKPLACES5 && 
+		sv.protocol != PROTOCOL_DARKPLACES6) {
+			// Baker: 
+			WARP_X_ (cls.servermovesequence)
+			MSG_WriteLong(msg, in_movesequence);
+	}
+
 	for (priority = ENTITYFRAME5_PRIORITYLEVELS - 1;priority >= 0 && packetlog->numstates < ENTITYFRAME5_MAXSTATES;priority--)
 	{
 		for (i = 0;i < d->prioritychaincounts[priority] && packetlog->numstates < ENTITYFRAME5_MAXSTATES;i++)

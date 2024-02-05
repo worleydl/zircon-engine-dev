@@ -69,7 +69,7 @@ void Mod_Skeletal_BuildTransforms(const model_t * RESTRICT model, const frameble
 
 	if (!bonepose)
 		bonepose = (float * RESTRICT) Mod_Skeletal_AnimateVertices_AllocBuffers(sizeof(float[12]) * model->num_bones);
-		
+
 	if (skeleton && !skeleton->relativetransforms)
 		skeleton = NULL;
 
@@ -247,15 +247,15 @@ static int Mod_Skeletal_CompressBlend(model_t *model, const int *newindex, const
 		newweights.index[i] = newindex[i];
 		newweights.influence[i] = (unsigned char)(newinfluence[i] * scale);
 		total += newweights.influence[i];
-	}	
+	}
 	while (total > 255)
 	{
 		for (i = 0;i < 4;i++)
 		{
-			if (newweights.influence[i] > 0 && total > 255) 
-			{ 
+			if (newweights.influence[i] > 0 && total > 255)
+			{
 				newweights.influence[i]--;
-				total--; 
+				total--;
 			}
 		}
 	}
@@ -263,10 +263,10 @@ static int Mod_Skeletal_CompressBlend(model_t *model, const int *newindex, const
 	{
 		for (i = 0; i < 4;i++)
 		{
-			if (newweights.influence[i] < 255 && total < 255) 
-			{ 
-				newweights.influence[i]++; 
-				total++; 
+			if (newweights.influence[i] < 255 && total < 255)
+			{
+				newweights.influence[i]++;
+				total++;
 			}
 		}
 	}
@@ -970,7 +970,7 @@ void Mod_BuildAliasSkinsFromSkinFiles(texture_t *skin, skinfile_t *skinfile, con
 extern cvar_t r_nolerp_list;
 #define BOUNDI(VALUE,MIN,MAX) if (VALUE < MIN || VALUE >= MAX) Host_Error_Line ("model %s has an invalid ##VALUE (%d exceeds %d - %d)", loadmodel->model_name, VALUE, MIN, MAX);
 #define BOUNDF(VALUE,MIN,MAX) if (VALUE < MIN || VALUE >= MAX) Host_Error_Line ("model %s has an invalid ##VALUE (%f exceeds %f - %f)", loadmodel->model_name, VALUE, MIN, MAX);
-void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i, j, version, totalskins, skinwidth, skinheight, groupframes, groupskins, numverts;
 	float scales, scalet, interval;
@@ -1042,8 +1042,8 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 	BOUNDI(loadmodel->numframes,0,65536);
 	loadmodel->synctype = (synctype_t)LittleLong (pinmodel->synctype);
 	BOUNDI((int)loadmodel->synctype,0,2);
-	// convert model flags to EF flags (MF_ROCKET becomes EF_ROCKET, etc)
-	i = LittleLong (pinmodel->flags);
+	
+	i = LittleLong (pinmodel->aliasflags);
 #pragma message ("Baker: This is not quite the right way disable PRYDON CURSOR with model load")
 #if 1 // Baker r0087: Fence texture q1 mdl support
 	if (gamemode != GAME_PRYDON) {
@@ -1055,7 +1055,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 	}
 #endif
 
-
+	// convert model flags to EF flags (MF_ROCKET becomes EF_ROCKET, etc)
 	loadmodel->effects = ((i & 255) << 24) | (i & 0x00FFFF00);
 
 	if (strstr(r_nolerp_list.string, loadmodel->model_name))
@@ -1106,6 +1106,11 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 			pinframegroup = (daliasgroup_t *)datapointer;
 			datapointer += sizeof(daliasgroup_t);
 			groupframes = LittleLong(pinframegroup->numframes);
+			// We have groupframes < 0
+			if (groupframes < 0) {
+				Con_PrintLinef ("Model %s has negative group frames and failed to load", mod->model_name);
+				return false;
+			}
 			datapointer += sizeof(daliasinterval_t) * groupframes;
 		}
 
@@ -1253,24 +1258,24 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 					dpsnprintf (name, sizeof(name), "%s_%d", loadmodel->model_name, i);
 				// Baker r0087: fence
 				// Baker this is where mdl model skin loading external occurs.
-				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, 
-					loadmodel->data_textures + totalskins * loadmodel->num_surfaces, 
-					name, q_tx_warn_missing_false, q_tx_fallback_notexture_false, q_tx_do_external_true, 
-					(r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | 
+				if (!Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name,
+					loadmodel->data_textures + totalskins * loadmodel->num_surfaces,
+					name, q_tx_warn_missing_false, q_tx_fallback_notexture_false, q_tx_do_external_true,
+					(r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP |
 						TEXF_COMPRESS, MATERIALFLAG_WALL)) {
 					int material_flagz = MATERIALFLAG_WALL;
 					if (is_fence)
-						Flag_Add_To (material_flagz, 
-								MATERIALFLAG_ALPHA | 
-								MATERIALFLAG_BLENDED | 
+						Flag_Add_To (material_flagz,
+								MATERIALFLAG_ALPHA |
+								MATERIALFLAG_BLENDED |
 								MATERIALFLAG_NOSHADOW);
 
-					Mod_LoadCustomMaterial(loadmodel->mempool, 
-						loadmodel->data_textures + totalskins * loadmodel->num_surfaces, 
-						name, 
-						SUPERCONTENTS_SOLID, 
-						material_flagz /*MATERIALFLAG_WALL*/, 
-						R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ? 
+					Mod_LoadCustomMaterial(loadmodel->mempool,
+						loadmodel->data_textures + totalskins * loadmodel->num_surfaces,
+						name,
+						SUPERCONTENTS_SOLID,
+						material_flagz /*MATERIALFLAG_WALL*/,
+						R_SkinFrame_LoadInternalQuake(name, (r_mipskins.integer ?
 							TEXF_MIPMAP : 0) | TEXF_PICMIP, true, r_fullbrights.integer, (unsigned char *)datapointer, skinwidth, skinheight, is_fence));
 				}
 				datapointer += skinwidth * skinheight;
@@ -1281,7 +1286,7 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 		// (this was added because yummyluv kept pestering me about support for it)
 		// TODO: support shaders here?
 		for (;;)
-		{ 
+		{
 			dpsnprintf(name, sizeof(name), "%s_%d", loadmodel->model_name, loadmodel->numskins);
 			tempskinframe = R_SkinFrame_LoadExternal(name, (r_mipskins.integer ? TEXF_MIPMAP : 0) | TEXF_ALPHA | TEXF_PICMIP | TEXF_COMPRESS, q_tx_fallback_notexture_false, q_tx_complain_false);
 			if (!tempskinframe)
@@ -1336,9 +1341,10 @@ void Mod_IDP0_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->TracePoint = Mod_CollisionBIH_TracePoint_Mesh;
 		loadmodel->PointSuperContents = Mod_CollisionBIH_PointSuperContents_Mesh;
 	}
+	return true;
 }
 
-void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i, j, hashindex, numxyz, numst, xyz, st, skinwidth, skinheight, *vertremap, version, end;
 	float iskinwidth, iskinheight;
@@ -1590,9 +1596,10 @@ void Mod_IDP2_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->TracePoint = Mod_CollisionBIH_TracePoint_Mesh;
 		loadmodel->PointSuperContents = Mod_CollisionBIH_PointSuperContents_Mesh;
 	}
+	return true;
 }
 
-void Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i, j, k, version, meshvertices, meshtriangles;
 	unsigned char *data;
@@ -1670,7 +1677,7 @@ void Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend)
 			loadmodel->data_tags[i].matrixgl[j] = LittleFloat(pintag->rotationmatrix[j]);
 		for (j = 0;j < 3;j++)
 			loadmodel->data_tags[i].matrixgl[9+j] = LittleFloat(pintag->origin[j]);
-		//Con_Printf ("model \"%s\" frame #%d tag #%d \"%s\"\n", loadmodel->name, i / loadmodel->num_tags, i % loadmodel->num_tags, loadmodel->data_tags[i].name);
+		//Con_PrintLinef ("model " QUOTED_S " frame #%d tag #%d " QUOTED_S, loadmodel->name, i / loadmodel->num_tags, i % loadmodel->num_tags, loadmodel->data_tags[i].name);
 	}
 
 	// load meshes
@@ -1769,9 +1776,10 @@ void Mod_IDP3_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->TracePoint = Mod_CollisionBIH_TracePoint_Mesh;
 		loadmodel->PointSuperContents = Mod_CollisionBIH_PointSuperContents_Mesh;
 	}
+	return true;
 }
 
-void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	zymtype1header_t *pinmodel, *pheader;
 	unsigned char *pbase;
@@ -1835,12 +1843,12 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	if (pheader->numtris < 1 || pheader->numverts < 3 || pheader->numshaders < 1)
 	{
 		Con_PrintLinef ("%s has no geometry", loadmodel->model_name);
-		return;
+		return false;
 	}
 	if (pheader->numscenes < 1 || pheader->lump_poses.length < (int)sizeof(float[3][4]))
 	{
 		Con_PrintLinef ("%s has no animations", loadmodel->model_name);
-		return;
+		return false;
 	}
 
 	loadmodel->Draw = R_Mod_Draw;
@@ -2152,9 +2160,10 @@ void Mod_ZYMOTICMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->TracePoint = Mod_CollisionBIH_TracePoint_Mesh;
 		loadmodel->PointSuperContents = Mod_CollisionBIH_PointSuperContents_Mesh;
 	}
+	return true;
 }
 
-void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	dpmheader_t *pheader;
 	dpmframe_t *frames;
@@ -2202,12 +2211,12 @@ void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	if (pheader->num_bones < 1 || pheader->num_meshs < 1)
 	{
 		Con_PrintLinef ("%s has no geometry", loadmodel->model_name);
-		return;
+		return false;
 	}
 	if (pheader->num_frames < 1)
 	{
 		Con_PrintLinef ("%s has no frames", loadmodel->model_name);
-		return;
+		return false;
 	}
 
 	loadmodel->Draw = R_Mod_Draw;
@@ -2516,11 +2525,12 @@ void Mod_DARKPLACESMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->TracePoint = Mod_CollisionBIH_TracePoint_Mesh;
 		loadmodel->PointSuperContents = Mod_CollisionBIH_PointSuperContents_Mesh;
 	}
+	return true;
 }
 
 // no idea why PSK/PSA files contain weird quaternions but they do...
 #define PSKQUATNEGATIONS
-void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i, j, index, version, recordsize, numrecords, meshvertices, meshtriangles;
 	int numpnts, numvtxw, numfaces, nummatts, numbones, numrawweights, numanimbones, numanims, numanimkeys;
@@ -2880,7 +2890,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			// TODO: allocate bonepose stuff
 		}
 		else
-			Con_Printf ("%s: unknown chunk ID \"%s\"\n", animname, pchunk->id);
+			Con_PrintLinef ("%s: unknown chunk ID " QUOTED_S, animname, pchunk->id);
 	}
 
 	if (!numpnts || !pnts || !numvtxw || !vtxw || !numfaces || !faces || !nummatts || !matts || !numbones || !bones || !numrawweights || !rawweights)
@@ -3090,7 +3100,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		if (loadmodel->num_posescale == 0) // don't divide by zero
 			loadmodel->num_posescale = 1.0;
 		loadmodel->num_poseinvscale = 1.0f / loadmodel->num_posescale;
-	
+
 		// load the poses from the animkeys
 		for (index = 0;index < numanimkeys;index++)
 		{
@@ -3131,7 +3141,7 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		if (loadmodel->num_posescale == 0) // don't divide by zero
 			loadmodel->num_posescale = 1.0;
 		loadmodel->num_poseinvscale = 1.0f / loadmodel->num_posescale;
-	
+
 		// load the basepose as a frame
 		for (index = 0;index < numbones;index++)
 		{
@@ -3179,9 +3189,10 @@ void Mod_PSKMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		loadmodel->TracePoint = Mod_CollisionBIH_TracePoint_Mesh;
 		loadmodel->PointSuperContents = Mod_CollisionBIH_PointSuperContents_Mesh;
 	}
+	return true;
 }
 
-void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
+int Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	unsigned char *data;
 	const char *text;
@@ -3268,7 +3279,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			pbase + header.ofs_poses + header.num_poses*sizeof(iqmpose1_t) > pend)
 		{
 			Con_PrintLinef ("%s has invalid size or offset information", loadmodel->model_name);
-			return;
+			return false;
 		}
 	}
 	else
@@ -3277,7 +3288,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			pbase + header.ofs_poses + header.num_poses*sizeof(iqmpose_t) > pend)
 		{
 			Con_PrintLinef ("%s has invalid size or offset information", loadmodel->model_name);
-			return;
+			return false;
 		}
 	}
 	if (pbase + header.ofs_text + header.num_text > pend ||
@@ -3291,7 +3302,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		pbase + header.ofs_comment + header.num_comment > pend)
 	{
 		Con_PrintLinef ("%s has invalid size or offset information", loadmodel->model_name);
-		return;
+		return false;
 	}
 
 	// copy structs to make them aligned in memory (otherwise we crash on Sparc and PowerPC and others)
@@ -3315,7 +3326,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 		va.offset = LittleLong(vas[i].offset);
 		vsize = header.num_vertexes*va.size;
 		switch (va.format)
-		{ 
+		{
 		case IQM_FLOAT: vsize *= sizeof(float); break;
 		case IQM_UBYTE: vsize *= sizeof(unsigned char); break;
 		default: continue;
@@ -3360,7 +3371,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	if (header.num_vertexes > 0 && (!vposition || !vtexcoord || ((header.num_frames > 0 || header.num_anims > 0) && (!vblendindexes || !vblendweights))))
 	{
 		Con_PrintLinef ("%s is missing vertex array data", loadmodel->model_name);
-		return;
+		return false;
 	}
 
 	text = header.num_text && header.ofs_text ? (const char *)(pbase + header.ofs_text) : "";
@@ -3503,7 +3514,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 				Matrix4x4_FromArray12FloatD3D(&pinvbase, loadmodel->data_baseboneposeinverse + 12*loadmodel->data_bones[i].parent);
 				Matrix4x4_Concat(&invbase, &relinvbase, &pinvbase);
 				Matrix4x4_ToArray12FloatD3D(&invbase, loadmodel->data_baseboneposeinverse + 12*i);
-			}	
+			}
 			else Matrix4x4_ToArray12FloatD3D(&relinvbase, loadmodel->data_baseboneposeinverse + 12*i);
 		}
 	}
@@ -3656,7 +3667,7 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	}
 	else
 	{
-		for (i = 0, k = 0;i < (int)header.num_frames;i++)	
+		for (i = 0, k = 0;i < (int)header.num_frames;i++)
 		{
 			for (j = 0;j < (int)header.num_poses;j++, k++)
 			{
@@ -3708,9 +3719,9 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 			bound.mins[0] = LittleFloat(bounds[i].mins[0]);
 			bound.mins[1] = LittleFloat(bounds[i].mins[1]);
 			bound.mins[2] = LittleFloat(bounds[i].mins[2]);
-			bound.maxs[0] = LittleFloat(bounds[i].maxs[0]);			
-			bound.maxs[1] = LittleFloat(bounds[i].maxs[1]);	
-			bound.maxs[2] = LittleFloat(bounds[i].maxs[2]);	
+			bound.maxs[0] = LittleFloat(bounds[i].maxs[0]);
+			bound.maxs[1] = LittleFloat(bounds[i].maxs[1]);
+			bound.maxs[2] = LittleFloat(bounds[i].maxs[2]);
 			bound.xyradius = LittleFloat(bounds[i].xyradius);
 			bound.radius = LittleFloat(bounds[i].radius);
 			if (!i)
@@ -3916,4 +3927,6 @@ void Mod_INTERQUAKEMODEL_Load(model_t *mod, void *buffer, void *bufferend)
 	if (joint1) { Mem_Free(joint1); joint1 = NULL; }
 	if (pose)   { Mem_Free(pose);   pose   = NULL; }
 	if (pose1)  { Mem_Free(pose1);  pose1  = NULL; }
+
+	return true;
 }

@@ -565,6 +565,111 @@ skipwhite:
 	}
 }
 
+char *COM_Parse_FTE (const char *data, char *out, size_t outlen)
+{
+	int		c;
+	int		len;
+
+//	if (out == com_token)
+//		COM_AssertMainThread("COM_ParseOut: com_token");
+
+	len = 0;
+	out[0] = 0;
+#if 0
+	if (toktype)
+		*toktype = TTP_EOF;
+#endif
+
+	if (!data)
+		return NULL;
+
+// skip whitespace
+skipwhite:
+	while ( (c = *data) <= ' ')
+	{
+		if (c == 0)
+			return NULL;			// end of file;
+		data++;
+	}
+
+// skip // comments
+	if (c=='/')
+	{
+		if (data[1] == '/')
+		{
+			while (*data && *data != '\n')
+				data++;
+			goto skipwhite;
+		}
+	}
+
+//skip / * comments
+	if (c == '/' && data[1] == '*')
+	{
+		data+=2;
+		while(*data)
+		{
+			if (*data == '*' && data[1] == '/')
+			{
+				data+=2;
+				goto skipwhite;
+			}
+			data++;
+		}
+		goto skipwhite;
+	}
+
+// handle quoted strings specially
+	if (c == '\"')
+	{
+#if 0
+		if (toktype)
+			*toktype = TTP_STRING;
+#endif
+
+		data++;
+		while (1)
+		{
+			if (len >= (int)outlen-1)
+			{
+				out[len] = 0;
+				return (char*)data;
+			}
+
+			c = *data++;
+			if (c=='\"' || !c)
+			{
+				out[len] = 0;
+				return (char*)data;
+			}
+			out[len] = c;
+			len++;
+		}
+	}
+
+// parse a regular word
+#if 0
+	if (toktype)
+		*toktype = TTP_RAWTOKEN;
+#endif
+	do
+	{
+		if (len >= (int)outlen-1)
+		{
+			out[len] = 0;
+			return (char*)data;
+		}
+
+		out[len] = c;
+		data++;
+		len++;
+		c = *data;
+	} while (c>32);
+
+	out[len] = 0;
+	return (char*)data;
+}
+
 /*
 ==============
 COM_ParseToken_QuakeC

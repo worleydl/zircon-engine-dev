@@ -37,14 +37,16 @@
 #define FITZQUAKE_MAX_SOUNDS_2048	2048
 #define	MAX_SOUNDS_QUAKE_256		256 ///< max number of sounds loaded at once
 
-#define	NET_MAXMESSAGE			65536 ///< max reliable packet size (sent as multiple fragments of MAX_PACKETFRAGMENT)
+#define QW_MAX_CLIENTS_32		32
+
+#define	NET_MAXMESSAGE_65536			65536 ///< max reliable packet size (sent as multiple fragments of MAX_PACKETFRAGMENT)
 #define	MAX_PACKETFRAGMENT		1024 ///< max length of packet fragment
 #define	MAX_EDICTS_32768		32768 ///< max number of objects in game world at once (32768 protocol limit)
 #define	MAX_MODELS_8192			8192 ///< max number of models loaded at once (including during level transitions)
 #define	MAX_SOUNDS_4096			4096 ///< max number of sounds loaded at once
 #define	MAX_LIGHTSTYLES_256		256 ///< max flickering light styles in level (note: affects savegame format)
-#define	MAX_STYLESTRING			64 ///< max length of flicker pattern for light style
-#define	MAX_SCOREBOARD			255 ///< max number of players in game at once (255 protocol limit)
+#define	MAX_STYLESTRING_64			64 ///< max length of flicker pattern for light style
+#define	MAX_SCOREBOARD_255			255 ///< max number of players in game at once (255 protocol limit)
 #define	MAX_SCOREBOARDNAME_128	128 ///< max length of player name in game
 #define	MAX_USERINFO_STRING_1280		1280 ///< max length of infostring for PROTOCOL_QUAKEWORLD (196 in QuakeWorld)
 #define	MAX_SERVERINFO_STRING_1280	1280 ///< max length of server infostring for PROTOCOL_QUAKEWORLD (512 in QuakeWorld)
@@ -116,7 +118,7 @@
 
 #define	ON_EPSILON		0.1			///< point on plane side epsilon
 
-#define	NET_MINRATE		1000 ///< limits "rate" and "sv_maxrate" cvars
+#define	NET_MINRATE_1000		1000 ///< limits "rate" and "sv_maxrate" cvars
 
 // In Quake, any char in 0..32 counts as whitespace
 //#define ISWHITESPACE(ch) ((unsigned char) ch <= (unsigned char) ' ')

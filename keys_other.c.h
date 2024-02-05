@@ -10,16 +10,15 @@ int chat_bufferpos = 0;
 static void Key_Message (cmd_state_t *cmd, int key, int ascii)
 {
 	int linepos;
-	char vabuf[1024];
 
 	key = Key_Convert_NumPadKey(key);
 
 	if (key == K_ENTER || key == K_KP_ENTER || ascii == 10 || ascii == 13)
 	{
 		if (chat_mode < 0)
-			Cmd_ExecuteString(cmd, chat_buffer, src_local, true); // not Cbuf_AddText to allow semiclons in args; however, this allows no variables then. Use aliases!
+			Cmd_ExecuteString (cmd, chat_buffer, src_local, /*lockmutex?*/ true); // not Cbuf_AddText to allow semiclons in args; however, this allows no variables then. Use aliases!
 		else
-			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "%s %s", chat_mode ? "say_team" : "say ", chat_buffer));
+			CL_ForwardToServerf ("%s %s", chat_mode ? "say_team" : "say ", chat_buffer);
 
 		key_dest = key_game;
 		chat_bufferpos = Key_ClearEditLine(false);
@@ -166,24 +165,24 @@ Key_In_Unbind_f(cmd_state_t *cmd)
 	char *errchar = NULL;
 
 	if (Cmd_Argc (cmd) != 3) {
-		Con_Print("in_unbind <bindmap> <key> : remove commands from a key\n");
+		Con_PrintLinef ("in_unbind <bindmap> <key> : remove commands from a key");
 		return;
 	}
 
 	m = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
 	if ((m < 0) || (m >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf ("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+		Con_PrintLinef ("%s isn't a valid bindmap", Cmd_Argv(cmd, 1));
 		return;
 	}
 
 	b = Key_StringToKeynum (Cmd_Argv(cmd, 2));
 	if (b == -1) {
-		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 2));
+		Con_PrintLinef (QUOTED_S " isn't a valid key", Cmd_Argv(cmd, 2));
 		return;
 	}
 
 	if (!Key_SetBinding (b, m, ""))
-		Con_Printf ("Key_SetBinding failed for unknown reason\n");
+		Con_PrintLinef ("Key_SetBinding failed for unknown reason");
 }
 
 static void
@@ -196,39 +195,39 @@ Key_In_Bind_f(cmd_state_t *cmd)
 	c = Cmd_Argc (cmd);
 
 	if (c != 3 && c != 4) {
-		Con_Print("in_bind <bindmap> <key> [command] : attach a command to a key\n");
+		Con_PrintLinef ("in_bind <bindmap> <key> [command] : attach a command to a key");
 		return;
 	}
 
 	m = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
 	if ((m < 0) || (m >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf ("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+		Con_PrintLinef ("%s isn't a valid bindmap", Cmd_Argv(cmd, 1));
 		return;
 	}
 
 	b = Key_StringToKeynum (Cmd_Argv(cmd, 2));
 	if (b == -1 || b >= MAX_KEYS) {
-		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 2));
+		Con_PrintLinef (QUOTED_S " isn't a valid key", Cmd_Argv(cmd, 2));
 		return;
 	}
 
 	if (c == 3) {
 		if (keybindings[m][b])
-			Con_Printf ("\"%s\" = \"%s\"\n", Cmd_Argv(cmd, 2), keybindings[m][b]);
+			Con_PrintLinef (QUOTED_S " = " QUOTED_S, Cmd_Argv(cmd, 2), keybindings[m][b]);
 		else
-			Con_Printf ("\"%s\" is not bound\n", Cmd_Argv(cmd, 2));
+			Con_PrintLinef (QUOTED_S " is not bound", Cmd_Argv(cmd, 2));
 		return;
 	}
 // copy the rest of the command line
 	line[0] = 0;							// start out with a null string
 	for (i = 3; i < c; i++) {
-		strlcat (line, Cmd_Argv(cmd, i), sizeof (line));
+		c_strlcat (line, Cmd_Argv(cmd, i) );
 		if (i != (c - 1))
 			strlcat (line, " ", sizeof (line));
 	}
 
 	if (!Key_SetBinding (b, m, line))
-		Con_Printf ("Key_SetBinding failed for unknown reason\n");
+		Con_PrintLinef ("Key_SetBinding failed for unknown reason");
 }
 
 static void
@@ -240,19 +239,19 @@ Key_In_Bindmap_f(cmd_state_t *cmd)
 	c = Cmd_Argc (cmd);
 
 	if (c != 3) {
-		Con_Print("in_bindmap <bindmap> <fallback>: set current bindmap and fallback\n");
+		Con_PrintLinef ("in_bindmap <bindmap> <fallback>: set current bindmap and fallback");
 		return;
 	}
 
 	m1 = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
 	if ((m1 < 0) || (m1 >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf ("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+		Con_PrintLinef ("%s isn't a valid bindmap", Cmd_Argv(cmd, 1));
 		return;
 	}
 
 	m2 = strtol(Cmd_Argv(cmd, 2), &errchar, 0);
 	if ((m2 < 0) || (m2 >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf ("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 2));
+		Con_PrintLinef ("%s isn't a valid bindmap", Cmd_Argv(cmd, 2));
 		return;
 	}
 
@@ -266,18 +265,18 @@ Key_Unbind_f(cmd_state_t *cmd)
 	int         b;
 
 	if (Cmd_Argc (cmd) != 2) {
-		Con_Print("unbind <key> : remove commands from a key\n");
+		Con_PrintLinef ("unbind <key> : remove commands from a key");
 		return;
 	}
 
 	b = Key_StringToKeynum (Cmd_Argv(cmd, 1));
 	if (b == -1) {
-		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 1));
+		Con_PrintLinef (QUOTED_S " isn't a valid key", Cmd_Argv(cmd, 1));
 		return;
 	}
 
 	if (!Key_SetBinding (b, 0, ""))
-		Con_Printf ("Key_SetBinding failed for unknown reason\n");
+		Con_PrintLinef ("Key_SetBinding failed for unknown reason");
 }
 
 static void
@@ -350,20 +349,20 @@ Key_Bind_f(cmd_state_t *cmd)
 	c = Cmd_Argc (cmd);
 
 	if (c != 2 && c != 3) {
-		Con_Print("bind <key> [command] : attach a command to a key\n");
+		Con_PrintLinef ("bind <key> [command] : attach a command to a key");
 		return;
 	}
 	b = Key_StringToKeynum (Cmd_Argv(cmd, 1));
 	if (b == -1 || b >= MAX_KEYS) {
-		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 1));
+		Con_PrintLinef (QUOTED_S " isn't a valid key", Cmd_Argv(cmd, 1));
 		return;
 	}
 
 	if (c == 2) {
 		if (keybindings[0][b])
-			Con_Printf ("\"%s\" = \"%s\"\n", Cmd_Argv(cmd, 1), keybindings[0][b]);
+			Con_PrintLinef (QUOTED_S " = " QUOTED_S, Cmd_Argv(cmd, 1), keybindings[0][b]);
 		else
-			Con_Printf ("\"%s\" is not bound\n", Cmd_Argv(cmd, 1));
+			Con_PrintLinef (QUOTED_S " is not bound", Cmd_Argv(cmd, 1));
 		return;
 	}
 // copy the rest of the command line
@@ -375,7 +374,7 @@ Key_Bind_f(cmd_state_t *cmd)
 	}
 
 	if (!Key_SetBinding (b, 0, line))
-		Con_Printf ("Key_SetBinding failed for unknown reason\n");
+		Con_PrintLinef ("Key_SetBinding failed for unknown reason");
 }
 
 /*
@@ -403,9 +402,9 @@ Key_WriteBindings (qfile_t *f)
 			{
 				Cmd_QuoteString(bindbuf, sizeof(bindbuf), p, "\"\\", false); // don't need to escape $ because cvars are not expanded inside bind
 				if (j == 0)
-					FS_Printf(f, "bind %s \"%s\"\n", Key_KeynumToString (i, tinystr, sizeof(tinystr)), bindbuf);
+					FS_Printf (f, "bind %s " QUOTED_S NEWLINE, Key_KeynumToString (i, tinystr, sizeof(tinystr)), bindbuf);
 				else
-					FS_Printf(f, "in_bind %d %s \"%s\"\n", j, Key_KeynumToString (i, tinystr, sizeof(tinystr)), bindbuf);
+					FS_Printf (f, "in_bind %d %s " QUOTED_S NEWLINE, j, Key_KeynumToString (i, tinystr, sizeof(tinystr)), bindbuf);
 			}
 		}
 	}
@@ -475,11 +474,11 @@ void VID_Alt_Enter_f (void) // Baker: ALT-ENTER
 		// Baker: Not working so far ...
 		double dirtytime = Sys_DirtyTime ();
 		double delta_time = dirtytime - cls.world_start_realtime;
-		if (delta_time > 2) {
+		if (delta_time > 1 /*seconds ALT-ENTER*/) {
 			goto ok_to_restart;
 		}
 		
-		Con_DPrintLinef ("Ignored ALT-ENTER because loading state or not fully connected");
+		Con_PrintLinef ("ALT-ENTER: Please wait %1.1f seconds ...", 1.0 - delta_time);
 
 		return; // Not ok
 	}
@@ -573,6 +572,9 @@ void Key_Event (int key, int ascii, qbool down)
 	if (key < 0 || key >= MAX_KEYS)
 		return;
 
+	if (developer_keycode.integer)
+		Con_PrintLinef ("key %d ascii %d", key, ascii);
+
 	if (events_blocked) {
 		Key_EventQueue_Add(key, ascii, down);
 		return;
@@ -640,6 +642,13 @@ void Key_Event (int key, int ascii, qbool down)
 	// specially handle escape (togglemenu) and shift-escape (toggleconsole)
 	// engine bindings, these are not handled as normal binds so that the user
 	// can recover from a completely empty bindmap
+	if (isin2 (key, 96, 178) && ascii == K_SUPERSCRIPT_2) {
+		// Con_PrintLinef ("SUPER: key %d ascii %d", key, ascii);
+		Con_ToggleConsole (); // Baker: SHIFT-ESC toggle of console.
+		tbl_keydest[key] = key_void; // esc release should go nowhere (especially not to key_menu or key_game)
+		return;
+	}
+
 	if (key == K_ESCAPE) {
 		// ignore key repeats on escape
 		if (keydown[key] > 1)
@@ -701,7 +710,7 @@ void Key_Event (int key, int ascii, qbool down)
 				break;
 
 			default:
-				Con_Printf ("Key_Event: Bad key_dest\n");
+				Con_PrintLinef ("Key_Event: Bad key_dest");
 		}
 		return;
 	}

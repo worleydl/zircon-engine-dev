@@ -81,7 +81,7 @@ static void Con_Pos_f(cmd_state_t *cmd)
 			cl.entities[cl.playerentity].state_current.angles[1],
 			cl.entities[cl.playerentity].state_current.angles[2]
 			);
-			Clipboard_Set_Text (vabuf);
+			Clipboard_Set_Text (vabuf); // "pos"
 			Con_PrintLinef ("pos to clipboard: " NEWLINE "%s", vabuf);
 	} else {
 		Con_PrintLinef ("No entities");
@@ -930,8 +930,48 @@ static void Con_Copy_Ents_f(void)
 		return;
 	}
 	const char *s_ents = sv.worldmodel->brush.entities; // , (fs_offset_t)strlen(sv.worldmodel->brush.entities));
-	Clipboard_Set_Text(s_ents);
+	Clipboard_Set_Text(s_ents); // copy ents
 	Con_PrintLinef ("Entities copied console to clipboard");
+}
+
+// Copy "showtex" current texture
+static void Con_Copy_Tex_f(void)
+{
+	if (!sv.active || !sv.worldmodel) {
+		Con_PrintLinef ("Not running a server");
+		return;
+	}
+
+	extern cvar_t showtex;
+	vec3_t org;
+	vec3_t dest;
+	vec3_t temp;
+	trace_t cltrace = {0};
+	int hitnetentity = -1;
+	char texstring[MAX_QPATH_128];
+
+	Matrix4x4_OriginFromMatrix(&r_refdef.view.matrix, org);
+	VectorSet(temp, 65536, 0, 0);
+	Matrix4x4_Transform(&r_refdef.view.matrix, temp, dest);
+	// clear the traces as we may or may not fill them out, and mark them with an invalid fraction so we know if we did
+	memset(&cltrace, 0, sizeof(cltrace));
+	cltrace.fraction = 2.0;
+	
+	trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask, float extend, qbool hitnetworkbrushmodels, int hitnetworkplayers, int *hitnetworkentity, qbool hitcsqcentities, qbool hitsurfaces);
+	cltrace = CL_TraceLine(org, dest, MOVE_HITMODEL, NULL, 
+			SUPERCONTENTS_SOLID | SUPERCONTENTS_WATER | SUPERCONTENTS_SLIME | 
+			SUPERCONTENTS_LAVA | SUPERCONTENTS_SKY
+		, 
+		0, 
+		showtex.integer >= 2 ? MATERIALFLAGMASK_TRANSLUCENT : 0, collision_extendmovelength.value, 
+		true, false, &hitnetentity, true, true);
+	if (cltrace.hittexture)
+		c_strlcpy (texstring, cltrace.hittexture->name);
+	else
+		c_strlcpy (texstring, "(no texture hit)");
+
+	Clipboard_Set_Text (texstring); // copy tex
+	Con_PrintLinef ("texturename " QUOTED_S " copied console to clipboard", texstring);
 }
 
 WARP_X_(Con_ConDump_f)
@@ -944,8 +984,13 @@ void Con_Copy_f(cmd_state_t* cmd)
 		return;
 	}
 
+	if (Cmd_Argc(cmd) == 2 && String_Does_Match_Caseless(Cmd_Argv(cmd, 1), "tex")) {
+		Con_Copy_Tex_f();
+		return;
+	}
+
 	if (Cmd_Argc(cmd) != 1) {
-		Con_PrintLinef ("usage: copy [ents]");
+		Con_PrintLinef ("usage: copy [ents or tex]");
 		return;
 	}
 
@@ -980,7 +1025,7 @@ void Con_Copy_f(cmd_state_t* cmd)
 		Mem_Free(sanitizedmsg);
 	}
 	if (con_mutex) Thread_UnlockMutex(con_mutex);
-	Clipboard_Set_Text(s_msg_alloc);
+	Clipboard_Set_Text (s_msg_alloc); // Con_Copy_f
 	Con_PrintLinef ("Copied console to clipboard");
 
 	freenull_(s_msg_alloc);
@@ -1996,9 +2041,9 @@ static int Con_DisplayLineFunc(void *passthrough, const char *line, size_t lengt
 	{
 		int x = (int) (ti->x + (ti->width - width) * ti->alignment);
 		if (isContinuation && *ti->continuationString)
-			x = (int) DrawQ_String(x, ti->y, ti->continuationString, strlen(ti->continuationString), ti->fontsize, ti->fontsize, 1.0, 1.0, 1.0, 1.0, 0, NULL, false, ti->font);
+			x = (int) DrawQ_String(x, ti->y, ti->continuationString, strlen(ti->continuationString), ti->fontsize, ti->fontsize, 1.0, 1.0, 1.0, 1.0, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_false, ti->font);
 		if (length > 0)
-			DrawQ_String(x, ti->y, line, length, ti->fontsize, ti->fontsize, 1.0, 1.0, 1.0, 1.0, 0, &(ti->colorindex), false, ti->font);
+			DrawQ_String(x, ti->y, line, length, ti->fontsize, ti->fontsize, /*rgba*/ 1.0, 1.0, 1.0, 1.0, DRAWFLAG_NORMAL_0, /*outcolor*/ &(ti->colorindex), q_ignore_color_codes_false, ti->font);
 	}
 
 	ti->y += ti->fontsize;
@@ -2227,7 +2272,7 @@ static int Con_DrawConsoleLine(int mask_must, int mask_mustnot, float y, int lin
 	ti.ymax = ymax;
 	ti.width = width;
 
-	return COM_Wordwrap(li->start, li->len, 0, width, Con_WordWidthFunc, &ti, Con_DisplayLineFunc, &ti);
+	return COM_Wordwrap (li->start, li->len, 0, width, Con_WordWidthFunc, &ti, Con_DisplayLineFunc, &ti);
 }
 
 /*
@@ -2354,54 +2399,43 @@ void Con_DrawConsole (int lines)
 	} // alpha > 0
 
 	// Baker r0003: Thin cursor / no text overwrite mode
-	DrawQ_String(vid_conwidth.integer -
-		DrawQ_TextWidth(engineversionshort , 0, con_textsize.value, con_textsize.value, false,
-			FONT_CONSOLE), lines - con_textsize.value, engineversionshort, 0, con_textsize.value, //bronzey
-			con_textsize.value, /*rgba*/ 0.90, 0.90, 0.90, 1.0, /*flags outcolor*/ 0, NULL, true, FONT_CONSOLE); // Baker 1007.2
+	DrawQ_String (/*x*/ vid_conwidth.integer -
+							DrawQ_TextWidth (
+								engineversionshort , 0, con_textsize.value, con_textsize.value, 
+								q_ignore_color_codes_true /* Baker corrected*/, FONT_CONSOLE
+							), 
+			/*y*/ lines - con_textsize.value, 
+			/*string*/ engineversionshort, 
+			q_text_maxlen_0, 
+			/*scalex*/ con_textsize.value, //bronzey
+			/*scaley*/ con_textsize.value, /*rgba*/ 0.90, 0.90, 0.90, 1.0, /*flags outcolor*/ DRAWFLAG_NORMAL_0, 
+			q_outcolor_null, q_ignore_color_codes_true, FONT_CONSOLE); // Baker 1007.2
 
 // draw the text
-#if 0
-	{
-		int i;
-		int count = CON_LINES_COUNT;
-		float ymax = con_vislines - 2 * con_textsize.value;
-		float y = ymax + con_textsize.value * con_backscroll;
-		for (i = 0;i < count && y >= 0;i++)
-			y -= Con_DrawConsoleLine(mask_must, mask_mustnot, y - con_textsize.value, CON_LINES_COUNT - 1 - i, 0, ymax) * con_textsize.value;
-		// fix any excessive scrollback for the next frame
-		if (i >= count && y >= 0)
-		{
-			con_backscroll -= (int)(y / con_textsize.value);
-			if (con_backscroll < 0)
-				con_backscroll = 0;
-		}
-	}
-#else
-	if (CON_LINES_COUNT > 0)
-	{
+
+	if (CON_LINES_COUNT > 0) {
 		int i, last, limitlast;
 		float y;
 		float ymax = con_vislines - 2 * con_textsize.value;
-		Con_LastVisibleLine(mask_must, mask_mustnot, &last, &limitlast);
-		//Con_LastVisibleLine(mask_must, mask_mustnot, &last, &limitlast);
+
+		Con_LastVisibleLine (mask_must, mask_mustnot, &last, &limitlast); // Baker: Sets last variable
+
 		y = ymax - con_textsize.value;
 
 		if (limitlast)
 			y += (CON_LINES(last).height - limitlast) * con_textsize.value;
 		i = last;
 
-		for(;;)
-		{
-			y -= Con_DrawConsoleLine(mask_must, mask_mustnot, y, i, 0, ymax) * con_textsize.value;
+		while (1) {
+			y -= Con_DrawConsoleLine (mask_must, mask_mustnot, y, i, 0, ymax) * con_textsize.value;
 			if (i == 0)
 				break; // top of console buffer
 			if (y < 0)
 				break; // top of console window
 			limitlast = 0;
-			--i;
-		}
-	}
-#endif
+			i --;
+		} // while
+	} // if
 
 // draw the input prompt, user text, and cursor if desired
 	Con_DrawInput (/*is console*/ true, 0, con_vislines - con_textsize.value * 2, con_textsize.value);
@@ -2453,10 +2487,10 @@ void Con_DisplayList(const char **list)
 
 
 // Now it becomes TRICKY :D --blub
-static char Nicks_list[MAX_SCOREBOARD][MAX_SCOREBOARDNAME_128];	// contains the nicks with colors and all that
-static char Nicks_sanlist[MAX_SCOREBOARD][MAX_SCOREBOARDNAME_128];	// sanitized list for completion when there are other possible matches.
+static char Nicks_list[MAX_SCOREBOARD_255][MAX_SCOREBOARDNAME_128];	// contains the nicks with colors and all that
+static char Nicks_sanlist[MAX_SCOREBOARD_255][MAX_SCOREBOARDNAME_128];	// sanitized list for completion when there are other possible matches.
 // means: when somebody uses a cvar's name as his name, we won't ever get his colors in there...
-static int Nicks_offset[MAX_SCOREBOARD]; // when nicks use a space, we need this to move the completion list string starts to avoid invalid memcpys
+static int Nicks_offset[MAX_SCOREBOARD_255]; // when nicks use a space, we need this to move the completion list string starts to avoid invalid memcpys
 static int Nicks_matchpos;
 
 // co against <<:BLASTER:>> is true!?
@@ -2969,7 +3003,8 @@ exit_possible:
 			else if (String_Isin1 (command, "cvarlist") /**/)						ac->searchtype = 20;
 			else if (String_Isin1 (command, "sv_protocolname") /**/)				ac->searchtype = 21;
 			else if (String_Isin1 (command, "loadfont"))							ac->searchtype = 22;
-		} 
+			else if (String_Isin1 (command, "showmodel") /**/)						ac->searchtype = 23;
+		}
 		else if (ac->s_command0_a) {
 			// We are 2nd argument or further down (or someone typed multiple spaces that's on them)
 		         if (String_Isin1 (command, "r_replacemaptexture") /**/)			ac->searchtype = 19;
@@ -3007,7 +3042,7 @@ autocomplete_go:
 		case 5:  GetFileList_Count		(s, ".cfg", q_strip_exten_false); break;
 		case 6:  GetSkyList_Count		(s);	break;
 		case 7:  GetTexMode_Count		(s);	break;
-		case 8:  GetAny1_Count			(s, "ents"); break;
+		case 8:  GetCommad_Count		(s, "ents,tex"); break;
 		case 9:  GetEdictsCmd_Count		(s);	break;
 		case 10: GetREditLightsEdit_Count(s);	break;
 		case 11: GetGameCommands_Count  (s, prvm_sv_gamecommands.string);	break; // Baker r7103 gamecommand autocomplete
@@ -3022,6 +3057,7 @@ autocomplete_go:
 		case 20: GetAny1_Count			(s, "changed"); break; // cvarlist "changed"
 		case 21: GetCommad_Count		(s, "666,999,dp7,quake"); break; // sv_protocolname
 		case 22: GetCommad_Count		(s, "centerprint,chat,console,default,infobar,menu,notify,sbar"); break;
+		case 23: GetShowModelList_Count	(s);	break;
 		} // switch
 
 		if (ac->s_match_alphatop_a == NULL) {

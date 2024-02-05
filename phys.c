@@ -55,7 +55,7 @@ int PHYS_NudgeOutOfSolid(prvm_prog_t *prog, prvm_edict_t *ent)
 			if (prog == SVVM_prog) // TODO: can we refactor to use a shared TraceBox or at least a func ptr for these cases?
 				stucktrace = SV_TraceBox(stuckorigin, stuckmins, stuckmaxs, stuckorigin, pass ? MOVE_WORLDONLY : MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
 			else
-				stucktrace = CL_TraceBox(stuckorigin, stuckmins, stuckmaxs, stuckorigin, pass ? MOVE_WORLDONLY : MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, pass ? false : true, false, NULL, false);
+				stucktrace = CL_TraceBox(stuckorigin, stuckmins, stuckmaxs, stuckorigin, pass ? MOVE_WORLDONLY : MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, pass ? false : true, HITT_NOPLAYERS_0_NOTAMOVE, NULL, false);
 
 			// Separation compared here to ensure a good location will be recognised reliably.
 			if (-stucktrace.startdepth <= separation

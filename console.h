@@ -62,6 +62,12 @@ void Con_Printf (const char *fmt, ...) DP_FUNC_PRINTF(1);
 
 void Con_PrintLinef (const char *fmt, ...) DP_FUNC_PRINTF(1);  // Baker 1009: Jan 19 2022
 
+#define Con_PrintVarInt(var) Con_PrintLinef (STRINGIFY(var) " %d", (int)(var))
+#define Con_PrintVarFloat(var) Con_PrintLinef (STRINGIFY(var) " %f", (float)(var))
+#define Con_PrintVarString(var) Con_PrintLinef (STRINGIFY(var) " %s", var)
+#define Con_PrintVarVector(var) Con_PrintLinef (STRINGIFY(var) " %f %f %f", var[0], var[1], var[2])
+
+
 void Con_LogCenterPrint(const char *str); // Baker r1421: centerprint logging to console
 
 void Con_HidenotifyPrintLinef(const char *fmt, ...) DP_FUNC_PRINTF(1); // Baker r1421: centerprint logging to console

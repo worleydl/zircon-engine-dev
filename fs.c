@@ -348,7 +348,7 @@ typedef struct pk3_endOfCentralDir_s
 typedef struct dpackfile_s
 {
 	char name[56];
-	int filepos, filelen;
+	int dpackfilepos, dpackfilelen;
 } dpackfile_t;
 
 typedef struct dpackheader_s
@@ -1147,8 +1147,8 @@ static pack_t *FS_LoadPackPAK (const char *packfile)
 	// parse the directory
 	for (i = 0;i < numpackfiles;i++)
 	{
-		fs_offset_t offset = (unsigned int)LittleLong (info[i].filepos);
-		fs_offset_t size = (unsigned int)LittleLong (info[i].filelen);
+		fs_offset_t offset = (unsigned int)LittleLong (info[i].dpackfilepos);
+		fs_offset_t size = (unsigned int)LittleLong (info[i].dpackfilelen);
 
 		// Ensure a zero terminated file name (required by format).
 		info[i].name[sizeof(info[i].name) - 1] = 0;
@@ -1318,7 +1318,7 @@ qbool FS_AddPack(const char *pakfile, qbool *already_loaded, qbool keep_plain_di
 	search = FS_FindFile(pakfile, &index, fs_quiet_true);
 	if (!search || search->pack)
 	{
-		Con_Printf ("could not find pak \"%s\"\n", pakfile);
+		Con_PrintLinef ("could not find pak " QUOTED_S, pakfile);
 		return false;
 	}
 
@@ -2703,7 +2703,7 @@ qfile_t *FS_OpenRealFile (const char *filepath, const char *mode /*rb or what no
 	char real_path [MAX_OSPATH];
 
 	if (FS_CheckNastyPath(filepath, false)) {
-		Con_PrintLinef ("FS_OpenRealFile(\"%s\", \"%s\", %s): nasty filename rejected", filepath, mode, quiet ? "true" : "false");
+		Con_PrintLinef ("FS_OpenRealFile(" QUOTED_S ", " QUOTED_S ", %s): nasty filename rejected", filepath, mode, quiet ? "true" : "false");
 		return NULL;
 	}
 
@@ -3307,7 +3307,7 @@ static unsigned char *FS_LoadAndCloseQFile (qfile_t *file, const char *path, mem
 		filesize = file->real_length;
 		if (filesize < 0)
 		{
-			Con_Printf ("FS_LoadFile(\"%s\", pool, %s, filesizepointer): trying to open a non-regular file\n", path, quiet ? "true" : "false");
+			Con_Printf ("FS_LoadFile(" QUOTED_S ", pool, %s, filesizepointer): trying to open a non-regular file\n", path, quiet ? "true" : "false");
 			FS_Close(file);
 			return NULL;
 		}
@@ -3317,7 +3317,7 @@ static unsigned char *FS_LoadAndCloseQFile (qfile_t *file, const char *path, mem
 		FS_Read (file, buf, filesize);
 		FS_Close (file);
 		if (developer_loadfile.integer)
-			Con_PrintLinef ("loaded file \"%s\" (%u bytes)", path, (unsigned int)filesize);
+			Con_PrintLinef ("loaded file " QUOTED_S " (%u bytes)", path, (unsigned int)filesize);
 	}
 
 	if (filesizepointer)

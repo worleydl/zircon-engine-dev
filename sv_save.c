@@ -48,21 +48,21 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 
 	isserver = prog == SVVM_prog;
 
-	Con_Printf ("Saving game to %s...\n", name);
+	Con_PrintLinef ("Saving game to %s...", name);
 	f = FS_OpenRealFile(name, "wb", false);
 	if (!f)
 	{
-		Con_Print("ERROR: couldn't open.\n");
+		Con_PrintLinef ("ERROR: couldn't open.");
 		return;
 	}
 
-	FS_Printf(f, "%d\n", SAVEGAME_VERSION);
+	FS_Printf (f, "%d" NEWLINE, SAVEGAME_VERSION);
 
 	memset(comment, 0, sizeof(comment));
 	if (isserver)
-		dpsnprintf(comment, sizeof(comment), "%-21.21s kills:%3i/%3i", PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)), (int)PRVM_serverglobalfloat(killed_monsters), (int)PRVM_serverglobalfloat(total_monsters));
+		dpsnprintf (comment, sizeof(comment), "%-21.21s kills:%3d/%3d", PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)), (int)PRVM_serverglobalfloat(killed_monsters), (int)PRVM_serverglobalfloat(total_monsters));
 	else
-		dpsnprintf(comment, sizeof(comment), "(crash dump of %s progs)", prog->name);
+		dpsnprintf (comment, sizeof(comment), "(crash dump of %s progs)", prog->name);
 	// convert space to _ to make stdio happy
 	// LadyHavoc: convert control characters to _ as well
 	for (i=0 ; i<SAVEGAME_COMMENT_LENGTH ; i++)
@@ -74,63 +74,62 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 	if (isserver)
 	{
 		for (i=0 ; i<NUM_SPAWN_PARMS ; i++)
-			FS_Printf(f, "%f\n", svs.clients[0].spawn_parms[i]);
-		FS_Printf(f, "%d\n", current_skill);
-		FS_Printf(f, "%s\n", sv.name);
-		FS_Printf(f, "%f\n",sv.time);
+			FS_Printf(f, "%f" NEWLINE, svs.clients[0].spawn_parms[i]);
+		FS_Printf(f, "%d" NEWLINE, current_skill);
+		FS_Printf(f, "%s" NEWLINE, sv.name);
+		FS_Printf(f, "%f" NEWLINE,sv.time);
 	}
 	else
 	{
 		for (i=0 ; i<NUM_SPAWN_PARMS ; i++)
-			FS_Printf(f, "(dummy)\n");
-		FS_Printf(f, "%d\n", 0);
-		FS_Printf(f, "%s\n", "(dummy)");
-		FS_Printf(f, "%f\n", host.realtime);
+			FS_Printf(f, "(dummy)" NEWLINE);
+		FS_Printf (f, "%d" NEWLINE, 0);
+		FS_Printf (f, "%s" NEWLINE, "(dummy)");
+		FS_Printf (f, "%f" NEWLINE, host.realtime);
 	}
 
 	// write the light styles
 	for (i=0 ; i<lightstyles ; i++)
 	{
 		if (isserver && sv.lightstyles[i][0])
-			FS_Printf(f, "%s\n", sv.lightstyles[i]);
+			FS_Printf(f, "%s" NEWLINE, sv.lightstyles[i]);
 		else
-			FS_Print(f,"m\n");
+			FS_Print (f,"m" NEWLINE);
 	}
 
 	PRVM_ED_WriteGlobals (prog, f);
 	for (i=0 ; i<prog->num_edicts ; i++)
 	{
-		FS_Printf(f,"// edict %d\n", i);
+		FS_Printf (f,"// edict %d" NEWLINE, i);
 		//Con_Printf ("edict %d...\n", i);
 		PRVM_ED_Write (prog, f, PRVM_EDICT_NUM(i));
 	}
 
 #if 1
-	FS_Printf(f,"/*\n");
-	FS_Printf(f,"// DarkPlaces extended savegame\n");
+	FS_Printf (f,"/*" NEWLINE);
+	FS_Printf (f,"// DarkPlaces extended savegame" NEWLINE);
 	// darkplaces extension - extra lightstyles, support for color lightstyles
 	for (i=0 ; i<MAX_LIGHTSTYLES_256 ; i++)
 		if (isserver && sv.lightstyles[i][0])
-			FS_Printf(f, "sv.lightstyles %d %s\n", i, sv.lightstyles[i]);
+			FS_Printf (f, "sv.lightstyles %d %s" NEWLINE, i, sv.lightstyles[i]);
 
 	// darkplaces extension - model precaches
 	for (i=1 ; i<MAX_MODELS_8192 ; i++)
 		if (sv.model_precache[i][0])
-			FS_Printf(f,"sv.model_precache %d %s\n", i, sv.model_precache[i]);
+			FS_Printf (f,"sv.model_precache %d %s" NEWLINE, i, sv.model_precache[i]);
 
 	// darkplaces extension - sound precaches
 	for (i=1 ; i<MAX_SOUNDS_4096 ; i++)
 		if (sv.sound_precache[i][0])
-			FS_Printf(f,"sv.sound_precache %d %s\n", i, sv.sound_precache[i]);
+			FS_Printf (f,"sv.sound_precache %d %s" NEWLINE, i, sv.sound_precache[i]);
 
 	// darkplaces extension - save buffers
 	numbuffers = (int)Mem_ExpandableArray_IndexRange(&prog->stringbuffersarray);
-	for (i = 0; i < numbuffers; i++)
-	{
+	for (i = 0; i < numbuffers; i++) {
 		prvm_stringbuffer_t *stringbuffer = (prvm_stringbuffer_t*) Mem_ExpandableArray_RecordAtIndex(&prog->stringbuffersarray, i);
-		if (stringbuffer && (stringbuffer->flags & STRINGBUFFER_SAVED))
-		{
-			FS_Printf(f,"sv.buffer %d %d \"string\"\n", i, stringbuffer->flags & STRINGBUFFER_QCFLAGS);
+		if (stringbuffer && (stringbuffer->flags & STRINGBUFFER_SAVED)) {
+			FS_Printf (f,"sv.buffer %d %d \"string\"" NEWLINE, i, 
+				stringbuffer->flags & STRINGBUFFER_QCFLAGS);
 			for(k = 0; k < stringbuffer->num_strings; k++)
 			{
 				if (!stringbuffer->strings[k])
@@ -165,15 +164,15 @@ void SV_Savegame_to(prvm_prog_t *prog, const char *name)
 					s++;
 				}
 				line[l] = '\0';
-				FS_Printf(f,"sv.bufstr %d %d \"%s\"\n", i, k, line);
+				FS_Printf (f,"sv.bufstr %d %d " QUOTED_S NEWLINE, i, k, line);
 			}
 		}
 	}
-	FS_Printf(f,"*/\n");
+	FS_Printf(f,"*/" NEWLINE);
 #endif
 
 	FS_Close (f);
-	Con_Print("done.\n");
+	Con_PrintLinef ("done.");
 }
 
 static qbool SV_CanSave(void)
@@ -233,7 +232,7 @@ void SV_Savegame_f(cmd_state_t *cmd)
 		return;
 	}
 
-	strlcpy (name, Cmd_Argv(cmd, 1), sizeof (name));
+	c_strlcpy (name, Cmd_Argv(cmd, 1));
 	FS_DefaultExtension (name, ".sav", sizeof (name));
 
 	SV_Savegame_to(prog, name);

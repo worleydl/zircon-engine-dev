@@ -267,7 +267,7 @@ static void Key_History_Find_All(void)
 	int i, count = 0;
 	char vabuf[1024];
 	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES));
-	Con_Printf ("History commands containing \"%s\":\n", key_line + 1);
+	Con_Printf ("History commands containing " QUOTED_S ":\n", key_line + 1);
 
 	if (!*partial)
 		partial = "*";

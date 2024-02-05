@@ -175,8 +175,9 @@ void MSG_WriteString (sizebuf_t *sb, const char *s)
 		SZ_Write (sb, (unsigned char *)s, (int)strlen(s)+1);
 }
 
+
 // your_clc is like qw_clc_stringcmd or clc_stringcmd
-void Msg_WriteByte_WriteStringf (sizebuf_t *sb, int your_clc, char *fmt, ...)
+void Msg_WriteByte_WriteStringf (sizebuf_t *sb, int your_clc, const char *fmt, ...)
 {
 	va_list		argptr;
 	char		msg[2048];

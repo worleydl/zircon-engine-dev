@@ -324,8 +324,8 @@ void World_LinkEdict(world_t *world, prvm_edict_t *ent, const vec3_t mins, const
 	if (ent->priv.server->areagrid[0].list.prev)
 		World_UnlinkEdict(ent);
 
-	// some games don't want SOLID_NOT entities linked
-	if (!link_solid_not && PRVM_serveredictfloat(ent, solid) == SOLID_NOT)
+	// some games don't want SOLID_NOT_0 entities linked
+	if (!link_solid_not && PRVM_serveredictfloat(ent, solid) == SOLID_NOT_0)
 		return;
 
 	// don't add the world
@@ -2125,7 +2125,7 @@ static void World_Physics_Frame_BodyFromEntity(world_t *world, prvm_edict_t *ed)
 	int movetype = MOVETYPE_NONE;
 	int numtriangles;
 	int numvertices;
-	int solid = SOLID_NOT, geomtype = 0;
+	int solid = SOLID_NOT_0, geomtype = 0;
 	int triangleindex;
 	int vertexindex;
 	mempool_t *mempool;
@@ -2186,9 +2186,9 @@ static void World_Physics_Frame_BodyFromEntity(world_t *world, prvm_edict_t *ed)
 	if (!geomtype)
 	{
 		// VorteX: keep support for deprecated solid fields to not break mods
-		if (solid == SOLID_PHYSICS_TRIMESH || solid == SOLID_BSP)
+		if (solid == SOLID_PHYSICS_TRIMESH || solid == SOLID_BSP_4)
 			geomtype = GEOMTYPE_TRIMESH;
-		else if (solid == SOLID_NOT || solid == SOLID_TRIGGER)
+		else if (solid == SOLID_NOT_0 || solid == SOLID_TRIGGER_1)
 			geomtype = GEOMTYPE_NONE;
 		else if (solid == SOLID_PHYSICS_SPHERE)
 			geomtype = GEOMTYPE_SPHERE;
@@ -2692,7 +2692,7 @@ treatasbox:
 		gravity = false;
 
 	// compatibility for legacy entities
-	//if (!VectorLength2(forward) || solid == SOLID_BSP)
+	//if (!VectorLength2(forward) || solid == SOLID_BSP_4)
 	{
 		float pitchsign = 1;
 		vec3_t qangles, qavelocity;
@@ -2719,9 +2719,9 @@ treatasbox:
 	// compatibility for legacy entities
 	switch (solid)
 	{
-	case SOLID_BBOX:
-	case SOLID_SLIDEBOX:
-	case SOLID_CORPSE:
+	case SOLID_BBOX_2:
+	case SOLID_SLIDEBOX_3:
+	case SOLID_CORPSE_5:
 		VectorSet(forward, 1, 0, 0);
 		VectorSet(left, 0, 1, 0);
 		VectorSet(up, 0, 0, 1);
@@ -2737,9 +2737,9 @@ treatasbox:
 		if (VEC_IS_NAN(test))
 		{
 			modified = true;
-			//Con_Printf ("Fixing NAN values on entity %d : .classname = \"%s\" .origin = '%f %f %f' .velocity = '%f %f %f' .axis_forward = '%f %f %f' .axis_left = '%f %f %f' .axis_up = %f %f %f' .spinvelocity = '%f %f %f'\n", PRVM_NUM_FOR_EDICT(ed), PRVM_GetString(PRVM_gameedictstring(ed, classname)), origin[0], origin[1], origin[2], velocity[0], velocity[1], velocity[2], forward[0], forward[1], forward[2], left[0], left[1], left[2], up[0], up[1], up[2], spinvelocity[0], spinvelocity[1], spinvelocity[2]);
+			//Con_Printf ("Fixing NAN values on entity %d : .classname = " QUOTED_S " .origin = '%f %f %f' .velocity = '%f %f %f' .axis_forward = '%f %f %f' .axis_left = '%f %f %f' .axis_up = %f %f %f' .spinvelocity = '%f %f %f'\n", PRVM_NUM_FOR_EDICT(ed), PRVM_GetString(PRVM_gameedictstring(ed, classname)), origin[0], origin[1], origin[2], velocity[0], velocity[1], velocity[2], forward[0], forward[1], forward[2], left[0], left[1], left[2], up[0], up[1], up[2], spinvelocity[0], spinvelocity[1], spinvelocity[2]);
 			if (physics_ode_trick_fixnan.integer >= 2)
-				Con_Printf ("Fixing NAN values on entity %d : .classname = \"%s\" .origin = '%f %f %f' .velocity = '%f %f %f' .angles = '%f %f %f' .avelocity = '%f %f %f'\n", PRVM_NUM_FOR_EDICT(ed), PRVM_GetString(prog, PRVM_gameedictstring(ed, classname)), origin[0], origin[1], origin[2], velocity[0], velocity[1], velocity[2], angles[0], angles[1], angles[2], avelocity[0], avelocity[1], avelocity[2]);
+				Con_Printf ("Fixing NAN values on entity %d : .classname = " QUOTED_S " .origin = '%f %f %f' .velocity = '%f %f %f' .angles = '%f %f %f' .avelocity = '%f %f %f'\n", PRVM_NUM_FOR_EDICT(ed), PRVM_GetString(prog, PRVM_gameedictstring(ed, classname)), origin[0], origin[1], origin[2], velocity[0], velocity[1], velocity[2], angles[0], angles[1], angles[2], avelocity[0], avelocity[1], avelocity[2]);
 			test = VectorLength2(origin);
 			if (VEC_IS_NAN(test))
 				VectorClear(origin);

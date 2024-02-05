@@ -1,6 +1,9 @@
 #ifndef QSTATS_H
 #define QSTATS_H
 
+#define QW_TREAT_AS_CL_MOVEMENT ((cl_movement.integer && !sv.active) || cl_movement.integer > 1)
+#define QW_TREAT_AS_SPECTATOR	(cls.netcon && cls.protocol == PROTOCOL_QUAKEWORLD && \
+			(cl.scores[cl.playerentity-1].qw_spectator || cl.stats[STAT_HEALTH] <= 0 || cl.stats[STAT_HEALTH] >= 1000) )
 //
 // stats are integers communicated to the client by the server
 //

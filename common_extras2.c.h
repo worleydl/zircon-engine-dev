@@ -390,6 +390,18 @@ char *String_Edit_Remove_Last_Character (char *s_edit)
 	return s_edit;
 }
 
+int String_Edit_Remove_This_Trailing_Character (char *s_edit, int ch)
+{
+	int len = (int)strlen(s_edit);
+
+	if (len >= 1 && s_edit[len-1] == ch) {
+		s_edit[len-1] = 0;
+		return true;
+	}
+
+	return false;
+}
+
 
 // Short: Removes trailing spaces by replacing with null characters
 // Notes: None.
@@ -1737,7 +1749,7 @@ void String_Command_String_To_Argv (char *s_cmdline, int *numargc, char **argvz,
 	\\	Write a backslash character.
 	*/
 
-// Strips newlines, carriage returns and backspaces,
+// Strips newlines, carriage returns and backspaces.
 void String_Edit_To_Single_Line (char *s_edit)
 {
 	int length = strlen(s_edit);
@@ -1816,7 +1828,7 @@ size_t str_format_int_grouped(char dst[16], int num)
 char *String_Num_To_Thousands (int num)
 {
 	static char sbuf[64];
-	size_t result = str_format_int_grouped(sbuf, num);
+	str_format_int_grouped(sbuf, num);
 
 	return sbuf;
 }

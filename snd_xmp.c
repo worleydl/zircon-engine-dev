@@ -452,7 +452,7 @@ static void XMP_GetSamplesFloat(channel_t *ch, sfx_t *sfx, int firstsampleframe,
 		// create an xmp file context
 		if ((per_ch->playercontext = qxmp_create_context()) == NULL)
 		{
-			//Con_Printf ("error getting a libxmp file context; while trying to load file \"%s\"\n", filename);
+			//Con_PrintLinef ("error getting a libxmp file context; while trying to load file " QUOTED_S, filename);
 			Mem_Free(per_ch);
 			return;
 		}
@@ -622,24 +622,24 @@ qbool XMP_LoadModFile(const char *filename, sfx_t *sfx)
 	// Create an xmp file context
 	if ((xc = qxmp_create_context()) == NULL)
 	{
-		Con_Printf ("error creating a libxmp file context; while trying to load file \"%s\"\n", filename);
+		Con_PrintLinef ("error creating a libxmp file context; while trying to load file " QUOTED_S, filename);
 		Mem_Free(data);
 		return false;
 	}
 
 	if (developer_loading.integer >= 2)
-		Con_Printf ("Loading Module file (libxmp) \"%s\"\n", filename);
+		Con_PrintLinef ("Loading Module file (libxmp) " QUOTED_S, filename);
 
 	if (qxmp_load_module_from_memory(xc, (void *)data, (long)filesize) < 0) // Added in libxmp 4.2
 	{
-		Con_Printf ("error while trying to load xmp module \"%s\"\n", filename);
+		Con_PrintLinef ("error while trying to load xmp module " QUOTED_S, filename);
 		qxmp_free_context(xc);
 		Mem_Free(data);
 		return false;
 	}
 
 	if (developer_loading.integer >= 2)
-		Con_Printf ("\"%s\" will be streamed\n", filename);
+		Con_PrintLinef (QUOTED_S " will be streamed", filename);
 
 	// keep the file around
 	per_sfx = (xmp_stream_persfx_t *)Mem_Alloc (snd_mempool, sizeof (*per_sfx));
@@ -684,7 +684,7 @@ qbool XMP_LoadModFile(const char *filename, sfx_t *sfx)
 		);
 	}
 	else if (developer_loading.integer == 1)
-		Con_Printf ("Decoding module (libxmp) \"%s\" (%s)\n", mi.mod->name, mi.mod->type);
+		Con_Printf ("Decoding module (libxmp) " QUOTED_S " (%s)\n", mi.mod->name, mi.mod->type);
 
 	qxmp_free_context(xc);
 	return true;

@@ -145,7 +145,75 @@ void StoreLittleShort (unsigned char *buffer, unsigned short i);
 //============================================================================
 
 #define PROTOCOL_VERSION_FTE1		(('F'<<0) + ('T'<<8) + ('E'<<16) + ('X' << 24))	//fte extensions.
+#define PROTOCOL_VERSION_EZQUAKE1	(('M'<<0) + ('V'<<8) + ('D'<<16) + ('1' << 24)) //ezquake/mvdsv extensions
+
+WARP_X_ (DEFS: ZIRCON_PEXT ZIRCON_EXT_CHUNKED_2)
+#define ZIRCON_EXT_CHUNKED_2							2
+#define ZIRCON_EXT_FREEMOVE_4							4
+#define ZIRCON_EXT_NONSOLID_FLAG_8						8
+#define ZIRCON_EXT_32BIT_RENDER_FLAGS_16				16	// Baker: We send flags as a long instead of a byte
+#define ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32	32  // Baker: Static entities write alpha, colormod, scale
+#define ZIRCON_EXT_SERVER_SENDS_BBOX_TO_CLIENT_64		64
+#define ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128	128 // sv_players_walk_thru_players 1
+
+// to client 
+
+#define CLIENT_SUPPORTED_ZIRCON_EXT		(			\
+	ZIRCON_EXT_CHUNKED_2 +							\
+	ZIRCON_EXT_FREEMOVE_4 +							\
+	ZIRCON_EXT_NONSOLID_FLAG_8 +					\
+	ZIRCON_EXT_32BIT_RENDER_FLAGS_16 +				\
+	ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32 +	\
+	ZIRCON_EXT_SERVER_SENDS_BBOX_TO_CLIENT_64 +		\
+	ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128 +	\
+	0 \
+	) // Ender
+
+// sv.zirconprotcolextensions_sv -- set in SV_SpawnServer
+// CL: CL_ForwardToServerf ("prespawn %d", cl_pext.integer ? CLIENT_SUPPORTED_ZIRCON_EXT : 0)
+// SV: unsigned int shared_flags = client->cl_zirconprotocolextensions & sv.zirconprotcolextensions_sv;
+// SV: svc_stufftext -> //hint "zircon_ext %d", shared_flags
+// CL: svc_stufftext -> //hint "zircon_ext %d" -> cls.zirconprotocolextensions = atoi (scmd_arg1);
+// CL: 
+//					if (Have_Zircon_Ext_CLHard_CHUNKS_ACTIVE)
+//							CL_ForwardToServerf ("download %s chunked", cl.model_name[cl.downloadmodel_current]);
+//					else	CL_ForwardToServerf ("download %s", cl.model_name[cl.downloadmodel_current]);
+
+// Chunks: We always ask for chunks, unless cl_pext 0
+// Reason: This might too early to read server extensions.
+// How do we know if we get chunks?
+// SV: --> "cl_downloadbegin 3232323 maps/aerowalk.bsp deflate chunked"
+// CL_DownloadBegin_DP_f: Cmd_Argc(cmd) >= 4 && String_Does_Match(Cmd_Argv(cmd, 3), "chunked")
+
+// Q: Does server ever disallow chunked downloads?
+
+// HARD: chunked downloads only.
+#define Have_Zircon_Ext_Flag_CL_Hard(zext)		Have_Flag((cl_pext.integer ? CLIENT_SUPPORTED_ZIRCON_EXT : 0), zext)
+#define Have_Zircon_Ext_Flag_CLS(zext)			Have_Flag(cls.zirconprotocolextensions, zext)
+#define Have_Zircon_Ext_CLHard_CHUNKS_ACTIVE	(Have_Zircon_Ext_Flag_CL_Hard(ZIRCON_EXT_CHUNKED_2) )
+
+// sv.zirconprotcolextensions_sv and Have_Zircon_Ext_Flag_SV_Hard as about the same thing.
+// Except for SV/CL handshake, use Have_Zircon_Ext_Flag_SV_Hard to indicate hard.
+
+// SV_HARD for signon buffer only. 
+
+#define Have_Zircon_Ext_Flag_SV_HCL(zext)		Have_Flag(host_client->cl_zirconprotocolextensions, zext)
+#define Have_Zircon_Ext_Flag_SV_Hard(zext)		Have_Flag(sv.zirconprotcolextensions_sv, zext)
+
+
+//#define ZIRCON_EXT_SERVER (sv_pext.integer ? CLIENT_SUPPORTED_ZIRCON_EXT : 0) // sv.zirconprotcolextensions_sv
+
+#define ZMOVE_IS_ENABLED \
+	(Have_Zircon_Ext_Flag_CLS (ZIRCON_EXT_FREEMOVE_4) && \
+	cl_zircon_move.integer && \
+	(cl.zircon_warp_sequence_clock == 0 || cl.zircon_warp_sequence_clock < cl.time))
+
+
 #define PROTOCOL_VERSION_QW_28		28
+
+#define CLIENT_SUPPORTED_Z_EXTENSIONS (Z_EXT_JOIN_OBSERVE)
+#define Z_EXT_JOIN_OBSERVE	(1<<5)	// 32 server: "join" and "observe" commands are supported
+									// 32 client: on-the-fly spectator <-> player switching supported
 
 // these versions are purely for internal use, never sent in network protocol
 // (use Protocol_EnumForNumber and Protocol_NumberToEnum to convert)
@@ -194,7 +262,7 @@ void MSG_WriteCoord (sizebuf_t *sb, vec_t f, protocolversion_t protocol);
 void MSG_WriteVector (sizebuf_t *sb, const vec3_t v, protocolversion_t protocol);
 void MSG_WriteAngle (sizebuf_t *sb, vec_t f, protocolversion_t protocol);
 
-void Msg_WriteByte_WriteStringf (sizebuf_t *sb, int your_clc, char *fmt, ...) DP_FUNC_PRINTF(3);
+void Msg_WriteByte_WriteStringf (sizebuf_t *sb, int your_clc, const char *fmt, ...) DP_FUNC_PRINTF(3);
 
 
 void MSG_BeginReading (sizebuf_t *sb);
@@ -237,6 +305,7 @@ int COM_ParseToken_Simple(const char **datapointer, qbool returnnewline, qbool p
 int COM_ParseToken_QuakeC(const char **datapointer, qbool returnnewline);
 int COM_ParseToken_VM_Tokenize(const char **datapointer, qbool returnnewline);
 int COM_ParseToken_Console(const char **datapointer);
+char *COM_Parse_FTE (const char *data, char *out, size_t outlen);
 
 void COM_Init (void);
 void COM_Shutdown (void);
@@ -390,6 +459,7 @@ float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angl
 // Optimize these 2 for speed rather than debugging convenience ...
 
 #define String_Does_Match_Caseless(s1,s2)				(!strcasecmp(s1, s2))
+#define String_Does_NOT_Match_Caseless(s1,s2)			(!!strcasecmp(s1, s2))
 #define String_Does_Match(s1,s2)						(!strcmp(s1, s2))
 #define String_Does_Not_Match(s1,s2)					(!!strcmp(s1, s2))
 
@@ -405,8 +475,11 @@ float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angl
 #define String_Does_Start_With(s,s_prefix)				(!strncmp(s, s_prefix, strlen(s_prefix)))
 #define String_Does_Start_With_Caseless(s,s_prefix)		(!strncasecmp(s, s_prefix, strlen(s_prefix)))
 
-#define String_Does_Start_With_PRE(s,s_prefix)	(!strncmp(s, s_prefix, sizeof(s_prefix) - 1 ))
-#define String_Does_Start_With_Caseless_PRE(s,s_prefix)	(!strncasecmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+#define String_Does_Start_With_PRE(s,s_prefix)					(!strncmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+#define String_Does_Start_With_Caseless_PRE(s,s_prefix)			(!strncasecmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+#define String_Does_NOT_Start_With_Caseless_PRE(s,s_prefix)		(!!strncasecmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+
+#define STRINGLEN(s_literal) (sizeof(s_literal) - 1)
 
 // FN ...
 
@@ -423,8 +496,11 @@ char *String_Edit_Replace (char *s_edit, size_t s_size, const char *s_find, cons
 char *String_Replace_Alloc (const char *s, const char *s_find, const char *s_replace);
 char *String_Edit_RTrim_Whitespace_Including_Spaces (char *s_edit);
 
+int String_Edit_Remove_This_Trailing_Character (char *s_edit, int ch);
 char *String_Edit_RemoveTrailingUnixSlash (char *s_edit);
-void String_Edit_To_Single_Line (char *s_edit);
+
+void String_Edit_To_Single_Line (char *s_edit); // Strips newlines, carriage returns and backspaces
+
 char *Clipboard_Get_Text_Line_Static (void);
 
 char *String_Num_To_Thousands (int num);

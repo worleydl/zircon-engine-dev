@@ -1,5 +1,7 @@
 // cl_parse_quakeworld.c.h
 
+WARP_X_ (CL_ParseServerMessage)
+
 		CL_NetworkTimeReceived(host.realtime); // qw has no clock
 
 		// kill all qw nails
@@ -50,9 +52,8 @@
 						j = 0;
 					count = cmdcount - j;
 					j &= 31;
-					while(count > 0)
-					{
-						dpsnprintf(logtemp, sizeof(logtemp), "%3i:%s ", cmdlog[j], cmdlogname[j]);
+					while(count > 0) {
+						dpsnprintf(logtemp, sizeof(logtemp), "%3d:%s ", cmdlog[j], cmdlogname[j]);
 						strlcat(description, logtemp, sizeof(description));
 						count--;
 						j++;
@@ -76,22 +77,34 @@
 				break;
 
 			case qw_svc_print:
+				// CTEXT
 				j = MSG_ReadByte(&cl_message);
 				str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-				if (CL_ExaminePrintString(str)) // look for anything interesting like player IP addresses or ping reports
-				{
-					if (j == 3) // chat
-						CSQC_AddPrintText(va(vabuf, sizeof(vabuf), "\1%s", str));	//[515]: csqc
-					else
-						CSQC_AddPrintText(str);
+				if (CL_ExaminePrintString(str)) { // look for anything interesting like player IP addresses or ping reports
+					if (j == 3) {
+						// chat
+						va(vabuf, sizeof(vabuf), "\1%s", str);
+						if (1 /*cl_pext_qw_coloredtext.value*/ && String_Does_Contain (vabuf, "&"))
+							CSQC_AddPrintTextQWColor (vabuf);
+						else
+							CSQC_AddPrintText(vabuf);	//[515]: csqc
+					}
+					else {
+						if (1 /*cl_pext_qw_coloredtext.value*/ && String_Does_Contain (str, "&"))
+							CSQC_AddPrintTextQWColor (str);
+						else
+							CSQC_AddPrintText(str);
+					}
 				}
 				break;
 
 			case qw_svc_centerprint:
+				// CTEXT
 				CL_VM_Parse_CenterPrint(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)));	//[515]: csqc
 				break;
 
 			case qw_svc_stufftext:
+				// CTEXT
 				CL_VM_Parse_StuffCmd(MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), q_is_quakeworld_true);	//[515]: csqc
 				break;
 
@@ -128,7 +141,7 @@ gamedir_change:
 					break;
 				}
 				strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
-				cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+				cl.lightstyle[j].map[MAX_STYLESTRING_64 - 1] = 0;
 				cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
 				break;
 
@@ -176,8 +189,9 @@ gamedir_change:
 					Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", j);
 				if (j >= cl.max_entities)
 					CL_ExpandEntities(j);
-				CL_ParseBaseline(cl.entities + j, q_is_large_modelindex_false, q_fitz_version_none_0);
+				CL_ParseBaseline(cl.entities + j, q_is_large_modelindex_false, q_fitz_version_none_0, q_is_static_false);
 				break;
+
 			case qw_svc_spawnstatic:
 				CL_ParseStatic(q_is_large_modelindex_false, q_fitz_version_none_0);
 				break;
@@ -268,7 +282,7 @@ gamedir_change:
 				break;
 
 			case qw_svc_serverinfo:
-				QW_CL_ServerInfo();
+				QW_CL_ServerInfo(); // HEREON
 				break;
 
 			case qw_svc_download:
@@ -278,8 +292,7 @@ gamedir_change:
 			case qw_svc_playerinfo:
 				// slightly kill qw player entities now that we know there is
 				// an update of player entities this frame...
-				if (!qwplayerupdatereceived)
-				{
+				if (!qwplayerupdatereceived) {
 					qwplayerupdatereceived = true;
 					for (j = 1; j < cl.maxclients; j++)
 						cl.entities_active[j] = false;
@@ -295,7 +308,7 @@ gamedir_change:
 				(void) MSG_ReadByte(&cl_message);
 				// FIXME: apply to netgraph
 				//for (j = 0;j < j;j++)
-				//	cl.frames[(cls.netcon->qw.incoming_acknowledged-1-j)&QW_UPDATE_MASK].receivedtime = -2;
+				//	cl.frames[(cls.netcon->qw.incoming_acknowledged-1-j)&QW_UPDATE_MASK_63].receivedtime = -2;
 				break;
 
 			case qw_svc_modellist:
@@ -311,7 +324,7 @@ gamedir_change:
 				break;
 
 			case qw_svc_packetentities:
-				EntityFrameQW_CL_ReadFrame(false);
+				EntityFrameQW_CL_ReadFrame (q_is_delta_false);
 				// first update is the final signon stage
 				if (cls.signon == SIGNONS_4 - 1) {
 					cls.signon = SIGNONS_4; // QUAKEWORLD
@@ -321,7 +334,7 @@ gamedir_change:
 				break;
 
 			case qw_svc_deltapacketentities:
-				EntityFrameQW_CL_ReadFrame(true);
+				EntityFrameQW_CL_ReadFrame (q_is_delta_true);
 				// first update is the final signon stage
 				if (cls.signon == SIGNONS_4 - 1) {
 					cls.signon = SIGNONS_4; // QUAKEWORLD

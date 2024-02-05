@@ -349,7 +349,7 @@ static void VM_M_setserverlistmaskstring(prvm_prog_t *prog)
 			strlcpy( mask->info.qcstatus, str, sizeof(mask->info.qcstatus)  );
 			break;
 		case SLIF_PLAYERS:
-			strlcpy( mask->info.players, str, sizeof(mask->info.players)  );
+			strlcpy( mask->info.players_data, str, sizeof(mask->info.players_data)  );
 			break;
 		case SLIF_MAP:
 			strlcpy( mask->info.map, str, sizeof(mask->info.map)  );
@@ -494,7 +494,7 @@ static void VM_M_getserverliststring(prvm_prog_t *prog)
 			PRVM_G_INT (OFS_RETURN ) = PRVM_SetTempString( prog, cache->info.qcstatus );
 			break;
 		case SLIF_PLAYERS:
-			PRVM_G_INT (OFS_RETURN ) = PRVM_SetTempString( prog, cache->info.players );
+			PRVM_G_INT (OFS_RETURN ) = PRVM_SetTempString( prog, cache->info.players_data );
 			break;
 		case SLIF_GAME:
 			PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, cache->info.game );

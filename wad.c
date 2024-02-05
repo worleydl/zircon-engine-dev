@@ -33,7 +33,7 @@ mwad_t;
 
 typedef struct wadstate_s
 {
-	unsigned char *gfx_base;
+	unsigned char *gfx_base; // Baker: wad_base equivalent of FitzQuake / Quakespasm
 	mwad_t gfx;
 	memexpandablearray_t hlwads;
 }
@@ -111,25 +111,33 @@ void W_UnloadAll(void)
 	memset(&wad, 0, sizeof(wad));
 }
 
-unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
+// Baker: DarkPlaces will look for "conchars_norm" and "conchars_reflect" in a WAD
+unsigned char *W_GetLumpName(const char *wanted_lump_name, fs_offset_t *returnfilesize)
 {
 	int i;
 	fs_offset_t filesize;
 	lumpinfo_t *lump;
-	char clean[16];
+	char s_cleaned_name_buf[16];
 	wadinfo_t *header;
 	int infotableofs;
 
-	W_CleanupName (name, clean);
+	// Baker: long names like "conchars_reflect" by definition cannot be found in a wad file
+	// Because length 16 exceeds 15 max lump texture name.
+	// Solve a buffer overrun like issue where the cleaned name does not get null terminated
+	// if incoming name is 16 or more characters long.
+	if (strlen(wanted_lump_name) >= 16)
+		return NULL;
 
-	if (!wad.gfx_base)
-	{
-		if ((wad.gfx_base = FS_LoadFile ("gfx.wad", cls.permanentmempool, fs_quiet_FALSE, &filesize)))
-		{
-			if (memcmp(wad.gfx_base, "WAD2", 4))
-			{
-				Con_Print("gfx.wad doesn't have WAD2 id\n");
-				Mem_Free(wad.gfx_base);
+	// Baker: This copies the data to
+	W_CleanupName (wanted_lump_name, s_cleaned_name_buf); // Baker: says Lowercases name and pads with spaces and a terminating 0
+
+	// Baker: This loads the WAD
+	// static wadstate_t wad; < --- the global
+	if (!wad.gfx_base) {
+		if ((wad.gfx_base = FS_LoadFile ("gfx.wad", cls.permanentmempool, fs_quiet_FALSE, &filesize))) {
+			if (memcmp (wad.gfx_base, "WAD2", 4)) {
+				Con_PrintLinef	("gfx.wad doesn't have WAD2 id");
+				Mem_Free		(wad.gfx_base);
 				wad.gfx_base = NULL;
 			}
 			else
@@ -140,13 +148,13 @@ unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
 				wad.gfx.lumps = (lumpinfo_t *)(wad.gfx_base + infotableofs);
 
 				// byteswap the gfx.wad lumps in place
-				W_SwapLumps(wad.gfx.numlumps, wad.gfx.lumps);
+				W_SwapLumps (wad.gfx.numlumps, wad.gfx.lumps);
 			}
 		}
 	}
 
 	for (lump = wad.gfx.lumps, i = 0;i < wad.gfx.numlumps;i++, lump++) {
-		if (String_Does_Match(clean, lump->name)) {
+		if (String_Does_Match (s_cleaned_name_buf, lump->name)) {
 			if (returnfilesize)
 				*returnfilesize = lump->size;
 			return (wad.gfx_base + lump->filepos);
@@ -272,7 +280,7 @@ unsigned char *W_ConvertWAD3TextureBGRA(sizebuf_t *sb)
 	return data;
 }
 
-unsigned char *W_GetTextureBGRA(char *name)
+unsigned char *W_GetTextureBGRA_HalfLife(char *name)
 {
 	unsigned int i, k;
 	sizebuf_t sb;
@@ -293,16 +301,19 @@ unsigned char *W_GetTextureBGRA(char *name)
 			continue;
 		for (i = 0;i < (unsigned int)w->numlumps;i++)
 		{
-			if (String_Does_Match(texname, w->lumps[i].name)) // found it
-			{
-				if (FS_Seek(w->file, w->lumps[i].filepos, SEEK_SET))
-				{Con_Print("W_GetTexture: corrupt WAD3 file\n");return NULL;}
+			if (String_Does_Match(texname, w->lumps[i].name)) { // found it 
+				if (FS_Seek(w->file, w->lumps[i].filepos, SEEK_SET)) {
+					Con_PrintLinef ("W_GetTexture: corrupt WAD3 file");
+					return NULL;
+				}
 
 				MSG_InitReadBuffer(&sb, (unsigned char *)Mem_Alloc(tempmempool, w->lumps[i].disksize), w->lumps[i].disksize);
 				if (!sb.data)
 					return NULL;
-				if (FS_Read(w->file, sb.data, w->lumps[i].size) < w->lumps[i].disksize)
-				{Con_Print("W_GetTexture: corrupt WAD3 file\n");return NULL;}
+				if (FS_Read(w->file, sb.data, w->lumps[i].size) < w->lumps[i].disksize) {
+					Con_PrintLinef ("W_GetTexture: corrupt WAD3 file");
+					return NULL;
+				}
 
 				data = W_ConvertWAD3TextureBGRA(&sb);
 				Mem_Free(sb.data);

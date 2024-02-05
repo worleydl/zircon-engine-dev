@@ -127,6 +127,8 @@ static void CDAudio_Play_byName (const char *trackname, qbool looping, qbool try
 	if (!enabled)
 		return;
 
+	// Baker: strspn - Returns the length of the initial portion of str1 which consists only of 
+	// characters that are part of str2
 	if (tryreal && strspn(trackname, "0123456789") == strlen(trackname))
 	{
 		track = (unsigned int) atoi(trackname);
@@ -274,24 +276,21 @@ static void CD_f(cmd_state_t *cmd)
 
 	command = Cmd_Argv(cmd, 1);
 
-	if (strcasecmp(command, "remap") != 0)
+	if (String_Does_NOT_Match_Caseless (command, "remap"))
 		CL_StartVideo();
 
-	if (strcasecmp(command, "on") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "on")) {
 		enabled = true;
 		return;
 	}
 
-	if (strcasecmp(command, "off") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "off")) {
 		CDAudio_Stop();
 		enabled = false;
 		return;
 	}
 
-	if (strcasecmp(command, "reset") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "reset")) {
 		enabled = true;
 		CDAudio_Stop();
 #ifdef MAXTRACKS
@@ -302,15 +301,13 @@ static void CD_f(cmd_state_t *cmd)
 		return;
 	}
 
-	if (strcasecmp(command, "rescan") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "rescan")) {
 		CDAudio_Shutdown();
 		CDAudio_Startup();
 		return;
 	}
 
-	if (strcasecmp(command, "remap") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "remap")) {
 #ifdef MAXTRACKS
 		ret = Cmd_Argc(cmd) - 2;
 		if (ret <= 0)
@@ -326,62 +323,54 @@ static void CD_f(cmd_state_t *cmd)
 		return;
 	}
 
-	if (strcasecmp(command, "close") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "close")) {
 		CDAudio_CloseDoor();
 		return;
 	}
 
-	if (strcasecmp(command, "play") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "play")) {
 		if (music_playlist_index.integer >= 0)
 			return;
 		CDAudio_Play_byName(Cmd_Argv(cmd, 2), false, true, (Cmd_Argc(cmd) > 3) ? atof( Cmd_Argv(cmd, 3) ) : 0);
 		return;
 	}
 
-	if (strcasecmp(command, "loop") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "loop")) {
 		if (music_playlist_index.integer >= 0)
 			return;
 		CDAudio_Play_byName(Cmd_Argv(cmd, 2), true, true, (Cmd_Argc(cmd) > 3) ? atof( Cmd_Argv(cmd, 3) ) : 0);
 		return;
 	}
 
-	if (strcasecmp(command, "stop") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "stop")) {
 		if (music_playlist_index.integer >= 0)
 			return;
 		CDAudio_Stop();
 		return;
 	}
 
-	if (strcasecmp(command, "pause") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "pause")) {
 		if (music_playlist_index.integer >= 0)
 			return;
 		CDAudio_Pause();
 		return;
 	}
 
-	if (strcasecmp(command, "resume") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "resume")) {
 		if (music_playlist_index.integer >= 0)
 			return;
 		CDAudio_Resume();
 		return;
 	}
 
-	if (strcasecmp(command, "eject") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "eject")) {
 		if (faketrack == -1)
 			CDAudio_Stop();
 		CDAudio_Eject();
 		return;
 	}
 
-	if (strcasecmp(command, "info") == 0)
-	{
+	if (String_Does_Match_Caseless (command, "info") == 0) {
 		CDAudio_GetAudioDiskInfo ();
 		if (cdPlaying)
 			Con_Printf ("Currently %s track %u\n", cdPlayLooping ? "looping" : "playing", cdPlayTrack);

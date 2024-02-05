@@ -1,6 +1,7 @@
 #include "quakedef.h"
 #include "protocol.h"
 
+WARP_X_ (EntityFrame5_CL_ReadFrame)
 void CL_ParseUpdate_Fitz (entity_t *ent, entity_state_t *s, int bits)
 {
 	// Baker: Everything reset to baseline already
@@ -164,7 +165,7 @@ void EntityFrameQuake_ReadEntity(int bits)
 		cl.lastquakeentity = num;
 	s.number = num;
 	s.time = cl.mtime[0];
-	s.flags = 0;
+	s.sflags = 0;
 
 	// FITZQUAKE has lerp flag here
 	// if (ent->msgtime + 0.2 < cl.mtime[0]) //more than 0.2 seconds since the last message (most entities think every 0.1 sec)
@@ -193,7 +194,7 @@ void EntityFrameQuake_ReadEntity(int bits)
 	if (bits & U_ORIGIN3)	s.origin[2] = MSG_ReadCoord(&cl_message, cls.protocol);
 	if (bits & U_ANGLE3)	s.angles[2] = MSG_ReadAngle(&cl_message, cls.protocol);
 
-	if (bits & U_STEP)		s.flags |= RENDER_STEP;
+	if (bits & U_STEP)		s.sflags |= RENDER_STEP;
 
 	// Baker: FitzQuake collides with U_DELTA_S16, U_ALPHA_S17, U_SCALE_S18, U_EFFECTS2_S19
 	if (bits & U_ALPHA_S17)		s.alpha = MSG_ReadByte(&cl_message);
@@ -203,11 +204,11 @@ void EntityFrameQuake_ReadEntity(int bits)
 	if (bits & U_GLOWSIZE_S20)	s.glowsize = MSG_ReadByte(&cl_message);
 	if (bits & U_GLOWCOLOR)		s.glowcolor = MSG_ReadByte(&cl_message);
 	if (bits & U_COLORMOD)		{int c = MSG_ReadByte(&cl_message);s.colormod[0] = (unsigned char)(((c >> 5) & 7) * (32.0f / 7.0f));s.colormod[1] = (unsigned char)(((c >> 2) & 7) * (32.0f / 7.0f));s.colormod[2] = (unsigned char)((c & 3) * (32.0f / 3.0f));}
-	if (bits & U_GLOWTRAIL)		s.flags |= RENDER_GLOWTRAIL;
+	if (bits & U_GLOWTRAIL)		s.sflags |= RENDER_GLOWTRAIL;
 	if (bits & U_FRAME2_S26)	s.frame = (s.frame & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
 	if (bits & U_MODEL2_S27)	s.modelindex = (s.modelindex & 0x00FF) | (MSG_ReadByte(&cl_message) << 8);
-	if (bits & U_VIEWMODEL)		s.flags |= RENDER_VIEWMODEL;
-	if (bits & U_EXTERIORMODEL)	s.flags |= RENDER_EXTERIORMODEL;
+	if (bits & U_VIEWMODEL)		s.sflags |= RENDER_VIEWMODEL;
+	if (bits & U_EXTERIORMODEL)	s.sflags |= RENDER_EXTERIORMODEL;
 
 	// LadyHavoc: to allow playback of the Nehahra movie
 	if (cls.protocol == PROTOCOL_NEHAHRAMOVIE && Have_Flag(bits, U_EXTEND1_S15)) {

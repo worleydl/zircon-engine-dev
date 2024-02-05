@@ -354,7 +354,7 @@ void VM_error(prvm_prog_t *prog)
 	char string[VM_STRINGTEMP_LENGTH];
 
 	VM_VarString(prog, 0, string, sizeof(string));
-	Con_Printf (CON_ERROR "======%s ERROR in %s:\n%s\n", prog->name, PRVM_GetString(prog, prog->xfunction->s_name), string);
+	Con_PrintLinef (CON_ERROR "======%s ERROR in %s:" NEWLINE "%s", prog->name, PRVM_GetString(prog, prog->xfunction->s_name), string);
 	ed = PRVM_PROG_TO_EDICT(PRVM_allglobaledict(self));
 	PRVM_ED_Print(prog, ed, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
 
@@ -1304,7 +1304,7 @@ void VM_findchainflags(prvm_prog_t *prog)
 	else
 		chainfield = prog->fieldoffsets.chain;
 	if (chainfield < 0)
-		prog->error_cmd("VM_findchainflags: %s doesnt have the specified chain field !", prog->name);
+		prog->error_cmd ("VM_findchainflags: %s doesnt have the specified chain field !", prog->name);
 
 	chain = (prvm_edict_t *)prog->edicts;
 
@@ -1678,6 +1678,12 @@ vector randomvec()
 */
 void VM_randomvec(prvm_prog_t *prog)
 {
+	if (sv.is_qex) {
+		// PF_walkpathtogoal -- #91 (RERELEASE) 
+		PRVM_G_FLOAT(OFS_RETURN) = 0;
+		return;
+	}
+
 	vec3_t temp;
 	VM_SAFEPARMCOUNT(0, VM_randomvec);
 	VectorRandom(temp);
@@ -3045,7 +3051,7 @@ void VM_loadfromfile(prvm_prog_t *prog)
 	if (FS_CheckNastyPath(filename, false))
 	{
 		PRVM_G_FLOAT(OFS_RETURN) = -4;
-		VM_Warning(prog, "VM_loadfromfile: %s dangerous or non-portable filename \"%s\" not allowed. (contains : or \\ or begins with .. or /)\n", prog->name, filename);
+		VM_Warning(prog, "VM_loadfromfile: %s dangerous or non-portable filename " QUOTED_S " not allowed. (contains : or \\ or begins with .. or /)\n", prog->name, filename);
 		return;
 	}
 
@@ -6561,7 +6567,7 @@ void VM_physics_addtorque(prvm_prog_t *prog)
 	if (!ed)
 	{
 		if (developer.integer > 0)
-			VM_Warning(prog, "VM_physics_addtorque: null entity!\n");
+			VM_Warning (prog, "VM_physics_addtorque: null entity!" NEWLINE);
 		return;
 	}
 	// entity should have MOVETYPE_PHYSICS already set, this can damage memory (making leaked allocation) so warn about this even if non-developer

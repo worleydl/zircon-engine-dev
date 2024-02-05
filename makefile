@@ -75,8 +75,10 @@ endif
 
 # default targets
 TARGETS_DEBUG=sv-debug sdl-debug
+TARGETS_OBJECTN=sv-objectn sdl-objectn
 TARGETS_PROFILE=sv-profile sdl-profile
 TARGETS_RELEASE=sv-release sdl-release
+TARGETS_ZIRCON=sv-release sdl-release sv-objectn sdl-objectn
 TARGETS_RELEASE_PROFILE=sv-release-profile sdl-release-profile
 TARGETS_NEXUIZ=sv-nexuiz sdl-nexuiz
 
@@ -106,6 +108,8 @@ ifeq ($(DP_MAKE_TARGET), linux)
 	EXE_SDL=$(EXE_UNIXSDL)
 	EXE_SVNEXUIZ=$(EXE_UNIXSVNEXUIZ)
 	EXE_SDLNEXUIZ=$(EXE_UNIXSDLNEXUIZ)
+	EXE_SVOBJECTN=$(EXE_UNIXSVOBJECTN)
+	EXE_SDLOBJECTN=$(EXE_UNIXSDLOBJECTN)
 
 	DP_LINK_SDL?=shared
 	DP_LINK_ZLIB?=shared
@@ -132,6 +136,8 @@ ifeq ($(DP_MAKE_TARGET), macosx)
 	EXE_SDL=$(EXE_UNIXSDL)
 	EXE_SVNEXUIZ=$(EXE_UNIXSVNEXUIZ)
 	EXE_SDLNEXUIZ=$(EXE_UNIXSDLNEXUIZ)
+	EXE_SVOBJECTN=$(EXE_UNIXSVOBJECTN)
+	EXE_SDLOBJECTN=$(EXE_UNIXSDLOBJECTN)
 
 	ifeq ($(word 2, $(filter -arch, $(CC))), -arch)
 		CFLAGS_MAKEDEP=
@@ -149,9 +155,12 @@ ifeq ($(DP_MAKE_TARGET), macosx)
 	# and not-implemented-in-64bit Carbon
 	TARGETS_DEBUG=sv-debug sdl-debug
 	TARGETS_PROFILE=sv-profile sdl-profile
+	TARGETS_OBJECTN=sv-objectn sdl-objectn
+	TARGETS_ZIRCON=sv-release sdl-release sv-objectn sdl-objectn
 	TARGETS_RELEASE=sv-release sdl-release
 	TARGETS_RELEASE_PROFILE=sv-release-profile sdl-release-profile
 	TARGETS_NEXUIZ=sv-nexuiz sdl-nexuiz
+	TARGETS_OBJECTN=sv-objectn sdl-objectn
 endif
 
 # SunOS configuration (Solaris)
@@ -172,6 +181,8 @@ ifeq ($(DP_MAKE_TARGET), sunos)
 	EXE_SDL=$(EXE_UNIXSDL)
 	EXE_SVNEXUIZ=$(EXE_UNIXSVNEXUIZ)
 	EXE_SDLNEXUIZ=$(EXE_UNIXSDLNEXUIZ)
+	EXE_SVOBJECTN=$(EXE_UNIXSVOBJECTN)
+	EXE_SDLOBJECTN=$(EXE_UNIXSDLOBJECTN)
 
 	DP_LINK_SDL?=shared
 	DP_LINK_ZLIB?=shared
@@ -199,6 +210,8 @@ ifeq ($(DP_MAKE_TARGET), bsd)
 	EXE_SDL=$(EXE_UNIXSDL)
 	EXE_SVNEXUIZ=$(EXE_UNIXSVNEXUIZ)
 	EXE_SDLNEXUIZ=$(EXE_UNIXSDLNEXUIZ)
+	EXE_SVOBJECTN=$(EXE_UNIXSVOBJECTN)
+	EXE_SDLOBJECTN=$(EXE_UNIXSDLOBJECTN)
 
 	DP_LINK_SDL?=shared
 	DP_LINK_ZLIB?=shared
@@ -245,6 +258,8 @@ ifeq ($(DP_MAKE_TARGET), mingw)
 	EXE_SDL=$(EXE_WINSDL)
 	EXE_SVNEXUIZ=$(EXE_WINSVNEXUIZ)
 	EXE_SDLNEXUIZ=$(EXE_WINSDLNEXUIZ)
+	EXE_SVOBJECTN=$(EXE_UNIXSVOBJECTN)
+	EXE_SDLOBJECTN=$(EXE_UNIXSDLOBJECTN)
 
 	DP_LINK_SDL?=shared
 	DP_LINK_ZLIB?=dlopen

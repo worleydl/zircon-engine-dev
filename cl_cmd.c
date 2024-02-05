@@ -39,22 +39,34 @@ cvar_t cl_noaim = {CF_CLIENT | CF_USERINFO | CF_ARCHIVE, "noaim", "1", "QW optio
 cvar_t cl_pmodel = {CF_CLIENT | CF_USERINFO | CF_ARCHIVE, "pmodel", "0", "current player model number in nehahra"};
 cvar_t r_fixtrans_auto = {CF_CLIENT, "r_fixtrans_auto", "0", "automatically fixtrans textures (when set to 2, it also saves the fixed versions to a fixtrans directory)"};
 
+cvar_t cl_chatmode = {CF_CLIENT, "cl_chatmode", "1", "Chat using console: text typed in console while connected to server, if unknown command, is said to other players [Zircon]"};
+
 extern cvar_t rcon_secure;
 extern cvar_t rcon_secure_challengetimeout;
 
 /*
 ===================
-CL_ForwardToServer
+CL_ForwardToServerf
 
 Sends an entire command string over to the server, unprocessed
 ===================
 */
-void CL_ForwardToServer (const char *s)
+// Baker: Calling function must have an engine hardcoded string for format
+void CL_ForwardToServerf (const char *fmt, ...)
 {
+	va_list		argptr;
+	char		txt[MAX_INPUTLINE_16384];
+
+	va_start	(argptr, fmt);
+	dpvsnprintf (txt, sizeof(txt), fmt, argptr);
+
+	va_end		(argptr);
+
+	const char *s = txt;
+
 	char temp[128];
-	if (cls.state != ca_connected)
-	{
-		Con_Printf ("Can't \"%s\", not connected\n", s);
+	if (cls.state != ca_connected) {
+		Con_PrintLinef ("Can't " QUOTED_S ", not connected", s);
 		return;
 	}
 
@@ -189,27 +201,28 @@ void CL_ForwardToServer_f (cmd_state_t *cmd)
 	// don't send an empty forward message if the user tries "cmd" by itself
 	if (!s || !*s)
 		return;
-	CL_ForwardToServer(s);
+	CL_ForwardToServerf("%s", s); // Baker: Hardened against macros
 }
 
 static void CL_SendCvar_f(cmd_state_t *cmd)
 {
 	cvar_t	*c;
 	const char *cvarname;
-	char vabuf[1024];
 
 	if (Cmd_Argc(cmd) != 2)
 		return;
+
 	cvarname = Cmd_Argv(cmd, 1);
+
 	if (cls.state == ca_connected)
 	{
 		c = Cvar_FindVar(&cvars_all, cvarname, CF_CLIENT | CF_SERVER);
 		// LadyHavoc: if there is no such cvar or if it is private, send a
 		// reply indicating that it has no value
 		if (!c || (c->flags & CF_PRIVATE))
-			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "sentcvar %s", cvarname));
+			CL_ForwardToServerf ("sentcvar %s", cvarname);
 		else
-			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "sentcvar %s \"%s\"", c->name, c->string));
+			CL_ForwardToServerf ("sentcvar %s " QUOTED_S, c->name, c->string);
 		return;
 	}
 }
@@ -351,30 +364,28 @@ user <name or userid>
 Dump userdata / masterdata for a user
 ====================
 */
+// Baker: "user 0" or "user bob"
 static void CL_User_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 {
 	int		uid;
 	int		i;
 
-	if (Cmd_Argc(cmd) != 2)
-	{
+	if (Cmd_Argc(cmd) != 2) {
 		Con_PrintLinef ("Usage: user <username / userid>");
 		return;
 	}
 
 	uid = atoi(Cmd_Argv(cmd, 1));
 
-	for (i = 0;i < cl.maxclients;i++)
-	{
+	for (i = 0;i < cl.maxclients;i++) {
 		if (!cl.scores[i].name[0])
 			continue;
-		if (cl.scores[i].qw_userid == uid || String_Does_Match_Caseless(cl.scores[i].name, Cmd_Argv(cmd, 1)))
-		{
+		if (cl.scores[i].qw_userid == uid || String_Does_Match_Caseless(cl.scores[i].name, Cmd_Argv(cmd, 1))) {
 			InfoString_Print(cl.scores[i].qw_userinfo);
 			return;
 		}
 	}
-	Con_Printf ("User not in server.\n");
+	Con_PrintLinef ("User not in server.");
 }
 
 /*
@@ -586,21 +597,21 @@ static void CL_Rcon_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 			{
 				char s[128];
 				LHNETADDRESS_ToString(&cls.rcon_addresses[cls.rcon_ringpos], s, sizeof(s), true);
-				Con_Printf ("rcon to %s (for command %s) failed: too many buffered commands (possibly increase MAX_RCONS)\n", s, cls.rcon_commands[cls.rcon_ringpos]);
+				Con_Printf ("rcon to %s (for command %s) failed: too many buffered commands (possibly increase MAX_RCONS_16)\n", s, cls.rcon_commands[cls.rcon_ringpos]);
 				cls.rcon_commands[cls.rcon_ringpos][0] = 0;
 				--cls.rcon_trying;
 			}
-			for (i = 0;i < MAX_RCONS;i++)
+			for (i = 0;i < MAX_RCONS_16;i++)
 				if (cls.rcon_commands[i][0])
 					if (!LHNETADDRESS_Compare(&cls.rcon_address, &cls.rcon_addresses[i]))
 						break;
 			++cls.rcon_trying;
-			if (i >= MAX_RCONS)
+			if (i >= MAX_RCONS_16)
 				NetConn_WriteString(mysocket, "\377\377\377\377getchallenge", &cls.rcon_address); // otherwise we'll request the challenge later
 			strlcpy(cls.rcon_commands[cls.rcon_ringpos], Cmd_Args(cmd), sizeof(cls.rcon_commands[cls.rcon_ringpos]));
 			cls.rcon_addresses[cls.rcon_ringpos] = cls.rcon_address;
 			cls.rcon_timeout[cls.rcon_ringpos] = host.realtime + rcon_secure_challengetimeout.value;
-			cls.rcon_ringpos = (cls.rcon_ringpos + 1) % MAX_RCONS;
+			cls.rcon_ringpos = (cls.rcon_ringpos + 1) % MAX_RCONS_16;
 		}
 		else if (rcon_secure.integer > 0)
 		{
@@ -636,8 +647,7 @@ Sent by server when serverinfo changes
 static void CL_FullServerinfo_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 {
 	char temp[512];
-	if (Cmd_Argc(cmd) != 2)
-	{
+	if (Cmd_Argc(cmd) != 2) {
 		Con_Printf ("usage: fullserverinfo <complete info string>\n");
 		return;
 	}
@@ -724,6 +734,67 @@ static void CL_SetInfo_f(cmd_state_t *cmd) // credit: taken from QuakeWorld
 	CL_SetInfo(Cmd_Argv(cmd, 1), Cmd_Argv(cmd, 2), true, false, false, false);
 }
 
+
+#define INFO_PRINT_FIRST_COLUMN_WIDTH 20
+void Info_Print (char *s) {
+	char key[512], value[512], *o;
+	int l;
+
+	if (*s == '\\')
+		s++;
+	while (*s) {
+		o = key;
+		while (*s && *s != '\\')
+			*o++ = *s++;
+
+		l = o - key;
+		if (l < INFO_PRINT_FIRST_COLUMN_WIDTH) {
+			memset (o, ' ', INFO_PRINT_FIRST_COLUMN_WIDTH - l);
+			key[INFO_PRINT_FIRST_COLUMN_WIDTH] = 0;
+		} else {
+			*o = 0;
+		}
+		Con_Printf ("%s", key);
+
+		if (!*s) {
+			Con_PrintLinef ("MISSING VALUE");
+			return;
+		}
+
+		o = value;
+		s++;
+		while (*s && *s != '\\')
+			*o++ = *s++;
+		*o = 0;
+
+		if (*s)
+			s++;
+		Con_PrintLinef ("%s", value);
+	}
+}
+
+void CL_UserInfo_f (cmd_state_t *cmd) 
+{
+	if (Cmd_Argc(cmd) != 1) {
+		Con_PrintLinef ("%s : no arguments expected", Cmd_Argv(cmd, 0));
+		return;
+	}
+	Info_Print (cls.userinfo);
+}
+
+WARP_X_ (CL_Join_f)
+void CL_ServerInfo_f (cmd_state_t *cmd) 
+{
+	if (Cmd_Argc(cmd) != 1) {
+		Con_PrintLinef ("%s : no arguments expected", Cmd_Argv(cmd, 0));
+		return;
+	}
+
+	Info_Print (cl.qw_serverinfo);
+}
+
+
+
 static void CL_PingPLReport_f(cmd_state_t *cmd)
 {
 	char *errbyte;
@@ -742,9 +813,103 @@ static void CL_PingPLReport_f(cmd_state_t *cmd)
 	}
 }
 
+void CL_Join_f (cmd_state_t *cmd)
+{
+	char vabuf[1024];
+
+	if (Cmd_Argc(cmd) > 2) {
+		Con_PrintLinef ("Usage: join [server]");
+		return; 
+	}
+
+	CL_SetInfo("spectator", "0", qnfo_send_true, 
+		qnfo_allowstar_false, qnfo_allowmodel_false, qnfo_quiet_false);
+
+	if (Cmd_Argc(cmd) == 1) {
+		if (cls.demoplayback) {
+			Con_PrintLinef ("Can't join while playing a demo");
+			return;
+		}
+
+		int is_connected_to_a_quakeworld_server = cls.state == ca_connected && cls.state == ca_connected && cls.signon == SIGNONS_4 && cls.protocol == PROTOCOL_QUAKEWORLD;
+
+		if (is_connected_to_a_quakeworld_server == false) {
+			Con_PrintLinef ("Not connected to a Quakeworld server");
+			return;
+		}
+
+		// Refresh the server's ZQuake extension bits
+		char temp[2048];
+		cl.qw_z_ext = atoi(InfoString_GetValue (cl.qw_serverinfo, "*z_ext", temp, sizeof(temp)));
+
+		if (Have_Flag (cl.qw_z_ext, Z_EXT_JOIN_OBSERVE)) {
+			// Server supports the join/observe command, good
+			Cbuf_AddTextLine (cmd, "cmd join");
+			return;
+		}
+		
+		// Fall through to the clunky way ...
+	}
+
+	if (Cmd_Argc(cmd) == 2)
+		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "disconnect; connect %s", Cmd_Argv(cmd, 1)));
+	else
+		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "disconnect; reconnect %s", Cmd_Argv(cmd, 1)));
+}
+
+void CL_Observe_f (cmd_state_t *cmd)
+{
+	char vabuf[1024];
+
+	if (Cmd_Argc(cmd) > 2) {
+		Con_PrintLinef ("Usage: observe [server]");
+		return; 
+	}
+
+	CL_SetInfo("spectator", "1", qnfo_send_true, 
+		qnfo_allowstar_false, qnfo_allowmodel_false, qnfo_quiet_false);
+
+	if (Cmd_Argc(cmd) == 1) {
+		if (cls.demoplayback) {
+			Con_PrintLinef ("Can't observe while playing a demo");
+			return;
+		}
+
+		int is_connected_to_a_quakeworld_server = cls.state == ca_connected && cls.state == ca_connected && cls.signon == SIGNONS_4 && cls.protocol == PROTOCOL_QUAKEWORLD;
+
+		if (is_connected_to_a_quakeworld_server == false) {
+			Con_PrintLinef ("Not connected to a Quakeworld server");
+			return;
+		}
+
+		// Refresh the server's ZQuake extension bits
+		char temp[2048];
+		cl.qw_z_ext = atoi(InfoString_GetValue (cl.qw_serverinfo, "*z_ext", temp, sizeof(temp)));
+
+		if (Have_Flag (cl.qw_z_ext, Z_EXT_JOIN_OBSERVE)) {
+			// Server supports the join/observe command, good
+			Cbuf_AddTextLine (cmd, "cmd observe");
+			return;
+		}
+		
+		// Fall through to the clunky way ...
+	}
+
+	if (Cmd_Argc(cmd) == 2)
+		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "disconnect; connect %s", Cmd_Argv(cmd, 1)));
+	else
+		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "disconnect; reconnect %s", Cmd_Argv(cmd, 1)));
+}
+
+WARP_X_ (buildstring)
+
 void CL_InitCommands(void)
 {
-	dpsnprintf(cls.userinfo, sizeof(cls.userinfo), "\\name\\player\\team\\none\\topcolor\\0\\bottomcolor\\0\\rate\\10000\\msg\\1\\noaim\\1\\*ver\\dp");
+	// Baker: SetInfo
+	dpsnprintf (cls.userinfo, sizeof(cls.userinfo), 
+		"\\name\\player\\team\\none\\topcolor\\0\\bottomcolor\\0\\rate\\10000\\msg\\1\\noaim\\1"
+		"\\b_switch\\9\\w_switch\\9"
+		"\\*ver\\Zircon" "\\*z_ext\\%d", CLIENT_SUPPORTED_Z_EXTENSIONS /*32*/ );
 
 	/* In Quake `name` is a command that concatenates its arguments (quotes unnecessary)
 	 * which is expected in most DP-based games.
@@ -773,7 +938,8 @@ void CL_InitCommands(void)
 	Cvar_RegisterVariable(&r_fixtrans_auto);
 	Cvar_RegisterVariable(&cl_team);
 	Cvar_RegisterVariable(&cl_skin);
-	Cvar_RegisterVariable(&cl_noaim);	
+	Cvar_RegisterVariable(&cl_noaim);
+	Cvar_RegisterVariable(&cl_chatmode);
 
 	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "cmd", CL_ForwardToServer_f, "send a console commandline to the server (used by some mods)");
 	Cmd_AddCommand(CF_CLIENT, "color", CL_Color_f, "change your player shirt and pants colors");
@@ -787,6 +953,10 @@ void CL_InitCommands(void)
 	Cmd_AddCommand(CF_CLIENT, "packet", CL_Packet_f, "send a packet to the specified address:port containing a text string");
 	Cmd_AddCommand(CF_CLIENT, "fullinfo", CL_FullInfo_f, "allows client to modify their userinfo");
 	Cmd_AddCommand(CF_CLIENT, "setinfo", CL_SetInfo_f, "modifies your userinfo");
+	Cmd_AddCommand(CF_CLIENT, "userinfo", CL_UserInfo_f, "view your userinfo [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "join", CL_Join_f, "Quakeworld join [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "observe", CL_Observe_f, "Quakeworld observe [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "serverinfo", CL_ServerInfo_f, "Quakeworld serverinfo [Zircon]");
 	Cmd_AddCommand(CF_CLIENT, "fixtrans", Image_FixTransparentPixels_f, "change alpha-zero pixels in an image file to sensible values, and write out a new TGA (warning: SLOW)");
 	host.hook.CL_SendCvar = CL_SendCvar_f;
 

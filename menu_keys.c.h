@@ -223,7 +223,7 @@ static void M_Keys_Draw (void)
 }
 
 
-static void M_Keys_Key(cmd_state_t *cmd, int k, int ascii)
+static void M_Keys_Key(cmd_state_t *cmd, int key, int ascii)
 {
 	char	s_execccmd[80];
 	int		keys[NUMKEYS];
@@ -232,12 +232,12 @@ static void M_Keys_Key(cmd_state_t *cmd, int k, int ascii)
 	if (bind_grab) {	
 		// defining a key
 		S_LocalSound ("sound/misc/menu1.wav");
-		if (k == K_ESCAPE) {
+		if (key == K_ESCAPE) {
 			bind_grab = false;
 		}
 		else //if (k != '`')
 		{
-			c_dpsnprintf2 (s_execccmd, "bind " QUOTED_S " " QUOTED_S NEWLINE, Key_KeynumToString(k, tinystr, sizeof(tinystr)), bindnames[local_cursor][0]);
+			c_dpsnprintf2 (s_execccmd, "bind " QUOTED_S " " QUOTED_S NEWLINE, Key_KeynumToString(key, tinystr, sizeof(tinystr)), bindnames[local_cursor][0]);
 			Cbuf_InsertText (cmd, s_execccmd);
 		}
 
@@ -245,7 +245,7 @@ static void M_Keys_Key(cmd_state_t *cmd, int k, int ascii)
 		return;
 	}
 
-	switch (k) {
+	switch (key) {
 	case K_MOUSE2: if (Hotspots_DidHit_Slider()) { local_cursor = hotspotx_hover; goto leftus; } // PPX Key2 fall thru
 	case K_ESCAPE:
 //		if (m_keys_prevstate == m_options_classic) {
@@ -268,8 +268,8 @@ static void M_Keys_Key(cmd_state_t *cmd, int k, int ascii)
 		//S_LocalSound ("sound/misc/menu1.wav");
 		do {
 			local_cursor --;
-			if (local_cursor < 0)
-				local_cursor = 0;
+			if (local_cursor < 0) // K_UPARROW wraps around to end
+				local_cursor = local_count - 1;
 		} while (bindnames[local_cursor][0][0] == 0);  // skip sections
 		break;
 
@@ -278,13 +278,18 @@ static void M_Keys_Key(cmd_state_t *cmd, int k, int ascii)
 		//S_LocalSound ("sound/misc/menu1.wav");
 		do {
 			local_cursor++;
-			if (local_cursor >= local_count)
-				local_cursor = local_count - 1;
+			if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
+				local_cursor = 0;
 		}
 		while (bindnames[local_cursor][0][0] == 0);  // skip sections
 		break;
 
-	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else local_cursor = hotspotx_hover; // fall thru
+	case K_MOUSE1: 
+		if (hotspotx_hover == not_found_neg1) 
+			break; 
+		
+		local_cursor = hotspotx_hover; 
+		// fall thru
 
 	case K_ENTER:		// go into bind mode
 		Key_FindKeysForCommand (bindnames[local_cursor][0], keys, NUMKEYS, 0);

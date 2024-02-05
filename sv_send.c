@@ -127,12 +127,12 @@ void SV_BroadcastPrintf(const char *fmt, ...)
 
 /*
 =================
-SV_ClientCommands
+SV_ClientCommandsf
 
 Send text over to the client to be executed
 =================
 */
-void SV_ClientCommands(const char *fmt, ...)
+void SV_ClientCommandsf(const char *fmt, ...)
 {
 	va_list argptr;
 	char string[MAX_INPUTLINE_16384];
@@ -436,6 +436,8 @@ crosses a waterline.
 =============================================================================
 */
 
+// Baker: What protocols?
+WARP_X_ ()
 static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, int enumber)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -450,10 +452,18 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	vec3_t cullmins, cullmaxs;
 	model_t *model;
 
+#if 0
+	const char *s_brush = PRVM_GetString(prog, PRVM_serveredictstring(ent, model));
+	if (s_brush && s_brush[0] && s_brush[0] == '*') {
+		const char *sc = PRVM_GetString(prog, PRVM_serveredictstring(ent, classname));
+		int j = 5;
+	}
+#endif
+
 	// fast path for games that do not use legacy entity networking
 	// note: still networks clients even if they are legacy
 	sendentity = PRVM_serveredictfunction(ent, SendEntity);
-	if (sv_onlycsqcnetworking.integer && !sendentity && enumber > svs.maxclients)
+	if (sv_onlycsqcnetworking.integer /*d: 0*/ && !sendentity && enumber > svs.maxclients)
 		return false;
 
 	// this 2 billion unit check is actually to detect NAN origins
@@ -491,11 +501,9 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	lightstyle = (unsigned char)PRVM_serveredictfloat(ent, style);
 	lightpflags = (unsigned char)PRVM_serveredictfloat(ent, pflags);
 
-	if (gamemode == GAME_TENEBRAE)
-	{
+	if (gamemode == GAME_TENEBRAE) {
 		// tenebrae's EF_FULLDYNAMIC conflicts with Q2's EF_NODRAW_16
-		if (effects & 16)
-		{
+		if (effects & 16) {
 			effects &= ~16;
 			lightpflags |= PFLAGS_FULLDYNAMIC;
 		}
@@ -514,9 +522,9 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 		if (Have_Flag (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64)) {
 			int efx = effects;
 			Flag_Remove_From (effects, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16 | EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32 | EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64);
-			if (Have_Flag (efx, EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32))	Flag_Add_To (effects, EF_RED); // 128
-			if (Have_Flag (efx, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16))		Flag_Add_To (effects, EF_BLUE); // 64
-			if (Have_Flag (efx, EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64))		Flag_Add_To (effects, EF_DIMLIGHT); // 8 .. I guess?
+			if (Have_Flag (efx, EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32))	Flag_Add_To (effects, EF_RED_128); // 128
+			if (Have_Flag (efx, EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16))		Flag_Add_To (effects, EF_BLUE_64); // 64
+			if (Have_Flag (efx, EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64))		Flag_Add_To (effects, EF_DIMLIGHT_8); // 8 .. I guess?
 		} // if
 	} // qex
 	specialvisibilityradius = 0;
@@ -526,19 +534,19 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 		specialvisibilityradius = max(specialvisibilityradius, glowsize * 4);
 	if (erendflags & RENDER_GLOWTRAIL)
 		specialvisibilityradius = max(specialvisibilityradius, 100);
-	if (effects & (EF_BRIGHTFIELD | EF_MUZZLEFLASH | EF_BRIGHTLIGHT | EF_DIMLIGHT | EF_RED | EF_BLUE | EF_FLAME | EF_STARDUST))
+	if (effects & (EF_BRIGHTFIELD_1 | EF_MUZZLEFLASH_2 | EF_BRIGHTLIGHT_4 | EF_DIMLIGHT_8 | EF_RED_128 | EF_BLUE_64 | EF_FLAME | EF_STARDUST))
 	{
-		if (effects & EF_BRIGHTFIELD)
+		if (effects & EF_BRIGHTFIELD_1)
 			specialvisibilityradius = max(specialvisibilityradius, 80);
-		if (effects & EF_MUZZLEFLASH)
+		if (effects & EF_MUZZLEFLASH_2)
 			specialvisibilityradius = max(specialvisibilityradius, 100);
-		if (effects & EF_BRIGHTLIGHT)
+		if (effects & EF_BRIGHTLIGHT_4)
 			specialvisibilityradius = max(specialvisibilityradius, 400);
-		if (effects & EF_DIMLIGHT)
+		if (effects & EF_DIMLIGHT_8)
 			specialvisibilityradius = max(specialvisibilityradius, 200);
-		if (effects & EF_RED)
+		if (effects & EF_RED_128)
 			specialvisibilityradius = max(specialvisibilityradius, 200);
-		if (effects & EF_BLUE)
+		if (effects & EF_BLUE_64)
 			specialvisibilityradius = max(specialvisibilityradius, 200);
 		if (effects & EF_FLAME)
 			specialvisibilityradius = max(specialvisibilityradius, 250);
@@ -557,7 +565,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	cs->number = enumber;
 	VectorCopy(PRVM_serveredictvector(ent, origin), cs->origin);
 	VectorCopy(PRVM_serveredictvector(ent, angles), cs->angles);
-	cs->flags = erendflags;
+	cs->sflags = erendflags;
 	cs->effects = effects;
 	cs->colormap = (unsigned)PRVM_serveredictfloat(ent, colormap);
 	cs->modelindex = modelindex;
@@ -572,6 +580,10 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	cs->tagindex = (unsigned char)PRVM_serveredictfloat(ent, tag_index);
 	cs->glowsize = glowsize;
 	cs->traileffectnum = PRVM_serveredictfloat(ent, traileffectnum);
+
+	WARP_X_ (VM_SV_setsize)
+	VectorCopy (PRVM_serveredictvector(ent, mins), cs->bbx_mins);
+	VectorCopy (PRVM_serveredictvector(ent, maxs), cs->bbx_maxs);
 
 	// don't need to init cs->colormod because the defaultstate did that for us
 	//cs->colormod[0] = cs->colormod[1] = cs->colormod[2] = 32;
@@ -630,18 +642,39 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	if (f)
 		cs->effects |= ((unsigned int)f & 0xff) << 24;
 
+	int is_monster = Have_Flag ((int)PRVM_serveredictfloat(ent, flags), FL_MONSTER_32);
 	if (PRVM_serveredictfloat(ent, movetype) == MOVETYPE_STEP)
-		cs->flags |= RENDER_STEP;
-	if (cs->number != sv.writeentitiestoclient_cliententitynumber && (cs->effects & EF_LOWPRECISION) && cs->origin[0] >= -32768 && cs->origin[1] >= -32768 && cs->origin[2] >= -32768 && cs->origin[0] <= 32767 && cs->origin[1] <= 32767 && cs->origin[2] <= 32767)
-		cs->flags |= RENDER_LOWPRECISION;
+		cs->sflags |= RENDER_STEP;
+	else if (sv_gameplayfix_monsterinterpolate.integer && is_monster)
+		cs->sflags |= RENDER_STEP;
+
+	// Baker: For free movement prediction, these are types that a player does not collide with
+	WARP_X_ (E5_ALPHA, E5_NON_SOLID_S27)
+	int solid_typex = PRVM_serveredictfloat(ent, solid);
+	int movetype_typex = PRVM_serveredictfloat(ent, movetype);
+
+	// Baker:
+	int is_non_solid_baker = isin3 (solid_typex, SOLID_NOT_0, SOLID_TRIGGER_1, SOLID_CORPSE_5);
+	// Baker: The nailgun in particular shoots projectiles that we don't want blocking player movement.
+	// Baker: This doesn't cover enforcer lasers which are MOVETYPE_FLY, but gets the rest of the standard
+	// projectiles.
+	int is_non_solid_baker2 = is_monster == false && isin2 (movetype_typex, MOVETYPE_FLY, MOVETYPE_FLYMISSILE_9);
+
+	if (is_non_solid_baker || is_non_solid_baker2) {
+		cs->sflags |= RENDER_SOLID_NOT_BAKER_256;
+	}
+
+	if (cs->number != sv.writeentitiestoclient_cliententitynumber && (cs->effects & EF_LOWPRECISION) && 
+		cs->origin[0] >= -32768 && cs->origin[1] >= -32768 && cs->origin[2] >= -32768 && cs->origin[0] <= 32767 && cs->origin[1] <= 32767 && cs->origin[2] <= 32767)
+		cs->sflags |= RENDER_LOWPRECISION;
 	if (PRVM_serveredictfloat(ent, colormap) >= 1024)
-		cs->flags |= RENDER_COLORMAPPED;
+		cs->sflags |= RENDER_COLORMAPPED;
 	if (cs->viewmodelforclient)
-		cs->flags |= RENDER_VIEWMODEL; // show relative to the view
+		cs->sflags |= RENDER_VIEWMODEL; // show relative to the view
 
 	if (PRVM_serveredictfloat(ent, sendcomplexanimation))
 	{
-		cs->flags |= RENDER_COMPLEXANIMATION;
+		cs->sflags |= RENDER_COMPLEXANIMATION;
 		if (PRVM_serveredictfloat(ent, skeletonindex) >= 1)
 			cs->skeletonobject = ent->priv.server->skeleton;
 		cs->framegroupblend[0].frame = PRVM_serveredictfloat(ent, frame);
@@ -844,7 +877,7 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 	for (touchindex = 0;touchindex < originalnumtouchedicts;touchindex++)
 	{
 		touch = touchedicts[touchindex];
-		if (PRVM_serveredictfloat(touch, solid) != SOLID_BSP)
+		if (PRVM_serveredictfloat(touch, solid) != SOLID_BSP_4)
 			continue;
 		model = SV_GetModelFromEdict(touch);
 		if (!model || !model->brush.TraceLineOfSight)
@@ -853,7 +886,7 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 		alpha = PRVM_serveredictfloat(touch, alpha);
 		if (alpha && alpha < 1)
 			continue;
-		if ((int)PRVM_serveredictfloat(touch, effects) & EF_ADDITIVE)
+		if ((int)PRVM_serveredictfloat(touch, effects) & EF_ADDITIVE_32)
 			continue;
 		touchedicts[numtouchedicts++] = touch;
 	}
@@ -924,8 +957,7 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 	sv.sententitiesconsideration[s->number] = sv.sententitiesmark;
 	sv.writeentitiestoclient_stats_totalentities++;
 
-	if (s->customizeentityforclient)
-	{
+	if (s->customizeentityforclient) {
 		PRVM_serverglobalfloat(time) = sv.time;
 		PRVM_serverglobaledict(self) = s->number;
 		PRVM_serverglobaledict(other) = sv.writeentitiestoclient_cliententitynumber;
@@ -1010,7 +1042,7 @@ void SV_MarkWriteEntityStateToClient(entity_state_t *s, client_t *client)
 
 			// or not seen by random tracelines
 			// Baker: sv_cullentities_trace defaults 0 -- is not the norm
-			if (sv_cullentities_trace.integer && !isbmodel && sv.worldmodel && sv.worldmodel->brush.TraceLineOfSight && !r_trippy.integer && (client->frags != -666 || sv_cullentities_trace_spectators.integer))
+			if (sv_cullentities_trace.integer && !isbmodel && sv.worldmodel && sv.worldmodel->brush.TraceLineOfSight && !r_trippy.integer && (client->frags != NEXUIZ_OBS_NEG_666 || sv_cullentities_trace_spectators.integer))
 			{
 				int samples =
 					s->number <= svs.maxclients
@@ -1142,7 +1174,7 @@ static void SV_CleanupEnts (void)
 
 	ent = PRVM_NEXT_EDICT(prog->edicts);
 	for (e=1 ; e<prog->num_edicts ; e++, ent = PRVM_NEXT_EDICT(ent))
-		PRVM_serveredictfloat(ent, effects) = (int)PRVM_serveredictfloat(ent, effects) & ~EF_MUZZLEFLASH;
+		PRVM_serveredictfloat(ent, effects) = (int)PRVM_serveredictfloat(ent, effects) & ~EF_MUZZLEFLASH_2;
 }
 
 /*
@@ -1288,7 +1320,6 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	int is_fitz2 = isin2(sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999);
 //	int is_rmq	= isin1(sv.protocol, PROTOCOL_FITZQUAKE999);
 
-
 //
 // send a damage message
 //
@@ -1310,23 +1341,27 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	SV_SetIdealPitch ();		// how much to look up / down ideally
 
 // a fixangle might get lost in a dropped packet.  Oh well.
-	if (PRVM_serveredictfloat(ent, fixangle))
-	{
+	if (PRVM_serveredictfloat(ent, fixangle)) {
 		// angle fixing was requested by global thinking code...
 		// so store the current angles for later use
 		VectorCopy(PRVM_serveredictvector(ent, angles), host_client->fixangle_angles);
 		host_client->fixangle_angles_set = true;
 
+		//SV_PhysicsX_Zircon_Warp_Start (host_client, "fixangles_writeclientdata");
+
 		// and clear fixangle for the next frame
 		PRVM_serveredictfloat(ent, fixangle) = 0;
 	}
 
-	if (host_client->fixangle_angles_set)
-	{
+	WARP_X_ ()
+	if (host_client->fixangle_angles_set) { // ZMOVE WARP
 		MSG_WriteByte (msg, svc_setangle);
 		for (i=0 ; i < 3 ; i++)
 			MSG_WriteAngle (msg, host_client->fixangle_angles[i], sv.protocol);
 		host_client->fixangle_angles_set = false;
+		//prvm_vec_t *v = PRVM_serveredictvector(host_client->edict, origin);
+		//Con_PrintLinef ("Client at " VECTOR3_5d1F, VECTOR3_SEND (v));
+		SV_PhysicsX_Zircon_Warp_Start (host_client, "fixangles_writeclientdata");
 	}
 
 	// the runes are in serverflags, pack them into the items value, also pack
@@ -1399,63 +1434,55 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	//stats[STAT_SECRETS] = PRVM_serverglobalfloat(found_secrets);
 	//stats[STAT_MONSTERS] = PRVM_serverglobalfloat(killed_monsters);
 
-// Baker: sv_gameplayfix_customstats defaults 0.  Xonotic uses it.
-// Baker: Custom stats disables stats above 220
+	// Baker: sv_gameplayfix_customstats defaults 0.  Xonotic uses it.
+	// Baker: Custom stats disables stats above 220
 
 	if (sv_gameplayfix_customstats.integer == 0 /*defaults 0, XONOTIC*/) {
-		statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value;
-		statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
-		statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;		
-		statsf[STAT_MOVEVARS_AIRSTRAFEACCEL_QW] = sv_airstrafeaccel_qw.value;
-		statsf[STAT_MOVEVARS_AIRCONTROL_POWER] = sv_aircontrol_power.value;
+		statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value; // 0
+		statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value; // 0
+		statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value; // 0		
+		statsf[STAT_MOVEVARS_AIRSTRAFEACCEL_QW] = sv_airstrafeaccel_qw.value; // 0
+		statsf[STAT_MOVEVARS_AIRCONTROL_POWER] = sv_aircontrol_power.value; // 2
 		// movement settings for prediction
 		// note: these are not sent in protocols with lower MAX_CL_STATS limits
 
 		stats[STAT_MOVEFLAGS] = MOVEFLAG_VALID;
-		if (sv_gameplayfix_q2airaccelerate.integer)
+		if (sv_gameplayfix_q2airaccelerate.integer) // 0
 			Flag_Add_To (stats[STAT_MOVEFLAGS], MOVEFLAG_Q2AIRACCELERATE);
-		if (sv_gameplayfix_nogravityonground.integer)
+		if (sv_gameplayfix_nogravityonground.integer) // 0
 			Flag_Add_To (stats[STAT_MOVEFLAGS], MOVEFLAG_NOGRAVITYONGROUND);
-		if (sv_gameplayfix_gravityunaffectedbyticrate.integer)
+		if (sv_gameplayfix_gravityunaffectedbyticrate.integer) // 0
 			Flag_Add_To (stats[STAT_MOVEFLAGS], MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE);
 
-#if 0
-		stats[STAT_MOVEFLAGS] = MOVEFLAG_VALID
-			| (sv_gameplayfix_q2airaccelerate.integer ? MOVEFLAG_Q2AIRACCELERATE : 0)
-			| (sv_gameplayfix_nogravityonground.integer ? MOVEFLAG_NOGRAVITYONGROUND : 0)
-			| (sv_gameplayfix_gravityunaffectedbyticrate.integer ? MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE : 0)
-		;
-#endif
-
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_ACCEL] = sv_warsowbunny_accel.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_TOPSPEED] = sv_warsowbunny_topspeed.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_TURNACCEL] = sv_warsowbunny_turnaccel.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_BACKTOSIDERATIO] = sv_warsowbunny_backtosideratio.value;
-		statsf[STAT_MOVEVARS_AIRSTOPACCELERATE] = sv_airstopaccelerate.value;
-		statsf[STAT_MOVEVARS_AIRSTRAFEACCELERATE] = sv_airstrafeaccelerate.value;
-		statsf[STAT_MOVEVARS_MAXAIRSTRAFESPEED] = sv_maxairstrafespeed.value;
-		statsf[STAT_MOVEVARS_AIRCONTROL] = sv_aircontrol.value;
-		statsf[STAT_FRAGLIMIT] = fraglimit.value;
-		statsf[STAT_TIMELIMIT] = timelimit.value;
-		statsf[STAT_MOVEVARS_FRICTION] = sv_friction.value;	
-		statsf[STAT_MOVEVARS_WATERFRICTION] = sv_waterfriction.value >= 0 ? sv_waterfriction.value : sv_friction.value;
-		statsf[STAT_MOVEVARS_TICRATE] = sys_ticrate.value;
-		statsf[STAT_MOVEVARS_TIMESCALE] = host_timescale.value;
-		statsf[STAT_MOVEVARS_GRAVITY] = sv_gravity.value;
-		statsf[STAT_MOVEVARS_STOPSPEED] = sv_stopspeed.value;
-		statsf[STAT_MOVEVARS_MAXSPEED] = sv_maxspeed.value;
+		statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value; // 1.00001
+		statsf[STAT_MOVEVARS_WARSOWBUNNY_ACCEL] = sv_warsowbunny_accel.value; // 0.1585
+		statsf[STAT_MOVEVARS_WARSOWBUNNY_TOPSPEED] = sv_warsowbunny_topspeed.value; // 525
+		statsf[STAT_MOVEVARS_WARSOWBUNNY_TURNACCEL] = sv_warsowbunny_turnaccel.value; // 0
+		statsf[STAT_MOVEVARS_WARSOWBUNNY_BACKTOSIDERATIO] = sv_warsowbunny_backtosideratio.value; // 0.8
+		statsf[STAT_MOVEVARS_AIRSTOPACCELERATE] = sv_airstopaccelerate.value; // 0
+		statsf[STAT_MOVEVARS_AIRSTRAFEACCELERATE] = sv_airstrafeaccelerate.value; // 0
+		statsf[STAT_MOVEVARS_MAXAIRSTRAFESPEED] = sv_maxairstrafespeed.value; // 0
+		statsf[STAT_MOVEVARS_AIRCONTROL] = sv_aircontrol.value; // 0
+		statsf[STAT_FRAGLIMIT] = fraglimit.value; // 0
+		statsf[STAT_TIMELIMIT] = timelimit.value; // 0
+		statsf[STAT_MOVEVARS_FRICTION] = sv_friction.value;	 // 4
+		statsf[STAT_MOVEVARS_WATERFRICTION] = sv_waterfriction.value /*-1*/ >= 0 ? sv_waterfriction.value : sv_friction.value;
+		statsf[STAT_MOVEVARS_TICRATE] = sys_ticrate.value; // 0.138889 which is 1/72
+		statsf[STAT_MOVEVARS_TIMESCALE] = host_timescale.value; // 1
+		statsf[STAT_MOVEVARS_GRAVITY] = sv_gravity.value; // 800
+		statsf[STAT_MOVEVARS_STOPSPEED] = sv_stopspeed.value;  // 100
+		statsf[STAT_MOVEVARS_MAXSPEED] = sv_maxspeed.value; // 320
 		statsf[STAT_MOVEVARS_SPECTATORMAXSPEED] = sv_maxspeed.value; // FIXME: QW has a separate cvar for this
-		statsf[STAT_MOVEVARS_ACCELERATE] = sv_accelerate.value;
-		statsf[STAT_MOVEVARS_AIRACCELERATE] = sv_airaccelerate.value >= 0 ? sv_airaccelerate.value : sv_accelerate.value;
-		statsf[STAT_MOVEVARS_WATERACCELERATE] = sv_wateraccelerate.value >= 0 ? sv_wateraccelerate.value : sv_accelerate.value;
+		statsf[STAT_MOVEVARS_ACCELERATE] = sv_accelerate.value; // 10
+		statsf[STAT_MOVEVARS_AIRACCELERATE] = sv_airaccelerate.value /*-1*/ >= 0 ? sv_airaccelerate.value : sv_accelerate.value;
+		statsf[STAT_MOVEVARS_WATERACCELERATE] = sv_wateraccelerate.value /*-1*/  >= 0 ? sv_wateraccelerate.value : sv_accelerate.value;
 		statsf[STAT_MOVEVARS_ENTGRAVITY] = gravity;
-		statsf[STAT_MOVEVARS_JUMPVELOCITY] = sv_jumpvelocity.value;
-		statsf[STAT_MOVEVARS_EDGEFRICTION] = sv_edgefriction.value;
-		statsf[STAT_MOVEVARS_MAXAIRSPEED] = sv_maxairspeed.value;
-		statsf[STAT_MOVEVARS_STEPHEIGHT] = sv_stepheight.value;
-		statsf[STAT_MOVEVARS_AIRACCEL_QW] = sv_airaccel_qw.value;
-		statsf[STAT_MOVEVARS_AIRACCEL_SIDEWAYS_FRICTION] = sv_airaccel_sideways_friction.value;
+		statsf[STAT_MOVEVARS_JUMPVELOCITY] = sv_jumpvelocity.value; // 270
+		statsf[STAT_MOVEVARS_EDGEFRICTION] = sv_edgefriction.value; // 1
+		statsf[STAT_MOVEVARS_MAXAIRSPEED] = sv_maxairspeed.value; // 30
+		statsf[STAT_MOVEVARS_STEPHEIGHT] = sv_stepheight.value; // 18
+		statsf[STAT_MOVEVARS_AIRACCEL_QW] = sv_airaccel_qw.value; // 1
+		statsf[STAT_MOVEVARS_AIRACCEL_SIDEWAYS_FRICTION] = sv_airaccel_sideways_friction.value; // 0
 	}
 
 	if (is_fitz2) {
@@ -1551,7 +1578,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		MSG_WriteShort (msg, stats[STAT_ROCKETS]);
 		MSG_WriteShort (msg, stats[STAT_CELLS]);
 		MSG_WriteShort (msg, stats[STAT_ACTIVEWEAPON]);
-		if (bits & SU_VIEWZOOM_S19)
+		if (bits & SU_VIEWZOOM_S19) // PROTOCOL DP 5
 			MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM], 65535));
 	}
 	else if (isin10 (sv.protocol, 
@@ -1657,7 +1684,7 @@ static void SV_SendClientDatagram (client_t *client)
 	int clientrate, maxrate, maxsize, maxsize2, downloadsize;
 	sizebuf_t msg;
 	int stats[MAX_CL_STATS];
-	static unsigned char sv_sendclientdatagram_buf[NET_MAXMESSAGE];
+	static unsigned char sv_sendclientdatagram_buf[NET_MAXMESSAGE_65536];
 	double timedelta;
 
 	// obey rate limit by limiting packet frequency if the packet size
@@ -1667,13 +1694,13 @@ static void SV_SendClientDatagram (client_t *client)
 		return;
 
 	// PROTOCOL_DARKPLACES5 and later support packet size limiting of updates
-	maxrate = max(NET_MINRATE, sv_maxrate.integer);
+	maxrate = max(NET_MINRATE_1000, sv_maxrate.integer);
 	if (sv_maxrate.integer != maxrate)
 		Cvar_SetValueQuick(&sv_maxrate, maxrate);
 
 	// clientrate determines the 'cleartime' of a packet
 	// (how long to wait before sending another, based on this packet's size)
-	clientrate = bound(NET_MINRATE, client->rate, maxrate);
+	clientrate = bound(NET_MINRATE_1000, client->rate, maxrate);
 
 	switch (sv.protocol)
 	{
@@ -1743,8 +1770,8 @@ static void SV_SendClientDatagram (client_t *client)
 	if (LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) == LHNETADDRESSTYPE_LOOP && !host_limitlocal.integer)
 	{
 		// for good singleplayer, send huge packets
-		maxsize = sizeof(sv_sendclientdatagram_buf);
-		maxsize2 = sizeof(sv_sendclientdatagram_buf);
+		maxsize = sizeof(sv_sendclientdatagram_buf); // 65536
+		maxsize2 = sizeof(sv_sendclientdatagram_buf); // 65536
 		// never limit frequency in singleplayer
 		clientrate = 1000000000;
 	}
@@ -1791,8 +1818,20 @@ static void SV_SendClientDatagram (client_t *client)
 
 	// if a download is active, see if there is room to fit some download data
 	// in this packet
-	downloadsize = min(maxsize*2,maxsize2) - msg.cursize - 7;
-	if (host_client->download_file && host_client->download_started && downloadsize > 0)
+
+downloadx_sv_start_download_during_1:
+
+
+	// Baker: Chunked DP download already did "cl_downloadbegin 3232323 maps/aerowalk.bsp deflate chunked"
+	// So for DPChunks, already knows the size and filename.
+
+	// Baker: maxsize tends to be 32768, maxsize2 is 65536, msg.cursize who knows but can be small like 7
+	downloadsize = min(maxsize*2,maxsize2) - msg.cursize - 7; // Might be something like 65521
+	if (host_client->download_file && 
+		host_client->download_started && 
+		downloadsize > 0 &&
+		host_client->download_chunked == false
+		)
 	{
 		fs_offset_t downloadstart;
 		unsigned char data[1400];
@@ -1805,9 +1844,10 @@ static void SV_SendClientDatagram (client_t *client)
 		//  only occur if the client acks the empty end messages, revealing
 		//  a gap in the download progress, causing the last blocks to be
 		//  sent again)
-		MSG_WriteChar (&msg, svc_downloaddata);
-		MSG_WriteLong (&msg, downloadstart);
-		MSG_WriteShort (&msg, downloadsize);
+downloadx_sv_frame:
+		MSG_WriteChar	(&msg, svc_downloaddata);
+		MSG_WriteLong	(&msg, downloadstart);
+		MSG_WriteShort	(&msg, downloadsize);
 		if (downloadsize > 0)
 			SZ_Write (&msg, data, downloadsize);
 	}
@@ -1852,7 +1892,7 @@ static void SV_UpdateToReliableMessages (void)
 		// always point the string back at host_client->name to keep it safe
 		//strlcpy (host_client->name, name, sizeof (host_client->name));
 		if (name != host_client->name) // prevent buffer overlap SIGABRT on Mac OSX
-			strlcpy (host_client->name, name, sizeof (host_client->name));
+			c_strlcpy (host_client->name, name);
 		SV_Name(i);
 
 		// DP_SV_CLIENTCOLORS
@@ -1906,7 +1946,7 @@ static void SV_UpdateToReliableMessages (void)
 		host_client->frags = (int)PRVM_serveredictfloat(host_client->edict, frags);
 		if (IS_OLDNEXUIZ_DERIVED(gamemode))
 			if (!host_client->begun && host_client->netconnection)
-				host_client->frags = -666;
+				host_client->frags = NEXUIZ_OBS_NEG_666;
 		if (host_client->old_frags != host_client->frags)
 		{
 			host_client->old_frags = host_client->frags;
@@ -1917,10 +1957,11 @@ static void SV_UpdateToReliableMessages (void)
 		}
 	}
 
-	for (j = 0, client = svs.clients;j < svs.maxclients;j++, client++)
-		if (client->netconnection && (client->begun || client->clientconnectcalled)) // also send MSG_ALL to people who are past ClientConnect, but not spawned yet
+	for (j = 0, client = svs.clients;j < svs.maxclients;j++, client++) {
+		if (client->netconnection && (client->begun || client->clientconnectcalled)) { // also send MSG_ALL to people who are past ClientConnect, but not spawned yet
 			SZ_Write (&client->netconnection->message, sv.reliable_datagram.data, sv.reliable_datagram.cursize);
-
+		} // if
+	} // for
 	SZ_Clear (&sv.reliable_datagram);
 }
 
@@ -1948,6 +1989,9 @@ void SV_SendClientMessages(void)
 			continue;
 		if (!host_client->netconnection)
 			continue;
+
+		// Baker:  We only set zircon_warp_sequence if extension present.  Right?
+		SV_UpdateToReliableMessages_Zircon_Warp_Think ();
 
 		if (host_client->netconnection->message.overflowed)
 		{

@@ -892,8 +892,8 @@ static void IN_Move_TouchScreen_SteelStorm(void)
 	if (VID_ShowingKeyboard() && (float)in_windowmouse_y > vid_height.value / 2 - 10)
 		in_windowmouse_y = 128;
 
-	cl.cmd.forwardmove -= move[1] * cl_forwardspeed.value;
-	cl.cmd.sidemove += move[0] * cl_sidespeed.value;
+	cl.mcmd.clx_forwardmove -= move[1] * cl_forwardspeed.value;
+	cl.mcmd.clx_sidemove += move[0] * cl_sidespeed.value;
 	cl.viewangles[0] += aim[1] * cl_pitchspeed.value * cl.realframetime;
 	cl.viewangles[1] -= aim[0] * cl_yawspeed.value * cl.realframetime;
 }
@@ -980,8 +980,8 @@ static void IN_Move_TouchScreen_Quake(void)
 		break;
 	}
 
-	cl.cmd.forwardmove -= move[1] * cl_forwardspeed.value;
-	cl.cmd.sidemove += move[0] * cl_sidespeed.value;
+	cl.mcmd.clx_forwardmove -= move[1] * cl_forwardspeed.value;
+	cl.mcmd.clx_sidemove += move[0] * cl_sidespeed.value;
 	cl.viewangles[0] += aim[1] * cl_pitchspeed.value * cl.realframetime;
 	cl.viewangles[1] -= aim[0] * cl_yawspeed.value * cl.realframetime;
 }
@@ -1172,13 +1172,17 @@ void AllowWindowsShortcutKeys(int bAllowKeys)
 void IN_Keyboard_Unacquire(void)
 {
 	//AllowAccessibilityShortcutKeys(true);
+#if 0
 	AllowWindowsShortcutKeys(true);
+#endif
 }
 
 
 void IN_Keyboard_Acquire(void)
 {
+#if 0
 	AllowWindowsShortcutKeys(false);
+#endif
 	//AllowAccessibilityShortcutKeys(false);
 
 }
@@ -1587,7 +1591,7 @@ void VID_EnableJoystick(qbool enable)
 					vid_sdlgamecontroller = SDL_GameControllerOpen(vid_sdljoystickindex);
 					Con_DPrintLinef ("Using SDL GameController mappings for Joystick %d", index);
 				}
-				Con_PrintLinef ("Joystick %d opened (SDL_Joystick %d is \"%s\" with %d axes, %d buttons, %d balls)", index, sdlindex, joystickname, (int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
+				Con_PrintLinef ("Joystick %d opened (SDL_Joystick %d is " QUOTED_S " with %d axes, %d buttons, %d balls)", index, sdlindex, joystickname, (int)SDL_JoystickNumAxes(vid_sdljoystick), (int)SDL_JoystickNumButtons(vid_sdljoystick), (int)SDL_JoystickNumBalls(vid_sdljoystick));
 			}
 			else
 			{

@@ -2171,15 +2171,13 @@ int Crypto_ClientParsePacket(const char *data_in, size_t len_in, char *data_out,
 		}
 		return CRYPTO_NOMATCH;
 	}
-	else if (len_in >= 13 && !memcmp(string, "infoResponse\x0A", 13))
-	{
+	else if (len_in >= 13 && !memcmp(string, "infoResponse\x0A", 13)) {
 		s = InfoString_GetValue(string + 13, "d0_blind_id", infostringvalue, sizeof(infostringvalue));
 		if (s)
 			Crypto_StoreHostKey(peeraddress, s, true);
 		return CRYPTO_NOMATCH;
 	}
-	else if (len_in >= 15 && !memcmp(string, "statusResponse\x0A", 15))
-	{
+	else if (len_in >= 15 && !memcmp(string, "statusResponse\x0A", 15)) {
 		char save = 0;
 		const char *p;
 		p = strchr(string + 15, '\n');

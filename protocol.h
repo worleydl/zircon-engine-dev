@@ -56,66 +56,70 @@ void Protocol_Names(char *buffer, size_t buffersize);
 
 
 // model effects
-#define	MF_ROCKET	1			// leave a trail
-#define	MF_GRENADE	2			// leave a trail
-#define	MF_GIB		4			// leave a trail
-#define	MF_ROTATE	8			// rotate (bonus items)
-#define	MF_TRACER	16			// green split trail
-#define	MF_ZOMGIB	32			// small blood trail
-#define	MF_TRACER2	64			// orange split trail + rotate
-#define	MF_TRACER3	128			// purple trail
+WARP_X_ (EF_ROCKET)
+#define	MF_ROCKET_1		1			// leave a trail
+#define	MF_GRENADE_2	2			// leave a trail
+#define	MF_GIB_4		4			// leave a trail
+#define	MF_ROTATE_8		8			// rotate (bonus items)
+#define	MF_TRACER_16	16			// green split trail
+#define	MF_ZOMGIB_32	32			// small blood trail
+#define	MF_TRACER2_64	64			// orange split trail + rotate
+#define	MF_TRACER3_127	128			// purple trail
 
 // Baker r0087: Fence texture q1 mdl support
 #define MF_FENCE	16384		// 0x40000	
 
 
 // entity effects
-#define	EF_BRIGHTFIELD			1
-#define	EF_MUZZLEFLASH 			2
-#define	EF_BRIGHTLIGHT 			4
-#define	EF_DIMLIGHT 			8
+#define	EF_BRIGHTFIELD_1		1
+#define	EF_MUZZLEFLASH_2 		2
+#define	EF_BRIGHTLIGHT_4 		4
+#define	EF_DIMLIGHT_8 			8
 #define	EF_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16	// AURA 7.0
 
 #define	EF_QEX_QUADLIGHT_FIGHTS_NODRAW_16			16			// EF_QEX_QUADLIGHT FIGHTS	EF_NODRAW_16
 #define	EF_QEX_PENTALIGHT_FIGHTS_ADDITIVE_32		32
 #define	EF_QEX_CANDLELIGHT_FIGHTS_BLUE_64			64
 
-#define EF_ADDITIVE				32			// EF_QEX_PENTALIGHT FIGHTS	EF_ADDITIVE 32
-#define EF_BLUE					64			// EF_QEX_CANDLELIGHT FIGHTS EF_BLUE
-#define EF_RED					128
-#define EF_NOGUNBOB				256			// LadyHavoc: when used with .viewmodelforclient this makes the entity attach to the view without gun bobbing and such effects, it also works on the player entity to disable gun bobbing of the engine-managed .viewmodel (without affecting any .viewmodelforclient entities attached to the player)
-#define EF_FULLBRIGHT			512			// LadyHavoc: fullbright
-#define EF_FLAME				1024		// LadyHavoc: on fire
-#define EF_STARDUST				2048		// LadyHavoc: showering sparks
-#define EF_NOSHADOW				4096		// LadyHavoc: does not cast a shadow
-#define EF_NODEPTHTEST			8192		// LadyHavoc: shows through walls
-#define EF_SELECTABLE			16384		// LadyHavoc: highlights when PRYDON_CLIENTCURSOR mouse is over it
-#define EF_DOUBLESIDED			32768		//[515]: disable cull face for this entity
-#define EF_NOSELFSHADOW			65536		// LadyHavoc: does not cast a shadow on itself (or any other EF_NOSELFSHADOW entities)
-#define EF_DYNAMICMODELLIGHT			131072
-#define EF_UNUSED18				262144
-#define EF_UNUSED19				524288
-#define EF_RESTARTANIM_BIT		1048576     // div0: restart animation bit (like teleport bit, but lerps between end and start of the anim, and doesn't stop player lerping)
-#define EF_TELEPORT_BIT			2097152		// div0: teleport bit (toggled when teleporting, prevents lerping when the bit has changed)
-#define EF_LOWPRECISION			4194304		// LadyHavoc: entity is low precision (integer coordinates) to save network bandwidth  (serverside only)
-#define EF_NOMODELFLAGS			8388608		// indicates the model's .effects should be ignored (allows overriding them)
-#define EF_ROCKET				16777216	// leave a trail
-#define EF_GRENADE				33554432	// leave a trail
-#define EF_GIB					67108864	// leave a trail
-#define EF_ROTATE				134217728	// rotate (bonus items)
-#define EF_TRACER				268435456	// green split trail
-#define EF_ZOMGIB				536870912	// small blood trail
-#define EF_TRACER2				1073741824	// orange split trail + rotate
-#define EF_TRACER3				0x80000000	// purple trail
+#define EF_SHORTY_ADDITIVE_1	1
+#define EF_SHORTY_FULLBRIGHT_2	2
+
+#define EF_ADDITIVE_32			32			// 5	EF_QEX_PENTALIGHT FIGHTS	EF_ADDITIVE 32
+#define EF_BLUE_64				64			// 6	EF_QEX_CANDLELIGHT FIGHTS EF_BLUE
+#define EF_RED_128				128			// 7
+#define EF_NOGUNBOB				256			// 8	LadyHavoc: when used with .viewmodelforclient this makes the entity attach to the view without gun bobbing and such effects, it also works on the player entity to disable gun bobbing of the engine-managed .viewmodel (without affecting any .viewmodelforclient entities attached to the player)
+#define EF_FULLBRIGHT			512			// 9	LadyHavoc: fullbright
+#define EF_FLAME				1024		// 10	LadyHavoc: on fire
+#define EF_STARDUST				2048		// 11	LadyHavoc: showering sparks
+#define EF_NOSHADOW				4096		// 12	LadyHavoc: does not cast a shadow
+#define EF_NODEPTHTEST			8192		// 13	LadyHavoc: shows through walls
+#define EF_SELECTABLE			16384		// 14	LadyHavoc: highlights when PRYDON_CLIENTCURSOR mouse is over it
+#define EF_DOUBLESIDED			32768		// 15	[515]: disable cull face for this entity
+#define EF_NOSELFSHADOW			65536		// 16	LadyHavoc: does not cast a shadow on itself (or any other EF_NOSELFSHADOW entities)
+#define EF_DYNAMICMODELLIGHT	131072		// 17
+#define EF_UNUSED18				262144		// 18
+#define EF_UNUSED19				524288		// 19
+#define EF_RESTARTANIM_BIT		1048576     // 20	div0: restart animation bit (like teleport bit, but lerps between end and start of the anim, and doesn't stop player lerping)
+#define EF_TELEPORT_BIT			2097152		// 21	div0: teleport bit (toggled when teleporting, prevents lerping when the bit has changed)
+#define EF_LOWPRECISION			4194304		// 22	LadyHavoc: entity is low precision (integer coordinates) to save network bandwidth  (serverside only)
+#define EF_NOMODELFLAGS			8388608		// 23	indicates the model's .effects should be ignored (allows overriding them)
+#define EF_ROCKET				16777216	// 24	leave a trail
+#define EF_GRENADE				33554432	// 25	leave a trail
+#define EF_GIB					67108864	// 26	leave a trail
+#define EF_ROTATE				134217728	// 27	rotate (bonus items)
+#define EF_TRACER				268435456	// 28	green split trail
+#define EF_ZOMGIB				536870912	// 29	small blood trail
+#define EF_TRACER2				1073741824	// 30	orange split trail + rotate
+#define EF_TRACER3				0x80000000	// 31	purple trail
 
 // internaleffects bits (no overlap with EF_ bits):
-#define INTEF_FLAG1QW				1
-#define INTEF_FLAG2QW				2
+#define INTEF_FLAG1QW_1				1
+#define INTEF_FLAG2QW_2				2
 
 // flags for the pflags field of entities
-#define PFLAGS_NOSHADOW			1
-#define PFLAGS_CORONA			2
-#define PFLAGS_FULLDYNAMIC		128 // must be set or the light fields are ignored
+#define PFLAGS_NOSHADOW				1
+#define PFLAGS_CORONA				2
+#define PFLAGS_FULLDYNAMIC			128		// must be set or the light fields are ignored
 
 // if the high bit of the servercmd is set, the low bits are fast update flags:
 #define U_MOREBITS_1				(1<<0)		// 1
@@ -367,26 +371,39 @@ WARP_X_ (MAX_MODELS_8192)
 #define svc_pointparticles	61		// [short] effectnum [vector] start [vector] velocity [short] count
 #define svc_pointparticles1	62		// [short] effectnum [vector] start, same as svc_pointparticles except velocity is zero and count is 1
 
+#if 5432
+// Baker:
+#define PRED_ZIRCON_MOVE_2 2
+
+WARP_X_ (clc_zircon_warp_ack, svc_zircon_warp)
+#define svc_zircon_warp		70		// [int] sequence .. client will need to clc_zircon_warp_ack
+									// And should use DarkPlaces origin.
+#endif
+
 //
 // client to server
 //
-#define	clc_bad			0
-#define	clc_nop 		1
-#define	clc_disconnect	2
-#define	clc_move		3			// [usercmd_t]
-#define	clc_stringcmd	4		// [string] message
+#define	clc_bad						0
+#define	clc_nop 					1
+#define	clc_disconnect				2
+#define	clc_move					3		// [usercmd_t]
+#define	clc_stringcmd				4		// [string] message
+
+WARP_X_ (qw_clc_stringcmd)		// also 4
 
 // LadyHavoc: my clc_ range, 50-59
-#define clc_ackframe	50		// [int] framenumber
-#define clc_ackdownloaddata	51	// [int] start [short] size   (note: exact echo of latest values received in svc_downloaddata, packet-loss handling is in the server)
-#define clc_unusedlh2 	52
-#define clc_unusedlh3 	53
-#define clc_unusedlh4 	54
-#define clc_unusedlh5 	55
-#define clc_unusedlh6 	56
-#define clc_unusedlh7 	57
-#define clc_unusedlh8 	58
-#define clc_unusedlh9 	59
+#define clc_ackframe			50	// [int] framenumber
+#define clc_ackdownloaddata		51	// [int] start [short] size   (note: exact echo of latest values received in svc_downloaddata, packet-loss handling is in the server)
+#define clc_unusedlh2 			52
+#define clc_unusedlh3 			53
+#define clc_unusedlh4 			54
+#define clc_unusedlh5 			55
+#define clc_unusedlh6 			56
+#define clc_unusedlh7 			57
+#define clc_zircon_warp_ack		58	// [int] sequence - confirms receipt of a svc_zircon_warp often a teleport, server should resume accepting origins 
+#define clc_zircon_move			59  // [usercmd_t] same as clc_move, we send origin and server (usually) accepts it.
+
+WARP_X_ ()
 
 //
 // temp entity events
@@ -439,57 +456,70 @@ WARP_X_ (MAX_MODELS_8192)
 
 
 // these are bits for the 'flags' field of the entity_state_t
-#define RENDER_STEP 1
-#define RENDER_GLOWTRAIL 2
-#define RENDER_VIEWMODEL 4
-#define RENDER_EXTERIORMODEL 8
-#define RENDER_LOWPRECISION 16 // send as low precision coordinates to save bandwidth
-#define RENDER_COLORMAPPED 32
-#define RENDER_WORLDOBJECT 64 // do not cull this entity with r_cullentities
-#define RENDER_COMPLEXANIMATION 128
+#define RENDER_STEP						1		// S0
+#define RENDER_GLOWTRAIL				2		// S1
+#define RENDER_VIEWMODEL				4		// S2
+#define RENDER_EXTERIORMODEL			8		// S3
+#define RENDER_LOWPRECISION				16		// S4  send as low precision coordinates to save bandwidth
+#define RENDER_COLORMAPPED				32		// S5 
+#define RENDER_WORLDOBJECT				64		// S6  do not cull this entity with r_cullentities
+#define RENDER_COMPLEXANIMATION			128		// S7
 
-#define RENDER_SHADOW 65536 // cast shadow
-#define RENDER_LIGHT 131072 // receive light
-#define RENDER_NOSELFSHADOW 262144 // render lighting on this entity before its own shadow is added to the scene
+#define RENDER_SOLID_NOT_BAKER_256		256		// Baker: 256 SOLID_NOT, SOLID_TRIGGER
+
+#define RENDER_CUSTOMIZEDMODELLIGHT		4096	// S12
+
+#define RENDER_SHADOW					65536	// S16 cast shadow
+#define RENDER_LIGHT					131072	// S17 receive light
+#define RENDER_NOSELFSHADOW				262144	// S18 render lighting on this entity before its own shadow is added to the scene
 // (note: all RENDER_NOSELFSHADOW entities are grouped together and rendered in a batch before their shadows are rendered, so they can not shadow eachother either)
-#define RENDER_NODEPTHTEST 1048576
-#define RENDER_ADDITIVE 2097152
-#define RENDER_DOUBLESIDED 4194304
-#define RENDER_CUSTOMIZEDMODELLIGHT 4096
-#define RENDER_DYNAMICMODELLIGHT 8388608 // origin dependent model light
+#define RENDER_NODEPTHTEST				1048576
+#define RENDER_ADDITIVE					2097152
+#define RENDER_DOUBLESIDED				4194304
+
+#define RENDER_DYNAMICMODELLIGHT		8388608		// S23 origin dependent model light
 
 typedef struct usercmd_s
 {
-	vec3_t	viewangles;
-	vec3_t	player_org;
+	vec3_t			viewangles;
 
 // intended velocities
-	float	forwardmove;
-	float	sidemove;
-	float	upmove;
+	float			clx_forwardmove;
+	float			clx_sidemove;
+	float			clx_upmove;
 
-	vec3_t	cursor_screen;
-	vec3_t	cursor_start;
-	vec3_t	cursor_end;
-	vec3_t	cursor_impact;
-	vec3_t	cursor_normal;
-	vec_t	cursor_fraction;
-	int		cursor_entitynumber;
+	vec3_t			cursor_screen;
+	vec3_t			cursor_start;
+	vec3_t			cursor_end;
+	vec3_t			cursor_impact;
+	vec3_t			cursor_normal;
+	vec_t			cursor_fraction;
+	int				cursor_entitynumber;
 
-	double time; // time the move is executed for (non-cl_movement is executed at receivetime)
-	float receivetime; // time the move was received at (used for ping)
-	unsigned char msec; // for predicted moves
-	int buttons;
-	int impulse;
-	unsigned int sequence;
-	qbool applied; // if false we're still accumulating a move
-	qbool predicted; // if true the sequence should be sent as 0
+	double			clx_time;			// time the move is executed for (non-cl_movement is executed at receivetime)
+	float			clx_receivetime;	// time the move was received at (used for ping)
+	unsigned char	clx_msec;			// for predicted moves .. see SV side: cl.mcmd.msec if (sv.frametime > 0.05)
+	int				buttons;
+	int				impulse;
+	unsigned int	clx_sequence;
+	qbool			clx_is_applied;		// if false we're still accumulating a move
+	qbool			clx_is_predicted;	// if true the sequence should be sent as 0
 
 	// derived properties
-	double frametime;
-	qbool canjump;
-	qbool jump;
-	qbool crouch;
+	double			clx_frametime;
+	qbool			clx_canjump;
+	qbool			clx_jump;
+	qbool			clx_crouch;
+
+#if 4321 // ZMOVE
+	unsigned int	zmove_is_move_processed;
+	vec3_t			zmove_start_origin;
+	vec3_t			zmove_start_velocity;
+	int				zmove_start_onground;
+	vec3_t			zmove_end_origin;
+	vec3_t			zmove_end_velocity;
+	int				zmove_end_onground;
+#endif
 } usercmd_t;
 
 #define MAX_FRAMEGROUPBLENDS 4
@@ -523,6 +553,7 @@ typedef enum entity_state_active_e
 entity_state_active_t;
 
 // this was 96 bytes, now 168 bytes (32bit) or 176 bytes (64bit)
+// Baker: increased by widening flags from unsigned char to unsigned (+3 bytes)
 typedef struct entity_state_s
 {
 	// ! means this is not sent to client
@@ -552,7 +583,11 @@ typedef struct entity_state_s
 	unsigned char scale;
 	unsigned char glowsize;
 	unsigned char glowcolor;
-	unsigned char flags;
+#if 1
+	unsigned sflags; // Baker: Zircon Wide Flags
+#else
+	unsigned char sflags;
+#endif
 	unsigned char internaleffects; // INTEF_FLAG1QW and so on
 	unsigned char tagindex;
 	unsigned char colormod[3];
@@ -560,6 +595,11 @@ typedef struct entity_state_s
 	// LadyHavoc: very big data here :(
 	framegroupblend_t framegroupblend[4];
 	skeleton_t skeletonobject;
+
+#if 1
+	vec3_t	bbx_mins;	// Baker: bbox mins/maxes for non-bsp E5_BBOX_S27
+	vec3_t	bbx_maxs;	// Baker: bbox mins/maxes for non-bsp E5_BBOX_S27
+#endif
 }
 entity_state_t;
 
@@ -768,7 +808,7 @@ void EntityFrame_AddFrame_Server(entityframe_database_t *d, vec3_t eye, int fram
 // (server) writes a frame to network stream
 qbool EntityFrame_WriteFrame(struct sizebuf_s *msg, int maxsize, entityframe_database_t *d, int numstates, const entity_state_t **states, int viewentnum);
 // (client) reads a frame from network stream
-void EntityFrame_CL_ReadFrame(void);
+void EntityFrame_CL_ReadFrame_DP1_DP3(void);
 // (client) returns the frame number of the most recent frame recieved
 int EntityFrame_MostRecentlyRecievedFrameNum(entityframe_database_t *d);
 
@@ -825,49 +865,49 @@ qbool EntityFrame4_WriteFrame(struct sizebuf_s *msg, int maxsize, entityframe4_d
 void EntityFrame4_CL_ReadFrame(void);
 
 // reset all entity fields (typically used if status changed)
-#define E5_FULLUPDATE (1<<0)
+#define E5_FULLUPDATE (1<<0)	// 1
 // E5_ORIGIN32=0: short[3] = s->origin[0] * 8, s->origin[1] * 8, s->origin[2] * 8
 // E5_ORIGIN32=1: float[3] = s->origin[0], s->origin[1], s->origin[2]
-#define E5_ORIGIN (1<<1)
+#define E5_ORIGIN (1<<1)		// 2
 // E5_ANGLES16=0: byte[3] = s->angle[0] * 256 / 360, s->angle[1] * 256 / 360, s->angle[2] * 256 / 360
 // E5_ANGLES16=1: short[3] = s->angle[0] * 65536 / 360, s->angle[1] * 65536 / 360, s->angle[2] * 65536 / 360
-#define E5_ANGLES (1<<2)
+#define E5_ANGLES (1<<2)		// 4
 // E5_MODEL16=0: byte = s->modelindex
 // E5_MODEL16=1: short = s->modelindex
-#define E5_MODEL (1<<3)
+#define E5_MODEL (1<<3)			// 8
 // E5_FRAME16=0: byte = s->frame
 // E5_FRAME16=1: short = s->frame
-#define E5_FRAME (1<<4)
+#define E5_FRAME (1<<4)			// 16
 // byte = s->skin
-#define E5_SKIN (1<<5)
+#define E5_SKIN (1<<5)			// 32
 // E5_EFFECTS16=0 && E5_EFFECTS32=0: byte = s->effects
 // E5_EFFECTS16=1 && E5_EFFECTS32=0: short = s->effects
 // E5_EFFECTS16=0 && E5_EFFECTS32=1: int = s->effects
 // E5_EFFECTS16=1 && E5_EFFECTS32=1: int = s->effects
-#define E5_EFFECTS (1<<6)
+#define E5_EFFECTS (1<<6)		// 64
 // bits >= (1<<8)
-#define E5_EXTEND1 (1<<7)
+#define E5_EXTEND1 (1<<7)		// 128
 
 // byte = s->renderflags
-#define E5_FLAGS (1<<8)
+#define E5_FLAGS (1<<8)			// 256
 // byte = bound(0, s->alpha * 255, 255)
-#define E5_ALPHA (1<<9)
+#define E5_ALPHA (1<<9)			// 512
 // byte = bound(0, s->scale * 16, 255)
-#define E5_SCALE (1<<10)
+#define E5_SCALE (1<<10)		// 1024
 // flag
-#define E5_ORIGIN32 (1<<11)
+#define E5_ORIGIN32 (1<<11)		// 2048
 // flag
-#define E5_ANGLES16 (1<<12)
+#define E5_ANGLES16 (1<<12)		// 4096
 // flag
-#define E5_MODEL16 (1<<13)
+#define E5_MODEL16 (1<<13)		// 8192
 // byte = s->colormap
-#define E5_COLORMAP (1<<14)
+#define E5_COLORMAP (1<<14)		// 16384
 // bits >= (1<<16)
-#define E5_EXTEND2 (1<<15)
+#define E5_EXTEND2 (1<<15)		// 32768 0x8000
 
 // short = s->tagentity
 // byte = s->tagindex
-#define E5_ATTACHMENT (1<<16)
+#define E5_ATTACHMENT (1<<16)	// 65536
 // short[4] = s->light[0], s->light[1], s->light[2], s->light[3]
 // byte = s->lightstyle
 // byte = s->lightpflags
@@ -898,7 +938,7 @@ void EntityFrame4_CL_ReadFrame(void);
 // ushort traileffectnum
 #define E5_TRAILEFFECTNUM (1<<26)
 // unused
-#define E5_UNUSED27 (1<<27)
+#define E5_BBOX_S27 (1<<27) // Baker
 // unused
 #define E5_UNUSED28 (1<<28)
 // unused
@@ -1053,10 +1093,10 @@ extern struct cvar_s developer_networkentities;
 // playerinfo always sends: playernum, flags, origin[] and framenumber
 #define	QW_PF_MSEC			(1<<0)
 #define	QW_PF_COMMAND		(1<<1)
-#define	QW_PF_VELOCITY1	(1<<2)
-#define	QW_PF_VELOCITY2	(1<<3)
-#define	QW_PF_VELOCITY3	(1<<4)
-#define	QW_PF_MODEL		(1<<5)
+#define	QW_PF_VELOCITY1		(1<<2)
+#define	QW_PF_VELOCITY2		(1<<3)
+#define	QW_PF_VELOCITY3		(1<<4)
+#define	QW_PF_MODEL			(1<<5)
 #define	QW_PF_SKINNUM		(1<<6)
 #define	QW_PF_EFFECTS		(1<<7)
 #define	QW_PF_WEAPONFRAME	(1<<8)		// only sent for view player
@@ -1067,32 +1107,39 @@ extern struct cvar_s developer_networkentities;
 // if the high bit of the client to server byte is set, the low bits are
 // client move cmd bits
 // ms and angle2 are allways sent, the others are optional
-#define QW_CM_ANGLE1 	(1<<0)
-#define QW_CM_ANGLE3 	(1<<1)
-#define QW_CM_FORWARD	(1<<2)
-#define QW_CM_SIDE		(1<<3)
-#define QW_CM_UP		(1<<4)
-#define QW_CM_BUTTONS	(1<<5)
-#define QW_CM_IMPULSE	(1<<6)
-#define QW_CM_ANGLE2 	(1<<7)
+#define QW_CM_ANGLE1 		(1<<0)
+#define QW_CM_ANGLE3 		(1<<1)
+#define QW_CM_FORWARD		(1<<2)
+#define QW_CM_SIDE			(1<<3)
+#define QW_CM_UP			(1<<4)
+#define QW_CM_BUTTONS		(1<<5)
+#define QW_CM_IMPULSE		(1<<6)
+#define QW_CM_ANGLE2 		(1<<7)
 // QUAKEWORLD
 // the first 16 bits of a packetentities update holds 9 bits
 // of entity number and 7 bits of flags
-#define QW_U_ORIGIN1	(1<<9)
-#define QW_U_ORIGIN2	(1<<10)
-#define QW_U_ORIGIN3	(1<<11)
-#define QW_U_ANGLE2		(1<<12)
-#define QW_U_FRAME		(1<<13)
-#define QW_U_REMOVE		(1<<14)		// REMOVE this entity, don't add it
-#define QW_U_MOREBITS	(1<<15)
+#define QW_U_ORIGIN1		(1<<9)
+#define QW_U_ORIGIN2		(1<<10)
+#define QW_U_ORIGIN3		(1<<11)
+#define QW_U_ANGLE2			(1<<12)
+#define QW_U_FRAME			(1<<13)
+#define QW_U_REMOVE			(1<<14)		// REMOVE this entity, don't add it
+#define QW_U_MOREBITS		(1<<15)
+
+WARP_X_ (PEXT_256PACKETENTITIES)
+#define QW_FTE_U_ENTITYDBL_S5	(1<<5)		// 
+#define QW_FTE_U_ENTITYDBL2_S6	(1<<6)	//
+#define QW_FTE_U_EVENMORE_S7	(1<<7)		// FTE entity limit > 512 for Quakeworld
+//#define QW_FTE_U_YETMORE		(1<<7)	//even more extension info stuff.
+
 // if MOREBITS is set, these additional flags are read in next
-#define QW_U_ANGLE1		(1<<0)
-#define QW_U_ANGLE3		(1<<1)
-#define QW_U_MODEL		(1<<2)
-#define QW_U_COLORMAP	(1<<3)
-#define QW_U_SKIN		(1<<4)
-#define QW_U_EFFECTS	(1<<5)
-#define QW_U_SOLID		(1<<6)		// the entity should be solid for prediction
+#define QW_U_ANGLE1			(1<<0)
+#define QW_U_ANGLE3			(1<<1)
+#define QW_U_MODEL			(1<<2)
+#define QW_U_COLORMAP		(1<<3)
+#define QW_U_SKIN			(1<<4)
+#define QW_U_EFFECTS		(1<<5)
+#define QW_U_SOLID			(1<<6)		// the entity should be solid for prediction
 // QUAKEWORLD
 // temp entity events
 #define QW_TE_SPIKE				0
@@ -1111,17 +1158,17 @@ extern struct cvar_s developer_networkentities;
 #define QW_TE_LIGHTNINGBLOOD	13
 // QUAKEWORLD
 // effect flags
-#define QW_EF_BRIGHTFIELD		1
-#define QW_EF_MUZZLEFLASH 		2
-#define QW_EF_BRIGHTLIGHT 		4
-#define QW_EF_DIMLIGHT 			8
-#define QW_EF_FLAG1	 			16
-#define QW_EF_FLAG2	 			32
-#define QW_EF_BLUE				64
-#define QW_EF_RED				128
+#define QW_EF_BRIGHTFIELD_1		1
+#define QW_EF_MUZZLEFLASH_2 	2
+#define QW_EF_BRIGHTLIGHT_4 	4
+#define QW_EF_DIMLIGHT_8 		8
+#define QW_EF_FLAG1_16	 		16
+#define QW_EF_FLAG2_32	 		32
+#define QW_EF_BLUE_64			64
+#define QW_EF_RED_128			128
 
-#define QW_UPDATE_BACKUP 64
-#define QW_UPDATE_MASK (QW_UPDATE_BACKUP - 1)
+#define QW_UPDATE_BACKUP_64 64
+#define QW_UPDATE_MASK_63 (QW_UPDATE_BACKUP_64 - 1)
 #define QW_MAX_PACKET_ENTITIES_64 64
 
 #define QW_MAX_PACKET_ENTITIES_FTE_256 256
@@ -1156,7 +1203,7 @@ WARP_X_ (PROTOCOL_VERSION_FTE1, PROTOCOL_VERSION_QW_28, FTE_EXTENSIONS_SUPPORTED
 #define QW_STAT_WEAPON			2
 #define QW_STAT_AMMO			3
 #define QW_STAT_ARMOR			4
-//#define QW_STAT_WEAPONFRAME		5
+//#define QW_STAT_WEAPONFRAME	5
 #define QW_STAT_SHELLS			6
 #define QW_STAT_NAILS			7
 #define QW_STAT_ROCKETS			8
@@ -1181,7 +1228,7 @@ entityframeqw_snapshot_t;
 
 typedef struct entityframeqw_database_s
 {
-	entityframeqw_snapshot_t snapshotz[QW_UPDATE_BACKUP];
+	entityframeqw_snapshot_t snapshotz[QW_UPDATE_BACKUP_64];
 }
 entityframeqw_database_t;
 

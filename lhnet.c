@@ -304,7 +304,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		a[3] = d4;
 #ifdef STANDALONETEST
 		LHNETADDRESS_ToString(address, string2, sizeof(string2), 1);
-		printf("manual parsing of ipv4 dotted decimal address \"%s\" successful: %s\n", string, string2);
+		printf("manual parsing of ipv4 dotted decimal address " QUOTED_S " successful: %s\n", string, string2);
 #endif
 		return 1;
 	}
@@ -359,14 +359,14 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 				break;
 		}
 		LHNETADDRESS_ToString(vaddress, string2, sizeof(string2), 1);
-		Con_Printf ("LHNETADDRESS_Resolve(\"%s\") returned %s address %s\n", string, protoname, string2);
+		Con_Printf ("LHNETADDRESS_Resolve(" QUOTED_S ") returned %s address %s\n", string, protoname, string2);
 #endif
 		namecache[namecacheposition].address = *address;
 	}
 	else
 	{
 #ifdef STANDALONETEST
-		printf("name resolution failed on address \"%s\"\n", name);
+		printf("name resolution failed on address " QUOTED_S NEWLINE, name);
 #endif
 		namecache[namecacheposition].address.addresstype = LHNETADDRESSTYPE_NONE;
 	}
@@ -439,7 +439,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 		a[3] = d4;
 #ifdef STANDALONETEST
 		LHNETADDRESS_ToString(address, string2, sizeof(string2), 1);
-		printf("manual parsing of ipv4 dotted decimal address \"%s\" successful: %s\n", string, string2);
+		printf("manual parsing of ipv4 dotted decimal address " QUOTED_S " successful: %s\n", string, string2);
 #endif
 		return 1;
 	}
@@ -491,7 +491,7 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 			namecacheposition = (namecacheposition + 1) % MAX_NAMECACHE;
 #ifdef STANDALONETEST
 			LHNETADDRESS_ToString(address, string2, sizeof(string2), 1);
-			printf("gethostbyname(\"%s\") returned ipv6 address %s\n", string, string2);
+			printf("gethostbyname(" QUOTED_S ") returned ipv6 address %s\n", string, string2);
 #endif
 			return 1;
 #endif
@@ -514,13 +514,13 @@ int LHNETADDRESS_FromString(lhnetaddress_t *vaddress, const char *string, int de
 			namecacheposition = (namecacheposition + 1) % MAX_NAMECACHE;
 #ifdef STANDALONETEST
 			LHNETADDRESS_ToString(address, string2, sizeof(string2), 1);
-			printf("gethostbyname(\"%s\") returned ipv4 address %s\n", string, string2);
+			printf("gethostbyname(" QUOTED_S ") returned ipv4 address %s\n", string, string2);
 #endif
 			return 1;
 		}
 	}
 #ifdef STANDALONETEST
-	printf("gethostbyname failed on address \"%s\"\n", name);
+	printf("gethostbyname failed on address " QUOTED_S NEWLINE, name);
 #endif
 	for (i = 0;i < (int)sizeof(namecache[namecacheposition].name)-1 && name[i];i++)
 		namecache[namecacheposition].name[i] = name[i];
@@ -748,7 +748,8 @@ void LHNET_Init(void)
 
 int LHNET_DefaultDSCP(int dscp)
 {
-#ifdef IP_TOS
+#ifdef IP_TOS // Baker: 3
+	// This is the norm
 	int prev = lhnet_default_dscp;
 	if (dscp >= 0)
 		lhnet_default_dscp = dscp;
@@ -1326,7 +1327,7 @@ int main(int argc, char **argv)
 			if ((sock[i] = LHNET_OpenSocket_Connectionless(&sockaddress[i])))
 			{
 				LHNETADDRESS_ToString(LHNET_AddressFromSocket(sock[i]), addressstring2, sizeof(addressstring2), 1);
-				printf("opened socket successfully (address \"%s\")\n", addressstring2);
+				printf("opened socket successfully (address " QUOTED_S ")\n", addressstring2);
 			}
 			else
 			{
@@ -1358,7 +1359,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				printf("LHNETADDRESS_FromString did not like the address \"%s\", switching to listen only mode\n", argv[3]);
+				printf("LHNETADDRESS_FromString did not like the address " QUOTED_S ", switching to listen only mode\n", argv[3]);
 				argc = 2;
 			}
 		}
@@ -1383,7 +1384,7 @@ int main(int argc, char **argv)
 						buffer[length] = 0;
 						LHNETADDRESS_ToString(&receiveaddress, addressstring, sizeof(addressstring), 1);
 						LHNETADDRESS_ToString(LHNET_AddressFromSocket(sock[i]), addressstring2, sizeof(addressstring2), 1);
-						printf("received message \"%s\" from \"%s\" on socket \"%s\"\n", buffer, addressstring, addressstring2);
+						printf("received message " QUOTED_S " from " QUOTED_S " on socket " QUOTED_S NEWLINE, buffer, addressstring, addressstring2);
 						if (String_Does_Match(buffer, "exit"))
 							break;
 					}
@@ -1398,7 +1399,7 @@ int main(int argc, char **argv)
 				{
 					LHNETADDRESS_ToString(&destaddress, addressstring, sizeof(addressstring), 1);
 					LHNETADDRESS_ToString(LHNET_AddressFromSocket(sendsock), addressstring2, sizeof(addressstring2), 1);
-					printf("calling LHNET_Write(<%s>, \"%s\", %d, <%s>)\n", addressstring2, sendmessage, sendmessagelength, addressstring);
+					printf("calling LHNET_Write(<%s>, " QUOTED_S ", %d, <%s>)\n", addressstring2, sendmessage, sendmessagelength, addressstring);
 					length = LHNET_Write(sendsock, sendmessage, sendmessagelength, &destaddress);
 					if (length == sendmessagelength)
 						printf("sent successfully\n");

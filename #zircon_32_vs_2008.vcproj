@@ -296,6 +296,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cl_demo.c"
+				>
+			</File>
+			<File
 				RelativePath=".\cl_ents.c"
 				>
 			</File>
@@ -304,19 +308,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\cl_ents5.c"
-				>
-			</File>
-			<File
 				RelativePath=".\cl_ents_nq.c"
-				>
-			</File>
-			<File
-				RelativePath=".\cl_ents_qw.c"
-				>
-			</File>
-			<File
-				RelativePath=".\cl_input.c"
 				>
 			</File>
 			<File
@@ -452,7 +444,35 @@
 				>
 			</File>
 			<File
+				RelativePath=".\image_png.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug SDL|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\jpeg.c"
+				>
+			</File>
+			<File
+				RelativePath=".\keys.c"
+				>
+			</File>
+			<File
+				RelativePath=".\keys_undo.c.h"
 				>
 			</File>
 			<File
@@ -656,27 +676,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sv_main.c"
-				>
-			</File>
-			<File
-				RelativePath=".\sv_move.c"
-				>
-			</File>
-			<File
-				RelativePath=".\sv_phys.c"
-				>
-			</File>
-			<File
 				RelativePath=".\sv_save.c"
-				>
-			</File>
-			<File
-				RelativePath=".\sv_send.c"
-				>
-			</File>
-			<File
-				RelativePath=".\sv_user.c"
 				>
 			</File>
 			<File
@@ -765,10 +765,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\baker.h"
-				>
-			</File>
 			<File
 				RelativePath=".\bih.h"
 				>
@@ -1356,11 +1352,35 @@
 			Name="A_Nova"
 			>
 			<File
+				RelativePath=".\___warps.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\_zircon_beta_changes.txt"
 				>
 			</File>
 			<File
-				RelativePath=".\cl_demo.c"
+				RelativePath=".\baker.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_ents5.c"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_ents_qw.c"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_input.c"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_input_pmove.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_input_pmove_spectator.c.h"
 				>
 			</File>
 			<File
@@ -1372,11 +1392,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cl_parse_chunked_dp.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_parse_download.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\cl_parse_quakeworld.c.h"
 				>
 			</File>
 			<File
-				RelativePath=".\cl_parse_temp_quakeworld.c.h"
+				RelativePath=".\cl_parse_temp_particles_quakeworld.c.h"
 				>
 			</File>
 			<File
@@ -1392,35 +1420,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\image_png.c"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SDL|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath=".\jack_scripts.c.h"
-				>
-			</File>
-			<File
-				RelativePath=".\keys.c"
-				>
-			</File>
-			<File
-				RelativePath=".\keys_undo.c.h"
 				>
 			</File>
 			<File
@@ -1444,9 +1444,69 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sv_main.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sv_main_download.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\sv_main_precache.c.h"
 				>
 			</File>
+			<File
+				RelativePath=".\sv_move.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sv_phys.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sv_send.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sv_user.c"
+				>
+			</File>
+			<File
+				RelativePath=".\sv_user_zmove.c.h"
+				>
+			</File>
+			<Filter
+				Name="dpdefs"
+				>
+				<File
+					RelativePath=".\#zircon_dpbeta_sdl2_win64.cbp"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\_fteextensions.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\csprogsdefs.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\dpextensions.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\keycodes.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\menudefs.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\dpdefs\progsdefs.qc"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>

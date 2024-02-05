@@ -26,7 +26,7 @@ fitz_skip_1:
 	if (pbaseline->angles[2] != s->angles[2])
 												fitz_bits |= U_ANGLE3;
 
-	if (s->flags & RENDER_STEP)
+	if (s->sflags & RENDER_STEP)
 												fitz_bits |= U_STEP;
 
 	if (pbaseline->colormap != s->colormap)
@@ -167,14 +167,14 @@ qbool EntityFrameQuake_WriteFrame(sizebuf_t *msg, int maxsize, int numstates, co
 		}
 		if (s->number >= 256)
 													bits |= U_LONGENTITY;		// Looks ok for Fitz
-		if (s->flags & RENDER_STEP)
+		if (s->sflags & RENDER_STEP)
 													bits |= U_STEP;
 
-		if (s->flags & RENDER_VIEWMODEL)
+		if (s->sflags & RENDER_VIEWMODEL)
 													bits |= U_VIEWMODEL;
-		if (s->flags & RENDER_GLOWTRAIL)
+		if (s->sflags & RENDER_GLOWTRAIL)
 													bits |= U_GLOWTRAIL;
-		if (s->flags & RENDER_EXTERIORMODEL)
+		if (s->sflags & RENDER_EXTERIORMODEL)
 													bits |= U_EXTERIORMODEL;
 
 		// LadyHavoc: old stuff, but rewritten to have more exact tolerances

@@ -251,13 +251,13 @@ static void SCR_DrawNetGraph_DrawGraph (int graphx, int graphy, int graphwidth, 
 	int j, x, y;
 	int totalbytes = 0;
 	char bytesstring[128];
-	float g[NETGRAPH_PACKETS][7];
+	float g[NETGRAPH_PACKETS_256][7];
 	float *a;
 	float *b;
 	DrawQ_Fill(graphx, graphy, graphwidth, graphheight + textsize * 2, 0, 0, 0, 0.5, 0);
 	// draw the bar graph itself
 	memset(g, 0, sizeof(g));
-	for (j = 0;j < NETGRAPH_PACKETS;j++)
+	for (j = 0;j < NETGRAPH_PACKETS_256;j++)
 	{
 		graph = netgraph + j;
 		g[j][0] = 1.0f - 0.25f * (host.realtime - graph->time);
@@ -267,14 +267,14 @@ static void SCR_DrawNetGraph_DrawGraph (int graphx, int graphy, int graphwidth, 
 		g[j][4] = 1.0f;
 		g[j][5] = 1.0f;
 		g[j][6] = 1.0f;
-		if (graph->unreliablebytes == NETGRAPH_LOSTPACKET)
+		if (graph->unreliablebytes == NETGRAPH_LOSTPACKET_NEG1)
 			g[j][1] = 0.00f;
 		else if (graph->unreliablebytes == NETGRAPH_CHOKEDPACKET)
 			g[j][2] = 0.90f;
 		else
 		{
-			if (netgraph[j].time >= netgraph[(j+NETGRAPH_PACKETS-1)%NETGRAPH_PACKETS].time)
-				if (graph->unreliablebytes + graph->reliablebytes + graph->ackbytes >= graphlimit * (netgraph[j].time - netgraph[(j+NETGRAPH_PACKETS-1)%NETGRAPH_PACKETS].time))
+			if (netgraph[j].time >= netgraph[(j+NETGRAPH_PACKETS_256-1)%NETGRAPH_PACKETS_256].time)
+				if (graph->unreliablebytes + graph->reliablebytes + graph->ackbytes >= graphlimit * (netgraph[j].time - netgraph[(j+NETGRAPH_PACKETS_256-1)%NETGRAPH_PACKETS_256].time))
 					g[j][2] = 0.98f;
 			g[j][3] = 1.0f    - graph->unreliablebytes * graphscale;
 			g[j][4] = g[j][3] - graph->reliablebytes   * graphscale;
@@ -293,10 +293,10 @@ static void SCR_DrawNetGraph_DrawGraph (int graphx, int graphy, int graphwidth, 
 		g[j][6] = bound(0.0f, g[j][6], 1.0f);
 	}
 	// render the lines for the graph
-	for (j = 0;j < NETGRAPH_PACKETS;j++)
+	for (j = 0;j < NETGRAPH_PACKETS_256;j++)
 	{
 		a = g[j];
-		b = g[(j+1)%NETGRAPH_PACKETS];
+		b = g[(j+1)%NETGRAPH_PACKETS_256];
 		if (a[0] < 0.0f || b[0] > 1.0f || b[0] < a[0])
 			continue;
 		DrawQ_Line(1, graphx + graphwidth * a[0], graphy + graphheight * a[2], graphx + graphwidth * b[0], graphy + graphheight * b[2], 1.0f, 1.0f, 1.0f, 1.0f, 0);
@@ -514,7 +514,7 @@ static int SCR_DrawQWDownload(int offset)
 		cls.qw_downloadspeedtime = host.realtime;
 		cls.qw_downloadspeedcount = 0;
 	}
-	if (cls.protocol == PROTOCOL_QUAKEWORLD && cls.qw_downloadmethod == DL_QWCHUNKS_2) {
+	if (cls.qw_downloadmethod >= DL_QWCHUNKS_2) {
 		extern int chunked_receivedbytes;
 		double dur = Sys_DirtyTime () - cls.qw_downloadstarttime;
 		cls.qw_downloadspeedrate = chunked_receivedbytes / dur;

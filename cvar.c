@@ -414,7 +414,7 @@ static void Cvar_SetQuick_Internal (cvar_t *var, const char *value)
 	var->value = atof (var->string);
 	var->integer = (int) var->value;
 	if ((var->flags & CF_NOTIFY) && sv.active && !sv_disablenotify.integer)
-		SV_BroadcastPrintf("\003^3Server cvar \"%s\" changed to \"%s\"\n", var->name, var->string);
+		SV_BroadcastPrintf("\003^3Server cvar " QUOTED_S " changed to " QUOTED_S NEWLINE, var->name, var->string);
 #if 0
 	// TODO: add infostring support to the server?
 	if ((var->flags & CF_SERVERINFO) && changed && sv.active)
@@ -441,18 +441,18 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 {
 	if (var == NULL)
 	{
-		Con_Print("Cvar_SetQuick: var == NULL\n");
+		Con_PrintLinef ("Cvar_SetQuick: var == NULL");
 		return;
 	}
 
 	if (!(var->flags & CF_REGISTERED) && !(var->flags & CF_ALLOCATED))
 	{
-		Con_Printf (CON_WARN "Warning: Cvar_SetQuick() cannot set unregistered cvar \"%s\"\n", var->name);
+		Con_PrintLinef (CON_WARN "Warning: Cvar_SetQuick() cannot set unregistered cvar " QUOTED_S, var->name);
 		return; // setting an unregistered engine cvar crashes
 	}
 
 	if (developer_extra.integer)
-		Con_DPrintf ("Cvar_SetQuick({\"%s\", \"%s\", %d, \"%s\"}, \"%s\");\n", var->name, var->string, var->flags, var->defstring, value);
+		Con_DPrintLinef ("Cvar_SetQuick({" QUOTED_S ", " QUOTED_S ", %d, " QUOTED_S "}, " QUOTED_S ");", var->name, var->string, var->flags, var->defstring, value);
 
 	Cvar_SetQuick_Internal(var, value);
 }
@@ -463,7 +463,7 @@ void Cvar_Set(cvar_state_t *cvars, const char *var_name, const char *value)
 	var = Cvar_FindVar(cvars, var_name, ALL_FLAGS_ANTIZERO);
 	if (var == NULL)
 	{
-		Con_Printf ("Cvar_Set: variable %s not found\n", var_name);
+		Con_PrintLinef ("Cvar_Set: variable %s not found", var_name);
 		return;
 	}
 	Cvar_SetQuick(var, value);
@@ -1092,7 +1092,7 @@ void Cvar_WriteVariables (cvar_state_t *cvars, qfile_t *f)
 
 		Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
 		Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
-		FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
+		FS_Printf (f, "%s" QUOTED_S " " QUOTED_S NEWLINE, var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
 	} // for each cvar
 }
 
@@ -1113,7 +1113,7 @@ void Cvar_WriteVariables_All_Changed (cvar_state_t *cvars, qfile_t *f)
 
 		Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
 		Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
-		FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
+		FS_Printf (f, "%s" QUOTED_S " " QUOTED_S NEWLINE, var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
 	} // for each cvar
 }
 
@@ -1125,7 +1125,7 @@ void Cvar_WriteVariables_All (cvar_state_t *cvars, qfile_t *f)
 	for (var = cvars->vars ; var ; var = var->next) {
 		Cmd_QuoteString(buf1, sizeof(buf1), var->name, "\"\\$", false);
 		Cmd_QuoteString(buf2, sizeof(buf2), var->string, "\"\\$", false);
-		FS_Printf(f, "%s" QUOTED_S " " QUOTED_S "\n", var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
+		FS_Printf (f, "%s" QUOTED_S " " QUOTED_S NEWLINE, var->flags & CF_ALLOCATED ? "seta " : "", buf1, buf2);
 	} // for each cvar
 }
 

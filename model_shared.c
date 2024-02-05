@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// models.c -- model loading and caching
+// model_shared.c -- model loading and caching
 
 // models are the only shared resource between a client and server running
 // on the same machine.
@@ -82,6 +82,7 @@ typedef struct q3shader_data_s
 } q3shader_data_t;
 static q3shader_data_t* q3shader_data;
 
+WARP_X_CALLERS_ ()
 static void mod_start(void)
 {
 	int i, count;
@@ -117,7 +118,7 @@ static void mod_shutdown(void)
 			Mod_UnloadModel(mod);
 			// Baker r9003: Clear models/sounds on gamedir change
 			if (is_game_switch) {
-				mod->used = false; // Baker .. loadmodel: stuff from prior gamedir persisted			
+				mod->used = false; // Baker .. loadmodel: stuff from prior gamedir persisted
 			} // if
 		} // mod
  	} // for
@@ -127,7 +128,7 @@ static void mod_shutdown(void)
 
 	// Baker r9003: Clear models/sounds on gamedir change
 	if (is_game_switch) {
-		Mod_PurgeUnused (); // Baker .. loadmodel: stuff from prior gamedir persisted			
+		Mod_PurgeUnused (); // Baker .. loadmodel: stuff from prior gamedir persisted
 		S_PurgeUnused();
 		is_game_switch = false; // Baker r9062: This is where.
 	} else {
@@ -135,6 +136,7 @@ static void mod_shutdown(void)
 	}
 }
 
+WARP_X_ (mod->brushq1.lightmapupdateflags)
 static void mod_newmap(void)
 {
 	msurface_t *surface;
@@ -142,12 +144,9 @@ static void mod_newmap(void)
 	int nummodels = (int)Mem_ExpandableArray_IndexRange(&models);
 	model_t *mod;
 
-	for (i = 0;i < nummodels;i++)
-	{
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->mempool)
-		{
-			for (j = 0;j < mod->num_textures && mod->data_textures;j++)
-			{
+	for (i = 0;i < nummodels;i++) {
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->mempool) {
+			for (j = 0;j < mod->num_textures && mod->data_textures;j++) {
 				// note that materialshaderpass and backgroundshaderpass point to shaderpasses[] and so do the pre/post shader ranges, so this catches all of them...
 				for (l = 0; l < Q3SHADER_MAXLAYERS_8; l++)
 					if (mod->data_textures[j].shaderpasses[l])
@@ -164,14 +163,10 @@ static void mod_newmap(void)
 	if (!cl_stainmaps_clearonload.integer)
 		return;
 
-	for (i = 0;i < nummodels;i++)
-	{
-		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->mempool && mod->data_surfaces)
-		{
-			for (surfacenum = 0, surface = mod->data_surfaces;surfacenum < mod->num_surfaces;surfacenum++, surface++)
-			{
-				if (surface->lightmapinfo && surface->lightmapinfo->stainsamples)
-				{
+	for (i = 0;i < nummodels;i++) {
+		if ((mod = (model_t*) Mem_ExpandableArray_RecordAtIndex(&models, i)) && mod->mempool && mod->data_surfaces) {
+			for (surfacenum = 0, surface = mod->data_surfaces;surfacenum < mod->num_surfaces;surfacenum++, surface++) {
+				if (surface->lightmapinfo && surface->lightmapinfo->stainsamples) {
 					ssize = (surface->lightmapinfo->extents[0] >> 4) + 1;
 					tsize = (surface->lightmapinfo->extents[1] >> 4) + 1;
 					memset(surface->lightmapinfo->stainsamples, 255, ssize * tsize * 3);
@@ -419,6 +414,7 @@ Mod_LoadModel
 Loads a model
 ==================
 */
+WARP_X_CALLERS_ ()
 model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 {
 	unsigned int crc;
@@ -430,7 +426,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 
 	if (mod->model_name[0] == '*') // submodel
 		return mod;
-	
+
 	if (String_Does_Match(mod->model_name, "null")) {
 		if (mod->loaded)
 			return mod;
@@ -491,7 +487,7 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 
 	if (developer_loading.integer)
 		Con_PrintLinef ("loading model %s", mod->model_name);
-	
+
 	SCR_PushLoadingScreen(mod->model_name, 1);
 
 	// LadyHavoc: unload the existing model in this slot (if there is one)
@@ -533,15 +529,23 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 		loadmodel = mod;
 
 		// Call the appropriate loader. Try matching magic bytes.
-		for (i = 0; loader[i].Load; i++)
-		{
+		for (i = 0; loader[i].Load; i++) {
 			// Headerless formats can just load based on extension. Otherwise match the magic string.
 			if ((loader[i].extension && String_Does_Match_Caseless(ext, loader[i].extension) && !loader[i].header) ||
 			   (loader[i].header && !memcmp(buf, loader[i].header, loader[i].headersize)))
 			{
-				// Matched. Load it.			
-				loader[i].Load(mod, buf, bufend);
+				size_t mod_sz = sizeof(*mod);
+				model_t mod_fallback = *mod;
+
+				// Matched. Load it.
+				WARP_X_ (Mod_IDP0_Load)
+				int res = loader[i].Load(mod, buf, bufend);
 				Mem_Free(buf);
+
+				if (res == false) {
+					*mod = mod_fallback; // Struct copy
+					goto other_failure;
+				}
 
 				Mod_FindPotentialDeforms(mod);
 
@@ -557,12 +561,13 @@ model_t *Mod_LoadModel(model_t *mod, qbool crash, qbool checkdisk)
 				break;
 			}
 		}
+other_failure:
 		if (!loader[i].Load) {
 			Con_PrintLinef (CON_ERROR "Mod_LoadModel: model " QUOTED_S " is of unknown/unsupported type", mod->model_name);
 		}
 	}
 	else if (crash) {
-		
+
 		if (String_Does_Match(mod->model_name, "progs/beam.mdl")) {
 			// Baker r1461: beam.mdl quit printing this thing nothing uses ...
 			Con_DPrintLinef (CON_ERROR "Mod_LoadModel: %s not found", mod->model_name);
@@ -1060,6 +1065,15 @@ void Mod_ShadowMesh_AddMesh(shadowmesh_t *mesh, const float *vertex3f, int numtr
 
 	for (i = 0;i < numtris;i++)
 	{
+#if 1 // Signed-off-by: bones_was_here <bones_was_here@xonotic.au>
+		if ((mesh->numtriangles * 3 + 2) * sizeof(int) + 1 >= 
+			((memheader_t *)((unsigned char *)mesh->element3i - sizeof(memheader_t)))->size)
+		{
+			// FIXME: we didn't allocate enough space for all the tris, see R_Mod_CompileShadowMap
+			Con_PrintLinef (CON_WARN "Mod_ShadowMesh_AddMesh: insufficient memory allocated!");
+			return;
+		}
+#endif
 		mesh->element3i[mesh->numtriangles * 3 + 0] = Mod_ShadowMesh_AddVertex(mesh, vertex3f + 3 * element3i[i * 3 + 0]);
 		mesh->element3i[mesh->numtriangles * 3 + 1] = Mod_ShadowMesh_AddVertex(mesh, vertex3f + 3 * element3i[i * 3 + 1]);
 		mesh->element3i[mesh->numtriangles * 3 + 2] = Mod_ShadowMesh_AddVertex(mesh, vertex3f + 3 * element3i[i * 3 + 2]);
@@ -1384,7 +1398,7 @@ void Mod_Terrain_UpdateSurfacesForViewOrigin(model_t *model)
 {
 	for (y = 0;y < model->terrain.size[1];y += model->terrain.
 	Mod_Terrain_SurfaceRecurseChunk(model, model->terrain.maxstepsize, x, y);
-	Mod_Terrain_BuildChunk(model, 
+	Mod_Terrain_BuildChunk(model,
 }
 #endif
 
@@ -1485,7 +1499,7 @@ void Mod_LoadQ3Shaders(void)
 	int numparameters;
 	char parameter[TEXTURE_MAXFRAMES_64 + 4][Q3PATHLENGTH_64];
 	char *custsurfaceparmnames[256]; // VorteX: q3map2 has 64 but well, someone will need more
-	unsigned long custsurfaceflags[256]; 
+	unsigned long custsurfaceflags[256];
 	int numcustsurfaceflags;
 	qbool dpshaderkill;
 	int i, tcmodindex;
@@ -1505,7 +1519,7 @@ void Mod_LoadQ3Shaders(void)
 	if ((text = f = (char *)FS_LoadFile("scripts/custinfoparms.txt", tempmempool, fs_quiet_FALSE, fs_size_ptr_null)) != NULL)
 	{
 		if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-			Con_DPrintf ("scripts/custinfoparms.txt: contentflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
+			Con_DPrintLinef ("scripts/custinfoparms.txt: contentflags section parsing error - expected \"{\", found " QUOTED_S, com_token);
 		else
 		{
 			while (COM_ParseToken_QuakeC(&text, false))
@@ -1513,17 +1527,17 @@ void Mod_LoadQ3Shaders(void)
 					break;
 			// custom surfaceflags section
 			if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-				Con_DPrintf ("scripts/custinfoparms.txt: surfaceflags section parsing error - expected \"{\", found \"%s\"\n", com_token);
+				Con_DPrintLinef ("scripts/custinfoparms.txt: surfaceflags section parsing error - expected \"{\", found " QUOTED_S, com_token);
 			else
 			{
 				while(COM_ParseToken_QuakeC(&text, false))
 				{
 					if (String_Does_Match_Caseless(com_token, "}"))
-						break;	
+						break;
 					// register surfaceflag
 					if (numcustsurfaceflags >= 256)
 					{
-						Con_Printf ("scripts/custinfoparms.txt: surfaceflags section parsing error - max 256 surfaceflags exceeded\n");
+						Con_PrintLinef ("scripts/custinfoparms.txt: surfaceflags section parsing error - max 256 surfaceflags exceeded");
 						break;
 					}
 					// name
@@ -1691,7 +1705,7 @@ void Mod_LoadQ3Shaders(void)
 							     if (String_Does_Match_Caseless(parameter[1], "identity"))         layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITY;
 							else if (String_Does_Match_Caseless(parameter[1], "const"))            layer->rgbgen.rgbgen = Q3RGBGEN_CONST;
 							else if (String_Does_Match_Caseless(parameter[1], "entity"))           layer->rgbgen.rgbgen = Q3RGBGEN_ENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "exactvertex"))      layer->rgbgen.rgbgen = Q3RGBGEN_EXACTVERTEX;
+							else if (String_Does_Match_Caseless(parameter[1], "exactvertex"))      layer->rgbgen.rgbgen = Q3RGBGEN_VERTEX; // Baker: Q3RGBGEN_EXACTVERTEX;
 							else if (String_Does_Match_Caseless(parameter[1], "identitylighting")) layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITYLIGHTING;
 							else if (String_Does_Match_Caseless(parameter[1], "lightingdiffuse"))  layer->rgbgen.rgbgen = Q3RGBGEN_LIGHTINGDIFFUSE;
 							else if (String_Does_Match_Caseless(parameter[1], "oneminusentity"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSENTITY;
@@ -1802,7 +1816,7 @@ void Mod_LoadQ3Shaders(void)
 						if (layer->blendfunc[0] == GL_ONE && layer->blendfunc[1] == GL_ONE)
 							layer->blendfunc[0] = GL_SRC_ALPHA;
 					}
-					
+
 					layer->dptexflags = 0;
 					if (layer->alphatest)
 						layer->dptexflags |= TEXF_ALPHA;
@@ -1898,7 +1912,7 @@ void Mod_LoadQ3Shaders(void)
 						}
 						// failed all
 						if (j == numcustsurfaceflags)
-							Con_DPrintf ("%s parsing warning: unknown surfaceparm \"%s\"\n", search->filenames[fileindex], parameter[1]);
+							Con_DPrintLinef ("%s parsing warning: unknown surfaceparm " QUOTED_S, search->filenames[fileindex], parameter[1]);
 					}
 				} // surfaceparm
 				else if (String_Does_Match_Caseless(parameter[0], "dpshadow")) shader.dpshadow = true;
@@ -2135,7 +2149,7 @@ texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(mempool_t *mempool, 
 	return shaderpass;
 }
 
-qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, texture_t *texture, const char *name, qbool warnmissing, 
+qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, texture_t *texture, const char *name, qbool warnmissing,
 								  qbool fallback, int shall_do_external, int defaulttexflags, int defaultmaterialflags)
 {
 	int texflagsmask, texflagsor;
@@ -2163,7 +2177,7 @@ qbool Mod_LoadTextureFromQ3Shader(mempool_t *mempool, const char *modelname, tex
 	texture->offsetscale = 1;
 	texture->offsetbias = 0;
 	texture->specularscalemod = 1;
-	texture->specularpowermod = 1; 
+	texture->specularpowermod = 1;
 	texture->rtlightambient = 0;
 	texture->transparentsort = TRANSPARENTSORT_DISTANCE;
 	// WHEN ADDING DEFAULTS HERE, REMEMBER TO PUT DEFAULTS IN ALL LOADERS
@@ -2281,7 +2295,8 @@ nothing                GL_ZERO GL_ONE
 				// terrain blend or certain other effects involving alphatest over a regular layer
 				terrainbackgroundlayer = 0;
 				materiallayer = 1;
-				// terrain may be vertex lit (in which case both layers are rgbGen vertex) or lightmapped (in which ase the third layer is lightmap)
+				// terrain may be vertex lit (in which case both layers are rgbGen vertex) or 
+				// lightmapped (in which ase the third layer is lightmap)
 				firstpostlayer = lightmaplayer >= 0 ? lightmaplayer + 1 : materiallayer + 1;
 			}
 			else if (lightmaplayer == 0)
@@ -2492,7 +2507,7 @@ nothing                GL_ZERO GL_ONE
 		}
 		else
 		{
-#if 1				
+#if 1
 			if (fallback || shall_do_external)
 			{
 				skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
@@ -2544,7 +2559,7 @@ nothing                GL_ZERO GL_ONE
 void Mod_LoadCustomMaterial(mempool_t *mempool, texture_t *texture, const char *name, int supercontents, int materialflags, skinframe_t *skinframe)
 {
 	if (!(materialflags & (MATERIALFLAG_WALL | MATERIALFLAG_SKY)))
-		Con_DPrintf ("^1Custom texture ^3\"%s\" does not have MATERIALFLAG_WALL set\n", texture->name);
+		Con_DPrintf ("^1Custom texture ^3" QUOTED_S " does not have MATERIALFLAG_WALL set\n", texture->name);
 
 	strlcpy(texture->name, name, sizeof(texture->name));
 	texture->basealpha = 1.0f;
@@ -2562,7 +2577,7 @@ void Mod_LoadCustomMaterial(mempool_t *mempool, texture_t *texture, const char *
 	// JUST GREP FOR "specularscalemod = 1".
 
 	if (developer_extra.integer)
-		Con_DPrintf ("^1Custom texture ^3\"%s\"\n", texture->name);
+		Con_DPrintLinef ("^1Custom texture ^3" QUOTED_S, texture->name);
 	if (skinframe)
 		texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(mempool, skinframe);
 
@@ -2660,7 +2675,7 @@ tag_torso,
 				if (words == 3)
 				{
 					if (developer_loading.integer)
-						Con_Printf ("Mod_LoadSkinFiles: parsed mesh \"%s\" shader replacement \"%s\"\n", word[1], word[2]);
+						Con_PrintLinef ("Mod_LoadSkinFiles: parsed mesh " QUOTED_S " shader replacement " QUOTED_S, word[1], word[2]);
 					skinfileitem = (skinfileitem_t *)Mem_Alloc(loadmodel->mempool, sizeof(skinfileitem_t));
 					skinfileitem->next = skinfile->items;
 					skinfile->items = skinfileitem;
@@ -2668,7 +2683,7 @@ tag_torso,
 					strlcpy (skinfileitem->replacement, word[2], sizeof (skinfileitem->replacement));
 				}
 				else
-					Con_PrintLinef ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: wrong number of parameters to command \"%s\", see documentation in DP_GFX_SKINFILES extension in dpextensions.qc", loadmodel->model_name, i, line, word[0]);
+					Con_PrintLinef ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: wrong number of parameters to command " QUOTED_S ", see documentation in DP_GFX_SKINFILES extension in dpextensions.qc", loadmodel->model_name, i, line, word[0]);
 			}
 			else if (words >= 2 && !strncmp(word[0], "tag_", 4))
 			{
@@ -2679,7 +2694,7 @@ tag_torso,
 			{
 				// mesh shader name, like "U_RArm,models/players/Legoman/BikerA1.tga"
 				if (developer_loading.integer)
-					Con_Printf ("Mod_LoadSkinFiles: parsed mesh \"%s\" shader replacement \"%s\"\n", word[0], word[2]);
+					Con_PrintLinef ("Mod_LoadSkinFiles: parsed mesh " QUOTED_S " shader replacement " QUOTED_S, word[0], word[2]);
 				skinfileitem = (skinfileitem_t *)Mem_Alloc(loadmodel->mempool, sizeof(skinfileitem_t));
 				skinfileitem->next = skinfile->items;
 				skinfile->items = skinfileitem;
@@ -2687,7 +2702,7 @@ tag_torso,
 				strlcpy (skinfileitem->replacement, word[2], sizeof (skinfileitem->replacement));
 			}
 			else
-				Con_Printf ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: does not look like tag or mesh specification, or replace command, see documentation in DP_GFX_SKINFILES extension in dpextensions.qc\n", loadmodel->model_name, i, line);
+				Con_PrintLinef ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: does not look like tag or mesh specification, or replace command, see documentation in DP_GFX_SKINFILES extension in dpextensions.qc", loadmodel->model_name, i, line);
 		}
 		Mem_Free(text);
 	}
@@ -3068,7 +3083,7 @@ static void Mod_Decompile_SMD(model_t *model, const char *filename, int firstpos
 			Z_Free(oldbuffer);
 		}
 		countnodes++;
-		l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i \"%s\" %3i\n", transformindex, model->data_bones[transformindex].name, model->data_bones[transformindex].parent);
+		l = dpsnprintf(outbuffer + outbufferpos, outbuffermax - outbufferpos, "%3i " QUOTED_S " %3i\n", transformindex, model->data_bones[transformindex].name, model->data_bones[transformindex].parent);
 		if (l > 0)
 			outbufferpos += l;
 	}
@@ -3306,7 +3321,7 @@ static void Mod_Decompile_f(cmd_state_t *cmd)
 				// if it's only one frame, use the original frame name
 				if (j == i + 1)
 					strlcpy(animname, mod->animscenes[i].name, sizeof(animname));
-				
+
 			}
 			dpsnprintf(outname, sizeof(outname), "%s_decompiled/%s.smd", basename, animname);
 			Mod_Decompile_SMD(mod, outname, first, count, false);
@@ -4379,7 +4394,11 @@ texture_t *Mod_Mesh_GetTexture(model_t *mod, const char *name, int defaultdrawfl
 			mod->data_surfaces[i].texture = mod->data_textures + (mod->data_surfaces[i].texture - oldtextures);
 	}
 	t = &mod->data_textures[mod->num_textures++];
-	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, defaulttexflags, defaultmaterialflags);
+	
+	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, 
+		q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, 
+		defaulttexflags, defaultmaterialflags);
+
 	t->mesh_drawflag = drawflag;
 	t->mesh_defaulttexflags = defaulttexflags;
 	t->mesh_defaultmaterialflags = defaultmaterialflags;

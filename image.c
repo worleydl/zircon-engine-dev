@@ -1153,7 +1153,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 		if ((lmpdata = W_GetLumpName(afterpath, &filesize)))
 		{
 			if (developer_loading.integer)
-				Con_Printf ("loading gfx.wad lump \"%s\"\n", afterpath);
+				Con_PrintLinef ("loading gfx.wad lump " QUOTED_S, afterpath);
 
 			mymiplevel = miplevel ? *miplevel : 0;
 			if (String_Does_Match(afterpath, "conchars"))
@@ -1180,7 +1180,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 		for (format = firstformat;format->formatstring;format++)
 		{
 			dpsnprintf (name, sizeof(name), format->formatstring, basename);
-			Con_Printf (format == firstformat ? "\"%s\"" : (format[1].formatstring ? ", \"%s\"" : " or \"%s\".\n"), format->formatstring);
+			Con_PrintLinef (format == firstformat ? QUOTED_S : (format[1].formatstring ? ", " QUOTED_S : " or " QUOTED_S "."), format->formatstring);
 		}
 	}
 

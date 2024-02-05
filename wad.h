@@ -78,7 +78,7 @@ unsigned char *W_GetLumpName(const char *name, int64_t *returnfilesize);
 
 // halflife texture wads
 void W_LoadTextureWadFile(char *filename, int complain);
-unsigned char *W_GetTextureBGRA(char *name); // returns tempmempool allocated image data, width and height are in image_width and image_height
+unsigned char *W_GetTextureBGRA_HalfLife(char *name); // returns tempmempool allocated image data, width and height are in image_width and image_height
 unsigned char *W_ConvertWAD3TextureBGRA(struct sizebuf_s *sb); // returns tempmempool allocated image data, width and height are in image_width and image_height
 
 #endif // !WAD_H

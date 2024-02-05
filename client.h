@@ -482,7 +482,7 @@ entity_t;
 typedef struct lightstyle_s
 {
 	int		length;
-	char	map[MAX_STYLESTRING];
+	char	map[MAX_STYLESTRING_64];
 } lightstyle_t;
 
 typedef struct scoreboard_s
@@ -524,11 +524,14 @@ typedef struct cshift_s
 //
 
 #define SIGNON_ZERO		0
-#define SIGNON_1		1		// Baker: causes client to CL_SendPlayerInfo
+#define SIGNON_1		1		// Baker: causes client to CL_SignonReply_SIGNON_1_SendPlayerInfo
+
+WARP_X_ (Non-QW: CL_SignonReply SIGNON_1 -> CL_BeginDownloads_DP)
+
 #define SIGNON_2		2		// Baker: causes client to send "spawn"
 #define SIGNON_3		3		// Baker: causes client to send "begin"
 								//  4 is everything loaded.  DarkPlaces purges unused stuff here.
-#define	SIGNONS_4		4			// signon messages to receive before connected
+#define	SIGNONS_4		4		// signon messages to receive before connected
 
 extern double	cl_signon_start_time; // Baker: playdemo, map, reconnect call .. detects slow load times, forces info.
 
@@ -552,7 +555,7 @@ typedef enum qw_downloadtype_e
 }
 qw_downloadtype_t;
 
-#define CL_MAX_DOWNLOADACKS 4
+#define CL_MAX_DOWNLOADACKS_DP_QW_4 4
 
 typedef struct cl_downloadack_s
 {
@@ -572,8 +575,7 @@ cl_soundstats_t;
 // the client_static_t structure is persistent through an arbitrary number
 // of server connections
 //
-typedef struct client_static_s
-{
+typedef struct client_static_s { // cls.
 	cactive_t state;
 
 	// all client memory allocations go in these pools
@@ -629,11 +631,13 @@ typedef struct client_static_s
 	protocolversion_t protocol;
 	int protocol_flags_rmq; // U_SCALE
 
-#define MAX_RCONS 16
+	int storr[16];
+
+#define MAX_RCONS_16 16
 	int rcon_trying;
-	lhnetaddress_t rcon_addresses[MAX_RCONS];
-	char rcon_commands[MAX_RCONS][MAX_INPUTLINE_16384];
-	double rcon_timeout[MAX_RCONS];
+	lhnetaddress_t rcon_addresses[MAX_RCONS_16];
+	char rcon_commands[MAX_RCONS_16][MAX_INPUTLINE_16384];
+	double rcon_timeout[MAX_RCONS_16];
 	int rcon_ringpos;
 
 // connection information
@@ -645,10 +649,10 @@ typedef struct client_static_s
 
 	// download information
 	// (note: qw_download variables are also used)
-	cl_downloadack_t dp_downloadack[CL_MAX_DOWNLOADACKS];
+	cl_downloadack_t dp_downloadack[CL_MAX_DOWNLOADACKS_DP_QW_4];
 
 	// input sequence numbers are not reset on level change, only connect
-	unsigned int servermovesequence;
+	unsigned int servermovesequence; // See in_movesequence client->movesequence for server side
 
 	// quakeworld stuff below
 
@@ -660,9 +664,12 @@ typedef struct client_static_s
 
 	// current file download buffer (only saved when file is completed)
 	char qw_downloadname[MAX_QPATH_128];
+	int asking_for_lit;
 
+#if 0
 	FILE		*qw_download_f; // OOF
-	char		qw_downloadtempname[MAX_PATH];
+	char		qw_downloadtempname[MAX_OSPATH];
+#endif
 
 	unsigned char *qw_downloadmemory;
 	int qw_downloadmemorycursize;
@@ -673,11 +680,15 @@ typedef struct client_static_s
 	int qw_downloadpercent;
 	double qw_downloadstarttime;
 
-	int fteprotocolextensions;	// Set to 0.  Read from server where?
+	unsigned int fteprotocolextensions;	// Set to 0.  Read from server where?
+
+	WARP_X_ (ZIRCON_EXT_CHUNKED_2, ZIRCON_EXT_FREEMOVE_4, ZIRCON_EXT_NONSOLID_FLAG_8)
+	unsigned int zirconprotocolextensions; // ZIRCON_PEXT
 
 	#define DL_NONE_0				0
 	#define DL_QW_1					1
 	#define DL_QWCHUNKS_2			2
+	#define DL_DPCHUNKS_3			3
 
 	int qw_downloadmethod; // DL_NONE 0 DL_QW_1 DL_QWCHUNKS_2 ez: cls.downloadmethod
 	qw_downloadtype_t qw_downloadtype;
@@ -780,7 +791,7 @@ typedef struct client_state_s
 	float sendnoptime;
 
 	// current input being accumulated by mouse/joystick/etc input
-	usercmd_t cmd;
+	usercmd_t mcmd;
 	// latest moves sent to the server that have not been confirmed yet
 	usercmd_t movecmd[CL_MAX_USERCMDS_128];
 
@@ -830,10 +841,27 @@ typedef struct client_state_s
 	// between teleporting and spectating
 	qbool fixangle[2];
 
+	
+
 	// client movement simulation
 	// these fields are only updated by CL_ClientMovement (called by CL_SendMove after parsing each network packet)
 	// set by CL_ClientMovement_Replay functions
-	qbool movement_predicted;
+
+	int movement_predicted; // PRED ZIRCON MOVE_2 (BOOL -> INT move along)
+
+#if 4321
+	unsigned int	zircon_replay_high;			// This is used
+	vec3_t			movement_final_origin;
+	vec3_t			movement_final_velocity;
+	int				movement_final_origin_set;
+	usercmd_t		zircon_replay_save;
+
+	unsigned int	zircon_step_sequence; // Baker: Prevent elevator stepping from more than once per received packet
+											// Baker: The reason is that elevator is not predicted so it can only move if we get data
+	unsigned int	zircon_warp_sequence; // Baker: ZMOVE - svc_zircon sets this
+	float			zircon_warp_sequence_clock; // Baker: ZMOVE - svc_zircon sets this
+#endif
+
 	// if true the CL_ClientMovement_Replay function will update origin, etc
 	qbool movement_replay;
 	// simulated data (this is valid even if cl.movement is false)
@@ -989,10 +1017,10 @@ typedef struct client_state_s
 
 	// entity database stuff
 	// latest received entity frame numbers
-#define LATESTFRAMENUMS 32
+#define LATESTFRAMENUMS_32 32
 	int latestframenumsposition;
-	int latestframenums[LATESTFRAMENUMS];
-	unsigned int latestsendnums[LATESTFRAMENUMS];
+	int latestframenums[LATESTFRAMENUMS_32];
+	unsigned int latestsendnums[LATESTFRAMENUMS_32];
 	entityframe_database_t *entitydatabase;
 	entityframe4_database_t *entitydatabase4;
 	entityframeqw_database_t *entitydatabaseqw;
@@ -1074,6 +1102,8 @@ typedef struct client_state_s
 	// updated from serverinfo
 	int qw_teamplay;
 
+	int	qw_z_ext;				///< ZQuake protocol extensions flags
+
 	// unused: indicates whether the player is spectating
 	// use cl.scores[cl.playerentity-1].qw_spectator instead
 	//qbool qw_spectator;
@@ -1123,6 +1153,10 @@ typedef struct client_state_s
 	int qw_modelindex_flag;
 	int qw_modelindex_s_explod;
 
+	int qw_monsters_modelindexes[48];
+	int qw_monsters_modelindexes_qw_monster_id[48];
+	int qw_monsters_modelindexes_count;
+
 	vec3_t qw_intermission_origin;
 	vec3_t qw_intermission_angles;
 
@@ -1134,7 +1168,7 @@ typedef struct client_state_s
 
 	unsigned int qw_validsequence;
 
-	unsigned int qw_deltasequence[QW_UPDATE_BACKUP];
+	unsigned int qw_deltasequence[QW_UPDATE_BACKUP_64];
 
 	// csqc stuff:
 	// server entity number corresponding to a clientside entity
@@ -1180,6 +1214,7 @@ extern cvar_t cl_rate_burstsize;
 extern cvar_t cl_pmodel;
 extern cvar_t cl_playermodel;
 extern cvar_t cl_playerskin;
+extern cvar_t cl_chatmode;
 
 extern cvar_t rcon_password;
 extern cvar_t rcon_address;
@@ -1291,7 +1326,7 @@ void CL_ParseTEnt (void);
 void CL_NewBeam (int ent, vec3_t start, vec3_t end, model_t *m, int lightning);
 void CL_RelinkBeams (void);
 void CL_Beam_CalculatePositions (const beam_t *b, vec3_t start, vec3_t end);
-void CL_ClientMovement_Replay(void);
+void CL_ClientMovement_Replay (int collide_type);
 
 void CL_ClearTempEntities (void);
 entity_render_t *CL_NewTempEntity (double shadertime);
@@ -1317,7 +1352,7 @@ float CL_KeyState (kbutton_t *key);
 //
 /// adds the string as a clc_stringcmd to the client message.
 /// (used when there is no reason to generate a local command to do it)
-void CL_ForwardToServer (const char *s);
+void CL_ForwardToServerf (const char *fmt, ...) DP_FUNC_PRINTF(1);
 
 /// adds the current command line as a clc_stringcmd to the client message.
 /// things like godmode, noclip, etc, are commands directed to the server,
@@ -1352,10 +1387,10 @@ extern qbool sb_showscores;
 
 typedef enum waterlevel_e
 {
-	WATERLEVEL_NONE,
-	WATERLEVEL_WETFEET,
-	WATERLEVEL_SWIMMING,
-	WATERLEVEL_SUBMERGED
+	WATERLEVEL_NONE_0,
+	WATERLEVEL_WETFEET_1,
+	WATERLEVEL_SWIMMING_2,
+	WATERLEVEL_SUBMERGED_3
 }
 waterlevel_t;
 
@@ -1367,8 +1402,8 @@ typedef struct cl_clientmovement_state_s
 	vec3_t origin;
 	vec3_t velocity;
 	// current bounding box (different if crouched vs standing)
-	vec3_t mins;
-	vec3_t maxs;
+	vec3_t mdl_mins;
+	vec3_t mdl_maxs;
 	// currently on the ground
 	qbool onground;
 	// currently crouching
@@ -1385,21 +1420,22 @@ typedef struct cl_clientmovement_state_s
 	usercmd_t cmd;
 }
 cl_clientmovement_state_t;
-void CL_ClientMovement_PlayerMove_Frame(cl_clientmovement_state_t *s);
+
+void CL_ClientMovement_PlayerMove_Frame (cl_clientmovement_state_t *s, int collide_type);
 
 // warpzone prediction hack (CSQC builtin)
 void CL_RotateMoves(const matrix4x4_t *m);
 
 typedef enum meshname_e {
-	MESH_SCENE, // CSQC R_PolygonBegin, potentially also engine particles and debug stuff
-	MESH_UI,
-	NUM_MESHENTITIES,
+	MESH_SCENE_0, // CSQC R_PolygonBegin, potentially also engine particles and debug stuff
+	MESH_UI_1,
+	NUM_MESHENTITIES_2,
 } meshname_t;
-extern entity_t cl_meshentities[NUM_MESHENTITIES];
-extern model_t cl_meshentitymodels[NUM_MESHENTITIES];
-extern const char *cl_meshentitynames[NUM_MESHENTITIES];
-#define CL_Mesh_Scene() (&cl_meshentitymodels[MESH_SCENE])
-#define CL_Mesh_UI() (&cl_meshentitymodels[MESH_UI])
+extern entity_t cl_meshentities[NUM_MESHENTITIES_2];
+extern model_t cl_meshentitymodels[NUM_MESHENTITIES_2];
+extern const char *cl_meshentitynames[NUM_MESHENTITIES_2];
+#define CL_Mesh_Scene() (&cl_meshentitymodels[MESH_SCENE_0])
+#define CL_Mesh_UI() (&cl_meshentitymodels[MESH_UI_1])
 void CL_MeshEntities_Init(void);
 void CL_MeshEntities_Scene_Clear(void);
 void CL_MeshEntities_Scene_AddRenderEntity(void);
@@ -1419,14 +1455,17 @@ extern cvar_t cl_pext;
 extern cvar_t cl_chunksperframe;
 extern cvar_t cl_pext_chunkeddownloads;
 extern cvar_t cl_pext_qw_256packetentities;
-//extern cvar_t cl_pext_qw_limits;
+extern cvar_t cl_pext_qw_coloredtext;
+extern cvar_t cl_pext_qw_limits;
 
 unsigned int QW_CL_SupportedFTEExtensions (void);
 void QW_CL_Parse_OOB_ChunkedDownload(void);
 void QW_CL_SendChunkDownloadReq(void);
-void QW_CL_SendClientCommand(int is_reliable, char *fmt, ...) DP_FUNC_PRINTF(2);
+qbool QW_CL_SendClientCommandf(int is_reliable, const char *fmt, ...) DP_FUNC_PRINTF(2);
 void QW_CL_ParseDownload(int q_is_oob);
 void QW_CL_FinishDownload(void);
+
+qbool DP_CL_SendClientCommandf (int is_reliable, const char *fmt, ...) DP_FUNC_PRINTF(2);;
 
 #define QW_S2C_CONNECTION_char_j		'j'
 #define QW_A2C_PRINT_char_n				'n'
@@ -1434,7 +1473,28 @@ void QW_CL_FinishDownload(void);
 
 #define QW_C2M_MASTER_REQUEST_char_c	'c'
 
+// pmove
+#define BLOCKED_FLOOR_1		1
+#define BLOCKED_STEP_2		2
+#define BLOCKED_OTHER_4		4
+#define BLOCKED_ANY_7		7
+#define BLOCKED_TELEPORT_8	8
 
+void Baker_CL_Download_Start_DP (const char *s_name, int size);
+void Baker_CL_Download_During_ReadMsg_Size_Enlarge_QW (int size);
+
+void Baker_CL_Download_During_Data_Start_Size_DP_And_Chunks (void *data, int start, int size);
+
+
+void Baker_CL_Download_FWrite (int size, int crc);
+
+void CL_DPChunks_CL_BeginDownload_Start (int download_size);
+void CL_DPChunks_CL_SendChunkDownloadReq (void); // cl_input.c CL_SendMove calls frame
+void CL_DPChunks_CL_ParseChunkedDownload (int is_oob); // From NetConn_ClientParsePacket -> QW_CL_Parse_OOB_ChunkedDownload
+
+extern cvar_t cl_movement_collide_models;
+extern cvar_t cl_movement_collide_nonsolid_red;
+extern cvar_t cl_zircon_move;
 
 #endif // CLIENT_H
 

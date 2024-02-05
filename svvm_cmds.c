@@ -335,6 +335,39 @@ setmodel(entity, model)
 =================
 */
 static vec3_t quakemins = {-16, -16, -16}, quakemaxs = {16, 16, 16};
+
+void VMX_SV_setmodel (prvm_prog_t *prog, prvm_edict_t *e, const char *s_model)
+{
+	model_t	*mod;
+	int		i;
+
+	if (e == prog->edicts)
+	{
+		VM_Warning(prog, "setmodel: can not modify world entity\n");
+		return;
+	}
+	if (e->free)
+	{
+		VM_Warning(prog, "setmodel: can not modify free entity\n");
+		return;
+	}
+	i = SV_ModelIndex (s_model, /*precache mode*/ 1);
+	PRVM_serveredictstring(e, model) = PRVM_SetEngineString(prog, sv.model_precache[i]);
+	PRVM_serveredictfloat(e, modelindex) = i;
+
+	mod = SV_GetModelByIndex(i);
+
+	if (mod)
+	{
+		if (mod->type != mod_alias || sv_gameplayfix_setmodelrealbox.integer)
+			SetMinMaxSize(prog, e, mod->normalmins, mod->normalmaxs, true);
+		else
+			SetMinMaxSize(prog, e, quakemins, quakemaxs, true);
+	}
+	else
+		SetMinMaxSize(prog, e, vec3_origin, vec3_origin, true);
+}
+
 static void VM_SV_setmodel(prvm_prog_t *prog)
 {
 	prvm_edict_t	*e;
@@ -584,6 +617,24 @@ static void VM_SV_sound(prvm_prog_t *prog)
 		flags = (int)PRVM_G_FLOAT(OFS_PARM6) & (CHANNELFLAG_RELIABLE | CHANNELFLAG_FORCELOOP | CHANNELFLAG_PAUSED | CHANNELFLAG_FULLVOLUME);
 	}
 
+	if (sv_clmovement_soundreliable.integer)
+		Flag_Add_To (flags, CHANNELFLAG_RELIABLE);
+
+	// "ambience/windfly.wav" other
+	// int old_other = PRVM_serverglobaledict(other);
+	// How to check if is player? 
+	// if (entnum > 0 && entnum <= svs.maxclients) {
+	// How get host_client from entnum
+	// host_client = svs.clients .. svs.clients[i]
+	if (sv_allow_zircon_move.integer && String_Does_Match (sample, "ambience/windfly.wav")) {
+		int other_entnum = PRVM_serverglobaledict(other);
+		int client_idnum = other_entnum - 1; // World is 0
+		if (in_range_beyond (0, client_idnum, svs.maxclients)) {
+			client_t *hcl = &svs.clients[client_idnum];
+			SV_PhysicsX_Zircon_Warp_Start (hcl, "windtunnel");
+		} // is player
+	} // is windfly
+
 	if (nvolume < 0 || nvolume > 255)
 	{
 		VM_Warning(prog, "SV_StartSound: volume must be in range 0-1\n");
@@ -698,6 +749,14 @@ tracebox (vector1, vector mins, vector maxs, vector2, tryents)
 // LadyHavoc: added this for my own use, VERY useful, similar to traceline
 static void VM_SV_tracebox(prvm_prog_t *prog)
 {
+	if (sv.is_qex) {
+		// PF_CheckPlayerEXFlags qex fights VM_SV_tracebox
+		// G_FLOAT(OFS_RETURN) = 0;
+		// #90 RERELEASE PF_CheckPlayerEXFlags
+		PRVM_G_FLOAT(OFS_RETURN) = 0;
+		return;
+	}
+
 	vec3_t v1, v2, m1, m2;
 	trace_t	trace;
 	int		move;
@@ -990,7 +1049,7 @@ static void VM_SV_stuffcmd(prvm_prog_t *prog)
 
 	old = host_client;
 	host_client = svs.clients + entnum-1;
-	SV_ClientCommands ("%s", string);
+	SV_ClientCommandsf ("%s", string);
 	host_client = old;
 }
 
@@ -1047,7 +1106,7 @@ static void VM_SV_findradius(prvm_prog_t *prog)
 		prog->xfunction->builtinsprofile++;
 		// Quake did not return non-solid entities but darkplaces does
 		// (note: this is the reason you can't blow up fallen zombies)
-		if (PRVM_serveredictfloat(ent, solid) == SOLID_NOT && !sv_gameplayfix_blowupfallenzombies.integer)
+		if (PRVM_serveredictfloat(ent, solid) == SOLID_NOT_0 && !sv_gameplayfix_blowupfallenzombies.integer)
 			continue;
 		// LadyHavoc: compare against bounding box rather than center so it
 		// doesn't miss large objects, and use DotProduct instead of Length
@@ -1126,6 +1185,12 @@ static void VM_SV_precache_model(prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT(1, VM_SV_precache_model);
 	SV_ModelIndex(PRVM_G_STRING(OFS_PARM0), 2);
 	PRVM_G_INT(OFS_RETURN) = PRVM_G_INT(OFS_PARM0);
+}
+
+void VMX_SV_precache_model (prvm_prog_t *prog, const char *s_model)
+{
+	SV_ModelIndex (s_model, /*precache mode*/ 2);
+//	PRVM_G_INT(OFS_RETURN) = PRVM_G_INT(OFS_PARM0);
 }
 
 /*
@@ -1312,9 +1377,9 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 	{
 		int n = PHYS_NudgeOutOfSolid(prog, ent);
 		if (!n)
-			VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid_nudgetocorrect COULD NOT FIX badly placed entity \"%s\" before drop\n", PRVM_gameedictvector(ent, origin)[0], PRVM_gameedictvector(ent, origin)[1], PRVM_gameedictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
+			VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid_nudgetocorrect COULD NOT FIX badly placed entity " QUOTED_S " before drop\n", PRVM_gameedictvector(ent, origin)[0], PRVM_gameedictvector(ent, origin)[1], PRVM_gameedictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
 		else if (n > 0)
-			VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid_nudgetocorrect FIXED badly placed entity \"%s\" before drop\n", PRVM_gameedictvector(ent, origin)[0], PRVM_gameedictvector(ent, origin)[1], PRVM_gameedictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
+			VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid_nudgetocorrect FIXED badly placed entity " QUOTED_S " before drop\n", PRVM_gameedictvector(ent, origin)[0], PRVM_gameedictvector(ent, origin)[1], PRVM_gameedictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
 	}
 
 	VectorCopy (PRVM_serveredictvector(ent, origin), end);
@@ -1348,10 +1413,10 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 			trace = SV_TraceLine(org, end, MOVE_NORMAL, ent, SUPERCONTENTS_SOLID, 0, 0, collision_extendmovelength.value);
 			if (droptofloor_bsp_failcond(&trace))
 			{
-				VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid COULD NOT FIX badly placed entity \"%s\"\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
+				VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid COULD NOT FIX badly placed entity " QUOTED_S "\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
 				return;
 			}
-			VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid FIXED badly placed entity \"%s\"\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
+			VM_Warning(prog, "droptofloor at \"%f %f %f\": sv_gameplayfix_droptofloorstartsolid FIXED badly placed entity " QUOTED_S "\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)));
 			VectorSubtract(trace.endpos, offset, PRVM_serveredictvector(ent, origin));
 
 			// only because we dropped it without considering its bbox
@@ -1360,7 +1425,7 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 		}
 		else
 		{
-			VM_Warning(prog, "droptofloor at \"%f %f %f\": badly placed entity \"%s\", startsolid: %d allsolid: %d\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)), trace.startsolid, trace.allsolid);
+			VM_Warning(prog, "droptofloor at \"%f %f %f\": badly placed entity " QUOTED_S ", startsolid: %d allsolid: %d\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2], PRVM_GetString(prog, PRVM_gameedictstring(ent, classname)), trace.startsolid, trace.allsolid);
 			return;
 		}
 	}
@@ -1691,6 +1756,87 @@ static void VM_SV_WritePicture(prvm_prog_t *prog)
 }
 
 //////////////////////////////////////////////////////////
+WARP_X_ (CL_ParseStatic)
+void Maybe_Prestore_Extra_Static_Attributes (prvm_prog_t *prog, prvm_edict_t *ent)
+{
+	int extra_effects = 0;
+
+	// Baker: Why is this not checking CL? Answer: We are writing to signon buffer!
+	// host_client cannot apply here.
+	if (isin1 (sv.protocol, PROTOCOL_DARKPLACES7) && 
+		Have_Zircon_Ext_Flag_SV_Hard (ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32)) {
+		// Stay
+	} else {
+		return;
+	}
+
+	unsigned char cs_alpha = 255;
+	unsigned char cs_colormod[3] = {0};
+	unsigned char cs_effects_additive1_fullbright2 = 0;
+	unsigned char cs_scale = 16;
+
+	float f;
+	
+	int i;
+	//unsigned char cs_alpha = 255;
+	f = (PRVM_serveredictfloat(ent, alpha) * 255.0f); // ZERO is normal
+	if (f)
+	{
+		extra_effects ++;
+		i = (int)f;
+		cs_alpha = (unsigned char)bound(0, i, 255);
+	}
+
+	prvm_vec_t *v;
+	//unsigned char cs_colormod[3] = {0};
+	v = PRVM_serveredictvector(ent, colormod);
+	if (VectorLength2(v))
+	{
+		extra_effects ++;
+		i = (int)(v[0] * 32.0f);cs_colormod[0] = bound(0, i, 255);
+		i = (int)(v[1] * 32.0f);cs_colormod[1] = bound(0, i, 255);
+		i = (int)(v[2] * 32.0f);cs_colormod[2] = bound(0, i, 255);
+	}
+
+	//unsigned char cs_scale = 16;
+	f = (PRVM_serveredictfloat(ent, scale) * 16.0f);
+	if (f) {
+		i = (int)f;
+		cs_scale = (unsigned char)bound(0, i, 255);
+	}
+
+	//unsigned char cs_effects_additive1_fullbright2 = 0;
+	i = (unsigned)PRVM_serveredictfloat(ent, effects);
+
+	if (Have_Flag (i, EF_ADDITIVE_32))	{
+		extra_effects ++;
+		Flag_Add_To (cs_effects_additive1_fullbright2, EF_SHORTY_ADDITIVE_1);
+	}
+
+	if (Have_Flag (i, EF_FULLBRIGHT)) {
+		Flag_Add_To (cs_effects_additive1_fullbright2, EF_SHORTY_FULLBRIGHT_2);
+		extra_effects ++;
+	}
+
+	if (extra_effects == 0)
+		return; // NOTHING
+
+	char vabuf[1024];
+	char *sv_hint_string;
+	// alpha colormod0 colormod1   colormod2 effects scale = 6 numbers
+	sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "stor 6 %d %d %d %d %d %d" NEWLINE, 
+		cs_alpha,
+		cs_colormod[0],
+		cs_colormod[1],
+		cs_colormod[2],
+		cs_effects_additive1_fullbright2,
+		cs_scale
+	);
+	Con_DPrintLinef	("Sending before static: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
+	MSG_WriteByte	(&sv.signon, svc_stufftext);
+	MSG_WriteString (&sv.signon, sv_hint_string);
+}
+
 
 static void VM_SV_makestatic(prvm_prog_t *prog)
 {
@@ -1717,6 +1863,8 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 		VM_Warning(prog, "makestatic: can not modify free entity" NEWLINE);
 		return;
 	}
+
+	Maybe_Prestore_Extra_Static_Attributes (prog, ent);
 
 	if (is_fitz) {
 		// Baker: This is radically different
@@ -1784,7 +1932,7 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 #endif
 
 		goto fitzquake_bypass;
-	}
+	} // is_fitz
 
 	large = false;
 	if (PRVM_serveredictfloat(ent, modelindex) >= 256 || PRVM_serveredictfloat(ent, frame) >= 256)
@@ -1809,11 +1957,13 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 
 	MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, colormap));
 	MSG_WriteByte (&sv.signon, (int)PRVM_serveredictfloat(ent, skin));
+
 	for (i=0 ; i<3 ; i++)
 	{
 		MSG_WriteCoord(&sv.signon, PRVM_serveredictvector(ent, origin)[i], sv.protocol);
 		MSG_WriteAngle(&sv.signon, PRVM_serveredictvector(ent, angles)[i], sv.protocol);
 	}
+
 
 fitzquake_bypass:
 // throw the entity away now
@@ -1848,6 +1998,81 @@ static void VM_SV_setspawnparms(prvm_prog_t *prog)
 	for (i=0 ; i< NUM_SPAWN_PARMS ; i++)
 		(&PRVM_serverglobalfloat(parm1))[i] = client->spawn_parms[i];
 }
+
+// #79 RERELEASE PF_finalefinished
+static void VM_SV_qex_finalefinished (prvm_prog_t *prog)
+{
+	if (sv.is_qex) {
+		// PF_finalefinished -- #79 (RERELEASE) 
+		PRVM_G_FLOAT(OFS_RETURN) = 0; // Quakespasm does a nop for PF_finalefinished
+		return;
+	}
+	prog->error_cmd ("Unimplemented builtin #79");
+	PRVM_G_FLOAT(OFS_RETURN) = 0;
+}
+
+// QUAKESPASM:
+//static void PF_localsound (void)
+//{
+//	const char	*sample;
+//	int		entnum;
+//
+//	entnum = G_EDICTNUM(OFS_PARM0);
+//	sample = G_STRING(OFS_PARM1);
+//	if (entnum < 1 || entnum > svs.maxclients) {
+//		Con_Printf ("tried to localsound to a non-client\n");
+//		return;
+//	}
+//	SV_LocalSound (&svs.clients[entnum-1], sample);
+//}
+
+//void SV_LocalSound (client_t *client, const char *sample)
+//{
+//	int	sound_num, field_mask;
+//
+//	for (sound_num = 1; sound_num < MAX_SOUNDS && sv.sound_precache[sound_num]; sound_num++)
+//	{
+//		if (!strcmp(sample, sv.sound_precache[sound_num]))
+//			break;
+//	}
+//	if (sound_num == MAX_SOUNDS || !sv.sound_precache[sound_num])
+//	{
+//		Con_Printf ("SV_LocalSound: %s not precached\n", sample);
+//		return;
+//	}
+//
+//	field_mask = 0;
+//	if (sound_num >= 256)
+//	{
+//		if (sv.protocol == PROTOCOL_NETQUAKE)
+//			return;
+//		field_mask = SND_LARGESOUND;
+//	}
+//
+//	if (client->message.cursize > client->message.maxsize-4)
+//		return;
+//
+//	MSG_WriteByte (&client->message, svc_localsound);
+//	MSG_WriteByte (&client->message, field_mask);
+//	if (field_mask & SND_LARGESOUND)
+//		MSG_WriteShort (&client->message, sound_num);
+//	else
+//		MSG_WriteByte (&client->message, sound_num);
+//}
+
+
+static void VM_SV_qex_localsound (prvm_prog_t *prog)
+{
+	if (sv.is_qex) {
+		// PF_localsound -- // #80 (RERELEASE) Quakespasm plays a sound void localsound (entity client, string sample) = #80
+		PRVM_G_FLOAT(OFS_RETURN) = 0; // Quakespasm sends an svc_localsound
+		return;
+	}
+	prog->error_cmd ("Unimplemented builtin #80");
+	PRVM_G_FLOAT(OFS_RETURN) = 0;
+}
+
+
 
 /*
 =================
@@ -2639,10 +2864,10 @@ static void VM_SV_setattachment(prvm_prog_t *prog)
 		{
 			tagindex = Mod_Alias_GetTagIndexForName(model, (int)PRVM_serveredictfloat(tagentity, skin), tagname);
 			if (tagindex == 0)
-				Con_DPrintf ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d (model \"%s\") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
+				Con_DPrintf ("setattachment(edict %d, edict %d, string " QUOTED_S "): tried to find tag named " QUOTED_S " on entity %d (model " QUOTED_S ") but could not find it\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
 		}
 		else
-			Con_DPrintf ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d but it has no model\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
+			Con_DPrintf ("setattachment(edict %d, edict %d, string " QUOTED_S "): tried to find tag named " QUOTED_S " on entity %d but it has no model\n", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
 	}
 
 	PRVM_serveredictedict(e, tag_entity) = PRVM_EDICT_TO_PROG(tagentity);
@@ -2818,7 +3043,7 @@ static void VM_SV_gettagindex(prvm_prog_t *prog)
 		tag_index = SV_GetTagIndex(prog, ent, tag_name);
 		if (tag_index == 0)
 			if (developer_extra.integer)
-				Con_DPrintf ("VM_SV_gettagindex(entity #%d): tag \"%s\" not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
+				Con_DPrintf ("VM_SV_gettagindex(entity #%d): tag " QUOTED_S " not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
 	}
 	PRVM_G_FLOAT(OFS_RETURN) = tag_index;
 }
@@ -3511,8 +3736,10 @@ VM_SV_precache_model,			// #75 string(string s) precache_model2 (QUAKE)
 VM_SV_precache_sound,			// #76 string(string s) precache_sound2 (QUAKE)
 VM_precache_file,				// #77 string(string s) precache_file2 (QUAKE)
 VM_SV_setspawnparms,			// #78 void(entity e) setspawnparms (QUAKE)
-NULL,							// #79 void(entity killer, entity killee) logfrag (QUAKEWORLD)
-NULL,							// #80 string(entity e, string keyname) infokey (QUAKEWORLD)
+
+// Baker: // #79 (RERELEASE) Quakespasm returns 0		float() finaleFinished = #79
+VM_SV_qex_finalefinished,		// #79 void(entity killer, entity killee) logfrag (QUAKEWORLD)
+VM_SV_qex_localsound,			// #80 string(entity e, string keyname) infokey (QUAKEWORLD)
 VM_stof,						// #81 float(string s) stof (FRIK_FILE)
 NULL,							// #82 void(vector where, float set) multicast (QUAKEWORLD)
 NULL,							// #83 (QUAKE)
@@ -3522,6 +3749,40 @@ NULL,							// #86 (QUAKE)
 NULL,							// #87 (QUAKE)
 NULL,							// #88 (QUAKE)
 NULL,							// #89 (QUAKE)
+
+WARP_X_ (exbuiltins VM_SV_tracebox)
+
+// Baker: Rerelease alternates live here
+
+//  Baker: PF_localsound sends a sound to a single client
+
+//	MSG_WriteByte (&client->message, svc_localsound);
+//	MSG_WriteByte (&client->message, field_mask);
+//	if (field_mask & SND_LARGESOUND)
+//		MSG_WriteShort (&client->message, sound_num);
+//	else
+//		MSG_WriteByte (&client->message, sound_num);
+
+
+// Baker: PF_Fixme errors out in Quakespasm
+//	PF_finalefinished,		DONE	// #79 (RERELEASE) Quakespasm returns 0		float() finaleFinished = #79
+//	PF_localsound,			PUNT	// #80 (RERELEASE) Quakespasm plays a sound void localsound (entity client, string sample) = #80
+//	PF_Fixme,						// #81 (RERELEASE) Quakespasm throws error	void draw_point (vector point, float colormap, float lifetime, float depthtest) = #81
+//	PF_Fixme,						// #82 (RERELEASE) Quakespasm throws error	void draw_line (vector start, vector end, float colormap, float lifetime, float depthtest) = #82
+//	PF_Fixme,						// #83 (RERELEASE) Quakespasm throws error	void draw_arrow (vector start, vector end, float colormap, float size, float lifetime, float depthtest) = #83
+//	PF_Fixme,						// #84 (RERELEASE) Quakespasm throws error	void draw_ray (vector start, vector direction, float length, float colormap, float size, float lifetime, float depthtest) = #84
+//	PF_Fixme,						// #85 (RERELEASE) Quakespasm throws error	void draw_circle (vector origin, float radius, float colormap, float lifetime, float depthtest) = #85
+//	PF_Fixme,						// #86 (RERELEASE) Quakespasm throws error	void draw_bounds (vector min, vector max, float colormap, float lifetime, float depthtest) = #86
+//	PF_Fixme,						// #87 (RERELEASE) Quakespasm throws error	void draw_worldtext (string s, vector origin, float size, float lifetime, float depthtest) = #87
+//	PF_Fixme,						// #88 (RERELEASE) Quakespasm throws error	void draw_sphere (vector origin, float radius, float colormap, float lifetime, float depthtest) = #88
+//	PF_Fixme,						// #89 (RERELEASE) Quakespasm throws error	void draw_cylinder (vector origin, float halfHeight, float radius, float colormap, float lifetime, float depthtest) = #89
+//
+//	PF_CheckPlayerEXFlags,	DONE	// #90 (RERELEASE) Quakespasm returns 0 
+//	PF_walkpathtogoal,		DONE	// #91 (RERELEASE) Quakespasm returns 0 
+//	PF_Fixme,				IGN		// #92 (RERELEASE) Quakespasm returns 0  // ex_bot_movetopoint, ex_bot_followentity
+
+
+
 VM_SV_tracebox,					// #90 void(vector v1, vector min, vector max, vector v2, float nomonsters, entity forent) tracebox (DP_QC_TRACEBOX)
 VM_randomvec,					// #91 vector() randomvec (DP_QC_RANDOMVEC)
 VM_SV_getlight,					// #92 vector(vector org) getlight (DP_QC_GETLIGHT)

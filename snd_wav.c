@@ -291,7 +291,7 @@ qbool S_LoadWavFile (const char *filename, sfx_t *sfx)
 	}
 
 	if (developer_loading.integer >= 2)
-		Con_Printf ("Loading WAV file \"%s\"\n", filename);
+		Con_PrintLinef ("Loading WAV file " QUOTED_S, filename);
 
 	info = GetWavinfo (sfx->name, data, (int)filesize);
 	if (info.channels < 1 || info.channels > 2)  // Stereo sounds are allowed (intended for music)

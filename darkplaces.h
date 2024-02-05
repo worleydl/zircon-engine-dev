@@ -24,7 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef DARKPLACES_H
 #define DARKPLACES_H
 
+//WARP_X_ (CL_InitCommands infostring)
 extern const char *buildstring;
+extern const char *buildmajor;
 extern const char *buildstringshort; // Baker r8002: Zircon console name
 extern char engineversion[128];
 extern char engineversionshort[128]; // Baker r8002: Zircon console name
@@ -90,6 +92,10 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_undo_action_delete_neg_1		-1
 #define q_netchange_zero				0
 
+#define q_is_aborted_download_false		false
+#define q_is_aborted_download_true		true
+#define q_alpha_1						1
+
 #define q_is_from_nothing_false			false
 #define q_is_from_nothing_true			true
 #define q_s_loadgame_NULL				NULL
@@ -131,6 +137,7 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_is_kicked_true				true
 #define q_is_kicked_false				false
 #define q_is_leaving_false				false
+#define q_is_leaving_true				true
 
 #define q_tx_complain_false				false
 #define q_tx_complain_true				true
@@ -146,9 +153,13 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_tx_warn_missing_true			true
 #define q_tx_warn_missing_false			false
 
+#define q_is_static_true				true
+#define q_is_static_false				false
+
 #define q_fail_on_missing_false			false
 #define q_fail_on_missing_true			true
 
+#define q_reply_len_NULL				NULL
 
 #define q_write_depth_false				false		// GL_DepthMask
 #define q_write_depth_true				true		// GL_DepthMask
@@ -162,6 +173,12 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_ignore_color_codes_true		true
 #define q_ignore_color_codes_false		false
 
+#define q_net_suppress_reliables_true	true
+#define q_net_suppress_reliables_false	false
+
+#define q_net_burstrate_0				0
+#define q_net_rate_10000				10000
+
 
 #define qnfo_send_true					true
 #define qnfo_send_false					false
@@ -173,12 +190,16 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define qnfo_quiet_false				false
 
 #define qsv_resetcache_true				true
+#define qsv_resetcache_false			false
 #define qsv_querydp_true				true
 #define qsv_queryqw_true				true
 #define qsv_querydp_false				false
 #define qsv_queryqw_false				false
 #define qsv_consoleoutput_true			true
 #define qsv_consoleoutput_false			false
+
+#define q_is_zircon_move_true			true
+#define q_is_zircon_move_false			false
 
 #define q_include_port_true				true
 #define q_include_port_false			false
@@ -194,6 +215,17 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_fitz_version_none_0			0
 #define q_fitz_version_1				1
 #define q_fitz_version_2				2
+
+#define q_is_delta_true					true
+#define q_is_delta_false				false
+
+#define q_hitcsqcents_true				true
+#define q_hitcsqcents_false				false
+#define q_hitnetwork_ent_NULL			NULL
+#define q_hitbrush_true					true
+
+#define q_hitsuraces_true				true
+#define q_hitsuraces_false				false
 
 #include "common.h"
 #include "filematch.h"
@@ -213,6 +245,11 @@ extern cvar_t developer_extra;
 extern cvar_t developer_insane;
 extern cvar_t developer_loadfile;
 extern cvar_t developer_loading;
+extern cvar_t developer_stuffcmd;
+extern cvar_t developer_keycode;
+extern cvar_t developer_zext;
+extern cvar_t developer_movement;
+extern cvar_t developer_svc;
 extern cvar_t host_isclient;
 extern cvar_t sessionid;
 

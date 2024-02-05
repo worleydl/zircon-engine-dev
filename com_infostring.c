@@ -35,12 +35,12 @@ char *InfoString_GetValue(const char *buffer, const char *key, char *value, size
 	value[0] = 0;
 	if (strchr(key, '\\'))
 	{
-		Con_Printf ("InfoString_GetValue: key name \"%s\" contains \\ which is not possible in an infostring\n", key);
+		Con_Printf ("InfoString_GetValue: key name " QUOTED_S " contains \\ which is not possible in an infostring\n", key);
 		return NULL;
 	}
 	if (strchr(key, '\"'))
 	{
-		Con_Printf ("InfoString_SetValue: key name \"%s\" contains \" which is not allowed in an infostring\n", key);
+		Con_Printf ("InfoString_SetValue: key name " QUOTED_S " contains \" which is not allowed in an infostring\n", key);
 		return NULL;
 	}
 	if (!key[0])
@@ -81,12 +81,12 @@ void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, con
 	keylength = strlen(key);
 	if (strchr(key, '\\') || strchr(value, '\\'))
 	{
-		Con_Printf ("InfoString_SetValue: \"%s\" \"%s\" contains \\ which is not possible to store in an infostring\n", key, value);
+		Con_Printf ("InfoString_SetValue: " QUOTED_S " " QUOTED_S " contains \\ which is not possible to store in an infostring\n", key, value);
 		return;
 	}
 	if (strchr(key, '\"') || strchr(value, '\"'))
 	{
-		Con_Printf ("InfoString_SetValue: \"%s\" \"%s\" contains \" which is not allowed in an infostring\n", key, value);
+		Con_Printf ("InfoString_SetValue: " QUOTED_S " " QUOTED_S " contains \" which is not allowed in an infostring\n", key, value);
 		return;
 	}
 	if (!key[0])
@@ -115,7 +115,7 @@ void InfoString_SetValue(char *buffer, size_t bufferlength, const char *key, con
 	}
 	if (bufferlength <= pos + 1 + strlen(key) + 1 + strlen(value) + strlen(buffer + pos2))
 	{
-		Con_Printf ("InfoString_SetValue: no room for \"%s\" \"%s\" in infostring\n", key, value);
+		Con_Printf ("InfoString_SetValue: no room for " QUOTED_S " " QUOTED_S " in infostring\n", key, value);
 		return;
 	}
 	if (value[0])

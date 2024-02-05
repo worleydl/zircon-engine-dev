@@ -158,7 +158,7 @@ void stringlistsort(stringlist_t *list, qbool uniq)
 // operating system specific code
 static void adddirentry(stringlist_t *list, const char *path, const char *name)
 {
-	if (strcmp(name, ".") && strcmp(name, ".."))
+	if (String_Does_Not_Match(name, ".") && String_Does_Not_Match(name, ".."))
 	{
 		char temp[MAX_OSPATH];
 		dpsnprintf( temp, sizeof( temp ), "%s%s", path, name );

@@ -1804,7 +1804,7 @@ void Collision_ClipToGenericEntity(trace_t *trace, model_t *model, const framebl
 	{
 		if (model->TraceBrush && (inversematrix->m[0][1] || inversematrix->m[0][2] || inversematrix->m[1][0] || inversematrix->m[1][2] || inversematrix->m[2][0] || inversematrix->m[2][1]))
 		{
-			// we get here if TraceBrush exists, AND we have a rotation component (SOLID_BSP case)
+			// we get here if TraceBrush exists, AND we have a rotation component (SOLID_BSP_4 case)
 			// using starttransformed, endtransformed is WRONG in this case!
 			// should rather build a brush and trace using it
 			colboxbrushf_t thisbrush_start, thisbrush_end;
@@ -1821,7 +1821,7 @@ void Collision_ClipToGenericEntity(trace_t *trace, model_t *model, const framebl
 		else // this is only approximate if rotated, quite useless
 			model->TraceBox(model, frameblend, skeleton, trace, starttransformed, mins, maxs, endtransformed, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
 	}
-	else // and this requires that the transformation matrix doesn't have angles components, like SV_TraceBox ensures; FIXME may get called if a model is SOLID_BSP but has no TraceBox function
+	else // and this requires that the transformation matrix doesn't have angles components, like SV_TraceBox ensures; FIXME may get called if a model is SOLID_BSP_4 but has no TraceBox function
 		Collision_ClipTrace_Box(trace, bodymins, bodymaxs, starttransformed, mins, maxs, endtransformed, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, bodysupercontents, 0, NULL);
 
 	Collision_ClipExtendFinish(&extendtraceinfo);
@@ -1873,6 +1873,7 @@ void Collision_ClipLineToWorld(trace_t *trace, model_t *model, const vec3_t tsta
 	Collision_ClipExtendPrepare(&extendtraceinfo, trace, tstart, tend, extend);
 
 	if (model && model->TraceLineAgainstSurfaces && hitsurfaces)
+		WARP_X_ (example: Mod_Q1BSP_TraceLineAgainstSurfaces Mod_Q1BSP_TraceLine)
 		model->TraceLineAgainstSurfaces(model, NULL, NULL, trace, extendtraceinfo.extendstart, extendtraceinfo.extendend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
 	else if (model && model->TraceLine)
 		model->TraceLine(model, NULL, NULL, trace, extendtraceinfo.extendstart, extendtraceinfo.extendend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
@@ -1880,7 +1881,9 @@ void Collision_ClipLineToWorld(trace_t *trace, model_t *model, const vec3_t tsta
 	Collision_ClipExtendFinish(&extendtraceinfo);
 }
 
-void Collision_ClipPointToGenericEntity(trace_t *trace, model_t *model, const frameblend_t *frameblend, const skeleton_t *skeleton, const vec3_t bodymins, const vec3_t bodymaxs, int bodysupercontents, matrix4x4_t *matrix, matrix4x4_t *inversematrix, const vec3_t start, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask)
+void Collision_ClipPointToGenericEntity(trace_t *trace, model_t *model, const frameblend_t *frameblend, 
+										const skeleton_t *skeleton, 
+										const vec3_t bodymins, const vec3_t bodymaxs, int bodysupercontents, matrix4x4_t *matrix, matrix4x4_t *inversematrix, const vec3_t start, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask)
 {
 	float starttransformed[3];
 	memset(trace, 0, sizeof(*trace));

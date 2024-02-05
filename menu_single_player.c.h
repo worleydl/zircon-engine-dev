@@ -85,14 +85,14 @@ static void M_SinglePlayer_Key (cmd_state_t *cmd, int key, int ascii)
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor --;
-		if (local_cursor < 0)
+		if (local_cursor < 0) // K_UPARROW wraps around to end
 			local_cursor = local_count - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor ++;
-		if (local_cursor >= local_count)
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
 			local_cursor = 0;
 		break;
 	} // sw

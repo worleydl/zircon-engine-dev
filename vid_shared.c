@@ -681,7 +681,7 @@ qbool GL_CheckExtension(const char *name, const char *disableparm, int silent)
 		if (!*func->funcvariable && String_Does_Match(name, func->extension))
 		{
 			if (!silent)
-				Con_DPrintf ("%s is missing function \"%s\" - broken driver!\n", name, func->name);
+				Con_DPrintf ("%s is missing function " QUOTED_S " - broken driver!\n", name, func->name);
 			failed = true;
 		}
 	}
@@ -756,7 +756,7 @@ skip_spam2:
 	{
 		if (!*func->funcvariable && String_Does_Match(func->extension, "core"))
 		{
-			Con_DPrintf ("GL context is missing required function \"%s\"!\n", func->name);
+			Con_DPrintf ("GL context is missing required function " QUOTED_S "!\n", func->name);
 			missingrequiredfuncs = true;
 			strlcat(missingfuncs, " ", sizeof(missingfuncs));
 			strlcat(missingfuncs, func->name, sizeof(missingfuncs));
@@ -1056,9 +1056,9 @@ void VID_ApplyJoyState(vid_joystate_t *joystate)
 			VID_KeyEventForButton(vid_joystate.button[j] != 0, joystate->button[j] != 0, joybuttonkey360[j][c], &vid_joybuttontimer[j]);
 
 		// axes
-		cl.cmd.forwardmove += VID_JoyState_GetAxis(joystate, joy_x360_axisforward.integer, joy_x360_sensitivityforward.value, joy_x360_deadzoneforward.value) * cl_forwardspeed.value;
-		cl.cmd.sidemove    += VID_JoyState_GetAxis(joystate, joy_x360_axisside.integer, joy_x360_sensitivityside.value, joy_x360_deadzoneside.value) * cl_sidespeed.value;
-		cl.cmd.upmove      += VID_JoyState_GetAxis(joystate, joy_x360_axisup.integer, joy_x360_sensitivityup.value, joy_x360_deadzoneup.value) * cl_upspeed.value;
+		cl.mcmd.clx_forwardmove += VID_JoyState_GetAxis(joystate, joy_x360_axisforward.integer, joy_x360_sensitivityforward.value, joy_x360_deadzoneforward.value) * cl_forwardspeed.value;
+		cl.mcmd.clx_sidemove    += VID_JoyState_GetAxis(joystate, joy_x360_axisside.integer, joy_x360_sensitivityside.value, joy_x360_deadzoneside.value) * cl_sidespeed.value;
+		cl.mcmd.clx_upmove      += VID_JoyState_GetAxis(joystate, joy_x360_axisup.integer, joy_x360_sensitivityup.value, joy_x360_deadzoneup.value) * cl_upspeed.value;
 		cl.viewangles[0]   += VID_JoyState_GetAxis(joystate, joy_x360_axispitch.integer, joy_x360_sensitivitypitch.value, joy_x360_deadzonepitch.value) * cl.realframetime * cl_pitchspeed.value;
 		cl.viewangles[1]   += VID_JoyState_GetAxis(joystate, joy_x360_axisyaw.integer, joy_x360_sensitivityyaw.value, joy_x360_deadzoneyaw.value) * cl.realframetime * cl_yawspeed.value;
 		//cl.viewangles[2]   += VID_JoyState_GetAxis(joystate, joy_x360_axisroll.integer, joy_x360_sensitivityroll.value, joy_x360_deadzoneroll.value) * cl.realframetime * cl_rollspeed.value;
@@ -1070,9 +1070,9 @@ void VID_ApplyJoyState(vid_joystate_t *joystate)
 			VID_KeyEventForButton(vid_joystate.button[j] != 0, joystate->button[j] != 0, joybuttonkey[j][c], &vid_joybuttontimer[j]);
 
 		// axes
-		cl.cmd.forwardmove += VID_JoyState_GetAxis(joystate, joy_axisforward.integer, joy_sensitivityforward.value, joy_deadzoneforward.value) * cl_forwardspeed.value;
-		cl.cmd.sidemove    += VID_JoyState_GetAxis(joystate, joy_axisside.integer, joy_sensitivityside.value, joy_deadzoneside.value) * cl_sidespeed.value;
-		cl.cmd.upmove      += VID_JoyState_GetAxis(joystate, joy_axisup.integer, joy_sensitivityup.value, joy_deadzoneup.value) * cl_upspeed.value;
+		cl.mcmd.clx_forwardmove += VID_JoyState_GetAxis(joystate, joy_axisforward.integer, joy_sensitivityforward.value, joy_deadzoneforward.value) * cl_forwardspeed.value;
+		cl.mcmd.clx_sidemove    += VID_JoyState_GetAxis(joystate, joy_axisside.integer, joy_sensitivityside.value, joy_deadzoneside.value) * cl_sidespeed.value;
+		cl.mcmd.clx_upmove      += VID_JoyState_GetAxis(joystate, joy_axisup.integer, joy_sensitivityup.value, joy_deadzoneup.value) * cl_upspeed.value;
 		cl.viewangles[0]   += VID_JoyState_GetAxis(joystate, joy_axispitch.integer, joy_sensitivitypitch.value, joy_deadzonepitch.value) * cl.realframetime * cl_pitchspeed.value;
 		cl.viewangles[1]   += VID_JoyState_GetAxis(joystate, joy_axisyaw.integer, joy_sensitivityyaw.value, joy_deadzoneyaw.value) * cl.realframetime * cl_yawspeed.value;
 		//cl.viewangles[2]   += VID_JoyState_GetAxis(joystate, joy_axisroll.integer, joy_sensitivityroll.value, joy_deadzoneroll.value) * cl.realframetime * cl_rollspeed.value;
@@ -1118,6 +1118,7 @@ int VID_Shared_SetJoystick(int index)
 static void Force_CenterView_f(cmd_state_t *cmd)
 {
 	cl.viewangles[PITCH] = 0;
+	cl.viewangles[ROLL] = 0;
 }
 
 static int gamma_forcenextframe = false;

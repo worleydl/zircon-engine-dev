@@ -55,14 +55,28 @@ static void M_MultiPlayer_Key(cmd_state_t *cmd, int key, int ascii)
 		M_Menu_Main_f(cmd);
 		break;
 
-	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else local_cursor = hotspotx_hover; // fall thru
+	case K_MOUSE1: 
+		if (hotspotx_hover == not_found_neg1) 
+			break; 
+		
+		local_cursor = hotspotx_hover; 
+		// fall thru
 
 	case K_ENTER:
 		m_entersound = true;
 		switch (local_cursor) {
 		case 0:
 		case 1:
+#if 1
+			{
+				static int		lanConfig_cursor;
+				lanConfig_cursor = 1; // M_Menu_LanConfig_f
+				Cbuf_AddTextLine (cmd, "stopdemo");
+				M_Menu_ServerList_f(cmd);
+			}
+#else
 			M_Menu_LanConfig_f(cmd);
+#endif
 			break;
 
 		case 2:
@@ -74,14 +88,14 @@ static void M_MultiPlayer_Key(cmd_state_t *cmd, int key, int ascii)
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor --;
-		if (local_cursor < 0)
+		if (local_cursor < 0) // K_UPARROW wraps around to end
 			local_cursor = local_count - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor ++;
-		if (local_cursor >= local_count)
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
 			local_cursor = 0;
 		break;
 

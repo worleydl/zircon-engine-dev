@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "common.h"
 struct cmd_state_s;
 
-#define NET_HEADERSIZE		(2 * sizeof(unsigned int))
+#define NET_HEADERSIZE_8		(2 * sizeof(unsigned int))
 
 // NetHeader flags
 #define NETFLAG_LENGTH_MASK 0x0000ffff
@@ -44,7 +44,7 @@ struct cmd_state_s;
 #define NETFLAG_CTL         0x80000000
 
 
-#define NET_PROTOCOL_VERSION	3
+#define NET_PROTOCOL_VERSION_3	3
 #define NET_EXTRESPONSE_MAX 16
 
 /// \page netconn The network info/connection protocol.
@@ -59,11 +59,11 @@ struct cmd_state_s;
 ///
 /// CCREQ_CONNECT
 ///		string	game_name				"QUAKE"
-///		byte	net_protocol_version	NET_PROTOCOL_VERSION
+///		byte	net_protocol_version	NET_PROTOCOL_VERSION_3
 ///
 /// CCREQ_SERVER_INFO
 ///		string	game_name				"QUAKE"
-///		byte	net_protocol_version	NET_PROTOCOL_VERSION
+///		byte	net_protocol_version	NET_PROTOCOL_VERSION_3
 ///
 /// CCREQ_PLAYER_INFO
 ///		byte	player_number
@@ -80,7 +80,7 @@ struct cmd_state_s;
 /// CCREP_ACCEPT
 ///		long	port
 ///
-/// CCREP_REJECT
+/// CCREP_REJECT_x82
 ///		string	reason
 ///
 /// CCREP_SERVER_INFO
@@ -89,7 +89,7 @@ struct cmd_state_s;
 ///		string	level_name
 ///		byte	current_players
 ///		byte	max_players
-///		byte	protocol_version	NET_PROTOCOL_VERSION
+///		byte	protocol_version	NET_PROTOCOL_VERSION_3
 ///
 /// CCREP_PLAYER_INFO
 ///		byte	player_number
@@ -120,10 +120,10 @@ struct cmd_state_s;
 #define CCREQ_SERVER_INFO	0x02
 #define CCREQ_PLAYER_INFO	0x03
 #define CCREQ_RULE_INFO		0x04
-#define CCREQ_RCON		0x05 // RocketGuy: ProQuake rcon support
+#define CCREQ_RCON			0x05 // RocketGuy: ProQuake rcon support
 
 #define CCREP_ACCEPT		0x81
-#define CCREP_REJECT		0x82
+#define CCREP_REJECT_x82	0x82
 #define CCREP_SERVER_INFO	0x83
 #define CCREP_PLAYER_INFO	0x84
 #define CCREP_RULE_INFO		0x85
@@ -159,18 +159,22 @@ typedef struct netconn_s
 	/// possible to send a reliable message and then cleared
 	/// @{
 	sizebuf_t message;
-	unsigned char messagedata[NET_MAXMESSAGE];
+	unsigned char messagedata[NET_MAXMESSAGE_65536];
 	/// @}
+
+	// Baker: Extra unreliable
+	unsigned char cmdmsg_data[1024];
+	sizebuf_t cmdmsg;
 
 	/// reliable message that is currently sending
 	/// (for building fragments)
 	int sendMessageLength;
-	unsigned char sendMessage[NET_MAXMESSAGE];
+	unsigned char sendMessage[NET_MAXMESSAGE_65536];
 
 	/// reliable message that is currently being received
 	/// (for putting together fragments)
 	int receiveMessageLength;
-	unsigned char receiveMessage[NET_MAXMESSAGE];
+	unsigned char receiveMessage[NET_MAXMESSAGE_65536];
 
 	/// used by both NQ and QW protocols
 	unsigned int outgoing_unreliable_sequence;
@@ -219,14 +223,14 @@ typedef struct netconn_s
 
 	// this tracks packet loss and packet sizes on the most recent packets
 	// used by shownetgraph feature
-#define NETGRAPH_PACKETS 256
+#define NETGRAPH_PACKETS_256 256
 #define NETGRAPH_NOPACKET 0
-#define NETGRAPH_LOSTPACKET -1
+#define NETGRAPH_LOSTPACKET_NEG1 -1
 #define NETGRAPH_CHOKEDPACKET -2
 	int incoming_packetcounter;
-	netgraphitem_t incoming_netgraph[NETGRAPH_PACKETS];
+	netgraphitem_t incoming_netgraph[NETGRAPH_PACKETS_256];
 	int outgoing_packetcounter;
-	netgraphitem_t outgoing_netgraph[NETGRAPH_PACKETS];
+	netgraphitem_t outgoing_netgraph[NETGRAPH_PACKETS_256];
 
 	char address[128];
 	crypto_t crypto;
@@ -271,8 +275,7 @@ typedef enum serverlist_maskop_e
 } serverlist_maskop_t;
 
 /// struct with all fields that you can search for or sort by
-typedef struct serverlist_info_s
-{
+typedef struct serverlist_info_s {
 	/// address for connecting
 	char cname[128];					// IP address
 	/// ping time for sorting servers
@@ -288,7 +291,9 @@ typedef struct serverlist_info_s
 	/// qc-defined short status string
 	char qcstatus[128];
 	/// frags/ping/name list (if they fit in the packet)
-	char players[2800];
+	WARP_X_ (VM_M_getserverliststring Commit_To_Cname last_nav_cname)
+	WARP_X_ ()
+	char players_data[2800]; 
 	/// max client number
 	int maxplayers;
 	/// number of currently connected players (including bots)
@@ -310,7 +315,27 @@ typedef struct serverlist_info_s
 	int category;
 	/// favorite server flag
 	qbool isfavorite;
+
+	int tiebreaker_bias;
 } serverlist_info_t;
+
+typedef struct {
+	int		userid;
+	int		frags;
+	float	time;
+	int		ping;
+	char	name[MAX_SCOREBOARDNAME_128];
+	char	qw_skin[16];
+	char	qw_team[16];
+	// team
+	int		top_color;
+	int		bottom_color;
+	int		is_specator;
+} server_player_info_t;
+
+
+extern server_player_info_t server_player_infos[QW_MAX_CLIENTS_32];
+extern int server_player_infos_count;
 
 typedef enum
 {
@@ -444,7 +469,7 @@ extern struct cvar_s net_usesizelimit;
 extern struct cvar_s net_burstreserve;
 
 qbool NetConn_CanSend(netconn_t *conn);
-int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolversion_t protocol, int rate, int burstsize, qbool quakesignon_suppressreliables);
+int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolversion_t protocol, int rate, int burstsize, int quakesignon_suppressreliables);
 qbool NetConn_HaveClientPorts(void);
 qbool NetConn_HaveServerPorts(void);
 void NetConn_CloseClientPorts(void);
@@ -474,6 +499,7 @@ void NetConn_QueryMasters(qbool querydp, qbool queryqw);
 void NetConn_QueryQueueFrame(void);
 void Net_Slist_f(struct cmd_state_s *cmd);
 void Net_SlistQW_f(struct cmd_state_s *cmd);
+void Net_Slist_Both_f(cmd_state_t *cmd);
 void Net_Refresh_f(struct cmd_state_s *cmd);
 
 /// ServerList interface (public)

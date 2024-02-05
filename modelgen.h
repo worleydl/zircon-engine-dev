@@ -55,7 +55,7 @@ typedef struct mdl_s
 	int			numtris;
 	int			numframes;
 	int			synctype;
-	int			flags;
+	int			aliasflags;
 	float		size;
 }
 mdl_t;

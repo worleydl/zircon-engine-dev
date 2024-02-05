@@ -828,9 +828,9 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 		if (j == prvm_type_size[type])
 			continue;
 
-		FS_Printf(f,"\"%s\" ",name);
+		FS_Printf (f, QUOTED_S " ", name);
 		prog->statestring = va(vabuf, sizeof(vabuf), "PRVM_ED_Write, ent=%d, name=%s", i, name);
-		FS_Printf(f,"\"%s\"\n", PRVM_UglyValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf)));
+		FS_Printf (f, QUOTED_S NEWLINE, PRVM_UglyValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf)));
 		prog->statestring = NULL;
 	}
 
@@ -1086,8 +1086,8 @@ void PRVM_ED_WriteGlobals (prvm_prog_t *prog, qfile_t *f)
 			Con_Printf ("PRVM_ED_WriteGlobals: at global %s\n", name);
 
 		prog->statestring = va(vabuf, sizeof(vabuf), "PRVM_ED_WriteGlobals, name=%s", name);
-		FS_Printf(f,"\"%s\" ", name);
-		FS_Printf(f,"\"%s\"\n", PRVM_UglyValueString(prog, (etype_t)type, (prvm_eval_t *)&prog->globals.fp[def->ofs], valuebuf, sizeof(valuebuf)));
+		FS_Printf(f, QUOTED_S " ", name);
+		FS_Printf(f, QUOTED_S NEWLINE, PRVM_UglyValueString(prog, (etype_t)type, (prvm_eval_t *)&prog->globals.fp[def->ofs], valuebuf, sizeof(valuebuf)));
 		prog->statestring = NULL;
 	}
 	FS_Print(f,"}\n");
@@ -1112,16 +1112,16 @@ void PRVM_ED_ParseGlobals (prvm_prog_t *prog, const char *data)
 			break;
 
 		if (developer_entityparsing.integer)
-			Con_Printf ("Key: \"%s\"", com_token);
+			Con_PrintLinef ("Key: " QUOTED_S, com_token);
 
-		strlcpy (keyname, com_token, sizeof(keyname));
+		c_strlcpy (keyname, com_token);
 
 		// parse value
 		if (!COM_ParseToken_Simple(&data, false, true, true))
 			prog->error_cmd("PRVM_ED_ParseGlobals: EOF without closing brace");
 
 		if (developer_entityparsing.integer)
-			Con_Printf (" \"%s\"\n", com_token);
+			Con_PrintLinef (" " QUOTED_S, com_token);
 
 		if (com_token[0] == '}')
 			prog->error_cmd("PRVM_ED_ParseGlobals: closing brace without data");
@@ -1129,7 +1129,7 @@ void PRVM_ED_ParseGlobals (prvm_prog_t *prog, const char *data)
 		key = PRVM_ED_FindGlobal (prog, keyname);
 		if (!key)
 		{
-			Con_DPrintf ("'%s' is not a global on %s\n", keyname, prog->name);
+			Con_DPrintLinef ("'%s' is not a global on %s", keyname, prog->name);
 			continue;
 		}
 
@@ -1244,7 +1244,7 @@ qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, mdef_t *key, cons
 		break;
 
 	default:
-		Con_Printf ("PRVM_ED_ParseEpair: Unknown key->type %d for key \"%s\" on %s\n", key->type, PRVM_GetString(prog, key->s_name), prog->name);
+		Con_Printf ("PRVM_ED_ParseEpair: Unknown key->type %d for key " QUOTED_S " on %s\n", key->type, PRVM_GetString(prog, key->s_name), prog->name);
 		return false;
 	}
 	return true;
@@ -1456,7 +1456,7 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 		if (!COM_ParseToken_Simple(&data, false, false, true))
 			prog->error_cmd("PRVM_ED_ParseEdict: EOF without closing brace");
 		if (developer_entityparsing.integer)
-			Con_Printf ("Key: \"%s\"", com_token);
+			Con_Printf ("Key: " QUOTED_S, com_token);
 		if (com_token[0] == '}')
 			break;
 
@@ -1488,7 +1488,7 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 		if (!COM_ParseToken_Simple(&data, false, false, true))
 			prog->error_cmd("PRVM_ED_ParseEdict: EOF without closing brace");
 		if (developer_entityparsing.integer)
-			Con_Printf (" \"%s\"\n", com_token);
+			Con_PrintLinef (" " QUOTED_S, com_token);
 
 		if (com_token[0] == '}')
 			prog->error_cmd("PRVM_ED_ParseEdict: closing brace without data");
@@ -2294,6 +2294,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 	// functions need to be converted to the memory format
 	prog->functions = (mfunction_t *)Mem_Alloc(prog->progs_mempool, sizeof(mfunction_t) * prog->progs_numfunctions);
 
+	// Baker: Quakespasm equivalent sec 2
 	for (i = 0;i < prog->progs_numfunctions;i++)
 	{
 		prog->functions[i].first_statement = LittleLong(infunctions[i].first_statement);
@@ -2330,6 +2331,8 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 		}
 		break;
 	}
+
+	// Baker: Mostly a DarkPlaces thing
 
 	// append the required globals
 	for (i = 0;i < numrequiredglobals;i++)
@@ -2713,7 +2716,7 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 						{
 							char buf[MAX_INPUTLINE_16384];
 							PRVM_PO_UnparseString(buf, value, sizeof(buf));
-							FS_Printf(f, "msgid \"%s\"\nmsgstr \"\"\n\n", buf);
+							FS_Printf(f, "msgid " QUOTED_S "\nmsgstr \"\"\n\n", buf);
 						}
 					}
 				}
@@ -3009,6 +3012,20 @@ static void PRVM_Fields_f(cmd_state_t *cmd)
 	}
 	Mem_Free(counts);
 	Con_Printf ("%s: %d entity fields (%d in use), totalling %d bytes per edict (%d in use), %d edicts allocated, %d bytes total spent on edict fields (%d needed)\n", prog->name, prog->entityfields, used, prog->entityfields * 4, usedamount * 4, prog->max_edicts, prog->entityfields * 4 * prog->max_edicts, usedamount * 4 * prog->max_edicts);
+}
+
+
+const char *PRVM_Prog_Dump_Functions (prvm_prog_t *prog)
+{
+		
+
+	// Baker: Quakespasm equivalent sec 2
+	for (int j = 0; j < prog->progs_numfunctions; j ++) {
+		mfunction_t *func = &prog->functions[j];
+		const char *s_f = PRVM_GetString(prog, func->s_name);
+		Con_PrintLinef ("%05d " S_FMT_LEFT_PAD_20 " 1st state: %d", j, s_f, /*int32_t*/ func->first_statement);
+	}
+	return 0;
 }
 
 static void PRVM_Globals_f(cmd_state_t *cmd)
@@ -3456,7 +3473,7 @@ int PRVM_SetEngineString(prvm_prog_t *prog, const char *s)
 			return PRVM_KNOWNSTRINGBASE + i;
 	// new unknown engine string
 	if (developer_insane.integer)
-		Con_DPrintf ("new engine string %p = \"%s\"\n", (void *)s, s);
+		Con_DPrintLinef ("new engine string %p = " QUOTED_S, (void *)s, s);
 	for (i = prog->firstfreeknownstring;i < prog->numknownstrings;i++)
 		if (!prog->knownstrings[i])
 			break;
@@ -3837,7 +3854,7 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 						if (!prog->knownstrings[num])
 						{
 							// invalid
-							Con_DPrintf ("PRVM_GarbageCollection: Found bogus strzone reference in global %d (global name: \"%s\"), erasing reference", d->ofs, PRVM_GetString(prog, d->s_name));
+							Con_DPrintf ("PRVM_GarbageCollection: Found bogus strzone reference in global %d (global name: " QUOTED_S "), erasing reference", d->ofs, PRVM_GetString(prog, d->s_name));
 							prog->globals.ip[d->ofs] = 0;
 							continue;
 						}
@@ -3870,7 +3887,7 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 						if (!prog->knownstrings[num])
 						{
 							// invalid
-							Con_DPrintf ("PRVM_GarbageCollection: Found bogus strzone reference in edict %d field %d (field name: \"%s\"), erasing reference", entityindex, d->ofs, PRVM_GetString(prog, d->s_name));
+							Con_DPrintf ("PRVM_GarbageCollection: Found bogus strzone reference in edict %d field %d (field name: " QUOTED_S "), erasing reference", entityindex, d->ofs, PRVM_GetString(prog, d->s_name));
 							prog->edictsfields.ip[entityindex * prog->entityfields + d->ofs] = 0;
 							continue;
 						}
@@ -3908,7 +3925,7 @@ void PRVM_GarbageCollection(prvm_prog_t *prog)
 				{
 					// string has been marked for pruning two passes in a row
 					if (prvm_garbagecollection_notify.integer)
-						Con_DPrintf ("prvm_garbagecollection_notify: %s: freeing unreferenced string %d: \"%s\"\n", prog->name, num, prog->knownstrings[num]);
+						Con_DPrintLinef ("prvm_garbagecollection_notify: %s: freeing unreferenced string %d: " QUOTED_S, prog->name, num, prog->knownstrings[num]);
 					Mem_Free((char *)prog->knownstrings[num]);
 					prog->knownstrings[num] = NULL;
 					prog->knownstrings_flags[num] = 0;

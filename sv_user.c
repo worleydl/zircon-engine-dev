@@ -33,20 +33,53 @@ extern cvar_t sv_rollspeed;
 SV_PreSpawn_f
 ==================
 */
+
+// Baker: Zircon sends extensions with prespawn if protcool is DP7
+WARP_X_ (CL_BeginDownloads_Prespawn_Zircon_Extensions_Send HINT_MESSAGE_PREFIX SV_InsertHints)
+static void SV_Zircon_Extensions_Send (client_t *client, sizebuf_t *sb)
+{
+	// Baker: Send even if client does not support protocol extensions.
+	// We will send "//hint zircon_ext 0
+	char vabuf[1024];
+	const char *sv_hint_string;
+	
+	if (sv.protocol == PROTOCOL_DARKPLACES7) {
+		WARP_X_ (CLIENT_SUPPORTED_ZIRCON_EXT)
+		//unsigned int sv_ext = sv.zirconprotcolextensions_sv; //sv_pext.integer ? CLIENT_SUPPORTED_ZIRCON_EXT : 0;
+		unsigned int shared_flags = client->cl_zirconprotocolextensions & sv.zirconprotcolextensions_sv;
+
+		if (developer_zext.integer)
+			Con_PrintLinef ("SV: Client " QUOTED_S " is reporting extensions %d", client->name, client->cl_zirconprotocolextensions); // This has newline
+		if (developer_zext.integer)
+			Con_PrintLinef ("SV: Server supports extensions %d", sv.zirconprotcolextensions_sv); // This has newline
+		client->cl_zirconprotocolextensions = shared_flags; // zirconprotocolextensions
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "zircon_ext %d" NEWLINE, shared_flags);
+		
+		Con_DPrintLinef	("Sending to " QUOTED_S ": "  QUOTED_S, client->name, sv_hint_string); // No newline, hint_string already has one
+		MSG_WriteByte	(sb, svc_stufftext);  // ZIRCON_PEXT
+		MSG_WriteString (sb, sv_hint_string);
+	}
+}
+
 void SV_PreSpawn_f(cmd_state_t *cmd)
 {
-	if (host_client->prespawned)
-	{
-		Con_Print("prespawn not valid -- already prespawned\n");
+	if (host_client->prespawned) {
+		Con_PrintLinef ("prespawn not valid -- already prespawned");
 		return;
 	}
 	host_client->prespawned = true;
 
-	if (host_client->netconnection)
-	{
+	if (Cmd_Argc (cmd) > 1) {
+		host_client->cl_zirconprotocolextensions = atoi(Cmd_Argv(cmd,1));
+		if (developer_zext.integer)
+			Con_PrintLinef ("Client is reporting extensions %d", host_client->cl_zirconprotocolextensions); // ZIRCON_PEXT
+	}
+
+	if (host_client->netconnection) {
+		SV_Zircon_Extensions_Send (host_client, &host_client->netconnection->message);
 		SZ_Write (&host_client->netconnection->message, sv.signon.data, sv.signon.cursize);
 		MSG_WriteByte (&host_client->netconnection->message, svc_signonnum);
-		MSG_WriteByte (&host_client->netconnection->message, 2);
+		MSG_WriteByte (&host_client->netconnection->message, SIGNON_2);
 		host_client->sendsignon = 0;		// enable unlimited sends again
 	}
 
@@ -66,16 +99,16 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	client_t *client;
 	int stats[MAX_CL_STATS];
 
-	if (!host_client->prespawned)
-	{
-		Con_Print("Spawn not valid -- not yet prespawned\n");
+	if (!host_client->prespawned) {
+		Con_PrintLinef ("Spawn not valid -- not yet prespawned");
 		return;
 	}
-	if (host_client->spawned)
-	{
-		Con_Print("Spawn not valid -- already spawned\n");
+
+	if (host_client->spawned) {
+		Con_PrintLinef ("Spawn not valid -- already spawned");
 		return;
 	}
+
 	host_client->spawned = true;
 
 	// reset name change timer again because they might want to change name
@@ -88,12 +121,10 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	//	SZ_Clear (&host_client->netconnection->message);
 
 	// run the entrance script
-	if (sv.loadgame)
-	{
+	if (sv.loadgame) {
 		// loaded games are fully initialized already
-		if (PRVM_serverfunction(RestoreGame))
-		{
-			Con_DPrint("Calling RestoreGame\n");
+		if (PRVM_serverfunction(RestoreGame)) {
+			Con_DPrint("Calling RestoreGame");
 			PRVM_serverglobalfloat(time) = sv.time;
 			PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
 			prog->ExecuteProgram(prog, PRVM_serverfunction(RestoreGame), "QC function RestoreGame is missing");
@@ -117,6 +148,11 @@ void SV_Spawn_f(cmd_state_t *cmd)
 
 		PRVM_serverglobalfloat(time) = sv.time;
 		prog->ExecuteProgram(prog, PRVM_serverfunction(PutClientInServer), "QC function PutClientInServer is missing");
+
+#if 1
+		if (Have_Zircon_Ext_Flag_SV_Hard (ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128) )
+			PRVM_serveredictfloat(host_client->edict, clipgroup) = 1;
+#endif
 	}
 
 	if (!host_client->netconnection)
@@ -127,19 +163,18 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	MSG_WriteFloat (&host_client->netconnection->message, sv.time);
 
 	// send all current names, colors, and frag counts
-	for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++)
-	{
+	for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++) {
 		if (!client->active)
 			continue;
-		MSG_WriteByte (&host_client->netconnection->message, svc_updatename);
-		MSG_WriteByte (&host_client->netconnection->message, i);
+		MSG_WriteByte	(&host_client->netconnection->message, svc_updatename);
+		MSG_WriteByte	(&host_client->netconnection->message, i);
 		MSG_WriteString (&host_client->netconnection->message, client->name);
-		MSG_WriteByte (&host_client->netconnection->message, svc_updatefrags);
-		MSG_WriteByte (&host_client->netconnection->message, i);
-		MSG_WriteShort (&host_client->netconnection->message, client->frags);
-		MSG_WriteByte (&host_client->netconnection->message, svc_updatecolors);
-		MSG_WriteByte (&host_client->netconnection->message, i);
-		MSG_WriteByte (&host_client->netconnection->message, client->colors);
+		MSG_WriteByte	(&host_client->netconnection->message, svc_updatefrags);
+		MSG_WriteByte	(&host_client->netconnection->message, i);
+		MSG_WriteShort	(&host_client->netconnection->message, client->frags);
+		MSG_WriteByte	(&host_client->netconnection->message, svc_updatecolors);
+		MSG_WriteByte	(&host_client->netconnection->message, i);
+		MSG_WriteByte	(&host_client->netconnection->message, client->colors);
 	}
 
 	// send all current light styles
@@ -147,8 +182,8 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	{
 		if (sv.lightstyles[i][0])
 		{
-			MSG_WriteByte (&host_client->netconnection->message, svc_lightstyle);
-			MSG_WriteByte (&host_client->netconnection->message, (char)i);
+			MSG_WriteByte	(&host_client->netconnection->message, svc_lightstyle);
+			MSG_WriteByte	(&host_client->netconnection->message, (char)i);
 			MSG_WriteString (&host_client->netconnection->message, sv.lightstyles[i]);
 		}
 	}
@@ -201,7 +236,7 @@ void SV_Spawn_f(cmd_state_t *cmd)
 SV_Begin_f
 ==================
 */
-void SV_Begin_f(cmd_state_t *cmd)
+void SV_Begin_f (cmd_state_t *cmd)
 {
 	if (!host_client->spawned)
 	{
@@ -214,6 +249,7 @@ void SV_Begin_f(cmd_state_t *cmd)
 		return;
 	}
 	host_client->begun = true;
+
 
 	// LadyHavoc: note: this code also exists in SV_DropClient
 	if (sv.loadgame)
@@ -445,10 +481,10 @@ void SV_NoClip_Move (void)
 	AngleVectors(v_angle, forward, right, up);
 
 	for (i = 0; i < 3 ; i ++) {
-		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
+		wishvel[i] = forward[i] * usercmd.clx_forwardmove + right[i] * usercmd.clx_sidemove;
 	}
 
-    wishvel[2] += usercmd.upmove;
+    wishvel[2] += usercmd.clx_upmove;
 
 	fwishspeed = VectorLength(wishvel);
 	if (fwishspeed > sv_maxspeed.value)
@@ -474,12 +510,12 @@ static void SV_WaterMove (void)
 	AngleVectors(v_angle, forward, right, up);
 
 	for (i=0 ; i<3 ; i++)
-		wishvel[i] = forward[i]*usercmd.forwardmove + right[i]*usercmd.sidemove;
+		wishvel[i] = forward[i]*usercmd.clx_forwardmove + right[i]*usercmd.clx_sidemove;
 
-	if (!usercmd.forwardmove && !usercmd.sidemove && !usercmd.upmove)
+	if (!usercmd.clx_forwardmove && !usercmd.clx_sidemove && !usercmd.clx_upmove)
 		wishvel[2] -= 60;		// drift towards bottom
 	else
-		wishvel[2] += usercmd.upmove;
+		wishvel[2] += usercmd.clx_upmove;
 
 	fwishspeed = VectorLength(wishvel);
 	if (fwishspeed > sv_maxspeed.value)
@@ -551,8 +587,8 @@ static void SV_AirMove (void)
 	wishvel[1] = PRVM_serveredictvector(host_client->edict, angles)[1];
 	AngleVectors (wishvel, forward, right, up);
 
-	fmove = usercmd.forwardmove;
-	smove = usercmd.sidemove;
+	fmove = usercmd.clx_forwardmove;
+	smove = usercmd.clx_sidemove;
 
 // hack to not let you back into teleporter
 	if (sv.time < PRVM_serveredictfloat(host_client->edict, teleport_time) && fmove < 0)
@@ -562,7 +598,7 @@ static void SV_AirMove (void)
 		wishvel[i] = forward[i]*fmove + right[i]*smove;
 
 	if ((int)PRVM_serveredictfloat(host_client->edict, movetype) != MOVETYPE_WALK)
-		wishvel[2] += usercmd.upmove;
+		wishvel[2] += usercmd.clx_upmove;
 
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalizeLength(wishdir);
@@ -699,18 +735,25 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 							PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE, 
 							PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
 							PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
-							PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5,	PROTOCOL_DARKPLACES6))
-		move->sequence = MSG_ReadLong(&sv_message);
-	move->time = MSG_ReadFloat(&sv_message);
-	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
-	move->receivetime = (float)sv.time;
+							PROTOCOL_DARKPLACES4,	PROTOCOL_DARKPLACES5,	PROTOCOL_DARKPLACES6)) {
+		move->clx_sequence = MSG_ReadLong(&sv_message);
+
+	} // if DP7 / Quakeworld
+	move->clx_time = MSG_ReadFloat(&sv_message);
+	if (sv_message.badread) Con_PrintLinef ("SV_ReadClientMessage: badread at %s:%d", __FILE__, __LINE__);
+	move->clx_receivetime = (float)sv.time;
 
 #if DEBUGMOVES
 	Con_Printf ("%s move%d #%u %dms (%dms) %d %d '%d %d %d' '%d %d %d'\n", move->time > move->receivetime ? "^3read future" : "^4read normal", sv_numreadmoves + 1, move->sequence, (int)floor((move->time - host_client->cmd.time) * 1000.0 + 0.5), (int)floor(move->time * 1000.0 + 0.5), move->impulse, move->buttons, (int)move->viewangles[0], (int)move->viewangles[1], (int)move->viewangles[2], (int)move->forwardmove, (int)move->sidemove, (int)move->upmove);
 #endif
 	// limit reported time to current time
 	// (incase the client is trying to cheat)
-	move->time = min(move->time, sv.time + sv.frametime);
+	if (move->clx_time > sv.time + sv.frametime) {
+		// Baker: No evidence this future move hits PHYSICAL
+		// Baker: This hits sometimes when the console is opened on listen server hosting player
+		// Con_PrintLinef ("Future move time %f vs max %f", move->clx_time, sv.time + sv.frametime); // PHYSICAL
+	}
+	move->clx_time = Smallest(move->clx_time, sv.time + sv.frametime);
 
 	// read current angles
 	for (i = 0;i < 3;i++) {
@@ -742,9 +785,9 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
 
 	// read movement
-	move->forwardmove = MSG_ReadCoord16i(&sv_message);
-	move->sidemove = MSG_ReadCoord16i(&sv_message);
-	move->upmove = MSG_ReadCoord16i(&sv_message);
+	move->clx_forwardmove = MSG_ReadCoord16i(&sv_message);
+	move->clx_sidemove = MSG_ReadCoord16i(&sv_message);
+	move->clx_upmove = MSG_ReadCoord16i(&sv_message);
 	if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
 
 	// read buttons
@@ -795,7 +838,7 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 
 	// if the previous move has not been applied yet, we need to accumulate
 	// the impulse/buttons from it
-	if (!host_client->cmd.applied)
+	if (!host_client->cmd.clx_is_applied)
 	{
 		if (!move->impulse)
 			move->impulse = host_client->cmd.impulse;
@@ -809,33 +852,27 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 
 	// movement packet loss tracking
 	// bones_was_here: checking begun prevents heavy loss detection right after a map change
-	// Baker: 9068u ALT-TAB on level change keys stuck.  This is a change.  Is this involved in the stuck stuck issue?  Test.
-	// Baker: We still stuck!  Not fix issue.
-	if (move->sequence && host_client->begun)
-	{
-		if (move->sequence > host_client->movement_highestsequence_seen)
-		{
-			if (host_client->movement_highestsequence_seen)
-			{
+	if (move->clx_sequence && host_client->begun) {
+		if (move->clx_sequence > host_client->movement_highestsequence_seen) {
+			if (host_client->movement_highestsequence_seen) {
 				// mark moves in between as lost
-				unsigned int delta = move->sequence - host_client->movement_highestsequence_seen - 1;
-				if (delta < NETGRAPH_PACKETS)
-				{
+				unsigned int delta = move->clx_sequence - host_client->movement_highestsequence_seen - 1;
+				if (delta < NETGRAPH_PACKETS_256) {
 					unsigned int u;
 					for(u = 0; u < delta; ++u)
-						host_client->movement_count[(host_client->movement_highestsequence_seen + 1 + u) % NETGRAPH_PACKETS] = -1;
+						host_client->movement_count[(host_client->movement_highestsequence_seen + 1 + u) % NETGRAPH_PACKETS_256] = -1;
 				}
 				else
 					memset(host_client->movement_count, -1, sizeof(host_client->movement_count));
 			}
 			// mark THIS move as seen for the first time
-			host_client->movement_count[move->sequence % NETGRAPH_PACKETS] = 1;
+			host_client->movement_count[move->clx_sequence % NETGRAPH_PACKETS_256] = 1;
 			// update highest sequence seen
-			host_client->movement_highestsequence_seen = move->sequence;
+			host_client->movement_highestsequence_seen = move->clx_sequence;
 		}
 		else
-			if (host_client->movement_count[move->sequence % NETGRAPH_PACKETS] >= 0)
-				++host_client->movement_count[move->sequence % NETGRAPH_PACKETS];
+			if (host_client->movement_count[move->clx_sequence % NETGRAPH_PACKETS_256] >= 0)
+				++host_client->movement_count[move->clx_sequence % NETGRAPH_PACKETS_256];
 	}
 	else
 	{
@@ -844,8 +881,9 @@ static void SV_ReadClientMessage_ReadClientMove (void)
 	}
 }
 
-static void SV_ReadClientMessage_ExecuteClientMoves(void)
+static void SV_ReadClientMessage_ExecuteClientMoves (vec_t *zircon_move_final_pos, int zircon_move_final_ground)
 {
+	vec_t *v;
 	prvm_prog_t *prog = SVVM_prog;
 	int moveindex;
 	double moveframetime;
@@ -857,16 +895,28 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 	// only start accepting input once the player is spawned
 	if (!host_client->begun)
 		return;
+
+			// Baker: This is for elevators and lifts
+			int ground_ent = PRVM_serveredictedict(host_client->edict, groundentity);
+			if (ground_ent) {
+				SV_PhysicsX_Zircon_Warp_Start (host_client, "onground_entity");
+			}
+			int health = PRVM_serveredictfloat(host_client->edict, health);
+			if (health <= 0 && health != NEXUIZ_OBS_NEG_666) {
+				//SV_PhysicsX_Zircon_Warp_Start ("execmove_health");
+			}
+
+
 #if DEBUGMOVES
 	Con_Printf ("SV_ExecuteClientMoves: read %d moves at sv.time %f\n", sv_numreadmoves, (float)sv.time);
 #endif
 	// disable clientside movement prediction in some cases
-	if (ceil(max(sv_readmoves[sv_numreadmoves-1].receivetime - sv_readmoves[sv_numreadmoves-1].time, 0) * 1000.0) < sv_clmovement_minping.integer)
+	if (ceil(max(sv_readmoves[sv_numreadmoves-1].clx_receivetime - sv_readmoves[sv_numreadmoves-1].clx_time, 0) * 1000.0) < sv_clmovement_minping.integer)
 		host_client->clmovement_disabletimeout = host.realtime + sv_clmovement_minping_disabletime.value / 1000.0;
 	// several conditions govern whether clientside movement prediction is allowed
-	if (sv_readmoves[sv_numreadmoves-1].sequence && 
+	if (sv_readmoves[sv_numreadmoves-1].clx_sequence && 
 		sv_clmovement_enable.integer && 
-		sv_clmovement_inputtimeout.value > 0 && 
+		sv_clmovement_inputtimeout.value /*0.1*/ > 0 && 
 		host_client->clmovement_disabletimeout <= host.realtime && 
 		(PRVM_serveredictfloat(host_client->edict, disableclientprediction) == -1 || 
 		(PRVM_serveredictfloat(host_client->edict, movetype) == MOVETYPE_WALK && 
@@ -877,20 +927,28 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 		// (this deals with bogus initial move sequences after level change,
 		//  where the client will eventually catch up with the level change
 		//  and reset its move sequence)
-		for (moveindex = 0;moveindex < sv_numreadmoves;moveindex++)
-		{
+		for (moveindex = 0; moveindex < sv_numreadmoves; moveindex++) {
 			usercmd_t *move = sv_readmoves + moveindex;
-			if (host_client->movesequence < move->sequence || moveindex == sv_numreadmoves - 1)
-			{
+			if (host_client->movesequence < move->clx_sequence || moveindex == sv_numreadmoves - 1) {
+				// Baker: float clx_time_in = move->clx_time;
 #if DEBUGMOVES
-				Con_Printf ("%smove #%u %dms (%dms) %d %d '%d %d %d' '%d %d %d'\n", (move->time - host_client->cmd.time) > sv.frametime * 1.01 ? "^1" : "^2", move->sequence, (int)floor((move->time - host_client->cmd.time) * 1000.0 + 0.5), (int)floor(move->time * 1000.0 + 0.5), move->impulse, move->buttons, (int)move->viewangles[0], (int)move->viewangles[1], (int)move->viewangles[2], (int)move->forwardmove, (int)move->sidemove, (int)move->upmove);
+				Con_Printf ("%smove #%u %dms (%dms) %d %d '%d %d %d' '%d %d %d'\n", (move->time - host_client->cmd.time) > sv.frametime * 1.01 ? "^1" : "^2", 
+					move->sequence, (int)floor((move->time - host_client->cmd.time) * 
+					1000.0 + 0.5), (int)floor(move->time * 1000.0 + 0.5), 
+					move->impulse, move->buttons, 
+					(int)move->viewangles[0], (int)move->viewangles[1], 
+					(int)move->viewangles[2], (int)move->forwardmove, 
+					(int)move->sidemove, (int)move->upmove);
 #endif
-				// this is a new move
-				move->time = bound(sv.time - 1, move->time, sv.time); // prevent slowhack/speedhack combos
-				move->time = max(move->time, host_client->cmd.time); // prevent backstepping of time
+				// this is a new move - (PHYSICAL - PRIME TARGET - SO WHICH ONE HITS, WHAT ARE VALUES?)
+				move->clx_time = bound(sv.time - 1, move->clx_time, sv.time); // prevent slowhack/speedhack combos
+				move->clx_time = Largest(move->clx_time, host_client->cmd.clx_time); // prevent backstepping of time
 				// bones_was_here: limit moveframetime to a multiple of sv.frametime to match inputtimeout behaviour
-				moveframetime = min(move->time - host_client->cmd.time, min(0.1, sys_ticrate.value > 0.0 && sv.frametime > 0.0 ? sv.frametime * ceil(sv_clmovement_inputtimeout.value / sv.frametime) : sv_clmovement_inputtimeout.value));
-
+				moveframetime = Smallest(move->clx_time - host_client->cmd.clx_time, 
+					min(0.1, sys_ticrate.value /*d: 1/72 or 0.013*/ > 0.0 && 
+						sv.frametime > 0.0 ? 
+							sv.frametime * ceil(sv_clmovement_inputtimeout.value /*d: 0.1*/ / sv.frametime) : 
+							sv_clmovement_inputtimeout.value));
 
 				// discard (treat like lost) moves with too low distance from
 				// the previous one to prevent hacks using float inaccuracy
@@ -898,20 +956,30 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 				// this should also apply if a move cannot get
 				// executed because it came too late and
 				// already was performed serverside
-				if (moveframetime < 0.0005)
-				{
+				if (moveframetime < 0.0005) { 
 					// count the move as LOST if we don't
 					// execute it but it has higher
 					// sequence count
 					if (host_client->movesequence)
-						if (move->sequence > host_client->movesequence)
-							host_client->movement_count[(move->sequence) % NETGRAPH_PACKETS] = -1;
-					continue;
+						if (move->clx_sequence > host_client->movesequence)
+							host_client->movement_count[(move->clx_sequence) % NETGRAPH_PACKETS_256] = -1;
+
+					//if (developer_movement.integer) { // OLD
+					//	Con_PrintLinef ("Rejected move due to timing svframetime is %f", sv.frametime);
+					//	Con_PrintLinef ("clx_time in was        : %f", clx_time_in);
+					//	Con_PrintLinef ("min allowed sv_time - 1: %f", sv.time - 1);
+					//	Con_PrintLinef ("actual      sv_time - 0: %f", sv.time);
+					//	Con_PrintLinef ("move->clx_time         : %f", move->clx_time);
+					//	Con_PrintLinef ("host_client->clx_time  : %f", host_client->cmd.clx_time);
+					//	Con_PrintLinef ("moveframetime          : %f", moveframetime);
+
+					//}
+					continue; // REJECT MOVE SLICING
 				}
 
 				//Con_Printf ("movesequence = %d (%d lost), moveframetime = %f\n", move->sequence, move->sequence ? move->sequence - host_client->movesequence - 1 : 0, moveframetime);
 				host_client->cmd = *move;
-				host_client->movesequence = move->sequence;
+				host_client->movesequence = move->clx_sequence;
 
 				// if using prediction, we need to perform moves when packets are
 				// received, even if multiple occur in one frame
@@ -922,16 +990,16 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 				oldframetime = PRVM_serverglobalfloat(frametime);
 				oldframetime2 = sv.frametime;
 				// update ping time for qc to see while executing this move
-				host_client->ping = host_client->cmd.receivetime - host_client->cmd.time;
+				host_client->ping = host_client->cmd.clx_receivetime - host_client->cmd.clx_time;
 				// the server and qc frametime values must be changed temporarily
 				PRVM_serverglobalfloat(frametime) = sv.frametime = moveframetime;
-				// if move is more than 50ms, split it into two moves (this matches QWSV behavior and the client prediction)
-				if (sv.frametime > 0.05)
-				{
+				// if move is more than 50ms, split it into two moves (this matches QWSV 
+				// behavior and the client prediction)
+				if (sv.frametime > 0.05) { // Baker: ezQuake chop up very long command 
 					PRVM_serverglobalfloat(frametime) = sv.frametime = moveframetime * 0.5f;
-					SV_Physics_ClientMove();
+					SV_Physics_ClientMove(); // PREDICTED MOVE
 				}
-				SV_Physics_ClientMove();
+				SV_Physics_ClientMove(); // PREDICTED MOVE
 				sv.frametime = oldframetime2;
 				PRVM_serverglobalfloat(frametime) = oldframetime;
 				host_client->clmovement_inputtimeout = min(0.1, sv_clmovement_inputtimeout.value);
@@ -940,12 +1008,12 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 	}
 	else
 	{
+		// Baker: This happens on level start
 		// try to gather button bits from old moves, but only if their time is
 		// advancing (ones with the same timestamp can't be trusted)
-		for (moveindex = 0;moveindex < sv_numreadmoves-1;moveindex++)
-		{
+		for (moveindex = 0;moveindex < sv_numreadmoves-1;moveindex++) {
 			usercmd_t *move = sv_readmoves + moveindex;
-			if (host_client->cmd.time < move->time)
+			if (host_client->cmd.clx_time < move->clx_time)
 			{
 				sv_readmoves[sv_numreadmoves-1].buttons |= move->buttons;
 				if (move->impulse)
@@ -954,7 +1022,7 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 		}
 		// now copy the new move
 		host_client->cmd = sv_readmoves[sv_numreadmoves-1];
-		host_client->cmd.time = max(host_client->cmd.time, sv.time);
+		host_client->cmd.clx_time = max(host_client->cmd.clx_time, sv.time);
 			// physics will run up to sv.time, so allow no predicted moves
 			// before that otherwise, there is a speedhack by turning
 			// prediction on and off repeatedly on client side because the
@@ -964,8 +1032,46 @@ static void SV_ReadClientMessage_ExecuteClientMoves(void)
 		// make sure that normal physics takes over immediately
 		host_client->clmovement_inputtimeout = 0;
 		// update ping time
-		host_client->ping = host_client->cmd.receivetime - sv_readmoves[sv_numreadmoves-1].time;
+		host_client->ping = host_client->cmd.clx_receivetime - sv_readmoves[sv_numreadmoves-1].clx_time;
 	}
+
+	health = PRVM_serveredictfloat(host_client->edict, health);
+	if (health <= 0 && health != NEXUIZ_OBS_NEG_666) {
+		//SV_PhysicsX_Zircon_Warp_Start ("execmoves_health0");
+	}
+
+	if (host_client->last_wanted_is_zircon_free_move) {
+		v = PRVM_serveredictvector(host_client->edict, origin);
+		VectorCopy (zircon_move_final_pos, v);
+		int on_ground_sv = Have_Flag ((int)PRVM_serveredictfloat(host_client->edict, flags), FL_ONGROUND);
+		if (on_ground_sv == false && sv.zircon_jumpflag_fieldoffset) {
+			// Baker: Mild reduction in jump_flag to avoid weird damage
+			// from freemove's slightly higher jumps
+			//int ofs = PRVM_ED_FindFieldOffset (prog, "jump_flag");
+			float varjumpflag = PRVM_EDICTFIELDFLOAT(host_client->edict, sv.zircon_jumpflag_fieldoffset);
+
+			//Con_PrintLinef ("%dis ground jump flag = %d  z vel %f", 
+			//	Have_Flag ((int)PRVM_serveredictfloat(host_client->edict, flags), FL_ONGROUND),
+			//	(int)varjumpflag,
+			//	v[2]
+			//);
+			PRVM_EDICTFIELDFLOAT(host_client->edict, sv.zircon_jumpflag_fieldoffset) = varjumpflag* 0.84375;
+			//varjumpflag = PRVM_EDICTFIELDFLOAT(host_client->edict, sv.zircon_jumpflag_fieldoffset);
+			//Con_PrintLinef ("After %d", (int)varjumpflag);
+//			if (varjumpflag)
+//				v[2] *= 0.875;
+
+		} else
+
+
+		if (zircon_move_final_ground) { // Used to reduce velocity
+			v = PRVM_serveredictvector(host_client->edict, velocity);
+			if (v[2] < 0)
+				v[2] = -3.0; // Clear downwards move
+		}
+		host_client->last_wanted_is_zircon_free_move = false; // TURN IT OFF, SINCE WE ARE DONE EXECUTING MOVES
+	}
+
 }
 
 void SV_PlayerPhysics_ApplyClientMove (void)
@@ -974,7 +1080,7 @@ void SV_PlayerPhysics_ApplyClientMove (void)
 	usercmd_t *move = &host_client->cmd;
 	int j, movementloss, packetloss;
 
-	if (!move->receivetime)
+	if (!move->clx_receivetime)
 		return;
 
 	// note: a move can be applied multiple times if the client packets are
@@ -982,7 +1088,7 @@ void SV_PlayerPhysics_ApplyClientMove (void)
 	// applied before running qc each time because the id1 qc had a bug where
 	// it clears self.button2 in PlayerJump, causing pogostick behavior if
 	// moves are not applied every time before calling qc
-	move->applied = true;
+	move->clx_is_applied = true;
 
 	// set the edict fields
 	PRVM_serveredictfloat(host_client->edict, button0) = move->buttons & 1;
@@ -995,10 +1101,10 @@ void SV_PlayerPhysics_ApplyClientMove (void)
 	movementloss = packetloss = 0;
 	if (host_client->netconnection)
 	{
-		for (j = 0;j < NETGRAPH_PACKETS;j++)
-			if (host_client->netconnection->incoming_netgraph[j].unreliablebytes == NETGRAPH_LOSTPACKET)
+		for (j = 0;j < NETGRAPH_PACKETS_256;j++)
+			if (host_client->netconnection->incoming_netgraph[j].unreliablebytes == NETGRAPH_LOSTPACKET_NEG1)
 				packetloss++;
-		for (j = 0;j < NETGRAPH_PACKETS;j++)
+		for (j = 0;j < NETGRAPH_PACKETS_256;j++)
 			if (host_client->movement_count[j] < 0)
 				movementloss++;
 	}
@@ -1021,14 +1127,14 @@ void SV_PlayerPhysics_ApplyClientMove (void)
 	PRVM_serveredictfloat(host_client->edict, buttonuse) = ((move->buttons >> 8) & 1);
 	PRVM_serveredictfloat(host_client->edict, buttonchat) = ((move->buttons >> 9) & 1);
 	PRVM_serveredictfloat(host_client->edict, cursor_active) = ((move->buttons >> 10) & 1);
-	VectorSet(PRVM_serveredictvector(host_client->edict, movement), move->forwardmove, move->sidemove, move->upmove);
+	VectorSet(PRVM_serveredictvector(host_client->edict, movement), move->clx_forwardmove, move->clx_sidemove, move->clx_upmove);
 	VectorCopy(move->cursor_screen, PRVM_serveredictvector(host_client->edict, cursor_screen));
 	VectorCopy(move->cursor_start, PRVM_serveredictvector(host_client->edict, cursor_trace_start));
 	VectorCopy(move->cursor_impact, PRVM_serveredictvector(host_client->edict, cursor_trace_endpos));
 	PRVM_serveredictedict(host_client->edict, cursor_trace_ent) = PRVM_EDICT_TO_PROG(PRVM_EDICT_NUM(move->cursor_entitynumber));
 	PRVM_serveredictfloat(host_client->edict, ping) = host_client->ping * 1000.0;
-	PRVM_serveredictfloat(host_client->edict, ping_packetloss) = packetloss / (float) NETGRAPH_PACKETS;
-	PRVM_serveredictfloat(host_client->edict, ping_movementloss) = movementloss / (float) NETGRAPH_PACKETS;
+	PRVM_serveredictfloat(host_client->edict, ping_packetloss) = packetloss / (float) NETGRAPH_PACKETS_256;
+	PRVM_serveredictfloat(host_client->edict, ping_movementloss) = movementloss / (float) NETGRAPH_PACKETS_256;
 }
 
 static qbool SV_FrameLost(int framenum)
@@ -1060,50 +1166,60 @@ static void SV_FrameAck(int framenum)
 SV_ReadClientMessage
 ===================
 */
-WARP_X_ (NetConn_ServerParsePacket)
+WARP_X_ (NetConn_ServerParsePacket clc_move takes us to SV_ReadClientMessage_ReadClientMove)
+WARP_X_ (we exit we do SV_ReadClientMessage_ExecuteClientMoves)
+
+WARP_X_CALLERS_ (NetConn_ServerParsePacket)
+
+#include "sv_user_zmove.c.h"
+
 void SV_ReadClientMessage(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int netcmd, num, start;
 	char *s, *p, *q;
+	
+	vec3_t zircon_move_final_pos = {0};
+	int zircon_move_final_ground = false; // Used to reduce falling velocity
 
 	if (sv_autodemo_perclient.integer >= 2)
-		SV_WriteDemoMessage(host_client, &(host_client->netconnection->message), true);
+		SV_WriteDemoMessage (host_client, &(host_client->netconnection->message), /*clientoserver?*/ true);
 
 	//MSG_BeginReading ();
+	host_client->download_chunks_perframe = 0;
 	sv_numreadmoves = 0;
 
-	for(;;)
-	{
-		if (!host_client->active)
-		{
+	// Baker: SV_ReadClientMessage This loop exits when?
+	// netcmd == -1
+	while (1) {
+		if (!host_client->active) {
 			// a command caused an error
-			SV_DropClient (false, "Connection closing");
+			SV_DropClient (q_is_leaving_false, "Connection closing");
 			return;
 		}
 
 		if (sv_message.badread) {
-			Con_Print("SV_ReadClientMessage: badread\n");
-			SV_DropClient (false, "An internal server error occurred");
+			Con_PrintLinef ("SV_ReadClientMessage: badread");
+			SV_DropClient (q_is_leaving_false, "An internal server error occurred");
 			return;
 		}
 
 		netcmd = MSG_ReadByte(&sv_message);
-		if (netcmd == -1)
-		{
+
+baker_loop_exits_here:
+		if (netcmd == -1) {
 			// end of message
-			// apply the moves that were read this frame
-			SV_ReadClientMessage_ExecuteClientMoves();
+			SV_ReadClientMessage_ExecuteClientMoves (zircon_move_final_pos, zircon_move_final_ground);
 			break;
 		}
 
-		switch (netcmd)
-		{
+		switch (netcmd) {
 		default:
-			Con_Printf ("SV_ReadClientMessage: unknown command char %d (at offset 0x%x)\n", netcmd, sv_message.readcount);
+			Con_PrintLinef ("SV_ReadClientMessage: unknown command char %d (at offset 0x%x)", netcmd, 
+				sv_message.readcount);
 			if (developer_networking.integer)
 				Com_HexDumpToConsole(sv_message.data, sv_message.cursize);
-			SV_DropClient (false, "Unknown message sent to the server");
+			SV_DropClient (q_is_leaving_false, "Unknown message sent to the server");
 			return;
 
 		case clc_nop:
@@ -1113,10 +1229,10 @@ void SV_ReadClientMessage(void)
 			// allow reliable messages now as the client is done with initial loading
 			if (host_client->sendsignon == 2)
 				host_client->sendsignon = 0;
-			s = MSG_ReadString(&sv_message, sv_readstring, sizeof(sv_readstring));
+			s = MSG_ReadString (&sv_message, sv_readstring, sizeof(sv_readstring));
 			q = NULL;
-			for(p = s; *p; ++p) switch(*p)
-			{
+			for (p = s; *p; ++p) {
+				switch(*p) {
 				case 10:
 				case 13:
 					if (!q)
@@ -1126,13 +1242,14 @@ void SV_ReadClientMessage(void)
 					if (q)
 						goto clc_stringcmd_invalid; // newline seen, THEN something else -> possible exploit
 					break;
-			}
+				} // switch
+			} // for p
 			if (q)
 				*q = 0;
-			if (strncasecmp(s, "spawn", 5) == 0
-			 || strncasecmp(s, "begin", 5) == 0
-			 || strncasecmp(s, "prespawn", 8) == 0)
-				Cmd_ExecuteString (cmd_serverfromclient, s, src_client, true);
+			if (String_Does_Start_With_PRE(s, "spawn"/*, 5*/) ||
+				String_Does_Start_With_PRE(s, "begin"/*, 5*/) ||
+				String_Does_Start_With_PRE(s, "prespawn"/*, 8*/) )
+				Cmd_ExecuteString (cmd_serverfromclient, s, src_client, /*lock mutex*/ true);
 			else if (PRVM_serverfunction(SV_ParseClientCommand))
 			{
 				int restorevm_tempstringsbuf_cursize;
@@ -1140,43 +1257,82 @@ void SV_ReadClientMessage(void)
 				PRVM_G_INT(OFS_PARM0) = PRVM_SetTempString(prog, s);
 				PRVM_serverglobalfloat(time) = sv.time;
 				PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
-				prog->ExecuteProgram(prog, PRVM_serverfunction(SV_ParseClientCommand), "QC function SV_ParseClientCommand is missing");
+
+				prog->ExecuteProgram	(prog, PRVM_serverfunction(SV_ParseClientCommand), "QC function SV_ParseClientCommand is missing");
+
 				prog->tempstringsbuf.cursize = restorevm_tempstringsbuf_cursize;
 			}
 			else
-				Cmd_ExecuteString (cmd_serverfromclient, s, src_client, true);
+				Cmd_ExecuteString (cmd_serverfromclient, s, src_client, /*lockmutex?*/ true);
 			break;
 
 clc_stringcmd_invalid:
-			Con_Printf ("Received invalid stringcmd from %s\n", host_client->name);
+			Con_PrintLinef ("Received invalid stringcmd from %s", host_client->name);
 			if (developer.integer > 0)
 				Com_HexDumpToConsole((unsigned char *) s, (int)strlen(s));
 			break;
 
 		case clc_disconnect:
-			SV_DropClient (true, sv.protocol == PROTOCOL_DARKPLACES8
+			SV_DropClient (q_is_leaving_true, sv.protocol == PROTOCOL_DARKPLACES8
 			               ? MSG_ReadString(&sv_message, sv_readstring, sizeof(sv_readstring))
 			               : "Disconnect by user"); // client wants to disconnect
 			return;
 
 		case clc_move:
-			SV_ReadClientMessage_ReadClientMove();
+			host_client->last_wanted_is_zircon_free_move = false; // ZMOVE 
+			SV_ReadClientMessage_ReadClientMove ();
 			break;
+
+#if 5432
+		case clc_zircon_move:
+			// Where is execute .. top of loop
+			host_client->last_wanted_is_zircon_free_move = true; // ZMOVE
+			if (host_client->last_wanted_is_zircon_free_move) {
+				// Baker: Do we need to check if it occurred here?
+				// I don't think touch functions can fire here
+				
+				//if (host_client->zircon_warp_sequence == false) {
+				//// Baker: If free move is wanted, we have to read the move even if we deny it.
+				zircon_move_final_pos[0] = MSG_ReadFloat(&sv_message); // ZMOVE RECEIVE END MOVE
+				zircon_move_final_pos[1] = MSG_ReadFloat(&sv_message); // ZMOVE RECEIVE END MOVE
+				zircon_move_final_pos[2] = MSG_ReadFloat(&sv_message); // ZMOVE RECEIVE END MOVE
+				zircon_move_final_ground = MSG_ReadByte(&sv_message); // ZMOVE RECEIVE END MOVE
+			}
+			if (ZMOVE_SV_DENIED) {
+				if (Have_Flag (developer_movement.integer, /*SV*/ 2)) // ZMOVE_WARP
+					Con_PrintLinef ("SV: ZMOVE denied due to warp %u", host_client->zircon_warp_sequence);
+				host_client->last_wanted_is_zircon_free_move = false; // ZMOVE	
+			}			
+			SV_ReadClientMessage_ReadClientMove ();
+			break;
+
+		WARP_X_ (svc_zircon_warp)
+		case clc_zircon_warp_ack: // ZMOVE_WARP
+			SV_ReadClientMessage_Zircon_Warp_Ack_Read ();
+			break;
+
+#endif
 
 		case clc_ackdownloaddata:
 			start = MSG_ReadLong(&sv_message);
+downloadx_sv_start_download_during_3:
 			num = MSG_ReadShort(&sv_message);
-			if (host_client->download_file && host_client->download_started)
-			{
-				if (host_client->download_expectedposition == start)
-				{
+
+			if (host_client->download_file && host_client->download_started) {
+				int is_chunked_finish = 
+					host_client->download_file && 
+					host_client->download_chunked &&
+					host_client->download_expectedposition == 0 &&
+					start == (int)FS_FileSize(host_client->download_file);
+
+				if (host_client->download_expectedposition == start || is_chunked_finish) {
 					int size = (int)FS_FileSize(host_client->download_file);
 					// a data block was successfully received by the client,
 					// update the expected position on the next data block
 					host_client->download_expectedposition = start + num;
 					// if this was the last data block of the file, it's done
-					if (host_client->download_expectedposition >= FS_FileSize(host_client->download_file))
-					{
+					if (is_chunked_finish || host_client->download_expectedposition >= 
+						FS_FileSize(host_client->download_file) ) {
 						// tell the client that the download finished
 						// we need to calculate the crc now
 						//
@@ -1188,6 +1344,7 @@ clc_stringcmd_invalid:
 						// download rather than the start because it reduces
 						// potential for Denial Of Service attacks against the
 						// server.
+
 						int crc;
 						unsigned char *temp;
 						FS_Seek(host_client->download_file, 0, SEEK_SET);
@@ -1197,44 +1354,47 @@ clc_stringcmd_invalid:
 						Mem_Free(temp);
 						// calculated crc, send the file info to the client
 						// (so that it can verify the data)
-						SV_ClientCommands("\ncl_downloadfinished %d %d %s\n", size, crc, host_client->download_name);
-						Con_DPrintf ("Download of %s by %s has finished\n", host_client->download_name, host_client->name);
+downloadx_sv_finish_0:
+						SV_ClientCommandsf		(NEWLINE 
+							"cl_downloadfinished %d %d %s" NEWLINE, 
+							size, 
+							crc, 
+							host_client->download_name);
+						Con_DPrintLinef			("Download of %s by %s has finished", host_client->download_name, host_client->name);
 						FS_Close(host_client->download_file);
+
 						host_client->download_file = NULL;
 						host_client->download_name[0] = 0;
 						host_client->download_expectedposition = 0;
 						host_client->download_started = false;
 					}
 				}
-				else
-				{
+				else {
 					// a data block was lost, reset to the expected position
 					// and resume sending from there
-					FS_Seek(host_client->download_file, host_client->download_expectedposition, SEEK_SET);
+					FS_Seek (host_client->download_file, host_client->download_expectedposition, SEEK_SET);
 				}
 			}
 			break;
 
 		case clc_ackframe:
-			if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
+			if (sv_message.badread) Con_PrintLinef ("SV_ReadClientMessage: badread at %s:%d", __FILE__, __LINE__);
 			num = MSG_ReadLong(&sv_message);
-			if (sv_message.badread) Con_Printf ("SV_ReadClientMessage: badread at %s:%d\n", __FILE__, __LINE__);
+			if (sv_message.badread) Con_PrintLinef ("SV_ReadClientMessage: badread at %s:%d", __FILE__, __LINE__);
 			if (developer_networkentities.integer >= 10)
-				Con_Printf ("recv clc_ackframe %d\n", num);
+				Con_PrintLinef ("recv clc_ackframe %d", num);
 			// if the client hasn't progressed through signons yet,
 			// ignore any clc_ackframes we get (they're probably from the
 			// previous level)
-			if (host_client->begun && host_client->latestframenum < num)
-			{
-				int i;
-				for (i = host_client->latestframenum + 1;i < num;i++)
+			if (host_client->begun && host_client->latestframenum < num) {
+				for (int i = host_client->latestframenum + 1;i < num;i++)
 					if (!SV_FrameLost(i))
 						break;
 				SV_FrameAck(num);
-				host_client->latestframenum = num;
-			}
+				host_client->latestframenum = num; // PHYSICAL
+			} // if
 			break;
-		}
-	}
+		} // switch
+	} // while
 }
 

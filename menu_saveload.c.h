@@ -131,10 +131,10 @@ static void M_Save_Draw (void)
 }
 
 
-static void M_Load_Key(cmd_state_t *cmd, int k, int ascii)
+static void M_Load_Key(cmd_state_t *cmd, int key, int ascii)
 {
 	char vabuf[1024];
-	switch (k) {
+	switch (key) {
 	case K_MOUSE2: 
 		if (Hotspots_DidHit_Slider()) { 
 			local_cursor = hotspotx_hover; 
@@ -172,19 +172,19 @@ static void M_Load_Key(cmd_state_t *cmd, int k, int ascii)
 
 	case K_PGUP:
 		local_cursor -= visiblerows / 2;
-		if (local_cursor < 0) 
+		if (local_cursor < 0) // PGUP does not wrap, stops at start
 			local_cursor = 0;
 		break;
 
 	case K_MWHEELUP:
 		local_cursor -= visiblerows / 4;
-		if (local_cursor < 0) 
-		local_cursor = 0;
+		if (local_cursor < 0) // K_MWHEELUP does not wrap, stops at start
+			local_cursor = 0;
 		break;
 
 	case K_PGDN:
 		local_cursor += visiblerows / 2;
-		if (local_cursor >= local_count) 
+		if (local_cursor >= local_count) // PGDN does not wrap, stops at end
 			local_cursor = local_count - 1;
 		break;
 
@@ -197,15 +197,15 @@ static void M_Load_Key(cmd_state_t *cmd, int k, int ascii)
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor--;
-		if (local_cursor < 0)
-			local_cursor = 0;
+		if (local_cursor < 0) // K_UPARROW wraps around to end
+			local_cursor = local_count - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor++;
-		if (local_cursor >= local_count)
-			local_cursor = local_count - 1;
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
+			local_cursor = 0;
 		break;
 
 leftus:
@@ -218,10 +218,10 @@ leftus:
 }
 
 
-static void M_Save_Key(cmd_state_t *cmd, int k, int ascii)
+static void M_Save_Key(cmd_state_t *cmd, int key, int ascii)
 {
 	char vabuf[1024];
-	switch (k) {
+	switch (key) {
 	case K_MOUSE2:
 		if (Hotspots_DidHit_Slider()) { 
 			local_cursor = hotspotx_hover; 
@@ -254,40 +254,40 @@ static void M_Save_Key(cmd_state_t *cmd, int k, int ascii)
 
 	case K_PGUP:
 		local_cursor -= visiblerows / 2;
-		if (local_cursor < 0) 
+		if (local_cursor < 0) // PGUP does not wrap, stops at start
 			local_cursor = 0;
 		break;
 
 	case K_MWHEELUP:
 		local_cursor -= visiblerows / 4;
-		if (local_cursor < 0) 
+		if (local_cursor < 0) // K_MWHEELUP does not wrap, stops at start
 			local_cursor = 0;
 		break;
 
 	case K_PGDN:
 		local_cursor += visiblerows / 2;
-		if (local_cursor >= local_count) 
+		if (local_cursor >= local_count)  // PGDN does not wrap, stops at end
 			local_cursor = local_count - 1;
 		break;
 
 	case K_MWHEELDOWN:
 		local_cursor += visiblerows / 4;
-		if (local_cursor >= local_count) 
+		if (local_cursor >= local_count) // K_MWHEELDOWN does not wrap, stops at end
 			local_cursor = local_count - 1;
 		break;
 
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor--;
-		if (local_cursor < 0)
-			local_cursor = 0;
+		if (local_cursor < 0) // K_UPARROW wraps around to end
+			local_cursor = local_count - 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor++;
-		if (local_cursor >= local_count)
-			local_cursor = local_count - 1;
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start
+			local_cursor = 0;
 		break;
 
 leftus:

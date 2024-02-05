@@ -1074,7 +1074,7 @@ void S_FreeSfx (sfx_t *sfx, qbool force)
 			}
 		if (prev_sfx == NULL)
 		{
-			Con_Printf ("S_FreeSfx: Can't find SFX %s in the list!\n", sfx->name);
+			Con_PrintLinef ("S_FreeSfx: Can't find SFX %s in the list!", sfx->name);
 			return;
 		}
 	}
@@ -1084,7 +1084,7 @@ void S_FreeSfx (sfx_t *sfx, qbool force)
 	{
 		if (channels[i].sfx == sfx)
 		{
-			Con_Printf ("S_FreeSfx: stopping channel %d for sfx \"%s\"\n", i, sfx->name);
+			Con_PrintLinef ("S_FreeSfx: stopping channel %d for sfx " QUOTED_S, i, sfx->name);
 			S_StopChannel (i, true, false);
 		}
 	}
@@ -1944,7 +1944,7 @@ void S_StaticSound (sfx_t *sfx, vec3_t origin, float fvol, float attenuation)
 		return;
 	if (!sfx->fetcher)
 	{
-		Con_Printf ("S_StaticSound: \"%s\" hasn't been precached\n", sfx->name);
+		Con_Printf ("S_StaticSound: " QUOTED_S " hasn't been precached\n", sfx->name);
 		return;
 	}
 

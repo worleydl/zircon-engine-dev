@@ -372,7 +372,7 @@ static trace_t CL_Trace_Toss (prvm_prog_t *prog, prvm_edict_t *tossent, prvm_edi
 		VectorCopy(PRVM_clientedictvector(tossent, origin), start);
 		VectorCopy(PRVM_clientedictvector(tossent, mins), mins);
 		VectorCopy(PRVM_clientedictvector(tossent, maxs), maxs);
-		trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, tossent, CL_GenericHitSuperContentsMask(tossent), 0, 0, collision_extendmovelength.value, true, true, NULL, true);
+		trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, tossent, CL_GenericHitSuperContentsMask(tossent), 0, 0, collision_extendmovelength.value, true, HITT_PLAYERS_1_NOTAMOVE, NULL, true);
 		VectorCopy (trace.endpos, PRVM_clientedictvector(tossent, origin));
 
 		if (trace.fraction < 1)
@@ -441,7 +441,7 @@ static void VM_CL_precache_model (prvm_prog_t *prog)
 		VM_Warning(prog, "VM_CL_precache_model: no free models\n");
 		return;
 	}
-	VM_Warning(prog, "VM_CL_precache_model: model \"%s\" not found\n", name);
+	VM_Warning(prog, "VM_CL_precache_model: model " QUOTED_S " not found\n", name);
 }
 
 // #22 entity(vector org, float rad) findradius
@@ -487,7 +487,7 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 		ent = touchedicts[i];
 		// Quake did not return non-solid entities but darkplaces does
 		// (note: this is the reason you can't blow up fallen zombies)
-		if (PRVM_clientedictfloat(ent, solid) == SOLID_NOT && !sv_gameplayfix_blowupfallenzombies.integer)
+		if (PRVM_clientedictfloat(ent, solid) == SOLID_NOT_0 && !sv_gameplayfix_blowupfallenzombies.integer)
 			continue;
 		// LadyHavoc: compare against bounding box rather than center so it
 		// doesn't miss large objects, and use DotProduct instead of Length
@@ -585,7 +585,7 @@ static void VM_CL_droptofloor (prvm_prog_t *prog)
 		end[2] -= 256; // Quake, QuakeWorld
 #endif
 
-	trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, NULL, true);
+	trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, HITT_PLAYERS_1_NOTAMOVE, NULL, true);
 
 	if (trace.fraction != 1)
 	{
@@ -614,7 +614,7 @@ static void VM_CL_lightstyle (prvm_prog_t *prog)
 		return;
 	}
 	strlcpy (cl.lightstyle[i].map, c, sizeof (cl.lightstyle[i].map));
-	cl.lightstyle[i].map[MAX_STYLESTRING - 1] = 0;
+	cl.lightstyle[i].map[MAX_STYLESTRING_64 - 1] = 0;
 	cl.lightstyle[i].length = (int)strlen(cl.lightstyle[i].map);
 }
 
@@ -2274,16 +2274,16 @@ static void VM_CL_getinputstate (prvm_prog_t *prog)
 	PRVM_G_FLOAT(OFS_RETURN) = false;
 	for (i = 0;i < CL_MAX_USERCMDS_128; i++)
 	{
-		if (cl.movecmd[i].sequence == frame)
+		if (cl.movecmd[i].clx_sequence == frame)
 		{
 			VectorCopy(cl.movecmd[i].viewangles, PRVM_clientglobalvector(input_angles));
 			PRVM_clientglobalfloat(input_buttons) = cl.movecmd[i].buttons; // FIXME: this should not be directly exposed to csqc (translation layer needed?)
-			PRVM_clientglobalvector(input_movevalues)[0] = cl.movecmd[i].forwardmove;
-			PRVM_clientglobalvector(input_movevalues)[1] = cl.movecmd[i].sidemove;
-			PRVM_clientglobalvector(input_movevalues)[2] = cl.movecmd[i].upmove;
-			PRVM_clientglobalfloat(input_timelength) = cl.movecmd[i].frametime;
+			PRVM_clientglobalvector(input_movevalues)[0] = cl.movecmd[i].clx_forwardmove;
+			PRVM_clientglobalvector(input_movevalues)[1] = cl.movecmd[i].clx_sidemove;
+			PRVM_clientglobalvector(input_movevalues)[2] = cl.movecmd[i].clx_upmove;
+			PRVM_clientglobalfloat(input_timelength) = cl.movecmd[i].clx_frametime;
 			// this probably shouldn't be here
-			if (cl.movecmd[i].crouch)
+			if (cl.movecmd[i].clx_crouch)
 			{
 				VectorCopy(cl.playercrouchmins, PRVM_clientglobalvector(pmove_mins));
 				VectorCopy(cl.playercrouchmaxs, PRVM_clientglobalvector(pmove_maxs));
@@ -2326,11 +2326,11 @@ static void VM_CL_runplayerphysics (prvm_prog_t *prog)
 		s.self = NULL;
 		VectorCopy(PRVM_clientglobalvector(pmove_org), s.origin);
 		VectorCopy(PRVM_clientglobalvector(pmove_vel), s.velocity);
-		VectorCopy(PRVM_clientglobalvector(pmove_mins), s.mins);
-		VectorCopy(PRVM_clientglobalvector(pmove_maxs), s.maxs);
+		VectorCopy(PRVM_clientglobalvector(pmove_mins), s.mdl_mins);
+		VectorCopy(PRVM_clientglobalvector(pmove_maxs), s.mdl_maxs);
 		s.crouched = 0;
 		s.waterjumptime = PRVM_clientglobalfloat(pmove_waterjumptime);
-		s.cmd.canjump = (int)PRVM_clientglobalfloat(pmove_jump_held) == 0;
+		s.cmd.clx_canjump = (int)PRVM_clientglobalfloat(pmove_jump_held) == 0;
 	}
 	else
 	{
@@ -2338,40 +2338,45 @@ static void VM_CL_runplayerphysics (prvm_prog_t *prog)
 		s.self = ent;
 		VectorCopy(PRVM_clientedictvector(ent, origin), s.origin);
 		VectorCopy(PRVM_clientedictvector(ent, velocity), s.velocity);
-		VectorCopy(PRVM_clientedictvector(ent, mins), s.mins);
-		VectorCopy(PRVM_clientedictvector(ent, maxs), s.maxs);
+		VectorCopy(PRVM_clientedictvector(ent, mins), s.mdl_mins);
+		VectorCopy(PRVM_clientedictvector(ent, maxs), s.mdl_maxs);
 		s.crouched = ((int)PRVM_clientedictfloat(ent, pmove_flags) & PMF_DUCKED) != 0;
 		s.waterjumptime = 0; // FIXME where do we get this from? FTEQW lacks support for this too
-		s.cmd.canjump = ((int)PRVM_clientedictfloat(ent, pmove_flags) & PMF_JUMP_HELD) == 0;
+		s.cmd.clx_canjump = ((int)PRVM_clientedictfloat(ent, pmove_flags) & PMF_JUMP_HELD) == 0;
 	}
 
 	VectorCopy(PRVM_clientglobalvector(input_angles), s.cmd.viewangles);
-	s.cmd.forwardmove = PRVM_clientglobalvector(input_movevalues)[0];
-	s.cmd.sidemove = PRVM_clientglobalvector(input_movevalues)[1];
-	s.cmd.upmove = PRVM_clientglobalvector(input_movevalues)[2];
+	s.cmd.clx_forwardmove = PRVM_clientglobalvector(input_movevalues)[0];
+	s.cmd.clx_sidemove = PRVM_clientglobalvector(input_movevalues)[1];
+	s.cmd.clx_upmove = PRVM_clientglobalvector(input_movevalues)[2];
 	s.cmd.buttons = PRVM_clientglobalfloat(input_buttons);
-	s.cmd.frametime = PRVM_clientglobalfloat(input_timelength);
-	s.cmd.jump = (s.cmd.buttons & 2) != 0;
-	s.cmd.crouch = (s.cmd.buttons & 16) != 0;
+	s.cmd.clx_frametime = PRVM_clientglobalfloat(input_timelength);
+	s.cmd.clx_jump = (s.cmd.buttons & 2) != 0;
+	s.cmd.clx_crouch = (s.cmd.buttons & 16) != 0;
 
-	CL_ClientMovement_PlayerMove_Frame(&s);
+	// Baker: For now, keep HITT_PLAYERS_1 always? No.
+	SET___ int collide_type = cl_movement_collide_models.integer ?
+			(cls.protocol == PROTOCOL_QUAKEWORLD ? HITT_PLAYERS_PLUS_ONLY_MONSTERS_QW_3 :
+			Have_Zircon_Ext_Flag_CLS (ZIRCON_EXT_NONSOLID_FLAG_8) ? (Have_Zircon_Ext_Flag_CLS(ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128) ? HITT_PLAYERS_PLUS_SOLIDS_NO_PLAYERS_6 : HITT_PLAYERS_PLUS_SOLIDS_2) :
+			HITT_PLAYERS_1) :  HITT_PLAYERS_1;
 
-	if (ent == prog->edicts)
-	{
+	CL_ClientMovement_PlayerMove_Frame(&s, /*HITT_PLAYERS_1*/ collide_type);
+
+	if (ent == prog->edicts) {
 		// deprecated use
-		VectorCopy(s.origin, PRVM_clientglobalvector(pmove_org));
-		VectorCopy(s.velocity, PRVM_clientglobalvector(pmove_vel));
-		PRVM_clientglobalfloat(pmove_jump_held) = !s.cmd.canjump;
+		VectorCopy	(s.origin, PRVM_clientglobalvector(pmove_org));
+		VectorCopy	(s.velocity, PRVM_clientglobalvector(pmove_vel));
+		PRVM_clientglobalfloat(pmove_jump_held) = !s.cmd.clx_canjump;
 		PRVM_clientglobalfloat(pmove_waterjumptime) = s.waterjumptime;
 	}
 	else
 	{
 		// new use
-		VectorCopy(s.origin, PRVM_clientedictvector(ent, origin));
-		VectorCopy(s.velocity, PRVM_clientedictvector(ent, velocity));
+		VectorCopy	(s.origin, PRVM_clientedictvector(ent, origin));
+		VectorCopy	(s.velocity, PRVM_clientedictvector(ent, velocity));
 		PRVM_clientedictfloat(ent, pmove_flags) =
 			(s.crouched ? PMF_DUCKED : 0) |
-			(s.cmd.canjump ? 0 : PMF_JUMP_HELD) |
+			(s.cmd.clx_canjump ? 0 : PMF_JUMP_HELD) |
 			(s.onground ? PMF_ONGROUND : 0);
 	}
 }
@@ -2624,11 +2629,11 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 				staticent->render.crflags |= RENDER_LIGHT;
 		}
 		// turn off shadows from transparent objects
-		if (!(staticent->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST)) && (staticent->render.alpha >= 1))
+		if (!(staticent->render.effects & (EF_NOSHADOW | EF_ADDITIVE_32 | EF_NODEPTHTEST)) && (staticent->render.alpha >= 1))
 			staticent->render.crflags |= RENDER_SHADOW;
 		if (staticent->render.effects & EF_NODEPTHTEST)
 			staticent->render.crflags |= RENDER_NODEPTHTEST;
-		if (staticent->render.effects & EF_ADDITIVE)
+		if (staticent->render.effects & EF_ADDITIVE_32)
 			staticent->render.crflags |= RENDER_ADDITIVE;
 		if (staticent->render.effects & EF_DOUBLESIDED)
 			staticent->render.crflags |= RENDER_DOUBLESIDED;
@@ -3149,10 +3154,10 @@ static void VM_CL_setattachment (prvm_prog_t *prog)
 		if (model) {
 			tagindex = Mod_Alias_GetTagIndexForName(model, (int)PRVM_clientedictfloat(tagentity, skin), tagname);
 			if (tagindex == 0)
-				Con_DPrintLinef ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d (model \"%s\") but could not find it", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
+				Con_DPrintLinef ("setattachment(edict %d, edict %d, string " QUOTED_S "): tried to find tag named " QUOTED_S " on entity %d (model " QUOTED_S ") but could not find it", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity), model->model_name);
 		}
 		else
-			Con_DPrintLinef ("setattachment(edict %d, edict %d, string \"%s\"): tried to find tag named \"%s\" on entity %d but it has no model", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
+			Con_DPrintLinef ("setattachment(edict %d, edict %d, string " QUOTED_S "): tried to find tag named " QUOTED_S " on entity %d but it has no model", PRVM_NUM_FOR_EDICT(e), PRVM_NUM_FOR_EDICT(tagentity), tagname, tagname, PRVM_NUM_FOR_EDICT(tagentity));
 	}
 
 	PRVM_clientedictedict(e, tag_entity) = PRVM_EDICT_TO_PROG(tagentity);
@@ -3377,7 +3382,7 @@ static void VM_CL_gettagindex (prvm_prog_t *prog)
 		tag_index = CL_GetTagIndex(prog, ent, tag_name);
 		if (tag_index == 0)
 			if (developer_extra.integer)
-				Con_DPrintf ("VM_CL_gettagindex(entity #%d): tag \"%s\" not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
+				Con_DPrintf ("VM_CL_gettagindex(entity #%d): tag " QUOTED_S " not found\n", PRVM_NUM_FOR_EDICT(ent), tag_name);
 	}
 	PRVM_G_FLOAT(OFS_RETURN) = tag_index;
 }
@@ -4191,6 +4196,7 @@ static void VM_DrawPolygonCallback (const entity_render_t *ent, const rtlight_t 
 	}
 }
 
+WARP_X_CALLERS_ ( VM_CL_R_PolygonEnd_Classic )
 static void VMPolygons_Store(vmpolygons_t *polys)
 {
 	qbool hasalpha;
@@ -4331,6 +4337,22 @@ static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
 	polys->begin_draw2d = (prog->argc >= 3 ? (int)PRVM_G_FLOAT(OFS_PARM2) : r_refdef.draw2dstage);
 }
 
+void SBar2D_PolygonBegin (prvm_prog_t *prog, const char *texname, float drawflags, float isdraw2d)
+{
+	//prvm_prog_t *prog = CLVM_prog;
+	
+	// we need to remember whether this is a 2D or 3D mesh we're adding to
+	model_t *mod = isdraw2d ? CL_Mesh_UI() : CL_Mesh_Scene();
+	prog->polygonbegin_model = mod;
+	if (texname == NULL || texname[0] == 0)
+		texname = "$whiteimage";
+
+	//SBar2D_PolygonBegin (prog, texname, drawflags, isdraw2d);
+	c_strlcpy (prog->polygonbegin_texname, texname);
+	prog->polygonbegin_drawflags = drawflags;
+	prog->polygonbegin_numvertices = 0;
+}
+
 //void(string texturename, float flag[, float is2d]) R_BeginPolygon
 static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 {
@@ -4339,10 +4361,12 @@ static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 		VM_CL_R_PolygonBegin_Classic (prog);
 		return;
 	}
+
+	
 	const char *texname;
 	int drawflags;
 	qbool draw2d;
-	model_t *mod;
+//B	model_t *mod;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_R_PolygonBegin);
 
@@ -4360,14 +4384,16 @@ static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 		draw2d = prog->polygonbegin_guess2d;
 	}
 
+	
 	// we need to remember whether this is a 2D or 3D mesh we're adding to
-	mod = draw2d ? CL_Mesh_UI() : CL_Mesh_Scene();
-	prog->polygonbegin_model = mod;
+// B	mod = draw2d ? CL_Mesh_UI() : CL_Mesh_Scene();
+// B	prog->polygonbegin_model = mod;
 	if (texname == NULL || texname[0] == 0)
 		texname = "$whiteimage";
-	c_strlcpy (prog->polygonbegin_texname, texname);
-	prog->polygonbegin_drawflags = drawflags;
-	prog->polygonbegin_numvertices = 0;
+	SBar2D_PolygonBegin (prog, texname, drawflags, draw2d);
+// B	c_strlcpy (prog->polygonbegin_texname, texname);
+// B	prog->polygonbegin_drawflags = drawflags;
+// B	prog->polygonbegin_numvertices = 0;
 }
 
 static void VM_CL_R_PolygonVertex_Classic (prvm_prog_t *prog)
@@ -4401,6 +4427,32 @@ static void VM_CL_R_PolygonVertex_Classic (prvm_prog_t *prog)
 }
 
 //void(vector org, vector texcoords, vector rgb, float alpha) R_PolygonVertex
+
+void SBar2D_PolygonVertex (prvm_prog_t *prog, float x, float y, float z, float tx, float ty, float tz, float red, float green, float blue, float alpha)
+{
+	float *o;
+	model_t *mod = prog->polygonbegin_model;
+
+	if (prog->polygonbegin_maxvertices <= prog->polygonbegin_numvertices)
+	{
+		prog->polygonbegin_maxvertices = max(16, prog->polygonbegin_maxvertices * 2);
+		prog->polygonbegin_vertexdata = (float *)Mem_Realloc(prog->progs_mempool, prog->polygonbegin_vertexdata, prog->polygonbegin_maxvertices * sizeof(float[10]));
+	}
+	o = prog->polygonbegin_vertexdata + prog->polygonbegin_numvertices++ * 10;
+
+	o[0] = x; //v[0];
+	o[1] = y; //v[1];
+	o[2] = z; // v[2];
+	o[3] = tx;// tc[0];
+	o[4] = ty;//tc[1];
+	o[5] = tz;//tc[2];
+	o[6] = red;//c[0];
+	o[7] = green;//c[1];
+	o[8] = blue;//c[2];
+	o[9] = alpha;
+
+}
+
 static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 {
 	// DarkPlaces Classic method (123)
@@ -4461,18 +4513,10 @@ static void VM_CL_R_PolygonEnd_Classic (prvm_prog_t *prog)
 		VM_Warning(prog, "VM_CL_R_PolygonEnd: %d vertices isn't a good choice\n", polys->begin_vertices);
 }
 
-//void() R_EndPolygon
-static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
+WARP_X_ (SBar2D_PolygonBegin)
+void SBar2D_PolygonEnd (prvm_prog_t *prog)
 {
-	// DarkPlaces Classic method (123)
-	if (csqc_polygons_darkplaces_classic_3d.integer && prog->polygonbegin_guess2d == false) {
-		VM_CL_R_PolygonEnd_Classic (prog);
-		return;
-	}
-
 	int i;
-	qbool hascolor;
-	qbool hasalpha;
 	int e0 = 0, e1 = 0, e2 = 0;
 	float *o;
 	model_t *mod = prog->polygonbegin_model;
@@ -4480,16 +4524,9 @@ static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 	texture_t *tex;
 	int materialflags;
 
-	VM_SAFEPARMCOUNT(0, VM_CL_R_PolygonEnd);
-	if (!mod)
-	{
-		VM_Warning(prog, "VM_CL_R_PolygonEnd: VM_CL_R_PolygonBegin wasn't called\n");
-		return;
-	}
-
 	// determine if vertex alpha is being used so we can provide that hint to GetTexture...
-	hascolor = false;
-	hasalpha = false;
+	qbool hascolor = false;
+	qbool hasalpha = false;
 	for (i = 0; i < prog->polygonbegin_numvertices; i++)
 	{
 		o = prog->polygonbegin_vertexdata + 10 * i;
@@ -4501,13 +4538,14 @@ static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 
 	// create the surface, looking up the best matching texture/shader
 	materialflags = MATERIALFLAG_WALL;
-	if (csqc_polygons_defaultmaterial_nocullface.integer)
+	if (csqc_polygons_defaultmaterial_nocullface.integer /*d: 0*/)
 		materialflags |= MATERIALFLAG_NOCULLFACE;
 	if (hascolor)
 		materialflags |= MATERIALFLAG_VERTEXCOLOR;
 	if (hasalpha)
 		materialflags |= MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
-	tex = Mod_Mesh_GetTexture(mod, prog->polygonbegin_texname, prog->polygonbegin_drawflags, TEXF_ALPHA, materialflags);
+	tex = Mod_Mesh_GetTexture(mod, prog->polygonbegin_texname, prog->polygonbegin_drawflags, 
+		TEXF_ALPHA, materialflags);
 	surf = Mod_Mesh_AddSurface(mod, tex, false);
 	// create triangle fan
 	for (i = 0; i < prog->polygonbegin_numvertices; i++)
@@ -4528,6 +4566,76 @@ static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 	prog->polygonbegin_texname[0] = 0;
 	prog->polygonbegin_drawflags = 0;
 	prog->polygonbegin_numvertices = 0;
+}
+
+//void() R_EndPolygon
+static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
+{
+	// DarkPlaces Classic method (123)
+	if (csqc_polygons_darkplaces_classic_3d.integer && prog->polygonbegin_guess2d == false) {
+		VM_CL_R_PolygonEnd_Classic (prog);
+		return;
+	}
+
+	SBar2D_PolygonEnd (prog);
+	//int i;
+	//qbool hascolor;
+	//qbool hasalpha;
+	//int e0 = 0, e1 = 0, e2 = 0;
+	//float *o;
+	//model_t *mod = prog->polygonbegin_model;
+	//msurface_t *surf;
+	//texture_t *tex;
+	//int materialflags;
+
+	//VM_SAFEPARMCOUNT(0, VM_CL_R_PolygonEnd);
+	//if (!mod)
+	//{
+	//	VM_Warning(prog, "VM_CL_R_PolygonEnd: VM_CL_R_PolygonBegin wasn't called\n");
+	//	return;
+	//}
+
+	//// determine if vertex alpha is being used so we can provide that hint to GetTexture...
+	//hascolor = false;
+	//hasalpha = false;
+	//for (i = 0; i < prog->polygonbegin_numvertices; i++)
+	//{
+	//	o = prog->polygonbegin_vertexdata + 10 * i;
+	//	if (o[6] != 1.0f || o[7] != 1.0f || o[8] != 1.0f)
+	//		hascolor = true;
+	//	if (o[9] != 1.0f)
+	//		hasalpha = true;
+	//}
+
+	//// create the surface, looking up the best matching texture/shader
+	//materialflags = MATERIALFLAG_WALL;
+	//if (csqc_polygons_defaultmaterial_nocullface.integer)
+	//	materialflags |= MATERIALFLAG_NOCULLFACE;
+	//if (hascolor)
+	//	materialflags |= MATERIALFLAG_VERTEXCOLOR;
+	//if (hasalpha)
+	//	materialflags |= MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
+	//tex = Mod_Mesh_GetTexture(mod, prog->polygonbegin_texname, prog->polygonbegin_drawflags, TEXF_ALPHA, materialflags);
+	//surf = Mod_Mesh_AddSurface(mod, tex, false);
+	//// create triangle fan
+	//for (i = 0; i < prog->polygonbegin_numvertices; i++)
+	//{
+	//	o = prog->polygonbegin_vertexdata + 10 * i;
+	//	e2 = Mod_Mesh_IndexForVertex(mod, surf, o[0], o[1], o[2], 0, 0, 0, o[3], o[4], 0, 0, o[6], o[7], o[8], o[9]);
+	//	if (i >= 2)
+	//		Mod_Mesh_AddTriangle(mod, surf, e0, e1, e2);
+	//	else if (i == 0)
+	//		e0 = e2;
+	//	e1 = e2;
+	//}
+	//// build normals (since they are not provided)
+	//Mod_BuildNormals(surf->num_firstvertex, surf->num_vertices, surf->num_triangles, mod->surfmesh.data_vertex3f, mod->surfmesh.data_element3i + 3 * surf->num_firsttriangle, mod->surfmesh.data_normal3f, true);
+
+	//// reset state
+	//prog->polygonbegin_model = NULL;
+	//prog->polygonbegin_texname[0] = 0;
+	//prog->polygonbegin_drawflags = 0;
+	//prog->polygonbegin_numvertices = 0;
 }
 
 /*
@@ -4641,7 +4749,7 @@ static qbool CL_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool no
 					neworg[2] += 8;
 			}
 			VectorCopy(PRVM_clientedictvector(ent, origin), start);
-			trace = CL_TraceBox(start, mins, maxs, neworg, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, &svent, true);
+			trace = CL_TraceBox(start, mins, maxs, neworg, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, HITT_PLAYERS_1_NOTAMOVE, &svent, true);
 			if (settrace)
 				CL_VM_SetTraceGlobals(prog, &trace, svent);
 
@@ -4676,7 +4784,7 @@ static qbool CL_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool no
 	if (trace.startsolid)
 	{
 		neworg[2] -= sv_stepheight.value;
-		trace = CL_TraceBox(neworg, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, &svent, true);
+		trace = CL_TraceBox(neworg, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, HITT_PLAYERS_1_NOTAMOVE, &svent, true);
 		if (settrace)
 			CL_VM_SetTraceGlobals(prog, &trace, svent);
 		if (trace.startsolid)

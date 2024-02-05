@@ -360,7 +360,7 @@ void R_FreeTexture(rtexture_t *rt)
 	if (*gltpointer == glt)
 		*gltpointer = glt->chain;
 	else
-		Host_Error_Line ("R_FreeTexture: texture \"%s\" not linked in pool", glt->identifier);
+		Host_Error_Line ("R_FreeTexture: texture " QUOTED_S " not linked in pool", glt->identifier);
 
 	R_Mesh_ClearBindingsForTexture(glt->texnum);
 
@@ -965,19 +965,19 @@ static void GL_SetupTextureParameters(int flags, textype_t textype, int texturet
 static void R_UploadPartialTexture(gltexture_t *glt, const unsigned char *data, int fragx, int fragy, int fragz, int fragwidth, int fragheight, int fragdepth)
 {
 	if (data == NULL)
-		Sys_Error ("R_UploadPartialTexture \"%s\": partial update with NULL pixels", glt->identifier);
+		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update with NULL pixels", glt->identifier);
 
 	if (glt->texturetype != GLTEXTURETYPE_2D)
-		Sys_Error ("R_UploadPartialTexture \"%s\": partial update of type other than 2D", glt->identifier);
+		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update of type other than 2D", glt->identifier);
 
 	if (glt->textype->textype == TEXTYPE_PALETTE)
-		Sys_Error ("R_UploadPartialTexture \"%s\": partial update of paletted texture", glt->identifier);
+		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update of paletted texture", glt->identifier);
 
 	if (glt->flags & (TEXF_MIPMAP | TEXF_PICMIP))
-		Sys_Error ("R_UploadPartialTexture \"%s\": partial update not supported with MIPMAP or PICMIP flags", glt->identifier);
+		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update not supported with MIPMAP or PICMIP flags", glt->identifier);
 
 	if (glt->inputwidth != glt->tilewidth || glt->inputheight != glt->tileheight || glt->tiledepth != 1)
-		Sys_Error ("R_UploadPartialTexture \"%s\": partial update not supported with stretched or special textures", glt->identifier);
+		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update not supported with stretched or special textures", glt->identifier);
 
 	// update a portion of the image
 
@@ -1008,7 +1008,7 @@ static void R_UploadFullTexture(gltexture_t *glt, const unsigned char *data)
 
 	// error out if a stretch is needed on special texture types
 	if (glt->texturetype != GLTEXTURETYPE_2D && (glt->tilewidth != glt->inputwidth || glt->tileheight != glt->inputheight || glt->tiledepth != glt->inputdepth))
-		Sys_Error ("R_UploadFullTexture \"%s\": stretch uploads allowed only on 2D textures\n", glt->identifier);
+		Sys_Error ("R_UploadFullTexture " QUOTED_S ": stretch uploads allowed only on 2D textures\n", glt->identifier);
 
 	// when picmip or maxsize is applied, we scale up to a power of 2 multiple
 	// of the target size and then use the mipmap reduction function to get
@@ -2327,7 +2327,7 @@ void R_UpdateTexture(rtexture_t *rt, const unsigned char *data, int x, int y, in
 		Host_Error_Line ("R_UpdateTexture: no texture supplied");
 	if (!glt->texnum)
 	{
-		Con_DPrintf ("R_UpdateTexture: texture %p \"%s\" in pool %p has not been uploaded yet\n", (void *)glt, glt->identifier, (void *)glt->pool);
+		Con_DPrintf ("R_UpdateTexture: texture %p " QUOTED_S " in pool %p has not been uploaded yet\n", (void *)glt, glt->identifier, (void *)glt->pool);
 		return;
 	}
 	// update part of the texture

@@ -31,7 +31,7 @@ void R_RegisterModule(const char *name, void(*start)(void), void(*shutdown)(void
 			break;
 		if (String_Does_Match(name, rendermodule[i].name))
 		{
-			Con_Printf ("R_RegisterModule: module \"%s\" registered twice\n", name);
+			Con_Printf ("R_RegisterModule: module " QUOTED_S " registered twice\n", name);
 			return;
 		}
 	}
@@ -55,10 +55,10 @@ void R_Modules_Start(void)
 			continue;
 		if (rendermodule[i].active)
 		{
-			Con_Printf ("R_Modules_Start: module \"%s\" already active\n", rendermodule[i].name);
+			Con_Printf ("R_Modules_Start: module " QUOTED_S " already active\n", rendermodule[i].name);
 			continue;
 		}
-		Con_DPrintf ("Starting render module \"%s\"\n", rendermodule[i].name);
+		Con_DPrintLinef ("Starting render module " QUOTED_S, rendermodule[i].name);
 		rendermodule[i].active = 1;
 		rendermodule[i].start();
 	}
@@ -74,7 +74,7 @@ void R_Modules_Shutdown(void)
 			continue;
 		if (!rendermodule[i].active)
 			continue;
-		Con_DPrintf ("Stopping render module \"%s\"\n", rendermodule[i].name);
+		Con_DPrintLinef ("Stopping render module " QUOTED_S, rendermodule[i].name);
 		rendermodule[i].active = 0;
 		rendermodule[i].shutdown();
 	}

@@ -50,6 +50,9 @@
 //
 // these are the key numbers that should be passed to Key_Event
 //
+
+#define K_SUPERSCRIPT_2 178 // AZERTY "2" in tilde key location 
+
 typedef enum keynum_e
 {
 	K_TEXT			= 1, // used only for unicode character input

@@ -250,15 +250,15 @@ static void CSQC_SetGlobals (double frametime)
 		PRVM_clientglobalfloat(cltime) = host.realtime; // Spike named it that way.
 		PRVM_clientglobalfloat(frametime) = frametime;
 		PRVM_clientglobalfloat(servercommandframe) = cls.servermovesequence;
-		PRVM_clientglobalfloat(clientcommandframe) = cl.movecmd[0].sequence;
+		PRVM_clientglobalfloat(clientcommandframe) = cl.movecmd[0].clx_sequence;
 		VectorCopy(cl.viewangles, PRVM_clientglobalvector(input_angles));
 		// // FIXME: this actually belongs into getinputstate().. [12/17/2007 Black]
 		PRVM_clientglobalfloat(input_buttons) = cl.movecmd[0].buttons;
-		VectorSet(PRVM_clientglobalvector(input_movevalues), cl.movecmd[0].forwardmove, cl.movecmd[0].sidemove, cl.movecmd[0].upmove);
+		VectorSet(PRVM_clientglobalvector(input_movevalues), cl.movecmd[0].clx_forwardmove, cl.movecmd[0].clx_sidemove, cl.movecmd[0].clx_upmove);
 		VectorCopy(cl.csqc_vieworiginfromengine, cl.csqc_vieworigin);
 		VectorCopy(cl.csqc_viewanglesfromengine, cl.csqc_viewangles);
 
-		// LadyHavoc: Spike says not to do this, but without pmove_org the
+		// LadyHavoc: Spike says not to do this, but without pmove_org the (PHYSICAL)
 		// CSQC is useless as it can't alter the view origin without
 		// completely replacing it
 		Matrix4x4_OriginFromMatrix(&cl.entities[cl.viewentity].render.matrix, pmove_org);
@@ -393,11 +393,11 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 
 	if (renderflags)
 	{
-		if (renderflags & RF_VIEWMODEL) entrender->crflags |= RENDER_VIEWMODEL | RENDER_NODEPTHTEST;
-		if (renderflags & RF_EXTERNALMODEL) entrender->crflags |= RENDER_EXTERIORMODEL;
-		if (renderflags & RF_WORLDOBJECT) entrender->crflags |= RENDER_WORLDOBJECT;
-		if (renderflags & RF_DEPTHHACK) entrender->crflags |= RENDER_NODEPTHTEST;
-		if (renderflags & RF_ADDITIVE) entrender->crflags |= RENDER_ADDITIVE;
+		if (renderflags & RF_VIEWMODEL)			entrender->crflags |= RENDER_VIEWMODEL | RENDER_NODEPTHTEST;
+		if (renderflags & RF_EXTERNALMODEL)		entrender->crflags |= RENDER_EXTERIORMODEL;
+		if (renderflags & RF_WORLDOBJECT)		entrender->crflags |= RENDER_WORLDOBJECT;
+		if (renderflags & RF_DEPTHHACK)			entrender->crflags |= RENDER_NODEPTHTEST;
+		if (renderflags & RF_ADDITIVE)			entrender->crflags |= RENDER_ADDITIVE;
 		if (renderflags & RF_DYNAMICMODELLIGHT) entrender->crflags |= RENDER_DYNAMICMODELLIGHT;
 	}
 
@@ -416,7 +416,7 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 			entrender->crflags |= RENDER_LIGHT;
 	}
 	// hide player shadow during intermission or nehahra movie
-	if (!(entrender->effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST))
+	if (!(entrender->effects & (EF_NOSHADOW | EF_ADDITIVE_32 | EF_NODEPTHTEST))
 	 &&  (entrender->alpha >= 1)
 	 && !(renderflags & RF_NOSHADOW)
 	 && !(entrender->crflags & RENDER_VIEWMODEL)
@@ -428,7 +428,7 @@ qbool CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 		entrender->crflags |= RENDER_NOSELFSHADOW;
 	if (entrender->effects & EF_NODEPTHTEST)
 		entrender->crflags |= RENDER_NODEPTHTEST;
-	if (entrender->effects & EF_ADDITIVE)
+	if (entrender->effects & EF_ADDITIVE_32)
 		entrender->crflags |= RENDER_ADDITIVE;
 	if (entrender->effects & EF_DOUBLESIDED)
 		entrender->crflags |= RENDER_DOUBLESIDED;
@@ -512,7 +512,7 @@ qbool CL_VM_UpdateView (double frametime)
 		/*
 		 * This should be fine for now but FTEQW uses flags for keydest
 		 * and checks that an array called "eyeoffset" is 0
-		 * 
+		 *
 		 * Just a note in case there's compatibility problems later
 		 */
 		PRVM_G_FLOAT(OFS_PARM2) = key_dest == key_game;
@@ -580,31 +580,46 @@ void CL_VM_Parse_StuffCmd (const char *msg, int is_qw)
 		return;
 	}
 
+	if (developer_stuffcmd.value) {
+		char msg_copy[MAX_INPUTLINE_16384];
+		c_strlcpy (msg_copy, msg);
+		int did_strip = String_Edit_Remove_This_Trailing_Character (msg_copy, NEWLINE_CHAR_10);
+		Con_PrintLinef ("developer_stuffcmd: " QUOTED_S " %s", msg_copy, did_strip ? "(+ newline)" : "(no newline)");
+	}
+
+	if (developer_qw.integer) {
+		// Commented cmd string is sneaky info
+		// ezQuake looks for: tinfo, cainfo, at, vwep, sn, qul, wps
+		if (String_Does_Start_With_Caseless_PRE (msg, "//")) goto skip_comment;
+		Con_PrintLinef ("Parse_StuffCmd: %s", msg);
+	}
+
+skip_comment:
 	// Baker: In practice, I have yet to see this hit?
 	// Hit @ connect "50.116.17.172:28501" // unnamed
 	// *version             MVDSV 0.35
 	// *z_ext               511
 
-	// Baker: Does not hit on fte or 
+	// Baker: Does not hit on fte or
 	//*version             MVDSV 0.28 cXE
 	//*z_ext               235
 
 	// ezQuake send cl extensions (stuffcmd)  !strcmp(msg, "cmd pext\n"
 	if (is_qw && String_Does_Start_With (msg, "cmd pext")) {
 		// If someone requested protocol extensions we support - reply.
-		// PROTOCOL_VERSION_FTE		
+		// PROTOCOL_VERSION_FTE
 		char vabuf[1024];
 
 		int ext_supported = cls.fteprotocolextensions ? cls.fteprotocolextensions : QW_CL_SupportedFTEExtensions();
-		Con_PrintLinef ("StuffCmd cmd pext: PEXT: 0x%x is fte protocol ver and 0x%x is fteprotocolextensions", 
+		Con_PrintLinef ("StuffCmd cmd pext: PEXT: 0x%x is fte protocol ver and 0x%x is fteprotocolextensions",
 			PROTOCOL_VERSION_FTE1, ext_supported);
-		
+
 		Cbuf_AddTextLine (cmd_local, va(vabuf, sizeof(vabuf), "cmd pext 0x%x 0x%x", PROTOCOL_VERSION_FTE1, ext_supported) );
 		return;
 	}
 
 
-	if (cls.demoplayback)		
+	if (cls.demoplayback)
 		if (!strncmp(msg, "curl --clear_autodownload\ncurl --pak --forthismap --as ", 55))
 		{
 			// special handling for map download commands
@@ -675,11 +690,100 @@ static void CL_VM_Parse_Print (const char *msg)
 	prog->tempstringsbuf.cursize = restorevm_tempstringsbuf_cursize;
 }
 
+void CSQC_AddPrintTextQWColor (const char *text)
+{
+	int is_bronze = String_Does_Start_With (text, "\1"); // Character 1
+	// We know there is stuff
+	char vabuf[MAX_INPUTLINE_16384] = {0};
+	//c_strlcpy (vabuf, msg);
+	const char *src = text;
+	char *dst = vabuf;
+	int lessor = 0;
+
+	while (*src) {
+		if (src[0] == '&') {
+			if (src[1] == 'c' && src[2] && src[3] && src[4]) {
+#if 1
+	*dst++ = '^';
+	*dst++ = 'x';
+	*dst++ = src[2];
+	*dst++ = src[3];
+	*dst++ = src[4];
+
+#else
+
+				*dst++ = '^';
+				*dst++ = '5';
+				lessor += 3;
+
+#endif
+				src++; // Skip &
+				src++; // Skip c
+				src++; // Skip r
+				src++; // Skip g
+				src++; // Skip b
+				// CON_CYAN
+				continue;
+			}
+			if (src[1] == 'r') {
+				// CON_WHITE
+				*dst++ = '^';
+				*dst++ = is_bronze ? '3' : '7';
+				src++; // Skip &
+				src++; // Skip r
+				continue;
+			}
+		}
+
+		*dst++ = *src++;
+	}
+	*dst++ = 0;
+	if (strlen(text) == strlen(vabuf) + lessor) {
+		// Good
+	} else {
+		// Bad
+	}
+	CSQC_AddPrintText (vabuf);
+}
+
+	//
+	//for (int i = 0; text[i]; i ++) {
+	//	if (text[i] != '&') {
+	//		vabuf[i] = text[i];
+	//		continue;
+	//	}
+	//
+	//	//							// R			// G			// B
+	//	if (text[i + 1] == 'c' && text[i + 2] && text[i + 3] && text[i + 4]) {
+	//		//int r = HexToInt(text[i + 2]);
+	//		//int g = HexToInt(text[i + 3]);
+	//		//int b = HexToInt(text[i + 4]);
+	//
+	//		i += 4;
+	//		continue;
+	//		}
+	//	}
+	//		else if (text[i + 1] == 'r') {
+	//			if (!color_is_white) {
+	//				rgba[0] = rgba[1] = rgba[2] = 255;
+	//				rgba[3] = 255 * alpha;
+	//				color_is_white = true;
+	//				Draw_SetColor(rgba);
+	//			}
+
+	//			i++;
+	//			continue;
+	//		}
+	//}
+
+	//CSQC_AddPrintText (vabuf);
+
 void CSQC_AddPrintText (const char *msg)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	size_t j;
 	CSQC_BEGIN
+
 	if (cl.csqc_loaded && PRVM_clientfunction(CSQC_Parse_Print)) {
 		// FIXME: is this bugged?
 		j = strlen(msg)-1;
@@ -975,8 +1079,7 @@ qbool MakeDownloadPacket(const char *filename, unsigned char *data, size_t len, 
 		return false; // CSQC can't run in QW anyway
 
 	SZ_Clear(buf);
-	if (cnt == 0)
-	{
+	if (cnt == 0) {
 		MSG_WriteByte(buf, svc_stufftext);
 		MSG_WriteString(buf, va(vabuf, sizeof(vabuf), "\ncl_downloadbegin %lu %s\n", (unsigned long)len, filename));
 		return true;
@@ -1033,11 +1136,11 @@ void CL_VM_Init (void)
 	// see if the requested csprogs.dat file matches the requested crc
 	if (!cls.demoplayback || csqc_usedemoprogs.integer) {
 		csprogsname = va(vabuf, sizeof(vabuf), "dlcache/%s.%d.%d", csqc_progname.string, requiredsize, requiredcrc);
-		if (cls.caughtcsprogsdata && 
-			cls.caughtcsprogsdatasize == requiredsize && 
+		if (cls.caughtcsprogsdata &&
+			cls.caughtcsprogsdatasize == requiredsize &&
 			CRC_Block(cls.caughtcsprogsdata, (size_t)cls.caughtcsprogsdatasize) == requiredcrc)
 		{
-			Con_DPrintf ("Using buffered \"%s\"\n", csprogsname);  // Baker: and this is what?
+			Con_DPrintLinef ("Using buffered " QUOTED_S, csprogsname);  // Baker: and this is what?
 			csprogsdata = cls.caughtcsprogsdata;
 			csprogsdatasize = cls.caughtcsprogsdatasize;
 			cls.caughtcsprogsdata = NULL;
@@ -1045,14 +1148,14 @@ void CL_VM_Init (void)
 		}
 		else
 		{
-			Con_DPrintf ("Not using buffered \"%s\" (buffered: %p, %d)\n", csprogsname, (void *)cls.caughtcsprogsdata, (int) cls.caughtcsprogsdatasize);
+			Con_DPrintLinef ("Not using buffered " QUOTED_S " (buffered: %p, %d)", csprogsname, (void *)cls.caughtcsprogsdata, (int) cls.caughtcsprogsdatasize);
 			csprogsdata = FS_LoadFile(csprogsname, tempmempool, fs_quiet_true, &csprogsdatasize);
 		}
 	}
 
 	if (csprogsdata == NULL)
 	{
-		csprogsname = csqc_progname.string; // Baker: a cvar
+		csprogsname = csqc_progname.string /*csprogs.dat*/; // Baker: a cvar
 		csprogsdata = FS_LoadFile(csprogsname, tempmempool, fs_quiet_true, &csprogsdatasize);
 	}
 
@@ -1118,7 +1221,7 @@ void CL_VM_Init (void)
 	// Baker: See if csprogs supports DarkPlaces (pass is no guarantee, but we elim some)
 	if (s_missing_fn) {
 		Con_PrintLinef ("csprogs.dat not supported (DarkPlaces was not a target engine, lacks %s).  Unloading.", s_missing_fn);
-		
+
 		// unload
 		PRVM_Prog_Reset(prog);
 		cl.csqc_loaded = false;
@@ -1136,7 +1239,7 @@ void CL_VM_Init (void)
 		if (cls.demo_lastcsprogssize != csprogsdatasize || cls.demo_lastcsprogscrc != csprogsdatacrc)
 		{
 			int i;
-			static char buf[NET_MAXMESSAGE];
+			static char buf[NET_MAXMESSAGE_65536];
 			sizebuf_t sb;
 			unsigned char *demobuf; fs_offset_t demofilesize;
 

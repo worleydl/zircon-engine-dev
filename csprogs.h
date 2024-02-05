@@ -134,6 +134,7 @@ void QW_CL_StartUpload(unsigned char *data, int size);
 
 void CSQC_UpdateNetworkTimes(double newtime, double oldtime);
 void CSQC_AddPrintText(const char *msg);
+void CSQC_AddPrintTextQWColor (const char *msg);
 void CSQC_ReadEntities(void);
 void CSQC_RelinkAllEntities(int drawmask);
 void CSQC_RelinkCSQCEntities(void);
@@ -145,5 +146,12 @@ void CSQC_R_RecalcView(void);
 model_t *CL_GetModelByIndex(int modelindex);
 
 int CL_VM_GetViewEntity(void);
+
+void SBar2D_PolygonBegin (prvm_prog_t *prog, const char *texname, float drawflags, float isdraw2d);
+void SBar2D_PolygonEnd (prvm_prog_t *prog);
+void SBar2D_PolygonVertex (prvm_prog_t *prog, float x, float y, float z, float tx, 
+						   float ty, float tz, float red, float green, float blue, float alpha);
+
+
 
 #endif

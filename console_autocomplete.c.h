@@ -758,7 +758,7 @@ int GetTexWorld_Count (const char *s_prefix)
 
 
 // "folder" "dir" "ls" -- this completes in a weird way
-#pragma message ("Baker: This niche autocomplete needs cleanup, it's gross")
+#pragma message ("Baker: This folder path completion autocomplete needs cleanup")
 int GetFolderList_Count (const char *s_prefix)
 {
 	autocomplete_t *ac = &_g_autocomplete;
@@ -833,6 +833,162 @@ int GetFolderList_Count (const char *s_prefix)
 	} // for
 
 	if (num_matches == 1) {
+		// If only one match, we indicate the intention to help 
+		// the autocompletion "enter the folder"
+		if (String_Does_Match (s_prefix, ac->s_match_alphalast_a)) {
+			// Completely replace search results
+			freenull_ (ac->s_match_after_a)
+			freenull_ (ac->s_match_alphalast_a);
+			freenull_ (ac->s_match_alphatop_a);
+			freenull_ (ac->s_match_before_a);
+			
+			c_strlcpy (sthisy, s_prefix);
+			c_strlcat (sthisy, "/");
+
+			char *sxy = sthisy;
+			SPARTIAL_EVAL_
+		}
+	}
+
+	stringlistfreecontents(&list);
+
+	return num_matches;
+}
+
+// s_path "sound/doors/" s_prefix "air" s_suffix ".wav"
+WARP_X_ (GetSoundList_Count)
+int CatList (stringlist_t *pmain_list, const char *s_path, const char *s_prefix, const char *s_suffix)
+{
+	// For our purposes, we need to skip the first path
+	const char *s_subpath = String_Find_Skip_Past (s_path, "/");
+
+	char		spattern[1024];
+	char		s_prefix2[1024] = {0};
+
+	if (s_prefix && s_prefix[0]) {
+		// Remove ext ... Why?
+		c_strlcpy (s_prefix2, s_prefix);
+		File_URL_Edit_Remove_Extension (s_prefix2);
+	}
+
+	c_dpsnprintf3 (spattern, "%s%s%s"  /*"*.wav"*/, s_subpath, s_prefix2, s_suffix);
+
+	fssearch_t	*t = FS_Search (spattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
+
+	int num_matches = 0;
+
+	if (t && t->numfilenames > 0) {
+		for (int idx = 0; idx < t->numfilenames; idx++) {
+			// Baker: We are getting the fullpath like "progs/player.mdl"
+			// However, for our purposes we need to reduce
+			
+			char *sxy = t->filenames[idx];
+			const char *s_skippath = File_URL_SkipPath(sxy);
+			stringlistappend (pmain_list, s_skippath);
+			num_matches ++;
+		} // for
+	} // if
+
+	if (t) FS_FreeSearch(t);
+
+	return num_matches;
+}
+
+// "showmodel"
+// Autocomplete of paths and or .md3 .obj .mdl .spr .bsp in path
+int GetShowModelList_Count (const char *s_prefix)
+{
+	autocomplete_t *ac = &_g_autocomplete;
+
+	stringlist_t list;
+
+	char s_prefix_copy[1024] ;
+	char gamepathos[1024] ;
+	char s_prefix_filename_only[1024] ;
+	char sthisy[1024] ;
+
+	const char *safterpath = File_URL_SkipPath (s_prefix);
+		char sgdwork[1024];
+		c_strlcpy (sgdwork, fs_gamedir);
+		File_URL_Remove_Trailing_Unix_Slash (sgdwork);
+
+		const char *slastcom = File_URL_SkipPath(sgdwork);
+		char sgamedirlast[1024];
+		c_strlcpy (sgamedirlast, slastcom);
+		File_URL_Remove_Trailing_Unix_Slash (sgamedirlast);
+		// sgamedirlast is like "id1" or "travail" or whatever
+
+	WARP_X_ (Con_Folder_f)
+
+	// What is dir?
+	c_strlcpy  (s_prefix_copy, s_prefix);
+	if (String_Does_End_With (s_prefix_copy, "/") == false)
+		File_URL_Edit_Reduce_To_Parent_Path_Trailing_Slash (s_prefix_copy);
+	c_strlcpy  (s_prefix_filename_only, safterpath);
+
+	c_strlcpy  (gamepathos, sgamedirlast); // "id1"
+	c_strlcat  (gamepathos, "/");
+	// fs_gamedir "C:\Users\Main\Documents/My Games/zircon/id1/"
+	// fs_gamedir "id1/"
+	// gamedirname1
+	if (s_prefix_copy[0])
+		c_strlcat  (gamepathos, s_prefix_copy);
+
+	if (s_prefix_copy[0] && String_Does_End_With (gamepathos,  "/")==false) {
+		c_strlcat  (gamepathos, "/");		// Directory to list
+		c_strlcat  (s_prefix_copy, "/");
+	}
+
+	stringlistinit	(&list);
+	// game pathos tends to be "id1/" here
+	// game pathos tends to be "id1/progs/"
+	listdirectory	(&list, gamepathos /*fs_gamedir*/, fs_all_files_empty_string);
+	
+	CatList (&list, gamepathos, s_prefix_filename_only, "*.mdl");
+	CatList (&list, gamepathos, s_prefix_filename_only, "*.md3");
+	CatList (&list, gamepathos, s_prefix_filename_only, "*.spr");
+	CatList (&list, gamepathos, s_prefix_filename_only, "*.obj");
+
+	// SORT
+	stringlistsort (&list, /*uniq*/ fs_make_unique_true);
+
+	int num_matches = 0;
+
+	for (int idx = 0; idx < list.numstrings; idx ++) {
+		char *s_this = list.strings[idx];
+
+		if (String_Is_Dot(s_this) || String_Is_DotDot(s_this))
+			continue; // ignore "." and ".." as filenames
+
+		if (String_Does_Start_With_Caseless (s_this, s_prefix_filename_only) == false)
+			continue;
+
+		if (String_Does_End_With_Caseless (s_this, ".mdl") || 
+			String_Does_End_With_Caseless (s_this, ".md3") || 
+			String_Does_End_With_Caseless (s_this, ".spr") || 
+			String_Does_End_With_Caseless (s_this, ".obj") || 
+			String_Does_Contain (s_this, ".") == false)
+		{
+			// Stay
+		} else {
+			continue; // Disqualified
+		}
+
+		// Preserve the result to a variable
+		// outside the for loop in case there is only one match
+		c_strlcpy (sthisy, s_prefix_copy);
+		c_strlcat (sthisy, s_this);
+
+		char *sxy = sthisy;
+		//File_URL_Edit_Remove_Extension (sxy);
+
+		SPARTIAL_EVAL_
+
+		num_matches ++;
+	} // for
+
+	// Baker: Don't offer a trailing slash if there is a dot in it, probably a .mdl or other file
+	if (num_matches == 1 && String_Does_Contain(ac->s_match_alphalast_a, ".") == false) {
 		// If only one match, we indicate the intention to help 
 		// the autocompletion "enter the folder"
 		if (String_Does_Match (s_prefix, ac->s_match_alphalast_a)) {

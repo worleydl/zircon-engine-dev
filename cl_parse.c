@@ -103,6 +103,14 @@ const char *svc_strings[128] =
 	"svc_trailparticles", //	60		// [short] entnum [short] effectnum [vector] start [vector] end
 	"svc_pointparticles", //	61		// [short] effectnum [vector] start [vector] velocity [short] count
 	"svc_pointparticles1", //	62		// [short] effectnum [vector] start, same as svc_pointparticles except velocity is zero and count is 1
+	"",						// 63 
+	"",						// 64
+	"",						// 65 
+	"",						// 66
+	"",						// 67 
+	"",						// 68
+	"",						// 69 
+	"svc_zircon_warp",		// 70
 };
 
 const char *qw_svc_strings[128] =
@@ -186,17 +194,19 @@ cvar_t cl_sound_ric_gunshot = {CF_CLIENT, "cl_sound_ric_gunshot", "0", "specifie
 cvar_t cl_sound_r_exp3 = {CF_CLIENT, "cl_sound_r_exp3", "weapons/r_exp3.wav", "sound to play during TE_EXPLOSION and related effects (empty cvar disables sound)"};
 cvar_t snd_cdautopause = {CF_CLIENT | CF_ARCHIVE, "snd_cdautopause", "1", "pause the CD track while the game is paused"};
 
-cvar_t cl_serverextension_download = {CF_CLIENT, "cl_serverextension_download", "0", "indicates whether the server supports the download command"};
+cvar_t cl_serverextension_download = {CF_CLIENT, "cl_serverextension_download", "0", "indicates whether the server supports the download command.  Baker: a DarkPlaces server sends cl_serverextension_download 2 to clients"};
 cvar_t cl_joinbeforedownloadsfinish = {CF_CLIENT | CF_ARCHIVE, "cl_joinbeforedownloadsfinish", "1", "if non-zero the game will begin after the map is loaded before other downloads finish"};
 cvar_t cl_nettimesyncfactor = {CF_CLIENT | CF_ARCHIVE, "cl_nettimesyncfactor", "0", "rate at which client time adapts to match server time, 1 = instantly, 0.125 = slowly, 0 = not at all (only applied in bound modes 0, 1, 2, 3)"};
 cvar_t cl_nettimesyncboundmode = {CF_CLIENT | CF_ARCHIVE, "cl_nettimesyncboundmode", "6", "method of restricting client time to valid values, 0 = no correction, 1 = tight bounding (jerky with packet loss), 2 = loose bounding (corrects it if out of bounds), 3 = leniant bounding (ignores temporary errors due to varying framerate), 4 = slow adjustment method from Quake3, 5 = slightly nicer version of Quake3 method, 6 = tight bounding + mode 5, 7 = jitter compensated dynamic adjustment rate"};
 cvar_t cl_nettimesyncboundtolerance = {CF_CLIENT | CF_ARCHIVE, "cl_nettimesyncboundtolerance", "0.25", "how much error is tolerated by bounding check, as a fraction of frametime, 0.25 = up to 25% margin of error tolerated, 1 = use only new time, 0 = use only old time (same effect as setting cl_nettimesyncfactor to 1) (only affects bound modes 2 and 3)"};
 cvar_t cl_iplog_name = {CF_CLIENT | CF_ARCHIVE, "cl_iplog_name", "darkplaces_iplog.txt", "name of iplog file containing player addresses for iplog_list command and automatic ip logging when parsing status command"};
 
-cvar_t cl_pext = {CF_CLIENT, "cl_pext", "1", "allow/disallow protocol extensions [Zircon]"};
-cvar_t cl_pext_qw_256packetentities = {CF_CLIENT, "cl_pext_qw_256packetentities", "1", "Specifies that the client suppports FTE 256 visible entities, above the Quakeworld vanilla limit of 64 [Zircon]"};
-cvar_t cl_pext_chunkeddownloads = {CF_CLIENT, "cl_pext_chunkeddownloads", "1", "Specifies that the client supports chunked downloads [Zircon]"};
-cvar_t cl_chunksperframe = {CF_CLIENT | CF_ARCHIVE, "cl_chunksperframe", "2", "Chunks per frame for FTE chunked download [Zircon]"};
+cvar_t cl_pext = {CF_CLIENT | CF_PERSISTENT, "cl_pext", "1", "allow/disallow protocol extensions [Zircon]"};
+//cvar_t cl_pext_qw_coloredtext = {CF_CLIENT | CF_PERSISTENT, "cl_pext_qw_coloredtext", "1", "Zircon will look for &c and &r color codes in Quakeworld qw_svc_print and translate [Zircon]"};
+cvar_t cl_pext_qw_256packetentities = {CF_CLIENT | CF_PERSISTENT, "cl_pext_qw_256packetentities", "1", "Specifies that the client suppports FTE 256 visible entities, above the Quakeworld vanilla limit of 64 [Zircon]"};
+cvar_t cl_pext_qw_limits = {CF_CLIENT | CF_PERSISTENT, "cl_pext_qw_limits", "1", "Large entity limits above the Quakeworld vanilla limit of 512 [Zircon]"};
+cvar_t cl_pext_chunkeddownloads = {CF_CLIENT | CF_PERSISTENT, "cl_pext_chunkeddownloads", "1", "Specifies that the client supports chunked downloads [Zircon]"};
+cvar_t cl_chunksperframe = {CF_CLIENT | CF_PERSISTENT, "cl_chunksperframe", "30", "Chunks per frame for FTE chunked download [Zircon]"};
 //cvar_t cl_pext_qw_limits = {CF_CLIENT, "cl_pext_qw_limits", "1", "FTE enable Quakeworld enhanced protocol limits [Zircon]"};
 
 static qbool QW_CL_CheckOrDownloadFile(const char *filename);
@@ -273,7 +283,7 @@ static void CL_ParseStartSoundPacket(int is_largesoundindex)
 			channel &= 7;
 		}
 
-		if (is_largesoundindex || Have_Flag(field_mask, SND_LARGESOUND_16) || 
+		if (is_largesoundindex || Have_Flag(field_mask, SND_LARGESOUND_16) ||
 			isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3))
 			sound_num = (unsigned short) MSG_ReadShort(&cl_message);
 		else
@@ -325,7 +335,8 @@ so the server doesn't disconnect.
 ==================
 */
 
-static unsigned char olddata[NET_MAXMESSAGE];
+static unsigned char olddata[NET_MAXMESSAGE_65536];
+WARP_X_CALLERS_ (All over the place even model load plus texture load)
 void CL_KeepaliveMessage (qbool readmessages)
 {
 	static double lastdirtytime = 0;
@@ -377,19 +388,18 @@ void CL_KeepaliveMessage (qbool readmessages)
 		memcpy(cl_message.data, olddata, cl_message.cursize);
 	}
 
-	if (cls.netcon && countdownmsg <= 0) // check if time stepped backwards
-	{
+	if (cls.netcon && countdownmsg <= 0) { // check if time stepped backwards
 		sizebuf_t	msg;
 		unsigned char		buf[4];
 		countdownmsg = 5;
 		// write out a nop
 		// LadyHavoc: must use unreliable because reliable could kill the sigon message!
-		Con_Print("--> client to server keepalive\n");
+		Con_PrintLinef ("--> client to server keepalive");
 		memset(&msg, 0, sizeof(msg));
 		msg.data = buf;
 		msg.maxsize = sizeof(buf);
 		MSG_WriteChar(&msg, clc_nop);
-		NetConn_SendUnreliableMessage(cls.netcon, &msg, cls.protocol, 10000, 0, false);
+		NetConn_SendUnreliableMessage(cls.netcon, &msg, cls.protocol, q_net_rate_10000, q_net_burstrate_0, q_net_suppress_reliables_false);
 	}
 
 	recursive = thisrecursive;
@@ -454,9 +464,9 @@ void CL_ParseEntityLump(char *entdata)
 			// Baker r1201: FitzQuake r_skyfog
 			r_refdef.fog_alpha = 0;
 
-			sscanf(value, "%f %f %f %f %f %f %f %f %f", 
-				&r_refdef.fog_density0, 
-				&r_refdef.fog_red, 
+			sscanf(value, "%f %f %f %f %f %f %f %f %f",
+				&r_refdef.fog_density0,
+				&r_refdef.fog_red,
 				&r_refdef.fog_green,
 				&r_refdef.fog_blue,
 				&r_refdef.fog_alpha,
@@ -522,7 +532,8 @@ static void CL_SetupWorldModel(void)
 	if (cl.worldmodel) {
 		c_strlcpy(cl.worldname, cl.worldmodel->model_name);
 		FS_StripExtension(cl.worldname, cl.worldnamenoextension, sizeof(cl.worldnamenoextension));
-		strlcpy(cl.worldbasename, !strncmp(cl.worldnamenoextension, "maps/", 5) ? cl.worldnamenoextension + 5 : cl.worldnamenoextension, sizeof(cl.worldbasename));
+		c_strlcpy (cl.worldbasename, String_Does_Start_With_PRE (cl.worldnamenoextension, "maps/") ? 
+			cl.worldnamenoextension + 5 : cl.worldnamenoextension);
 		Cvar_SetQuick(&cl_worldmessage, cl.worldmessage);
 		Cvar_SetQuick(&cl_worldname, cl.worldname);
 		Cvar_SetQuick(&cl_worldnamenoextension, cl.worldnamenoextension);
@@ -539,7 +550,7 @@ static void CL_SetupWorldModel(void)
 		Cvar_SetQuick(&cl_worldbasename, "");
 		Cvar_SetQuick(&prvm_cl_gamecommands, ""); // newmap
 		Cvar_SetQuick(&prvm_cl_progfields, ""); // newmap
-		
+
 		World_SetSize(&cl.world, "", defaultmins, defaultmaxs, prog);
 	}
 	World_Start(&cl.world);
@@ -598,19 +609,64 @@ static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 	if (!cls.netcon)
 		return true;
 
+	int was_lit = cls.asking_for_lit == 1;
+
+
+	if (was_lit == false && String_Does_End_With_Caseless (filename, ".bsp")) {
+		// We will ask for lit first
+		// ezQuake #d0
+		// Baker_CL_Download_Start_QW_SetName
+		cls.asking_for_lit = 1; // Ask for lit
+
+		cls.qw_downloadname[0] = 0;
+		c_strlcpy (cls.qw_downloadname, filename);
+		File_URL_Edit_Remove_Extension(cls.qw_downloadname);
+		c_strlcat (cls.qw_downloadname, ".lit");
+			//filename = cls.qw_downloadname;
+		//cls.qw_got_lit = -1;
+
+
+
+	//	if (developer_qw.integer)
+	//		Con_PrintLinef ("QW_CL_CheckOrDownloadFile: Temp file is %s", cls.qw_downloadtempname);
+
+		cls.qw_downloadmethod = DL_QW_1; // Gets changed later
+		cls.qw_downloadstarttime = Sys_DirtyTime();
+
+		Con_PrintLinef ("Downloading %s", cls.qw_downloadname);
+
+		if (!cls.qw_downloadmemory) {
+			cls.qw_downloadmemory = NULL;
+			cls.qw_downloadmemorycursize = 0;
+			cls.qw_downloadmemorymaxsize = 1024*1024; // start out with a 1MB buffer
+		}
+
+		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "download %s", cls.qw_downloadname);
+
+		//MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
+		//MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "download %s", filename));
+		if (developer_qw.integer)
+			Con_PrintLinef ("QW_CL_CheckOrDownloadFile: Asking for file " QUOTED_S, cls.qw_downloadname);
+
+		//cls.qw_downloadnumber++;
+		cls.qw_downloadpercent = 0;
+		cls.qw_downloadmemorycursize = 0;
+
+
+		return false;
+
+	}
+
+	cls.asking_for_lit = 0;
+
 	// ezQuake #d0
-	const char *s_base = fs_numgamedirs ? fs_gamedirs[0] : gamedirname1;
+	// Baker_CL_Download_Start_QW_SetName
+	cls.qw_downloadname[0] = 0;
+	c_strlcpy (cls.qw_downloadname, filename);
 
-	c_strlcpy (cls.qw_downloadname, s_base);
-	c_strlcat (cls.qw_downloadname, "/");
-	c_strlcat (cls.qw_downloadname, filename);
 
-	c_strlcpy (cls.qw_downloadtempname, cls.qw_downloadname);
-	File_URL_Edit_Remove_Extension (cls.qw_downloadtempname);
-	c_strlcat (cls.qw_downloadtempname, ".tmp");
-
-	if (developer_qw.integer)
-		Con_PrintLinef ("QW_CL_CheckOrDownloadFile: Temp file is %s", cls.qw_downloadtempname);
+//	if (developer_qw.integer)
+//		Con_PrintLinef ("QW_CL_CheckOrDownloadFile: Temp file is %s", cls.qw_downloadtempname);
 
 	cls.qw_downloadmethod = DL_QW_1; // Gets changed later
 	cls.qw_downloadstarttime = Sys_DirtyTime();
@@ -634,10 +690,105 @@ static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 	cls.qw_downloadpercent = 0;
 	cls.qw_downloadmemorycursize = 0;
 
+
 	return false;
 }
 
 static void QW_CL_ProcessUserInfo(int slot);
+
+typedef struct _deadster_t_s {
+	int	our_qw_monster_id;
+	int	dying_low;
+	int dying_high;
+	int extra_dead_frame1;
+	int extra_dead_frame2;
+	int extra_dead_frame3;
+	int extra_dead_frame4;
+} deadster_t;
+
+char *qw_monsters[] = {
+	"progs/soldier.mdl",	// 0
+	"progs/dog.mdl",		// 1
+	"progs/demon.mdl",		// 2
+	"progs/ogre.mdl",		// 3
+	"progs/shambler.mdl",	// 4
+	"progs/knight.mdl",		// 5
+	"progs/zombie.mdl",		// 6
+	"progs/wizard.mdl",		// 7
+	"progs/enforcer.mdl",	// 8
+	"progs/fish.mdl",		// 9
+	"progs/hknight.mdl",	// 10
+	"progs/shalrath.mdl",	// 11
+	"progs/tarbaby",		// 12
+};
+
+
+deadster_t deadinfos[] = {
+// index					dying0	dying1	extra dead frame
+	{ 0,		/*soldier*/		8,		28,		0,		0,	0,	}, // dead frames 17 28
+	{ 1,		/*dog*/			8,		25,		0,		0,	0,	}, // dead frames 16 25
+	{ 2,		/*fiend*/		45,		53,		0,		0,	0,	}, // dead frames 53
+	{ 3,		/*ogre*/		112,	135,	0,		0,	0,	}, // dead frames 125 135
+	{ 4,		/*shambler*/	83,		93,		102,	0,	0,	}, // dead frames 84 92 102
+	{ 5,		/*knight*/		76,		96,		0,		0,	0,	}, // dead frames 85 96
+	{ 6,		/*zombie*/		91,		197,	0,		0,	0,	}, // you have to gib them
+	{ 7,		/*scrag*/		46,		53,		0,		0,	0,	}, // dead frames 53
+	{ 8,		/*enforcer*/	41,		65,		0,		0,	0,	}, // dead frames 54 65
+	{ 9,		/*fish*/		18,		38,		0,		0,	0,	}, // dead frames 38
+	{ 10,		/*hknight*/		42,		62,		0,		0,	0,	}, // dead frames 53 62
+	{ 11,		/*vore*/		16,		22,		0,		0,	0,	}, // dead frames 22
+};
+
+int deadinfos_count = ARRAY_COUNT(deadinfos);
+
+WARP_X_ (QW_CL_FindModelNumbers EntityFrameQW_AllocDatabase right above)
+
+qbool QW_Is_Step_Dead (int qw_monster_id, int frame)
+{
+	if (in_range (0, qw_monster_id, (int)ARRAY_COUNT(deadinfos)) == false)
+		Host_Error_Line ("QW Monster id %d not in range 0 to %d", qw_monster_id, (int)ARRAY_COUNT(deadinfos));
+
+	deadster_t *p_monster = &deadinfos[qw_monster_id];
+	if (in_range (p_monster->dying_low, frame, p_monster->dying_high))
+		return true; // It's dying or dead
+
+	if (p_monster->extra_dead_frame1 && frame == p_monster->extra_dead_frame1)
+		return true; // It's dead
+
+	return false; // It's alive
+}
+
+WARP_X_ (QW_Is_Step_ModelIndex, QW_Is_Step_Dead)
+void QW_CL_FindModelNumbers (void)
+{
+	//memset (cl.qw_monsters_modelindexes, 0, sizeof(qw_monsters_modelindexes) );
+	cl.qw_monsters_modelindexes_count = 0;
+
+	for (int my_model_idx = 0; my_model_idx < MAX_MODELS_8192; my_model_idx ++)  {
+		char *s_this = cl.model_name[my_model_idx];
+
+		for (int monster_idx = 0; monster_idx < (int)ARRAY_COUNT (qw_monsters); monster_idx ++)  {
+			char *s_this_monster = qw_monsters[monster_idx];
+			if (false == String_Does_Match (s_this, s_this_monster))
+				continue;
+
+			// Add to indexes
+			cl.qw_monsters_modelindexes[cl.qw_monsters_modelindexes_count] = my_model_idx;
+			cl.qw_monsters_modelindexes_qw_monster_id[cl.qw_monsters_modelindexes_count] = monster_idx;
+			cl.qw_monsters_modelindexes_count ++;
+
+			if (cl.qw_monsters_modelindexes_count == (int)ARRAY_COUNT(cl.qw_monsters_modelindexes)) {
+				// FULL!
+				goto filled_it;
+			}
+		} // monster
+	} // model
+
+filled_it:
+	; // Baker: obligatory null statement :(
+}
+
+
 static void QW_CL_RequestNextDownload(void)
 {
 	int j;
@@ -647,6 +798,7 @@ static void QW_CL_RequestNextDownload(void)
 		Con_PrintLinef ("QW_CL_RequestNextDownload");
 
 	// clear name of file that just finished
+	// Baker_CL_Download_Clear_Name_QW
 	cls.qw_downloadname[0] = 0;
 
 	// skip the download fragment if playing a demo
@@ -660,14 +812,13 @@ static void QW_CL_RequestNextDownload(void)
 	case dl_skin:
 		if (cls.qw_downloadnumber == 0)
 			Con_PrintLinef ("Checking skins...");
-		for (;cls.qw_downloadnumber < cl.maxclients;cls.qw_downloadnumber++)
-		{
+		for (; cls.qw_downloadnumber < cl.maxclients;cls.qw_downloadnumber++) {
 			if (!cl.scores[cls.qw_downloadnumber].name[0])
 				continue;
 			// check if we need to download the file, and return if so
 			if (!QW_CL_CheckOrDownloadFile(va(vabuf, sizeof(vabuf), "skins/%s.pcx", cl.scores[cls.qw_downloadnumber].qw_skin)))
 				return;
-		}
+		} // for
 
 		cls.qw_downloadtype = dl_none;
 
@@ -733,12 +884,12 @@ static void QW_CL_RequestNextDownload(void)
 		// world model
 		cl.model_precache[1] = Mod_ForName(cl.model_name[1], false, false, NULL);
 		if (cl.model_precache[1]->Draw == NULL)
-			Con_Printf ("Map %s could not be found or downloaded\n", cl.model_name[1]);
+			Con_PrintLinef ("Map %s could not be found or downloaded", cl.model_name[1]);
 
 		// normal models
 		for (j = 2;j < MAX_MODELS_8192 && cl.model_name[j][0];j++)
 			if ((cl.model_precache[j] = Mod_ForName(cl.model_name[j], false, false, cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL))->Draw == NULL)
-				Con_Printf ("Model %s could not be found or downloaded\n", cl.model_name[j]);
+				Con_PrintLinef ("Model %s could not be found or downloaded", cl.model_name[j]);
 
 		// check memory integrity
 		Mem_CheckSentinelsGlobal();
@@ -747,12 +898,16 @@ static void QW_CL_RequestNextDownload(void)
 		// modules and csqc
 		CL_SetupWorldModel();
 
+		{
+			QW_CL_FindModelNumbers ();
+		}
+
 		// add pmodel/emodel CRCs to userinfo
 		CL_SetInfo("pmodel", va(vabuf, sizeof(vabuf), "%d", FS_CRCFile("progs/player.mdl", NULL)), true, true, true, true);
 		CL_SetInfo("emodel", va(vabuf, sizeof(vabuf), "%d", FS_CRCFile("progs/eyes.mdl", NULL)), true, true, true, true);
 
 		// done checking sounds and models, send a prespawn command now
-		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, 
+		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd,
 			"prespawn %d 0 %d", cl.qw_servercount, cl.model_precache[1]->brush.qw_md4sum2);
 
 		if (cls.qw_downloadmemory)
@@ -765,9 +920,8 @@ static void QW_CL_RequestNextDownload(void)
 		cl.loadfinished = true;
 		break;
 	case dl_sound:
-		if (cls.qw_downloadnumber == 0)
-		{
-			Con_Printf ("Checking sounds...\n");
+		if (cls.qw_downloadnumber == 0) {
+			Con_PrintLinef ("Checking sounds...");
 			cls.qw_downloadnumber = 1;
 		}
 
@@ -815,7 +969,7 @@ static void QW_CL_RequestNextDownload(void)
 
 #include "cl_parse_chunked.c.h"
 
-
+WARP_X_ (qw_svc_download oob is false)
 void QW_CL_ParseDownload(int q_is_oob)
 {
 	// ezQuake start chunk
@@ -854,9 +1008,13 @@ void QW_CL_ParseDownload(int q_is_oob)
 	if (cl_message.readcount + (unsigned short)size > cl_message.cursize)
 		Host_Error_Line ("corrupt download message");
 
+#if 1
+
+
+	Baker_CL_Download_During_ReadMsg_Size_Enlarge_QW (size);
+#else
 	// make sure the buffer is big enough to include this new fragment
-	if (!cls.qw_downloadmemory || cls.qw_downloadmemorymaxsize < cls.qw_downloadmemorycursize + size)
-	{
+	if (!cls.qw_downloadmemory || cls.qw_downloadmemorymaxsize < cls.qw_downloadmemorycursize + size) {
 		unsigned char *old;
 		while (cls.qw_downloadmemorymaxsize < cls.qw_downloadmemorycursize + size)
 			cls.qw_downloadmemorymaxsize *= 2;
@@ -873,7 +1031,7 @@ void QW_CL_ParseDownload(int q_is_oob)
 	MSG_ReadBytes(&cl_message, size, cls.qw_downloadmemory + cls.qw_downloadmemorycursize);
 	cls.qw_downloadmemorycursize += size;
 	cls.qw_downloadspeedcount += size;
-
+#endif
 	cls.qw_downloadpercent = percent_of_all;
 
 	if (percent_of_all != 100) {
@@ -884,15 +1042,21 @@ void QW_CL_ParseDownload(int q_is_oob)
 		if (developer_qw.integer)
 			Con_PrintLinef ("QW_CL_CheckOrDownloadFile: Asking for next download via " QUOTED_S, "nextdl");
 		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "nextdl");
-		//MSG_WriteString(&cls.netcon->message, "nextdl");		
+		//MSG_WriteString(&cls.netcon->message, "nextdl");
 	}
 	else
 	{
 		// finished file
-		Con_PrintLinef ("Downloaded " QUOTED_S, cls.qw_downloadname);
 
+#if 1
+
+		Baker_CL_Download_FWrite (cls.qw_downloadmemorycursize, -1);
+#else
+		Con_PrintLinef ("Downloaded " QUOTED_S, cls.qw_downloadname);
 		FS_WriteFile (cls.qw_downloadname, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
 
+
+#endif
 		cls.qw_downloadpercent = 0;
 
 		// start downloading the next file (or join the game)
@@ -915,20 +1079,20 @@ static void QW_CL_ParseModelList(int is_double_width)
 		nummodels++;
 		if (nummodels == MAX_MODELS_8192)
 			Host_Error_Line ("Server sent too many model precaches");
-		
+
 		if (strlen(str) >= MAX_QPATH_128)
 			Host_Error_Line ("Server sent a precache name of %d characters (max %d)", (int)strlen(str), MAX_QPATH_128 - 1);
-		
+
 		c_strlcpy (cl.model_name[nummodels], str);
 	}
 
 	n = MSG_ReadByte(&cl_message);
 	if (n) {
 #if 1 // Baker: Hmmm ... purpose?
-		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, 
+		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd,
 			"modellist %d %d", cl.qw_servercount, (nummodels & 0xff00) + n);
 #else
-		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, 
+		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd,
 			"modellist %d %d", cl.qw_servercount, n);
 
 #endif
@@ -966,7 +1130,7 @@ static void QW_CL_ParseSoundList(void)
 	n = MSG_ReadByte(&cl_message);
 
 	if (n) {
-		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, 
+		Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd,
 			"soundlist %d %d", cl.qw_servercount, n);
 		//MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
 		//MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "soundlist %d %d", cl.qw_servercount, n));
@@ -1015,14 +1179,14 @@ void QW_CL_NextUpload_f(cmd_state_t *cmd)
 	MSG_WriteByte(&cls.netcon->message, percent);
 	SZ_Write(&cls.netcon->message, cls.qw_uploaddata + cls.qw_uploadpos, r);
 
-	Con_DPrintf ("UPLOAD: %6d: %d written\n", cls.qw_uploadpos, r);
+	Con_DPrintLinef ("UPLOAD: %6d: %d written", cls.qw_uploadpos, r);
 
 	cls.qw_uploadpos += r;
 
 	if (cls.qw_uploadpos < cls.qw_uploadsize)
 		return;
 
-	Con_Printf ("Upload completed\n");
+	Con_PrintLinef ("Upload completed");
 
 	QW_CL_StopUpload_f(cmd);
 }
@@ -1036,7 +1200,7 @@ void QW_CL_StartUpload(unsigned char *data, int size)
 	// abort existing upload if in progress
 	QW_CL_StopUpload_f(cmd_local);
 
-	Con_DPrintf ("Starting upload of %d bytes...\n", size);
+	Con_DPrintLinef ("Starting upload of %d bytes...", size);
 
 	cls.qw_uploaddata = (unsigned char *)Mem_Alloc(cls.permanentmempool, size);
 	memcpy(cls.qw_uploaddata, data, size);
@@ -1062,6 +1226,10 @@ void QW_CL_StopUpload_f(cmd_state_t *cmd)
 	cls.qw_uploadpos = 0;
 }
 
+WARP_X_ (qw_svc_setinfo			QW_CL_SetInfo)
+WARP_X_ (qw_svc_updateuserinfo	QW_CL_UpdateUserInfo)
+WARP_X_ (QW_CL_RequestNextDownload)
+
 static void QW_CL_ProcessUserInfo(int slot)
 {
 	int topcolor, bottomcolor;
@@ -1083,9 +1251,8 @@ static void QW_CL_UpdateUserInfo(void)
 {
 	int slot;
 	slot = MSG_ReadByte(&cl_message);
-	if (slot >= cl.maxclients)
-	{
-		Con_Printf ("svc_updateuserinfo >= cl.maxclients\n");
+	if (slot >= cl.maxclients) {
+		Con_PrintLinef ("svc_updateuserinfo >= cl.maxclients (%d >= %d)", slot, cl.maxclients);
 		MSG_ReadLong(&cl_message);
 		MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
 		return;
@@ -1104,9 +1271,8 @@ static void QW_CL_SetInfo(void)
 	slot = MSG_ReadByte(&cl_message);
 	strlcpy(key, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof(key));
 	strlcpy(value, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof(value));
-	if (slot >= cl.maxclients)
-	{
-		Con_Printf ("svc_setinfo >= cl.maxclients\n");
+	if (slot >= cl.maxclients) {
+		Con_PrintLinef ("svc_setinfo >= cl.maxclients  (%d >= %d)", slot, cl.maxclients);
 		return;
 	}
 	InfoString_SetValue(cl.scores[slot].qw_userinfo, sizeof(cl.scores[slot].qw_userinfo), key, value);
@@ -1114,6 +1280,21 @@ static void QW_CL_SetInfo(void)
 	QW_CL_ProcessUserInfo(slot);
 }
 
+WARP_X_ (QW_CL_ServerInfo qw_svc_serverinfo cl.serverinfo )
+void QW_CL_ProcessServerInfo (void)
+{
+	char temp[2048];
+	cl.qw_z_ext = 0;
+	// Get the server's ZQuake extension bits
+	char *s_val = InfoString_GetValue (cl.qw_serverinfo, "*z_ext", temp, sizeof(temp));
+
+	if (s_val)
+		cl.qw_z_ext = atoi(s_val);
+	//Info_ValueForKey(cl.qw_serverinfo, "*z_ext"));
+
+}
+
+WARP_X_ (svc_serverinfo)
 static void QW_CL_ServerInfo(void)
 {
 	char key[2048];
@@ -1125,6 +1306,9 @@ static void QW_CL_ServerInfo(void)
 	InfoString_SetValue(cl.qw_serverinfo, sizeof(cl.qw_serverinfo), key, value);
 	InfoString_GetValue(cl.qw_serverinfo, "teamplay", temp, sizeof(temp));
 	cl.qw_teamplay = atoi(temp);
+
+
+	QW_CL_ProcessServerInfo ();
 }
 
 static void QW_CL_ParseNails(void)
@@ -1172,496 +1356,11 @@ static void CL_UpdateItemsAndWeapon(void)
 #define LOADPROGRESSWEIGHT_WORLDMODEL      30.0
 #define LOADPROGRESSWEIGHT_WORLDMODEL_INIT  2.0
 
-static void CL_BeginDownloads(qbool aborteddownload)
-{
-	char vabuf[1024];
-	// quakeworld works differently
-	if (cls.protocol == PROTOCOL_QUAKEWORLD)
-		return;
-
-	// this would be a good place to do curl downloads
-	if (Curl_Have_forthismap())
-	{
-		Curl_Register_predownload(); // come back later
-		return;
-	}
-
-	// if we got here...
-	// curl is done, so let's start with the business
-	if (!cl.loadbegun)
-		SCR_PushLoadingScreen("Loading precaches", 1);
-	cl.loadbegun = true;
-
-	// if already downloading something from the previous level, don't stop it
-	if (cls.qw_downloadname[0])
-		return;
-
-	if (cl.downloadcsqc)
-	{
-		size_t progsize;
-		cl.downloadcsqc = false;
-		if (cls.netcon
-		 && !sv.active
-		 && csqc_progname.string
-		 && csqc_progname.string[0]
-		 && csqc_progcrc.integer >= 0
-		 && cl_serverextension_download.integer
-		 && (FS_CRCFile(csqc_progname.string, &progsize) != csqc_progcrc.integer || ((int)progsize != csqc_progsize.integer && csqc_progsize.integer != -1))
-		 && !FS_FileExists(va(vabuf, sizeof(vabuf), "dlcache/%s.%d.%d", csqc_progname.string, csqc_progsize.integer, csqc_progcrc.integer)))
-		{
-			Con_Printf ("Downloading new CSQC code to dlcache/%s.%d.%d\n", csqc_progname.string, csqc_progsize.integer, csqc_progcrc.integer);
-			if (cl_serverextension_download.integer == 2 && FS_HasZlib())
-				CL_ForwardToServer(va(vabuf, sizeof(vabuf), "download %s deflate", csqc_progname.string));
-			else
-				CL_ForwardToServer(va(vabuf, sizeof(vabuf), "download %s", csqc_progname.string));
-			return;
-		}
-	}
-
-	if (cl.loadmodel_current < cl.loadmodel_total)
-	{
-		// loading models
-		if (cl.loadmodel_current == 1)
-		{
-			// worldmodel counts as 16 models (15 + world model setup), for better progress bar
-			SCR_PushLoadingScreen("Loading precached models",
-				(
-					(cl.loadmodel_total - 1) * LOADPROGRESSWEIGHT_MODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL_INIT
-				) / (
-					(cl.loadmodel_total - 1) * LOADPROGRESSWEIGHT_MODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL_INIT
-				+	cl.loadsound_total * LOADPROGRESSWEIGHT_SOUND
-				)
-			);
-		}
-		for (; cl.loadmodel_current < cl.loadmodel_total;cl.loadmodel_current++) {
-			SCR_PushLoadingScreen(cl.model_name[cl.loadmodel_current],
-				(
-					(cl.loadmodel_current == 1) ? LOADPROGRESSWEIGHT_WORLDMODEL : LOADPROGRESSWEIGHT_MODEL
-				) / (
-					(cl.loadmodel_total - 1) * LOADPROGRESSWEIGHT_MODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL_INIT
-				)
-			);
-			if (cl.model_precache[cl.loadmodel_current] && cl.model_precache[cl.loadmodel_current]->Draw)
-			{
-				SCR_PopLoadingScreen(false);
-				if (cl.loadmodel_current == 1)
-				{
-					SCR_PushLoadingScreen(cl.model_name[cl.loadmodel_current], 1.0 / cl.loadmodel_total);
-					SCR_PopLoadingScreen(false);
-				}
-				continue;
-			}
-			CL_KeepaliveMessage(true);
-
-			// if running a local game, calling Mod_ForName is a completely wasted effort...
-			if (sv.active)
-				cl.model_precache[cl.loadmodel_current] = sv.models[cl.loadmodel_current];
-			else
-			{
-				if (cl.loadmodel_current == 1)
-				{
-					// they'll be soon loaded, but make sure we apply freshly downloaded shaders from a curled pk3
-					Mod_FreeQ3Shaders();
-				}
-				cl.model_precache[cl.loadmodel_current] = Mod_ForName(cl.model_name[cl.loadmodel_current], false, false, cl.model_name[cl.loadmodel_current][0] == '*' ? cl.model_name[1] : NULL);
-			}
-			SCR_PopLoadingScreen(false);
-			if (cl.model_precache[cl.loadmodel_current] && cl.model_precache[cl.loadmodel_current]->Draw && cl.loadmodel_current == 1)
-			{
-				// we now have the worldmodel so we can set up the game world
-				SCR_PushLoadingScreen("world model setup",
-					(
-						LOADPROGRESSWEIGHT_WORLDMODEL_INIT
-					) / (
-						(cl.loadmodel_total - 1) * LOADPROGRESSWEIGHT_MODEL
-					+	LOADPROGRESSWEIGHT_WORLDMODEL
-					+	LOADPROGRESSWEIGHT_WORLDMODEL_INIT
-					)
-				);
-				CL_SetupWorldModel();
-				SCR_PopLoadingScreen(true);
-				if (!cl.loadfinished && cl_joinbeforedownloadsfinish.integer)
-				{
-					cl.loadfinished = true;
-					// now issue the spawn to move on to signon 2 like normal
-					if (cls.netcon)
-						CL_ForwardToServer("prespawn");
-				}
-			}
-		}
-		SCR_PopLoadingScreen(false);
-		// finished loading models
-	}
-
-	if (cl.loadsound_current < cl.loadsound_total)
-	{
-		// loading sounds
-		if (cl.loadsound_current == 1)
-			SCR_PushLoadingScreen("Loading precached sounds",
-				(
-					cl.loadsound_total * LOADPROGRESSWEIGHT_SOUND
-				) / (
-					(cl.loadmodel_total - 1) * LOADPROGRESSWEIGHT_MODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL
-				+	LOADPROGRESSWEIGHT_WORLDMODEL_INIT
-				+	cl.loadsound_total * LOADPROGRESSWEIGHT_SOUND
-				)
-			);
-		for (;cl.loadsound_current < cl.loadsound_total;cl.loadsound_current++)
-		{
-			SCR_PushLoadingScreen(cl.sound_name[cl.loadsound_current], 1.0 / cl.loadsound_total);
-			if (cl.sound_precache[cl.loadsound_current] && S_IsSoundPrecached(cl.sound_precache[cl.loadsound_current]))
-			{
-				SCR_PopLoadingScreen(false);
-				continue;
-			}
-			CL_KeepaliveMessage(true);
-			cl.sound_precache[cl.loadsound_current] = S_PrecacheSound(cl.sound_name[cl.loadsound_current], false, true);
-			SCR_PopLoadingScreen(false);
-		}
-		SCR_PopLoadingScreen(false);
-		// finished loading sounds
-	}
-
-	if (IS_NEXUIZ_DERIVED(gamemode))
-		Cvar_SetValueQuick(&cl_serverextension_download, false);
-		// in Nexuiz/Xonotic, the built in download protocol is kinda broken (misses lots
-		// of dependencies) anyway, and can mess around with the game directory;
-		// until this is fixed, only support pk3 downloads via curl, and turn off
-		// individual file downloads other than for CSQC
-		// on the other end of the download protocol, GAME_NEXUIZ/GAME_XONOTIC enforces writing
-		// to dlcache only
-		// idea: support download of pk3 files using this protocol later
-
-	// note: the reason these loops skip already-loaded things is that it
-	// enables this command to be issued during the game if desired
-
-	if (cl.downloadmodel_current < cl.loadmodel_total)
-	{
-		// loading models
-
-		for (;cl.downloadmodel_current < cl.loadmodel_total;cl.downloadmodel_current++)
-		{
-			if (aborteddownload)
-			{
-
-				if (cl.downloadmodel_current == 1)
-				{
-					// the worldmodel failed, but we need to set up anyway
-					Mod_FreeQ3Shaders();
-					CL_SetupWorldModel();
-					if (!cl.loadfinished && cl_joinbeforedownloadsfinish.integer)
-					{
-						cl.loadfinished = true;
-						// now issue the spawn to move on to signon 2 like normal
-						if (cls.netcon)
-							CL_ForwardToServer("prespawn");
-					}
-				}
-				aborteddownload = false;
-				continue;
-			}
-			if (cl.model_precache[cl.downloadmodel_current] && cl.model_precache[cl.downloadmodel_current]->Draw)
-				continue;
-			CL_KeepaliveMessage(true);
-			if (cl.model_name[cl.downloadmodel_current][0] != '*' && strcmp(cl.model_name[cl.downloadmodel_current], "null") && !FS_FileExists(cl.model_name[cl.downloadmodel_current]))
-			{
-				if (cl.downloadmodel_current == 1)
-					Con_Printf ("Map %s not found\n", cl.model_name[cl.downloadmodel_current]);
-				else
-					Con_Printf ("Model %s not found\n", cl.model_name[cl.downloadmodel_current]);
-				// regarding the * check: don't try to download submodels
-				if (cl_serverextension_download.integer && cls.netcon && cl.model_name[cl.downloadmodel_current][0] != '*' && !sv.active)
-				{
-					CL_ForwardToServer(va(vabuf, sizeof(vabuf), "download %s", cl.model_name[cl.downloadmodel_current]));
-					// we'll try loading again when the download finishes
-					return;
-				}
-			}
-
-			if (cl.downloadmodel_current == 1)
-			{
-				// they'll be soon loaded, but make sure we apply freshly downloaded shaders from a curled pk3
-				Mod_FreeQ3Shaders();
-			}
-
-			cl.model_precache[cl.downloadmodel_current] = Mod_ForName(cl.model_name[cl.downloadmodel_current], false, true, cl.model_name[cl.downloadmodel_current][0] == '*' ? cl.model_name[1] : NULL);
-			if (cl.downloadmodel_current == 1)
-			{
-				// we now have the worldmodel so we can set up the game world
-				// or maybe we do not have it (cl_serverextension_download 0)
-				// then we need to continue loading ANYWAY!
-				CL_SetupWorldModel();
-				if (!cl.loadfinished && cl_joinbeforedownloadsfinish.integer)
-				{
-					cl.loadfinished = true;
-					// now issue the spawn to move on to signon 2 like normal
-					if (cls.netcon)
-						CL_ForwardToServer("prespawn");
-				}
-			}
-		}
-
-		// finished loading models
-	}
-
-	if (cl.downloadsound_current < cl.loadsound_total)
-	{
-		// loading sounds
-
-		for (;cl.downloadsound_current < cl.loadsound_total;cl.downloadsound_current++)
-		{
-			char soundname[MAX_QPATH_128];
-			if (aborteddownload)
-			{
-				aborteddownload = false;
-				continue;
-			}
-			if (cl.sound_precache[cl.downloadsound_current] && S_IsSoundPrecached(cl.sound_precache[cl.downloadsound_current]))
-				continue;
-			CL_KeepaliveMessage(true);
-			dpsnprintf(soundname, sizeof(soundname), "sound/%s", cl.sound_name[cl.downloadsound_current]);
-			if (!FS_FileExists(soundname) && !FS_FileExists(cl.sound_name[cl.downloadsound_current]))
-			{
-				if (cl_serverextension_download.integer && cls.netcon && !sv.active)
-				{
-					CL_ForwardToServer(va(vabuf, sizeof(vabuf), "download %s", soundname));
-					// we'll try loading again when the download finishes
-					return;
-				}
-			}
-			cl.sound_precache[cl.downloadsound_current] = S_PrecacheSound(cl.sound_name[cl.downloadsound_current], false, true);
-		}
-
-		// finished loading sounds
-	}
-
-	SCR_PopLoadingScreen(false);
-
-	if (!cl.loadfinished)
-	{
-		cl.loadfinished = true;
-
-		// check memory integrity
-		Mem_CheckSentinelsGlobal();
-
-		// now issue the spawn to move on to signon 2 like normal
-		if (cls.netcon)
-			CL_ForwardToServer("prespawn");
-	}
-}
-
-static void CL_BeginDownloads_f(cmd_state_t *cmd)
-{
-	// prevent cl_begindownloads from being issued multiple times in one match
-	// to prevent accidentally cancelled downloads
-	if (cl.loadbegun)
-		Con_Printf ("cl_begindownloads is only valid once per match\n");
-	else
-		CL_BeginDownloads(false);
-}
-
-static void CL_StopDownload(int size, int crc)
-{
-	if (cls.qw_downloadmemory && cls.qw_downloadmemorycursize == size && CRC_Block(cls.qw_downloadmemory, cls.qw_downloadmemorycursize) == crc) {
-		int existingcrc;
-		size_t existingsize;
-		const char *extension;
-
-		if (cls.qw_download_deflate) {
-			unsigned char *out_inflated; // deflate
-			size_t inflated_size;
-			out_inflated = FS_Inflate(cls.qw_downloadmemory, cls.qw_downloadmemorycursize, &inflated_size, tempmempool);
-			Mem_Free(cls.qw_downloadmemory);
-			if (out_inflated) {
-				Con_PrintLinef ("Inflated download: new size: %u (%g%%)", (unsigned)inflated_size, 100.0 - 100.0*(cls.qw_downloadmemorycursize / (float)inflated_size));
-				cls.qw_downloadmemory = out_inflated;
-				cls.qw_downloadmemorycursize = (int)inflated_size;
-			}
-			else
-			{
-				cls.qw_downloadmemory = NULL;
-				cls.qw_downloadmemorycursize = 0;
-				Con_PrintLinef ("Cannot inflate download, possibly corrupt or zlib not present");
-			}
-		}
-
-		if (!cls.qw_downloadmemory) {
-			Con_PrintLinef ("Download " QUOTED_S " is corrupt (see above!)", cls.qw_downloadname);
-		}
-		else {
-			crc = CRC_Block(cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
-			size = cls.qw_downloadmemorycursize;
-			// finished file
-			// save to disk only if we don't already have it
-			// (this is mainly for playing back demos)
-			existingcrc = FS_CRCFile(cls.qw_downloadname, &existingsize);
-			if (existingsize || IS_NEXUIZ_DERIVED(gamemode) || String_Does_Match(cls.qw_downloadname, csqc_progname.string))
-				// let csprogs ALWAYS go to dlcache, to prevent "viral csprogs"; also, never put files outside dlcache for Nexuiz/Xonotic
-			{
-				if ((int)existingsize != size || existingcrc != crc) {
-					// we have a mismatching file, pick another name for it
-					char name[MAX_QPATH_128*2];
-					dpsnprintf(name, sizeof(name), "dlcache/%s.%d.%d", cls.qw_downloadname, size, crc);
-					if (!FS_FileExists(name))
-					{
-						Con_PrintLinef ("Downloaded " QUOTED_S " (%d bytes, %d CRC)", name, size, crc);
-						FS_WriteFile(name, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
-						if (String_Does_Match(cls.qw_downloadname, csqc_progname.string))
-						{
-							if (cls.caughtcsprogsdata)
-								Mem_Free(cls.caughtcsprogsdata);
-							cls.caughtcsprogsdata = (unsigned char *) Mem_Alloc(cls.permanentmempool, cls.qw_downloadmemorycursize);
-							memcpy(cls.caughtcsprogsdata, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
-							cls.caughtcsprogsdatasize = cls.qw_downloadmemorycursize;
-							Con_DPrintLinef ("Buffered " QUOTED_S, name);
-						}
-					}
-				}
-			}
-			else
-			{
-				// we either don't have it or have a mismatching file...
-				// so it's time to accept the file
-				// but if we already have a mismatching file we need to rename
-				// this new one, and if we already have this file in renamed form,
-				// we do nothing
-				Con_PrintLinef ("Downloaded " QUOTED_S " (%d bytes, %d CRC)", cls.qw_downloadname, size, crc);
-				FS_WriteFile(cls.qw_downloadname, cls.qw_downloadmemory, cls.qw_downloadmemorycursize);
-				extension = FS_FileExtension(cls.qw_downloadname);
-				if (String_Does_Match_Caseless(extension, "pak") || String_Does_Match_Caseless(extension, "pk3") || String_Does_Match_Caseless(extension, "dpk"))
-					FS_Rescan();
-			}
-		}
-	}
-	else if (cls.qw_downloadmemory && size)
-	{
-		Con_PrintLinef ("Download " QUOTED_S " is corrupt (%d bytes, %d CRC, should be %d bytes, %d CRC), discarding", cls.qw_downloadname, size, crc, (int)cls.qw_downloadmemorycursize, (int)CRC_Block(cls.qw_downloadmemory, cls.qw_downloadmemorycursize));
-		CL_BeginDownloads(true);
-	}
-
-	if (cls.qw_downloadmemory)
-		Mem_Free(cls.qw_downloadmemory);
-	cls.qw_downloadmemory = NULL;
-	cls.qw_downloadname[0] = 0;
-	cls.qw_downloadmemorymaxsize = 0;
-	cls.qw_downloadmemorycursize = 0;
-	cls.qw_downloadpercent = 0;
-}
-
-static void CL_ParseDownload(void)
-{
-	int j, start, size;
-	static unsigned char data[NET_MAXMESSAGE];
-	start = MSG_ReadLong(&cl_message);
-	size = (unsigned short)MSG_ReadShort(&cl_message);
-
-	// record the start/size information to ack in the next input packet
-	for (j = 0; j < CL_MAX_DOWNLOADACKS; j++) {
-		if (!cls.dp_downloadack[j].start && !cls.dp_downloadack[j].size)
-		{
-			cls.dp_downloadack[j].start = start;
-			cls.dp_downloadack[j].size = size;
-			break;
-		}
-	}
-
-	if (developer_qw.integer)
-		Con_PrintLinef ("CL_ParseDownload size %d", (int)size);
-	MSG_ReadBytes(&cl_message, size, data);
-
-	if (!cls.qw_downloadname[0]) {
-		if (size > 0)
-			Con_PrintLinef ("CL_ParseDownload: received %d bytes with no download active", size);
-		return;
-	}
-
-	if (start + size > cls.qw_downloadmemorymaxsize)
-		Host_Error_Line ("corrupt download message");
-
-	// only advance cursize if the data is at the expected position
-	// (gaps are unacceptable)
-	memcpy (cls.qw_downloadmemory + start, data, size);
-	cls.qw_downloadmemorycursize = start + size;
-	cls.qw_downloadpercent = (int)floor((start+size) * 100.0 / cls.qw_downloadmemorymaxsize);
-	cls.qw_downloadpercent = bound(0, cls.qw_downloadpercent, 100);
-	cls.qw_downloadspeedcount += size;
-}
-
-// Baker: I believe this is exclusively DarkPlaces
-static void CL_DownloadBegin_f(cmd_state_t *cmd)
-{
-	int size = atoi(Cmd_Argv(cmd, 1));
-
-	if (size < 0 || size > 1<<30 || FS_CheckNastyPath(Cmd_Argv(cmd, 2), false)) {
-		Con_PrintLinef ("cl_downloadbegin: received bogus information");
-		CL_StopDownload(0, 0);
-		return;
-	}
-
-	if (cls.qw_downloadname[0])
-		Con_PrintLinef ("Download of %s aborted", cls.qw_downloadname);
-
-	CL_StopDownload(0, 0);
-
-	// we're really beginning a download now, so initialize stuff
-	c_strlcpy (cls.qw_downloadname, Cmd_Argv(cmd, 2));
-
-#if 000 // I think this is exclusively DarkPlaces
-	c_strlcpy (cls.qw_downloadtempname, cls.qw_downloadname);
-	File_URL_Edit_Remove_Extension (cls.qw_downloadtempname);
-	c_strlcat (cls.qw_downloadtempname, ".tmp");
-
-	cls.qw_downloadmethod = DL_QW_1; // Gets changed later
-#endif	
-
-	if (developer_qw.integer)
-		Con_PrintLinef ("CL_DownloadBegin_f");
-	
-	cls.qw_downloadmemorymaxsize = size;
-	cls.qw_downloadmemory = (unsigned char *) Mem_Alloc(cls.permanentmempool, cls.qw_downloadmemorymaxsize);
-	cls.qw_downloadnumber++;
-
-	cls.qw_download_deflate = false;
-	if (Cmd_Argc(cmd) >= 4) {
-		if (String_Does_Match(Cmd_Argv(cmd, 3), "deflate"))
-			cls.qw_download_deflate = true;
-		// check further encodings here
-	}
-
-	CL_ForwardToServer("sv_startdownload");
-}
-
-static void CL_StopDownload_f(cmd_state_t *cmd)
-{
-	Curl_CancelAll();
-	if (cls.qw_downloadname[0]) {
-		Con_PrintLinef ("Download of %s aborted", cls.qw_downloadname);
-		CL_StopDownload(0, 0);
-	}
-	CL_BeginDownloads(true);
-}
-
-static void CL_DownloadFinished_f(cmd_state_t *cmd)
-{
-	if (Cmd_Argc(cmd) < 3)
-	{
-		Con_PrintLinef ("Malformed cl_downloadfinished command");
-		return;
-	}
-	CL_StopDownload(atoi(Cmd_Argv(cmd, 1)), atoi(Cmd_Argv(cmd, 2)));
-	CL_BeginDownloads(false);
-}
+#include "cl_parse_download.c.h"
 
 extern cvar_t cl_topcolor;
 extern cvar_t cl_bottomcolor;
-static void CL_SendPlayerInfo(void)
+static void CL_SignonReply_SIGNON_1_SendPlayerInfo(void)
 {
 	char vabuf[1024];
 	MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
@@ -1676,18 +1375,15 @@ static void CL_SendPlayerInfo(void)
 	MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 	MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "rate_burstsize %d", cl_rate_burstsize.integer));
 
-	if (cl_pmodel.integer)
-	{
+	if (cl_pmodel.integer) {
 		MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 		MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "pmodel %d", cl_pmodel.integer));
 	}
-	if (*cl_playermodel.string)
-	{
+	if (*cl_playermodel.string) {
 		MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 		MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "playermodel %s", cl_playermodel.string));
 	}
-	if (*cl_playerskin.string)
-	{
+	if (*cl_playerskin.string) {
 		MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 		MSG_WriteString (&cls.netcon->message, va(vabuf, sizeof(vabuf), "playerskin %s", cl_playerskin.string));
 	}
@@ -1702,35 +1398,31 @@ An svc_signonnum has been received, perform a client side setup
 */
 static void CL_SignonReply (void)
 {
-	Con_DPrintLinef ("CL_SignonReply: %d", cls.signon);
-
-	switch (cls.signon)
-	{
+	switch (cls.signon) {
 	case SIGNON_1:
-		if (cls.netcon)
-		{
+		if (cls.netcon) {
 			// send player info before we begin downloads
 			// (so that the server can see the player name while downloading)
-			CL_SendPlayerInfo();
+			CL_SignonReply_SIGNON_1_SendPlayerInfo();
 
 			// execute cl_begindownloads next frame
 			// (after any commands added by svc_stufftext have been executed)
 			// when done with downloads the "prespawn" will be sent
+			WARP_X_ (CL_BeginDownloads_DP_f)
 			Cbuf_AddTextLine (cmd_local, NEWLINE "cl_begindownloads" NEWLINE);
 
 			//MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
 			//MSG_WriteString (&cls.netcon->message, "prespawn");
 		}
 		else // playing a demo...  make sure loading occurs as soon as possible
-			CL_BeginDownloads(false);
+			CL_BeginDownloads_DP (q_is_aborted_download_false);
 		break;
 
 	case SIGNON_2:
-		if (cls.netcon)
-		{
+		if (cls.netcon) {
 			// LadyHavoc: quake sent the player info here but due to downloads
 			// it is sent earlier instead
-			// CL_SendPlayerInfo();
+			// CL_SignonReply_SIGNON_1_SendPlayerInfo();
 
 			// LadyHavoc: changed to begin a loading stage and issue this when done
 			MSG_WriteByte (&cls.netcon->message, clc_stringcmd);
@@ -1766,7 +1458,8 @@ static void CL_SignonReply (void)
 CL_ParseServerInfo
 ==================
 */
-WARP_X_ (svc_serverinfo qw_svc_serverdata)
+WARP_X_ (svc_serverinfo ) // Baker: svc_serverinfo and qw_svc_serverdata are both 11
+WARP_X_ (qw_svc_serverdata)
 static void CL_ParseServerInfo (int is_qw)
 {
 	char *str;
@@ -1779,6 +1472,13 @@ static void CL_ParseServerInfo (int is_qw)
 
 	Con_DPrintLinef ("Serverinfo packet received.");
 	Collision_Cache_Reset(true);
+
+#if 1
+	if (is_qw && cls.demorecording) {
+		Con_PrintLinef ("Unable to record Quakeworld demos, stopping record.");
+		CL_Stop_f (cmd_local);
+	}
+#endif
 
 	// if server is active, we already began a loading plaque
 	if (!sv.active) {
@@ -1801,32 +1501,37 @@ static void CL_ParseServerInfo (int is_qw)
 // wipe the client_state_t struct
 //
 	CL_ClearState ();
-	cls.fteprotocolextensions = 0;
+	cls.fteprotocolextensions = 0;  cls.zirconprotocolextensions = 0; cl.qw_z_ext = 0;
+
 
 // parse protocol version number
 	if (!is_qw) {
+		// Baker: cls.signon is 0
 		j = MSG_ReadLong(&cl_message);
 		goto quakeworld_skip;
 	}
 
 	// ezQuake read fte sv_extensions
 #if 1
-	for (;;)
-	{
+	while (1) {
 		int protover = MSG_ReadLong (&cl_message);
 		if (protover == PROTOCOL_VERSION_FTE1) {
 			int sv_extensions = MSG_ReadLong(&cl_message);
 			cls.fteprotocolextensions = sv_extensions;
-			Con_PrintLinef ("Server: Using FTE extensions 0x%x\n", cls.fteprotocolextensions);
+			Con_PrintLinef ("Server: Using FTE extensions 0x%x", cls.fteprotocolextensions);
 			continue;
 		}
+		//if (protover == PROTOCOL_VERSION_EZQUAKE1) {
+		//	int sv_extensions = MSG_ReadLong(&cl_message);
+		//	cls.mvdprotocolextensions1 = sv_extensions;
+		//	Con_PrintLinef ("Server: Using ezQuake extensions 0x%x", cls.mvdprotocolextensions1);
+		//	continue;
+		//}
 
 		if (protover == PROTOCOL_VERSION_QW_28) //this ends the version info
 			break;
-//		if (cls.demoplayback && protover >= 24 && protover <= 28)	//older versions, maintain demo compatability.
-//			break;
 		Host_Error_Line ("Server returned version %d, not %d" NEWLINE "You probably need to upgrade.", protover, 28 /*PROTOCOL_VERSION*/);
-	}
+	} // while
 	j = PROTOCOL_VERSION_QW_28;
 #endif
 
@@ -1840,7 +1545,7 @@ quakeworld_skip:
 		return;
 	}
 	// hack for unmarked Nehahra movie demos which had a custom protocol
-	if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback 
+	if (protocol == PROTOCOL_QUAKEDP && cls.demoplayback
 		&& gamemode == GAME_NEHAHRA)
 		protocol = PROTOCOL_NEHAHRAMOVIE;
 	cls.protocol = protocol;
@@ -1852,15 +1557,15 @@ quakeworld_skip:
 	cls.protocol_flags_rmq = 0;
 	if (isin1(cls.protocol, PROTOCOL_FITZQUAKE999)) {
 		const unsigned int supportedflags = (PRFL_RMQ_SHORTANGLE_USED | PRFL_RMQ_INT32COORD_USED);
-			//PRFL_RMQ_FLOATANGLE_UNUSED | PRFL_RMQ_24BITCOORD_UNUSED | PRFL_RMQ_FLOATCOORD_UNUSED | PRFL_RMQ_EDICTSCALE_UNUSED | 
+			//PRFL_RMQ_FLOATANGLE_UNUSED | PRFL_RMQ_24BITCOORD_UNUSED | PRFL_RMQ_FLOATCOORD_UNUSED | PRFL_RMQ_EDICTSCALE_UNUSED |
 			//PRFL_RMQ_INT32COORD_USED);
-		
+
 		// mh - read protocol flags from server so that we know what protocol features to expect
 		cls.protocol_flags_rmq = (unsigned int) MSG_ReadLong (&cl_message);
-		
+
 		if (0 != (cls.protocol_flags_rmq & (~supportedflags))) {
 			Con_PrintLinef (CON_WARN "PROTOCOL_RMQ protocol_flags_rmq %d contains unsupported flags", cls.protocol_flags_rmq);
-		}	
+		}
 	} // if rmq
 
 	cl.num_entities = 1;
@@ -1875,18 +1580,20 @@ quakeworld_skip:
 		c_strlcpy(gamedir[0], str);
 gamedir_change:
 		// change gamedir if needed
+		if (!cl.islocalgame)
 		if (!FS_ChangeGameDirs(1, gamedir, q_tx_complain_true, q_fail_on_missing_false))
 			Host_Error_Line ("CL_ParseServerInfo: unable to switch to server specified gamedir");
 
 		cl.gametype = GAME_DEATHMATCH;
-		cl.maxclients = 32;
+		cl.maxclients = QW_MAX_CLIENTS_32;
 
 		// parse player number
 		j = MSG_ReadByte(&cl_message);
 		// cl.qw_spectator is an unneeded flag, cl.scores[cl.playerentity].qw_spectator works better (it can be updated by the server during the game)
-		//cl.qw_spectator = (j & 128) != 0;
+		//int is_cl_qw_spectator_on_connect = (j & 128) != 0;
 		cl.realplayerentity = cl.playerentity = cl.viewentity = (j & 127) + 1;
 		cl.scores = (scoreboard_t *)Mem_Alloc(cls.levelmempool, cl.maxclients*sizeof(*cl.scores));
+		//cl.scores[cl.playerentity-1].qw_spectator = is_cl_qw_spectator_on_connect;
 
 		// get the full level name
 		str = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
@@ -1924,7 +1631,7 @@ gamedir_change:
 		Mem_CheckSentinelsGlobal();
 
 		if (cls.netcon) {
-			Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, 
+			Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd,
 				"soundlist %d %d", cl.qw_servercount, 0);
 			//MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
 			//MSG_WriteString(&cls.netcon->message, va(vabuf, sizeof(vabuf), "soundlist %d %d", cl.qw_servercount, 0));
@@ -1955,8 +1662,7 @@ gamedir_change:
 	{
 	// parse maxclients
 		cl.maxclients = MSG_ReadByte(&cl_message);
-		if (cl.maxclients < 1 || cl.maxclients > MAX_SCOREBOARD)
-		{
+		if (cl.maxclients < 1 || cl.maxclients > MAX_SCOREBOARD_255) {
 			Host_Error_Line ("Bad maxclients (%u) from server", cl.maxclients);
 			return;
 		}
@@ -1964,7 +1670,7 @@ gamedir_change:
 
 	// parse gametype
 		cl.gametype = MSG_ReadByte(&cl_message);
-		cls.fteprotocolextensions = 0; // Hmmm
+		cls.fteprotocolextensions = 0; cls.zirconprotocolextensions = 0; cl.qw_z_ext = 0; // Hmmm
 		// the original id singleplayer demos are bugged and contain
 		// GAME_DEATHMATCH even for singleplayer
 		if (cl.maxclients == 1 && cls.protocol == PROTOCOL_QUAKE)
@@ -2011,7 +1717,7 @@ gamedir_change:
 		// set the base name for level-specific things...  this gets updated again by CL_SetupWorldModel later
 		c_strlcpy(cl.worldname, cl.model_name[1]);
 		FS_StripExtension(cl.worldname, cl.worldnamenoextension, sizeof(cl.worldnamenoextension));
-		c_strlcpy(cl.worldbasename, 
+		c_strlcpy(cl.worldbasename,
 			String_Does_Start_With_PRE(cl.worldnamenoextension, "maps/") ? cl.worldnamenoextension + 5 : cl.worldnamenoextension);
 		Cvar_SetQuick(&cl_worldmessage, cl.worldmessage);
 		Cvar_SetQuick(&cl_worldname, cl.worldname);
@@ -2025,7 +1731,7 @@ gamedir_change:
 		for (j = 1;j < nummodels;j++)
 			Mod_FindName(cl.model_name[j], cl.model_name[j][0] == '*' ? cl.model_name[1] : NULL);
 		// precache any models used by the client (this also marks them used)
-		cl.model_bolt = Mod_ForName("progs/bolt.mdl", false, false, NULL);
+		cl.model_bolt = Mod_ForName("progs/bolt.mdl", /*crash checkdisk parent name*/ false, false, NULL);
 		cl.model_bolt2 = Mod_ForName("progs/bolt2.mdl", false, false, NULL);
 		cl.model_bolt3 = Mod_ForName("progs/bolt3.mdl", false, false, NULL);
 		cl.model_beam = Mod_ForName("progs/beam.mdl", false, false, NULL);
@@ -2048,7 +1754,7 @@ gamedir_change:
 
 		// sounds used by the game
 		for (j = 1;j < MAX_SOUNDS_4096 && cl.sound_name[j][0];j++)
-			cl.sound_precache[j] = S_PrecacheSound(cl.sound_name[j], true, true);
+			cl.sound_precache[j] = S_PrecacheSound(cl.sound_name[j], /*complain levelsound*/ true, true);
 
 		// now we try to load everything that is new
 		cl.loadmodel_current = 1;
@@ -2066,18 +1772,17 @@ gamedir_change:
 		Mem_CheckSentinelsGlobal();
 
 	// if cl_autodemo is set, automatically start recording a demo if one isn't being recorded already
-		if (cl_autodemo.integer && cls.netcon && cls.protocol != PROTOCOL_QUAKEWORLD)
-		{
+		if (cl_autodemo.integer && cls.netcon && cls.protocol != PROTOCOL_QUAKEWORLD) {
 			char demofile[MAX_OSPATH];
 
-			if (cls.demorecording)
-			{
+			if (cls.demorecording) {
 				// finish the previous level's demo file
 				CL_Stop_f(cmd_local);
 			}
 
 			// start a new demo file
-			dpsnprintf (demofile, sizeof(demofile), "%s_%s.dem", Sys_TimeString (cl_autodemo_nameformat.string), cl.worldbasename);
+			dpsnprintf (demofile, sizeof(demofile), "%s_%s.dem",
+				Sys_TimeString (cl_autodemo_nameformat.string), cl.worldbasename);
 
 			Con_PrintLinef ("Auto-recording to %s.", demofile);
 
@@ -2089,10 +1794,9 @@ gamedir_change:
 			);
 
 			cls.demofile = FS_OpenRealFile(demofile, "wb", false);
-			if (cls.demofile)
-			{
+			if (cls.demofile) {
 				cls.forcetrack = -1;
-				FS_Printf (cls.demofile, "%d\n", cls.forcetrack);
+				FS_Printf (cls.demofile, "%d" NEWLINE, cls.forcetrack);
 				cls.demorecording = true;
 				strlcpy(cls.demoname, demofile, sizeof(cls.demoname));
 				cls.demo_lastcsprogssize = -1;
@@ -2121,16 +1825,16 @@ void CL_ValidateState(entity_state_t *s)
 	// (this used to happen, sometimes affecting skin and frame)
 
 	// colormap is client index + 1
-	if (!(s->flags & RENDER_COLORMAPPED) && s->colormap > cl.maxclients)
+	if (!(s->sflags & RENDER_COLORMAPPED) && s->colormap > cl.maxclients)
 		Con_DPrintLinef ("CL_ValidateState: colormap (%d) > cl.maxclients (%d)", s->colormap, cl.maxclients);
 
 	if (developer_extra.integer)
 	{
 		model = CL_GetModelByIndex(s->modelindex);
 		if (model && model->type && s->frame >= model->numframes)
-			Con_DPrintLinef ("CL_ValidateState: no such frame %d in \"%s\" (which has %d frames)", s->frame, model->model_name, model->numframes);
+			Con_DPrintLinef ("CL_ValidateState: no such frame %d in " QUOTED_S " (which has %d frames)", s->frame, model->model_name, model->numframes);
 		if (model && model->type && s->skin > 0 && s->skin >= model->numskins && !(s->lightpflags & PFLAGS_FULLDYNAMIC))
-			Con_DPrintLinef ("CL_ValidateState: no such skin %d in \"%s\" (which has %d skins)", s->skin, model->model_name, model->numskins);
+			Con_DPrintLinef ("CL_ValidateState: no such skin %d in " QUOTED_S " (which has %d skins)", s->skin, model->model_name, model->numskins);
 	}
 }
 
@@ -2139,8 +1843,7 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 	float odelta[3], adelta[3];
 	VectorSubtract(ent->state_current.origin, ent->persistent.neworigin, odelta);
 	VectorSubtract(ent->state_current.angles, ent->persistent.newangles, adelta);
-	if (!ent->state_previous.active || ent->state_previous.modelindex != ent->state_current.modelindex)
-	{
+	if (!ent->state_previous.active || ent->state_previous.modelindex != ent->state_current.modelindex) {
 		// reset all persistent stuff if this is a new entity
 		ent->persistent.lerpdeltatime = 0;
 		ent->persistent.lerpstarttime = cl.mtime[1];
@@ -2180,7 +1883,8 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 
 		// note that this case must do everything the following case does too
 	}
-	else if ((ent->state_previous.effects & EF_RESTARTANIM_BIT) != (ent->state_current.effects & EF_RESTARTANIM_BIT))
+	else if ((ent->state_previous.effects & EF_RESTARTANIM_BIT)
+					!= (ent->state_current.effects & EF_RESTARTANIM_BIT))
 	{
 		ent->render.framegroupblend[1] = ent->render.framegroupblend[0];
 		ent->render.framegroupblend[1].lerp = 1;
@@ -2204,11 +1908,10 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 		VectorCopy(ent->state_current.angles, ent->persistent.newangles);
 		ent->persistent.trail_allowed = false;
 	}
-	else if (ent->state_current.flags & RENDER_STEP)
-	{
+	else if (ent->state_current.sflags & RENDER_STEP) {
+		// Baker: Does this ever hit and does this do it right?
 		// monster interpolation
-		if (DotProduct(odelta, odelta) + DotProduct(adelta, adelta) > 0.01)
-		{
+		if (DotProduct(odelta, odelta) + DotProduct(adelta, adelta) > 0.01) {
 			ent->persistent.lerpdeltatime = bound(0, cl.mtime[1] - ent->persistent.lerpstarttime, 0.1);
 			ent->persistent.lerpstarttime = cl.mtime[1];
 			VectorCopy(ent->persistent.neworigin, ent->persistent.oldorigin);
@@ -2217,8 +1920,7 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 			VectorCopy(ent->state_current.angles, ent->persistent.newangles);
 		}
 	}
-	else
-	{
+	else {
 		// not a monster
 		ent->persistent.lerpstarttime = ent->state_previous.time;
 		ent->persistent.lerpdeltatime = bound(0, ent->state_current.time - ent->state_previous.time, 0.1);
@@ -2228,12 +1930,11 @@ void CL_MoveLerpEntityStates(entity_t *ent)
 		VectorCopy(ent->state_current.angles, ent->persistent.newangles);
 	}
 	// trigger muzzleflash effect if necessary
-	if (ent->state_current.effects & EF_MUZZLEFLASH)
+	if (ent->state_current.effects & EF_MUZZLEFLASH_2)
 		ent->persistent.muzzleflash = 1;
 
 	// restart animation bit
-	if ((ent->state_previous.effects & EF_RESTARTANIM_BIT) != (ent->state_current.effects & EF_RESTARTANIM_BIT))
-	{
+	if ((ent->state_previous.effects & EF_RESTARTANIM_BIT) != (ent->state_current.effects & EF_RESTARTANIM_BIT)) {
 		ent->render.framegroupblend[1] = ent->render.framegroupblend[0];
 		ent->render.framegroupblend[1].lerp = 1;
 		ent->render.framegroupblend[0].frame = ent->state_current.frame;
@@ -2248,7 +1949,7 @@ CL_ParseBaseline
 ==================
 */
 WARP_X_ (svcfitz_spawnbaseline2)
-static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_version)
+static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_version, int is_static)
 { // DPD 999 - Stuff goes here
 	int j;
 	int fitz_bits = 0;
@@ -2260,14 +1961,14 @@ static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_
 	// Baker: large model index
 	if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 		fitz_bits = (fitz_version == 2) ? MSG_ReadByte(&cl_message) : 0;
-		ent->state_baseline.modelindex = Have_Flag(fitz_bits, B_FITZ_LARGEMODEL_1) ? 
-			MSG_ReadShort(&cl_message) : 
+		ent->state_baseline.modelindex = Have_Flag(fitz_bits, B_FITZ_LARGEMODEL_1) ?
+			MSG_ReadShort(&cl_message) :
 			MSG_ReadByte(&cl_message);
-		ent->state_baseline.frame = Have_Flag(fitz_bits, B_FITZ_LARGEFRAME_2) ? 
-			MSG_ReadShort(&cl_message) : 
+		ent->state_baseline.frame = Have_Flag(fitz_bits, B_FITZ_LARGEFRAME_2) ?
+			MSG_ReadShort(&cl_message) :
 			MSG_ReadByte(&cl_message);
 	}
-	else 
+	else
 	if (is_large_model_index) {
 		ent->state_baseline.modelindex = (unsigned short) MSG_ReadShort(&cl_message);
 		ent->state_baseline.frame = (unsigned short) MSG_ReadShort(&cl_message);
@@ -2281,6 +1982,15 @@ static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_
 		ent->state_baseline.modelindex = MSG_ReadByte(&cl_message);
 		ent->state_baseline.frame = MSG_ReadByte(&cl_message);
 	}
+
+	// Baker: Quakeworld comes here, but render flags does not occur here.
+	//if (cls.protocol == PROTOCOL_QUAKEWORLD) {
+	//	qbool QW_Is_Step_ModelIndex(int qw_modelindex);
+	//	if (QW_Is_Step_ModelIndex(ent->state_baseline.modelindex)) {
+	//		ent->render |= RENDER_STEP;
+	//	}
+	//}
+
 	ent->state_baseline.colormap = MSG_ReadByte(&cl_message);
 	ent->state_baseline.skin = MSG_ReadByte(&cl_message);
 	for (j = 0; j < 3; j++) {
@@ -2288,13 +1998,35 @@ static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_
 		ent->state_baseline.angles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
 	}
 
+	WARP_X_ (VM_SV_makestatic)
+
+	// Baker: This is too early for protocol extensions read from the server.
+	if (isin1 (cls.protocol, PROTOCOL_DARKPLACES7) &&
+		Have_Zircon_Ext_Flag_CLS (ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32)
+		&& cls.storr[0]) {
+		unsigned char cs_effects_additive1_fullbright2;
+
+		ent->state_baseline.alpha = cls.storr[1];
+		ent->state_baseline.colormod[0] = cls.storr[2];
+		ent->state_baseline.colormod[1] = cls.storr[3];
+		ent->state_baseline.colormod[2] = cls.storr[4];
+		cs_effects_additive1_fullbright2 = cls.storr[5];
+		ent->state_baseline.scale = cls.storr[6];
+
+		if (Have_Flag (cs_effects_additive1_fullbright2, EF_SHORTY_ADDITIVE_1))
+			Flag_Add_To (ent->state_baseline.effects, EF_ADDITIVE_32);
+		if (Have_Flag (cs_effects_additive1_fullbright2, EF_SHORTY_FULLBRIGHT_2))
+			Flag_Add_To (ent->state_baseline.effects, EF_FULLBRIGHT);
+		cls.storr[0] = 0; // Clear the store immediately.
+	} // Baker: ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32
+
 	if (isin2 (cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
-		ent->state_baseline.alpha = Have_Flag (fitz_bits, B_FITZ_ALPHA_4) ? 
+		ent->state_baseline.alpha = Have_Flag (fitz_bits, B_FITZ_ALPHA_4) ?
 			MSG_ReadByte(&cl_message) : 255;//FITZ_ENTALPHA_DEFAULT_0; //johnfitz -- PROTOCOL_FITZQUAKE
 		if (Have_Flag (fitz_bits, B_FITZ_SCALE_8)) {
 			// Baker: I'm not convinced DarkPlaces and FitzQuake scales are compatible
 			// However, AFAIK ... Quakespasm does not use scale at all?
-			ent->state_baseline.scale = Have_Flag (fitz_bits, B_FITZ_SCALE_8) ? MSG_ReadByte(&cl_message) : 
+			ent->state_baseline.scale = Have_Flag (fitz_bits, B_FITZ_SCALE_8) ? MSG_ReadByte(&cl_message) :
 				FITZ_ENTSCALE_DEFAULT_16;
 		} else {
 			ent->state_baseline.scale = FITZ_ENTSCALE_DEFAULT_16;
@@ -2324,10 +2056,10 @@ static void CL_ParseClientdata (void)
 	cl.mviewzoom[1] = cl.mviewzoom[0];
 
 	// Baker: These protocols don't support viewzoom
-	if (isin13 (cls.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,			
-								PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,	
-								PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	
-								PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	
+	if (isin13 (cls.protocol,	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,
+								PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
+								PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,
+								PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,
 								PROTOCOL_DARKPLACES5)) {
 		cl.stats[STAT_VIEWHEIGHT] = DEFAULT_VIEWHEIGHT;
 		cl.stats[STAT_ITEMS] = 0;
@@ -2361,8 +2093,8 @@ static void CL_ParseClientdata (void)
 
 	for (j = 0;j < 3;j++) {
 		if (bits & (SU_PUNCH1 << j) ) {
-			if (isin8 (cls.protocol,	
-						PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	 PROTOCOL_QUAKE,			
+			if (isin8 (cls.protocol,
+						PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	 PROTOCOL_QUAKE,
 						PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
 						PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3))
 				cl.mpunchangle[0][j] = MSG_ReadChar(&cl_message);
@@ -2370,7 +2102,7 @@ static void CL_ParseClientdata (void)
 				cl.mpunchangle[0][j] = MSG_ReadAngle16i(&cl_message);
 		}
 		// Baker: fitz collides with SU_FITZ_WEAPON2_S16
-		if ( (bits & (SU_PUNCHVEC1_S16 << j)) && 
+		if ( (bits & (SU_PUNCHVEC1_S16 << j)) &&
 			false == isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 			if (isin4 (cls.protocol, PROTOCOL_DARKPLACES1, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
 				cl.mpunchvector[0][j] = MSG_ReadCoord16i(&cl_message);
@@ -2379,10 +2111,10 @@ static void CL_ParseClientdata (void)
 		}
 		if (bits & (SU_VELOCITY1<<j) )
 		{
-			if (isin12 (cls.protocol,	
-						PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,			
-						PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
-						PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	
+			if (isin12 (cls.protocol,
+						PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,
+						PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
+						PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,
 						PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4))
 				cl.mvelocity[0][j] = MSG_ReadChar(&cl_message)*16;
 			else
@@ -2391,16 +2123,16 @@ static void CL_ParseClientdata (void)
 	}
 
 	// LadyHavoc: hipnotic demos don't have this bit set but should
-	if (Have_Flag (bits, SU_ITEMS) || 
-		isin13 (cls.protocol, 
-				PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,			
-				PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP, 
-				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,	
-				PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,	
+	if (Have_Flag (bits, SU_ITEMS) ||
+		isin13 (cls.protocol,
+				PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	PROTOCOL_QUAKE,
+				PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	PROTOCOL_NEHAHRABJP,
+				PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	PROTOCOL_DARKPLACES1,
+				PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	PROTOCOL_DARKPLACES4,
 				PROTOCOL_DARKPLACES5) )
 		cl.stats[STAT_ITEMS] = MSG_ReadLong(&cl_message);
 
-	cl.onground = (bits & SU_ONGROUND) != 0;
+	SET___ cl.onground = (bits & SU_ONGROUND) != 0; // Baker: svc_clientdata
 	cl.inwater = (bits & SU_INWATER) != 0;
 
 	if (cls.protocol == PROTOCOL_DARKPLACES5) {
@@ -2415,10 +2147,10 @@ static void CL_ParseClientdata (void)
 		cl.stats[STAT_CELLS] = MSG_ReadShort(&cl_message);
 		cl.stats[STAT_ACTIVEWEAPON] = (unsigned short) MSG_ReadShort(&cl_message);
 	}
-	else if (isin12 (cls.protocol, PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,	
-				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,	
-				PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,	
-				PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,	
+	else if (isin12 (cls.protocol, PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
+				PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
+				PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
+				PROTOCOL_DARKPLACES1,	PROTOCOL_DARKPLACES2,	PROTOCOL_DARKPLACES3,
 				PROTOCOL_DARKPLACES4)) {
 		cl.stats[STAT_WEAPONFRAME] = (bits & SU_WEAPONFRAME) ? MSG_ReadByte(&cl_message) : 0;
 		cl.stats[STAT_ARMOR] = (bits & SU_ARMOR) ? MSG_ReadByte(&cl_message) : 0;
@@ -2457,24 +2189,28 @@ static void CL_ParseClientdata (void)
 			if (bits & SU_FITZ_WEAPONFRAME2_24)
 				cl.stats[STAT_WEAPONFRAME] |= (MSG_ReadByte(&cl_message) << 8);
 			if (bits & SU_FITZ_WEAPONALPHA_S25) {
-				int gunalpha = MSG_ReadByte(&cl_message);
+				//int gunalpha =
+					MSG_ReadByte(&cl_message);
 				//cl.viewent.alpha = gunalpha; // FITZ TODO
 			}
 			else {
 				//cl.viewent.alpha = FITZ_ENTALPHA_DEFAULT_0;
 			}
 			//johnfitz
-			
+
 		}
 	}
 
 	// Baker: SU_VIEWZOOM_S19 collides with SU_FITZ_SHELLS2_S19
-	if (Have_Flag (bits, SU_VIEWZOOM_S19) && 
+	if (Have_Flag (bits, SU_VIEWZOOM_S19) &&
 		false == isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 		if (isin3 (cls.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4) )
 			cl.stats[STAT_VIEWZOOM] = MSG_ReadByte(&cl_message);
-		else
+		else {
+			if (developer_qw.integer)
+				Con_PrintLinef ("STAT_VIEWZOOM");
 			cl.stats[STAT_VIEWZOOM] = (unsigned short) MSG_ReadShort(&cl_message);
+	}
 	}
 
 	// viewzoom interpolation
@@ -2494,7 +2230,7 @@ static void CL_ParseStatic (int is_large_model_index, int fitz_version)
 	if (cl.num_static_entities >= cl.max_static_entities)
 		Host_Error_Line ("Too many static entities");
 	ent = &cl.static_entities[cl.num_static_entities++];
-	CL_ParseBaseline (ent, is_large_model_index, fitz_version);
+	CL_ParseBaseline (ent, is_large_model_index, fitz_version, q_is_static_true);
 
 	if (ent->state_baseline.modelindex == 0) {
 		Con_DPrintLinef ("svc_parsestatic: static entity without model at %f %f %f", ent->state_baseline.origin[0], ent->state_baseline.origin[1], ent->state_baseline.origin[2]);
@@ -2511,7 +2247,7 @@ static void CL_ParseStatic (int is_large_model_index, int fitz_version)
 	ent->render.framegroupblend[0].start = lhrandom(-10, -1);
 	ent->render.skinnum = ent->state_baseline.skin;
 	ent->render.effects = ent->state_baseline.effects;
-	ent->render.alpha = 1;
+	ent->render.alpha = ent->state_baseline.alpha * (1.0f / 255.0f);
 
 	// Baker: alpha and scale?  At least for FitzQuake?   What about colormap?
 	// Have we investigated Flint Ridge and the Hotel?
@@ -2652,7 +2388,7 @@ static void CL_ParseTempEntity(void)
 
 	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
 		type = MSG_ReadByte(&cl_message);
-		#include "cl_parse_temp_quakeworld.c.h"
+		#include "cl_parse_temp_particles_quakeworld.c.h"
 	}
 	else
 	{
@@ -3363,6 +3099,8 @@ static qbool CL_ExaminePrintString(const char *text)
 
 extern cvar_t host_timescale;
 extern cvar_t cl_lerpexcess;
+
+WARP_X_ (CL_ParseServerMessage svc_time also QW CL_ParseServerMessage)
 static void CL_NetworkTimeReceived(double newtime)
 {
 	cl.mtime[1] = cl.mtime[0];
@@ -3390,8 +3128,8 @@ static void CL_NetworkTimeReceived(double newtime)
 				Con_DPrintf ("--- cl.time > cl.mtime[0] (%f > %f ... %f)\n", cl.time, cl.mtime[1], cl.mtime[0]);
 		}
 
-		if (cl_nettimesyncboundmode.integer < 4)
-		{
+		 // Baker: This is not the norm cl_nettimesyncboundmode defaults 6
+		if (cl_nettimesyncboundmode.integer < 4) {
 			// doesn't make sense for modes > 3
 			cl.time += (cl.mtime[1] - cl.time) * bound(0, cl_nettimesyncfactor.value, 1);
 			timehigh = cl.mtime[1] + (cl.mtime[0] - cl.mtime[1]) * cl_nettimesyncboundtolerance.value;
@@ -3433,9 +3171,10 @@ static void CL_NetworkTimeReceived(double newtime)
 				cl.time = bound(cl.time - 0.002 * cl.movevars_timescale, cl.mtime[1], cl.time + 0.001 * cl.movevars_timescale);
 			break;
 
-		case 6:
+		case 6: // Baker: This is the norm -- cl_nettimesyncboundmode defaults 6
 			cl.time = bound(cl.mtime[1], cl.time, cl.mtime[0]);
-			cl.time = bound(cl.time - 0.002 * cl.movevars_timescale, cl.mtime[1], cl.time + 0.001 * cl.movevars_timescale);
+			cl.time = bound(cl.time - 0.002 * cl.movevars_timescale,
+				cl.mtime[1], cl.time + 0.001 * cl.movevars_timescale);
 			break;
 
 		case 7:
@@ -3466,16 +3205,17 @@ static void CL_NetworkTimeReceived(double newtime)
 	// to update the prediction
 	cl.movement_replay = true;
 	// this may get updated later in parsing by svc_clientdata
-	cl.onground = false;
+	SET___ cl.onground = false; // We received a packet
 	// if true the cl.viewangles are interpolated from cl.mviewangles[]
 	// during this frame
 	// (makes spectating players much smoother and prevents mouse movement from turning)
 	cl.fixangle[1] = cl.fixangle[0];
 	cl.fixangle[0] = false;
-	if (!cls.demoplayback)
-		VectorCopy(cl.mviewangles[0], cl.mviewangles[1]);
+
+	if (!cls.demoplayback) // Baker: Super waldo
+		VectorCopy (cl.mviewangles[0], cl.mviewangles[1]);
 	// update the csqc's server timestamps, critical for proper sync
-	CSQC_UpdateNetworkTimes(cl.mtime[0], cl.mtime[1]);
+	CSQC_UpdateNetworkTimes (cl.mtime[0], cl.mtime[1]);
 
 #ifdef USEODE
 	if (cl.mtime[0] > cl.mtime[1])
@@ -3483,21 +3223,64 @@ static void CL_NetworkTimeReceived(double newtime)
 #endif
 
 	// only lerp entities that also get an update in this frame, when lerp excess is used
-	if (cl_lerpexcess.value > 0)
-	{
+
+	// Baker: This is not the norm -- cl_lerpexcess defaults 0
+	if (cl_lerpexcess.value > 0) {
 		int j;
-		for (j = 1;j < cl.num_entities;j++)
-		{
-			if (cl.entities_active[j])
-			{
+		for (j = 1;j < cl.num_entities;j++) {
+			if (cl.entities_active[j]) {
 				entity_t *ent = cl.entities + j;
 				ent->persistent.lerpdeltatime = 0;
 			}
-		}
-	}
+		} // for
+	} // if
 }
 
 #define SHOWNET(x) if (cl_shownet.integer==2)Con_PrintLinef ("%3d:%s(%d)", cl_message.readcount-1, x, cmd);
+
+static	char	ztoken_string[MAX_INPUTLINE_16384];
+static	char *	ztoken_argv[MAX_INPUTLINE_16384 / 2];
+static	int		ztoken_argc = 0;
+
+int ztokenize_console_argc (const char *s_yourline)
+{
+	char *p;
+
+	char *z_startpos[sizeof(ztoken_string) / 2];
+	char *z_endpos[sizeof(ztoken_string) / 2];
+	int z_max_count = ARRAY_COUNT(ztoken_argv);
+
+	c_strlcpy (ztoken_string, s_yourline);
+	p = ztoken_string;
+
+	ztoken_argc = 0;
+	while (1) {
+		if (ztoken_argc >= (int)z_max_count)
+			break;
+
+		// skip whitespace here to find token start pos
+		while (*p && ISWHITESPACE(*p))
+			p ++;
+
+		z_startpos[ztoken_argc] = p;// p - ztoken_string;
+
+		// Fills or uses com_token global
+		// Q: Does this tear up our string?
+		// Q: Is p a pointer to the arg?
+		// Q: Is p a pointer to a arg in OUR string?
+		// Q: Do we need to null terminate or is this done for us?
+		if (!COM_ParseToken_Console( (const char **)&p))
+			break;
+		//z_endpos[ztoken_argc] = p - ztoken_string;
+		ztoken_argv[ztoken_argc] = z_startpos[ztoken_argc];
+		*p = 0; // Baker: term
+		p++; // Baker: Skip
+		//tokens[num_tokens] = PRVM_SetTempString(prog, com_token);
+		ztoken_argc ++;
+	};
+
+	return ztoken_argc;
+}
 
 /*
 ==================
@@ -3510,7 +3293,7 @@ void CL_ParseLocalSound (void) // AURA 1.0
 
 	field_mask = MSG_ReadByte(&cl_message);
 
-	sound_num = Have_Flag(field_mask, SND_LARGESOUND_16) ? 
+	sound_num = Have_Flag(field_mask, SND_LARGESOUND_16) ?
 		(unsigned short) MSG_ReadShort(&cl_message) :
 		MSG_ReadByte(&cl_message);
 
@@ -3557,7 +3340,43 @@ void CL_ParseHint (const char *str)
 
 		     if (String_Does_Match (scmd_arg0, "skill"))	{ cl.skill_level_p1 = atoi(scmd_arg1) + 1;	}
 		else if (String_Does_Match (scmd_arg0, "qex"))		{ cl.is_qex = atoi(scmd_arg1);				} // AURA 1.1
-		else if (String_Does_Match (scmd_arg0, "game"))		{ /* todo */ }
+		else if (String_Does_Match (scmd_arg0, "zircon_ext"))	{ // ZIRCON_PEXT
+			WARP_X_ (CLIENT_SUPPORTED_ZIRCON_EXT, SV_Zircon_Extensions_Send,  CL_BeginDownloads_Prespawn_Zircon_Extensions_Send)
+			cls.zirconprotocolextensions = atoi (scmd_arg1);
+			if (developer_zext.integer)
+				Con_PrintLinef ("CL_StuffText: Server reporting shared zirconprotocolextensions %d", cls.zirconprotocolextensions);
+		}
+		else if (String_Does_Match (scmd_arg0, "stor"))	{
+			// ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32
+			// stor [number of units max is 14]
+			int c = ztokenize_console_argc(scmd_arg1);
+			if (c) {
+				int num_stor = atoi(ztoken_argv[0]); // 6
+				if (num_stor + 1 == c) {
+					WARP_X_ (CL_ParseBaseline)
+					num_stor = bound (0, num_stor, (int)ARRAY_COUNT(cls.storr) - 1);
+					cls.storr[0] = num_stor; // Indicate the count
+					for (int xn = 0; xn < num_stor; xn ++) {
+						cls.storr[1 + xn] = atoi (ztoken_argv[1 + xn]);
+					} // for
+					//cls.storr[0] = 0;
+				} else {
+					Con_PrintLinef ("stor " QUOTED_S " says count of %d + 1 but we count %d", scmd_arg1, num_stor, ztoken_argc);
+				}
+
+			} // c
+		}
+		else if (String_Does_Match (scmd_arg0, "game"))		{
+			/* todo */
+			char gamedir[1][MAX_QPATH_128];
+  			//gamedir_change:
+			const char *s_base = fs_numgamedirs ? fs_gamedirs[0] : gamedirname1;
+			c_strlcpy(gamedir[0], scmd_arg1);
+			if (false == String_Does_Match ( s_base, gamedir[0]) && cls.signon < SIGNONS_4) {
+				if (!FS_ChangeGameDirs(1, gamedir /*gamedir*/, q_tx_complain_true, q_fail_on_missing_false))
+					Host_Error_Line ("CL_ParseServerInfo: unable to switch to server specified gamedir");
+			} // Game change
+		}
 		else
 			return;
 
@@ -3588,6 +3407,7 @@ CL_ParseServerMessage
 =====================
 */
 int parsingerror = false;
+WARP_X_ ()
 void CL_ParseServerMessage(void)
 {
 	int			cmd;
@@ -3654,24 +3474,29 @@ void CL_ParseServerMessage(void)
 			// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
 			str = "entity";
 			cmdlogname[cmdindex] = str;
-			SHOWNET("fast update");
+			SHOWNET ("fast update");
 			if (cls.signon == SIGNONS_4 - 1) {
 				// first update is the final signon stage
 				cls.signon = SIGNONS_4; // NORMAL QUAKE
-				cls.world_frames = 0; cls.world_start_realtime = 0; 
+				cls.world_frames = 0; cls.world_start_realtime = 0;
 				CL_SignonReply ();
 			}
-			EntityFrameQuake_ReadEntity (cmd&127);
+			EntityFrameQuake_ReadEntity (cmd&127); // Baker: DP7 is not supposed to come here.
 			continue;
 		}
 
 		SHOWNET(svc_strings[cmd]);
 		cmdlogname[cmdindex] = svc_strings[cmd];
-		if (!cmdlogname[cmdindex])
-		{
+		if (!cmdlogname[cmdindex]) {
 			// LadyHavoc: fix for bizarre problem in MSVC that I do not understand (if I assign the string pointer directly it ends up storing a NULL pointer)
 			const char *d = "<unknown>";
 			cmdlogname[cmdindex] = d;
+		}
+
+		if (developer_svc.value) {
+			// Skip certain spammy svcs unless developer_svc is 2 or higher
+			if (developer_svc.value >= 2 || false == isin4 (cmd, svc_nop, svc_time, svc_clientdata,svc_entities))
+				Con_PrintLinef ("svc: %s", cmdlogname[cmdindex]);
 		}
 
 		// other commands
@@ -3743,7 +3568,7 @@ void CL_ParseServerMessage(void)
 			break;
 
 		case svc_centerprint:
-			str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));					
+			str = MSG_ReadString (&cl_message, cl_readstring, sizeof(cl_readstring));
 			if (cl.is_qex && str[0] == '$') { // AURA 1.3
 				str = LOC_GetString (str);
 			}
@@ -3766,7 +3591,7 @@ void CL_ParseServerMessage(void)
 				case PROTOCOL_QUAKEDP:
 					// maybe add other protocols if
 					// so desired, but not DP7
-					strip_pqc = true;
+						strip_pqc = true;
 					break;
 				case PROTOCOL_DARKPLACES7:
 				default:
@@ -3789,7 +3614,7 @@ void CL_ParseServerMessage(void)
 				}
 			}
 
-			// Baker r8191
+			// Baker r8191 - cls.signon is what? SIGNON_1
 			if (String_Does_Start_With (str, HINT_MESSAGE_PREFIX)) {
 				Con_DPrintLinef ("Received server hint: %s", str);
 				str += strlen (HINT_MESSAGE_PREFIX);
@@ -3809,15 +3634,36 @@ void CL_ParseServerMessage(void)
 			break;
 
 		case svc_setangle:
+			if (developer_qw.integer)
+				Con_PrintLinef ("Setangle");
 			for (j = 0 ; j < 3 ; j ++)
 				cl.viewangles[j] = MSG_ReadAngle(&cl_message, cls.protocol);
-			if (!cls.demoplayback)
-			{
+			if (!cls.demoplayback) {
 				cl.fixangle[0] = true;
-				VectorCopy(cl.viewangles, cl.mviewangles[0]);
+				VectorCopy (cl.viewangles, cl.mviewangles[0]);
 				// disable interpolation if this is new
-				if (!cl.fixangle[1])
-					VectorCopy(cl.viewangles, cl.mviewangles[1]);
+				if (!cl.fixangle[1]) {
+					if (developer_qw.integer)
+						Con_PrintLinef ("Setangle2");
+					VectorCopy (cl.viewangles, cl.mviewangles[1]);
+				} // if !cl.fixangle[1]
+			} // if !cls.demoplayback
+			break;
+
+		case svc_zircon_warp: // ZMOVE_WARP - CL FROM SV
+			// Baker: We will turn off free move until we stop receiving this
+			// We reply to it in cl_input.c CL_SendCmd
+			if (Have_Zircon_Ext_Flag_CLS(ZIRCON_EXT_FREEMOVE_4)) {
+				cl.zircon_warp_sequence = MSG_ReadLong(&cl_message);
+				cl.zircon_warp_sequence_clock = cl.time + 0.2;
+				if (cl.zircon_warp_sequence == 0) { // ZMOVE_WARP
+					if (Have_Flag (developer_movement.integer, /*CL*/ 1)) // ZMOVE_WARP
+						Con_PrintLinef ("CL: svc_zircon_warp 0 Server says warp all clear!");
+				}
+			} else {
+				Con_DPrintLinef (CON_WARN "svc_zircon_warp without freemove -- This can happen in single player");
+				Con_DPrintLinef (CON_WARN "extensions %u", cls.zirconprotocolextensions);				
+				MSG_ReadLong(&cl_message); // Process the message
 			}
 			break;
 
@@ -3842,13 +3688,13 @@ void CL_ParseServerMessage(void)
 				break;
 			}
 			strlcpy (cl.lightstyle[j].map,  MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (cl.lightstyle[j].map));
-			cl.lightstyle[j].map[MAX_STYLESTRING - 1] = 0;
+			cl.lightstyle[j].map[MAX_STYLESTRING_64 - 1] = 0;
 			cl.lightstyle[j].length = (int)strlen(cl.lightstyle[j].map);
 			break;
 
 		case svc_sound:
 			CL_ParseStartSoundPacket (
-				isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3) ? 
+				isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3) ?
 						q_is_large_soundindex_true : q_is_large_soundindex_false
 			);
 			break;
@@ -3938,7 +3784,7 @@ void CL_ParseServerMessage(void)
 				Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", ent_num);
 			if (ent_num >= cl.max_entities)
 				CL_ExpandEntities(ent_num);
-			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_false, q_fitz_version_1);
+			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_false, q_fitz_version_1, q_is_static_false);
 			break;
 
 		case svcfitz_spawnbaseline2: // DPD 999 - Looks compat
@@ -3947,7 +3793,7 @@ void CL_ParseServerMessage(void)
 				Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline: invalid entity number %d", ent_num);
 			if (ent_num >= cl.max_entities)
 				CL_ExpandEntities(ent_num);
-			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_false, q_fitz_version_2);
+			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_false, q_fitz_version_2, q_is_static_false);
 			break;
 
 		case svc_spawnbaseline2: // 55 - Not used by Fitz666
@@ -3956,13 +3802,13 @@ void CL_ParseServerMessage(void)
 				Host_Error_Line ("CL_ParseServerMessage: svc_spawnbaseline2: invalid entity number %d", ent_num);
 			if (ent_num >= cl.max_entities)
 				CL_ExpandEntities(ent_num);
-			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_true, q_fitz_version_none_0);
+			CL_ParseBaseline (cl.entities + ent_num, q_is_large_modelindex_true, q_fitz_version_none_0, q_is_static_false);
 			break;
 		case svc_spawnstatic:
 			CL_ParseStatic (q_is_large_modelindex_false, q_fitz_version_1);
 			break;
 
-		case svcfitz_spawnstatic2: // DPD 999 
+		case svcfitz_spawnstatic2: // DPD 999
 			CL_ParseStatic (q_is_large_modelindex_false, q_fitz_version_2);
 			break;
 
@@ -4003,7 +3849,7 @@ svc_spawnstatic2_ugly: // AURA 13.2
 			//	// Baker: Save the time here
 			//	// we are going to use this to detect "slow loads hopefully".
 			//	cls.signon_1_time = Sys_DirtyTime();
-			//} else 
+			//} else
 			if (cls.signon == 3 /*SIGNONS_4*/) {
 				// Baker: Slow load end
 				// Baker: Demo playback never hits 4
@@ -4035,7 +3881,7 @@ svc_spawnstatic2_ugly: // AURA 13.2
 			break;
 
 		case svc_spawnstaticsound:
-			CL_ParseStaticSound (isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3) 
+			CL_ParseStaticSound (isin2 (cls.protocol, PROTOCOL_NEHAHRABJP2, PROTOCOL_NEHAHRABJP3)
 				? q_is_large_soundindex_true : q_is_large_soundindex_false
 				, q_fitz_version_1
 			);
@@ -4159,8 +4005,9 @@ svc_spawnstatic2_ugly: // AURA 13.2
 				cls.signon = SIGNONS_4;
 				CL_SignonReply ();
 			}
-			if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 || cls.protocol == PROTOCOL_DARKPLACES3)
-				EntityFrame_CL_ReadFrame();
+			if (cls.protocol == PROTOCOL_DARKPLACES1 || cls.protocol == PROTOCOL_DARKPLACES2 ||
+				cls.protocol == PROTOCOL_DARKPLACES3)
+				EntityFrame_CL_ReadFrame_DP1_DP3();
 			else if (cls.protocol == PROTOCOL_DARKPLACES4)
 				EntityFrame4_CL_ReadFrame();
 			else
@@ -4172,7 +4019,8 @@ svc_spawnstatic2_ugly: // AURA 13.2
 			break;
 
 		case svc_downloaddata:
-			CL_ParseDownload();
+			CL_ParseDownload_DP();
+downloadx_cl_start_download_during_2:
 			break;
 		case svc_trailparticles:
 			CL_ParseTrailParticles();
@@ -4222,7 +4070,7 @@ void CL_Parse_DumpPacket(void)
 
 void CL_Parse_ErrorCleanUp(void)
 {
-	CL_StopDownload(0, 0);
+	CL_StopDownload_DP(0, 0);
 	QW_CL_StopUpload_f(cmd_local);
 }
 
@@ -4261,16 +4109,18 @@ void CL_Parse_Init(void)
 	Cmd_AddCommand(CF_CLIENT, "stopul", QW_CL_StopUpload_f, "aborts current upload (screenshot for example)");
 	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "skins", QW_CL_Skins_f, "downloads missing qw skins from server");
 	Cmd_AddCommand(CF_CLIENT, "changing", QW_CL_Changing_f, "sent by qw servers to tell client to wait for level change");
-	Cmd_AddCommand(CF_CLIENT, "cl_begindownloads", CL_BeginDownloads_f, "used internally by darkplaces client while connecting (causes loading of models and sounds or triggers downloads for missing ones)");
-	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "cl_downloadbegin", CL_DownloadBegin_f, "(networking) informs client of download file information, client replies with sv_startsoundload to begin the transfer");
-	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "stopdownload", CL_StopDownload_f, "terminates a download");
-	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "cl_downloadfinished", CL_DownloadFinished_f, "signals that a download has finished and provides the client with file size and crc to check its integrity");
+	Cmd_AddCommand(CF_CLIENT, "cl_begindownloads", CL_BeginDownloads_DP_f, "used internally by darkplaces client while connecting (causes loading of models and sounds or triggers downloads for missing ones)");
+	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "cl_downloadbegin", CL_DownloadBegin_DP_f, "(networking) informs client of download file information, client replies with sv_startsoundload to begin the transfer");
+	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "stopdownload", CL_StopDownload_DP_QW_f, "terminates a download");
+	Cmd_AddCommand(CF_CLIENT | CF_CLIENT_FROM_SERVER, "cl_downloadfinished", CL_DownloadFinished_DP_f, "signals that a download has finished and provides the client with file size and crc to check its integrity");
 	Cmd_AddCommand(CF_CLIENT, "iplog_list", CL_IPLog_List_f, "lists names of players whose IP address begins with the supplied text (example: iplog_list 123.456.789)");
 
-	Cvar_RegisterVariable(&cl_pext);
-	Cvar_RegisterVariable(&cl_pext_qw_256packetentities);
-	Cvar_RegisterVariable(&cl_pext_chunkeddownloads);
-	Cvar_RegisterVariable(&cl_chunksperframe);
+	Cvar_RegisterVariable (&cl_pext);
+	Cvar_RegisterVariable (&cl_pext_qw_256packetentities);
+	Cvar_RegisterVariable (&cl_pext_qw_limits);
+
+	Cvar_RegisterVariable (&cl_pext_chunkeddownloads);
+	Cvar_RegisterVariable (&cl_chunksperframe);
 //	Cvar_RegisterVariable(&cl_pext_qw_limits);
 }
 

@@ -1908,7 +1908,9 @@ static float R_Shadow_BounceGrid_RefractiveIndexAtPoint(vec3_t point)
 	int hitsupercontentsmask = SUPERCONTENTS_SOLID | SUPERCONTENTS_LIQUIDSMASK;
 	int skipsupercontentsmask = 0;
 	int skipmaterialflagsmask = MATERIALFLAG_CUSTOMBLEND;
-	trace_t trace = CL_TracePoint(point, r_shadow_bouncegrid_state.settings.staticmode ? MOVE_WORLDONLY : (r_shadow_bouncegrid_state.settings.hitmodels ? MOVE_HITMODEL : MOVE_NOMONSTERS), NULL, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, true, false, NULL, true);
+	trace_t trace = CL_TracePoint(point, 
+		r_shadow_bouncegrid_state.settings.staticmode ? MOVE_WORLDONLY : (r_shadow_bouncegrid_state.settings.hitmodels ? MOVE_HITMODEL : MOVE_NOMONSTERS), 
+		NULL, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, true, HITT_NOPLAYERS_0_NOTAMOVE, NULL, true);
 	if (trace.starttexture && (trace.starttexture->currentmaterialflags & (MATERIALFLAG_REFRACTION | MATERIALFLAG_WATERSHADER)))
 		return trace.starttexture->refractive_index;
 	else if (trace.startsupercontents & SUPERCONTENTS_LIQUIDSMASK)
@@ -3556,10 +3558,14 @@ static void R_Shadow_PrepareLight(rtlight_t *rtlight)
 	numshadowentities_noselfshadow = 0;
 
 	// add dynamic entities that are lit by the light
+	int draw_only_by_num = r_drawentities.integer >= 2;
 	for (i = 0; i < r_refdef.scene.numentities; i++)
 	{
 		model_t *model;
 		entity_render_t *ent = r_refdef.scene.entities[i];
+		if (draw_only_by_num && r_refdef.scene.entities[i]->entitynumber != r_drawentities.integer)
+			continue; // Not selected
+
 		vec3_t org;
 		if (!BoxesOverlap(ent->mins, ent->maxs, rtlight->cached_cullmins, rtlight->cached_cullmaxs))
 			continue;
@@ -4298,8 +4304,12 @@ void R_Shadow_PrepareModelShadows(void)
 	shadowmaxs[1] = shadoworigin[1] + r_shadows_throwdistance.value * fabs(shadowdir[1]) + radius * (fabs(shadowforward[1]) + fabs(shadowright[1]));
 	shadowmaxs[2] = shadoworigin[2] + r_shadows_throwdistance.value * fabs(shadowdir[2]) + radius * (fabs(shadowforward[2]) + fabs(shadowright[2]));
 
+	int draw_only_by_num = r_drawentities.integer >= 2;
 	for (i = 0; i < r_refdef.scene.numentities; i++)
 	{
+		if (draw_only_by_num && r_refdef.scene.entities[i]->entitynumber != r_drawentities.integer)
+			continue; // Not selected
+
 		ent = r_refdef.scene.entities[i];
 		if (!BoxesOverlap(ent->mins, ent->maxs, shadowmins, shadowmaxs))
 			continue;
@@ -5011,9 +5021,9 @@ void R_Shadow_SaveWorldLights(void)
 		if (!light)
 			continue;
 		if (light->coronasizescale != 0.25f || light->ambientscale != 0 || light->diffusescale != 1 || light->specularscale != 1 || light->flags != LIGHTFLAG_REALTIMEMODE)
-			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d \"%s\" %f %f %f %f %f %f %f %f %d\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2], light->coronasizescale, light->ambientscale, light->diffusescale, light->specularscale, light->flags);
+			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d " QUOTED_S " %f %f %f %f %f %f %f %f %d\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2], light->coronasizescale, light->ambientscale, light->diffusescale, light->specularscale, light->flags);
 		else if (light->cubemapname[0] || light->corona || light->angles[0] || light->angles[1] || light->angles[2])
-			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d \"%s\" %f %f %f %f\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2]);
+			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d " QUOTED_S " %f %f %f %f\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2]);
 		else
 			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style);
 		if (bufchars + strlen(line) > bufmaxchars)
@@ -5083,7 +5093,7 @@ void R_Shadow_LoadLightsFile(void)
 			n++;
 		}
 		if (*s)
-			Con_Printf ("invalid lights file \"%s\"\n", name);
+			Con_PrintLinef ("invalid lights file " QUOTED_S, name);
 		Mem_Free(lightsstring);
 	}
 }

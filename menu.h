@@ -113,7 +113,7 @@ void menu_state_set_nova(int ee); // Baker: allows nostartdemos to exit menu?
 extern qbool menu_is_csqc;
 #endif
 
-
+int SList_Tiebreaker_Bias (const char *s);
 
 #endif // ! MENU_H
 

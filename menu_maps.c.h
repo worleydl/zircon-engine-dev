@@ -104,10 +104,10 @@ static void M_Maps_Draw (void)
 }
 
 #pragma message ("Check out what happens if no servers founds or no maps found and end up pgup hit")
-static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
+static void M_Maps_Key(cmd_state_t *cmd, int key, int ascii)
 {
 	int lcase_ascii;
-	switch (k) {
+	switch (key) {
 	case K_MOUSE2: // fall thru
 	case K_ESCAPE:
 		M_Menu_Main_f(cmd);
@@ -124,7 +124,7 @@ static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 		if (local_count) {
 			char vabuf[1024];
 			maplist_s *mx = &m_maplist[local_cursor];
-			va (vabuf, sizeof(vabuf), "map %s", mx->s_name_after_maps_folder_a);
+			va (vabuf, sizeof(vabuf), "map %s // %s", mx->s_name_after_maps_folder_a, mx->s_map_title_trunc_28_a);
 			menu_state_reenter = 1;
 			Cbuf_AddTextLine (cmd, vabuf );
 
@@ -153,19 +153,19 @@ static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 
 	case K_PGUP:
 		local_cursor -= visiblerows / 2;
-		if (local_cursor < 0) 
+		if (local_cursor < 0) // PGUP does not wrap, stops at start
 			local_cursor = 0;
 		break;
 
 	case K_MWHEELUP:
 		local_cursor -= visiblerows / 4;
-		if (local_cursor < 0) 
+		if (local_cursor < 0) // K_MWHEELUP does not wrap, stops at start
 			local_cursor = 0;
 		break;
 
 	case K_PGDN:
 		local_cursor += visiblerows / 2;
-		if (local_cursor >= local_count) 
+		if (local_cursor >= local_count) // PGDN does not wrap, stops at end
 			local_cursor = local_count - 1;
 		break;
 
@@ -178,15 +178,15 @@ static void M_Maps_Key(cmd_state_t *cmd, int k, int ascii)
 	case K_UPARROW:
 		//S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor--;
-		if (local_cursor < 0)
-			local_cursor = 0;
+		if (local_cursor < 0) // K_UPARROW wraps around to end EXCEPT ON MEGA LISTS
+			local_cursor = 0; // MEGA EXCEPTION
 		break;
 
 	case K_DOWNARROW:
 		//S_LocalSound ("sound/misc/menu1.wav");
 		local_cursor ++;
-		if (local_cursor >= local_count)
-			local_cursor = local_count - 1 ;
+		if (local_cursor >= local_count) // K_DOWNARROW wraps around to start EXCEPT ON MEGA LISTS
+			local_cursor = local_count - 1 ; // MEGA EXCEPTION
 		break;
 
 	case K_LEFTARROW:

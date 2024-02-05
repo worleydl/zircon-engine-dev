@@ -74,6 +74,8 @@ mplane_t;
 //#define SURF_PLANEBACK 2
 
 // indicates that all triangles of the surface should be added to the BIH collision system
+#define MATERIALFLAG_NONE_0	0
+
 #define MATERIALFLAG_MESHCOLLISIONS 0x00000001
 // use alpha blend on this material
 #define MATERIALFLAG_ALPHA 0x00000002

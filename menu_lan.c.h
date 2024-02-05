@@ -1,5 +1,6 @@
 // menu_lan.c.h
 
+// Baker:
 #pragma message ("It seems we missed lan config menu?")
 
 //=============================================================================
@@ -7,7 +8,7 @@
 
 static int		lanConfig_cursor = -1;
 static int		lanConfig_cursor_table [] = {56 + 16, 76+ 16, 84+ 16, 120+ 16};
-#define NUM_LANCONFIG_CMDS	4
+#define NUM_LANCONFIG_CMDS_4	4
 
 static int 	lanConfig_port;
 static char	lanConfig_portname[6];
@@ -18,8 +19,7 @@ void M_Menu_LanConfig_f(cmd_state_t *cmd)
 	key_dest = key_menu;
 	menu_state_set_nova (m_lanconfig);
 	m_entersound = true;
-	if (lanConfig_cursor == -1)
-	{
+	if (lanConfig_cursor == -1) {
 		if (JoiningGame)
 			lanConfig_cursor = 1;
 	}
@@ -39,6 +39,10 @@ static void M_LanConfig_Draw (void)
 	const char	*startJoin;
 	const char	*protocol;
 	char vabuf[1024];
+	int		effective_count = JoiningGame ? (NUM_LANCONFIG_CMDS_4 - 1) : 2;
+
+	if (lanConfig_cursor >= effective_count)
+		lanConfig_cursor = effective_count;
 
 	M_Background(320, 200, q_darken_true);
 
@@ -71,8 +75,7 @@ static void M_LanConfig_Draw (void)
 	M_Print(basex+9*8, lanConfig_cursor_table[0], lanConfig_portname);
 	Hotspots_Add (menu_x + basex - 8, menu_y + lanConfig_cursor_table[0], (45 * 8) /*360*/, 8, 1, hotspottype_button);
 
-	if (JoiningGame)
-	{
+	if (JoiningGame) {
 		M_Print(basex, lanConfig_cursor_table[1], "Search for DarkPlaces games...");
 		Hotspots_Add (menu_x + basex - 8, menu_y + lanConfig_cursor_table[1], (45 * 8) /*360*/, 8, 1, hotspottype_button);
 
@@ -108,11 +111,11 @@ static void M_LanConfig_Draw (void)
 
 static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 {
-	int		l;
+	int		jj;
 	char vabuf[1024];
+	int		effective_count = JoiningGame ? NUM_LANCONFIG_CMDS_4 : 2;
 
-	switch (key)
-	{
+	switch (key) {
 	case K_MOUSE2: // fall
 	case K_ESCAPE:
 		lanConfig_cursor = 0;
@@ -124,30 +127,42 @@ static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 		break;
 
 	case K_END:
-		lanConfig_cursor = NUM_LANCONFIG_CMDS - 1;
+		lanConfig_cursor = effective_count - 1; // NUM_LANCONFIG_CMDS_4 - 1;
 		break;
+
+	// If there are no visiblerows limitations
+	// in the menu, page and wheel do nothing.
+	// case K_PGUP:
+	// case K_MWHEELUP:
+	// case K_PGDN:
+	// case K_MWHEELDOWN:
 
 	case K_UPARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		lanConfig_cursor--;
-		if (lanConfig_cursor < 0)
-			lanConfig_cursor = NUM_LANCONFIG_CMDS-1;
+		if (lanConfig_cursor < 0) // K_UPARROW wrap
+			lanConfig_cursor = effective_count - 1; // Wrap
 		// when in start game menu, skip the unused search qw servers item
-		if (StartingGame && lanConfig_cursor == 2)
-			lanConfig_cursor = 1;
+		//if (StartingGame && lanConfig_cursor == 2)
+		//	lanConfig_cursor = 1;
 		break;
 
 	case K_DOWNARROW:
 		S_LocalSound ("sound/misc/menu1.wav");
 		lanConfig_cursor++;
-		if (lanConfig_cursor >= NUM_LANCONFIG_CMDS)
-			lanConfig_cursor = 0;
+		if (lanConfig_cursor >= effective_count) // K_DOWNARROW wraps
+			lanConfig_cursor = 0; // Wrap
 		// when in start game menu, skip the unused search qw servers item
-		if (StartingGame && lanConfig_cursor == 1)
-			lanConfig_cursor = 2;
+		//if (StartingGame && lanConfig_cursor == 1)
+		//	lanConfig_cursor = 2;
 		break;
 
-	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else lanConfig_cursor = hotspotx_hover; // fall thru
+	case K_MOUSE1: 
+		if (hotspotx_hover == not_found_neg1) 
+			break; 
+		
+		lanConfig_cursor = hotspotx_hover; 
+		// fall thru
 
 	case K_ENTER:
 		if (lanConfig_cursor == 0)
@@ -173,8 +188,7 @@ static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 		break;
 
 	case K_BACKSPACE:
-		if (lanConfig_cursor == 0)
-		{
+		if (lanConfig_cursor == 0) {
 			if (strlen(lanConfig_portname))
 				lanConfig_portname[strlen(lanConfig_portname)-1] = 0;
 		}
@@ -192,11 +206,11 @@ static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 
 		if (lanConfig_cursor == 3)
 		{
-			l = (int)strlen(lanConfig_joinname);
-			if (l < (int)sizeof(lanConfig_joinname) - 1)
+			jj = (int)strlen(lanConfig_joinname);
+			if (jj < (int)sizeof(lanConfig_joinname) - 1)
 			{
-				lanConfig_joinname[l+1] = 0;
-				lanConfig_joinname[l] = ascii;
+				lanConfig_joinname[jj+1] = 0;
+				lanConfig_joinname[jj] = ascii;
 			}
 		}
 
@@ -204,11 +218,11 @@ static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 			break;
 		if (lanConfig_cursor == 0)
 		{
-			l = (int)strlen(lanConfig_portname);
-			if (l < (int)sizeof(lanConfig_portname) - 1)
+			jj = (int)strlen(lanConfig_portname);
+			if (jj < (int)sizeof(lanConfig_portname) - 1)
 			{
-				lanConfig_portname[l+1] = 0;
-				lanConfig_portname[l] = ascii;
+				lanConfig_portname[jj+1] = 0;
+				lanConfig_portname[jj] = ascii;
 			}
 		}
 	}
@@ -221,8 +235,8 @@ static void M_LanConfig_Key(cmd_state_t *cmd, int key, int ascii)
 			lanConfig_cursor = 0;
 	}
 
-	l =  atoi(lanConfig_portname);
-	if (l <= 65535)
-		lanConfig_port = l;
+	jj =  atoi(lanConfig_portname);
+	if (jj <= 65535)
+		lanConfig_port = jj;
 	dpsnprintf(lanConfig_portname, sizeof(lanConfig_portname), "%u", (unsigned int) lanConfig_port);
 }

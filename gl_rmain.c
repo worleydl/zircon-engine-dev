@@ -96,7 +96,7 @@ cvar_t r_showdisabledepthtest = {CF_CLIENT, "r_showdisabledepthtest", "0", "disa
 cvar_t r_showspriteedges = {CF_CLIENT, "r_showspriteedges", "0", "renders a debug outline to show the polygon shape of each sprite frame rendered (may be 2 or more in case of interpolated animations), for debugging rendering bugs with specific view types"};
 cvar_t r_showparticleedges = {CF_CLIENT, "r_showparticleedges", "0", "renders a debug outline to show the polygon shape of each particle, for debugging rendering bugs with specific view types"};
 cvar_t r_drawportals = {CF_CLIENT, "r_drawportals", "0", "shows portals (separating polygons) in world interior in quake1 maps"};
-cvar_t r_drawentities = {CF_CLIENT, "r_drawentities","1", "draw entities (doors, players, projectiles, etc)"};
+cvar_t r_drawentities = {CF_CLIENT, "r_drawentities","1", "draw entities (doors, players, projectiles, etc).  Set to entity number to draw only a specific entity. [Zircon]"};
 cvar_t r_draw2d = {CF_CLIENT, "r_draw2d","1", "draw 2D stuff (dangerous to turn off)"};
 cvar_t r_drawworld = {CF_CLIENT, "r_drawworld","1", "draw world (most static stuff)"};
 cvar_t r_drawviewmodel = {CF_CLIENT, "r_drawviewmodel","1", "draw your weapon model"};
@@ -1182,7 +1182,7 @@ static void R_GLSL_CompilePermutation(r_glsl_permutation_t *p, unsigned int mode
 			for (activeuniformindex = 0;activeuniformindex < numactiveuniforms;activeuniformindex++)
 			{
 				qglGetActiveUniform(p->program, activeuniformindex, sizeof(uniformname) - 1, &uniformnamelength, &uniformsize, &uniformtype, uniformname);
-				Con_Printf ("Uniform %d name \"%s\" size %d type %d\n", (int)activeuniformindex, uniformname, (int)uniformsize, (int)uniformtype);
+				Con_Printf ("Uniform %d name " QUOTED_S " size %d type %d\n", (int)activeuniformindex, uniformname, (int)uniformsize, (int)uniformtype);
 			}
 		}
 #endif // 0
@@ -2052,7 +2052,7 @@ void R_SetupShader_Surface(const float rtlightambient[3], const float rtlightdif
 		}
 
 		if (r_glsl_permutation->loc_Color_Glow >= 0) qglUniform3f(r_glsl_permutation->loc_Color_Glow, t->render_glowmod[0], t->render_glowmod[1], t->render_glowmod[2]);
-		if (r_glsl_permutation->loc_Alpha >= 0) qglUniform1f(r_glsl_permutation->loc_Alpha, t->currentalpha * ((t->basematerialflags & MATERIALFLAG_WATERSHADER && r_fb.water.enabled && !r_refdef.view.isoverlay) ? t->r_water_wateralpha : 1));
+		if (r_glsl_permutation->loc_Alpha >= 0) qglUniform1f(r_glsl_permutation->loc_Alpha, t->currentalpha * ((t->basematerialflags & MATERIALFLAG_WATERSHADER && r_fb.water.wenabled && !r_refdef.view.isoverlay) ? t->r_water_wateralpha : 1));
 		if (r_glsl_permutation->loc_EyePosition >= 0) qglUniform3f(r_glsl_permutation->loc_EyePosition, rsurface.localvieworigin[0], rsurface.localvieworigin[1], rsurface.localvieworigin[2]);
 		if (r_glsl_permutation->loc_Color_Pants >= 0)
 		{
@@ -2411,6 +2411,7 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	// check for DDS texture file first
 	if (!r_loaddds || !(ddsbase = R_LoadTextureDDSFile(r_main_texturepool, va(vabuf, sizeof(vabuf), "dds/%s.dds", basename), vid.sRGB3D, textureflags, &ddshasalpha, ddsavgcolor, miplevel, false)))
 	{
+		// Not DDS
 		basepixels = loadimagepixelsbgra(name, complain, q_tx_allowfixtrans_true, q_tx_convertsrgb_false, &miplevel);
 		if (basepixels == NULL && fallbacknotexture)
 			basepixels = Image_GenerateNoTexture();
@@ -2652,7 +2653,7 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 		return NULL;
 
 	if (developer_loading.integer)
-		Con_Printf ("loading 32bit skin \"%s\"\n", name);
+		Con_PrintLinef ("loading 32bit skin " QUOTED_S, name);
 
 	if (r_loadnormalmap && r_shadow_bumpscale_basetexture.value > 0)
 	{
@@ -2871,7 +2872,7 @@ skinframe_t *R_SkinFrame_LoadInternal8bit(const char *name, int textureflags, co
 		return NULL;
 
 	if (developer_loading.integer)
-		Con_Printf ("loading embedded 8bit image \"%s\"\n", name);
+		Con_PrintLinef ("loading embedded 8bit image " QUOTED_S, name);
 
 	skinframe->base = skinframe->merged = R_LoadTexture2D(r_main_texturepool, skinframe->basename, width, height, skindata, TEXTYPE_PALETTE, textureflags, -1, palette);
 	if ((textureflags & TEXF_ALPHA)) // Baker: && alphapalette didn't exist before
@@ -2955,7 +2956,7 @@ skinframe_t *R_SkinFrame_LoadInternalUsingTexture(const char *name, int texturef
 	if (!tex)
 		return NULL;
 	if (developer_loading.integer)
-		Con_Printf ("loading 32bit skin \"%s\"\n", name);
+		Con_PrintLinef ("loading 32bit skin " QUOTED_S, name);
 	skinframe->base = skinframe->merged = tex;
 	Vector4Set(skinframe->avgcolor, 1, 1, 1, 1); // bogus placeholder
 	return skinframe;
@@ -3042,7 +3043,7 @@ static rtexture_t *R_LoadCubemap(const char *basename)
 						Image_CopyMux(cubemappixels+i*cubemapsize*cubemapsize*4, image_buffer, cubemapsize, cubemapsize, suffix[j][i].flipx, suffix[j][i].flipy, suffix[j][i].flipdiagonal, 4, 4, componentorder);
 				}
 				else
-					Con_Printf ("Cubemap image \"%s\" (%dx%d) is not square, OpenGL requires square cubemaps.\n", name, image_width, image_height);
+					Con_Printf ("Cubemap image " QUOTED_S " (%dx%d) is not square, OpenGL requires square cubemaps.\n", name, image_width, image_height);
 				// free the image
 				Mem_Free(image_buffer);
 			}
@@ -3052,21 +3053,21 @@ static rtexture_t *R_LoadCubemap(const char *basename)
 	if (cubemappixels)
 	{
 		if (developer_loading.integer)
-			Con_Printf ("loading cubemap \"%s\"\n", basename);
+			Con_PrintLinef ("loading cubemap " QUOTED_S, basename);
 
 		cubemaptexture = R_LoadTextureCubeMap(r_main_texturepool, basename, cubemapsize, cubemappixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, (gl_texturecompression_lightcubemaps.integer && gl_texturecompression.integer ? TEXF_COMPRESS : 0) | forcefilter | TEXF_CLAMP, -1, NULL);
 		Mem_Free(cubemappixels);
 	}
 	else
 	{
-		Con_DPrintf ("failed to load cubemap \"%s\"\n", basename);
+		Con_DPrintLinef ("failed to load cubemap " QUOTED_S, basename);
 		if (developer_loading.integer)
 		{
 			Con_Printf ("(tried tried images ");
 			for (j = 0;j < 3;j++)
 				for (i = 0;i < 6;i++)
 					Con_Printf ("%s\"%s%s.tga\"", j + i > 0 ? ", " : "", basename, suffix[j][i].suffix);
-			Con_Print(" and was unable to find any of them).\n");
+			Con_PrintLinef (" and was unable to find any of them).");
 		}
 	}
 	return cubemaptexture;
@@ -3973,8 +3974,12 @@ static void R_DrawModels(void)
 	int i;
 	entity_render_t *rent;
 
+	int draw_only_by_num = r_drawentities.integer >= 2;
 	for (i = 0;i < r_refdef.scene.numentities;i++)
 	{
+		if (draw_only_by_num && r_refdef.scene.entities[i]->entitynumber != r_drawentities.integer)
+			continue; // Not selected
+
 		if (!r_refdef.viewcache.entityvisible[i])
 			continue;
 		rent = r_refdef.scene.entities[i];
@@ -4527,7 +4532,7 @@ static void R_Water_StartFrame(int viewwidth, int viewheight)
 	r_fb.water.screenscale[1] = 0.5f;
 	r_fb.water.screencenter[0] = 0.5f;
 	r_fb.water.screencenter[1] = 0.5f;
-	r_fb.water.enabled = waterwidth != 0;
+	r_fb.water.wenabled = waterwidth != 0;
 
 	r_fb.water.maxwaterplanes = MAX_WATERPLANES;
 	r_fb.water.numwaterplanes = 0;
@@ -5532,10 +5537,10 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 	if (R_CompileShader_CheckStaticParms())
 		R_GLSL_Restart_f(cmd_local);
 
-	if (!r_drawentities.integer)
+	if (r_drawentities.integer == 0)
 		r_refdef.scene.numentities = 0;
 	else if (r_sortentities.integer)
-		R_SortEntities();
+		R_SortEntities(); // Baker: sorts r_refdef.scene.entities
 
 	R_AnimCache_ClearCache();
 
@@ -5555,7 +5560,7 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 
 		r_refdef.view.showdebug = false;
 
-		r_fb.water.enabled = false;
+		r_fb.water.wenabled = false;
 		r_fb.water.numwaterplanes = 0;
 
 		R_RenderScene(0, NULL, NULL, r_refdef.view.x, r_refdef.view.y, r_refdef.view.width, r_refdef.view.height);
@@ -5638,7 +5643,7 @@ void R_RenderView(int fbo, rtexture_t *depthtexture, rtexture_t *colortexture, i
 	// R_Shadow_UpdateBounceGridTexture called R_TimeReport a few times internally, so we don't need to do that here.
 
 	r_fb.water.numwaterplanes = 0;
-	if (r_fb.water.enabled)
+	if (r_fb.water.wenabled)
 		R_RenderWaterPlanes(viewfbo, viewdepthtexture, viewcolortexture, viewx, viewy, viewwidth, viewheight);
 
 	// for the actual view render we use scissoring a fair amount, so scissor
@@ -6004,13 +6009,13 @@ static void R_DrawEntityBBoxes_Callback(const entity_render_t *ent, const rtligh
 		edict = PRVM_EDICT_NUM(surfacelist[i]);
 		switch ((int)PRVM_serveredictfloat(edict, solid))
 		{
-			case SOLID_NOT:      Vector4Set(color, 1, 1, 1, 0.05);break;
-			case SOLID_TRIGGER:  Vector4Set(color, 1, 0, 1, 0.10);break;
-			case SOLID_BBOX:     Vector4Set(color, 0, 1, 0, 0.10);break;
-			case SOLID_SLIDEBOX: Vector4Set(color, 1, 0, 0, 0.10);break;
-			case SOLID_BSP:      Vector4Set(color, 0, 0, 1, 0.05);break;
-			case SOLID_CORPSE:   Vector4Set(color, 1, 0.5, 0, 0.05);break;
-			default:             Vector4Set(color, 0, 0, 0, 0.50);break;
+			case SOLID_NOT_0:		Vector4Set(color, 1, 1, 1, 0.05);break;
+			case SOLID_TRIGGER_1:	Vector4Set(color, 1, 0, 1, 0.10);break;
+			case SOLID_BBOX_2:		Vector4Set(color, 0, 1, 0, 0.10);break;
+			case SOLID_SLIDEBOX_3:	Vector4Set(color, 1, 0, 0, 0.10);break;
+			case SOLID_BSP_4:		Vector4Set(color, 0, 0, 1, 0.05);break;
+			case SOLID_CORPSE_5:	Vector4Set(color, 1, 0.5, 0, 0.05);break;
+			default:				Vector4Set(color, 0, 0, 0, 0.50);break;
 		}
 		if (prog == CLVM_prog)
 			color[3] *= r_showbboxes_client.value;
@@ -6533,9 +6538,9 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	t->currentalpha = rsurface.entity->alpha * t->basealpha;
 	if (t->basematerialflags & MATERIALFLAG_WATERALPHA && (model->brush.supportwateralpha || r_water.integer || r_novis.integer || r_trippy.integer))
 		t->currentalpha *= r_wateralpha.value;
-	if (t->basematerialflags & MATERIALFLAG_WATERSHADER && r_fb.water.enabled && !r_refdef.view.isoverlay)
+	if (t->basematerialflags & MATERIALFLAG_WATERSHADER && r_fb.water.wenabled && !r_refdef.view.isoverlay)
 		t->currentmaterialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW; // we apply wateralpha later
-	if (!r_fb.water.enabled || r_refdef.view.isoverlay)
+	if (!r_fb.water.wenabled || r_refdef.view.isoverlay)
 		t->currentmaterialflags &= ~(MATERIALFLAG_WATERSHADER | MATERIALFLAG_REFRACTION | MATERIALFLAG_REFLECTION | MATERIALFLAG_CAMERA);
 
 	// decide on which type of lighting to use for this surface
@@ -6779,7 +6784,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 	// lightmaps mode looks bad with dlights using actual texturing, so turn
 	// off the colormap and glossmap, but leave the normalmap on as it still
 	// accurately represents the shading involved
-	if (gl_lightmaps.integer && ent != &cl_meshentities[MESH_UI].render)
+	if (gl_lightmaps.integer && ent != &cl_meshentities[MESH_UI_1].render)
 	{
 		t->basetexture = r_texture_grey128;
 		t->pantstexture = r_texture_black;

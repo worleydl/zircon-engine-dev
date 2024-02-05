@@ -70,6 +70,8 @@ gamemode_t;
 // Pre-csqcmodels era.
 #define IS_OLDNEXUIZ_DERIVED(g) ((g) == GAME_NEXUIZ || (g) == GAME_VORETOURNAMENT)
 
+#define NEXUIZ_OBS_NEG_666 -666
+
 extern gamemode_t gamemode;
 extern const char *gamename;
 extern const char *gamenetworkfiltername;

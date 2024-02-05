@@ -1,13 +1,16 @@
 // baker.h -- platform environment. Orgins in 2014 and 2015.
 
-
 #ifndef __BAKER_H__
 #define __BAKER_H__
 
-#define WARP_X_(...)						// For warp without including code  see also: SPECIAL_POS___
+#define WARP_X_(...)			// For warp without including code  see also: SPECIAL_POS___
 #define WARP_X_CALLERS_(...)	// For warp without including code  see also: SPECIAL_POS___
 
-#define NULLFIX2		NULL		// Marking kludge fixes "NULLFIX, "
+#define NULLFIX2		NULL	// Marking kludge fixes "NULLFIX, "
+
+#define PLUS1(x)							(x+1)
+#define UNPLUS1(YOUR_PLUS_1)				((YOUR_PLUS_1) - 1)
+
 
 WARP_X_ (dpsnprintf)
 WARP_X_ (Partial_Reset String_Does_Have_Uppercase)
@@ -104,6 +107,8 @@ typedef struct _crect_t_s {
 
 #define ARRAY_COUNT(_array)						(sizeof(_array) / sizeof(_array[0]))	// Used tons.
 
+#define modulo %
+
 #define isin0(x) (0)					// No, not insane.  You can mark an future list with this.  Beats a comment.
 #define isin1(x,a) ((x) == (a))			// No, not insane.  What if you expect more, but can only remember one or only know of 1 at the moment.
 #define isin2(x,a,b) ((x) == (a) || (x) == (b))
@@ -168,6 +173,9 @@ typedef struct _crect_t_s {
 
 #define S_FMT_LEFT_PAD_40			"%-40.40s"		// Negative means left pad or right pad?  LEFT  The .20 truncates at 20, right?
 #define S_FMT_RIGHT_PAD_40			"%40.40s"		// Negative means left pad or right pad?  LEFT  The 20 pads the .20 truncs
+
+#define VECTOR3_5d1F				"%5.1f %5.1f %5.1f"
+#define VECTOR3_SEND(v)				(v)[0], (v)[1], (v)[2]
 
 ///////////////////////////////////////////////////////////////////////////////
 //  INTERNAL MACROS: Baker

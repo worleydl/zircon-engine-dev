@@ -887,7 +887,7 @@ typedef struct r_waterstate_s
 	float screenscale[2];
 	float screencenter[2];
 
-	qbool enabled;
+	qbool wenabled;
 
 	qbool renderingscene; // true while rendering a refraction or reflection texture, disables water surfaces
 	qbool hideplayer;

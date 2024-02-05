@@ -79,7 +79,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # elif TARGET_OS_MAC
 #  define DP_OS_NAME "macOS"
 #  define DP_OS_STR "macos"
-# endif 
+# endif
 #elif defined(__MORPHOS__)
 # define DP_OS_NAME		"MorphOS"
 # define DP_OS_STR		"morphos"
@@ -167,7 +167,7 @@ dllfunction_t;
 
 qbool Sys_LoadSelf(dllhandle_t *handle);
 
-/*! Loads a dependency library. 
+/*! Loads a dependency library.
  * \param dllnames a NULL terminated array of possible names for the DLL you want to load.
  * \param handle
  * \param fcts
@@ -202,12 +202,12 @@ void Sys_Error (const char *error, ...) DP_FUNC_PRINTF(1) DP_FUNC_NORETURN;
 
 /// (may) output text to terminal which launched program
 void Sys_PrintToTerminal(const char *text);
-void Sys_PrintfToTerminal (const char *fmt, ...);
+void Sys_PrintfToTerminal (const char *fmt, ...) DP_FUNC_PRINTF(1);
 
 #ifdef _DEBUG
 	// Baker: This prints output to the Visual Studio debug console
 	// I use it for console debugging during times that console printing
-	// not workable for feedback 
+	// not workable for feedback
 	void Sys_PrintToTerminal2(const char *text);
 #endif
 

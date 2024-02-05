@@ -1,3 +1,5 @@
+// libcurl.c
+
 #include "quakedef.h"
 #include "fs.h"
 #include "libcurl.h"
@@ -824,7 +826,8 @@ Curl_Shutdown
 Surprise... closes all the stuff. Please do this BEFORE shutting down LHNET.
 ====================
 */
-void Curl_ClearRequirements(void);
+WARP_X_ (Curl_ClearRequirements)
+
 void Curl_Shutdown(void)
 {
 	if (!curl_dll)
@@ -883,6 +886,8 @@ Starts a download of a given URL to the file name portion of this URL (or name
 if given) in the "dlcache/" folder.
 ====================
 */
+
+WARP_X_ (VM_uri_get Curl_EndDownload Curl_Frame)
 static qbool Curl_Begin(const char *URL, const char *extraheaders, double maxspeed, const char *name, int loadtype, qbool forthismap, const char *post_content_type, const unsigned char *postbuf, size_t postbufsize, unsigned char *buf, size_t bufsize, curl_callback_t callback, void *cbdata)
 {
 	if (buf)
@@ -1053,7 +1058,7 @@ static qbool Curl_Begin(const char *URL, const char *extraheaders, double maxspe
 		// URL scheme (so one can't read local files using file://)
 		if (strncmp(URL, "http://", 7) && strncmp(URL, "ftp://", 6) && strncmp(URL, "https://", 8))
 		{
-			Con_Printf ("Curl_Begin(\"%s\"): nasty URL scheme rejected\n", URL);
+			Con_Printf ("Curl_Begin(" QUOTED_S "): nasty URL scheme rejected\n", URL);
 			if (curl_mutex) Thread_UnlockMutex(curl_mutex);
 			return false;
 		}
@@ -1413,6 +1418,7 @@ curl --finish_autodownload
 	once the last download completes successfully, reconnect to the current server
 ====================
 */
+WARP_X_ ()
 static void Curl_Curl_f(cmd_state_t *cmd)
 {
 	double maxspeed = 0;
@@ -1423,20 +1429,17 @@ static void Curl_Curl_f(cmd_state_t *cmd)
 	const char *url;
 	const char *name = 0;
 
-	if (!curl_dll)
-	{
+	if (!curl_dll) {
 		Con_Print("libcurl DLL not found, this command is inactive.\n");
 		return;
 	}
 
-	if (!curl_enabled.integer)
-	{
+	if (!curl_enabled.integer) {
 		Con_Print("curl support not enabled. Set cl_curl_enabled to 1 to enable.\n");
 		return;
 	}
 
-	if (Cmd_Argc(cmd) < 2)
-	{
+	if (Cmd_Argc(cmd) < 2) {
 		Con_Print("usage:\ncurl --info, curl --cancel [filename], curl url\n");
 		return;
 	}
@@ -1444,16 +1447,13 @@ static void Curl_Curl_f(cmd_state_t *cmd)
 	url = Cmd_Argv(cmd, Cmd_Argc(cmd) - 1);
 	end = Cmd_Argc(cmd);
 
-	for(i = 1; i != end; ++i)
-	{
-		const char *a = Cmd_Argv(cmd, i);
-		if (String_Does_Match(a, "--info"))
-		{
+	for(i = 1; i != end; ++i) {
+		const char *s_arg = Cmd_Argv(cmd, i);
+		if (String_Does_Match(s_arg, "--info")) {
 			Curl_Info_f(cmd);
 			return;
 		}
-		else if (String_Does_Match(a, "--cancel"))
-		{
+		else if (String_Does_Match(s_arg, "--cancel")) {
 			if (i == end - 1) // last argument
 				Curl_CancelAll();
 			else
@@ -1466,57 +1466,47 @@ static void Curl_Curl_f(cmd_state_t *cmd)
 			}
 			return;
 		}
-		else if (String_Does_Match(a, "--pak"))
+		else if (String_Does_Match(s_arg, "--pak"))
 		{
 			loadtype = LOADTYPE_PAK;
 		}
-		else if (String_Does_Match(a, "--cachepic"))
-		{
+		else if (String_Does_Match(s_arg, "--cachepic")) {
 			loadtype = LOADTYPE_CACHEPIC;
 		}
-		else if (String_Does_Match(a, "--skinframe"))
-		{
+		else if (String_Does_Match(s_arg, "--skinframe")) {
 			loadtype = LOADTYPE_SKINFRAME;
 		}
-		else if (String_Does_Match(a, "--for")) // must be last option
-		{
-			for(i = i + 1; i != end - 1; ++i)
-			{
+		else if (String_Does_Match(s_arg, "--for")) { // must be last option
+			for(i = i + 1; i != end - 1; ++i) {
 				if (!FS_FileExists(Cmd_Argv(cmd, i)))
-					goto needthefile; // why can't I have a "double break"?
+					goto needthefile; // why can't I have s_arg "double break"?
 			}
 			// if we get here, we have all the files...
 			return;
 		}
-		else if (String_Does_Match(a, "--forthismap"))
-		{
+		else if (String_Does_Match(s_arg, "--forthismap")) {
 			forthismap = true;
 		}
-		else if (String_Does_Match(a, "--as"))
-		{
+		else if (String_Does_Match(s_arg, "--as")) { // Baker: ?
 			if (i < end - 1)
 			{
 				++i;
 				name = Cmd_Argv(cmd, i);
 			}
 		}
-		else if (String_Does_Match(a, "--clear_autodownload"))
-		{
+		else if (String_Does_Match(s_arg, "--clear_autodownload")) {
 			// mark all running downloads as "not for this map", so if they
 			// fail, it does not matter
 			Curl_Clear_forthismap();
 			return;
 		}
-		else if (String_Does_Match(a, "--finish_autodownload"))
-		{
-			if (numdownloads_added)
-			{
+		else if (String_Does_Match(s_arg, "--finish_autodownload")) {
+			if (numdownloads_added) {
 				char donecommand[256];
-				if (cls.netcon)
-				{
-					if (cl.loadbegun) // curling won't inhibit loading the map any more when at this stage, so bail out and force a reconnect
-					{
-						dpsnprintf(donecommand, sizeof(donecommand), "connect %s", cls.netcon->address);
+				if (cls.netcon) {
+					if (cl.loadbegun) { // curling won't inhibit loading the map any more 
+						// when at this stage, so bail out and force s_arg reconnect
+						c_dpsnprintf1 (donecommand, "connect %s", cls.netcon->address);
 						Curl_CommandWhenDone(donecommand);
 						noclear = true;
 						CL_Disconnect();
@@ -1529,13 +1519,12 @@ static void Curl_Curl_f(cmd_state_t *cmd)
 			}
 			return;
 		}
-		else if (!strncmp(a, "--maxspeed=", 11))
-		{
-			maxspeed = atof(a + 11);
+		else if (String_Does_Start_With_Caseless_PRE (s_arg, "--maxspeed="/*, 11*/)) {
+			maxspeed = atof(s_arg + 11);
 		}
-		else if (*a == '-')
+		else if (*s_arg == '-')
 		{
-			Con_Printf ("curl: invalid option %s\n", a);
+			Con_PrintLinef ("curl: invalid option %s", s_arg);
 			// but we ignore the option
 		}
 	}
@@ -1768,11 +1757,14 @@ Curl_RequireFile
 Adds the given file to the list of requirements.
 ====================
 */
+WARP_X_ (SV_SpawnServer  Curl_RequireFile(modelname) )
+// Baker: SV_SpawnServer calls Curl_RequireFile with the map name.
+// Only instance I see.
 void Curl_RequireFile(const char *filename)
 {
 	requirement *req = (requirement *) Z_Malloc(sizeof(*requirements));
 	req->next = requirements;
-	strlcpy(req->filename, filename, sizeof(req->filename));
+	c_strlcpy (req->filename, filename);
 	requirements = req;
 }
 
@@ -1784,6 +1776,7 @@ Clears the list of required files for playing on the current map.
 This should be called at every map change.
 ====================
 */
+WARP_X_CALLERS_ (SV_SpawnServer, Curl_Shutdown) 
 void Curl_ClearRequirements(void)
 {
 	while(requirements)
@@ -1806,7 +1799,7 @@ This is done by sending him the following console commands:
 	curl --finish_autodownload
 ====================
 */
-static qbool Curl_SendRequirement(const char *filename, qbool foundone, char *sendbuffer, size_t sendbuffer_len)
+static qbool Curl_SendRequirements_SendRequirement(const char *filename, qbool foundone, char *sendbuffer, size_t sendbuffer_len)
 {
 	const char *p;
 	const char *thispack = FS_WhichPack(filename);
@@ -1821,8 +1814,8 @@ static qbool Curl_SendRequirement(const char *filename, qbool foundone, char *se
 
 	packurl = Curl_FindPackURL(thispack);
 
-	if (packurl && *packurl && strcmp(packurl, "-"))
-	{
+	// Baker: concat to string
+	if (packurl && *packurl && strcmp(packurl, "-")) {
 		if (!foundone)
 			strlcat(sendbuffer, "curl --clear_autodownload\n", sendbuffer_len);
 
@@ -1842,6 +1835,8 @@ static qbool Curl_SendRequirement(const char *filename, qbool foundone, char *se
 
 	return false;
 }
+
+WARP_X_CALLERS_ (SV_SendServerinfo exclusive sv_curl_serverpackages <-- cvar ) // Baker: SV_SendServerinfo calls this, host_client = client;
 void Curl_SendRequirements(void)
 {
 	// for each requirement, find the pack name
@@ -1851,17 +1846,17 @@ void Curl_SendRequirements(void)
 	const char *p;
 
 	for(req = requirements; req; req = req->next)
-		foundone = Curl_SendRequirement(req->filename, foundone, sendbuffer, sizeof(sendbuffer)) || foundone;
+		foundone = Curl_SendRequirements_SendRequirement(req->filename, foundone, sendbuffer, sizeof(sendbuffer)) || foundone;
 
 	p = sv_curl_serverpackages.string;
 	while(COM_ParseToken_Simple(&p, false, false, true))
-		foundone = Curl_SendRequirement(com_token, foundone, sendbuffer, sizeof(sendbuffer)) || foundone;
+		foundone = Curl_SendRequirements_SendRequirement(com_token, foundone, sendbuffer, sizeof(sendbuffer)) || foundone;
 
 	if (foundone)
-		strlcat(sendbuffer, "curl --finish_autodownload\n", sizeof(sendbuffer));
+		c_strlcat(sendbuffer, "curl --finish_autodownload" NEWLINE);
 
 	if (strlen(sendbuffer) + 1 < sizeof(sendbuffer))
-		SV_ClientCommands("%s", sendbuffer);
+		SV_ClientCommandsf ("%s", sendbuffer);
 	else
-		Con_Printf ("Could not initiate autodownload due to URL buffer overflow\n");
+		Con_PrintLinef ("Could not initiate autodownload due to URL buffer overflow");
 }

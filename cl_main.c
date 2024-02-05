@@ -109,7 +109,7 @@ cvar_t cl_maxfps_alwayssleep = {CF_CLIENT | CF_ARCHIVE, "cl_maxfps_alwayssleep",
 cvar_t cl_maxidlefps = {CF_CLIENT | CF_ARCHIVE, "cl_maxidlefps", "20", "maximum fps cap when the game is not the active window (makes cpu time available to other programs"};
 cvar_t cl_maxconsole_menu_fps = { CF_CLIENT, "cl_maxconsole_menu_fps", "72", "maximum fps cap when console is up or menu is up and not hosting a game [Zircon]" }; // Baker r8192: throttle
 
-cvar_t cl_areagrid_link_SOLID_NOT = {CF_CLIENT, "cl_areagrid_link_SOLID_NOT", "1", "set to 0 to prevent SOLID_NOT entities from being linked to the area grid, and unlink any that are already linked (in the code paths that would otherwise link them), for better performance"};
+cvar_t cl_areagrid_link_SOLID_NOT = {CF_CLIENT, "cl_areagrid_link_SOLID_NOT", "1", "set to 0 to prevent SOLID_NOT_0 entities from being linked to the area grid, and unlink any that are already linked (in the code paths that would otherwise link them), for better performance"};
 #if 111 //  - M1
 #else
 cvar_t cl_gameplayfix_nudgeoutofsolid_separation = {CF_CLIENT, "cl_gameplayfix_nudgeoutofsolid_separation", "0.03125", "keep objects this distance apart to prevent collision issues on seams"};
@@ -260,7 +260,7 @@ void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstark
 	}
 	InfoString_SetValue(cls.userinfo, sizeof(cls.userinfo), key, value);
 	if (cls.state == ca_connected && cls.netcon) {
-		if (cls.protocol == PROTOCOL_QUAKEWORLD) 
+		if (cls.protocol == PROTOCOL_QUAKEWORLD)
 		{
 			Msg_WriteByte_WriteStringf (&cls.netcon->message, qw_clc_stringcmd, "setinfo " QUOTED_S " " QUOTED_S, key, value);
 			//MSG_WriteByte(&cls.netcon->message, qw_clc_stringcmd);
@@ -316,7 +316,8 @@ void CL_ExpandEntities(int num)
 			Host_Error_Line ("CL_ExpandEntities: num %d >= %d", num, MAX_EDICTS_32768);
 		oldmaxentities = cl.max_entities;
 		oldentities = cl.entities;
-		cl.max_entities = (num & ~255) + 256;
+		cl.max_entities = (num & ~255) + 256; // Baker: Looks like batches of 256
+
 		cl.entities = (entity_t *)Mem_Alloc(cls.levelmempool, cl.max_entities * sizeof(entity_t));
 		memcpy(cl.entities, oldentities, oldmaxentities * sizeof(entity_t));
 		Mem_Free(oldentities);
@@ -406,7 +407,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 	FS_UnloadPacks_dlcache();
 
 	cl.parsingtextexpectingpingforscores = 0; // just in case no reply has come yet
-	cls.fteprotocolextensions = 0;
+	cls.fteprotocolextensions = 0; cl.qw_z_ext = 0;
 
 	// clear contents blends
 	cl.cshifts[0].percent = 0;
@@ -416,7 +417,7 @@ void CL_DisconnectEx(qbool kicked, const char *fmt, ... )
 
 	cl.worldmodel = NULL;
 	cls.demonum = -1; // Baker
-	cls.world_frames = 0; cls.world_start_realtime = 0; 
+	cls.world_frames = 0; cls.world_start_realtime = 0;
 
 	CL_Parse_ErrorCleanUp();
 
@@ -566,6 +567,10 @@ static void CL_Connect_f(cmd_state_t *cmd)
 	if (rcon_secure.integer <= 0)
 		Cvar_SetQuick(&rcon_password, "");
 
+	CL_SetInfo ("spectator", "0", qnfo_send_true,
+		qnfo_allowstar_false, qnfo_allowmodel_false,
+		qnfo_quiet_false);
+
 	CL_EstablishConnection (Cmd_Argv(cmd, 1), /*first arg #*/ 2);
 }
 
@@ -649,13 +654,33 @@ static qbool CL_Intermission(void)
 CL_PrintEntities_f
 ==============
 */
-static void CL_PrintEntities_f(cmd_state_t *cmd)
+static void CL_PrintEntities_f (cmd_state_t *cmd)
 {
-	entity_t *ent;
-	int i;
+	if (!cl.worldmodel) {
+		Con_PrintLinef ("No world model");
+		return;
+	}
 
-	for (i = 0, ent = cl.entities;i < cl.num_entities;i++, ent++)
-	{
+	entity_t *ent;
+	int ent_num;
+	int expanded = (Cmd_Argc (cmd) > 1);
+
+	SET___ int collide_type = cl_movement_collide_models.integer ?
+			(cls.protocol == PROTOCOL_QUAKEWORLD ? HITT_PLAYERS_PLUS_ONLY_MONSTERS_QW_3 :
+			Have_Zircon_Ext_Flag_CLS (ZIRCON_EXT_NONSOLID_FLAG_8) ? (Have_Zircon_Ext_Flag_CLS(ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128) ? HITT_PLAYERS_PLUS_SOLIDS_NO_PLAYERS_6 : HITT_PLAYERS_PLUS_SOLIDS_2) :
+			HITT_PLAYERS_1) :  HITT_PLAYERS_1;
+
+	Con_PrintLinef ("cls.zirconprotocolextensions = %d", cls.zirconprotocolextensions);
+	Con_PrintLinef ("collide_type = %d", collide_type);
+	vec3_t world_size;
+	VectorSubtract (cl.entities[0].render.maxs, cl.entities[0].render.mins, world_size);
+	Con_PrintLinef ("World bounds mins " VECTOR3_5d1F " maxs " VECTOR3_5d1F " size " VECTOR3_5d1F, 
+		VECTOR3_SEND(cl.entities[0].render.mins), VECTOR3_SEND(cl.entities[0].render.maxs), VECTOR3_SEND(world_size)); 
+
+	// Baker: Header
+	Con_PrintLinef ("ent# %-18s frame  origin             angles         scale alpha", "model");
+
+	for (ent_num = 0, ent = cl.entities; ent_num < cl.num_entities; ent_num++, ent++) {
 		const char *modelname;
 
 		if (!ent->state_current.active)
@@ -665,8 +690,60 @@ static void CL_PrintEntities_f(cmd_state_t *cmd)
 			modelname = ent->render.model->model_name;
 		else
 			modelname = "--no model--";
-		Con_PrintLinef ("%3d: %-25s:%4d (%5d %5d %5d) [%3d %3d %3d] %4.2f %5.3f", i, modelname, ent->render.framegroupblend[0].frame, (int) ent->state_current.origin[0], (int) ent->state_current.origin[1], (int) ent->state_current.origin[2], (int) ent->state_current.angles[0] % 360, (int) ent->state_current.angles[1] % 360, (int) ent->state_current.angles[2] % 360, ent->render.scale, ent->render.alpha);
-	}
+
+		const char *s_solid;
+
+		if (cls.protocol == PROTOCOL_QUAKEWORLD) {
+			s_solid = !ent->render.model ? "no mdl" :
+				(ent->render.model->model_name[0] == '*' ? "BSOLID"
+				:
+					(Have_Flag(ent->render.crflags, RENDER_STEP) ? "MSTEP" : ""));
+		} else {
+			s_solid = !ent->render.model ? "NO MODEL" : (ent->render.model->model_name[0] == '*' ?
+				(Have_Flag(ent->render.crflags, RENDER_SOLID_NOT_BAKER_256 | RENDER_EXTERIORMODEL) ? "NSOLID" : "")
+				:
+				(Have_Flag(ent->render.crflags, RENDER_SOLID_NOT_BAKER_256 | RENDER_EXTERIORMODEL) ? "NSOLID" : ""));
+
+		}
+
+		//				   0     1    2     3   4   5    6   7   8
+		Con_PrintLinef ("%3d: %-18s:%4d  (%5d %5d %5d) [%4d %4d %3d] %3.1f %3.1f %s",
+			ent_num,	// 0
+			modelname,	// 1
+			ent->render.framegroupblend[0].frame,
+			(int) ent->state_current.origin[0],
+			(int) ent->state_current.origin[1],
+			(int) ent->state_current.origin[2],
+			(int) ent->state_current.angles[0] % 360,
+			(int) ent->state_current.angles[1] % 360,
+			(int) ent->state_current.angles[2] % 360,
+			ent->render.scale, ent->render.alpha, s_solid
+		);
+		
+		if (expanded) {
+			entity_render_t *rent = &ent->render;
+			if (rent->model) {
+#if 0
+				Con_PrintLinef ( "normal "
+					VECTOR3_5d1F " " VECTOR3_5d1F, 
+					VECTOR3_SEND (rent->model->normalmins), VECTOR3_SEND (rent->model->normalmaxs)
+				);
+				Con_PrintLinef ( "yaw "
+					VECTOR3_5d1F " " VECTOR3_5d1F, 
+					VECTOR3_SEND (rent->model->yawmins), VECTOR3_SEND (rent->model->yawmaxs)
+				);
+				Con_PrintLinef ( "ent "
+					VECTOR3_5d1F " " VECTOR3_5d1F, 
+					VECTOR3_SEND (rent->mins), VECTOR3_SEND (rent->maxs)
+				);
+#endif
+				Con_PrintLinef ( "e5 "
+					VECTOR3_5d1F " " VECTOR3_5d1F, 
+					VECTOR3_SEND (ent->state_current.bbx_mins), VECTOR3_SEND (ent->state_current.bbx_maxs)
+				);
+			}
+		} // Expanded
+	} // for
 }
 
 /*
@@ -787,6 +864,7 @@ static float CL_LerpPoint(void)
 {
 	float f;
 
+	 // Baker: This is not the norm cl_nettimesyncboundmode defaults 6
 	if (cl_nettimesyncboundmode.integer == 1)
 		cl.time = bound(cl.mtime[1], cl.time, cl.mtime[0]);
 
@@ -1116,7 +1194,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		return;
 	e->render.alpha = e->state_current.alpha * (1.0f / 255.0f); // FIXME: interpolate?
 	e->render.scale = e->state_current.scale * (1.0f / 16.0f); // FIXME: interpolate?
-	e->render.crflags = e->state_current.flags;
+	e->render.crflags = e->state_current.sflags;
 	e->render.effects = e->state_current.effects;
 	VectorScale(e->state_current.colormod, (1.0f / 32.0f), e->render.colormod);
 	VectorScale(e->state_current.glowmod, (1.0f / 32.0f), e->render.glowmod);
@@ -1124,7 +1202,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		e->render.entitynumber = e - cl.entities;
 	else
 		e->render.entitynumber = 0;
-	if (e->state_current.flags & RENDER_COLORMAPPED)
+	if (e->state_current.sflags & RENDER_COLORMAPPED)
 		CL_SetEntityColormapColors(&e->render, e->state_current.colormap);
 	else if (e->state_current.colormap > 0 && e->state_current.colormap <= cl.maxclients && cl.scores != NULL)
 		CL_SetEntityColormapColors(&e->render, cl.scores[e->state_current.colormap-1].colors);
@@ -1195,8 +1273,8 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		interpolate = false;
 	if (e == cl.entities + cl.playerentity && cl.movement_predicted && (!cl.fixangle[1] || !cl.fixangle[0]))
 	{
-		VectorCopy(cl.movement_origin, origin);
-		VectorSet(angles, 0, cl.viewangles[1], 0);
+		VectorCopy	(cl.movement_origin, origin);
+		VectorSet	(angles, 0, cl.viewangles[1], 0);
 	}
 	else if (interpolate && e->persistent.lerpdeltatime > 0 && (lerp = (cl.time - e->persistent.lerpstarttime) / e->persistent.lerpdeltatime) < 1 + cl_lerpexcess.value)
 	{
@@ -1244,7 +1322,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		// if model is alias or this is a tenebrae-like dlight, reverse pitch direction
 		if (e->render.model->type == mod_alias)
 			angles[0] = -angles[0];
-		if (Have_Flag(e->render.effects, EF_SELECTABLE) && cl.cmd.cursor_entitynumber == e->state_current.number)
+		if (Have_Flag(e->render.effects, EF_SELECTABLE) && cl.mcmd.cursor_entitynumber == e->state_current.number)
 		{
 			VectorScale(e->render.colormod, 2, e->render.colormod);
 			VectorScale(e->render.glowmod, 2, e->render.glowmod);
@@ -1333,7 +1411,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 			e->render.crflags |= RENDER_LIGHT;
 	}
 	// hide player shadow during intermission or nehahra movie
-	if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST))
+	if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE_32 | EF_NODEPTHTEST))
 	 && (e->render.alpha >= 1)
 	 && !(e->render.crflags & RENDER_VIEWMODEL)
 	 && (!(e->render.crflags & RENDER_EXTERIORMODEL) || (!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
@@ -1344,7 +1422,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		e->render.crflags |= RENDER_NOSELFSHADOW;
 	if (e->render.effects & EF_NODEPTHTEST)
 		e->render.crflags |= RENDER_NODEPTHTEST;
-	if (e->render.effects & EF_ADDITIVE)
+	if (e->render.effects & EF_ADDITIVE_32)
 		e->render.crflags |= RENDER_ADDITIVE;
 	if (e->render.effects & EF_DOUBLESIDED)
 		e->render.crflags |= RENDER_DOUBLESIDED;
@@ -1377,9 +1455,9 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 	// entity is in the world...
 	trailtype = EFFECT_NONE;
 	// LadyHavoc: if the entity has no effects, don't check each
-	if (e->render.effects & (EF_BRIGHTFIELD | EF_FLAME | EF_STARDUST))
+	if (e->render.effects & (EF_BRIGHTFIELD_1 | EF_FLAME | EF_STARDUST))
 	{
-		if (e->render.effects & EF_BRIGHTFIELD)
+		if (e->render.effects & EF_BRIGHTFIELD_1)
 		{
 			if (IS_NEXUIZ_DERIVED(gamemode))
 				trailtype = EFFECT_TR_NEXUIZPLASMA;
@@ -1391,10 +1469,10 @@ static void CL_UpdateNetworkEntityTrail(entity_t *e)
 		if (e->render.effects & EF_STARDUST)
 			CL_ParticleTrail(EFFECT_EF_STARDUST, bound(0, cl.time - cl.oldtime, 0.1), origin, origin, vec3_origin, vec3_origin, NULL, 0, false, true, NULL, NULL, 1);
 	}
-	if (e->render.internaleffects & (INTEF_FLAG1QW | INTEF_FLAG2QW))
+	if (e->render.internaleffects & (INTEF_FLAG1QW_1 | INTEF_FLAG2QW_2))
 	{
 		// these are only set on player entities
-		CL_AddQWCTFFlagModel(e, (e->render.internaleffects & INTEF_FLAG2QW) != 0);
+		CL_AddQWCTFFlagModel(e, (e->render.internaleffects & INTEF_FLAG2QW_2) != 0);
 	}
 	// muzzleflash fades over time
 	if (e->persistent.muzzleflash > 0)
@@ -1484,7 +1562,7 @@ static void CL_UpdateNetworkCollisionEntities(void)
 			ent = cl.entities + i;
 			if (ent->state_current.active && ent->render.model && ent->render.model->model_name[0] == '*' && ent->render.model->TraceBox) {
 				// do not interpolate the bmodels for this
-				CL_UpdateNetworkEntity(ent, 32, false);
+				CL_UpdateNetworkEntity(ent, 32, /*interpolate*/ false);
 				cl.brushmodel_entities[cl.num_brushmodel_entities++] = i;
 			}
 		}
@@ -1502,14 +1580,11 @@ static void CL_UpdateNetworkEntities(void)
 	int i;
 
 	// start on the entity after the world
-	for (i = 1;i < cl.num_entities;i++)
-	{
-		if (cl.entities_active[i])
-		{
+	for (i = 1;i < cl.num_entities;i++) {
+		if (cl.entities_active[i]) {
 			ent = cl.entities + i;
-			if (ent->state_current.active)
-			{
-				CL_UpdateNetworkEntity(ent, 32, true);
+			if (ent->state_current.active) {
+				CL_UpdateNetworkEntity(ent, 32, /*interpolate*/ true);
 				// view models should never create light/trails
 				if (!(ent->render.crflags & RENDER_VIEWMODEL))
 					CL_UpdateNetworkEntityTrail(ent);
@@ -1534,7 +1609,7 @@ static void CL_UpdateViewModel(void)
 	ent->state_current.active = true;
 	ent->state_current.modelindex = cl.stats[STAT_WEAPON];
 	ent->state_current.frame = cl.stats[STAT_WEAPONFRAME];
-	ent->state_current.flags = RENDER_VIEWMODEL;
+	ent->state_current.sflags = RENDER_VIEWMODEL;
 	if ((cl.stats[STAT_HEALTH] <= 0 && cl_deathnoviewmodel.integer) || cl.intermission)
 		ent->state_current.modelindex = 0;
 	else if (cl.stats[STAT_ITEMS] & IT_INVISIBILITY)
@@ -1551,7 +1626,7 @@ static void CL_UpdateViewModel(void)
 	}
 	ent->state_current.alpha = cl.entities[cl.viewentity].state_current.alpha;
 skip:  // Baker r1488 viewmodel ring alpha
-	ent->state_current.effects = EF_NOSHADOW | (cl.entities[cl.viewentity].state_current.effects & (EF_ADDITIVE | EF_FULLBRIGHT | EF_NODEPTHTEST | EF_NOGUNBOB));
+	ent->state_current.effects = EF_NOSHADOW | (cl.entities[cl.viewentity].state_current.effects & (EF_ADDITIVE_32 | EF_FULLBRIGHT | EF_NODEPTHTEST | EF_NOGUNBOB));
 
 	// reset animation interpolation on weaponmodel if model changed
 	if (ent->state_previous.modelindex != ent->state_current.modelindex)
@@ -1607,21 +1682,21 @@ static void CL_LinkNetworkEntity(entity_t *e)
 	dlightcolor[1] = 0;
 	dlightcolor[2] = 0;
 	// LadyHavoc: if the entity has no effects, don't check each
-	if (e->render.effects & (EF_BRIGHTFIELD | EF_DIMLIGHT | EF_BRIGHTLIGHT | EF_RED | EF_BLUE | EF_FLAME | EF_STARDUST))
+	if (e->render.effects & (EF_BRIGHTFIELD_1 | EF_DIMLIGHT_8 | EF_BRIGHTLIGHT_4 | EF_RED_128 | EF_BLUE_64 | EF_FLAME | EF_STARDUST))
 	{
-		if (e->render.effects & EF_BRIGHTFIELD)
+		if (e->render.effects & EF_BRIGHTFIELD_1)
 		{
 			if (IS_NEXUIZ_DERIVED(gamemode))
 				trailtype = EFFECT_TR_NEXUIZPLASMA;
 		}
-		if (e->render.effects & EF_DIMLIGHT)
+		if (e->render.effects & EF_DIMLIGHT_8)
 		{
 			dlightradius = max(dlightradius, 200);
 			dlightcolor[0] += 1.50f;
 			dlightcolor[1] += 1.50f;
 			dlightcolor[2] += 1.50f;
 		}
-		if (e->render.effects & EF_BRIGHTLIGHT)
+		if (e->render.effects & EF_BRIGHTLIGHT_4)
 		{
 			dlightradius = max(dlightradius, 400);
 			dlightcolor[0] += 3.00f;
@@ -1629,14 +1704,14 @@ static void CL_LinkNetworkEntity(entity_t *e)
 			dlightcolor[2] += 3.00f;
 		}
 		// LadyHavoc: more effects
-		if (e->render.effects & EF_RED) // red
+		if (e->render.effects & EF_RED_128) // red
 		{
 			dlightradius = max(dlightradius, 200);
 			dlightcolor[0] += 1.50f;
 			dlightcolor[1] += 0.15f;
 			dlightcolor[2] += 0.15f;
 		}
-		if (e->render.effects & EF_BLUE) // blue
+		if (e->render.effects & EF_BLUE_64) // blue
 		{
 			dlightradius = max(dlightradius, 200);
 			dlightcolor[0] += 0.15f;
@@ -1778,7 +1853,7 @@ static void CL_RelinkStaticEntities(void)
 				e->render.crflags |= RENDER_LIGHT;
 		}
 		// hide player shadow during intermission or nehahra movie
-		if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST)) && (e->render.alpha >= 1))
+		if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE_32 | EF_NODEPTHTEST)) && (e->render.alpha >= 1))
 			e->render.crflags |= RENDER_SHADOW;
 		VectorSet(e->render.colormod, 1, 1, 1);
 		VectorSet(e->render.glowmod, 1, 1, 1);
@@ -2075,6 +2150,8 @@ CL_UpdateWorld
 Update client game world for a new frame
 ===============
 */
+WARP_X_ (CL_Frame CL_Input NetConn_ClientFrame CL_SendMove CL_UpdateWorld)
+WARP_X_ (CL_ClientMovement_Replay CL_UpdateNetworkEntities interpolated)
 void CL_UpdateWorld(void)
 {
 	r_refdef.scene.extraupdate = !r_speeds.integer;
@@ -2085,34 +2162,40 @@ void CL_UpdateWorld(void)
 
 	cl.num_brushmodel_entities = 0;
 
-	if (cls.state == ca_connected && cls.signon == SIGNONS_4)
-	{
+	if (cls.state == ca_connected && cls.signon == SIGNONS_4) {
 		// prepare for a new frame
-		CL_LerpPlayer(CL_LerpPoint());
-		CL_DecayLightFlashes();
-		CL_ClearTempEntities();
-		V_DriftPitch();
-		V_FadeViewFlashs();
+		CL_LerpPlayer			(CL_LerpPoint());
+		CL_DecayLightFlashes	();
+		CL_ClearTempEntities	();
+		V_DriftPitch			();
+		V_FadeViewFlashs		();
 
 		// if prediction is enabled we have to update all the collidable
 		// network entities before the prediction code can be run
-		CL_UpdateNetworkCollisionEntities();
+		CL_UpdateNetworkCollisionEntities ();
 
 		// now update the player prediction
-		CL_ClientMovement_Replay();
+		// Baker: Quakeworld -- we collide against RENDER_STEP unless dead
+		//        DarkPlaces ??
+		//        Zircon -- collide against everything without non solid flag
+		SET___ int collide_type = cl_movement_collide_models.integer ?
+				(cls.protocol == PROTOCOL_QUAKEWORLD ? HITT_PLAYERS_PLUS_ONLY_MONSTERS_QW_3 :
+				Have_Zircon_Ext_Flag_CLS (ZIRCON_EXT_NONSOLID_FLAG_8) ? (Have_Zircon_Ext_Flag_CLS(ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128) ? HITT_PLAYERS_PLUS_SOLIDS_NO_PLAYERS_6 : HITT_PLAYERS_PLUS_SOLIDS_2) :
+				HITT_PLAYERS_1) :  HITT_PLAYERS_1;
+		CL_ClientMovement_Replay (collide_type);
 
 		// update the player entity (which may be predicted)
-		CL_UpdateNetworkEntity(cl.entities + cl.viewentity, 32, true);
+		CL_UpdateNetworkEntity (cl.entities + cl.viewentity, 32, /*interpolate?*/ true);
 
 		// now update the view (which depends on that player entity)
-		V_CalcRefdef();
+		V_CalcRefdef ();
 
 		// now update all the network entities and create particle trails
 		// (some entities may depend on the view)
-		CL_UpdateNetworkEntities();
+		CL_UpdateNetworkEntities ();
 
 		// update the engine-based viewmodel
-		CL_UpdateViewModel();
+		CL_UpdateViewModel ();
 
 		// when csqc is loaded, it will call this in CSQC_UpdateView
 		if (!cl.csqc_loaded) {
@@ -2138,7 +2221,7 @@ static void CL_Fog_f(cmd_state_t *cmd)
 	int is_fog_alpha_requested = false; // Baker r1201: FitzQuake r_skyfog
 	if (Cmd_Argc (cmd) == 1)
 	{
-		Con_Printf ("\"fog\" is \"%f %f %f %f %f %f %f %f %f\"\n", r_refdef.fog_density, r_refdef.fog_red, r_refdef.fog_green, r_refdef.fog_blue, r_refdef.fog_alpha, r_refdef.fog_start, r_refdef.fog_end, r_refdef.fog_height, r_refdef.fog_fadedepth);
+		Con_PrintLinef ("\"fog\" is " QUOTED_STR ("%f %f %f %f %f %f %f %f %f"), r_refdef.fog_density, r_refdef.fog_red, r_refdef.fog_green, r_refdef.fog_blue, r_refdef.fog_alpha, r_refdef.fog_start, r_refdef.fog_end, r_refdef.fog_height, r_refdef.fog_fadedepth);
 		return;
 	}
 	FOG_clear(); // so missing values get good defaults
@@ -2409,7 +2492,7 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 			FS_Printf(outfile, "%.0f %.0f %.0f %s\n", loc->mins[0]*8, loc->mins[1]*8, loc->mins[2]*8, name);
 		}
 		else
-			FS_Printf(outfile, "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,\"%s\"\n", loc->mins[0], loc->mins[1], loc->mins[2], loc->maxs[0], loc->maxs[1], loc->maxs[2], loc->name);
+			FS_Printf(outfile, "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f," QUOTED_S NEWLINE, loc->mins[0], loc->mins[1], loc->mins[2], loc->maxs[0], loc->maxs[1], loc->maxs[2], loc->name);
 	}
 	FS_Close(outfile);
 }
@@ -2549,19 +2632,19 @@ void CL_Locs_Reload_f(cmd_state_t *cmd)
 	}
 }
 
-entity_t cl_meshentities[NUM_MESHENTITIES];
-model_t cl_meshentitymodels[NUM_MESHENTITIES];
-const char *cl_meshentitynames[NUM_MESHENTITIES] =
+entity_t cl_meshentities[NUM_MESHENTITIES_2];
+model_t cl_meshentitymodels[NUM_MESHENTITIES_2];
+const char *cl_meshentitynames[NUM_MESHENTITIES_2] =
 {
-	"MESH_SCENE",
-	"MESH_UI",
+	"MESH_SCENE_0",
+	"MESH_UI_1",
 };
 
 static void CL_MeshEntities_Restart(void)
 {
 	int i;
 	entity_t *ent;
-	for (i = 0; i < NUM_MESHENTITIES; i++)
+	for (i = 0; i < NUM_MESHENTITIES_2; i++)
 	{
 		ent = cl_meshentities + i;
 		Mod_Mesh_Destroy(ent->render.model);
@@ -2573,7 +2656,7 @@ static void CL_MeshEntities_Start(void)
 {
 	int i;
 	entity_t *ent;
-	for(i = 0; i < NUM_MESHENTITIES; i++)
+	for(i = 0; i < NUM_MESHENTITIES_2; i++)
 	{
 		ent = cl_meshentities + i;
 		Mod_Mesh_Create(ent->render.model, cl_meshentitynames[i]);
@@ -2584,7 +2667,7 @@ static void CL_MeshEntities_Shutdown(void)
 {
 	int i;
 	entity_t *ent;
-	for(i = 0; i < NUM_MESHENTITIES; i++)
+	for(i = 0; i < NUM_MESHENTITIES_2; i++)
 	{
 		ent = cl_meshentities + i;
 		Mod_Mesh_Destroy(ent->render.model);
@@ -2595,7 +2678,7 @@ void CL_MeshEntities_Init(void)
 {
 	int i;
 	entity_t *ent;
-	for (i = 0; i < NUM_MESHENTITIES; i++)
+	for (i = 0; i < NUM_MESHENTITIES_2; i++)
 	{
 		ent = cl_meshentities + i;
 		ent->state_current.active = true;
@@ -2626,7 +2709,7 @@ void CL_MeshEntities_Init(void)
 		Matrix4x4_CreateIdentity(&ent->render.matrix);
 		CL_UpdateRenderEntity(&ent->render);
 	}
-	cl_meshentities[MESH_UI].render.crflags = RENDER_NOSELFSHADOW;
+	cl_meshentities[MESH_UI_1].render.crflags = RENDER_NOSELFSHADOW;
 	R_RegisterModule("CL_MeshEntities", CL_MeshEntities_Start, CL_MeshEntities_Shutdown, CL_MeshEntities_Restart, CL_MeshEntities_Restart, CL_MeshEntities_Restart);
 }
 
@@ -2637,13 +2720,13 @@ void CL_MeshEntities_Scene_Clear(void)
 
 void CL_MeshEntities_Scene_AddRenderEntity(void)
 {
-	entity_t* ent = &cl_meshentities[MESH_SCENE];
+	entity_t* ent = &cl_meshentities[MESH_SCENE_0];
 	r_refdef.scene.entities[r_refdef.scene.numentities++] = &ent->render;
 }
 
 void CL_MeshEntities_Scene_FinalizeRenderEntity(void)
 {
-	entity_t *ent = &cl_meshentities[MESH_SCENE];
+	entity_t *ent = &cl_meshentities[MESH_SCENE_0];
 	Mod_Mesh_Finalize(ent->render.model);
 	VectorCopy(ent->render.model->normalmins, ent->render.mins);
 	VectorCopy(ent->render.model->normalmaxs, ent->render.maxs);
@@ -2843,9 +2926,13 @@ traditional:
 void CL_UpdateEntityShading(void)
 {
 	int i;
-	CL_UpdateEntityShading_Entity(r_refdef.scene.worldentity);
-	for (i = 0; i < r_refdef.scene.numentities; i++)
+	int draw_only_by_num = r_drawentities.integer >= 2;
+	CL_UpdateEntityShading_Entity (r_refdef.scene.worldentity);
+	for (i = 0; i < r_refdef.scene.numentities; i++) {
+		if (draw_only_by_num && r_refdef.scene.entities[i]->entitynumber != r_drawentities.integer)
+			continue; // Not selected
 		CL_UpdateEntityShading_Entity(r_refdef.scene.entities[i]);
+	}
 }
 
 qbool vid_opened = false;
@@ -2981,7 +3068,7 @@ double CL_Frame (double time)
 		R_TimeReport("sendmove");
 
 		// update client world (interpolate entities, create trails, etc)
-		CL_UpdateWorld();
+		CL_UpdateWorld(); // Baker: Predicted movement occurs here.
 		R_TimeReport("lerpworld");
 
 		CL_Video_Frame();
@@ -3206,7 +3293,7 @@ void CL_Init (void)
 
 		Cvar_RegisterVariable(&csqc_polygons_defaultmaterial_nocullface);
 		Cvar_RegisterVariable(&csqc_polygons_darkplaces_classic_3d);
-		
+
 		Cvar_RegisterVariable (&cl_areagrid_link_SOLID_NOT);
 #if 111
 #else

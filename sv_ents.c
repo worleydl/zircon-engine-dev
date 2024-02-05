@@ -46,7 +46,7 @@ int EntityState_DeltaBits(const entity_state_t *o, const entity_state_t *n)
 		bits |= E_GLOWSIZE;
 	if (n->glowcolor != o->glowcolor)
 		bits |= E_GLOWCOLOR;
-	if (n->flags != o->flags)
+	if (n->sflags != o->sflags)
 		bits |= E_FLAGS;
 	if (n->tagindex != o->tagindex || n->tagentity != o->tagentity)
 		bits |= E_TAGATTACHMENT;
@@ -99,8 +99,8 @@ void EntityState_WriteFields(const entity_state_t *ent, sizebuf_t *msg, unsigned
 	{
 		// LadyHavoc: have to write flags first, as they can modify protocol
 		if (bits & E_FLAGS)
-			MSG_WriteByte(msg, ent->flags);
-		if (ent->flags & RENDER_LOWPRECISION)
+			MSG_WriteByte(msg, ent->sflags);
+		if (ent->sflags & RENDER_LOWPRECISION)
 		{
 			if (bits & E_ORIGIN1)
 				MSG_WriteCoord16i(msg, ent->origin[0]);
@@ -119,7 +119,7 @@ void EntityState_WriteFields(const entity_state_t *ent, sizebuf_t *msg, unsigned
 				MSG_WriteCoord32f(msg, ent->origin[2]);
 		}
 	}
-	if ((sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4) && (ent->flags & RENDER_LOWPRECISION))
+	if ((sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4) && (ent->sflags & RENDER_LOWPRECISION))
 	{
 		if (bits & E_ANGLE1)
 			MSG_WriteAngle8i(msg, ent->angles[0]);
@@ -163,7 +163,7 @@ void EntityState_WriteFields(const entity_state_t *ent, sizebuf_t *msg, unsigned
 		MSG_WriteByte(msg, ent->glowcolor);
 	if (sv.protocol == PROTOCOL_DARKPLACES2)
 		if (bits & E_FLAGS)
-			MSG_WriteByte(msg, ent->flags);
+			MSG_WriteByte(msg, ent->sflags);
 	if (bits & E_TAGATTACHMENT)
 	{
 		MSG_WriteShort(msg, ent->tagentity);
@@ -409,9 +409,9 @@ void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *
 				if (s->exteriormodelforclient)
 				{
 					if (s->exteriormodelforclient == sv.writeentitiestoclient_cliententitynumber)
-						s->flags |= RENDER_EXTERIORMODEL;
+						s->sflags |= RENDER_EXTERIORMODEL;
 					else
-						s->flags &= ~RENDER_EXTERIORMODEL;
+						s->sflags &= ~RENDER_EXTERIORMODEL;
 				}
 				sv.writeentitiestoclient_sendstates[numsendstates++] = s;
 			}

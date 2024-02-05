@@ -22,29 +22,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef SERVER_H
 #define SERVER_H
 
-typedef struct server_static_s
-{
-	/// number of svs.clients slots (updated by maxplayers command)
-	int maxclients, maxclients_next;
-	/// client slots
-	struct client_s *clients;
-	/// episode completion information
-	int serverflags;
-	/// cleared when at SV_SpawnServer
-	qbool changelevel_issued;
-	/// server infostring
-	char serverinfo[MAX_SERVERINFO_STRING_1280];
+typedef struct server_static_s{
+	int				maxclients, maxclients_next;				/// number of svs.clients slots (updated by maxplayers command)
+	struct client_s	*clients;									/// client slots
+	int				serverflags;								/// episode completion information
+	qbool			changelevel_issued;							/// cleared when at SV_SpawnServer
+	char			serverinfo[MAX_SERVERINFO_STRING_1280];		/// server infostring
+
+	WARP_X_ (PEXT_CHUNKEDDOWNLOADS)
+
 
 	// csqc stuff
-	unsigned char *csqc_progdata;
-	size_t csqc_progsize_deflated;
-	unsigned char *csqc_progdata_deflated;
+	unsigned char	*csqc_progdata;
+	size_t			csqc_progsize_deflated;
+	unsigned char	*csqc_progdata_deflated;
 
 	// independent server thread (when running client)
-	qbool threaded; // true if server is running on separate thread
-	qbool volatile threadstop;
-	void *threadmutex;
-	void *thread;
+	qbool			threaded; // true if server is running on separate thread
+	qbool volatile	threadstop;
+	void			*threadmutex;
+	void			*thread;
 } server_static_t;
 
 //=============================================================================
@@ -128,15 +125,15 @@ typedef struct server_s
 	server_state_t state;
 
 	sizebuf_t datagram;
-	unsigned char datagram_buf[NET_MAXMESSAGE];
+	unsigned char datagram_buf[NET_MAXMESSAGE_65536];
 
 	// copied to all clients at end of frame
 	sizebuf_t reliable_datagram;
-	unsigned char reliable_datagram_buf[NET_MAXMESSAGE];
+	unsigned char reliable_datagram_buf[NET_MAXMESSAGE_65536];
 
 	sizebuf_t signon;
 	/// LadyHavoc: increased signon message buffer from 8192
-	unsigned char signon_buf[NET_MAXMESSAGE];
+	unsigned char signon_buf[NET_MAXMESSAGE_65536];
 
 	/// connection flood blocking
 	/// note this is in server_t rather than server_static_t so that it is
@@ -171,6 +168,9 @@ typedef struct server_s
 
 	/// legacy support for self.Version based csqc entity networking
 	unsigned char csqcentityversion[MAX_EDICTS_32768]; // legacy
+
+	unsigned int zirconprotcolextensions_sv;
+	int zircon_jumpflag_fieldoffset;
 } server_t;
 
 #define NUM_CSQCENTITIES_PER_FRAME 256
@@ -215,7 +215,7 @@ typedef struct client_s
 	netconn_t *netconnection;
 
 	unsigned int movesequence;
-	signed char movement_count[NETGRAPH_PACKETS];
+	signed char movement_count[NETGRAPH_PACKETS_256];
 	unsigned int movement_highestsequence_seen; // not the same as movesequence if prediction is off
 	/// movement
 	usercmd_t cmd;
@@ -232,6 +232,17 @@ typedef struct client_s
 	double clmovement_disabletimeout;
 	/// this is used by sv_clmovement_inputtimeout code
 	float clmovement_inputtimeout;
+
+// SERVER:
+#if 5432
+	int last_wanted_is_zircon_free_move;
+
+	// And we treat clc_zircon_move as clc_move
+	// Until client responds with (byte)clc_zircon_fixangle_ack (LONG) fixangle_lastmovesequence  
+	WARP_X_ (clc_move clc_zircon_move clc_zircon_warp_ack svc_zircon_warp)
+	unsigned int zircon_warp_sequence; // Send svc_zircon_warp every frame until client responds with clc_zircon_warp_ack
+	int zircon_warp_sequence_cleared; // Send svc_zircon_warp every frame until client responds with clc_zircon_warp_ack
+#endif
 
 /// spawn parms are carried from level to level
 	prvm_vec_t spawn_parms[NUM_SPAWN_PARMS];
@@ -265,7 +276,7 @@ typedef struct client_s
 	float nametime;
 
 	/// latest received clc_ackframe (used to detect packet loss)
-	int latestframenum;
+	int latestframenum; // Baker: CL last acknowledged framenum Entity Database (PHYSICAL)
 
 	/// cache weaponmodel name lookups
 	char weaponmodel[MAX_QPATH_128];
@@ -282,10 +293,10 @@ typedef struct client_s
 	unsigned char statsdeltabits[(MAX_CL_STATS+7)/8];
 	int stats[MAX_CL_STATS];
 
-	unsigned char unreliablemsg_data[NET_MAXMESSAGE];
+	unsigned char unreliablemsg_data[NET_MAXMESSAGE_65536];
 	sizebuf_t unreliablemsg;
 	int unreliablemsg_splitpoints;
-	int unreliablemsg_splitpoint[NET_MAXMESSAGE/16];
+	int unreliablemsg_splitpoint[NET_MAXMESSAGE_65536/16];
 
 	// information on an active download if any
 	qfile_t *download_file;
@@ -293,9 +304,10 @@ typedef struct client_s
 	qbool download_started;
 	char download_name[MAX_QPATH_128];
 	qbool download_deflate;
+	qbool download_chunked;
 
 	// fixangle data
-	qbool fixangle_angles_set;
+	qbool fixangle_angles_set; // Baker: This is pre-existing DarkPlaces but relevant to ZMOVE
 	vec3_t fixangle_angles;
 
 	/// demo recording
@@ -307,8 +319,11 @@ typedef struct client_s
 
 	// last sent move sequence
 	// if the move sequence changed, an empty entity frame is sent
-	unsigned int lastmovesequence;
-} client_t;
+	unsigned int	lastmovesequence;
+
+	unsigned int 	cl_zirconprotocolextensions;
+	int				download_chunks_perframe;
+} client_t; // sv client
 
 
 //=============================================================================
@@ -323,25 +338,25 @@ typedef struct client_s
 #define	MOVETYPE_TOSS			6		///< gravity
 #define	MOVETYPE_PUSH			7		///< no clip to world, push and crush
 #define	MOVETYPE_NOCLIP			8
-#define	MOVETYPE_FLYMISSILE		9		///< extra size to monsters
+#define	MOVETYPE_FLYMISSILE_9	9		///< extra size to monsters
 #define	MOVETYPE_BOUNCE			10
 #define	MOVETYPE_GIB_FIGHTS_BOUNCEMISSILE_11	11		// 2021 rerelease gibs // AURA 9.1
 #define MOVETYPE_BOUNCEMISSILE	11		///< bounce w/o gravity
 #define MOVETYPE_FOLLOW			12		///< track movement of aiment
 #define MOVETYPE_FAKEPUSH		13		///< tenebrae's push that doesn't push
 #define MOVETYPE_PHYSICS		32		///< indicates this object is physics controlled
-#define MOVETYPE_FLY_WORLDONLY		33		///< like MOVETYPE_FLY, but uses MOVE_WORLDONLY for all its traces; objects of this movetype better be SOLID_NOT or SOLID_TRIGGER please, or else...
+#define MOVETYPE_FLY_WORLDONLY	33		///< like MOVETYPE_FLY, but uses MOVE_WORLDONLY for all its traces; objects of this movetype better be SOLID_NOT_0 or SOLID_TRIGGER_1 please, or else...
 #define MOVETYPE_USER_FIRST		128		///< user defined movetypes
 #define MOVETYPE_USER_LAST		191
 
 // edict->solid values
-#define	SOLID_NOT				0		///< no interaction with other objects
-#define	SOLID_TRIGGER			1		///< touch on edge, but not blocking
-#define	SOLID_BBOX				2		///< touch on edge, block
-#define	SOLID_SLIDEBOX			3		///< touch on edge, but not an onground
-#define	SOLID_BSP				4		///< bsp clip, touch on edge, block
+#define	SOLID_NOT_0				0		///< no interaction with other objects
+#define	SOLID_TRIGGER_1			1		///< touch on edge, but not blocking
+#define	SOLID_BBOX_2			2		///< touch on edge, block
+#define	SOLID_SLIDEBOX_3		3		///< touch on edge, but not an onground
+#define	SOLID_BSP_4				4		///< bsp clip, touch on edge, block
 // LadyHavoc: corpse code
-#define	SOLID_CORPSE			5		///< same as SOLID_BBOX, except it behaves as SOLID_NOT against SOLID_SLIDEBOX objects (players/monsters)
+#define	SOLID_CORPSE_5			5		///< same as SOLID_BBOX_2, except it behaves as SOLID_NOT_0 against SOLID_SLIDEBOX_3 objects (players/monsters)
 // LadyHavoc: physics
 // VorteX: now these fields are deprecated, as geomtype is more flexible
 #define	SOLID_PHYSICS_BOX		32		///< physics object (mins, maxs, mass, origin, axis_forward, axis_left, axis_up, velocity, spinvelocity)
@@ -363,9 +378,9 @@ typedef struct client_s
 #define	FL_FLY					1
 #define	FL_SWIM					2
 #define	FL_CONVEYOR				4
-#define	FL_CLIENT				8
+#define	FL_CLIENT_8				8
 #define	FL_INWATER				16
-#define	FL_MONSTER				32
+#define	FL_MONSTER_32			32
 #define	FL_GODMODE				64
 #define	FL_NOTARGET				128
 #define	FL_ITEM					256
@@ -430,6 +445,7 @@ extern cvar_t sv_clmovement_minping_disabletime;
 extern cvar_t sv_clmovement_inputtimeout;
 extern cvar_t sv_clmovement_maxnetfps;
 extern cvar_t sv_cullentities_nevercullbmodels;
+extern cvar_t sv_clmovement_soundreliable;
 extern cvar_t sv_cullentities_pvs;
 extern cvar_t sv_cullentities_stats;
 extern cvar_t sv_cullentities_trace;
@@ -463,6 +479,8 @@ extern cvar_t sv_gameplayfix_nogravityonground;
 extern cvar_t sv_gameplayfix_setmodelrealbox;
 extern cvar_t sv_gameplayfix_slidemoveprojectiles;
 extern cvar_t sv_gameplayfix_fiendjumpfix;
+extern cvar_t sv_gameplayfix_monsterinterpolate;
+
 extern cvar_t sv_gameplayfix_stepdown;
 extern cvar_t sv_gameplayfix_stepmultipletimes;
 extern cvar_t sv_gameplayfix_nostepmoveonsteepslopes;
@@ -488,6 +506,7 @@ extern cvar_t sv_progs;
 extern cvar_t sv_protocolname;
 extern cvar_t sv_random_seed;
 extern cvar_t host_limitlocal;
+extern cvar_t sv_pext;
 extern cvar_t sv_sound_land;
 extern cvar_t sv_sound_watersplash;
 extern cvar_t sv_stepheight;
@@ -526,7 +545,7 @@ void SV_StartPointSound (vec3_t origin, const char *sample, int volume, float at
 void SV_ConnectClient (int clientnum, netconn_t *netconnection);
 void SV_DropClient (qbool leaving, const char *reason, ... );
 
-void SV_ClientCommands(const char *fmt, ...) DP_FUNC_PRINTF(1);
+void SV_ClientCommandsf(const char *fmt, ...) DP_FUNC_PRINTF(1);
 
 void SV_SendClientMessages(void);
 
@@ -641,5 +660,13 @@ void SV_Spawn_f(cmd_state_t *cmd);
 void SV_Begin_f(cmd_state_t *cmd);
 
 qbool SV_VM_ConsoleCommand (const char *text);
+
+void SV_UpdateToReliableMessages_Zircon_Warp_Think (void);
+void SV_PhysicsX_Zircon_Warp_Start (client_t *hcl, const char *s_reason);
+void SV_Begin_f_Zircon_Warp_Initialize (void);
+#define ZMOVE_SV_DENIED (host_client->zircon_warp_sequence || host_client->zircon_warp_sequence_cleared || host_client->movesequence == 0) 
+
+extern cvar_t sv_allow_zircon_move;
+extern cvar_t sv_players_walk_thru_players;
 
 #endif // ! SERVER_H

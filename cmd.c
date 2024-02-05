@@ -427,18 +427,22 @@ void Cbuf_Execute (cmd_buf_t *cbuf)
 		cbuf->size -= current->length;
 
 		firstchar = current->text;
-		while(*firstchar && ISWHITESPACE(*firstchar))
-			++firstchar;
-		if ((strncmp(firstchar, "alias", 5)   || !ISWHITESPACE(firstchar[5])) &&
-		   (strncmp(firstchar, "bind", 4)    || !ISWHITESPACE(firstchar[4])) &&
-		   (strncmp(firstchar, "in_bind", 7) || !ISWHITESPACE(firstchar[7])))
+
+		// Baker: Advance past white space
+		while (*firstchar && ISWHITESPACE(*firstchar))
+			firstchar ++;
+		if (
+		  (String_Does_NOT_Start_With_Caseless_PRE (firstchar, "alias"/*, 5*/)   || !ISWHITESPACE(firstchar[5])) &&
+		   (String_Does_NOT_Start_With_Caseless_PRE (firstchar, "bind"/*, 4*/)    || !ISWHITESPACE(firstchar[4])) &&
+		   (String_Does_NOT_Start_With_Caseless_PRE (firstchar, "in_bind"/*, 7*/) || !ISWHITESPACE(firstchar[7])))
 		{
-			if (Cmd_PreprocessString(current->source, current->text, preprocessed, sizeof(preprocessed), NULL ))
-				Cmd_ExecuteString(current->source, preprocessed, src_local, false);
+			if (Cmd_PreprocessString(current->source, current->text, preprocessed, sizeof(preprocessed), NULL )) {
+				Cmd_ExecuteString(current->source, preprocessed, src_local, /*lockmutex ?*/ false);
+			}
 		}
 		else
 		{
-			Cmd_ExecuteString (current->source, current->text, src_local, false);
+			Cmd_ExecuteString (current->source, current->text, src_local, /*lockmutex ?*/ false);
 		}
 
 		current = NULL;
@@ -578,46 +582,15 @@ static void Cmd_StuffCmds_f (cmd_state_t *cmd)
 	Cbuf_InsertText (cmd, build);
 }
 
-static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
+void DarkPlaces_Settings_For_Game (cmd_state_t *cmd, int egamemode)
 {
-	char *f;
-	//size_t filenameLen = strlen(filename);
-	qbool isdefaultcfg = String_Does_Match(filename, "default.cfg") ||
-							String_Does_End_With(filename, "/default.cfg");
-	// (filenameLen >= 12 && String_Does_Match(filename + filenameLen - 12, "/default.cfg"));
-
-	if (String_Does_Match(filename, "config.cfg")) {
-		filename = CONFIGFILENAME;
-		if (Sys_CheckParm("-noconfig"))
-			return; // don't execute config.cfg
-	}
-
-	f = (char *)FS_LoadFile (filename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
-	if (!f)
+	// special defaults for specific games go here, these execute before default.cfg
+	// Nehahra pushable crates malfunction in some levels if this is on
+	// Nehahra NPC AI is confused by blowupfallenzombies
+	switch (egamemode)
 	{
-		Con_PrintLinef ("couldn't exec %s", filename);
-		return;
-	}
-	Con_PrintLinef ("execing %s", filename);
-
-	// if executing default.cfg for the first time, lock the cvar defaults
-	// it may seem backwards to insert this text BEFORE the default.cfg
-	// but Cbuf_InsertText inserts before, so this actually ends up after it.
-	if (isdefaultcfg)
-		Cbuf_InsertText(cmd, NEWLINE "cvar_lockdefaults" NEWLINE);
-
-	Cbuf_InsertText (cmd, f);
-	Mem_Free(f);
-
-	if (isdefaultcfg)
-	{
-		// special defaults for specific games go here, these execute before default.cfg
-		// Nehahra pushable crates malfunction in some levels if this is on
-		// Nehahra NPC AI is confused by blowupfallenzombies
-		switch(gamemode)
-		{
-		case GAME_NORMAL:
-			Cbuf_InsertText(cmd, "\n"
+	case GAME_NORMAL:
+		Cbuf_InsertText (cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n" // Baker r9066 ..[Zircon]
 "sv_gameplayfix_blowupfallenzombies 0\n"
 "sv_gameplayfix_findradiusdistancetobox 0\n"
@@ -640,10 +613,10 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "r_shadow_gloss 1\n"
 "r_shadow_bumpscale_basetexture 0\n"
 "csqc_polygons_defaultmaterial_nocullface 0\n"
-				);
-			break;
-		case GAME_NEHAHRA:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	case GAME_NEHAHRA:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 0\n"
 "sv_gameplayfix_findradiusdistancetobox 0\n"
@@ -666,14 +639,14 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "r_shadow_gloss 1\n"
 "r_shadow_bumpscale_basetexture 0\n"
 "csqc_polygons_defaultmaterial_nocullface 0\n"
-				);
-			break;
-		// hipnotic mission pack has issues in their 'friendly monster' ai, which seem to attempt to attack themselves for some reason when findradius() returns non-solid entities.
-		// hipnotic mission pack has issues with bobbing water entities 'jittering' between different heights on alternate frames at the default 0.0138889 ticrate, 0.02 avoids this issue
-		// hipnotic mission pack has issues in their proximity mine sticking code, which causes them to bounce off.
-		case GAME_HIPNOTIC:
-		case GAME_QUOTH:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	// hipnotic mission pack has issues in their 'friendly monster' ai, which seem to attempt to attack themselves for some reason when findradius() returns non-solid entities.
+	// hipnotic mission pack has issues with bobbing water entities 'jittering' between different heights on alternate frames at the default 0.0138889 ticrate, 0.02 avoids this issue
+	// hipnotic mission pack has issues in their proximity mine sticking code, which causes them to bounce off.
+	case GAME_HIPNOTIC:
+	case GAME_QUOTH:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 0\n"
 "sv_gameplayfix_findradiusdistancetobox 0\n"
@@ -696,11 +669,11 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "r_shadow_gloss 1\n"
 "r_shadow_bumpscale_basetexture 0\n"
 "csqc_polygons_defaultmaterial_nocullface 0\n"
-				);
-			break;
-		// rogue mission pack has a guardian boss that does not wake up if findradius returns one of the entities around its spawn area
-		case GAME_ROGUE:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	// rogue mission pack has a guardian boss that does not wake up if findradius returns one of the entities around its spawn area
+	case GAME_ROGUE:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 0\n"
 "sv_gameplayfix_findradiusdistancetobox 0\n"
@@ -723,10 +696,10 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "r_shadow_gloss 1\n"
 "r_shadow_bumpscale_basetexture 0\n"
 "csqc_polygons_defaultmaterial_nocullface 0\n"
-				);
-			break;
-		case GAME_TENEBRAE:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	case GAME_TENEBRAE:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 0\n"
 "sv_gameplayfix_findradiusdistancetobox 0\n"
@@ -749,10 +722,10 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "r_shadow_gloss 2\n"
 "r_shadow_bumpscale_basetexture 4\n"
 "csqc_polygons_defaultmaterial_nocullface 0\n"
-				);
-			break;
-		case GAME_NEXUIZ:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	case GAME_NEXUIZ:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 1\n"
 "sv_gameplayfix_findradiusdistancetobox 1\n"
@@ -776,21 +749,21 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "sv_gameplayfix_stepmultipletimes 1\n"
 "csqc_polygons_defaultmaterial_nocullface 1\n"
 "con_chatsound_team_mask 13\n"
-				);
-			break;
-		case GAME_XONOTIC:
-		case GAME_VORETOURNAMENT:
-			// compatibility for versions prior to 2020-05-25, this can be overridden in newer versions to get the default behavior and be consistent with FTEQW engine
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	case GAME_XONOTIC:
+	case GAME_VORETOURNAMENT:
+		// compatibility for versions prior to 2020-05-25, this can be overridden in newer versions to get the default behavior and be consistent with FTEQW engine
+		Cbuf_InsertText(cmd, "\n"
 "csqc_polygons_defaultmaterial_nocullface 1\n"
 "con_chatsound_team_mask 13\n"
 "sv_gameplayfix_customstats 1\n"
 "mod_q1bsp_zero_hullsize_cutoff 8.03125\n"
-				);
-			break;
-		// Steel Storm: Burning Retribution csqc misinterprets CSQC_InputEvent if type is a value other than 0 or 1
-		case GAME_STEELSTORM:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	// Steel Storm: Burning Retribution csqc misinterprets CSQC_InputEvent if type is a value other than 0 or 1
+	case GAME_STEELSTORM:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 1\n"
 "sv_gameplayfix_findradiusdistancetobox 1\n"
@@ -812,10 +785,10 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "sys_ticrate 0.01388889\n"
 "cl_csqc_generatemousemoveevents 0\n"
 "csqc_polygons_defaultmaterial_nocullface 1\n"
-				);
-			break;
-		default:
-			Cbuf_InsertText(cmd, "\n"
+			);
+		break;
+	default:
+		Cbuf_InsertText(cmd, "\n"
 "gl_texturemode gl_linear_mipmap_linear\n"
 "sv_gameplayfix_blowupfallenzombies 1\n"
 "sv_gameplayfix_findradiusdistancetobox 1\n"
@@ -836,10 +809,197 @@ static void Cmd_Exec(cmd_state_t *cmd, const char *filename)
 "sv_gameplayfix_downtracesupportsongroundflag 1\n"
 "sys_ticrate 0.01388889\n"
 "csqc_polygons_defaultmaterial_nocullface 0\n"
-				);
-			break;
-		}
+			);
+		break;
+	} //sw
+}
+
+static unsigned char *MemAllocString (const char *s)
+{
+	mempool_t *pool = tempmempool;
+	int			slen = strlen(s);
+	
+	unsigned char *buf = (unsigned char *)Mem_Alloc (pool, slen + ONE_CHAR_1);
+	memcpy (buf, s, slen);
+	buf[slen] = '\0';
+
+	return buf;
+}
+
+static char *s_default_cfg = 
+	""																		NEWLINE
+	"// load keybindings"													NEWLINE
+	"//"																	NEWLINE
+	"// commands with a leading + will also be called for key up events with"	NEWLINE
+	"// the + changed to a -"												NEWLINE
+	"unbindall"																NEWLINE
+	""																		NEWLINE
+	"//"																	NEWLINE
+	"// character controls"													NEWLINE
+	"//"																	NEWLINE
+	""																		NEWLINE
+	"bind	ALT				+strafe"										NEWLINE
+	""																		NEWLINE
+	"bind	,				\"impulse 10\""									NEWLINE
+	"bind	.				\"impulse 12\""									NEWLINE
+	"bind	PGUP			+lookup"										NEWLINE
+	"bind	PGDN			+lookdown"										NEWLINE
+	"bind	END				centerview"										NEWLINE
+	"bind	w				+forward"										NEWLINE
+	"bind	a				+moveleft"										NEWLINE
+	"bind	s				+back"											NEWLINE
+	"bind	d				+moveright"										NEWLINE
+	"bind	q				+moveup"										NEWLINE
+	"bind	e				+movedown"										NEWLINE
+	"bind	SHIFT			+speed"											NEWLINE
+	"bind	CTRL			+attack"										NEWLINE
+	"bind	UPARROW			+forward"										NEWLINE
+	"bind	DOWNARROW		+back"											NEWLINE
+	"bind	LEFTARROW		+left"											NEWLINE
+	"bind	RIGHTARROW		+right"											NEWLINE
+	""																		NEWLINE
+	"bind	SPACE			+jump "											NEWLINE
+	"bind	ENTER			+jump"											NEWLINE
+	""																		NEWLINE
+	"bind	TAB				+showscores"									NEWLINE
+	""																		NEWLINE
+	"bind	1				\"impulse 1\""									NEWLINE
+	"bind	2				\"impulse 2\""									NEWLINE
+	"bind	3				\"impulse 3\""									NEWLINE
+	"bind	4				\"impulse 4\""									NEWLINE
+	"bind	5				\"impulse 5\""									NEWLINE
+	"bind	6				\"impulse 6\""									NEWLINE
+	"bind	7				\"impulse 7\""									NEWLINE
+	"bind	8				\"impulse 8\""									NEWLINE
+	""																		NEWLINE
+	"bind	0				\"impulse 0\""									NEWLINE
+	""																		NEWLINE
+	"bind	/				\"impulse 10\"		// change weapon"			NEWLINE
+	""																		NEWLINE
+	"// zoom"																NEWLINE
+	"alias zoom_in \"sensitivity 2;fov 90;wait;fov 70;wait;fov 50;wait;fov 30;wait;fov 10;wait;fov 5;bind F11 zoom_out\"" NEWLINE
+	"alias zoom_out \"sensitivity 4;fov 5;wait;fov 10;wait;fov 30;wait;fov 50;wait;fov 70;wait;fov 90;bind F11 zoom_in; sensitivity 3\"" NEWLINE
+	"bind F11 zoom_in"														NEWLINE
+	""																		NEWLINE
+	"// Function keys"														NEWLINE
+	"bind	F1			\"help\""											NEWLINE
+	"bind	F2			\"menu_save\""										NEWLINE
+	"bind	F3			\"menu_load\""										NEWLINE
+	"bind	F4			\"menu_options\""									NEWLINE
+	"bind	F5			\"menu_multiplayer\""								NEWLINE
+	"bind	F6			\"echo Quicksaving...; wait; save quick\""			NEWLINE
+	"bind	F9			\"echo Quickloading...; wait; load quick\""			NEWLINE
+	//"bind	F10			\"quit\""											NEWLINE
+	"bind    F12                     \"screenshot\""						NEWLINE
+	"" NEWLINE
+	"// mouse options" NEWLINE
+	//"bind	\			+mlook"												NEWLINE
+	""																		NEWLINE
+	"//"																	NEWLINE
+	"// client environment commands"										NEWLINE
+	"//"																	NEWLINE
+	"bind	PAUSE	\"pause\""												NEWLINE
+	"bind	ESCAPE	\"togglemenu\""											NEWLINE
+	"bind	~		\"toggleconsole\""										NEWLINE
+	"bind	`		\"toggleconsole\""										NEWLINE
+	""																		NEWLINE
+	"bind	t		\"messagemode\""										NEWLINE
+	""																		NEWLINE
+	"bind	+		\"sizeup\""												NEWLINE
+	"bind	=		\"sizeup\""												NEWLINE
+	"bind	-		\"sizedown\""											NEWLINE
+	""																		NEWLINE
+	"bind	INS		+klook"													NEWLINE
+	""																		NEWLINE
+	"//"																	NEWLINE
+	"// mouse buttons"														NEWLINE
+	"//"																	NEWLINE
+	"bind	MOUSE1	+attack"												NEWLINE
+	"bind	MOUSE2	+forward"												NEWLINE
+	"bind	MOUSE3	+mlook"													NEWLINE
+	""																		NEWLINE
+	"//"																	NEWLINE
+	"// default cvars"														NEWLINE
+	"//"																	NEWLINE
+	"viewsize 		100"													NEWLINE
+	"gamma 			1.0"													NEWLINE
+	"volume 		0.7"													NEWLINE
+	"sensitivity 	9"														NEWLINE
+
+#if 1
+	"cl_forwardspeed 	400"												NEWLINE
+	"cl_backspeed 		400"												NEWLINE
+#endif
+
+	""																		NEWLINE
+	;
+
+#if 0
+static char *s_quake_rc = 
+		"// load the base configuration"					NEWLINE
+		"exec default.cfg"									NEWLINE
+		""													NEWLINE
+		"// load the last saved configuration"				NEWLINE
+		"exec config.cfg"									NEWLINE
+		""													NEWLINE
+		"// run a user script file if present"				NEWLINE
+		"exec autoexec.cfg"									NEWLINE
+		""													NEWLINE
+		"//"												NEWLINE
+		"// stuff command line statements"					NEWLINE
+		"//"												NEWLINE
+		"stuffcmds"											NEWLINE
+		""													NEWLINE
+		"// start demos if not allready running a server"	NEWLINE
+		"startdemos demo1 demo2 demo3"						NEWLINE
+	; // Ender
+#endif
+
+static void Cmd_Exec (cmd_state_t *cmd, const char *filename)
+{
+	char *f;
+	//size_t filenameLen = strlen(filename);
+	qbool is_default_cfg = String_Does_Match (filename, "default.cfg") ||
+							String_Does_End_With(filename, "/default.cfg");
+	// (filenameLen >= 12 && String_Does_Match(filename + filenameLen - 12, "/default.cfg"));
+
+#if 0
+	qbool is_quake_rc = String_Does_Match (filename, "quake.rc") ||
+							String_Does_End_With(filename, "/quake.rc");
+#endif
+
+	if (String_Does_Match(filename, "config.cfg")) {
+		filename = CONFIGFILENAME;
+		if (Sys_CheckParm("-noconfig"))
+			return; // don't execute config.cfg
 	}
+
+	f = (char *)FS_LoadFile (filename, tempmempool, fs_quiet_FALSE, fs_size_ptr_null);
+
+
+	if (!f && fs_have_qex && is_default_cfg) {
+		f = (char *)MemAllocString (s_default_cfg);
+	}
+
+	if (!f) {
+		Con_PrintLinef ("couldn't exec %s", filename);
+		return;
+	}
+	Con_PrintLinef ("execing %s", filename);
+
+	// if executing default.cfg for the first time, lock the cvar defaults
+	// it may seem backwards to insert this text BEFORE the default.cfg
+	// but Cbuf_InsertText inserts before, so this actually ends up after it.
+	if (is_default_cfg) {
+		Cbuf_InsertText (cmd, NEWLINE "cvar_lockdefaults" NEWLINE);
+	}
+
+	Cbuf_InsertText (cmd, f);
+	Mem_Free(f);
+
+	if (is_default_cfg) {
+		DarkPlaces_Settings_For_Game (cmd, gamemode);
+	} // if
 }
 
 /*
@@ -850,24 +1010,31 @@ Cmd_Exec_f
 static void Cmd_Exec_f (cmd_state_t *cmd)
 {
 	fssearch_t *s;
-	int i;
 
-	if (Cmd_Argc(cmd) != 2)
-	{
-		Con_Print("exec <filename> : execute a script file\n");
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("exec <filename> : execute a script file");
 		return;
 	}
 
-	s = FS_Search(Cmd_Argv(cmd, 1), fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
-	if (!s || !s->numfilenames)
-	{
-		Con_Printf ("couldn't exec %s\n",Cmd_Argv(cmd, 1));
+	const char *s_execfile = Cmd_Argv(cmd, 1);
+	s = FS_Search (s_execfile, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
+
+	if (!s && String_Does_Match (s_execfile, "default.cfg") && fs_have_qex) {
+		Cmd_Exec (cmd, s_execfile);
+		goto default_cfg_qex_skip;
+	}
+
+	if (!s || !s->numfilenames) {
+		Con_PrintLinef ("couldn't exec %s", s_execfile);
 		return;
 	}
 
-	for(i = 0; i < s->numfilenames; ++i)
-		Cmd_Exec(cmd, s->filenames[i]);
+	for (int j = 0; j < s->numfilenames; j ++) {
+		const char *s_filename = s->filenames[j];
+		Cmd_Exec (cmd, s_filename);
+	}
 
+default_cfg_qex_skip:
 	FS_FreeSearch(s);
 }
 
@@ -1622,9 +1789,9 @@ static void Cmd_List_f (cmd_state_t *cmd)
 	if (len)
 	{
 		if (ispattern)
-			Con_Printf ("%d Command%s matching \"%s\"\n\n", count, (count > 1) ? "s" : "", partial);
+			Con_Printf ("%d Command%s matching " QUOTED_S "\n\n", count, (count > 1) ? "s" : "", partial);
 		else
-			Con_Printf ("%d Command%s beginning with \"%s\"\n\n", count, (count > 1) ? "s" : "", partial);
+			Con_Printf ("%d Command%s beginning with " QUOTED_S "\n\n", count, (count > 1) ? "s" : "", partial);
 	}
 	else
 		Con_Printf ("%d Command%s\n\n", count, (count > 1) ? "s" : "");
@@ -2226,16 +2393,27 @@ qbool Cmd_CL_Callback(cmd_state_t *cmd, cmd_function_t *func, const char *text, 
 	return Cmd_Callback(cmd, func, text, src);
 }
 
+// Baker: What is the return value here?
+// Well denied cheats returned true before so we do that.
 qbool Cmd_SV_Callback(cmd_state_t *cmd, cmd_function_t *func, const char *text, cmd_source_t src)
 {
 	if (func->qcfunc && (func->flags & CF_SERVER))
 		return SV_VM_ConsoleCommand(text);
 	else if (src == src_client)
 	{
-		if ((func->flags & CF_CHEAT) && !sv_cheats.integer)
-			SV_ClientPrintf ("No cheats allowed. The server must have sv_cheats set to 1" NEWLINE);
-		else
-			func->function(cmd);
+		if ((func->flags & CF_CHEAT)) {
+			prvm_prog_t *prog = SVVM_prog;
+			if (!sv_cheats.integer) {
+				SV_ClientPrintf ("No cheats allowed. The server must have sv_cheats set to 1" NEWLINE);
+				return true;
+			}
+			else if (sv_cheats.integer < 2 && PRVM_serverglobalfloat(deathmatch)) {
+				SV_ClientPrintf ("No cheats allowed in deathmatch. The server must have sv_cheats set to 2" NEWLINE);
+				return true;
+			}
+			// is ok .. fall through
+		} // if
+		func->function(cmd);
 		return true;
 	}
 	return false;
@@ -2243,8 +2421,7 @@ qbool Cmd_SV_Callback(cmd_state_t *cmd, cmd_function_t *func, const char *text, 
 
 qbool Cmd_SV_NotFound(cmd_state_t *cmd, cmd_function_t *func, const char *text, cmd_source_t src)
 {
-	if (cmd->source == src_client)
-	{
+	if (cmd->source == src_client) {
 		Con_PrintLinef ("Client " QUOTED_S " tried to execute " QUOTED_S, host_client->name, text);
 		return true;
 	}
@@ -2268,6 +2445,10 @@ void Cmd_ExecuteString (cmd_state_t *cmd, const char *text, cmd_source_t src, qb
 	oldpos = cmd->cbuf->tokenizebufferpos;
 	cmd->source = src;
 
+#if 0
+	if (developer_execstring.integer)
+		Con_PrintLinef ("exec: " QUOTED_S, text);
+#endif
 	Cmd_TokenizeString (cmd, text);
 
 // execute the command line
@@ -2326,6 +2507,52 @@ done:
 	cmd->cbuf->tokenizebufferpos = oldpos;
 	if (lockmutex)
 		Cbuf_Unlock(cmd->cbuf);
+}
+
+int Cmd_Is_Lead_Word_A_Command_Cvar_Alias (cmd_state_t *cmd, const char *text)
+{
+	Cmd_TokenizeString (cmd, text);
+
+// execute the command line
+	if (!Cmd_Argc(cmd))
+		return 0; // no tokens
+
+	const char *s_command_wanted = Cmd_Argv(cmd, 0);
+
+// check functions
+
+	WARP_X_ (examples: )
+	for (cmd_function_t *func = cmd->userdefined->qc_functions; func; func = func->next) {
+		if (String_Does_Match_Caseless(func->name, s_command_wanted))
+			return true;
+	} // for cmd
+
+	WARP_X_ (examples: wait cprint sv_downloads )
+	for (cmd_function_t *func = cmd->engine_functions; func; func = func->next) {
+		if (String_Does_Match_Caseless (func->name, s_command_wanted))
+			return true;
+	} // for engine_functions // what is that?
+
+	// if it's a client command and no command was found, say so.
+	//if (cmd->NotFound) {
+	//	if (cmd->NotFound(cmd, func, text, src))
+	//		goto done;
+	//}
+
+// check alias
+	for (cmd_alias_t *a = cmd->userdefined->alias; a ; a = a->next) {
+		if (String_Does_Match_Caseless (a->name, s_command_wanted))
+			return true;
+	} // alias
+
+// check cvars
+	//cvar_state_t *cvars = cmd->cvars;
+	WARP_X_ (what is flags mask )
+	if (Cvar_FindVar(cmd->cvars, s_command_wanted, cmd->cvars_flagsmask) )
+		return true;
+	
+	
+	return false;
 }
 
 /*
@@ -2501,7 +2728,7 @@ void Cmd_Init(void)
 //
 	// client-only commands
 	Cmd_AddCommand(CF_SHARED, "wait", Cmd_Wait_f, "make script execution wait for next rendered frame");
-	Cmd_AddCommand(CF_CLIENT, "cprint", Cmd_Centerprint_f, "print something at the screen center");
+	Cmd_AddCommand(CF_CLIENT, "cprint", Cmd_Centerprint_f, "print something at the screen center"); // Baker: Really?
 
 	// maintenance commands used for upkeep of cvars and saved configs
 	Cmd_AddCommand(CF_SHARED, "stuffcmds", Cmd_StuffCmds_f, "execute commandline parameters (must be present in quake.rc script)");
@@ -2528,7 +2755,7 @@ void Cmd_Init(void)
 	// 2000-01-09 CmdList, CvarList commands By Matthias "Maddes" Buecher
 	// Added/Modified by EvilTypeGuy eviltypeguy@qeradiant.com
 	Cmd_AddCommand(CF_SHARED, "cmdlist", Cmd_List_f, "lists all console commands beginning with the specified prefix or matching the specified wildcard pattern");
-	Cmd_AddCommand(CF_SHARED, "cvarlist", Cvar_List_f, "lists all console variables beginning with the specified prefix or matching the specified wildcard pattern");
+	Cmd_AddCommand(CF_SHARED, "cvarlist", Cvar_List_f, "lists all console variables beginning with the specified prefix or matching the specified wildcard pattern, 'cvarlist changed' will print only changed cvars");
 	Cmd_AddCommand(CF_SHARED, "apropos", Cmd_Apropos_f, "lists all console variables/commands/aliases containing the specified string in the name or description");
 	Cmd_AddCommand(CF_SHARED, "find", Cmd_Apropos_f, "lists all console variables/commands/aliases containing the specified string in the name or description");
 
@@ -2543,3 +2770,4 @@ void Cmd_Init(void)
 	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "dec", Cmd_Dec_f, "Decreases value of cvar by 1 or provided amount [Zircon]"); // Baker r1246: inc, dec
 	Cmd_AddCommand (CF_SHARED | CF_CLIENT_FROM_SERVER, "cvar_reset", Cvar_Reset_f, "lists all console variables beginning with the specified prefix or matching the specified wildcard pattern"); // Baker r3173: cvar_reset
 }
+

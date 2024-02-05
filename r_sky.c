@@ -142,7 +142,7 @@ static int R_LoadSkyBox(void)
 		return false;
 
 	if (developer_loading.integer)
-		Con_Printf ("loading skybox \"%s\"\n", name);
+		Con_PrintLinef ("loading skybox " QUOTED_S, name);
 
 	return true;
 }

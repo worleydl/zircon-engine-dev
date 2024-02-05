@@ -180,6 +180,7 @@ endif
 
 CFLAGS_COMMON=$(CFLAGS_STANDARD) $(CFLAGS_TCC) $(CFLAGS_MAKEDEP) $(CFLAGS_PRELOAD) $(CFLAGS_FS) $(CFLAGS_WARNINGS) $(CFLAGS_LIBZ) $(CFLAGS_LIBJPEG) $(CFLAGS_SND_XMP) $(CFLAGS_NET) $(CFLAGS_SDL) -D_FILE_OFFSET_BITS=64 -D__KERNEL_STRICT_NAMES -I../../../
 CFLAGS_CLIENT=-DCORE_SDL -DCONFIG_MENU $(CFLAGS_VIDEO_CAPTURE)
+CFLAGS_OBJECTN=-DOBJECTN
 CFLAGS_SERVER=
 CFLAGS_DEBUG=-ggdb
 CFLAGS_PROFILE=-g -pg -ggdb -fprofile-arcs
@@ -222,10 +223,12 @@ LDFLAGS_UNIXSDL_PRELOAD=-lz -ljpeg -lpng -logg -ltheora -lvorbis -lvorbisenc -lv
 CFLAGS_UNIX_PRELOAD=-DPREFER_PRELOAD
 
 LDFLAGS_UNIXSDL=$(SDL_LIBS) #-lGLESv2
-EXE_UNIXSV=darkplaces-dedicated
-EXE_UNIXSDL=darkplaces-sdl
+EXE_UNIXSV=zircon_beta_linux_dedicated_server
+EXE_UNIXSDL=zircon_beta_linux_sdl
 EXE_UNIXSVNEXUIZ=nexuiz-dedicated
 EXE_UNIXSDLNEXUIZ=nexuiz-sdl
+EXE_UNIXSDLOBJECTN=objectn-sdl
+EXE_UNIXSVOBJECTN=objectn-dedicated
 
 CMD_UNIXRM=rm -rf
 CMD_UNIXCP=cp -f
@@ -270,10 +273,12 @@ WINDRES ?= windres
 # see LDFLAGS_WINCOMMON in makefile
 LDFLAGS_WINSV=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) -mconsole -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
 LDFLAGS_WINSDL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) $(LDFLAGS_UNIXSDL) -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG) $(LIB_SND_XMP)
-EXE_WINSV=darkplaces-dedicated.exe
-EXE_WINSDL=darkplaces-sdl.exe
+EXE_WINSV=zircon_beta_windows_dedicated_server.exe
+EXE_WINSDL=zircon_beta_windows_sdl.exe
 EXE_WINSVNEXUIZ=nexuiz-dedicated.exe
 EXE_WINSDLNEXUIZ=nexuiz-sdl.exe
+EXE_WINSVOBJECTN=objectn-dedicated.exe
+EXE_WINSDLOBJECTN=objectn-sdl.exe
 
 VPATH := ../../../
 
@@ -306,12 +311,14 @@ help:
 	@echo "* $(MAKE) sv-release-profile   : make dedicated server (release profile version)"
 	@echo "* $(MAKE) sv-release           : make dedicated server (release version)"
 	@echo "* $(MAKE) sv-nexuiz            : make dedicated server with nexuiz icon"
+	@echo "* $(MAKE) sv-objectn           : make objectn dedicated server"
 	@echo "                              (release version)"
 	@echo "* $(MAKE) sdl-debug            : make SDL client (debug version)"
 	@echo "* $(MAKE) sdl-profile          : make SDL client (profile version)"
 	@echo "* $(MAKE) sdl-release-profile  : make SDL client (release version)"
 	@echo "* $(MAKE) sdl-release          : make SDL client (release version)"
 	@echo "* $(MAKE) sdl-nexuiz           : make SDL client with nexuiz icon (release version)"
+	@echo "* $(MAKE) sdl-objectn          : make SDL objectn client (release version)"
 	@echo
 
 debug :
@@ -319,6 +326,9 @@ debug :
 
 profile :
 	$(MAKE) $(TARGETS_PROFILE)
+
+zircon :
+	$(MAKE) $(TARGETS_ZIRCON)
 
 release :
 	$(MAKE) $(TARGETS_RELEASE)
@@ -328,6 +338,9 @@ release-profile :
 
 nexuiz :
 	$(MAKE) $(TARGETS_NEXUIZ)
+
+objectn :
+	$(MAKE) $(TARGETS_OBJECTN)
 
 sv-debug :
 	$(MAKE) bin-debug \
@@ -368,6 +381,16 @@ sdl-release :
 	$(MAKE) bin-release \
 		DP_MAKE_TARGET=$(DP_MAKE_TARGET) \
 		EXE='$(EXE_SDL)' CFLAGS_FEATURES='$(CFLAGS_CLIENT)' CFLAGS_SDL='$(SDLCONFIG_CFLAGS)' LDFLAGS_COMMON='$(LDFLAGS_SDL)' LEVEL=1
+
+sdl-objectn :
+	$(MAKE) bin-release \
+		DP_MAKE_TARGET=$(DP_MAKE_TARGET) \
+		EXE='$(EXE_SDLOBJECTN)' CFLAGS_FEATURES='$(CFLAGS_CLIENT) $(CFLAGS_OBJECTN)' CFLAGS_SDL='$(SDLCONFIG_CFLAGS)' LDFLAGS_COMMON='$(LDFLAGS_SDL)' LEVEL=1
+
+sv-objectn :
+	$(MAKE) bin-release \
+		DP_MAKE_TARGET=$(DP_MAKE_TARGET) \
+		EXE='$(EXE_SVOBJECTN)' CFLAGS_FEATURES='$(CFLAGS_SERVER) $(CFLAGS_OBJECTN)' LDFLAGS_COMMON='$(LDFLAGS_SV)' LEVEL=1
 
 sdl-release-profile :
 	$(MAKE) bin-release-profile \
@@ -502,11 +525,21 @@ $(EXE_SDLNEXUIZ): $(OBJ_SDL) $(OBJ_ICON_NEXUIZ)
 	$(CHECKLEVEL2)
 	$(DO_LD)
 
+$(EXE_SVOBJECTN): $(OBJ_SV) $(OBJ_ICON)
+	$(CHECKLEVEL2)
+	$(DO_LD)
+
+$(EXE_SDLOBJECTN): $(OBJ_SDL) $(OBJ_ICON)
+	$(CHECKLEVEL2)
+	$(DO_LD)
+
 clean:
 	-$(CMD_RM) $(EXE_SV)
 	-$(CMD_RM) $(EXE_SDL)
 	-$(CMD_RM) $(EXE_SVNEXUIZ)
 	-$(CMD_RM) $(EXE_SDLNEXUIZ)
+	-$(CMD_RM) $(EXE_SVOBJECTN)
+	-$(CMD_RM) $(EXE_SDLOBJECTN)
 	-$(CMD_RM) *.o
 	-$(CMD_RM) *.d
 	-$(CMD_RM) *.gch

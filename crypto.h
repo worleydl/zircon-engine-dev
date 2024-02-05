@@ -31,7 +31,7 @@ extern struct cvar_s crypto_aeslevel;
 
 extern int crypto_keyfp_recommended_length; // applies to LOCAL IDs, and to ALL keys
 
-#define CRYPTO_HEADERSIZE 31
+#define CRYPTO_HEADERSIZE_31 31
 // AES case causes 16 to 31 bytes overhead
 // SHA256 case causes 16 bytes overhead as we truncate to 128bit
 

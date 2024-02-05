@@ -1,6 +1,7 @@
 #include "quakedef.h"
 #include "protocol.h"
 
+// ents and ents4
 int EntityState_ReadExtendBits(void)
 {
 	unsigned int bits;
@@ -32,8 +33,8 @@ void EntityState_ReadFields(entity_state_t *e, unsigned int bits)
 	else
 	{
 		if (bits & E_FLAGS)
-			e->flags = MSG_ReadByte(&cl_message);
-		if (e->flags & RENDER_LOWPRECISION)
+			e->sflags = MSG_ReadByte(&cl_message);
+		if (e->sflags & RENDER_LOWPRECISION)
 		{
 			if (bits & E_ORIGIN1)
 				e->origin[0] = MSG_ReadCoord16i(&cl_message);
@@ -52,7 +53,8 @@ void EntityState_ReadFields(entity_state_t *e, unsigned int bits)
 				e->origin[2] = MSG_ReadCoord32f(&cl_message);
 		}
 	}
-	if ((cls.protocol == PROTOCOL_DARKPLACES5 || cls.protocol == PROTOCOL_DARKPLACES6) && !(e->flags & RENDER_LOWPRECISION))
+	if (isin2 (cls.protocol, PROTOCOL_DARKPLACES5, PROTOCOL_DARKPLACES6) 
+		&& !(e->sflags & RENDER_LOWPRECISION))
 	{
 		if (bits & E_ANGLE1)
 			e->angles[0] = MSG_ReadAngle16i(&cl_message);
@@ -96,7 +98,7 @@ void EntityState_ReadFields(entity_state_t *e, unsigned int bits)
 		e->glowcolor = MSG_ReadByte(&cl_message);
 	if (cls.protocol == PROTOCOL_DARKPLACES2)
 		if (bits & E_FLAGS)
-			e->flags = MSG_ReadByte(&cl_message);
+			e->sflags = MSG_ReadByte(&cl_message);
 	if (bits & E_TAGATTACHMENT)
 	{
 		e->tagentity = (unsigned short) MSG_ReadShort(&cl_message);
@@ -217,7 +219,8 @@ void EntityFrame_AddFrame_Client(entityframe_database_t *d, vec3_t eye, int fram
 }
 
 // (client) reads a frame from network stream
-void EntityFrame_CL_ReadFrame(void)
+// This is DP1 to DP3
+void EntityFrame_CL_ReadFrame_DP1_DP3(void)
 {
 	int i, number, removed;
 	entity_frame_t *f, *delta;

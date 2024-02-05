@@ -99,7 +99,7 @@ static qbool Sys_LoadDependencyFunctions(dllhandle_t dllhandle, const dllfunctio
 			{
 				if (complain)
 				{
-					Con_DPrintf (" - missing function \"%s\" - broken library!", func->name);
+					Con_DPrintf (" - missing function " QUOTED_S " - broken library!", func->name);
 					if (has_next)
 						Con_DPrintf ("\nContinuing with");
 				}

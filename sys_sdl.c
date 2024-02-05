@@ -244,7 +244,7 @@ char *Sys_ConsoleInput_WinQuake (void)
 					int slen; const char *s; // CTRL-V hack
 					s = Clipboard_Get_Text_Line_Static ();
 					//logc ("Pasting %d", s);
-					slen = strlen(s);
+					slen = (int)strlen(s);
 					if (slen) {
 						// We need to jam it into the text buffer
 						int n; for (n = 0; n < slen; n ++) {

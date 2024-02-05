@@ -47,6 +47,12 @@ cvar_t host_speeds = {CF_CLIENT | CF_SERVER, "host_speeds","0", "reports how muc
 cvar_t host_maxwait = {CF_CLIENT | CF_SERVER, "host_maxwait","1000", "maximum sleep time requested from the operating system in millisecond. Larger sleeps will be done using multiple host_maxwait length sleeps. Lowering this value will increase CPU load, but may help working around problems with accuracy of sleep times."};
 
 cvar_t developer = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "developer","0", "shows debugging messages and information (recommended for all developers and level designers); the value -1 also suppresses buffering and logging these messages"};
+cvar_t developer_stuffcmd = {CF_CLIENT, "developer_stuffcmd", "0", "prints stuffcmd text to the console for debugging [Zircon]"};
+cvar_t developer_keycode = {CF_CLIENT, "developer_keycode", "0", "prints key scancode information for debugging [Zircon]"};
+cvar_t developer_zext = {CF_SHARED, "developer_zext", "0", "prints Zircon extension information for debugging [Zircon]"};
+
+cvar_t developer_svc = {CF_CLIENT, "developer_svc", "0", "prints svc messages received ignoring common ones, 2 prints them all [Zircon]"};
+
 cvar_t developer_extra = {CF_CLIENT | CF_SERVER, "developer_extra", "0", "prints additional debugging messages, often very verbose!"};
 cvar_t developer_insane = {CF_CLIENT | CF_SERVER, "developer_insane", "0", "prints huge streams of information about internal workings, entire contents of files being read/written, etc.  Not recommended!"};
 cvar_t developer_loadfile = {CF_CLIENT | CF_SERVER, "developer_loadfile","0", "prints name and size of every file loaded via the FS_LoadFile function (which is almost everything)"};
@@ -212,19 +218,19 @@ void Host_SaveConfig(const char *file)
 		Cvar_WriteVariables (&cvars_all, f);
 
 		FS_Close (f);
-	}
+	} // if not ignoring save config
 }
 
 // Baker r1411: "saveconfig" takes an argument so "saveconfig mine" is possible.
 static void Host_SaveConfig_f(cmd_state_t* cmd)
 {
 	char vabuf[1024];
-	const char *file = CONFIGFILENAME;
-	c_strlcpy(vabuf, file);
+	const char *s_file = CONFIGFILENAME;
+	c_strlcpy (vabuf, s_file);
 
 	if (Cmd_Argc(cmd) > 1) {
-		file = Cmd_Argv(cmd, 1);
-		c_strlcpy(vabuf, file);
+		s_file = Cmd_Argv(cmd, 1);
+		c_strlcpy (vabuf, s_file);
 
 		// If does not end with .cfg, default it.
 		if (String_Does_End_With(vabuf, ".cfg") == false) {
@@ -296,6 +302,12 @@ static void Host_AddConfigText(cmd_state_t *cmd)
 {
 	// set up the default startmap_sp and startmap_dm aliases (mods can
 	// override these) and then execute the quake.rc startup script
+
+#ifdef CONFIG_MENU
+	if (cls.state != ca_dedicated)
+		Cbuf_InsertText(cmd, "alias +zoom " QUOTED_STR("set _saved_fov $fov; fov 20") "; alias -zoom " QUOTED_STR("fov $_saved_fov") NEWLINE);
+#endif // CONFIG_MENU
+
 	if (gamemode == GAME_NEHAHRA)
 		Cbuf_InsertText(cmd, "alias startmap_sp \"map nehstart\"\nalias startmap_dm \"map nehstart\"\nexec " STARTCONFIGFILENAME "\n");
 	else if (gamemode == GAME_TRANSFUSION)
@@ -304,6 +316,7 @@ static void Host_AddConfigText(cmd_state_t *cmd)
 		Cbuf_InsertText(cmd, "alias startmap_sp \"map start\"\nalias startmap_dm \"map start\"\nexec teu.rc\n");
 	else
 		Cbuf_InsertText(cmd, "alias startmap_sp \"map start\"\nalias startmap_dm \"map start\"\nexec " STARTCONFIGFILENAME "\n");
+
 	Cbuf_Execute(cmd->cbuf);
 }
 
@@ -357,6 +370,13 @@ static void Host_InitLocal (void)
 	Cvar_RegisterVariable (&host_isclient);
 
 	Cvar_RegisterVariable (&developer);
+	Cvar_RegisterVariable (&developer_stuffcmd);
+	Cvar_RegisterVariable (&developer_keycode);
+	Cvar_RegisterVariable (&developer_svc);
+
+	Cvar_RegisterVariable (&developer_movement);
+	Cvar_RegisterVariable (&developer_zext);
+
 	Cvar_RegisterVariable (&developer_extra);
 	Cvar_RegisterVariable (&developer_insane);
 	Cvar_RegisterVariable (&developer_loadfile);

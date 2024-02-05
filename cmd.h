@@ -151,6 +151,10 @@ typedef struct cmd_state_s
 	int cmd_flags; // cmd flags that identify this interpreter
 
 	qbool (*Handle)(struct cmd_state_s *, struct cmd_function_s *, const char *, enum cmd_source_s);
+
+	// Baker: Example: cmd_serverfromclient->NotFound = Cmd_SV_NotFound;
+	// Client YOURNAME tried to SOMETHING
+	WARP_X_ (Cmd_SV_NotFound)
 	qbool (*NotFound)(struct cmd_state_s *, struct cmd_function_s *, const char *, enum cmd_source_s);
 }
 cmd_state_t;
@@ -289,6 +293,9 @@ qbool Cmd_QuoteString(char *out, size_t outlen, const char *in, const char *quot
 void Cmd_ClearCSQCCommands (cmd_state_t *cmd);
 
 void Cmd_NoOperation_f(cmd_state_t *cmd);
+
+// Baker: For chat in console
+int Cmd_Is_Lead_Word_A_Command_Cvar_Alias (cmd_state_t *cmd, const char *text);
 
 #endif // ! CMD_H
 
