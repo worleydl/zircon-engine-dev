@@ -297,10 +297,16 @@ float MSG_ReadAngle (sizebuf_t *sb, protocolversion_t protocol);
 
 typedef float (*COM_WordWidthFunc_t) (void *passthrough, const char *w, size_t *length, float maxWidth); // length is updated to the longest fitting string into maxWidth; if maxWidth < 0, all characters are used and length is used as is
 typedef int (*COM_LineProcessorFunc) (void *passthrough, const char *line, size_t length, float width, qbool isContination);
-int COM_Wordwrap(const char *string, size_t length, float continuationSize, float maxWidth, COM_WordWidthFunc_t wordWidth, void *passthroughCW, COM_LineProcessorFunc processLine, void *passthroughPL);
+int COM_Wordwrap_Num_Rows_Drawn(const char *string, size_t length, float continuationSize, float maxWidth, COM_WordWidthFunc_t wordWidth, void *passthroughCW, COM_LineProcessorFunc processLine, void *passthroughPL);
 
 extern char com_token[MAX_INPUTLINE_16384];
 
+// Baker: This is the dominant simple form used to parse entities
+// 80 of 101 uses of COM_ParseToken_Simple use false, false, true
+// non-"false, false, true" is used for effects, models and other cases.
+#define COM_Parse_Basic(p) COM_ParseToken_Simple(p, false, false, true)
+
+// Baker: COM_ParseToken_Simple -- Returns false on failure, true on success
 int COM_ParseToken_Simple(const char **datapointer, qbool returnnewline, qbool parsebackslash, qbool parsecomments);
 int COM_ParseToken_QuakeC(const char **datapointer, qbool returnnewline);
 int COM_ParseToken_VM_Tokenize(const char **datapointer, qbool returnnewline);
@@ -311,7 +317,24 @@ void COM_Init (void);
 void COM_Shutdown (void);
 
 char *va(char *buf, size_t buflen, const char *format, ...) DP_FUNC_PRINTF(3);
+
+#define va_sizeof(x, format, ...) \
+	va(x, sizeof(x), format, __VA_ARGS__) // Ender
+
+
 // does a varargs printf into provided buffer, returns buffer (so it can be called in-line unlike dpsnprintf)
+
+// Baker: Creates a variable, variadic prints to it.
+
+// Example: --- >    va_super (tmp, 1024, "load %s // %s", s_savename, s_map);
+
+// char tmp[1024];
+// va (tmp, sizeof(tmp), "load %s // %s", , s_savename, s_map ) // Ender
+
+#define va_super(varname,sizetwanted,format,...)	\
+	char varname[sizetwanted];		\
+	va (varname, sizeof(varname), format, __VA_ARGS__) // Ender
+
 
 // GCC with -Werror=c++-compat will error out if static_assert is used even though the macro is valid C11...
 #ifndef __cplusplus
@@ -352,10 +375,12 @@ char *va(char *buf, size_t buflen, const char *format, ...) DP_FUNC_PRINTF(3);
 #define c_dpsnprintf9(_var,_fmt,_s1,_s2,_s3,_s4,_s5,_s6,_s7,_s8,_s9) dpsnprintf (_var, sizeof(_var), _fmt, _s1,_s2,_s3,_s4,_s5,_s6,_s7,_s8,_s9)
 #define c_dpsnprintf10(_var,_fmt,_s1,_s2,_s3,_s4,_s5,_s6,_s7,_s8,_s9,_s10) dpsnprintf (_var, sizeof(_var), _fmt, _s1,_s2,_s3,_s4,_s5,_s6,_s7,_s8,_s9,_s10)
 
+// Baker: variadic buffer cycle of 32 strings .. adapted from ancient DarkPlaces
+char *va32 (const char *format, ...); // Helpful for engine testing
 
 extern int dpsnprintf (char *buffer, size_t buffersize, const char *format, ...) DP_FUNC_PRINTF(3);
 extern int dpvsnprintf (char *buffer, size_t buffersize, const char *format, va_list args);
-extern char *dpstrrstr(const char *s1, const char *s2); // Baker: 10000
+extern char *dp_strstr_reverse(const char *s1, const char *s2); // Baker: 10000
 extern char *dpstrcasestr(const char *s, const char *find); // Baker: 10001
 extern char *dpreplacechar (char *s_edit, int ch_find, int ch_replace); // Baker: 10002
 
@@ -434,6 +459,9 @@ char **XPM_DecodeString(const char *in);
 
 size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen);
 
+char *base64_encode_calloc (const unsigned char *data, size_t in_len, /*reply*/ size_t *numbytes);
+unsigned char *base64_decode_calloc (const char *encoded_string, /*reply*/ size_t *numbytes);
+
 // Baker use ARRAY_COUNT instead (name differece only)
 // A size implies the number of bytes.
 // We do not want the number of bytes of the array, we
@@ -461,12 +489,13 @@ float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angl
 #define String_Does_Match_Caseless(s1,s2)				(!strcasecmp(s1, s2))
 #define String_Does_NOT_Match_Caseless(s1,s2)			(!!strcasecmp(s1, s2))
 #define String_Does_Match(s1,s2)						(!strcmp(s1, s2))
-#define String_Does_Not_Match(s1,s2)					(!!strcmp(s1, s2))
+#define String_Does_NOT_Match(s1,s2)					(!!strcmp(s1, s2))
 
 
 #define String_Isin1(sthis,s0)							( String_Does_Match(sthis, s0) )
 #define String_Isin2(sthis,s0,s1)						( String_Does_Match(sthis, s0) || String_Does_Match(sthis, s1) )
 #define String_Isin3(sthis,s0,s1,s2)					( String_Does_Match(sthis, s0) || String_Does_Match(sthis, s1) || String_Does_Match(sthis, s2) )
+#define String_Isin4(sthis,s0,s1,s2,s3)					( String_Does_Match(sthis, s0) || String_Does_Match(sthis, s1) || String_Does_Match(sthis, s2) || String_Does_Match(sthis, s3) )
 
 #define String_Isin1_Caseless(sthis,s0)					( String_Does_Match_Caseless(sthis, s0) )
 #define String_Isin2_Caseless(sthis,s0,s1)				( String_Does_Match_Caseless(sthis, s0) || String_Does_Match_Caseless(sthis, s1) )
@@ -476,6 +505,7 @@ float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angl
 #define String_Does_Start_With_Caseless(s,s_prefix)		(!strncasecmp(s, s_prefix, strlen(s_prefix)))
 
 #define String_Does_Start_With_PRE(s,s_prefix)					(!strncmp(s, s_prefix, sizeof(s_prefix) - 1 ))
+#define String_Does_NOT_Start_With_PRE(s,s_prefix)				(!!strncmp(s, s_prefix, sizeof(s_prefix) - 1 ))
 #define String_Does_Start_With_Caseless_PRE(s,s_prefix)			(!strncasecmp(s, s_prefix, sizeof(s_prefix) - 1 ))
 #define String_Does_NOT_Start_With_Caseless_PRE(s,s_prefix)		(!!strncasecmp(s, s_prefix, sizeof(s_prefix) - 1 ))
 
@@ -503,9 +533,14 @@ void String_Edit_To_Single_Line (char *s_edit); // Strips newlines, carriage ret
 
 char *Clipboard_Get_Text_Line_Static (void);
 
-char *String_Num_To_Thousands (int num);
+char *String_Num_To_Thousands_Sbuf (int64_t num64);
+char *String_Worldspawn_Value_For_Key_Sbuf (const char *s_entities_string, const char *find_keyname);
 
-int String_Does_End_With (const char *s, const char *s_suffix);
+// returns number of keys printed
+int String_Worldspawn_Value_For_Key_Con_PrintLine (const char *s_entities_string);
+
+// String_Does_End_With is too complex for PRE (preprocessed version) .. move along ...
+int String_Does_End_With (const char *s, const char *s_suffix); 
 
 #define		String_Is_Dot(s)	(s[0] == '.' && s[1] == NULL_CHAR_0)
 #define		String_Is_DotDot(s)	(s[0] == '.' && s[1] == '.' && s[2] == NULL_CHAR_0)
@@ -587,5 +622,73 @@ int Time_Seconds (int seconds);
 
 void Math_Project (vec_t *src3d, vec_t *dest2d);
 void Math_Unproject (vec_t *src2d, vec_t *dest3d);
+
+
+// Baker: Zip support
+
+qbool Zip_List_Print_Is_Ok (const char *zipfile_url);
+
+// bufsize like SIV_DECOMPRESS_BUFSIZE_16_MB
+
+unsigned char *string_zlib_compress_alloc (const char *s_text_to_compress, /*reply*/ size_t *size_out, size_t buffersize);
+char *string_zlib_decompress_alloc (unsigned char *data_binary_of_compressed_text, size_t datasize, size_t buffersize);
+
+// Baker: All of this is to allow fast string concatenation.  Simplest way to do it.
+
+// "baker_string_t" allows NULLs inside the string, supports fast concatenation
+// and tends to over-allocate by 128 to avoid reallocations for fast strcat.
+// The performance with "strcat" (we aren't actually ever using strcat, rather memmove)
+// is roughly 10-30 times faster than strcat in heavy strcat situations.
+
+typedef struct {
+	/*ALLOC___*/	const char					*string;						// On creation, a reference to dynamic_empty_string
+					size_t						length;
+					size_t						bufsize;						// Size of the buffer.
+} baker_string_t; // We aren't going to need big strings, so using simpler version.
+
+//baker_string_t *BakerString_Destroy (/*modify*/ baker_string_t *dst);
+void BakerString_Destroy_And_Null_It (baker_string_t **pdst);
+baker_string_t *BakerString_Create_Alloc (const char *s);
+
+
+void BakerString_Set (baker_string_t *dst, int s_len, const char *s);
+
+// Baker: Do not have string to cat be inside the string receiving cat. This version does not allow that.
+void BakerString_Cat_No_Collide (/*modify*/ baker_string_t *dst, size_t s_len, const char *s);
+
+#ifdef _WIN32
+	#define VA_EXPAND_ALLOC(_text, _len, _siz16, _fmt) \
+		char		*_text; \
+		int			_len; \
+		size_t		_siz16; \
+		va_list		argptr; \
+		va_start	(argptr, _fmt); \
+		_text =		_length_vsnprintf (false /* not a test */, &_len, &_siz16, _fmt, argptr); \
+		va_end		(argptr) // Ender
+#else
+	#define VA_EXPAND_ALLOC(_text, _len, _siz16, _fmt) \
+		char		*_text; \
+		int			_len; \
+		size_t		_siz16; \
+		va_list		argptr; \
+		va_start	(argptr, _fmt); \
+		va_list		copy; \
+		va_copy		(copy, argptr); \
+		_text =		_length_vsnprintf (false /* not a test */, &_len, &_siz16, _fmt, copy); \
+		va_end		(copy); \
+		va_end		(argptr) // Ender
+#endif
+
+#define VA_EXPAND_ALLOC_FREE(TEXT) free (TEXT)
+
+char *_length_vsnprintf (qbool just_test, /*reply*/ int *created_length, /*reply*/ size_t *created_bufsize, const char *fmt, va_list args);
+
+void *core_memdup_z (const void *src, size_t len, /*optional*/ size_t *bufsize_made);
+
+void *z_memdup_z (const void *src, size_t len); // null terminated z_malloc //Z_Free(s); to free
+
+double File_Time (const char *path_to_file);
+
+char *String_Edit_Replace_Char (char *s_edit, int ch_find, int ch_replace, replyx int *outcount);
 
 #endif // ! COMMON_H

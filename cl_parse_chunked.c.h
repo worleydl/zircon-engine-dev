@@ -145,7 +145,7 @@ void QW_CL_FinishDownload(void)
 			Con_DPrintLinef ("Download took %.1f seconds", Sys_DirtyTime() - cls.qw_downloadspeedtime );
 
 			// rename the temp file to its final name
-			if (String_Does_Not_Match(cls.qw_downloadtempname, cls.qw_downloadname))
+			if (String_Does_NOT_Match(cls.qw_downloadtempname, cls.qw_downloadname))
 				if (rename(cls.qw_downloadtempname, cls.qw_downloadname))
 					Con_PrintLinef ("Failed to rename %s to %s.", cls.qw_downloadtempname, cls.qw_downloadname);
 		} else {
@@ -182,7 +182,7 @@ void QW_CL_ParseChunkedDownload(int is_oob)
 		totalsize = MSG_ReadLong	(&cl_message);
 		svname    = MSG_ReadString	(&cl_message, cl_readstring, sizeof(cl_readstring));
 
-		Con_PrintLinef ("Total size %s: svname " QUOTED_S, String_Num_To_Thousands (totalsize), svname);
+		Con_PrintLinef ("Total size %s: svname " QUOTED_S, String_Num_To_Thousands_Sbuf (totalsize), svname);
 
 		if (cls.qw_downloadmemory) {
 			// Ensure FILE is closed

@@ -135,7 +135,7 @@ typedef struct prvm_edict_s
 
 typedef struct vmpolygons_triangle_s
 {
-	rtexture_t		*texture;
+	rtexture_t		*tri_texture;
 	int				drawflag;
 	qbool hasalpha;
 	unsigned short	elements[3];
@@ -794,22 +794,22 @@ typedef struct prvm_prog_s
 
 typedef enum prvm_progindex_e
 {
-	PRVM_PROG_SERVER,
-	PRVM_PROG_CLIENT,
-	PRVM_PROG_MENU,
-	PRVM_PROG_MAX
+	PRVM_PROG_SERVER_0,
+	PRVM_PROG_CLIENT_1,
+	PRVM_PROG_MENU_2,
+	PRVM_PROG_MAX_3
 }
 prvm_progindex_t;
 
-extern prvm_prog_t prvm_prog_list[PRVM_PROG_MAX];
+extern prvm_prog_t prvm_prog_list[PRVM_PROG_MAX_3];
 prvm_prog_t *PRVM_ProgFromString(const char *str);
 prvm_prog_t *PRVM_FriendlyProgFromString(const char *str); // for console commands (prints error if name unknown and returns NULL, prints error if prog not loaded and returns NULL)
 #define PRVM_GetProg(n) (&prvm_prog_list[(n)])
 #define PRVM_ProgLoaded(n) (PRVM_GetProg(n)->loaded)
-#define SVVM_prog (&prvm_prog_list[PRVM_PROG_SERVER])
-#define CLVM_prog (&prvm_prog_list[PRVM_PROG_CLIENT])
+#define SVVM_prog (&prvm_prog_list[PRVM_PROG_SERVER_0])
+#define CLVM_prog (&prvm_prog_list[PRVM_PROG_CLIENT_1])
 #ifdef CONFIG_MENU
-#define MVM_prog (&prvm_prog_list[PRVM_PROG_MENU])
+#define MVM_prog (&prvm_prog_list[PRVM_PROG_MENU_2])
 #endif
 
 //============================================================================
@@ -976,6 +976,7 @@ void PRVM_Breakpoint(prvm_prog_t *prog, int stack_index, const char *text);
 void PRVM_Watchpoint(prvm_prog_t *prog, int stack_index, const char *text, etype_t type, prvm_eval_t *o, prvm_eval_t *n);
 
 void VM_Warning(prvm_prog_t *prog, const char *fmt, ...) DP_FUNC_PRINTF(2);
+void VM_WarningLinef (prvm_prog_t *prog, const char *fmt, ...) DP_FUNC_PRINTF(2);
 
 void VM_GenerateFrameGroupBlend(prvm_prog_t *prog, struct framegroupblend_s *framegroupblend, const prvm_edict_t *ed);
 void VM_FrameBlendFromFrameGroupBlend(struct frameblend_s *frameblend, const struct framegroupblend_s *framegroupblend, const struct model_s *model, double curtime);

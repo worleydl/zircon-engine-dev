@@ -15,7 +15,7 @@ int skyscissor[4];
 static int skyrendersphere;
 static int skyrenderbox;
 static rtexturepool_t *skytexturepool;
-static char skyname[MAX_QPATH_128];
+static char g_skyname[MAX_QPATH_128];
 static matrix4x4_t skymatrix;
 static matrix4x4_t skyinversematrix;
 
@@ -83,17 +83,15 @@ static void R_UnloadSkyBox(void)
 {
 	int i;
 	int c = 0;
-	for (i = 0;i < 6;i++)
-	{
-		if (skyboxskinframe[i])
-		{
-			R_SkinFrame_PurgeSkinFrame(skyboxskinframe[i]);
+	for (i = 0;i < 6; i ++) {
+		if (skyboxskinframe[i]) {
+			R_SkinFrame_PurgeSkinFrame (skyboxskinframe[i]);
 			c++;
 		}
 		skyboxskinframe[i] = NULL;
 	}
 	if (c && developer_loading.integer)
-		Con_Printf ("unloading skybox\n");
+		Con_PrintLinef ("unloading skybox");
 }
 
 static int R_LoadSkyBox(void)
@@ -107,36 +105,31 @@ static int R_LoadSkyBox(void)
 
 	R_UnloadSkyBox();
 
-	if (!skyname[0])
+	if (!g_skyname[0])
 		return true;
 
-	for (j=0; j<3; j++)
-	{
+	for (j = 0; j < 3; j ++) {
 		success = 0;
-		for (i=0; i<6; i++)
-		{
-			if (dpsnprintf(name, sizeof(name), "%s_%s", skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
-			{
-				if (dpsnprintf(name, sizeof(name), "%s%s", skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
-				{
-					if (dpsnprintf(name, sizeof(name), "env/%s%s", skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
-					{
-						if (dpsnprintf(name, sizeof(name), "gfx/env/%s%s", skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
+		for (i = 0; i < 6; i ++) {
+			if (dpsnprintf(name, sizeof(name), "%s_%s", g_skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL))) {
+				if (dpsnprintf(name, sizeof(name), "%s%s", g_skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL))) {
+					if (dpsnprintf(name, sizeof(name), "env/%s%s", g_skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL))) {
+						if (dpsnprintf(name, sizeof(name), "gfx/env/%s%s", g_skyname, suffix[j][i].suffix) < 0 || !(image_buffer = loadimagepixelsbgra(name, q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, NULL)))
 							continue;
-					}
-				}
-			}
+					} // if
+				} // if
+			} // if
 			temp = (unsigned char *)Mem_Alloc(tempmempool, image_width*image_height*4);
 			Image_CopyMux (temp, image_buffer, image_width, image_height, suffix[j][i].flipx, suffix[j][i].flipy, suffix[j][i].flipdiagonal, 4, 4, indices);
 			skyboxskinframe[i] = R_SkinFrame_LoadInternalBGRA(va(vabuf, sizeof(vabuf), "skyboxside%d", i), TEXF_CLAMP | (gl_texturecompression_sky.integer ? TEXF_COMPRESS : 0), temp, image_width, image_height, 0, 0, 0, vid.sRGB3D, /*q1skyload*/ false);
 			Mem_Free(image_buffer);
 			Mem_Free(temp);
 			success++;
-		}
+		} // for i 6
 
 		if (success)
 			break;
-	}
+	} // for j 3
 
 	if (j == 3)
 		return false;
@@ -149,7 +142,7 @@ static int R_LoadSkyBox(void)
 
 int R_SetSkyBox(const char *sky)
 {
-	if (strcmp(sky, skyname) == 0) // no change
+	if (String_Does_Match(sky, g_skyname)) // no change
 		return true;
 
 	if (strlen(sky) > 1000)
@@ -158,7 +151,7 @@ int R_SetSkyBox(const char *sky)
 		return false;
 	}
 
-	strlcpy(skyname, sky, sizeof(skyname));
+	c_strlcpy (g_skyname, sky);
 
 	return R_LoadSkyBox();
 }
@@ -169,8 +162,8 @@ static void LoadSky_f(cmd_state_t *cmd)
 	switch (Cmd_Argc(cmd))
 	{
 	case 1:
-		if (skyname[0])
-			Con_PrintLinef ("current sky: %s", skyname);
+		if (g_skyname[0])
+			Con_PrintLinef ("current sky: %s", g_skyname);
 		else
 			Con_PrintLinef ("no skybox has been set");
 		break;
@@ -178,8 +171,8 @@ static void LoadSky_f(cmd_state_t *cmd)
 		// Baker r1451: reduce spam to console, the skybox messages were printing during single player games
 		// for games like Nehahra when they change the sky, made this dprint
 		if (R_SetSkyBox(Cmd_Argv(cmd, 1))) {
-			if (skyname[0])
-				Con_DPrintLinef ("skybox set to %s", skyname);
+			if (g_skyname[0])
+				Con_DPrintLinef ("skybox set to %s", g_skyname);
 			else
 				Con_DPrintLinef ("skybox disabled");
 		}
@@ -442,7 +435,7 @@ void R_Sky(void)
 void R_ResetSkyBox(void)
 {
 	R_UnloadSkyBox();
-	memset(skyname,0,MAX_QPATH_128);
+	memset (g_skyname,0,MAX_QPATH_128);
 	R_LoadSkyBox();
 }
 
@@ -472,7 +465,7 @@ void R_Sky_Init(void)
 	Cvar_RegisterVariable (&r_skyscroll2);
 	Cvar_RegisterVariable (&r_sky_scissor);
 	memset(&skyboxskinframe, 0, sizeof(skyboxskinframe));
-	skyname[0] = 0;
+	g_skyname[0] = 0;
 	R_RegisterModule("R_Sky", r_sky_start, r_sky_shutdown, r_sky_newmap, NULL, NULL);
 }
 

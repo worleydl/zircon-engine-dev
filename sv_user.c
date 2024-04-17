@@ -121,10 +121,10 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	//	SZ_Clear (&host_client->netconnection->message);
 
 	// run the entrance script
-	if (sv.loadgame) {
+	if (sv.loadgame) { // WALDO!!!! .siv ok
 		// loaded games are fully initialized already
 		if (PRVM_serverfunction(RestoreGame)) {
-			Con_DPrint("Calling RestoreGame");
+			Con_DPrintLinef ("Calling RestoreGame");
 			PRVM_serverglobalfloat(time) = sv.time;
 			PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
 			prog->ExecuteProgram(prog, PRVM_serverfunction(RestoreGame), "QC function RestoreGame is missing");
@@ -135,7 +135,7 @@ void SV_Spawn_f(cmd_state_t *cmd)
 		//Con_Printf ("SV_Spawn_f: host_client->edict->netname = %s, host_client->edict->netname = %s, host_client->name = %s\n", PRVM_GetString(PRVM_serveredictstring(host_client->edict, netname)), PRVM_GetString(PRVM_serveredictstring(host_client->edict, netname)), host_client->name);
 
 		// copy spawn parms out of the client_t
-		for (i=0 ; i< NUM_SPAWN_PARMS ; i++)
+		for (i = 0 ; i < NUM_SPAWN_PARMS_16; i ++)
 			(&PRVM_serverglobalfloat(parm1))[i] = host_client->spawn_parms[i];
 
 		// call the spawn function
@@ -210,9 +210,8 @@ void SV_Spawn_f(cmd_state_t *cmd)
 	// in a state where it is expecting the client to correct the angle
 	// and it won't happen if the game was just loaded, so you wind up
 	// with a permanent head tilt
-	if (sv.loadgame)
-	{
-		MSG_WriteByte (&host_client->netconnection->message, svc_setangle);
+	if (sv.loadgame) { // .siv ok
+		MSG_WriteByte  (&host_client->netconnection->message, svc_setangle);
 		MSG_WriteAngle (&host_client->netconnection->message, PRVM_serveredictvector(host_client->edict, v_angle)[0], sv.protocol);
 		MSG_WriteAngle (&host_client->netconnection->message, PRVM_serveredictvector(host_client->edict, v_angle)[1], sv.protocol);
 		MSG_WriteAngle (&host_client->netconnection->message, 0, sv.protocol);
@@ -252,14 +251,14 @@ void SV_Begin_f (cmd_state_t *cmd)
 
 
 	// LadyHavoc: note: this code also exists in SV_DropClient
-	if (sv.loadgame)
-	{
+	if (sv.loadgame) { // .siv ok
 		int i;
-		for (i = 0;i < svs.maxclients;i++)
+		for (i = 0; i < svs.maxclients; i ++)
 			if (svs.clients[i].active && !svs.clients[i].spawned)
 				break;
-		if (i == svs.maxclients)
-		{
+
+		// Baker: Clients send "begin" one at a time
+		if (i == svs.maxclients) {
 			Con_Printf ("Loaded game, everyone rejoined - unpausing\n");
 			sv.paused = sv.loadgame = false; // we're basically done with loading now
 		}

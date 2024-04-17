@@ -27,11 +27,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qtypes.h"
 struct cmd_state_s;
 
-#define ENGINE_ICON ( (gamemode == GAME_NEXUIZ) ? nexuiz_xpm : darkplaces_xpm )
+#if 0 // Baker: GLX macro, I'm not seeing this used
+#define ENGINE_ICON ( (gamemode == GAME_NEXUIZ) ? nexuiz_xpm : darkplaces_xpm ) // Baker: This is GLX icon
+#endif
 
 extern int cl_available;
 
-#define MAX_TEXTUREUNITS 32
+#define MAX_TEXTUREUNITS_32 32
 
 typedef enum renderpath_e
 {
@@ -281,6 +283,9 @@ size_t VID_ListModes(vid_mode_t *modes, size_t maxcount);
 size_t VID_SortModes(vid_mode_t *modes, size_t count, qbool usebpp, qbool userefreshrate, qbool useaspect);
 void VID_Soft_SharedSetup(void);
 void VID_ListModes_f(cmd_state_t *cmd); // Mode list that video menu uses
+
+void Vid_SetWindowTitlef (const char *fmt, ...); // Baker
+void Vid_GetGlobalMouseState (float *px, float *py);
 
 
 #endif // ! VID_H

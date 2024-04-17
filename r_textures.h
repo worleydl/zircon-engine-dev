@@ -22,7 +22,7 @@
 // indicates texture should be compressed if possible
 #define TEXF_COMPRESS 0x00000200
 // use this flag to block R_PurgeTexture from freeing a texture (only used by r_texture_white and similar which may be used in skinframe_t)
-#define TEXF_PERSISTENT 0x00000400
+#define TEXF_PERSISTENT_H400 0x00000400
 // indicates texture should use GL_COMPARE_R_TO_TEXTURE mode
 #define TEXF_COMPARE 0x00000800
 // indicates texture should use lower precision where supported
@@ -103,13 +103,34 @@ typedef enum textype_e
 }
 textype_t;
 
+struct cachepic_s
+{
+	// size of pic
+	int width, height;
+	// this flag indicates that it should be loaded and unloaded on demand
+	int autoload;
+	// texture flags to upload with
+	int texflags;
+	// texture may be freed after a while
+	int lastusedframe;
+	// renderable texture
+	struct skinframe_s *skinframe;
+	// used for hash lookups
+	struct cachepic_s *chain;
+	// flags - CACHEPICFLAG_NEWPIC for example
+	unsigned int cacheflags;
+	// name of pic
+	char name[MAX_QPATH_128];
+};
+
+
 // contents of this structure are mostly private to gl_textures.c
 typedef struct rtexture_s
 {
 	// this is exposed (rather than private) for speed reasons only
 	int texnum; // GL texture slot number
 	int renderbuffernum; // GL renderbuffer slot number
-	qbool dirty; // indicates that R_RealGetTexture should be called
+	qbool dirty_ic; // indicates that R_RealGetTexture should be called
 	qbool glisdepthstencil; // indicates that FBO attachment has to be GL_DEPTH_STENCIL_ATTACHMENT
 	int gltexturetypeenum; // used by R_Mesh_TexBind
 }
@@ -211,7 +232,7 @@ void R_UpdateTexture(rtexture_t *rt, const unsigned char *data, int x, int y, in
 
 // returns the renderer dependent texture slot number (call this before each
 // use, as a texture might not have been precached)
-#define R_GetTexture(rt) ((rt) ? ((rt)->dirty ? R_RealGetTexture(rt) : (rt)->texnum) : r_texture_white->texnum)
+#define R_GetTexture(rt) ((rt) ? ((rt)->dirty_ic ? R_RealGetTexture(rt) : (rt)->texnum) : r_texture_white->texnum)
 int R_RealGetTexture (rtexture_t *rt);
 
 // returns width of texture, as was specified when it was uploaded
@@ -223,7 +244,7 @@ int R_TextureHeight(rtexture_t *rt);
 // returns flags of texture, as was specified when it was uploaded
 int R_TextureFlags(rtexture_t *rt);
 
-// only frees the texture if TEXF_PERSISTENT is not set
+// only frees the texture if TEXF_PERSISTENT_H400 is not set
 // also resets the variable
 void R_PurgeTexture(rtexture_t *prt);
 
@@ -233,6 +254,7 @@ void R_Textures_Frame(void);
 // maybe rename this - sounds awful? [11/21/2007 Black]
 void R_MarkDirtyTexture(rtexture_t *rt);
 void R_MakeTextureDynamic(rtexture_t *rt, updatecallback_t updatecallback, void *data);
+void R_UnMakeTextureDynamic(rtexture_t *rt);
 
 // Clear the texture's contents
 void R_ClearTexture (rtexture_t *rt);
@@ -243,8 +265,11 @@ int R_PicmipForFlags(int flags);
 void R_TextureStats_Print(qbool printeach, qbool printpool, qbool printtotal);
 
 // Baker: real-time r_nearest_conchars cvar support
-void R_Nearest_Conchars_Callback(cvar_t* var);
+void R_Nearest_Conchars_Callback(cvar_t *var);
 extern cvar_t r_nearest_conchars; 
+
+extern cvar_t gl_texturemode_cvar;
+const char *TexFilterNameForNum (int num);
 
 #endif
 

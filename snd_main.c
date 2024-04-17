@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SND_MAX_WIDTH 2
 #define SND_MIN_CHANNELS 1
 #define SND_MAX_CHANNELS 8
-#if SND_LISTENERS != 8
+#if SND_LISTENERS_8 != 8
 #	error this data only supports up to 8 channel, update it!
 #endif
 
@@ -140,7 +140,7 @@ vec3_t listener_origin;
 matrix4x4_t listener_basematrix;
 static unsigned char *listener_pvs = NULL;
 static int listener_pvsbytes = 0;
-matrix4x4_t listener_matrix[SND_LISTENERS];
+matrix4x4_t listener_matrix[SND_LISTENERS_8];
 mempool_t *snd_mempool;
 
 // Linked list of known sfx
@@ -183,6 +183,7 @@ cvar_t snd_spatialization_prologic_frontangle = {CF_CLIENT | CF_ARCHIVE, "snd_sp
 cvar_t snd_spatialization_occlusion = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_occlusion", "1", "enable occlusion testing on spatialized sounds, which simply quiets sounds that are blocked by the world; 1 enables PVS method, 2 enables LineOfSight method, 3 enables both"};
 
 // Cvars declared in snd_main.h (shared with other snd_*.c files)
+cvar_t snd_waterfx = {CF_CLIENT | CF_ARCHIVE, "snd_waterfx", "1", "underwater sound filter strength"};
 cvar_t _snd_mixahead = {CF_CLIENT | CF_ARCHIVE, "_snd_mixahead", "0.15", "how much sound to mix ahead of time"};
 cvar_t snd_streaming = {CF_CLIENT | CF_ARCHIVE, "snd_streaming", "1", "enables keeping compressed ogg sound files compressed, decompressing them only as needed, otherwise they will be decompressed completely at load (may use a lot of memory); when set to 2, streaming is performed even if this would waste memory"};
 cvar_t snd_streaming_length = {CF_CLIENT | CF_ARCHIVE, "snd_streaming_length", "1", "decompress sounds completely if they are less than this play time when snd_streaming is 1"};
@@ -256,7 +257,7 @@ static cvar_t snd_identicalsoundrandomization_time = {CF_CLIENT, "snd_identicals
 static cvar_t snd_identicalsoundrandomization_tics = {CF_CLIENT, "snd_identicalsoundrandomization_tics", "0", "if nonzero, how many tics to limit sound randomization as defined by snd_identicalsoundrandomization_time"};
 
 // Ambient sounds
-static sfx_t* ambient_sfxs [2] = { NULL, NULL };
+static sfx_t *ambient_sfxs [2] = { NULL, NULL };
 static const char *ambient_names [2] = { "sound/ambience/water1.wav", "sound/ambience/wind2.wav" };
 
 
@@ -266,32 +267,29 @@ static const char *ambient_names [2] = { "sound/ambience/water1.wav", "sound/amb
 
 void S_FreeSfx (sfx_t *sfx, qbool force);
 
-static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation)
+static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation, qbool is_forceloop)
 {
 	int i, ch_ind;
 	char name [MAX_QPATH_128];
 	sfx_t *sfx;
 
 	i = 1;
-	while (i < Cmd_Argc (cmd))
-	{
+	while (i < Cmd_Argc (cmd)) {
 		// Get the name, and appends ".wav" as an extension if there's none
-		strlcpy (name, Cmd_Argv(cmd, i), sizeof (name));
+		c_strlcpy (name, Cmd_Argv(cmd, i)); // Baker: 0 read name
 		if (!strrchr (name, '.'))
-			strlcat (name, ".wav", sizeof (name));
+			c_strlcat (name, ".wav");
 		i++;
 
 		// If we need to get the volume from the command line
-		if (fvol == -1.0f)
-		{
-			fvol = atof (Cmd_Argv(cmd, i));
+		if (fvol == -1.0f) {
+			fvol = atof (Cmd_Argv(cmd, i)); // Baker: volume
 			i++;
 		}
 
-		sfx = S_PrecacheSound (name, true, true);
-		if (sfx)
-		{
-			ch_ind = S_StartSound (-1, 0, sfx, listener_origin, fvol, attenuation);
+		sfx = S_PrecacheSound (name, /*complain?*/ true, /*levelsound?*/ true);
+		if (sfx) {
+			ch_ind = S_StartSound (-1, 0, sfx, listener_origin, fvol, attenuation, is_forceloop);
 
 			// Free the sfx if the file didn't exist
 			if (!sfx->fetcher)
@@ -304,17 +302,22 @@ static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation)
 
 static void S_Play_f(cmd_state_t *cmd)
 {
-	S_Play_Common(cmd, 1.0f, 1.0f);
+	S_Play_Common(cmd, 1.0f, 1.0f, q_is_forceloop_false);
+}
+
+static void S_PlayLoop_f(cmd_state_t *cmd)
+{
+	S_Play_Common (cmd, 1.0f, 1.0f, q_is_forceloop_true);
 }
 
 static void S_Play2_f(cmd_state_t *cmd)
 {
-	S_Play_Common(cmd, 1.0f, 0.0f);
+	S_Play_Common(cmd, 1.0f, 0.0f, q_is_forceloop_false);
 }
 
 static void S_PlayVol_f(cmd_state_t *cmd)
 {
-	S_Play_Common(cmd, -1.0f, 0.0f);
+	S_Play_Common(cmd, -1.0f, 0.0f, q_is_forceloop_false);
 }
 
 static void S_SoundList_f(cmd_state_t *cmd)
@@ -389,7 +392,7 @@ int S_GetSoundWidth(void)
 }
 
 #if 333
-static qbool S_ChooseCheaperFormat (snd_format_t* format, qbool fixed_speed, qbool fixed_width, qbool fixed_channels)
+static qbool S_ChooseCheaperFormat (snd_format_t *format, qbool fixed_speed, qbool fixed_width, qbool fixed_channels)
 {
 	static const snd_format_t thresholds [] =
 	{
@@ -774,12 +777,16 @@ void S_Startup (void)
 #ifdef CONFIG_VIDEO_CAPTURE
 	recording_sound = false;
 #endif
+
+	CDAudio_Startup();
 }
 
 void S_Shutdown(void)
 {
 	if (snd_renderbuffer == NULL)
 		return;
+
+	CDAudio_Shutdown();
 
 	oldpaintedtime = snd_renderbuffer->endframe;
 
@@ -888,8 +895,7 @@ void S_Init(void)
 	Cvar_RegisterVariable(&snd_identicalsoundrandomization_tics);
 
 // COMMANDLINEOPTION: Sound: -nosound disables sound (including CD audio)
-	if (Sys_CheckParm("-nosound"))
-	{
+	if (Sys_CheckParm("-nosound")) {
 		// dummy out Play and Play2 because mods stuffcmd that
 		Cmd_AddCommand(CF_CLIENT, "play", Cmd_NoOperation_f, "does nothing because -nosound was specified");
 		Cmd_AddCommand(CF_CLIENT, "play2", Cmd_NoOperation_f, "does nothing because -nosound was specified");
@@ -904,6 +910,7 @@ void S_Init(void)
 
 	Cmd_AddCommand(CF_CLIENT, "play", S_Play_f, "play a sound at your current location (not heard by anyone else)");
 	Cmd_AddCommand(CF_CLIENT, "play2", S_Play2_f, "play a sound globally throughout the level (not heard by anyone else)");
+	Cmd_AddCommand(CF_CLIENT, "playloop", S_PlayLoop_f, "play a sound at your current location (not heard by anyone else)");
 	Cmd_AddCommand(CF_CLIENT, "playvol", S_PlayVol_f, "play a sound at the specified volume level at your current location (not heard by anyone else)");
 	Cmd_AddCommand(CF_CLIENT, "stopsound", S_StopAllSounds_f, "silence");
 	Cmd_AddCommand(CF_CLIENT, "pausesound", S_PauseSound_f, "temporary silence");
@@ -921,6 +928,7 @@ void S_Init(void)
 	Cvar_RegisterVariable(&ambient_fade);
 	Cvar_RegisterVariable(&snd_noextraupdate);
 	Cvar_RegisterVariable(&snd_show);
+	Cvar_RegisterVariable(&snd_waterfx);
 	Cvar_RegisterVariable(&_snd_mixahead);
 	Cvar_RegisterVariable(&snd_swapstereo); // for people with backwards sound wiring
 	Cvar_RegisterVariable(&snd_channellayout);
@@ -937,6 +945,8 @@ void S_Init(void)
 #ifdef USEXMP
 	XMP_OpenLibrary ();
 #endif
+
+	CDAudio_Init();
 }
 
 
@@ -1249,7 +1259,7 @@ static channel_t *SND_PickChannel(int entnum, int entchannel)
 	int ch_idx;
 	int first_to_die;
 	int first_life_left, life_left;
-	channel_t* ch;
+	channel_t *ch;
 	sfx_t *sfx; // use this instead of ch->sfx->, because that is volatile.
 
 // Check for replacement sound, or find the best one to replace
@@ -1333,7 +1343,8 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 		{
 			//Con_Printf ("-- entnum %d origin %f %f %f neworigin %f %f %f\n", ch->entnum, ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 
-			if (ch->entnum > MAX_EDICTS_32768)
+			// Baker: bones fix from DarkPlaces this calls CSQC!  Make sure CSQC is loaded.
+			if (CLVM_prog->loaded && ch->entnum > MAX_EDICTS_32768)
 				if (!CL_VM_GetEntitySoundOrigin(ch->entnum, ch->origin))
 					ch->entnum = MAX_EDICTS_32768; // entity was removed, disown sound
 		}
@@ -1347,7 +1358,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 			else
 				Matrix4x4_OriginFromMatrix(&cl.entities[ch->entnum].render.matrix, ch->origin);
 		}
-		else if (cl.csqc_server2csqcentitynumber[ch->entnum])
+		else if (CLVM_prog->loaded && cl.csqc_server2csqcentitynumber[ch->entnum]) // Baker: bones fix CSQC
 		{
 			//Con_Printf ("-- entnum %d (client %d) origin %f %f %f neworigin %f %f %f\n", ch->entnum, cl.csqc_server2csqcentitynumber[ch->entnum], ch->origin[0], ch->origin[1], ch->origin[2], cl.entities[ch->entnum].state_current.origin[0], cl.entities[ch->entnum].state_current.origin[1], cl.entities[ch->entnum].state_current.origin[2]);
 
@@ -1489,12 +1500,12 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 		{
 			ch->volume[0] = mastervol * snd_speakerlayout.listeners[0].ambientvolume * sqrt(0.5);
 			ch->volume[1] = mastervol * snd_speakerlayout.listeners[1].ambientvolume * sqrt(0.5);
-			for (i = 2;i < SND_LISTENERS;i++)
+			for (i = 2;i < SND_LISTENERS_8;i++)
 				ch->volume[i] = 0;
 		}
 		else
 		{
-			for (i = 0;i < SND_LISTENERS;i++)
+			for (i = 0;i < SND_LISTENERS_8;i++)
 				ch->volume[i] = mastervol * snd_speakerlayout.listeners[i].ambientvolume;
 		}
 	}
@@ -1587,12 +1598,12 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 
 				ch->volume[0] = intensity * sqrt(angle_factor);
 				ch->volume[1] = intensity * sqrt(1 - angle_factor);
-				for (i = 2;i < SND_LISTENERS;i++)
+				for (i = 2;i < SND_LISTENERS_8;i++)
 					ch->volume[i] = 0;
 			}
 			else
 			{
-				for (i = 0;i < SND_LISTENERS;i++)
+				for (i = 0;i < SND_LISTENERS_8;i++)
 				{
 					Matrix4x4_Transform(&listener_matrix[i], ch->origin, source_vec);
 					VectorNormalize(source_vec);
@@ -1625,7 +1636,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 			}
 		}
 		else
-			for (i = 0;i < SND_LISTENERS;i++)
+			for (i = 0;i < SND_LISTENERS_8;i++)
 				ch->volume[i] = 0;
 	}
 }
@@ -1770,9 +1781,10 @@ int S_StartSound_StartPosition_Flags (int entnum, int entchannel, sfx_t *sfx, ve
 	return (target_chan - channels);
 }
 
-int S_StartSound (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation)
+int S_StartSound (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation, qbool is_forceloop)
 {
-	return S_StartSound_StartPosition_Flags(entnum, entchannel, sfx, origin, fvol, attenuation, 0, CHANNELFLAG_NONE, 1.0f);
+	return S_StartSound_StartPosition_Flags(entnum, entchannel, sfx, origin, fvol, attenuation, 0, 
+		is_forceloop ? CHANNELFLAG_FORCELOOP : CHANNELFLAG_NONE, 1.0f);
 }
 
 void S_StopChannel (unsigned int channel_ind, qbool lockmutex, qbool freesfx)
@@ -1979,6 +1991,8 @@ static void S_UpdateAmbientSounds (void)
 		cl.worldmodel->brush.AmbientSoundLevelsForPoint(cl.worldmodel, listener_origin, ambientlevels, sizeof(ambientlevels));
 
 	// Calc ambient sound levels
+	S_SetUnderwaterIntensity();
+
 	for (ambient_channel = 0 ; ambient_channel< NUM_AMBIENTS ; ambient_channel++) {
 		chan = &channels[ambient_channel];
 		sfx = chan->sfx; // fetch the volatile variable
@@ -2008,12 +2022,12 @@ static void S_UpdateAmbientSounds (void)
 		{
 			chan->volume[0] = chan->basevolume * ambient_level.value * volume.value * mastervolume.value * snd_speakerlayout.listeners[0].ambientvolume * sqrt(0.5);
 			chan->volume[1] = chan->basevolume * ambient_level.value * volume.value * mastervolume.value * snd_speakerlayout.listeners[1].ambientvolume * sqrt(0.5);
-			for (i = 2;i < SND_LISTENERS;i++)
+			for (i = 2;i < SND_LISTENERS_8;i++)
 				chan->volume[i] = 0.0f;
 		}
 		else
 		{
-			for (i = 0;i < SND_LISTENERS;i++)
+			for (i = 0;i < SND_LISTENERS_8;i++)
 				chan->volume[i] = chan->basevolume * ambient_level.value * volume.value * mastervolume.value * snd_speakerlayout.listeners[i].ambientvolume;
 		}
 	}
@@ -2260,7 +2274,7 @@ void S_Update(const matrix4x4_t *listenermatrix)
 	}
 
 	// calculate the current matrices
-	for (j = 0;j < SND_LISTENERS;j++)
+	for (j = 0;j < SND_LISTENERS_8;j++)
 	{
 		Matrix4x4_CreateFromQuakeEntity(&rotatematrix, 0, 0, 0, 0, -snd_speakerlayout.listeners[j].yawangle, 0, 1);
 		Matrix4x4_Concat(&listener_matrix[j], &rotatematrix, &listener_basematrix);
@@ -2300,10 +2314,10 @@ void S_Update(const matrix4x4_t *listenermatrix)
 		if (i > MAX_DYNAMIC_CHANNELS + NUM_AMBIENTS)
 		{
 			// no need to merge silent channels
-			for (j = 0;j < SND_LISTENERS;j++)
+			for (j = 0;j < SND_LISTENERS_8;j++)
 				if (ch->volume[j])
 					break;
-			if (j == SND_LISTENERS)
+			if (j == SND_LISTENERS_8)
 				continue;
 			// if the last combine chosen isn't suitable, find a new one
 			if (!(combine && combine != ch && combine->sfx == ch->sfx))
@@ -2321,17 +2335,17 @@ void S_Update(const matrix4x4_t *listenermatrix)
 			}
 			if (combine && combine != ch && combine->sfx == ch->sfx)
 			{
-				for (j = 0;j < SND_LISTENERS;j++)
+				for (j = 0;j < SND_LISTENERS_8;j++)
 				{
 					combine->volume[j] += ch->volume[j];
 					ch->volume[j] = 0;
 				}
 			}
 		}
-		for (k = 0;k < SND_LISTENERS;k++)
+		for (k = 0;k < SND_LISTENERS_8;k++)
 			if (ch->volume[k])
 				break;
-		if (k < SND_LISTENERS)
+		if (k < SND_LISTENERS_8)
 			cls.soundstats.mixedsounds++;
 	}
 	R_TimeReport("audiospatialize");
@@ -2353,6 +2367,7 @@ void S_ExtraUpdate (void)
 	S_PaintAndSubmit();
 }
 
+// Baker: Returns true is ok, false if failed to find sound
 qbool S_LocalSoundEx (const char *sound, int chan, float fvol)
 {
 	sfx_t	*sfx;
@@ -2362,9 +2377,8 @@ qbool S_LocalSoundEx (const char *sound, int chan, float fvol)
 		return true;
 
 	sfx = S_PrecacheSound (sound, true, false);
-	if (!sfx)
-	{
-		Con_Printf ("S_LocalSound: can't precache %s\n", sound);
+	if (!sfx) {
+		Con_PrintLinef ("S_LocalSound: can't precache %s", sound);
 		return false;
 	}
 
@@ -2374,7 +2388,7 @@ qbool S_LocalSoundEx (const char *sound, int chan, float fvol)
 	// fun fact: in Quake 1, this used -1 "replace any entity channel",
 	// which we no longer support anyway
 	// changed by Black in r4297 "Changed S_LocalSound to play multiple sounds at a time."
-	ch_ind = S_StartSound (cl.viewentity, chan, sfx, vec3_origin, fvol, 0);
+	ch_ind = S_StartSound (cl.viewentity, chan, sfx, vec3_origin, fvol, /*attenuation*/ 0, q_is_forceloop_false);
 	if (ch_ind < 0)
 		return false;
 

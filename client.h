@@ -1201,6 +1201,9 @@ typedef struct client_state_s
 	skeleton_t *engineskeletonobjects;
 
 	char		lastcenterstring[1024];
+
+	// used by underwater sound filter (snd_waterfx)
+	qbool view_underwater;
 }
 client_state_t;
 

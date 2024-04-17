@@ -238,10 +238,10 @@ int String_Does_Match_Nullproof (const char *s1, const char *s2)
 }
 
 
-#undef String_Does_Not_Match
+#undef String_Does_NOT_Match
 // Short: Returns 1 if string is different --- considering case, otherwise returns 0
 // Notes: Offers no advantage over strcmp(s1, s2).
-//int String_Does_Not_Match (const char *s1, const char *s2)
+//int String_Does_NOT_Match (const char *s1, const char *s2)
 //{
 //	return !!strcmp(s1, s2);
 //}
@@ -408,7 +408,7 @@ int String_Edit_Remove_This_Trailing_Character (char *s_edit, int ch)
 char *String_Edit_RemoveTrailingSpaces (char *s_edit)
 {
 	int /*ssize_t*/ offset;
-	for (offset = (int)strlen(s_edit) - 1; offset >= 0 && s_edit[offset] == SPACE_CHAR_32; offset--)
+	for (offset = (int)strlen(s_edit) - 1; offset >= 0 && s_edit[offset] == SPACE_CHAR_32; offset --)
 		s_edit[offset] = 0; // remove trailing spaces
 
 	return s_edit;
@@ -857,6 +857,20 @@ char *String_Edit_Whitespace_To_Space (char *s_edit)
 	return s_edit;
 }
 
+char *String_Edit_Whitespace_To_Space_Except_Newline (char *s_edit)
+{
+	char *cursor;
+	int c;
+
+	for (cursor = s_edit; *cursor; cursor ++)
+	{
+		c = *cursor;
+		if (c < SPACE_CHAR_32)
+			*cursor = SPACE_CHAR_32;
+	}
+
+	return s_edit;
+}
 
 // Short: Returns pointer to occurence of string --- considering case --- or NULL if not found
 // Notes: Offers no advantage over strstr.
@@ -915,7 +929,7 @@ char *String_Find_Skip_Past (const char *s, const char *s_find)
 // Notes: Offers no advantage over strrstr.
 char *String_Find_Reverse (const char *s, const char *s_find)
 {
-	char *search = dpstrrstr (s, s_find);
+	char *search = dp_strstr_reverse (s, s_find);
 	return search;
 }
 
@@ -1355,11 +1369,6 @@ int File_Is_Existing_File (const char *path_to_file)
 #define OFFSET_0			0
 
 
-#define FS_MODE_WRITE_TEXT_W_DO_NOT_USE			"w" // We don't want to use this.  We want binary, text mode may mess with the newlines.
-#define FS_MODE_WRITE_BINARY_WB					"wb"
-#define FS_MODE_APPEND_BINARY_AB				"ab"
-#define FS_MODE_READ_BINARY_RB					"rb"
-#define FS_MODE_READ_AND_WRITE_BINARY_R_PLUS_B	"r+b"
 
 #define AUTO_FOPEN___			// Auto but file open
 #define AUTO_FFREE___			// Auto but file close
@@ -1533,6 +1542,18 @@ char *File_URL_Edit_Remove_Extension (char *path_to_file)
 
 	return path_to_file;
 }
+
+// May 18 2020 - This does NOT leave a trailing "/".  It is also UNIX only.
+char *File_URL_Edit_Reduce_To_Parent_Path (char *path_to_file)
+{
+	char *terminate_point = strrchr (path_to_file, '/');
+
+	if (terminate_point)
+		*terminate_point = '\0';
+
+	return path_to_file;
+}
+
 
 // general no have / like "c:/zircon/id1"
 int Folder_Open (const char *path_to_file)
@@ -1782,7 +1803,7 @@ char *Clipboard_Get_Text_Line_Static (void)
 	out[0] = 0; // In case cliptext_a is NULL
 	if (cliptext_a) {
 		c_strlcpy (out, cliptext_a);
-		Z_Free(cliptext_a); cliptext_a = NULL; 
+		Z_Free(cliptext_a); cliptext_a = NULL;
 		String_Edit_To_Single_Line (out); // spaces < 32 except for newline, cr, backspace which it kills.
 	}
 
@@ -1797,7 +1818,7 @@ char *Clipboard_Get_Text_Line_Static (void)
 // http://stackoverflow.com/questions/1701055/what-is-the-maximum-length-in-chars-needed-to-represent-any-double-value
 // But we are mostly talking
 
-size_t str_format_int_grouped(char dst[16], int num)
+size_t str_format_int_grouped(char dst[16], int64_t num64)
 {
     char src[16];
     char *p_src = src;
@@ -1806,7 +1827,7 @@ size_t str_format_int_grouped(char dst[16], int num)
     const char separator = ',';
     int num_len, commas;
 
-    num_len = dpsnprintf (src, sizeof(src), "%d", num);
+    num_len = dpsnprintf (src, sizeof(src), PRINTF_INT64, num64);
 
     if (*p_src == '-') {
         *p_dst++ = *p_src++;
@@ -1825,10 +1846,101 @@ size_t str_format_int_grouped(char dst[16], int num)
     return (size_t)(p_dst - dst);
 }
 
-char *String_Num_To_Thousands (int num)
+// Baker: This bastard can only do integer at this time
+char *String_Num_To_Thousands_Sbuf (int64_t num)
 {
-	static char sbuf[64];
+	static char sbuf[128];
 	str_format_int_grouped(sbuf, num);
 
 	return sbuf;
+}
+
+char *String_Worldspawn_Value_For_Key_Sbuf (const char *s_entities_string, const char *find_keyname)
+{
+	static char		valuestring[4096];
+	char			current_key[128];
+	const char		*data = s_entities_string;
+	const char		*copy_start;
+
+	// Read some data ...
+	if (COM_Parse_Basic(&data) == false || com_token[0] != '{')	// Opening brace is start of worldspawn
+		return NULL; // error
+
+	while (1) {
+		// Read some data ...
+		if (COM_Parse_Basic(&data) == false)
+			return NULL; // End of data
+
+		if (com_token[0] == '}')	// Closing brace is end of worldspawn
+			return NULL; // End of worldspawn
+
+		// Copy data over, skipping a prefix of '_' in a keyname
+		copy_start = &com_token[0];
+
+		if (*copy_start == '_')
+			copy_start ++;
+
+		c_strlcpy (current_key, copy_start);
+
+		String_Edit_RemoveTrailingSpaces (current_key);
+
+		if (COM_Parse_Basic(&data) == false)
+			return NULL; // error
+
+		if (String_Does_Match_Caseless (find_keyname, current_key)) {
+			c_strlcpy (valuestring, com_token);
+			return valuestring;
+		}
+
+	}
+
+	return NULL;
+}
+
+// returns number of keys printed
+int String_Worldspawn_Value_For_Key_Con_PrintLine (const char *s_entities_string)
+{
+
+	char			current_key[128];
+	char			current_value[4096];
+	const char		*data = s_entities_string;
+	const char		*copy_start;
+	int numkeysprinted = 0;
+
+	// Read some data ...
+	if (COM_Parse_Basic(&data) == false || com_token[0] != '{')	// Opening brace is start of worldspawn
+		return -1; // error
+
+	while (1) {
+		// Read some data ...
+		if (COM_Parse_Basic(&data) == false)
+			return -1; // End of data
+
+		if (com_token[0] == '}')	// Closing brace is end of worldspawn
+			return numkeysprinted; // End of worldspawn
+
+		// Copy data over, skipping a prefix of '_' in a keyname
+		copy_start = &com_token[0];
+
+		if (*copy_start == '_')
+			copy_start ++;
+
+		c_strlcpy (current_key, copy_start);
+
+		String_Edit_RemoveTrailingSpaces (current_key);
+
+		if (COM_Parse_Basic(&data) == false)
+			return numkeysprinted; // error
+
+		extern int con_linewidth;
+
+		c_strlcpy (current_value, com_token);
+		if ((int)strlen (current_value) > con_linewidth - 23)
+			Con_PrintLinef (S_FMT_LEFT_PAD_20 NEWLINE NEWLINE QUOTED_S NEWLINE, current_key, current_value);
+		else Con_PrintLinef (S_FMT_LEFT_PAD_20 " " QUOTED_S, current_key, current_value);
+		numkeysprinted ++;
+	} // while 1
+
+	// Baker: We should have exited earlier all the time due to finding closing "}"
+	return numkeysprinted;
 }

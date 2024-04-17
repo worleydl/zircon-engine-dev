@@ -130,7 +130,7 @@ qbool Sys_LoadSelf(dllhandle_t *handle)
 	return true;
 }
 
-qbool Sys_LoadDependency (const char **dllnames, dllhandle_t* handle, const dllfunction_t *fcts)
+qbool Sys_LoadDependency (const char **dllnames, dllhandle_t *handle, const dllfunction_t *fcts)
 {
 #ifdef SUPPORTDLL
 	const dllfunction_t *func;
@@ -239,7 +239,7 @@ qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle)
 	return true;
 }
 
-void Sys_FreeLibrary (dllhandle_t* handle)
+void Sys_FreeLibrary (dllhandle_t *handle)
 {
 #ifdef SUPPORTDLL
 	if (handle == NULL || *handle == NULL)
@@ -368,7 +368,7 @@ double Sys_DirtyTime(void)
 		return benchmark_time * 0.000001;
 	}
 #if HAVE_QUERYPERFORMANCECOUNTER
-	if (sys_usequeryperformancecounter.integer) {
+	if (sys_usequeryperformancecounter.integer /*d: 0*/ ) {
 		// LadyHavoc: note to people modifying this code, DWORD is specifically defined as an unsigned 32bit number, therefore the 65536.0 * 65536.0 is fine.
 		// QueryPerformanceCounter
 		// platform:
@@ -412,7 +412,7 @@ double Sys_DirtyTime(void)
 #endif
 
 	// now all the FALLBACK timers
-	if (sys_supportsdlgetticks && sys_usesdlgetticks.integer)
+	if (sys_supportsdlgetticks && sys_usesdlgetticks.integer /*d: 0*/)
 		return (double) Sys_SDL_GetTicks() / 1000.0;
 #if HAVE_GETTIMEOFDAY
 	{

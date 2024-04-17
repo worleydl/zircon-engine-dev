@@ -1,3 +1,5 @@
+// cl_video_jamdecode.c.h
+
 #if 0 // Baker
 
 // JAM format decoder, used by Blood Omnicide
@@ -53,7 +55,7 @@ void *jam_open(clvideo_t *video, char *filename, const char **errorstring)
 	char *wavename;
 
 	// allocate stream structure
-	s = (jamdecodestream_t *)Z_Malloc(sizeof(jamdecodestream_t));
+	s = (jamdecodestream_t *)Z_Malloc_SizeOf(jamdecodestream_t);
 	memset(s, 0, sizeof(jamdecodestream_t));
 	if (s == NULL)
 	{
@@ -63,7 +65,7 @@ void *jam_open(clvideo_t *video, char *filename, const char **errorstring)
 	s->sndchan = -1;
 
 	// open file
-	s->file = FS_OpenVirtualFile(filename, true);
+	s->file = FS_OpenVirtualFile(filename, fs_quiet_true);
 	if (!s->file)
 	{
 		*errorstring = "unable to open videofile";
@@ -151,7 +153,7 @@ void *jam_open(clvideo_t *video, char *filename, const char **errorstring)
 	wavename = (char *)Z_Malloc(namelen);
 	if (wavename)
 	{
-		sfx_t* sfx;
+		sfx_t *sfx;
 		FS_StripExtension(filename, wavename, namelen);
 		strlcat(wavename, ".wav", namelen);
 		sfx = S_PrecacheSound(wavename, false, false);

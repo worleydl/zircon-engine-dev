@@ -26,7 +26,7 @@ freely, subject to the following restrictions:
 #ifndef LODEPNG_H
 #define LODEPNG_H
 
-#include <string.h> /*for size_t*/
+#include <string.h> /*for size_t */
 
 extern const char *LODEPNG_VERSION_STRING;
 
@@ -325,13 +325,13 @@ struct LodePNGDecompressSettings {
 
   /*use custom zlib decoder instead of built in one (default: null).
   Should return 0 if success, any non-0 if error (numeric value not exposed).*/
-  unsigned (*custom_zlib)(unsigned char **, size_t*,
+  unsigned (*custom_zlib)(unsigned char **, size_t *,
                           const unsigned char *, size_t,
                           const LodePNGDecompressSettings*);
   /*use custom deflate decoder instead of built in one (default: null)
   if custom_zlib is not null, custom_inflate is ignored (the zlib format uses deflate).
   Should return 0 if success, any non-0 if error (numeric value not exposed).*/
-  unsigned (*custom_inflate)(unsigned char **, size_t*,
+  unsigned (*custom_inflate)(unsigned char **, size_t *,
                              const unsigned char *, size_t,
                              const LodePNGDecompressSettings*);
 
@@ -358,13 +358,13 @@ struct LodePNGCompressSettings /*deflate = compress*/ {
   unsigned lazymatching; /*use lazy matching: better compression but a bit slower. Default: true*/
 
   /*use custom zlib encoder instead of built in one (default: null)*/
-  unsigned (*custom_zlib)(unsigned char **, size_t*,
+  unsigned (*custom_zlib)(unsigned char **, size_t *,
                           const unsigned char *, size_t,
                           const LodePNGCompressSettings*);
   /*use custom deflate encoder instead of built in one (default: null)
   if custom_zlib is used, custom_deflate is ignored since only the built in
   zlib function will call custom_deflate*/
-  unsigned (*custom_deflate)(unsigned char **, size_t*,
+  unsigned (*custom_deflate)(unsigned char **, size_t *,
                              const unsigned char *, size_t,
                              const LodePNGCompressSettings*);
 

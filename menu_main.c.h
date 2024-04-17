@@ -45,7 +45,7 @@ void M_Menu_Main_f(cmd_state_t *cmd)
 	if (m_missingdata)
 		local_count = 2;
 
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_main);
 	m_entersound = true;
 }
@@ -99,7 +99,7 @@ static void M_Main_Key(cmd_state_t *cmd, int key, int ascii)
 {
 	switch (key) {
 	case K_ESCAPE: case K_MOUSE2:
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		menu_state_set_nova (m_none);
 		break;
 	case K_MOUSE1: if (hotspotx_hover == not_found_neg1) break; else local_cursor = hotspotx_hover; // fall thru
@@ -111,7 +111,7 @@ static void M_Main_Key(cmd_state_t *cmd, int key, int ascii)
 			switch (local_cursor) {
 			case 0: if (cls.state == ca_connected) {
 						menu_state_set_nova (m_none);
-					key_dest = key_game;
+					KeyDest_Set (key_game); // key_dest = key_game;
 				} // if
 				Con_ToggleConsole (); // Baker: The idea here is if we are not in a game to open the console.
 				break;

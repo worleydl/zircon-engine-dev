@@ -104,12 +104,29 @@ typedef struct server_s
 
 	/// map name
 	char name[64]; // %s followed by entrance name
+
+	WARP_X_ (enable_intermap sv_siv_virtual_files_list) // This means save games use intermap
+	qbool		was_intermap_loaded_from_siv;	// If the map was re-entered, "restart" uses .siv
+	char		intermap_startspot[64];			// intermap "startspot" -- QuakeC can use or not.
+												// Will set global "startspot" if present in the QuakeC
+	vec3_t		intermap_startorigin;			// intermap "coordinates" -- QuakeC can use or not.
+	float		intermap_totaltimeatstart;		// intermap totaltime in world accumulated at changelevel (totaltime + sv.time = total game time)
+	float		intermap_totaltimeatlastexit;	// intermap totaltime in a map when it was last exited
+	float		intermap_surplustime;			// intermap totaltime in world accumulated at changelevel (totaltime + sv.time = total game time)
+
+	WARP_X_ (sv_siv_list)
+	//char		intermap_map_set[MAX_INPUTLINE_16384]; // Every .siv saved updates this
+											// When saving we do not do the map we are on.
+	//char		intermap_sessionid[32];		// We use a float like "27397.900391", QuakeC assigns.
+	
+
 	int is_qex; // AURA 9.0
 	// variants of map name
 	char worldmessage[40]; // map title (not related to filename)
 	char worldbasename[MAX_QPATH_128]; // %s
 	char worldname[MAX_QPATH_128]; // maps/%s.bsp
 	char worldnamenoextension[MAX_QPATH_128]; // maps/%s
+	//char		startspot[64];		// Q2X
 	struct model_s *worldmodel;
 	// NULL terminated
 	// LadyHavoc: precaches are now MAX_QPATH_128 rather than a pointer
@@ -142,7 +159,7 @@ typedef struct server_s
 	server_floodaddress_t getstatusfloodaddresses[MAX_GETSTATUSFLOODADDRESSES];
 
 	qbool particleeffectnamesloaded;
-	char particleeffectname[MAX_PARTICLEEFFECTNAME][MAX_QPATH_128];
+	char particleeffectname[MAX_PARTICLEEFFECTNAME_4096][MAX_QPATH_128];
 
 	int writeentitiestoclient_stats_culled_pvs;
 	int writeentitiestoclient_stats_culled_trace;
@@ -182,7 +199,7 @@ typedef struct csqcentityframedb_s
 	int sendflags[NUM_CSQCENTITIES_PER_FRAME];
 } csqcentityframedb_t;
 
-#define NUM_SPAWN_PARMS 16
+#define NUM_SPAWN_PARMS_16 16
 
 typedef struct client_s
 {
@@ -245,7 +262,7 @@ typedef struct client_s
 #endif
 
 /// spawn parms are carried from level to level
-	prvm_vec_t spawn_parms[NUM_SPAWN_PARMS];
+	prvm_vec_t spawn_parms[NUM_SPAWN_PARMS_16];
 
 	// properties that are sent across the network only when changed
 	char name[MAX_SCOREBOARDNAME_128], old_name[MAX_SCOREBOARDNAME_128];
@@ -527,6 +544,28 @@ extern server_static_t svs;
 /// local server
 extern server_t sv;
 
+extern stringlist_t sv_intermap_siv_list;  // /.siv string list
+// 0: start
+// 1: data blob zipped
+// 2: e1m1
+// 3: data blob zipped
+
+// Baker: sv_siv_virtual_files_list
+// 1. Allocated when?		.SIV		It is not allocated.  It must be freed. When we write a .siv
+
+// map is always a new game, changelevel is always a continued game.
+// 2. Cleared when?						// "map" because that is a new game.
+										// "changelevel" because preservation is killed
+										// "loadgame" can stomp it.
+										// "restart" should reload it, although ...
+										// "changelevel2" updates it
+										// "save" saves it
+
+WARP_X_ (SV_Changelevel_f, SV_Changelevel2_f, SV_Map_f, SV_Restart_f, SV_Loadgame_f)
+
+#define SIV_DECOMPRESS_BUFSIZE_16_MB (16384 * 1024)
+
+extern stringlist_t sv_sivs;
 extern client_t *host_client;
 
 //===========================================================
@@ -630,7 +669,10 @@ void VM_SV_MoveToGoal(prvm_prog_t *prog);
 void SV_PlayerPhysics_ApplyClientMove (void);
 void SV_SaveSpawnparms (void);
 
-void SV_SpawnServer (const char *mapshortname, char *sloadgame);  // Baker r9067: loadgame precaches "precache at any time models and sounds"
+//void SV_SpawnServer (const char *mapshortname, const char *s_loadgame, const char *s_startspot);  // Baker r9067: loadgame precaches "precache at any time models and sounds"
+
+void SV_SpawnServer (const char *mapshortname, const char *s_loadgame, const char *s_startspot, const vec3_t startorigin, float totaltimeatstart0);
+qbool SV_SpawnServer_Intermap_SIV_Is_Ok (const char *mapshortname, const char *s_loadgame, const char *s_startspot, const vec3_t startorigin, float totaltimeatstart0);
 
 void SV_CheckVelocity (prvm_edict_t *ent);
 
@@ -651,9 +693,12 @@ void VM_SV_UpdateCustomStats(client_t *client, prvm_edict_t *ent, sizebuf_t *msg
 void SV_Name(int clientnum);
 void SV_InitOperatorCommands(void);
 
-void SV_Savegame_to(prvm_prog_t *prog, const char *name);
+void SV_Loadgame_from (cmd_state_t *cmd, const char *s_loadgame, int is_intermap);
+void SV_Savegame_to (prvm_prog_t *prog, char **p_string, const char *name, int is_intermap_siv_write, float totaltimeatlastexit_to_write);
+
 void SV_Savegame_f(cmd_state_t *cmd);
 void SV_Loadgame_f(cmd_state_t *cmd);
+void SV_Siv_f     (cmd_state_t *cmd); // Data on intermap .siv files, entity state saves stored
 
 void SV_PreSpawn_f(cmd_state_t *cmd);
 void SV_Spawn_f(cmd_state_t *cmd);
@@ -668,5 +713,8 @@ void SV_Begin_f_Zircon_Warp_Initialize (void);
 
 extern cvar_t sv_allow_zircon_move;
 extern cvar_t sv_players_walk_thru_players;
+extern cvar_t sv_save_screenshots;
 
+#define	SAVEGAME_VERSION_5	5
+int SV_Loadgame_Intermap_Do_Ents (const char *s_load_game_contents);
 #endif // ! SERVER_H

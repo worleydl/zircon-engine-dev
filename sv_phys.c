@@ -53,7 +53,7 @@ int SV_GetPitchSign(prvm_prog_t *prog, prvm_edict_t *ent)
 			model->type == mod_alias
 			:
 			(
-			 (((unsigned char)PRVM_serveredictfloat(ent, pflags)) & PFLAGS_FULLDYNAMIC)
+			 (((unsigned char)PRVM_serveredictfloat(ent, pflags)) & PFLAGS_FULLDYNAMIC_128)
 			 ||
 			 ((gamemode == GAME_TENEBRAE) && ((unsigned int)PRVM_serveredictfloat(ent, effects) & (16 | 32)))
 			)

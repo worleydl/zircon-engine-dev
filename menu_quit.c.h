@@ -37,7 +37,7 @@ void M_Menu_Quit_f(cmd_state_t *cmd)
 	if (m_state == m_quit)
 		return;
 	wasInMenus = (key_dest == key_menu || key_dest == key_menu_grabbed);
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	m_quit_prevstate = m_state;
 	menu_state_set_nova (m_quit);
 	m_entersound = true;
@@ -61,7 +61,7 @@ static void M_Quit_Key(cmd_state_t *cmd, int key, int ascii)
 		}
 		else
 		{
-			key_dest = key_game;
+			KeyDest_Set (key_game); // key_dest = key_game;
 			menu_state_set_nova (m_none);
 		}
 		break;
@@ -108,7 +108,7 @@ static int M_ChooseNoSaveMessage()
 
 //void M_Menu_NoSave_f(cmd_state_t *cmd)
 //{
-//	key_dest = key_menu;
+//	KeyDest_Set (key_menu); // key_dest = key_menu;
 //	
 //	menu_state_set_nova (m_nosave);
 //	m_entersound = true;
@@ -116,7 +116,7 @@ static int M_ChooseNoSaveMessage()
 //}
 //
 //
-//static void M_NoSave_Key (cmd_state_t* cmd, int key, int ascii)
+//static void M_NoSave_Key (cmd_state_t *cmd, int key, int ascii)
 //{
 //	switch (key) {
 //	case K_MOUSE2:

@@ -186,7 +186,7 @@ void MVM_error_cmd(const char *format, ...)
 	dpvsnprintf (errorstring, sizeof(errorstring), format, argptr);
 	va_end (argptr);
 
-	if (host.framecount < 3)
+	if (host.superframecount < 3)
 		Sys_Error ("Menu_Error: %s", errorstring);
 
 	Con_Printf ( "Menu_Error: %s\n", errorstring );
@@ -204,7 +204,7 @@ void MVM_error_cmd(const char *format, ...)
 	// say it
 	Con_Print("Falling back to normal menu\n");
 
-	key_dest = key_game;
+	KeyDest_Set (key_game); // key_dest = key_game;
 
 	// init the normal menu now -> this will also correct the menu router pointers
 	MR_SetRouting (true);
@@ -342,7 +342,7 @@ static void MP_Shutdown (void)
 		prog->ExecuteProgram(prog, PRVM_menufunction(m_shutdown),"m_shutdown() required");
 
 	// reset key_dest
-	key_dest = key_game;
+	KeyDest_Set (key_game); // key_dest = key_game;
 
 	// AK not using this cause Im not sure whether this is useful at all instead :
 	PRVM_Prog_Reset(prog);
@@ -395,6 +395,7 @@ static void MP_Init (void)
 
 void (*MR_KeyEvent) (int key, int ascii, qbool downevent);
 void (*MR_Draw) (void);
+WARP_X_ (M_ToggleMenu)
 void (*MR_ToggleMenu) (int mode);
 void (*MR_Shutdown) (void);
 void (*MR_NewMap) (void);
@@ -450,8 +451,10 @@ static void Call_MR_ToggleMenu_f(cmd_state_t *cmd)
 	int m;
 	m = ((Cmd_Argc(cmd) < 2) ? -1 : atoi(Cmd_Argv(cmd, 1)));
 	CL_StartVideo();
-	if (MR_ToggleMenu)
+	if (MR_ToggleMenu) {
+		Consel_MouseReset ("MR_ToggleMenu"); 
 		MR_ToggleMenu(m);
+	}
 }
 
 void MR_Init_Commands(void)

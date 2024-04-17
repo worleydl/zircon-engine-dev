@@ -92,35 +92,35 @@ typedef struct ft2_settings_s
 	float outline, blur, shadowx, shadowy, shadowz;
 } ft2_settings_t;
 
-#define MAX_FONT_SIZES 16
-#define MAX_FONT_FALLBACKS 3
-typedef struct dp_font_s
-{
-	cachepic_t *pic;
+#define MAX_FONT_SIZES_16		16
+#define MAX_FONT_FALLBACKS_3	3
+
+typedef struct dp_font_s {
+	cachepic_t *pic_font;
 	float width_of[256]; // width_of[0] == max width of any char; 1.0f is base width (1/16 of texture width); therefore, all widths have to be <= 1 (does not include scale)
 	float maxwidth; // precalculated max width of the font (includes scale)
 	char texpath[MAX_QPATH_128];
 	char title[MAX_QPATH_128];
 
 	int req_face; // requested face index, usually 0
-	float req_sizes[MAX_FONT_SIZES]; // sizes to render the font with, 0 still defaults to 16 (backward compatibility when loadfont doesn't get a size parameter) and -1 = disabled
-	char fallbacks[MAX_FONT_FALLBACKS][MAX_QPATH_128];
-	int fallback_faces[MAX_FONT_FALLBACKS];
+	float req_sizes[MAX_FONT_SIZES_16]; // sizes to render the font with, 0 still defaults to 16 (backward compatibility when loadfont doesn't get a size parameter) and -1 = disabled
+	char fallbacks[MAX_FONT_FALLBACKS_3][MAX_QPATH_128];
+	int fallback_faces[MAX_FONT_FALLBACKS_3];
 	struct ft2_font_s *ft2;
 
 	ft2_settings_t settings;
-}
-dp_font_t;
+} dp_font_t;
 
 typedef struct dp_fonts_s
 {
 	dp_font_t *f;
-	int maxsize;
+	int maxsize_font;	// Baker: Does this get allocated?
 }
 dp_fonts_t;
+
 extern dp_fonts_t dp_fonts;
 
-#define MAX_FONTS         16 // fonts at the start
+#define MAX_FONTS_AT_START_16         16 // fonts at the start
 #define FONTS_EXPAND       8  // fonts grow when no free slots
 #define FONT_DEFAULT     (&dp_fonts.f[0]) // should be fixed width
 #define FONT_CONSOLE     (&dp_fonts.f[1]) // REALLY should be fixed width (ls!)
@@ -131,7 +131,7 @@ extern dp_fonts_t dp_fonts;
 #define FONT_INFOBAR     (&dp_fonts.f[6]) // free
 #define FONT_MENU        (&dp_fonts.f[7]) // should be fixed width
 #define FONT_USER(i)     (&dp_fonts.f[8+i]) // userdefined fonts
-#define MAX_USERFONTS    (dp_fonts.maxsize - 8)
+#define MAX_USERFONTS    (dp_fonts.maxsize_font - 8)
 
 // shared color tag printing constants
 #define STRING_COLOR_TAG			'^'
@@ -155,7 +155,8 @@ void DrawQ_Pic(float x, float y, cachepic_t *pic, float width, float height, flo
 // draw a rotated image
 void DrawQ_RotPic(float x, float y, cachepic_t *pic, float width, float height, float org_x, float org_y, float angle, float red, float green, float blue, float alpha, int flags);
 // draw a filled rectangle (slightly faster than DrawQ_Pic with pic = NULL)
-void DrawQ_Fill(float x, float y, float width, float height, float red, float green, float blue, float alpha, int flags);
+void DrawQ_Fill (float x, float y, float width, float height, float red, float green, float blue, float alpha, int flags);
+void DrawQ_Fill_Box (float x, float y, float width, float height, float red, float green, float blue, float alpha, int flags, int thickness);
 // draw a text string,
 // with optional color tag support,
 // returns final unclipped x coordinate
@@ -171,6 +172,13 @@ float DrawQ_TextWidth_UntilWidth_TrackColors(const char *text, size_t *maxlen, f
 float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *maxlen, float w, float h, float sw, float sh, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt, float maxwidth);
 // draw a very fancy pic (per corner texcoord/color control), the order is tl, tr, bl, br
 void DrawQ_SuperPic(float x, float y, cachepic_t *pic, float width, float height, float s1, float t1, float r1, float g1, float b1, float a1, float s2, float t2, float r2, float g2, float b2, float a2, float s3, float t3, float r3, float g3, float b3, float a3, float s4, float t4, float r4, float g4, float b4, float a4, int flags);
+
+// Baker: To try to fix vid
+//void DrawQ_SuperPic_Video(struct texture_s *basetex, void *p, void *fn, float x, float y, cachepic_t *pic, float width, float height, float s1, float t1, float r1, float g1, float b1, float a1, float s2, float t2, float r2, float g2, float b2, float a2, float s3, float t3, float r3, float g3, float b3, float a3, float s4, float t4, float r4, float g4, float b4, float a4, int flags);
+void DrawQ_SuperPic_Video(void *videotex, float x, float y, 
+					 cachepic_t *pic, float width, float height, 
+					 float s1, float t1, float r1, float g1, float b1, float a1, float s2, float t2, float r2, float g2, float b2, float a2, float s3, float t3, float r3, float g3, float b3, float a3, float s4, float t4, float r4, float g4, float b4, float a4, int flags);
+
 // set the clipping area
 void DrawQ_SetClipArea(float x, float y, float width, float height);
 // reset the clipping area

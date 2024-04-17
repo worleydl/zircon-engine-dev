@@ -24,6 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jpeg.h"
 #include "image_png.h"
 
+
+cvar_t gl_texturemode_cvar = {CF_CLIENT | CF_ARCHIVE, "_gl_texturemode", "5", "set texture filtering mode by integer (0 to 5) 0 = GL_NEAREST, 1 = GL_LINEAR, 2 =  GL_NEAREST_MIPMAP_NEAREST, 3 =  GL_LINEAR_MIPMAP_NEAREST, 4 = GL_NEAREST_MIPMAP_LINEAR, 5 = GL_LINEAR_MIPMAP_LINEAR [Zircon]"};
+
 cvar_t gl_max_size = {CF_CLIENT | CF_ARCHIVE, "gl_max_size", "2048", "maximum allowed texture size, can be used to reduce video memory usage, limited by hardware capabilities (typically 2048, 4096, or 8192)"};
 cvar_t gl_max_lightmapsize = {CF_CLIENT | CF_ARCHIVE, "gl_max_lightmapsize", "512", "maximum allowed texture size for lightmap textures, use larger values to improve rendering speed, as long as there is enough video memory available (setting it too high for the hardware will cause very bad performance)"};
 cvar_t gl_picmip = {CF_CLIENT | CF_ARCHIVE, "gl_picmip", "0", "reduces resolution of textures by powers of 2, for example 1 will halve width/height, reducing texture memory usage by 75%"};
@@ -175,13 +178,14 @@ static int cubemapside[6] =
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 };
 
+WARP_X_ (rtexture_t)
 typedef struct gltexture_s
 {
 	// this portion of the struct is exposed to the R_GetTexture macro for
 	// speed reasons, must be identical in rtexture_t!
 	int texnum; // GL texture slot number
 	int renderbuffernum; // GL renderbuffer slot number
-	qbool dirty; // indicates that R_RealGetTexture should be called
+	qbool dirty_ic; // indicates that R_RealGetTexture should be called
 	qbool glisdepthstencil; // indicates that FBO attachment has to be GL_DEPTH_STENCIL_ATTACHMENT
 	int gltexturetypeenum; // used by R_Mesh_TexBind
 
@@ -319,11 +323,24 @@ void R_MarkDirtyTexture(rtexture_t *rt) {
 	if (glt->flags & GLTEXF_DYNAMIC)
 	{
 		// mark it as dirty, so R_RealGetTexture gets called
-		glt->dirty = true;
+		glt->dirty_ic = true;
 	}
 }
 
-void R_MakeTextureDynamic(rtexture_t *rt, updatecallback_t updatecallback, void *data) {
+void R_UnMakeTextureDynamic(rtexture_t *rt) 
+{
+	gltexture_t *glt = (gltexture_t*) rt;
+	if ( !glt ) {
+		return;
+	}
+
+	Flag_Remove_From (glt->flags, GLTEXF_DYNAMIC);
+	glt->updatecallback = NULL; // updatecallback;
+	glt->updatecallback_data = NULL; // data;
+}
+
+void R_MakeTextureDynamic(rtexture_t *rt, updatecallback_t updatecallback, void *data) 
+{
 	gltexture_t *glt = (gltexture_t*) rt;
 	if ( !glt ) {
 		return;
@@ -334,8 +351,11 @@ void R_MakeTextureDynamic(rtexture_t *rt, updatecallback_t updatecallback, void 
 	glt->updatecallback_data = data;
 }
 
+WARP_X_CALLERS_ (R_RealGetTexture R_GetCurrentTexture)
+
+WARP_X_ (the callback is VideoUpdateCallback )
 static void R_UpdateDynamicTexture(gltexture_t *glt) {
-	glt->dirty = false;
+	glt->dirty_ic = false;
 	if ( glt->updatecallback ) {
 		glt->updatecallback( (rtexture_t*) glt, glt->updatecallback_data );
 	}
@@ -343,7 +363,7 @@ static void R_UpdateDynamicTexture(gltexture_t *glt) {
 
 void R_PurgeTexture(rtexture_t *rt)
 {
-	if (rt && !(((gltexture_t*) rt)->flags & TEXF_PERSISTENT)) {
+	if (rt && !(((gltexture_t*) rt)->flags & TEXF_PERSISTENT_H400)) {
 		R_FreeTexture(rt);
 	}
 }
@@ -364,17 +384,15 @@ void R_FreeTexture(rtexture_t *rt)
 
 	R_Mesh_ClearBindingsForTexture(glt->texnum);
 
-	switch(vid.renderpath)
-	{
+	switch(vid.renderpath) {
 	case RENDERPATH_GL32:
 	case RENDERPATH_GLES2:
-		if (glt->texnum)
-		{
+		if (glt->texnum) {
 			CHECKGLERROR
 			qglDeleteTextures(1, (GLuint *)&glt->texnum);CHECKGLERROR
 		}
-		if (glt->renderbuffernum)
-		{
+
+		if (glt->renderbuffernum) {
 			CHECKGLERROR
 			qglDeleteRenderbuffers(1, (GLuint *)&glt->renderbuffernum);CHECKGLERROR
 		}
@@ -429,32 +447,29 @@ typedef struct glmode_s
 }
 glmode_t;
 
-static glmode_t modes[6] =
+// Baker: Where is holder of current setting?
+static glmode_t gl_texture_modes[6] =
 {
-	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
-	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
-	{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
-	{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
-	{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
-	{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
+	{"GL_NEAREST",					GL_NEAREST,					GL_NEAREST},
+	{"GL_LINEAR",					GL_LINEAR,					GL_LINEAR},
+	{"GL_NEAREST_MIPMAP_NEAREST",	GL_NEAREST_MIPMAP_NEAREST,	GL_NEAREST},
+	{"GL_LINEAR_MIPMAP_NEAREST",	GL_LINEAR_MIPMAP_NEAREST,	GL_LINEAR},
+	{"GL_NEAREST_MIPMAP_LINEAR",	GL_NEAREST_MIPMAP_LINEAR,	GL_NEAREST},
+	{"GL_LINEAR_MIPMAP_LINEAR",		GL_LINEAR_MIPMAP_LINEAR,	GL_LINEAR}
 };
 
 WARP_X_ ()
-void R_Nearest_Conchars_Callback(cvar_t *var)
-{
-	// Baker: Is this necessary or do CF_CLIENT cvars
-	// simply not occur for dedicated server?
-	if (!host_isclient.value)
-		return;
 
+void R_Nearest_Conchars_Action (void)
+{
 	GLint oldbindtexnum;
-	gltexture_t* glt;
-	gltexturepool_t* pool;
+	gltexture_t *glt;
+	gltexturepool_t *pool;
 	
-	int filter_index = r_nearest_conchars.value ? /*GL_NEAREST*/ 0 : /*GL_LINEAR_MIPMAP_LINEAR*/ 5;
+	int filter_index = r_nearest_conchars.value /*d: 1*/ ? /*GL_NEAREST*/ 0 : /*GL_LINEAR_MIPMAP_LINEAR*/ 5;
 	
-	int xgl_filter_min = modes[filter_index].minification;
-	int xgl_filter_mag = modes[filter_index].magnification;
+	int xgl_filter_min = gl_texture_modes[filter_index].minification;
+	int xgl_filter_mag = gl_texture_modes[filter_index].magnification;
 	
 	switch (vid.renderpath)
 	{
@@ -487,39 +502,129 @@ void R_Nearest_Conchars_Callback(cvar_t *var)
 	} // switch
 }
 
-static void GL_TextureMode_f(cmd_state_t *cmd)
+void R_Nearest_Conchars_Callback(cvar_t *var)
+{
+	// Baker: Is this necessary or do CF_CLIENT cvars
+	// simply not occur for dedicated server?
+	if (!host_isclient.value)
+		return;
+
+	R_Nearest_Conchars_Action ();
+}
+
+WARP_X_ (gl_linear_ )
+
+void SetFilterNum(int num)
+{
+	GLint oldbindtexnum;
+	gl_filter_min = gl_texture_modes[num].minification;
+	gl_filter_mag = gl_texture_modes[num].magnification;
+//	gl_filter_force = f((Cmd_Argc(cmd) > 2) && String_Does_Match_Caseless(Cmd_Argv(cmd, 2), "force"));
+
+	switch(vid.renderpath) {
+	case RENDERPATH_GL32:
+	case RENDERPATH_GLES2:
+		// change all the existing mipmap texture objects
+		// FIXME: force renderer(/client/something?) restart instead?
+		CHECKGLERROR
+		GL_ActiveTexture(0);
+		for (gltexturepool_t *pool = gltexturepoolchain; pool; pool = pool->next) {
+			for (gltexture_t *glt = pool->gltchain;glt;glt = glt->chain) {
+				// only update already uploaded images
+				if (glt->texnum && false == Have_Flag (glt->flags, TEXF_FORCENEAREST | TEXF_FORCELINEAR)) {
+					oldbindtexnum = R_Mesh_TexBound(0, gltexturetypeenums[glt->texturetype]);
+					qglBindTexture(gltexturetypeenums[glt->texturetype], glt->texnum);CHECKGLERROR
+					if (Have_Flag (glt->flags, TEXF_MIPMAP)) {
+						qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MIN_FILTER, gl_filter_min);CHECKGLERROR
+					}
+					else {
+						qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MIN_FILTER, gl_filter_mag);CHECKGLERROR
+					}
+					qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MAG_FILTER, gl_filter_mag);CHECKGLERROR
+					qglBindTexture(gltexturetypeenums[glt->texturetype], oldbindtexnum);CHECKGLERROR
+				}
+			}
+		}
+		break;
+	} // switch
+
+
+	R_Nearest_Conchars_Action ();
+}
+
+int TexFilterNum (void)
+{
+	for (int i = 0; i < 6; i ++) {
+		if (gl_filter_min == gl_texture_modes[i].minification) {
+			return i; //Con_PrintLinef ("%s", gl_texture_modes[i].name);
+		}
+	}
+	return -1; // unreachable
+}
+
+const char *TexFilterName (void)
+{
+	int tfnum = TexFilterNum();
+	return gl_texture_modes[tfnum].name;
+}
+
+const char *TexFilterNameForNum (int num)
+{
+	if (in_range(0, num, 5))
+		return gl_texture_modes[num].name;
+
+	return "(invalid)";
+}
+
+//void 
+WARP_X_ (CL_Color_c SV_ProtocolName_c Host_Framerate_c);
+static void GL_TextureMode_Value_c (cvar_t *var)
+{
+	if (in_range (0, var->integer, 5) == false) {
+		Cvar_SetValueQuick(var, 0);
+		return;
+	}
+
+	// Baker: Is this necessary or do CF_CLIENT cvars
+	// simply not occur for dedicated server?
+	if (!host_isclient.value)
+		return;
+
+	SetFilterNum (var->integer);
+}
+
+
+static void GL_TextureMode_f (cmd_state_t *cmd)
 {
 	int i;
 	GLint oldbindtexnum;
 	gltexture_t *glt;
 	gltexturepool_t *pool;
 
-	if (Cmd_Argc(cmd) == 1)
-	{
-		Con_Printf ("Texture mode is %sforced\n", gl_filter_force ? "" : "not ");
-		for (i = 0;i < 6;i++)
-		{
-			if (gl_filter_min == modes[i].minification)
-			{
-				Con_Printf ("%s\n", modes[i].name);
+	if (Cmd_Argc(cmd) == 1) {
+		Con_PrintLinef ("Texture mode is %sforced", gl_filter_force ? "" : "not ");
+		for (i = 0; i < 6; i ++) {
+			if (gl_filter_min == gl_texture_modes[i].minification) {
+				Con_PrintLinef ("%s (%d)", gl_texture_modes[i].name, i);
 				return;
 			}
 		}
-		Con_Print("current filter is unknown???\n");
+		Con_PrintLinef ("current filter is unknown???");
 		return;
 	}
 
-	for (i = 0;i < (int)(sizeof(modes)/sizeof(*modes));i++)
-		if (String_Does_Match_Caseless (modes[i].name, Cmd_Argv(cmd, 1) ) )
+	int ac = ARRAY_COUNT (gl_texture_modes);
+	for (i = 0; i < ac; i ++)
+		if (String_Does_Match_Caseless (gl_texture_modes[i].name, Cmd_Argv(cmd, 1) ) )
 			break;
-	if (i == 6)
-	{
-		Con_Print("bad filter name\n");
+
+	if (i == 6) {
+		Con_PrintLinef ("bad filter name");
 		return;
 	}
 
-	gl_filter_min = modes[i].minification;
-	gl_filter_mag = modes[i].magnification;
+	gl_filter_min = gl_texture_modes[i].minification;
+	gl_filter_mag = gl_texture_modes[i].magnification;
 	gl_filter_force = ((Cmd_Argc(cmd) > 2) && String_Does_Match_Caseless(Cmd_Argv(cmd, 2), "force"));
 
 	switch(vid.renderpath)
@@ -706,10 +811,14 @@ static void r_textures_shutdown(void)
 {
 	rtexturepool_t *temp;
 
+#ifdef CONFIG_MENU
+	WARP_X_ (DYNAMICTEX_Q3_END)
+	m_load2_oldload_cursor = -1; m_load2_scroll_is_blocked = false;
+#endif
+
 	JPEG_CloseLibrary ();
 
-	while(gltexturepoolchain)
-	{
+	while (gltexturepoolchain) {
 		temp = (rtexturepool_t *) gltexturepoolchain;
 		R_FreeTexturePool(&temp);
 	}
@@ -718,6 +827,7 @@ static void r_textures_shutdown(void)
 	resizebuffer = NULL;
 	colorconvertbuffer = NULL;
 	texturebuffer = NULL;
+
 	Mem_ExpandableArray_FreeArray(&texturearray);
 	Mem_FreePool(&texturemempool);
 }
@@ -758,6 +868,8 @@ void R_Textures_Init (void)
 	Cmd_AddCommand(CF_CLIENT, "gl_texturemode", &GL_TextureMode_f, "set texture filtering mode (GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, etc); an additional argument 'force' forces the texture mode even in cases where it may not be appropriate");
 	Cmd_AddCommand(CF_CLIENT, "r_texturestats", R_TextureStats_f, "print information about all loaded textures and some statistics");
 
+	Cvar_RegisterVariable (&gl_texturemode_cvar);
+	Cvar_RegisterCallback (&gl_texturemode_cvar, GL_TextureMode_Value_c);
 	Cvar_RegisterVariable (&gl_max_size);
 	Cvar_RegisterVariable (&gl_picmip);
 	Cvar_RegisterVariable (&gl_picmip_world);
@@ -844,7 +956,6 @@ void R_Textures_Frame (void)
 
 						qglBindTexture(gltexturetypeenums[glt->texturetype], glt->texnum);CHECKGLERROR
 						qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MAX_ANISOTROPY_EXT, old_aniso);CHECKGLERROR
-
 						qglBindTexture(gltexturetypeenums[glt->texturetype], oldbindtexnum);CHECKGLERROR
 					}
 				}
@@ -968,7 +1079,7 @@ static void R_UploadPartialTexture(gltexture_t *glt, const unsigned char *data, 
 		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update with NULL pixels", glt->identifier);
 
 	if (glt->texturetype != GLTEXTURETYPE_2D)
-		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update of type other than 2D", glt->identifier);
+		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update of type other than 2D", glt->identifier); // packard
 
 	if (glt->textype->textype == TEXTYPE_PALETTE)
 		Sys_Error ("R_UploadPartialTexture " QUOTED_S ": partial update of paletted texture", glt->identifier);
@@ -1161,7 +1272,9 @@ static void R_UploadFullTexture(gltexture_t *glt, const unsigned char *data)
 	} // switch
 }
 
-static rtexture_t *R_SetupTexture(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, int depth, int sides, int flags, int miplevel, textype_t textype, int texturetype, const unsigned char *data, const unsigned int *palette)
+static rtexture_t *R_SetupTexture(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, 
+	int depth, int sides, int flags, int miplevel, 
+	textype_t textype, int texturetype, const unsigned char *data, const unsigned int *palette)
 {
 	int i, size;
 	gltexture_t *glt;
@@ -1348,7 +1461,7 @@ static rtexture_t *R_SetupTexture(rtexturepool_t *rtexturepool, const char *iden
 	glt->bytesperpixel = texinfo->internalbytesperpixel;
 	glt->sides = glt->texturetype == GLTEXTURETYPE_CUBEMAP ? 6 : 1;
 	glt->texnum = 0;
-	glt->dirty = false;
+	glt->dirty_ic = false;
 	glt->glisdepthstencil = false;
 	glt->gltexturetypeenum = gltexturetypeenums[glt->texturetype];
 	// init the dynamic texture attributes, too [11/22/2007 Black]
@@ -1368,7 +1481,8 @@ static rtexture_t *R_SetupTexture(rtexturepool_t *rtexturepool, const char *iden
 		break;
 	} // sw
 
-	R_UploadFullTexture(glt, data); // Baker: UPLOAD HERE
+
+	R_UploadFullTexture(glt, data); // Baker: UPLOAD HERE qglTexImage2D
 	if (glt->flags & TEXF_ALLOWUPDATES)
 		glt->bufferpixels = (unsigned char *)Mem_Alloc(texturemempool, glt->tilewidth*glt->tileheight*glt->tiledepth*glt->sides*glt->bytesperpixel);
 
@@ -1439,7 +1553,7 @@ rtexture_t *R_LoadTextureRenderBuffer(rtexturepool_t *rtexturepool, const char *
 	glt->bytesperpixel = texinfo->internalbytesperpixel;
 	glt->sides = glt->texturetype == GLTEXTURETYPE_CUBEMAP ? 6 : 1;
 	glt->texnum = 0;
-	glt->dirty = false;
+	glt->dirty_ic = false;
 	glt->glisdepthstencil = textype == TEXTYPE_DEPTHBUFFER24STENCIL8;
 	glt->gltexturetypeenum = GL_TEXTURE_2D;
 	// init the dynamic texture attributes, too [11/22/2007 Black]
@@ -2371,7 +2485,7 @@ void R_UpdateTexture(rtexture_t *rt, const unsigned char *data, int x, int y, in
 				glt->modified_maxs[1] = y + height;
 				glt->modified_maxs[2] = z + depth;
 			}
-			glt->dirty = true;
+			glt->dirty_ic = true;
 			break;
 		default:
 		case 2:
@@ -2383,7 +2497,7 @@ void R_UpdateTexture(rtexture_t *rt, const unsigned char *data, int x, int y, in
 			glt->modified_maxs[0] = glt->tilewidth;
 			glt->modified_maxs[1] = glt->tileheight;
 			glt->modified_maxs[2] = glt->tiledepth;
-			glt->dirty = true;
+			glt->dirty_ic = true;
 			break;
 		}
 	}
@@ -2391,6 +2505,7 @@ void R_UpdateTexture(rtexture_t *rt, const unsigned char *data, int x, int y, in
 		R_UploadFullTexture(glt, data);
 }
 
+WARP_X_ (VideoUpdateCallback  ->updatecallback R_UpdateDynamicTexture)
 int R_RealGetTexture(rtexture_t *rt)
 {
 	if (rt)
@@ -2413,7 +2528,7 @@ int R_RealGetTexture(rtexture_t *rt)
 		}
 		VectorClear(glt->modified_mins);
 		VectorClear(glt->modified_maxs);
-		glt->dirty = false;
+		glt->dirty_ic = false;
 		return glt->texnum;
 	}
 	else

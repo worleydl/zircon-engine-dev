@@ -522,7 +522,7 @@ crypto_data_t;
 
 // crypto specific helpers
 #define CDATA ((crypto_data_t *) crypto->data)
-#define MAKE_CDATA if (!crypto->data) crypto->data = Z_Malloc(sizeof(crypto_data_t))
+#define MAKE_CDATA if (!crypto->data) crypto->data = Z_Malloc_SizeOf(crypto_data_t)
 #define CLEAR_CDATA if (crypto->data) { if (CDATA->id) qd0_blind_id_free(CDATA->id); Z_Free(crypto->data); } crypto->data = NULL
 
 static crypto_t *Crypto_ServerFindInstance(lhnetaddress_t *peeraddress, qbool allow_create)
@@ -1192,8 +1192,8 @@ static void Crypto_KeyGen_Finished(int code, size_t length_received, unsigned ch
 		return;
 	}
 
-	FS_CreatePath(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string));
-	f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string), "wb", fs_nonblocking_false);
+	FS_CreatePath(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string)); // WRITE-EON crypto
+	f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%skey_%d.d0si%s", *fs_userdir ? fs_userdir : fs_basedir, keygen_i, sessionid.string), "wb", fs_nonblocking_false); // WRITE-EON crypto
 	if (!f)
 	{
 		Con_Printf ("Cannot open key_%d.d0si%s\n", keygen_i, sessionid.string);

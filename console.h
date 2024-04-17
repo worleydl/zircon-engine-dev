@@ -132,13 +132,13 @@ void Log_Printf(const char *logfilename, const char *fmt, ...) DP_FUNC_PRINTF(2)
 
 typedef struct con_lineinfo_s
 {
-	char *start;
-	size_t len;
-	int mask;
+	char *pstart;			// Baker: This is a pointer in con->text, pstart is not allocated
+	size_t line_strlen;		// Baker: Is this strlen or what exactly is this.
+	int mask;				// CON_MASK_DEVELOPER, CON_MASK_CHAT, CON_MASK_HIDENOTIFY and such
 
 	/// used only by console.c
 	double addtime;
-	int height; ///< recalculated line height when needed (-1 to unset)
+	int line_num_rows_height; ///< recalculated line height when needed (-1 to unset) // Baker: This is NOT pixels
 }
 con_lineinfo_t;
 
@@ -146,15 +146,72 @@ typedef struct conbuffer_s
 {
 	qbool active;
 	int textsize;
-	char *text;
+	char *textcon;
 	int maxlines; // Baker: 4096
-	con_lineinfo_t *lines;
+	con_lineinfo_t *clines;
 	int lines_first;
 	int lines_count; ///< cyclic buffer
 }
 conbuffer_t;
 
-#define CONBUFFER_LINES(buf, i) (buf)->lines[((buf)->lines_first + (i)) % (buf)->maxlines]
+#define CON_TRUEIDX(x)		(( con.lines_first + (x) ) % con.maxlines)
+#define THRESHOLD_5 5
+
+typedef struct {
+// Every frame that the console is drawn.
+// If console was not drawn, please set this to 0
+	//int		was_consoledrawn;		// 
+	// Baker: If drag distance > tolerance (5 pixels?)
+	// Then start selection
+
+
+//	int				mouse_is_down;
+//	int				have_select;
+
+//	unsigned int	mousedown_frame; // host.superframecount .. 
+	struct {
+		double		mousedown_time;
+		float		mousedown_fx;
+		float		mousedown_fy;
+		int			mousedown_row_index;
+		int			mousedown_col_index;
+		int			mousedown_end_row_index;
+		int			mousedown_end_col_index;
+		int			drag_state;
+		qbool		prior_was_selection;
+	} a;
+
+	struct {
+	  unsigned int	console_draw_frame; // host.superframecount .. 
+
+		int			draw_row_last_index;	// con line index
+		int			draw_row_top_pixel_y;	// This y pixel coord of TOP of last index.
+
+		float		conscalewidth;		// So we don't have to guess
+		float		conscaleheight;
+	} draww;
+} consel_t;
+
+typedef enum { // SlideState_e
+    drag_state_none_0 				= 0,
+    drag_state_awaiting_threshold_1 = 1,
+    drag_state_dragging_2 			= 2,
+	drag_state_drag_completed_3 	= 3,
+} drag_state_e;
+
+#define TREAT_IGNORE_0					0
+#define TREAT_CONSUMED_MOUSE_ACTION_1	1
+#define TREAT_MOUSEUP_2					2
+
+
+#define IS_DOWN_MOUSEMOVE_2	2
+
+extern consel_t g_consel; // Baker: SELECTEON
+
+
+WARP_X_ (con, history)  // Baker: Both of these are conbuffer_t
+
+#define CONBUFFER_LINES(buf, i) (buf)->clines[((buf)->lines_first + (i)) % (buf)->maxlines]
 #define CONBUFFER_LINES_COUNT(buf) ((buf)->lines_count)
 #define CONBUFFER_LINES_LAST(buf) CONBUFFER_LINES(buf, CONBUFFER_LINES_COUNT(buf) - 1)
 
@@ -242,6 +299,10 @@ void Partial_Reset_Undo_Navis_Selection_Reset (void);
 void Con_Undo_Point (int action, int was_space);
 void Key_Console_Cursor_Move(int netchange, cursor_e action);
 
+WARP_X_ (consel_t)
+void Consel_MouseReset (const char *reason);
+void Consel_MouseMove_Check (void);
+void Consel_Copy (void);
 
 #endif // ! CONSOLE_H
 

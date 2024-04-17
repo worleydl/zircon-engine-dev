@@ -640,17 +640,17 @@ static void PM_CheckWaterJump (cl_clientmovement_state_t *s)
 	VectorMA (s->origin, 24, flatforward, spot);
 	spot[2] += 8;
 
-	int pmove_contents = 
+	int pmove_contents =
 		CL_TracePoint(spot, MOVE_NOMONSTERS,
-		s->self, /*hit skip skip*/ 0, 0, 0, q_hitbrush_true, HITT_NOPLAYERS_0, 
+		s->self, /*hit skip skip*/ 0, 0, 0, q_hitbrush_true, HITT_NOPLAYERS_0,
 		q_hitnetwork_ent_NULL, q_hitcsqcents_false).startsupercontents;// & SUPERCONTENTS_LIQUIDSMASK;
 
-		
+
 	if (Have_Flag (pmove_contents, SUPERCONTENTS_SOLID) == false)
 		return;
 	spot[2] += 24;
 	pmove_contents = 		CL_TracePoint(spot, MOVE_NOMONSTERS,
-		s->self, /*hit skip skip*/ 0, 0, 0, q_hitbrush_true, HITT_NOPLAYERS_0, 
+		s->self, /*hit skip skip*/ 0, 0, 0, q_hitbrush_true, HITT_NOPLAYERS_0,
 		q_hitnetwork_ent_NULL, q_hitcsqcents_false).startsupercontents;// & SUPERCONTENTS_LIQUIDSMASK;
 
 	if (pmove_contents != SUPERCONTENTS_SKIP_NONE_0 /*empty*/)
@@ -681,7 +681,7 @@ static void CL_ClientMovement_PlayerMove (cl_clientmovement_state_t *s, int coll
 	if (s->waterlevel == WATERLEVEL_SWIMMING_2)
 		PM_CheckWaterJump(s);
 #endif
-	
+
 	if (s->waterlevel >= WATERLEVEL_SWIMMING_2)
 		CL_ClientMovement_Physics_Swim (s, collide_type);
 	else
@@ -719,13 +719,13 @@ int Is_In_Bad_Place_Ent_Plus1 (cl_clientmovement_state_t *s, int collide_type)
 	int reply_num = -2;
 	// Do we really want water check here?
 
-	check_our_player_trace = CL_TraceBox (s->origin, cl.playerstandmins, cl.playerstandmaxs, s->origin, 
-		MOVE_NORMAL, s->self, 
-		/*hit these*/  SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY | SUPERCONTENTS_PLAYERCLIP, 
-		/*skip these*/ SUPERCONTENTS_SKIP_NONE_0, 
-		/*skip these*/ MATERIALFLAG_NONE_0, 
-		collision_extendmovelength.value, q_hitbrush_true, 
-		 /*HITT_PLAYERS_1*/ /*collide_type*/ HITT_NOPLAYERS_0, &reply_num/*q_hitnetwork_ent_NULL*/, 
+	check_our_player_trace = CL_TraceBox (s->origin, cl.playerstandmins, cl.playerstandmaxs, s->origin,
+		MOVE_NORMAL, s->self,
+		/*hit these*/  SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY | SUPERCONTENTS_PLAYERCLIP,
+		/*skip these*/ SUPERCONTENTS_SKIP_NONE_0,
+		/*skip these*/ MATERIALFLAG_NONE_0,
+		collision_extendmovelength.value, q_hitbrush_true,
+		 /*HITT_PLAYERS_1*/ /*collide_type*/ HITT_NOPLAYERS_0, &reply_num/*q_hitnetwork_ent_NULL*/,
 		 q_hitcsqcents_true);
 	if (check_our_player_trace.startsolid) {
 		if (reply_num != -2)
@@ -749,12 +749,12 @@ void Zircon_Elevator_Apply_Nudge (cl_clientmovement_state_t *plyr, int collide_t
 	// Baker: move_seq will be first move greater than server known sequence.
 	// now walk them in oldest to newest order
 	// Baker: 0 is current move, so subtracting gets closer to the present
-	int is_first = true;
+	//int is_first = true;
 	for (move_seq --; move_seq >= 0; move_seq --) {
-		usercmd_t *m = &cl.movecmd[move_seq]; // Baker: Struct copy ..		
+		usercmd_t *m = &cl.movecmd[move_seq]; // Baker: Struct copy ..
 		m->zmove_start_origin[0] += nudge;
 		m->zmove_end_origin[0] += nudge;
-		is_first = false;
+//		is_first = false;
 	} // for
 
 	// Baker: Hit this too ...
@@ -773,19 +773,19 @@ int Zircon_Elevator_Check_Fix_Is_Ok (cl_clientmovement_state_t *plyr, int collid
 		return true;
 
 	// BAD PLACE CHECK
-	int hit_ent_plus1 = Is_In_Bad_Place_Ent_Plus1 (plyr, collide_type); // Brush collide only 
+	int hit_ent_plus1 = Is_In_Bad_Place_Ent_Plus1 (plyr, collide_type); // Brush collide only
 	if (hit_ent_plus1 == 0)
 		return true; // OK!
 
-	// ELEVATOR CALC	
+	// ELEVATOR CALC
 	float start_origin_z = plyr->origin[2];
-	
+
 	// We have a startsolid start with a brush model.
 	if (Have_Flag (developer_movement.integer, /*CL*/ 1))
-		Con_PrintLinef ("CL: Elevator - Start solid in brush!  Attempt elevator fix ...  %d (unplussed = %d)", hit_ent_plus1, UNPLUS1(hit_ent_plus1)); 
+		Con_PrintLinef ("CL: Elevator - Start solid in brush!  Attempt elevator fix ...  %d (unplussed = %d)", hit_ent_plus1, UNPLUS1(hit_ent_plus1));
 
 	// Baker: Moving up 20 fixes .. What is the least we can do
-	
+
 	float nudge;
 	int hit_ent_20_plus1;
 	int did_fix = false;
@@ -816,7 +816,7 @@ int Zircon_Elevator_Check_Fix_Is_Ok (cl_clientmovement_state_t *plyr, int collid
 	if (nudge)
 		Zircon_Elevator_Apply_Nudge (plyr, collide_type, nudge);
 
-	return false; // Elevator did correct 
+	return false; // Elevator did correct
 } // Elevator
 
 void CL_ClientMovement_Replay (int collide_type)
@@ -895,12 +895,12 @@ void CL_ClientMovement_Replay (int collide_type)
 			// Baker: Trying to recover by looking at previous move and using end position
 			if (cls.servermovesequence && move_seq < CL_MAX_USERCMDS_128 - 1) {
 				usercmd_t *mprev = &cl.movecmd[move_seq + 1];
-				if (mprev->clx_sequence == cls.servermovesequence - 1 && 
+				if (mprev->clx_sequence == cls.servermovesequence - 1 &&
 					mprev->zmove_is_move_processed && mprev->zmove_is_move_processed == mprev->clx_sequence) {
 					VectorCopy (mprev->zmove_end_origin, s.origin);
 					VectorCopy (mprev->zmove_end_velocity, s.velocity);
 					s.onground = mprev->zmove_end_onground;
-					if (VectorIsZeros (s.origin)) {
+					if (Vector3_IsZeros (s.origin)) {
 						if (developer_movement.integer > 3)
 							Con_PrintLinef ("CL %u: Zero origin on recover ok", cls.servermovesequence);
 					}
@@ -918,13 +918,13 @@ void CL_ClientMovement_Replay (int collide_type)
 			if (developer_movement.integer > 3)
 			Con_PrintLinef ("%d: Missing or new sequence, going hard copy", cls.servermovesequence);
 		}
-		
+
 		// Baker: Queue filled or previous move was not processed
 		// Baker: Recover using saved origin/velocity/
 		VectorCopy (cl.zircon_replay_save.zmove_end_origin, s.origin);
 		VectorCopy (cl.zircon_replay_save.zmove_end_velocity, s.velocity);
 		s.onground = cl.zircon_replay_save.zmove_end_onground;
-		if (VectorIsZeros (s.origin)) {
+		if (Vector3_IsZeros (s.origin)) {
 			if (developer_movement.integer > 3)
 				Con_PrintLinef ("CL %u: Zero origin on recover failed, using normal prediction", cls.servermovesequence);
 			goto copy_anyway;
@@ -978,7 +978,7 @@ dp7_go:
 		// now walk them in oldest to newest order
 		// Baker: 0 is current move, so subtracting gets closer to the present
 		for (move_seq --; move_seq >= 0; move_seq --) {
-#if 4321			
+#if 4321
 			WARP_X_ (quemove)
 			// This appears to be to alter the s.cmd without it affecting the stored version
 			usercmd_t *m = &cl.movecmd[move_seq]; // Baker: Struct copy ..
@@ -1015,14 +1015,14 @@ dp7_go:
 				m->zmove_is_move_processed = m->clx_sequence;
 			}
 			cl.zircon_replay_high = ghigh = cl.movecmd[move_seq - 1].clx_sequence;
-			if (VectorIsZeros (s.origin)) {
+			if (Vector3_IsZeros (s.origin)) {
 				if (Have_Flag (developer_movement.integer, /*CL*/ 1))
 					Con_PrintLinef ("CL: Wants to save zero s.origin");
 			}
 			cl.zircon_replay_save = cl.movecmd[move_seq];
 #endif
 		} // for move_seq
-		
+
 		CL_ClientMovement_UpdateStatus (&s, collide_type); // Baker: Crouch, onground, waterlevel
 	}
 	else { // !cl.movement_predicted ...
@@ -1042,7 +1042,7 @@ dp7_go:
 
 		VectorCopy	(s.velocity, cl.movement_final_velocity);
 		// causes jitter VectorCopy	(s.velocity, cl.mvelocity[0]);
-		//if (VectorIsZeros (s.velocity)) {
+		//if (Vector3_IsZeros (s.velocity)) {
 		//	[0] = 0;
 		//	cl.mvelocity[0][1] = 0;
 		//	cl.mvelocity[0][2] = 0;

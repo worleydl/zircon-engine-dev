@@ -164,7 +164,9 @@ cvar_t vid_mouse = {CF_CLIENT | CF_ARCHIVE, "vid_mouse", "1", "whether to use th
 cvar_t vid_grabkeyboard = {CF_CLIENT | CF_ARCHIVE, "vid_grabkeyboard", "0", "whether to grab the keyboard when mouse is active (prevents use of volume control keys, music player keys, etc on some keyboards)"};
 cvar_t vid_minwidth = {CF_CLIENT, "vid_minwidth", "0", "minimum vid_width that is acceptable (to be set in default.cfg in mods)"};
 cvar_t vid_minheight = {CF_CLIENT, "vid_minheight", "0", "minimum vid_height that is acceptable (to be set in default.cfg in mods)"};
-cvar_t vid_sRGB = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB", "0", "if hardware is capable, modify rendering to be gamma corrected for the sRGB color standard (computer monitors, TVs), recommended"};
+
+WARP_X_ (vid.sRGB3D)
+cvar_t vid_sRGB = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB", "0", "if hardware is capable, modify rendering to be gamma corrected for the sRGB color standard (computer monitors, TVs), recommended.  Requires vid_restart."};
 cvar_t vid_sRGB_fallback = {CF_CLIENT | CF_ARCHIVE, "vid_sRGB_fallback", "0", "do an approximate sRGB fallback if not properly supported by hardware (2: also use the fallback if framebuffer is 8bit, 3: always use the fallback even if sRGB is supported)"};
 
 cvar_t vid_touchscreen = {CF_CLIENT, "vid_touchscreen", "0", "Use touchscreen-style input (no mouse grab, track mouse motion only while button is down, screen areas for mimicing joystick axes and buttons"};
@@ -728,9 +730,9 @@ void GL_Setup(void)
 	if (vid.restart_count > 0) // Baker r1481: Reduce ALT-ENTER video restart spam
 		goto skip_spam1;
 
-	Con_PrintLinef ("GL_VENDOR:   %s", gl_vendor);
-	Con_PrintLinef ("GL_RENDERER: %s", gl_renderer);
-	Con_PrintLinef ("GL_VERSION:  %s", gl_version);
+	Con_DPrintLinef ("GL_VENDOR:   %s", gl_vendor);
+	Con_DPrintLinef ("GL_RENDERER: %s", gl_renderer);
+	Con_DPrintLinef ("GL_VERSION:  %s", gl_version);
 
 skip_spam1:
 
@@ -779,7 +781,7 @@ skip_spam2:
 		vid.support.glshaderversion = 100;
 
 	if (vid.restart_count == 0) // Baker r1481: Reduce ALT-ENTER video restart spam
-		Con_PrintLinef ("Detected GLSL version %d", vid.support.glshaderversion);
+		Con_DPrintLinef ("Detected GLSL version %d", vid.support.glshaderversion);
 
 #ifdef USE_GLES2
 	// GLES devices in general do not like GL_BGRA, so use GL_RGBA

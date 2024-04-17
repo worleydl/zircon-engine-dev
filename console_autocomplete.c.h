@@ -206,12 +206,14 @@ qbool GetMapList (const char *s_partial, char *completedname,
 					map_format_code = 7;
 			} else if (!memcmp(buf, "IBSP", 4)) {
 				p = LittleLong(((int *)buf)[1]);
-				if (p == Q3BSPVERSION) {
+				if (isin3 (p, Q3BSPVERSION_46, Q3BSPVERSION_LIVE_47, Q3BSPVERSION_IG_48)) {
 					q3dheader_t *header = (q3dheader_t *)buf;
 					lumpofs = LittleLong(header->lumps[Q3LUMP_ENTITIES].fileofs);
 					lumplen = LittleLong(header->lumps[Q3LUMP_ENTITIES].filelen);
 					c_dpsnprintf1 (desc, "Q3BSP%d", p); 
-					map_format_code = 3;
+					if (p == 47)		map_format_code = 8;
+					else if (p == 48)	map_format_code = 9;
+					else map_format_code = 3;
 				}
 				else if (p == Q2BSPVERSION) {
 					q2dheader_t *header = (q2dheader_t *)buf;
@@ -221,7 +223,7 @@ qbool GetMapList (const char *s_partial, char *completedname,
 					map_format_code = 2;
 				}
 				else {
-					c_dpsnprintf1 (desc, "IBSP%d", p); 
+					c_dpsnprintf1 (desc, "IBSP%d", p);
 					map_format_code = 4;
 				}
 			} else if (BuffLittleLong(buf) == BSPVERSION /*29*/) {
@@ -351,7 +353,9 @@ qbool GetMapList (const char *s_partial, char *completedname,
 				mx->s_name_trunc_16_a			= (unsigned char *)strdup	(s_file_trunc_at_16);
 				mx->s_map_title_trunc_28_a		= (unsigned char *)strdup	(s_title_trunc_at_28);
 				mx->s_bsp_code					= (unsigned char *) ( 
-					isin2 (map_format_code, 3, 4) ? "Q3" :
+					isin1 (map_format_code, 8) ? "QL" :
+					isin1 (map_format_code, 9) ? "IG" :
+					isin2 (map_format_code, 3,4) ? "Q3" :
 					isin1 (map_format_code, 7)	  ? "OBJ" :
 							"");
 				m_maplist_count ++;
@@ -382,24 +386,123 @@ endcomplete:
 	return p > partial_length;
 }
 
-int GetFileList_Count (const char *s_prefix, const char *s_dot_extension, int is_strip_extension)
+int GetVideoList_Count (const char *s_prefix)
+{
+	// Get any .dpv
+	// Get any _fps folders
+	// Get any .gif
+	char		s_pattern[1024];
+
+	stringlist_t list = {0};
+	fssearch_t	*t = NULL;
+
+	// .gif
+	c_dpsnprintf1 (s_pattern, "video/%s*.gif", s_prefix);
+	t = FS_Search (s_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
+	stringlistappendfssearch (&list, t);
+	FS_FreeSearch_Null_ (t);
+
+	// .dpv
+	c_dpsnprintf1 (s_pattern, "video/%s*.dpv", s_prefix);
+	t = FS_Search (s_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
+	stringlistappendfssearch (&list, t);
+	FS_FreeSearch_Null_ (t);
+
+	// Baker: .jpeg ... I want the autocomplete to work with the files in a .pak
+	// However, .pk3 and .pak remove the directories information on load.
+	// So this will not autocomplete from pk3 or pak
+	// "playvideo" will work fine
+	{
+		stringlist_t all_contents_of_video_folder_list = {0};
+		
+#if 1
+		char gamedir_slash_video_slash[MAX_OSPATH_EX_1024]; // id1/video/
+		c_dpsnprintf2 (gamedir_slash_video_slash, "%s%s", fs_gamedir /* "id1/" */ , "video/" );
+		// game pathos tends to be "id1/" here
+		// game pathos tends to be "id1/progs/"
+
+		// Baker: I totally don't trust this at this time.
+		// This returns file names without the path
+		listdirectory	(&all_contents_of_video_folder_list, gamedir_slash_video_slash /* id1/video/ */, "");
+		
+		//stringlist_condump (&all_contents_of_video_folder_list);
+
+		stringlist_t fps_list = {0};
+		stringlist_t *plist = &all_contents_of_video_folder_list;
+		for (int idx = 0; idx < plist->numstrings; idx++) {
+			char *sxy = plist->strings[idx];
+
+			if (false == String_Does_End_With (sxy, "_fps"))
+				continue;
+
+			if (false == String_Does_Start_With (sxy, s_prefix))
+				continue;
+
+			// Baker: The autocomplete doesn't want the full name just the partial
+
+			char nameout[MAX_OSPATH_EX_1024];
+			c_strlcpy (nameout, "video/");
+			c_strlcat (nameout, sxy);
+			stringlistappend (&fps_list, nameout);
+		} // for
+		//stringlist_condump (&fps_list);
+
+		stringlistappendlist (&list, &fps_list);
+
+		//
+		stringlistfreecontents (&all_contents_of_video_folder_list);
+		stringlistfreecontents (&fps_list);
+		
+#endif
+
+	}
+	stringlistsort (&list, fs_make_unique_true);
+
+	int num_matches = 0;
+	
+	// Baker: We want to keep the extension
+	// Baker: We want to remove "video\" prefix
+	for (int idx = 0; idx < list.numstrings; idx ++) {
+		char *sxy = list.strings[idx];
+
+		// Remove video/ prefix
+		sxy += STRINGLEN("video/");
+
+		SPARTIAL_EVAL_
+
+		num_matches ++;
+	} // for
+
+	stringlistfreecontents (&list);
+
+	return num_matches;
+}
+
+int GetFileList_Count (const char *s_folder_or_null, const char *s_prefix, const char *s_dot_extension, int is_strip_extension)
 {
 	fssearch_t	*t;
 	char		s_pattern[1024];
 	int			num_matches = 0;
 	int			j;
 
-	c_dpsnprintf2 (s_pattern, "%s*%s", s_prefix, s_dot_extension);
+	if (s_folder_or_null)
+		c_dpsnprintf3 (s_pattern, "%s%s*%s", s_folder_or_null, s_prefix, s_dot_extension);
+	else
+		c_dpsnprintf2 (s_pattern, "%s*%s", s_prefix, s_dot_extension);
 
-	t = FS_Search(s_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
+	t = FS_Search (s_pattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
 
 	if (t && t->numfilenames > 0) {
 		int array_count = t->numfilenames;
 
 		for (j = 0; j < array_count; j ++) {
 			char *sxy = t->filenames[j];
+
 			if (is_strip_extension)
 				File_URL_Edit_Remove_Extension (sxy);
+
+			if (s_folder_or_null)
+				sxy += strlen (s_folder_or_null);
 
 			SPARTIAL_EVAL_
 
@@ -682,38 +785,79 @@ int GetTexGeneric_Count (const char *s_prefix)
 
 int GetSoundList_Count (const char *s_prefix)
 {
-	char		spattern[1024];
-	char		s_prefix2[1024] = {0};
+	char		s_prefix_no_ext[MAX_QPATHX2_256] = {0};
 
-	if (s_prefix && s_prefix[0]) {
-		// Remove ext ... Why?
-		c_strlcpy (s_prefix2, s_prefix);
-		File_URL_Edit_Remove_Extension (s_prefix2);
-	}
+	// Remove extension before we add an extension in the pattern further down
+	c_strlcpy (s_prefix_no_ext, s_prefix);
+	File_URL_Edit_Remove_Extension (s_prefix_no_ext);
+	
+	stringlist_t list = {0};
 
-	c_dpsnprintf1 (spattern, "%s*.wav", s_prefix2);
+	va_super(spattern1, MAX_QPATHX2_256, "%s*.wav", s_prefix_no_ext); stringlistappend_search_pattern (&list, spattern1);
+	va_super(spattern2, MAX_QPATHX2_256, "%s*.ogg", s_prefix_no_ext); stringlistappend_search_pattern (&list, spattern2);
 
-	fssearch_t	*t = FS_Search (spattern, fs_caseless_true, fs_quiet_true, fs_pakfile_null, fs_gamedironly_false);
+	stringlistsort (&list, fs_make_unique_true);
 
 	int num_matches = 0;
 
-	if (t && t->numfilenames > 0) {
-		for (int idx = 0; idx < t->numfilenames; idx++) {
-			char *sxy = t->filenames[idx];
+	for (int idx = 0; idx < list.numstrings; idx++) {
+		char *sxy = list.strings[idx];
 
-			SPARTIAL_EVAL_
+		SPARTIAL_EVAL_
 
-			num_matches ++;
-		} // for
-	} // if
+		num_matches ++;
+	} // for
 
-	if (t) FS_FreeSearch(t);
-
+	stringlistfreecontents (&list);
 	return num_matches;
 }
 
 
 WARP_X_ (R_ReplaceWorldTexture)
+
+
+int GetShaderList_Count (const char *s_prefix)
+{
+	if (!r_refdef.scene.worldmodel || !cl.islocalgame || !cl.worldmodel) {
+		return 0;
+	}
+
+	model_t		*m = r_refdef.scene.worldmodel;
+
+	stringlist_t	matchedSet;
+	stringlistinit  (&matchedSet); // this does not allocate
+
+	texture_t	*tx = m->data_textures;
+
+	// We cannot do comparisons here as this list is NOT SORTED
+	for (int j = 0; j < m->num_textures; j ++, tx ++) {
+		if (String_Does_Start_With_Caseless (tx->name, s_prefix) == false)
+			continue;
+
+		stringlistappend (&matchedSet, tx->name);
+	} // for
+
+	// SORT
+	stringlistsort (&matchedSet, fs_make_unique_true);
+
+	int			num_matches = 0;
+
+	for (int idx = 0; idx < matchedSet.numstrings; idx ++) {
+		char *sxy = matchedSet.strings[idx];
+
+		if (String_Does_Start_With_Caseless (sxy, s_prefix) == false)
+			continue;
+
+		SPARTIAL_EVAL_
+
+		num_matches ++;
+	} // for
+
+	stringlistfreecontents (&matchedSet);
+
+	return num_matches;
+}
+
 int GetTexWorld_Count (const char *s_prefix)
 {
 	if (!r_refdef.scene.worldmodel || !cl.islocalgame || !cl.worldmodel) {

@@ -975,7 +975,7 @@ void V_CalcRefdef (void)
 			cldead = false;
 
 		// Baker: Zmove we get some jitter sometimes.
-		int velo_override = cl.movement_predicted == PRED_ZIRCON_MOVE_2 && VectorIsZeros (cl.movement_final_velocity);
+		int velo_override = cl.movement_predicted == PRED_ZIRCON_MOVE_2 && Vector3_IsZeros (cl.movement_final_velocity);
 		static vec3_t zmove_velocity_zero;
 		V_CalcRefdefUsing (&ent->render.matrix, cl.viewangles, !ent->persistent.trail_allowed, 
 			cl.onground, cl.mcmd.clx_jump, cl.stats[STAT_VIEWHEIGHT], 
@@ -1086,6 +1086,7 @@ void V_CalcViewBlend(void)
 		supercontents = CL_PointSuperContents(vieworigin);
 		if (supercontents & SUPERCONTENTS_LIQUIDSMASK)
 		{
+			cl.view_underwater = true;
 			// Baker r0082: r_waterwarp 2
 			float warpfac = r_waterwarp.value == 1 ? 1 : 0; // Baker
 			r_refdef.waterwarp2 = r_waterwarp.value >= 2; // Baker
@@ -1113,6 +1114,7 @@ void V_CalcViewBlend(void)
 		}
 		else
 		{
+			cl.view_underwater = false;
 			cl.cshifts[CSHIFT_CONTENTS].destcolor[0] = 0;
 			cl.cshifts[CSHIFT_CONTENTS].destcolor[1] = 0;
 			cl.cshifts[CSHIFT_CONTENTS].destcolor[2] = 0;

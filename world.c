@@ -992,7 +992,7 @@ void            (ODE_API *dGeomTransformSetCleanup)(dGeomID g, int mode);
 
 enum { TRIMESH_FACE_NORMALS };
 typedef int dTriCallback(dGeomID TriMesh, dGeomID RefObject, int TriangleIndex);
-typedef void dTriArrayCallback(dGeomID TriMesh, dGeomID RefObject, const int* TriIndices, int TriCount);
+typedef void dTriArrayCallback(dGeomID TriMesh, dGeomID RefObject, const int *TriIndices, int TriCount);
 typedef int dTriRayCallback(dGeomID TriMesh, dGeomID Ray, int TriangleIndex, dReal u, dReal v);
 typedef int dTriTriMergeCallback(dGeomID TriMesh, int FirstTriangleIndex, int SecondTriangleIndex);
 
@@ -1007,9 +1007,9 @@ void            (ODE_API *dGeomTriMeshDataBuildSingle)(dTriMeshDataID g, const v
 //void            (ODE_API *dGeomTriMeshDataBuildDouble)(dTriMeshDataID g,  const void *Vertices,  int VertexStride, int VertexCount,  const void *Indices, int IndexCount, int TriStride);
 //void            (ODE_API *dGeomTriMeshDataBuildDouble1)(dTriMeshDataID g,  const void *Vertices,  int VertexStride, int VertexCount,  const void *Indices, int IndexCount, int TriStride, const void *Normals);
 //void            (ODE_API *dGeomTriMeshDataBuildSimple)(dTriMeshDataID g, const dReal* Vertices, int VertexCount, const dTriIndex* Indices, int IndexCount);
-//void            (ODE_API *dGeomTriMeshDataBuildSimple1)(dTriMeshDataID g, const dReal* Vertices, int VertexCount, const dTriIndex* Indices, int IndexCount, const int* Normals);
+//void            (ODE_API *dGeomTriMeshDataBuildSimple1)(dTriMeshDataID g, const dReal* Vertices, int VertexCount, const dTriIndex* Indices, int IndexCount, const int *Normals);
 //void            (ODE_API *dGeomTriMeshDataPreprocess)(dTriMeshDataID g);
-//void            (ODE_API *dGeomTriMeshDataGetBuffer)(dTriMeshDataID g, unsigned char **buf, int* bufLen);
+//void            (ODE_API *dGeomTriMeshDataGetBuffer)(dTriMeshDataID g, unsigned char **buf, int *bufLen);
 //void            (ODE_API *dGeomTriMeshDataSetBuffer)(dTriMeshDataID g, unsigned char *buf);
 //void            (ODE_API *dGeomTriMeshSetCallback)(dGeomID g, dTriCallback* Callback);
 //dTriCallback*   (ODE_API *dGeomTriMeshGetCallback)(dGeomID g);

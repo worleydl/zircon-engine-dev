@@ -101,6 +101,21 @@
 
 		return image_data;
 	}
+
+	void *Image_Save_PNG_Memory_Alloc (const unsigned *rgba, int width, int height, /*required*/ size_t *png_length, const char *description)
+	{		
+		byte *png_out = NULL;
+
+		unsigned error = lodepng_encode32 (&png_out, png_length, (byte *)rgba, width, height);
+
+		if (error) {
+			Con_PrintLinef ("Image_Save_PNG_Memory_Alloc: Error saving image to memory '%s'", description);
+			return NULL;
+		}
+
+		return png_out;
+	}
+
 #endif
 
 

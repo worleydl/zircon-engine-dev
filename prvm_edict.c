@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "progsvm.h"
 #include "csprogs.h"
 
-prvm_prog_t prvm_prog_list[PRVM_PROG_MAX];
+prvm_prog_t prvm_prog_list[PRVM_PROG_MAX_3];
 
 int		prvm_type_size[8] = {1,sizeof(string_t)/4,1,3,1,1,sizeof(func_t)/4,sizeof(void *)/4};
 
@@ -530,8 +530,13 @@ char *PRVM_UglyValueString (prvm_prog_t *prog, etype_t type, prvm_eval_t *val, c
 		// (like newline, specifically) into escape codes,
 		// this fixes saving games from various mods
 		s = PRVM_GetString (prog, val->string);
-		for (i = 0;i < (int)linelength - 2 && *s;)
-		{
+
+		// Baker: We want to eventually see if we can get the engine
+		// to reliably save what it loads.
+		// I am not sure it does.
+		// "wad" "\editing\hammer\nar\apocrypha.wad;\editing\hammer\nar\armagon.wad;\editing
+		// \hammer\nar\bchess.wad;\editing\hammer\nar\dk"
+		for (i = 0;i < (int)linelength - 2 && *s;) {
 			if (*s == '\n')
 			{
 				line[i++] = '\\';
@@ -677,7 +682,7 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 	}
 
 	int ismatch = false;
-	
+
 	if (s_fieldname_partial && s_fieldname_partial[0]) {
 		tempstring[0] = 0;
 		for (n = 1; n < prog->numfielddefs; n ++) {
@@ -685,20 +690,20 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 			name = PRVM_GetString(prog, d->s_name);
 			if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
 				continue;	// skip _x, _y, _z vars
-	
+
 			val = (prvm_eval_t *)(ed->fields.fp + d->ofs);
-	
+
 			// if the value is still all 0, skip the field
 			type = d->type & ~DEF_SAVEGLOBAL;
-	
+
 			for (j = 0; j < prvm_type_size[type]; j ++) {
 				if (val->ivector[j])
 					break;
 			} // j
-	
+
 			if (j == prvm_type_size[type])
-				continue;	
-	
+				continue;
+
 			if (String_Does_Contain (name, s_fieldname_partial /*"targetname"*/)) {
 				name = PRVM_ValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf));
 
@@ -713,11 +718,11 @@ void PRVM_ED_Print(prvm_prog_t *prog, prvm_edict_t *ed, int shall_print_free, co
 					// disqual
 					//return;
 
-					// continue ... 
+					// continue ...
 				} else {
 					ismatch = true;
 				}
-			} // if	
+			} // if
 		} // for n
 		if (!ismatch)
 			return;
@@ -788,6 +793,10 @@ PRVM_ED_Write
 For savegames
 =============
 */
+
+// Baker: if f == NULL --> use "Baker strcat" instead
+WARP_X_ (PRVM_ED_WriteGlobals)
+WARP_X_CALLERS_ (SV_Savegame_to)
 void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 {
 	mdef_t	*d;
@@ -798,21 +807,20 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 	char vabuf[1024];
 	char valuebuf[MAX_INPUTLINE_16384];
 
-	FS_Print(f, "{\n");
+	Flex_Writef ("{" NEWLINE);
 
-	if (ed->free)
-	{
-		FS_Print(f, "}\n");
+	if (ed->free) {
+		Flex_Writef ("}" NEWLINE);
 		return;
 	}
 
-	for (i = 1;i < prog->numfielddefs;i++)
+	for (i = 1; i < prog->numfielddefs; i++)
 	{
 		d = &prog->fielddefs[i];
 		name = PRVM_GetString(prog, d->s_name);
 
 		if (developer_entityparsing.integer)
-			Con_Printf ("PRVM_ED_Write: at entity %d field %s\n", PRVM_NUM_FOR_EDICT(ed), name);
+			Con_PrintLinef ("PRVM_ED_Write: at entity %d field %s", PRVM_NUM_FOR_EDICT(ed), name);
 
 		//if (strlen(name) > 1 && name[strlen(name)-2] == '_' && (name[strlen(name)-1] == 'x' || name[strlen(name)-1] == 'y' || name[strlen(name)-1] == 'z'))
 		if (strlen(name) > 1 && name[strlen(name)-2] == '_')
@@ -822,19 +830,19 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 
 	// if the value is still all 0, skip the field
 		type = d->type & ~DEF_SAVEGLOBAL;
-		for (j=0 ; j<prvm_type_size[type] ; j++)
+		for (j = 0; j < prvm_type_size[type]; j ++)
 			if (val->ivector[j])
 				break;
 		if (j == prvm_type_size[type])
 			continue;
 
-		FS_Printf (f, QUOTED_S " ", name);
+		Flex_Writef (QUOTED_S " ", name);
 		prog->statestring = va(vabuf, sizeof(vabuf), "PRVM_ED_Write, ent=%d, name=%s", i, name);
-		FS_Printf (f, QUOTED_S NEWLINE, PRVM_UglyValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf)));
+		Flex_Writef (QUOTED_S NEWLINE, PRVM_UglyValueString(prog, (etype_t)d->type, val, valuebuf, sizeof(valuebuf)));
 		prog->statestring = NULL;
 	}
 
-	FS_Print(f, "}\n");
+	Flex_Writef ("}" NEWLINE);
 }
 
 void PRVM_ED_PrintNum (prvm_prog_t *prog, int ent, int shall_print_free, const char *wildcard_fieldname, const char *s_fieldname_partial, const char *s_fieldvalue_partial)
@@ -873,7 +881,7 @@ void PRVM_ED_PrintEdicts_f(cmd_state_t *cmd)
 
 	Con_PrintLinef ("%s: %d entities", prog->name, prog->num_edicts);
 	for (i=0 ; i<prog->num_edicts ; i++)
-		PRVM_ED_PrintNum (prog, i, q_vm_printfree_true, wildcard_fieldname, 
+		PRVM_ED_PrintNum (prog, i, q_vm_printfree_true, wildcard_fieldname,
 			q_vm_classname_NULL, q_vm_targetname_NULL);
 }
 
@@ -884,9 +892,9 @@ void PRVM_ED_PrintEdicts_Either (cmd_state_t *cmd, prvm_prog_t *prog)
 	const char *wildcard_fieldname = NULL;
 	const char *s_fieldname_partial = "";
 	const char *s_fieldvalue_partial = "";
-	
+
 	if (Cmd_Argc(cmd) == 3) {
-		const char *s_arg1 = Cmd_Argv(cmd, 1);
+		// gcc unused ... const char *s_arg1 = Cmd_Argv(cmd, 1);
 		//int isnumeric = isdigit(s_arg1[0]);
 		s_fieldname_partial = Cmd_Argv(cmd, 1);
 		s_fieldvalue_partial = Cmd_Argv(cmd, 2);
@@ -897,7 +905,7 @@ void PRVM_ED_PrintEdicts_Either (cmd_state_t *cmd, prvm_prog_t *prog)
 	}
 
 	if (Cmd_Argc(cmd) == 3) {
-		Con_PrintLinef ("%s: entities with field " QUOTED_S " containing " QUOTED_S, 
+		Con_PrintLinef ("%s: entities with field " QUOTED_S " containing " QUOTED_S,
 			prog->name, s_fieldname_partial, s_fieldvalue_partial);
 	} else if (Cmd_Argc(cmd) == 2) {
 		Con_PrintLinef ("%s: entities with classname containing " QUOTED_S, prog->name, s_fieldvalue_partial);
@@ -916,7 +924,7 @@ void PRVM_ED_PrintEdicts_Either (cmd_state_t *cmd, prvm_prog_t *prog)
 void PRVM_ED_PrintEdicts_SV_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
-	
+
 	if (!(prog = PRVM_FriendlyProgFromString("server")))
 		return;
 
@@ -927,7 +935,7 @@ void PRVM_ED_PrintEdicts_SV_f(cmd_state_t *cmd)
 void PRVM_ED_PrintEdicts_CL_f(cmd_state_t *cmd)
 {
 	prvm_prog_t *prog;
-	
+
 	if (!(prog = PRVM_FriendlyProgFromString("client")))
 		return;
 
@@ -1016,7 +1024,7 @@ static void PRVM_ED_PrintEdict_CL_f(cmd_state_t *cmd)
 		Con_PrintLinef ("Bad edict number");
 		return;
 	}
-	PRVM_ED_PrintNum (prog, edict_num, q_vm_printfree_true, wildcard_fieldname, 
+	PRVM_ED_PrintNum (prog, edict_num, q_vm_printfree_true, wildcard_fieldname,
 		q_vm_classname_NULL, q_vm_targetname_NULL);  // Baker r7101: edicts with criteria
 }
 
@@ -1059,6 +1067,9 @@ FIXME: need to tag constants, doesn't really work
 PRVM_ED_WriteGlobals
 =============
 */
+// If f == NULL, uses "bakerstring" method.
+// Baker: If f is NULL .. write to string buffer.
+WARP_X_ (SV_Savegame_to PRVM_ED_Write)
 void PRVM_ED_WriteGlobals (prvm_prog_t *prog, qfile_t *f)
 {
 	mdef_t		*def;
@@ -1068,7 +1079,7 @@ void PRVM_ED_WriteGlobals (prvm_prog_t *prog, qfile_t *f)
 	char vabuf[1024];
 	char valuebuf[MAX_INPUTLINE_16384];
 
-	FS_Print(f,"{\n");
+	Flex_Writef ("{" NEWLINE);
 	for (i = 0;i < prog->numglobaldefs;i++)
 	{
 		def = &prog->globaldefs[i];
@@ -1083,14 +1094,14 @@ void PRVM_ED_WriteGlobals (prvm_prog_t *prog, qfile_t *f)
 		name = PRVM_GetString(prog, def->s_name);
 
 		if (developer_entityparsing.integer)
-			Con_Printf ("PRVM_ED_WriteGlobals: at global %s\n", name);
+			Con_PrintLinef ("PRVM_ED_WriteGlobals: at global %s", name);
 
 		prog->statestring = va(vabuf, sizeof(vabuf), "PRVM_ED_WriteGlobals, name=%s", name);
-		FS_Printf(f, QUOTED_S " ", name);
-		FS_Printf(f, QUOTED_S NEWLINE, PRVM_UglyValueString(prog, (etype_t)type, (prvm_eval_t *)&prog->globals.fp[def->ofs], valuebuf, sizeof(valuebuf)));
+		Flex_Writef (QUOTED_S " ", name);
+		Flex_Writef (QUOTED_S NEWLINE, PRVM_UglyValueString(prog, (etype_t)type, (prvm_eval_t *)&prog->globals.fp[def->ofs], valuebuf, sizeof(valuebuf)));
 		prog->statestring = NULL;
 	}
-	FS_Print(f,"}\n");
+	Flex_Writef ("}" NEWLINE);
 }
 
 /*
@@ -1166,6 +1177,13 @@ qbool PRVM_ED_ParseEpair(prvm_prog_t *prog, prvm_edict_t *ent, mdef_t *key, cons
 	case ev_string:
 		l = (int)strlen(s) + 1;
 		val->string = PRVM_AllocString(prog, l, &new_p);
+
+		// Baker: map wicked in something wicked single player
+		// Baker: We want to eventually see if we can get the engine
+		// to reliably save what it loads.
+		// I am not sure it does.
+		// "wad" "\editing\hammer\nar\apocrypha.wad;\editing\hammer\nar\armagon.wad;\editing
+		// \hammer\nar\bchess.wad;\editing\hammer\nar\dk"
 		for (i = 0;i < l;i++)
 		{
 			if (s[i] == '\\' && s[i+1] && parsebackslash)
@@ -1505,17 +1523,16 @@ const char *PRVM_ED_ParseEdict (prvm_prog_t *prog, const char *data, prvm_edict_
 			continue;
 
 		key = PRVM_ED_FindField (prog, keyname);
-		if (!key)
-		{
-			Con_DPrintf ("%s: '%s' is not a field\n", prog->name, keyname);
+		if (!key) {
+			Con_DPrintLinef ("%s: '%s' is not a field", prog->name, keyname);
 			continue;
 		}
 
 		if (anglehack)
 		{
 			char	temp[32];
-			strlcpy (temp, com_token, sizeof(temp));
-			dpsnprintf (com_token, sizeof(com_token), "0 %s 0", temp);
+			c_strlcpy (temp, com_token);
+			c_dpsnprintf1 (com_token, "0 %s 0", temp);
 		}
 
 		if (!PRVM_ED_ParseEpair(prog, ent, key, com_token, strcmp(keyname, "wad") != 0))
@@ -1603,10 +1620,10 @@ qbool PRVM_ED_CallSpawnFunction(prvm_prog_t *prog, prvm_edict_t *ent, const char
 			}
 			else
 			{
-				
-				Con_DPrint("No spawn function for:\n");
-				if (developer.integer > 0) // don't confuse non-developers with errors	
-					PRVM_ED_Print(prog, ent, q_vm_printfree_true, q_vm_wildcard_NULL, q_vm_classname_NULL, q_vm_targetname_NULL);
+				Con_PrintLinef (CON_WARN "No spawn function for:");
+				//if (developer.integer > 0) // don't confuse non-developers with errors
+					PRVM_ED_Print(prog, ent, q_vm_printfree_true, q_vm_wildcard_NULL, 
+					q_vm_classname_NULL, q_vm_targetname_NULL);
 
 				PRVM_ED_Free (prog, ent);
 				return false; // not included in "inhibited" count
@@ -1712,7 +1729,7 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 
 		if (!PRVM_ED_CallSpawnFunction(prog, ent, data, start))
 			continue;
-		
+
 		PRVM_ED_CallPostspawnFunction(prog, ent);
 
 		spawned++;
@@ -2697,10 +2714,10 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 				}
 			}
 		}
-		if (String_Does_Match(prvm_language.string, "dump"))
-		{
-			qfile_t *f = FS_OpenRealFile(va(vabuf, sizeof(vabuf), "%s.pot", realfilename), "w", false);
-			Con_Printf ("Dumping to %s.pot\n", realfilename);
+		
+		if (String_Does_Match(prvm_language.string, "dump")) {
+			qfile_t *f = FS_OpenRealFile(va(vabuf, sizeof(vabuf), "%s.pot", realfilename), "w", fs_quiet_FALSE); // WRITEON - prog dump (DONE)
+			Con_PrintLinef ("Dumping to %s.pot", realfilename);
 			if (f)
 			{
 				for (i=0 ; i<prog->numglobaldefs ; i++)
@@ -2816,9 +2833,9 @@ const char *PRVM_Prog_Load(prvm_prog_t *prog, const char * filename, unsigned ch
 						Con_Printf ("PRVM_LoadProgs: invalid type of autocvar global %s in %s\n", name, prog->name);
 						goto fail;
 				}
-				cvar = Cvar_Get(prog->console_cmd->cvars, name + 9, value, prog->console_cmd->cvars_flagsmask, NULL);
-				if ((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string)
-				{
+				// 9 is length of "autocvar_" prefix
+				cvar = Cvar_Get(prog->console_cmd->cvars, name + 9, value, prog->console_cmd->cvars_flagsmask, /*description*/ NULL);
+				if ((prog->globaldefs[i].type & ~DEF_SAVEGLOBAL) == ev_string) {
 					val->string = PRVM_SetEngineString(prog, cvar->string);
 					cvar->globaldefindex_stringno[prog - prvm_prog_list] = val->string;
 				}
@@ -3017,7 +3034,7 @@ static void PRVM_Fields_f(cmd_state_t *cmd)
 
 const char *PRVM_Prog_Dump_Functions (prvm_prog_t *prog)
 {
-		
+
 
 	// Baker: Quakespasm equivalent sec 2
 	for (int j = 0; j < prog->progs_numfunctions; j ++) {
@@ -3132,7 +3149,7 @@ typedef struct
 	char watch_field[256];
 }
 debug_data_t;
-static debug_data_t debug_data[PRVM_PROG_MAX];
+static debug_data_t debug_data[PRVM_PROG_MAX_3];
 
 void PRVM_Breakpoint(prvm_prog_t *prog, int stack_index, const char *text)
 {
@@ -3140,7 +3157,7 @@ void PRVM_Breakpoint(prvm_prog_t *prog, int stack_index, const char *text)
 	Con_Printf ("PRVM_Breakpoint: %s\n", text);
 	PRVM_PrintState(prog, stack_index);
 	if (prvm_breakpointdump.integer)
-		SV_Savegame_to(prog, va(vabuf, sizeof(vabuf), "breakpoint-%s.dmp", prog->name));
+		SV_Savegame_to(prog, q_savestring_NULL, va(vabuf, sizeof(vabuf), "breakpoint-%s.dmp", prog->name), q_is_siv_write_false, /*totaltimeatlastexit*/ 0);
 }
 
 void PRVM_Watchpoint(prvm_prog_t *prog, int stack_index, const char *text, etype_t type, prvm_eval_t *o, prvm_eval_t *n)
@@ -3986,7 +4003,7 @@ void PRVM_Init (void)
 	// Baker r7084: gamecommand autocomplete assist
 	Cvar_RegisterVariable (&prvm_sv_gamecommands); // Baker r7103 gamecommand autocomplete
 	Cvar_RegisterVariable (&prvm_sv_progfields); // Baker r7103 gamecommand autocomplete
-	
+
 	Cvar_RegisterVariable (&prvm_cl_gamecommands); // Baker r7103 gamecommand autocomplete
 	Cvar_RegisterVariable (&prvm_cl_progfields); // Baker r7103 gamecommand autocomplete
 

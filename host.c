@@ -55,7 +55,7 @@ cvar_t developer_svc = {CF_CLIENT, "developer_svc", "0", "prints svc messages re
 
 cvar_t developer_extra = {CF_CLIENT | CF_SERVER, "developer_extra", "0", "prints additional debugging messages, often very verbose!"};
 cvar_t developer_insane = {CF_CLIENT | CF_SERVER, "developer_insane", "0", "prints huge streams of information about internal workings, entire contents of files being read/written, etc.  Not recommended!"};
-cvar_t developer_loadfile = {CF_CLIENT | CF_SERVER, "developer_loadfile","0", "prints name and size of every file loaded via the FS_LoadFile function (which is almost everything)"};
+cvar_t developer_loadingfile_fs = {CF_CLIENT | CF_SERVER, "developer_loadingfile_fs","0", "prints name and size of every file loaded via the FS_LoadFile function (which is almost everything)"};
 cvar_t developer_loading = {CF_CLIENT | CF_SERVER, "developer_loading","0", "prints information about files as they are loaded or unloaded successfully"};
 cvar_t developer_entityparsing = {CF_CLIENT, "developer_entityparsing", "0", "prints detailed network entities information each time a packet is received"};
 
@@ -108,7 +108,7 @@ void Host_Error_Line (const char *error, ...)
 
 	// LadyHavoc: if crashing very early, or currently shutting down, do
 	// Sys_Error instead
-	if (host.framecount < 3 || host.state == host_shutdown)
+	if (host.superframecount < 3 || host.state == host_shutdown)
 		Sys_Error ("Host_Error: %s", hosterrorstring1);
 
 	if (hosterror)
@@ -157,7 +157,11 @@ static void Host_Quit_f(cmd_state_t *cmd)
 	if (host.state == host_shutdown)
 		Con_PrintLinef ("shutting down already!");
 	else
+#if 1 // Baker: To allow "zircon.exe +quit"
+		Sys_Quit(0);
+#else
 		host.state = host_shutdown;
+#endif
 }
 
 static void Host_Version_f(cmd_state_t *cmd)
@@ -200,14 +204,14 @@ void Host_SaveConfig(const char *file)
 // dedicated servers initialize the host but don't parse and set the
 // config.cfg cvars
 	// LadyHavoc: don't save a config if it crashed in startup
-	if (host.framecount >= 3 && cls.state != ca_dedicated && !Sys_CheckParm("-benchmark") && !Sys_CheckParm("-capturedemo"))
+	if (host.superframecount >= 3 && cls.state != ca_dedicated && !Sys_CheckParm("-benchmark") && !Sys_CheckParm("-capturedemo"))
 	{
 		// Baker 1024: Prevent stale values of vid_width or vid_height writing to config
 		Cvar_SetValueQuick (&vid_width, vid.width);
 		Cvar_SetValueQuick (&vid_height, vid.height);
 		Cvar_SetValueQuick (&vid_fullscreen, vid.fullscreen);
 
-		f = FS_OpenRealFile(file, "wb", fs_quiet_FALSE);
+		f = FS_OpenRealFile(file, "wb", fs_quiet_FALSE);  // WRITE-EON save config
 		if (!f)
 		{
 			Con_PrintLinef (CON_ERROR "Couldn't write %s.", file);
@@ -222,7 +226,7 @@ void Host_SaveConfig(const char *file)
 }
 
 // Baker r1411: "saveconfig" takes an argument so "saveconfig mine" is possible.
-static void Host_SaveConfig_f(cmd_state_t* cmd)
+static void Host_SaveConfig_f(cmd_state_t *cmd)
 {
 	char vabuf[1024];
 	const char *s_file = CONFIGFILENAME;
@@ -260,7 +264,7 @@ void Host_WriteConfig_All_f (cmd_state_t *cmd)
 	}
 	Con_PrintLinef ("Saving to %s", vabuf);
 
-	qfile_t *f = FS_OpenRealFile (vabuf, "wb", fs_quiet_FALSE);
+	qfile_t *f = FS_OpenRealFile (vabuf, "wb", fs_quiet_FALSE); // WRITE-EON write config
 	if (!f) {
 		Con_PrintLinef (CON_ERROR "Couldn't write %s.", vabuf);
 		return;
@@ -287,7 +291,7 @@ void Host_WriteConfig_All_Changed_f (cmd_state_t *cmd)
 	}
 	Con_PrintLinef ("Saving to %s", vabuf);
 
-	qfile_t *f = FS_OpenRealFile (vabuf, "wb", fs_quiet_FALSE);
+	qfile_t *f = FS_OpenRealFile (vabuf, "wb", fs_quiet_FALSE); // WRITE-EON write config
 	if (!f) {
 		Con_PrintLinef (CON_ERROR "Couldn't write %s.", vabuf);
 		return;
@@ -304,8 +308,10 @@ static void Host_AddConfigText(cmd_state_t *cmd)
 	// override these) and then execute the quake.rc startup script
 
 #ifdef CONFIG_MENU
-	if (cls.state != ca_dedicated)
+	if (cls.state != ca_dedicated) {
 		Cbuf_InsertText(cmd, "alias +zoom " QUOTED_STR("set _saved_fov $fov; fov 20") "; alias -zoom " QUOTED_STR("fov $_saved_fov") NEWLINE);
+		Cbuf_InsertText(cmd, "set _saved_fov $fov" NEWLINE);
+	}
 #endif // CONFIG_MENU
 
 	if (gamemode == GAME_NEHAHRA)
@@ -318,6 +324,8 @@ static void Host_AddConfigText(cmd_state_t *cmd)
 		Cbuf_InsertText(cmd, "alias startmap_sp \"map start\"\nalias startmap_dm \"map start\"\nexec " STARTCONFIGFILENAME "\n");
 
 	Cbuf_Execute(cmd->cbuf);
+
+	
 }
 
 /*
@@ -358,7 +366,7 @@ static void Host_InitLocal (void)
 	Cmd_AddCommand(CF_SHARED, "loadconfig", Host_LoadConfig_f, "reset everything and reload configs");
 	Cmd_AddCommand(CF_SHARED, "sendcvar", SendCvar_f, "sends the value of a cvar to the server as a sentcvar command, for use by QuakeC");
 
-	Cmd_AddCommand(CF_SHARED, "writeconfig", Host_SaveConfig_f, "save settings to config.cfg (or a specified filename) immediately (also automatic when quitting) [Zircon]"); // Baker r1243: writeconfig 
+	Cmd_AddCommand(CF_SHARED, "writeconfig", Host_SaveConfig_f, "save settings to config.cfg (or a specified filename) immediately (also automatic when quitting) [Zircon]"); // Baker r1243: writeconfig
 
 	Cmd_AddCommand(CF_SHARED, "writeconfig_all", Host_WriteConfig_All_f, "write all cvars to a specified filename [Zircon]");
 	Cmd_AddCommand(CF_SHARED, "writeconfig_all_changed", Host_WriteConfig_All_Changed_f, "write all changed cvars to a specified filename [Zircon]");
@@ -379,7 +387,7 @@ static void Host_InitLocal (void)
 
 	Cvar_RegisterVariable (&developer_extra);
 	Cvar_RegisterVariable (&developer_insane);
-	Cvar_RegisterVariable (&developer_loadfile);
+	Cvar_RegisterVariable (&developer_loadingfile_fs);
 	Cvar_RegisterVariable (&developer_loading);
 	Cvar_RegisterVariable (&developer_entityparsing);
 
@@ -630,7 +638,9 @@ const char *LOC_GetString (const char *stxt)
 		//Sys_PrintToTerminal2 (va3(QUOTED_S, s_decodx));
 
 		int slen0 = (int)strlen(rerelease_loc.strings[j + 0]);
+#if 0 // gcc unused
 		int slen1 = (int)strlen(rerelease_loc.strings[j + 1]);
+#endif
 
 		char *s_afterx = &s_decodebuf[slen0 + 1 /*for the dollar*/ ];
 
@@ -687,11 +697,15 @@ skip:
 Host_Init
 ====================
 */
+float host_hoststartup_unique_num;
+
 static void Host_Init (void)
 {
 	int i;
 	const char *os;
 	char vabuf[1024];
+
+	host_hoststartup_unique_num = Sys_DirtyTime ();
 
 	host.hook.ConnectLocal = NULL;
 	host.hook.Disconnect = NULL;
@@ -828,7 +842,7 @@ static void Host_Init (void)
 
 	// save off current state of aliases, commands and cvars for later restore if FS_GameDir_f is called
 	// NOTE: menu commands are freed by Cmd_RestoreInitState
-	Cmd_SaveInitState();
+	Cmd_Host_Init_SaveInitState();
 
 	// FIXME: put this into some neat design, but the menu should be allowed to crash
 	// without crashing the whole game, so this should just be a short-time solution
@@ -840,8 +854,8 @@ static void Host_Init (void)
 	// if quake.rc is missing, use default
 	if (!FS_FileExists("quake.rc"))
 	{
-		Cbuf_AddTextLine(cmd_local, 
-			"exec default.cfg" NEWLINE 
+		Cbuf_AddTextLine(cmd_local,
+			"exec default.cfg" NEWLINE
 			"exec " CONFIGFILENAME NEWLINE
 			"exec autoexec.cfg");
 		Cbuf_Execute(cmd_local->cbuf);
@@ -947,6 +961,7 @@ void Host_Shutdown(void)
 		SV_StopThread();
 
 	// shut down local server if active
+	WARP_X_ (SV_Shutdown)
 	if (host.hook.SV_Shutdown)
 		host.hook.SV_Shutdown();
 
@@ -1012,14 +1027,14 @@ static double Host_Frame(double time)
 	sv_wait = - SV_Frame(time);
 	cl_wait = - CL_Frame(time);
 
-	Mem_CheckSentinelsGlobal();
+	Mem_CheckSentinelsGlobal ();
 
 	if (cls.state == ca_dedicated)
 		return sv_wait; // dedicated
 	else if (!sv.active || svs.threaded)
 		return cl_wait; // connected to server, main menu, or server is on different thread
 	else
-		return min(cl_wait, sv_wait); // listen server or singleplayer
+		return Smallest (cl_wait, sv_wait); // listen server or singleplayer
 }
 
 static inline double Host_Sleep(double time)
@@ -1104,7 +1119,7 @@ void Host_Main(void)
 
 		sleeptime = Host_Frame(time);
 		oldtime = host.dirtytime;
-		++host.framecount;
+		host.superframecount ++;
 
 		sleeptime -= Sys_DirtyTime() - host.dirtytime; // execution time
 		host.sleeptime = Host_Sleep(sleeptime);

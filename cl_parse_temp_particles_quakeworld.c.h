@@ -5,7 +5,7 @@
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_WIZSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_wizhit, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_wizhit, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case QW_TE_KNIGHTSPIKE:
@@ -13,7 +13,7 @@
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_KNIGHTSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_knighthit, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_knighthit, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case QW_TE_SPIKE:
@@ -22,16 +22,16 @@
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_SPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 			else
 			{
 				rnd = rand() & 3;
 				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 			}
 			break;
 		case QW_TE_SUPERSPIKE:
@@ -40,16 +40,16 @@
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_SUPERSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 			else
 			{
 				rnd = rand() & 3;
 				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 			}
 			break;
 
@@ -58,7 +58,7 @@
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 10);
 			CL_ParticleEffect(EFFECT_TE_EXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			CL_Effect(pos, CL_GetModelByIndex(cl.qw_modelindex_s_explod), 0, 6, 10);
 			break;
 
@@ -67,7 +67,7 @@
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 10);
 			CL_ParticleEffect(EFFECT_TE_TAREXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case QW_TE_LIGHTNING1:
@@ -106,16 +106,16 @@
 			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
 			{
 				if (rand() % 5)
-					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 				else
 				{
 					rnd = rand() & 3;
 					if (rnd == 1)
-						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 					else if (rnd == 2)
-						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 					else
-						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 				}
 			}
 			break;

@@ -55,10 +55,10 @@ typedef struct snd_ringbuffer_s
 
 // struct sfx_s flags
 #define SFXFLAG_NONE			0
-#define SFXFLAG_FILEMISSING		(1 << 0) // wasn't able to load the associated sound file
-#define SFXFLAG_LEVELSOUND		(1 << 1) // the sfx is part of the server or client precache list for this level
-#define SFXFLAG_STREAMED		(1 << 2) // informative only. You shouldn't need to know that
-#define SFXFLAG_MENUSOUND		(1 << 3) // not freed during level change (menu sounds, music, etc)
+#define SFXFLAG_FILEMISSING		(1 << 0) // 1 wasn't able to load the associated sound file
+#define SFXFLAG_LEVELSOUND		(1 << 1) // 2 the sfx is part of the server or client precache list for this level
+#define SFXFLAG_STREAMED		(1 << 2) // 4 informative only. You shouldn't need to know that
+#define SFXFLAG_MENUSOUND		(1 << 3) // 8 not freed during level change (menu sounds, music, etc)
 
 typedef struct snd_fetcher_s snd_fetcher_t;
 struct sfx_s
@@ -79,7 +79,7 @@ struct sfx_s
 };
 
 // maximum supported speakers constant
-#define SND_LISTENERS 8
+#define SND_LISTENERS_8 8
 
 typedef struct channel_s
 {
@@ -99,7 +99,7 @@ typedef struct channel_s
 	// spatialized playback speed (speed * doppler ratio)
 	float			mixspeed;
 	// spatialized volume per speaker (mastervol * distanceattenuation * channelvolume cvars)
-	float			volume[SND_LISTENERS];
+	float			volume[SND_LISTENERS_8];
 
 	// updated ONLY by mixer
 	// position in sfx, starts at 0, loops or stops at sfx->total_length
@@ -125,6 +125,7 @@ extern snd_ringbuffer_t *snd_renderbuffer;
 extern qbool snd_threaded; // enables use of snd_usethreadedmixing, provided that no sound hacks are in effect (like timedemo)
 extern qbool snd_usethreadedmixing; // if true, the main thread does not mix sound, soundtime does not advance, and neither does snd_renderbuffer->endframe, instead the audio thread will call S_MixToBuffer as needed
 
+extern struct cvar_s snd_waterfx;
 extern struct cvar_s _snd_mixahead;
 extern struct cvar_s snd_swapstereo;
 extern struct cvar_s snd_streaming;
@@ -152,13 +153,15 @@ extern qbool simsound;
 //         Architecture-independent functions
 // ====================================================================
 
+void S_SetUnderwaterIntensity(void);
+
 void S_MixToBuffer(void *stream, unsigned int frames);
 
 qbool S_LoadSound (struct sfx_s *sfx, qbool complain);
 
 // If "buffer" is NULL, the function allocates one buffer of "sampleframes" sample frames itself
 // (if "sampleframes" is 0, the function chooses the size).
-snd_ringbuffer_t *Snd_CreateRingBuffer (const snd_format_t* format, unsigned int sampleframes, void *buffer);
+snd_ringbuffer_t *Snd_CreateRingBuffer (const snd_format_t *format, unsigned int sampleframes, void *buffer);
 
 
 // ====================================================================
@@ -167,7 +170,7 @@ snd_ringbuffer_t *Snd_CreateRingBuffer (const snd_format_t* format, unsigned int
 
 // Create "snd_renderbuffer", attempting to use the chosen sound format, but accepting if the driver wants to change it (e.g. 7.1 to stereo or lowering the speed)
 // Note: SDL automatically converts all formats, so this only fails if there is no audio
-qbool SndSys_Init (snd_format_t* fmt);
+qbool SndSys_Init (snd_format_t *fmt);
 
 // Stop the sound card, delete "snd_renderbuffer" and free its other resources
 void SndSys_Shutdown (void);
@@ -188,26 +191,22 @@ void SndSys_UnlockRenderBuffer (void);
 void SndSys_SendKeyEvents(void);
 
 // exported for capturevideo so ogg can see all channels
-typedef struct portable_samplepair_s
-{
-	float sample[SND_LISTENERS];
+typedef struct portable_samplepair_s {
+	float sample[SND_LISTENERS_8];
 } portable_sampleframe_t;
 
-typedef struct listener_s
-{
+typedef struct listener_s {
 	int channel_unswapped; // for un-swapping
 	float yawangle;
 	float dotscale;
 	float dotbias;
 	float ambientvolume;
-}
-listener_t;
-typedef struct speakerlayout_s
-{
+} listener_t;
+
+typedef struct speakerlayout_s {
 	const char *name;
 	unsigned int channels;
-	listener_t listeners[SND_LISTENERS];
-}
-speakerlayout_t;
+	listener_t listeners[SND_LISTENERS_8];
+} speakerlayout_t;
 
-#endif
+#endif // ! SND_MAIN_H

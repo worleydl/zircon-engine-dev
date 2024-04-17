@@ -57,9 +57,9 @@ static hz_bitstream_read_t *hz_bitstream_read_open(char *filename)
 {
 	qfile_t *file;
 	hz_bitstream_read_t *stream;
-	if ((file = FS_OpenVirtualFile(filename, false)))
+	if ((file = FS_OpenVirtualFile(filename, fs_quiet_FALSE)))
 	{
-		stream = (hz_bitstream_read_t *)Z_Malloc(sizeof(hz_bitstream_read_t));
+		stream = (hz_bitstream_read_t *)Z_Malloc_SizeOf(hz_bitstream_read_t);
 		memset(stream, 0, sizeof(*stream));
 		stream->file = file;
 		return stream;
@@ -80,7 +80,7 @@ static void hz_bitstream_read_close(hz_bitstream_read_t *stream)
 static hz_bitstream_readblocks_t *hz_bitstream_read_blocks_new(void)
 {
 	hz_bitstream_readblocks_t *blocks;
-	blocks = (hz_bitstream_readblocks_t *)Z_Malloc(sizeof(hz_bitstream_readblocks_t));
+	blocks = (hz_bitstream_readblocks_t *)Z_Malloc_SizeOf(hz_bitstream_readblocks_t);
 	if (blocks == NULL)
 		return NULL;
 	memset(blocks, 0, sizeof(hz_bitstream_readblocks_t));
@@ -252,8 +252,11 @@ typedef struct dpvsimpledecodestream_s
 	unsigned int info_imagesize;
 	double info_aspectratio;
 
+#if 0
 	// current video frame (needed because of delta compression)
-	int videoframenum;
+	int videoframenumx; // Baker: I don't see this variable being used
+#endif
+
 	// current video frame data (needed because of delta compression)
 	unsigned int *videopixels;
 
@@ -267,17 +270,17 @@ static int dpvsimpledecode_setpixelformat(dpvsimpledecodestream_t *s, unsigned i
 	int Rshift, Rbits, Gshift, Gbits, Bshift, Bbits;
 	if (!Rmask)
 	{
-		s->error = DPVSIMPLEDECODEERROR_INVALIDRMASK;
+		s->error = DPVSIMPLEDECODEERROR_INVALIDRMASK_4;
 		return s->error;
 	}
 	if (!Gmask)
 	{
-		s->error = DPVSIMPLEDECODEERROR_INVALIDGMASK;
+		s->error = DPVSIMPLEDECODEERROR_INVALIDGMASK_5;
 		return s->error;
 	}
 	if (!Bmask)
 	{
-		s->error = DPVSIMPLEDECODEERROR_INVALIDBMASK;
+		s->error = DPVSIMPLEDECODEERROR_INVALIDBMASK_6;
 		return s->error;
 	}
 	if (Rmask & Gmask || Rmask & Bmask || Gmask & Bmask)
@@ -305,17 +308,17 @@ static int dpvsimpledecode_setpixelformat(dpvsimpledecodestream_t *s, unsigned i
 	for (Bshift = 0;!(Bmask & 1);Bshift++, Bmask >>= 1);
 	if (((Rmask + 1) & Rmask) != 0)
 	{
-		s->error = DPVSIMPLEDECODEERROR_INVALIDRMASK;
+		s->error = DPVSIMPLEDECODEERROR_INVALIDRMASK_4;
 		return s->error;
 	}
 	if (((Gmask + 1) & Gmask) != 0)
 	{
-		s->error = DPVSIMPLEDECODEERROR_INVALIDGMASK;
+		s->error = DPVSIMPLEDECODEERROR_INVALIDGMASK_5;
 		return s->error;
 	}
 	if (((Bmask + 1) & Bmask) != 0)
 	{
-		s->error = DPVSIMPLEDECODEERROR_INVALIDBMASK;
+		s->error = DPVSIMPLEDECODEERROR_INVALIDBMASK_6;
 		return s->error;
 	}
 	for (Rbits = 0;Rmask & 1;Rbits++, Rmask >>= 1);
@@ -394,20 +397,22 @@ void *dpvsimpledecode_open(clvideo_t *video, char *filename, const char **errors
 								wavename = (char *)Z_Malloc(namelen);
 								if (wavename)
 								{
-									sfx_t* sfx;
+									sfx_t *sfx;
 
 									FS_StripExtension(filename, wavename, namelen);
 									strlcat(wavename, ".wav", namelen);
 									sfx = S_PrecacheSound (wavename, false, false);
 									if (sfx != NULL)
-										s->sndchan = S_StartSound (-1, 0, sfx, vec3_origin, 1.0f, 0);
+										s->sndchan = S_StartSound (-1, 0, sfx, vec3_origin, 1.0f, 0, q_is_forceloop_false);
 									else
 										s->sndchan = -1;
 									Z_Free(wavename);
 								}
 								// all is well...
 								// set the module functions
-								s->videoframenum = -10000;
+#if 0
+								s->videoframenumx = -10000;
+#endif
 								video->close = dpvsimpledecode_close;
 								video->getwidth = dpvsimpledecode_getwidth;
 								video->getheight = dpvsimpledecode_getheight;
@@ -463,7 +468,7 @@ void dpvsimpledecode_close(void *stream)
 // utilitarian functions
 
 // returns the current error number for the stream, and resets the error
-// number to DPVSIMPLEDECODEERROR_NONE
+// number to DPVSIMPLEDECODEERROR_NONE_0
 // if the supplied string pointer variable is not NULL, it will be set to the
 // error message
 int dpvsimpledecode_error(void *stream, const char **errorstring)
@@ -476,25 +481,25 @@ int dpvsimpledecode_error(void *stream, const char **errorstring)
 	{
 		switch (e)
 		{
-			case DPVSIMPLEDECODEERROR_NONE:
+			case DPVSIMPLEDECODEERROR_NONE_0:
 				*errorstring = "no error";
 				break;
-			case DPVSIMPLEDECODEERROR_EOF:
+			case DPVSIMPLEDECODEERROR_EOF_1:
 				*errorstring = "end of file reached (this is not an error)";
 				break;
-			case DPVSIMPLEDECODEERROR_READERROR:
+			case DPVSIMPLEDECODEERROR_READERROR_2:
 				*errorstring = "read error (corrupt or incomplete file)";
 				break;
-			case DPVSIMPLEDECODEERROR_SOUNDBUFFERTOOSMALL:
+			case DPVSIMPLEDECODEERROR_SOUNDBUFFERTOOSMALL_3:
 				*errorstring = "sound buffer is too small for decoding frame (please allocate it as large as dpvsimpledecode_getneededsoundbufferlength suggests)";
 				break;
-			case DPVSIMPLEDECODEERROR_INVALIDRMASK:
+			case DPVSIMPLEDECODEERROR_INVALIDRMASK_4:
 				*errorstring = "invalid red bits mask";
 				break;
-			case DPVSIMPLEDECODEERROR_INVALIDGMASK:
+			case DPVSIMPLEDECODEERROR_INVALIDGMASK_5:
 				*errorstring = "invalid green bits mask";
 				break;
-			case DPVSIMPLEDECODEERROR_INVALIDBMASK:
+			case DPVSIMPLEDECODEERROR_INVALIDBMASK_6:
 				*errorstring = "invalid blue bits mask";
 				break;
 			case DPVSIMPLEDECODEERROR_COLORMASKSOVERLAP:
@@ -542,58 +547,60 @@ double dpvsimpledecode_getaspectratio(void *stream)
 	return s->info_aspectratio;
 }
 
-static int dpvsimpledecode_convertpixels(dpvsimpledecodestream_t *s, void *imagedata, int imagebytesperrow)
+static int _dpvsimpledecode_video_convertpixels (dpvsimpledecodestream_t *s, void *vid_vimagedata, int image_bytes_per_row)
 {
 	unsigned int a, x, y, width, height;
 	unsigned int Rloss, Rmask, Rshift, Gloss, Gmask, Gshift, Bloss, Bmask, Bshift;
-	unsigned int *in;
 
-	width = s->info_imagewidth;
-	height = s->info_imageheight;
+	width	= s->info_imagewidth;
+	height	= s->info_imageheight;
 
-	Rloss = s->info_imageRloss;
-	Rmask = s->info_imageRmask;
-	Rshift = s->info_imageRshift;
-	Gloss = s->info_imageGloss;
-	Gmask = s->info_imageGmask;
-	Gshift = s->info_imageGshift;
-	Bloss = s->info_imageBloss;
-	Bmask = s->info_imageBmask;
-	Bshift = s->info_imageBshift;
+	Rloss	= s->info_imageRloss;
+	Rmask	= s->info_imageRmask;
+	Rshift	= s->info_imageRshift;
+	Gloss	= s->info_imageGloss;
+	Gmask	= s->info_imageGmask;
+	Gshift	= s->info_imageGshift;
+	Bloss	= s->info_imageBloss;
+	Bmask	= s->info_imageBmask;
+	Bshift	= s->info_imageBshift;
 
-	in = s->videopixels;
-	if (s->info_imagebpp == 4)
-	{
+	// Baker: Take the s->videopixels and fill vimagedata
+	// Baker: image_bytes_per_row is usually like RGBA_4 times width
+	//        sometimes with padding to make it 4 pixel multiples or such.
+	unsigned int *in = s->videopixels;
+	if (s->info_imagebpp == RGBA_4) {
 		unsigned int *outrow;
-		for (y = 0;y < height;y++)
-		{
-			outrow = (unsigned int *)((unsigned char *)imagedata + y * imagebytesperrow);
-			for (x = 0;x < width;x++)
-			{
-				a = *in++;
-				outrow[x] = (((a >> Rloss) & Rmask) << Rshift) | (((a >> Gloss) & Gmask) << Gshift) | (((a >> Bloss) & Bmask) << Bshift);
+		for (y = 0; y < height; y++) {
+			outrow = (unsigned int *)((unsigned char *)vid_vimagedata + y * image_bytes_per_row);
+			for (x = 0;x < width;x++) {
+				a = *in ++;
+				// Baker: And we are messing with the color based on these variables.
+				outrow[x] = (((a >> Rloss) & Rmask) << Rshift) | 
+							(((a >> Gloss) & Gmask) << Gshift) | 
+							(((a >> Bloss) & Bmask) << Bshift);
 			}
 		}
+		return s->error;
 	}
-	else
-	{
+
+	// Baker: NOT RGBA_4 -- whatever the fuck this could be ...
+	// Baker: This could be 16-bit like RGB565
+
+	if (1) {
+		// Baker: So what the fuck is this if not RGBA_4?
 		unsigned short *outrow;
-		for (y = 0;y < height;y++)
-		{
-			outrow = (unsigned short *)((unsigned char *)imagedata + y * imagebytesperrow);
-			if (Rloss == 19 && Gloss == 10 && Bloss == 3 && Rshift == 11 && Gshift == 5 && Bshift == 0)
-			{
+		for (y = 0;y < height;y++) {
+			outrow = (unsigned short *)((unsigned char *)vid_vimagedata + y * image_bytes_per_row);
+			if (Rloss == 19 && Gloss == 10 && Bloss == 3 && Rshift == 11 && Gshift == 5 && Bshift == 0) {
 				// optimized
 				for (x = 0;x < width;x++)
 				{
 					a = *in++;
 					outrow[x] = ((a >> 8) & 0xF800) | ((a >> 5) & 0x07E0) | ((a >> 3) & 0x001F);
 				}
-			}
-			else
-			{
-				for (x = 0;x < width;x++)
-				{
+			} else {
+				for (x = 0;x < width;x++) {
 					a = *in++;
 					outrow[x] = (((a >> Rloss) & Rmask) << Rshift) | (((a >> Gloss) & Gmask) << Gshift) | (((a >> Bloss) & Bmask) << Bshift);
 				}
@@ -603,74 +610,79 @@ static int dpvsimpledecode_convertpixels(dpvsimpledecodestream_t *s, void *image
 	return s->error;
 }
 
-static int dpvsimpledecode_decompressimage(dpvsimpledecodestream_t *s)
+static int _dpvsimpledecode_video_decompressimage (dpvsimpledecodestream_t *s)
 {
 	int i, a, b, colors, g, x1, y1, bw, bh, width, height, palettebits;
 	unsigned int palette[256], *outrow, *out;
 	g = BLOCKSIZE;
 	width = s->info_imagewidth;
 	height = s->info_imageheight;
-	for (y1 = 0;y1 < height;y1 += g)
-	{
+	for (y1 = 0; y1 < height; y1 += g) {
 		outrow = s->videopixels + y1 * width;
 		bh = g;
+
 		if (y1 + bh > height)
 			bh = height - y1;
-		for (x1 = 0;x1 < width;x1 += g)
-		{
+
+		for (x1 = 0;x1 < width;x1 += g) {
 			out = outrow + x1;
 			bw = g;
 			if (x1 + bw > width)
 				bw = width - x1;
-			if (hz_bitstream_read_bit(s->framedatablocks))
-			{
+
+			if (hz_bitstream_read_bit(s->framedatablocks)) {
 				// updated block
 				palettebits = hz_bitstream_read_bits(s->framedatablocks, 3);
 				colors = 1 << palettebits;
 				for (i = 0;i < colors;i++)
 					palette[i] = hz_bitstream_read_bits(s->framedatablocks, 24);
-				if (palettebits)
-				{
+				
+				if (palettebits) {
 					for (b = 0;b < bh;b++, out += width)
 						for (a = 0;a < bw;a++)
 							out[a] = palette[hz_bitstream_read_bits(s->framedatablocks, palettebits)];
 				}
-				else
-				{
+				else {
 					for (b = 0;b < bh;b++, out += width)
 						for (a = 0;a < bw;a++)
 							out[a] = palette[0];
 				}
 			}
-		}
-	}
+		} // for x1
+	} // for y1
 	return s->error;
 }
 
 // decodes a video frame to the supplied output pixels
-int dpvsimpledecode_video(void *stream, void *imagedata, unsigned int Rmask, unsigned int Gmask, unsigned int Bmask, unsigned int bytesperpixel, int imagebytesperrow)
+int dpvsimpledecode_video(void *stream, void *vid_vimagedata, unsigned int Rmask, unsigned int Gmask, unsigned int Bmask, unsigned int bytesperpixel, int imagebytesperrow)
 {
 	dpvsimpledecodestream_t *s = (dpvsimpledecodestream_t *)stream;
 	unsigned int framedatasize;
 	char t[4];
-	s->error = DPVSIMPLEDECODEERROR_NONE;
+	s->error = DPVSIMPLEDECODEERROR_NONE_0;
 	if (dpvsimpledecode_setpixelformat(s, Rmask, Gmask, Bmask, bytesperpixel))
 		return s->error;
 
 	hz_bitstream_read_blocks_read(s->framedatablocks, s->bitstream, 8);
 	hz_bitstream_read_bytes(s->framedatablocks, t, 4);
-	if (memcmp(t, "VID0", 4))
-	{
+
+	if (memcmp(t, "VID0", 4)) {
+		// Baker: Mem compare check failed, EOF
 		if (t[0] == 0)
-			return (s->error = DPVSIMPLEDECODEERROR_EOF);
+			return (s->error = DPVSIMPLEDECODEERROR_EOF_1);
 		else
-			return (s->error = DPVSIMPLEDECODEERROR_READERROR);
+			return (s->error = DPVSIMPLEDECODEERROR_READERROR_2);
 	}
 	framedatasize = hz_bitstream_read_int(s->framedatablocks);
-	hz_bitstream_read_blocks_read(s->framedatablocks, s->bitstream, framedatasize);
-	if (dpvsimpledecode_decompressimage(s))
+	
+	hz_bitstream_read_blocks_read (s->framedatablocks, s->bitstream, framedatasize);
+	
+	if (_dpvsimpledecode_video_decompressimage(s))
 		return s->error;
 
-	dpvsimpledecode_convertpixels(s, imagedata, imagebytesperrow);
+	_dpvsimpledecode_video_convertpixels(s, vid_vimagedata, imagebytesperrow);
 	return s->error;
 }
+
+
+

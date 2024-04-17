@@ -175,4 +175,9 @@ int Sys_Clipboard_Set_Text (const char *text_to_clipboard)
 	return 0;
 }
 
+int Sys_Clipboard_Set_Image_BGRA_Is_Ok (const unsigned *bgra, int width, int height)
+{
+    return false;
+}
+
 #endif  // !CORE_SDL

@@ -11,7 +11,7 @@ int m_graphics_visiblerows;
 
 void M_Menu_Options_Graphics_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_options_graphics);
 	m_entersound = true;
 }

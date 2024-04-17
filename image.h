@@ -2,6 +2,8 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+// image.h
+
 #include <stddef.h>
 #include "qtypes.h"
 #include "cvar.h"
@@ -72,6 +74,8 @@ extern cvar_t r_fixtrans_auto;
 
 void Image_MakeLinearColorsFromsRGB(unsigned char *pout, const unsigned char *pin, int numpixels);
 void Image_MakesRGBColorsFromLinear_Lightmap(unsigned char *pout, const unsigned char *pin, int numpixels);
+
+bgra4 *Jpeg_Base64_BGRA_Decode_ZAlloc (const char *s_jpeg_string_base64);
 
 #endif
 

@@ -63,7 +63,7 @@ static void M_Menu_Video_FindResolution(int w, int h, float a)
 
 void M_Menu_Video_Classic_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_video_classic);
 	m_entersound = true;
 

@@ -24,6 +24,8 @@ THE SOFTWARE.
 // (brushes, aka n-sided polytopes or hulls) from a series of points provided by
 // the caller
 
+// convex.h
+
 #pragma once
 
 #ifndef CONVEX_H
@@ -72,7 +74,7 @@ typedef struct convex_builder_state_s
 convex_builder_state_t;
 
 // set up a builer state to receive points
-void convex_builder_initialize(convex_builder_state_t* b, float epsilon);
+void convex_builder_initialize(convex_builder_state_t *b, float epsilon);
 
 // this is a variant of QuickHull that relies on the caller to provide points
 // in a reasonable order - the result will be the same regardless of point order
@@ -80,17 +82,17 @@ void convex_builder_initialize(convex_builder_state_t* b, float epsilon);
 //
 // this could be a little more efficient if we kept track of edges during the
 // build, but I think it may be more numerically stable this way
-void convex_builder_add_point(convex_builder_state_t* b, float x, float y, float z);
+void convex_builder_add_point(convex_builder_state_t *b, float x, float y, float z);
 
 // returns computed faces in array of vec4
 // positivew=0 is for plane equations of the form a*x+b*y+c*z+w, which is the
 // internal format
 // positivew=1 is for plane equations of the form a*x+b*y+c*z-w, which tend to
 // be less friendly in terms of vector ops
-int convex_builder_get_planes4f(convex_builder_state_t* b, float* outplanes4f, int maxplanes, int positivew);
+int convex_builder_get_planes4f(convex_builder_state_t *b, float* outplanes4f, int maxplanes, int positivew);
 
 // returns the points as an array of vec3
 // internal format is vec4, so this is just repacking the data
-int convex_builder_get_points3f(convex_builder_state_t* b, float* outpoints3f, int maxpoints);
+int convex_builder_get_points3f(convex_builder_state_t *b, float* outpoints3f, int maxpoints);
 
 #endif

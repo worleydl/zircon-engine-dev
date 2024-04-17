@@ -1564,7 +1564,7 @@ static void NetConn_ConnectionEstablished(lhnetsocket_t *mysocket, lhnetaddress_
 				);
 	}
 	Con_PrintLinef ("Connection accepted to %s", cls.netcon->address);
-	key_dest = key_game;
+	KeyDest_Set (key_game); // key_dest = key_game;
 #ifdef CONFIG_MENU
 	menu_state_set_nova(m_none); // m_state = m_none;
 #endif
@@ -3494,7 +3494,7 @@ static int NetConn_ServerParsePacket(lhnetsocket_t *mysocket, unsigned char *dat
 
 			protocolname = MSG_ReadString(&sv_message, sv_readstring, sizeof(sv_readstring));
 			protocolnumber = MSG_ReadByte(&sv_message);
-			if (String_Does_Not_Match(protocolname, "QUAKE") || protocolnumber != NET_PROTOCOL_VERSION_3)
+			if (String_Does_NOT_Match(protocolname, "QUAKE") || protocolnumber != NET_PROTOCOL_VERSION_3)
 			{
 				if (developer_extra.integer)
 					Con_DPrintf ("Datagram_ParseConnectionless: sending CCREP_REJECT_x82 \"Incompatible version.\" to %s.\n", addressstring2);
@@ -4095,9 +4095,9 @@ void NetConn_Init(void)
 	Cvar_RegisterVariable(&net_fakelag);
 	Cvar_RegisterVariable(&net_fakeloss_send);
 	Cvar_RegisterVariable(&net_fakeloss_receive);
-	Cvar_RegisterVirtual(&net_fakelag, "cl_netlocalping");
-	Cvar_RegisterVirtual(&net_fakeloss_send, "cl_netpacketloss_send");
-	Cvar_RegisterVirtual(&net_fakeloss_receive, "cl_netpacketloss_receive");
+	Cvar_RegisterVariableAlias(&net_fakelag, "cl_netlocalping");
+	Cvar_RegisterVariableAlias(&net_fakeloss_send, "cl_netpacketloss_send");
+	Cvar_RegisterVariableAlias(&net_fakeloss_receive, "cl_netpacketloss_receive");
 	Cvar_RegisterVariable(&hostname);
 	Cvar_RegisterVariable(&developer_networking);
 	Cvar_RegisterVariable(&developer_qw);

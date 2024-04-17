@@ -23,15 +23,17 @@
 # endif
 #endif
 
-#define MAX_NUM_ARGVS	50	// Baker: Windows and reconstitute the command line for the cmdline externally visible cvar
+#define MAX_NUM_ARGVS_50	50	// Baker: Windows and reconstitute the command line for the cmdline externally visible cvar
 
 #define	MAX_INPUTLINE_16384		16384 ///< maximum length of console commandline, QuakeC strings, and many other text processing buffers
-#define	CON_TEXTSIZE			1048576 ///< max scrollback buffer characters in console
-#define	CON_MAXLINES			16384 ///< max scrollback buffer lines in console
+#define	CON_TEXTSIZE_1_MB		1048576 ///< max scrollback buffer characters in console
+#define	CON_MAXLINES_16384		16384 ///< max scrollback buffer lines in console
 #define	HIST_TEXTSIZE			262144 ///< max command history buffer characters in console
-#define	HIST_MAXLINES			4096 ///< max command history buffer lines in console
-#define	MAX_ALIAS_NAME			32
-#define	CMDBUFSIZE				655360 ///< maximum script size that can be loaded by the exec command (8192 in Quake)
+#define	HIST_MAXLINES_4096		4096 ///< max command history buffer lines in console
+#define	MAX_ALIAS_NAME_32		32
+
+// Baker: 131072 * 5 = 655360 .. not sure what is special about that
+#define	CMDBUFSIZE_0_6_MB		655360 ///< maximum script size that can be loaded by the exec command (8192 in Quake)
 #define	MAX_ARGS_80				80 ///< maximum number of parameters to a console command or alias
 
 #define FITZQUAKE_MAX_SOUNDS_2048	2048
@@ -52,29 +54,32 @@
 #define	MAX_SERVERINFO_STRING_1280	1280 ///< max length of server infostring for PROTOCOL_QUAKEWORLD (512 in QuakeWorld)
 #define	MAX_LOCALINFO_STRING	32768 ///< max length of server-local infostring for PROTOCOL_QUAKEWORLD (32768 in QuakeWorld)
 #define	CL_MAX_USERCMDS_128			128 ///< max number of predicted input packets in queue
-#define	CVAR_HASHSIZE			65536 ///< number of hash buckets for accelerating cvar name lookups
+#define	CVAR_HASHSIZE_65536			65536 ///< number of hash buckets for accelerating cvar name lookups
 #define	M_MAX_EDICTS			32768 ///< max objects in menu vm
 #define	MAX_DEMOS				8 ///< max demos provided to demos command
 #define	MAX_DEMONAME			16 ///< max demo name length for demos command
 #define	MAX_SAVEGAMES_20			20 ///< max savegames listed in savegame menu   //Baker r1241: MAX_SAVEGAMES_20 to 20 mirroring other Quake engines.
-#define	SAVEGAME_COMMENT_LENGTH	39 ///< max comment length of savegame in menu
+#define	SAVEGAME_COMMENT_LENGTH_39	39 ///< max comment length of savegame in menu
 #define	MAX_CLIENTNETWORKEYES	16 ///< max number of locations that can be added to pvs when culling network entities (must be at least 2 for prediction)
 #define	MAX_LEVELNETWORKEYES	512 ///< max number of locations that can be added to pvs when culling network entities (must be at least 2 for prediction)
 #define	MAX_OCCLUSION_QUERIES	4096 ///< max number of query objects that can be used in one frame (GL_ARB_occlusion_query)
 
 #define CRYPTO_HOSTKEY_HASHSIZE 8192 ///< number of hash buckets for accelerating host key lookups
+
+#if 0 // Baker: I'm not seeing this used
 #define MAX_NETWM_ICON 352822 // 16x16, 22x22, 24x24, 32x32, 48x48, 64x64, 128x128, 256x256, 512x512
+#endif
 
 #define	MAX_WATERPLANES			16 ///< max number of water planes visible (each one causes additional view renders)
 #define	MAX_CUBEMAPS			1024 ///< max number of cubemap textures loaded for light filters
 #define	MAX_EXPLOSIONS			64 ///< max number of explosion shell effects active at once (not particle related)
-#define	MAX_DLIGHTS				256 ///< max number of dynamic lights (rocket flashes, etc) in scene at once
+#define	MAX_DLIGHTS_256				256 ///< max number of dynamic lights (rocket flashes, etc) in scene at once
 #define	MAX_CACHED_PICS			2048 ///< max number of 2D pics loaded at once
 #define	CACHEPICHASHSIZE		256 ///< number of hash buckets for accelerating 2D pic name lookups
-#define	MAX_PARTICLEEFFECTNAME	4096 ///< maximum number of unique names of particle effects (for particleeffectnum)
-#define	MAX_PARTICLEEFFECTINFO	8192 ///< maximum number of unique particle effects (each name may associate with several of these)
+#define	MAX_PARTICLEEFFECTNAME_4096	4096 ///< maximum number of unique names of particle effects (for particleeffectnum)
+#define	MAX_PARTICLEEFFECTINFO_8192	8192 ///< maximum number of unique particle effects (each name may associate with several of these)
 #define	MAX_PARTICLETEXTURES	256 ///< maximum number of unique particle textures in the particle font
-#define	MAXCLVIDEOS				65 ///< maximum number of video streams being played back at once (1 is reserved for the playvideo command)
+#define	MAXCLVIDEOS_65				65 ///< maximum number of video streams being played back at once (1 is reserved for the playvideo command)
 #define	MAX_DYNAMIC_TEXTURE_COUNT	64 ///< maximum number of dynamic textures (web browsers, playvideo, etc)
 #define	MAX_MAP_LEAFS			65536 ///< maximum number of BSP leafs in world (8192 in Quake)
 

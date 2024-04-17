@@ -12,10 +12,10 @@
 		Host_Error_Line ("ERROR: couldn't open %s", sloadgame );
 	}
 
-	const char *scomment = dpstrrstr(text, "/*");
+	const char *scomment = dp_strstr_reverse(text, "/*");
 	if (scomment) {
 
-        const char *slastmodel, *mt = slastmodel = dpstrrstr(text, "sv.model_precache");
+        const char *slastmodel, *mt = slastmodel = dp_strstr_reverse(text, "sv.model_precache");
         if (slastmodel) {
             int mc =	SV_ModelIndex_Count ();	// expect 80
             int sc =	SV_SoundIndex_Count (); // expect 114?
@@ -32,7 +32,7 @@
                 Con_PrintLinef (CON_CYAN, "Loadgame has more models (%d) than QC precaches (%d) ", mc0, mc);
             }
 
-            const char *slastsou, *ms = slastsou = dpstrrstr(text, "sv.sound_precache");
+            const char *slastsou, *ms = slastsou = dp_strstr_reverse(text, "sv.sound_precache");
             if (slastsou) {
                 // sv.sound_precache 114 zirco/door_keypad_error.wav
                 COM_ParseToken_Simple (&ms, false, false, false); // sv.sound_precache
@@ -53,15 +53,15 @@
 
                     Con_PrintLinef (CON_CYAN "Precaching late models/sounds");
 
-                    while (COM_ParseToken_Simple(&tm, false, false, true)) {
+                    while (COM_Parse_Basic(&tm)) {
                         if (String_Does_Match(com_token, "sv.lightstyles")) {
-                            COM_ParseToken_Simple(&tm, false, false, true);
+                            COM_Parse_Basic (&tm);
                             jj = atoi(com_token);
-                            COM_ParseToken_Simple(&tm, false, false, true);
+                            COM_Parse_Basic (&tm);
                         } else if (String_Does_Match(com_token, "sv.model_precache")) {
-                            COM_ParseToken_Simple(&tm, false, false, true);
+                            COM_Parse_Basic (&tm);
                             jj = atoi(com_token);
-                            COM_ParseToken_Simple(&tm, false, false, true);
+                            COM_Parse_Basic (&tm);
                             if (jj >= 0 && jj < MAX_MODELS_8192) {
                                 if (jj >= mc) {
                                     Con_PrintLinef (CON_CYAN "Precaching %s", com_token);
@@ -70,9 +70,9 @@
                                 }
                             } else Con_PrintLinef (CON_CYAN "unsupported model %d " QUOTED_S, jj, com_token);
                         } else if (String_Does_Match(com_token, "sv.sound_precache")) {
-                            COM_ParseToken_Simple(&tm, false, false, true);
+                            COM_Parse_Basic (&tm);
                             jj = atoi(com_token);
-                            COM_ParseToken_Simple(&tm, false, false, true);
+                            COM_Parse_Basic (&tm);
                             if (jj >= 0 && jj < MAX_SOUNDS_4096) {
                                 if (jj >= sc) {
                                     Con_PrintLinef (CON_CYAN "Precaching %s", com_token);
@@ -111,7 +111,7 @@
                             }
                         }
                         // skip any trailing text or unrecognized commands
-                        while (COM_ParseToken_Simple(&tm, true, false, true) && String_Does_Not_Match (com_token, NEWLINE))
+                        while (COM_ParseToken_Simple(&tm, true, false, true) && String_Does_NOT_Match (com_token, NEWLINE))
                             ; // wh
                     } // wh
                 } // preparse

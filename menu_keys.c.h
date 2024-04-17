@@ -61,6 +61,8 @@ static const char *quake3_quake1bindnames[][2] =
 {"messagemode", 	"talk"},
 };
 
+const char *menu_keylist_bindnames[256][2];
+
 static const char *zirconbindnames[][2] =
 {
 {"+attack", 		"attack"},
@@ -100,10 +102,21 @@ static int		bind_grab;
 static int		m_keys_prevstate;
 void M_Menu_Keys_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu_grabbed;
+	KeyDest_Set (key_menu_grabbed); // key_dest = key_menu_grabbed;
 	m_keys_prevstate = m_state;
 	menu_state_set_nova (m_keys);
 	m_entersound = true;
+
+	if (menu_keylist_txt.numstrings) {
+		local_count = menu_keylist_txt.numstrings / 2;
+		for (int j = 0; j < menu_keylist_txt.numstrings; j ++) {
+			int row = j / 2;
+			int col = Math_IsOdd(j); 
+			menu_keylist_bindnames [row][col] = menu_keylist_txt.strings[j];
+		} // for
+		bindnames = menu_keylist_bindnames;
+		goto custom_bypass;
+	} // if
 
 	if (gamemode == GAME_QUAKE3_QUAKE1) {
 		local_count = ARRAY_COUNT(quake3_quake1bindnames);
@@ -116,6 +129,7 @@ void M_Menu_Keys_f(cmd_state_t *cmd)
 		bindnames = quakebindnames;
 	}
 
+custom_bypass:
 	// Make sure "local_cursor" doesn't start on a section in the binding list
 	local_cursor = 0;
 	while (bindnames[local_cursor][0][0] == '\0') {

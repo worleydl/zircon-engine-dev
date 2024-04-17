@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
+
+// vid_sdl.c
 #undef WIN32_LEAN_AND_MEAN  //hush a warning, SDL.h redefines this
 #if defined(_MSC_VER) && _MSC_VER < 1900
 	#include <SDL2/SDL.h>
@@ -385,6 +387,10 @@ qbool VID_ShowingKeyboard(void)
 	return SDL_IsTextInputActive() != 0;
 }
 
+// Baker: in-game relative is true, Zircon mouse driven menu does not call this
+// Baker: CL_UpdateScreen-> key_consoleactive --> 
+//   VID_SetMouse(q_mouse_relative_false, q_mouse_hidecursor_false);
+// Baker: What is the mouse cvar?
 void VID_SetMouse(qbool relative, qbool hidecursor)
 {
 #ifndef DP_MOBILETOUCH
@@ -392,7 +398,7 @@ void VID_SetMouse(qbool relative, qbool hidecursor)
 	if (relative)
 		if (vid_usingmouse && (vid_usingnoaccel != !!apple_mouse_noaccel.integer))
 			VID_SetMouse(false, false); // ungrab first!
-#endif
+#endif // MACOSX
 	if (vid_usingmouse != relative)
 	{
 		vid_usingmouse = relative;
@@ -450,13 +456,13 @@ void VID_SetMouse(qbool relative, qbool hidecursor)
 					Con_Print("Could not re-enable mouse acceleration (failed at IO_GetIOHandle).\n");
 			}
 		}
-#endif
+#endif // MACOSX
 	}
 	if (vid_usinghidecursor != hidecursor) {
 		vid_usinghidecursor = hidecursor;
 		SDL_ShowCursor( hidecursor ? SDL_DISABLE : SDL_ENABLE);
 	}
-#endif
+#endif // !DP_MOBILETOUCH
 }
 
 // multitouch[10][] represents the mouse pointer
@@ -791,7 +797,7 @@ static void IN_Move_TouchScreen_SteelStorm(void)
 	float move[3], aim[3];
 	static qbool oldbuttons[128];
 	static qbool buttons[128];
-	keydest_t keydest = Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
+	keydest_e keydest = Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
 	memcpy(oldbuttons, buttons, sizeof(oldbuttons));
 	memset(multitouchs, 0, sizeof(multitouchs));
 
@@ -906,7 +912,7 @@ static void IN_Move_TouchScreen_Quake(void)
 	static qbool oldbuttons[128];
 	static qbool buttons[128];
 
-	keydest_t keydest = Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
+	keydest_e keydest = Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
 
 	memcpy(oldbuttons, buttons, sizeof(oldbuttons));
 	memset(multitouchs, 0, sizeof(multitouchs));
@@ -986,15 +992,15 @@ static void IN_Move_TouchScreen_Quake(void)
 	cl.viewangles[1] -= aim[0] * cl_yawspeed.value * cl.realframetime;
 }
 
-void IN_Move( void )
+void IN_Move (void)
 {
 	static int old_x = 0, old_y = 0;
 	static int stuck = 0;
-	static keydest_t oldkeydest;
+	static keydest_e oldkeydest;
 	static qbool oldshowkeyboard;
 	int x, y;
 	vid_joystate_t joystate;
-	keydest_t keydest = Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
+	keydest_e keydest = Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER_1) ? key_console : key_dest;
 
 	scr_numtouchscreenareas = 0;
 
@@ -1011,24 +1017,21 @@ void IN_Move( void )
 	oldkeydest = keydest;
 	oldshowkeyboard = !!vid_touchscreen_showkeyboard.integer;
 
-	if (vid_touchscreen.integer)
-	{
-		switch(gamemode)
-		{
+	if (vid_touchscreen.integer /*d: 0*/) {
+		switch(gamemode) {
 		case GAME_STEELSTORM:
 			IN_Move_TouchScreen_SteelStorm();
 			break;
+
 		default:
 			IN_Move_TouchScreen_Quake();
 			break;
-		}
+		} // sw
 	}
 	else
 	{
-		if (vid_usingmouse)
-		{
-			if (vid_stick_mouse.integer || !vid_usingmouse_relativeworks)
-			{
+		if (vid_usingmouse) {
+			if (vid_stick_mouse.integer /*d:0*/ || !vid_usingmouse_relativeworks) {
 				// have the mouse stuck in the middle, example use: prevent expose effect of beryl during the game when not using
 				// window grabbing. --blub
 	
@@ -1059,6 +1062,7 @@ void IN_Move( void )
 		SDL_GetMouseState(&x, &y);
 		in_windowmouse_x = x;
 		in_windowmouse_y = y;
+		Consel_MouseMove_Check ();
 	}
 
 	VID_BuildJoyState(&joystate);
@@ -1339,10 +1343,14 @@ void Sys_SendKeyEvents( void )
 					case SDL_WINDOWEVENT_RESTORED:
 						break;
 					case SDL_WINDOWEVENT_ENTER:
+#if 0 // This is window area mouse leave
 						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+#endif
 						break;
 					case SDL_WINDOWEVENT_LEAVE:
+#if 0 // This is window area mouse leave
 						Key_ReleaseAll (); // Baker r9004: Release keys on loss of focus/hidden or major sizing change
+#endif
 						break;
 					case SDL_WINDOWEVENT_FOCUS_GAINED:
 						IN_Keyboard_Acquire(); // Baker r1413: Disable windows key
@@ -1658,10 +1666,10 @@ static void VID_OutputVersion(void)
 {
 	SDL_version version;
 	SDL_GetVersion(&version);
-	Con_Printf (	"Linked against SDL version %d.%d.%d\n"
-					"Using SDL library version %d.%d.%d\n",
-					SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
-					version.major, version.minor, version.patch );
+	Con_DPrintLinef (	"Linked against SDL version %d.%d.%d" NEWLINE
+						"Using SDL library version %d.%d.%d",
+						SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+						version.major, version.minor, version.patch );
 }
 
 #ifdef _WIN32
@@ -1773,12 +1781,12 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 
 			// Baker r1482: Windowed mode uses 75% desktop size with vid_fullscreendesktop
 			if (vid_desktopfullscreen.integer) {
-				vid_mode_t* m = VID_GetDesktopMode();
+				vid_mode_t *m = VID_GetDesktopMode();
 				mode->width = m->width * 0.75;
 				mode->height = m->height * 0.75;
 			}
 #ifdef _WIN32
-			if (vid_ignore_taskbar.integer) {
+			if (vid_ignore_taskbar.integer /*d: 1*/) {
 				xPos = SDL_WINDOWPOS_CENTERED;
 				yPos = SDL_WINDOWPOS_CENTERED;
 			}
@@ -1826,17 +1834,48 @@ static qbool VID_InitModeGL(viddef_mode_t *mode)
 	video_bpp = mode->bitsperpixel;
 	window_flags = windowflags;
 	window = SDL_CreateWindow(gamename, xPos, yPos, mode->width, mode->height, windowflags);
-	if (window == NULL)
-	{
-		Con_Printf (CON_ERROR "Failed to set video mode to %dx%d: %s\n", mode->width, mode->height, SDL_GetError());
+	if (window == NULL) {
+		Con_PrintLinef (CON_ERROR "Failed to set video mode to %dx%d: %s\n", mode->width, mode->height, SDL_GetError());
 		VID_Shutdown();
 		return false;
 	}
 
-	// Baker r9511: SDL ensure icon
-#if defined(_WIN32)
-	SetWIke (window);
+	// Baker r9511: SDL ensure icon	
+#if 0
+	#if defined(_WIN32)
+		SetWIke (window);
+	#endif
 #endif
+
+	// Baker: This needs initialized.
+	qbool JPEG_OpenLibrary (void);
+	qbool is_jpeglib_loaded = JPEG_OpenLibrary (); // Yay!
+
+	while (is_jpeglib_loaded) {
+		// Length is 3828, unpacks to 9216 bgra
+		const char *s_zircon_icon_jpeg_base64 = "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";
+
+		if (mod_list_game_icon_base64_zalloc)
+			s_zircon_icon_jpeg_base64 = mod_list_game_icon_base64_zalloc;
+
+		// Baker: This shouldn't fail.
+		bgra4 *bgra_pels_zalloc = Jpeg_Base64_BGRA_Decode_ZAlloc(s_zircon_icon_jpeg_base64);
+		int ike_width = image_width, ike_height = image_height;
+
+	#if 0
+		// Baker: Fills with black, testing.
+		SDL_Surface *sdl_surface_icon = SDL_CreateRGBSurface(0,/*wh*/ 64,64,32,0,0,0,0);
+	#endif
+
+		int rowbytes = ike_width * BGRA_4;
+		SDL_Surface *sdl_surface_icon = SDL_CreateRGBSurfaceFrom(bgra_pels_zalloc, /*rowbytes*/ ike_width , ike_height, /*depth*/ 32, rowbytes,0,0,0,0);
+		
+		SDL_SetWindowIcon (/*sdlWindow*/ window, sdl_surface_icon);
+
+		SDL_FreeSurface (sdl_surface_icon);
+		Mem_FreeNull_ (bgra_pels_zalloc);
+		break; // GET OUT!
+	} // while JPEG process
 
 	SDL_GetWindowSize(window, &mode->width, &mode->height);
 	context = SDL_GL_CreateContext(window);
@@ -1956,6 +1995,19 @@ void VID_Finish (void)
 			break;
 		} // switch
 	}
+}
+
+
+void Vid_SetWindowTitlef (const char *fmt, ...)
+{
+	if (window) {
+		int j = 5;
+		// No window!
+	}
+
+	VA_EXPAND_ALLOC (text, text_slen, bufsiz, fmt);
+	SDL_SetWindowTitle (window, text);
+	VA_EXPAND_ALLOC_FREE (text);
 }
 
 vid_mode_t *VID_GetDesktopMode(void)

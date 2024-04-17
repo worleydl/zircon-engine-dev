@@ -149,7 +149,7 @@ typedef enum effectnameindex_s
 	EFFECT_TR_NEXUIZPLASMA,
 	EFFECT_TR_GLOWTRAIL,
 	EFFECT_SVC_PARTICLE,
-	EFFECT_TOTAL
+	EFFECT_TOTAL_36
 }
 effectnameindex_t;
 

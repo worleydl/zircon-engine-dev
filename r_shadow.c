@@ -280,7 +280,7 @@ extern int con_vislines;
 
 void R_Shadow_UncompileWorldLights(void);
 void R_Shadow_ClearWorldLights(void);
-void R_Shadow_SaveWorldLights(void);
+void R_Shadow_SaveWorldLights(float shift_x, float shift_y, float shift_z);
 void R_Shadow_LoadWorldLights(void);
 void R_Shadow_LoadLightsFile(void);
 void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void);
@@ -2985,7 +2985,7 @@ void R_Shadow_RenderLighting(int texturenumsurfaces, const msurface_t **textures
 void R_RTLight_Update(rtlight_t *rtlight, int isstatic, matrix4x4_t *matrix, vec3_t color, int style, const char *cubemapname, int shadow, vec_t corona, vec_t coronasizescale, vec_t ambientscale, vec_t diffusescale, vec_t specularscale, int flags)
 {
 	matrix4x4_t tempmatrix = *matrix;
-	Matrix4x4_Scale(&tempmatrix, r_shadow_lightradiusscale.value, 1);
+	Matrix4x4_Scale(&tempmatrix, r_shadow_lightradiusscale.value /*d: 1*/, 1);
 
 	// if this light has been compiled before, free the associated data
 	R_RTLight_Uncompile(rtlight);
@@ -4686,7 +4686,7 @@ static void R_Shadow_UpdateWorldLight(dlight_t *light, vec3_t origin, vec3_t ang
 	light->style = style;
 	light->shadow = shadowenable;
 	light->corona = corona;
-	strlcpy(light->cubemapname, cubemapname, sizeof(light->cubemapname));
+	c_strlcpy (light->cubemapname, cubemapname);
 	light->coronasizescale = coronasizescale;
 	light->ambientscale = ambientscale;
 	light->diffusescale = diffusescale;
@@ -4995,7 +4995,7 @@ void R_Shadow_LoadWorldLights(void)
 	}
 }
 
-void R_Shadow_SaveWorldLights(void)
+void R_Shadow_SaveWorldLights(float shift_x, float shift_y, float shift_z)
 {
 	size_t lightindex;
 	dlight_t *light;
@@ -5021,7 +5021,8 @@ void R_Shadow_SaveWorldLights(void)
 		if (!light)
 			continue;
 		if (light->coronasizescale != 0.25f || light->ambientscale != 0 || light->diffusescale != 1 || light->specularscale != 1 || light->flags != LIGHTFLAG_REALTIMEMODE)
-			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d " QUOTED_S " %f %f %f %f %f %f %f %f %d\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2], light->coronasizescale, light->ambientscale, light->diffusescale, light->specularscale, light->flags);
+			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d " QUOTED_S " %f %f %f %f %f %f %f %f %d\n", 
+			light->shadow ? "" : "!", light->origin[0] + shift_x, light->origin[1] + shift_y, light->origin[2] + shift_z, light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2], light->coronasizescale, light->ambientscale, light->diffusescale, light->specularscale, light->flags);
 		else if (light->cubemapname[0] || light->corona || light->angles[0] || light->angles[1] || light->angles[2])
 			dpsnprintf(line, sizeof(line), "%s%f %f %f %f %f %f %f %d " QUOTED_S " %f %f %f %f\n", light->shadow ? "" : "!", light->origin[0], light->origin[1], light->origin[2], light->radius, light->color[0], light->color[1], light->color[2], light->style, light->cubemapname, light->corona, light->angles[0], light->angles[1], light->angles[2]);
 		else
@@ -5319,7 +5320,7 @@ void R_Shadow_LoadWorldLightsFromMap_LightArghliteTyrlite(void)
 		}
 		VectorAdd(origin, originhack, origin);
 		if (radius >= 1)
-			R_Shadow_UpdateWorldLight(R_Shadow_NewWorldLight(), origin, angles, color, radius, (pflags & PFLAGS_CORONA) != 0, style, (pflags & PFLAGS_NOSHADOW) == 0, skin >= 16 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", skin) : NULL, 0.25, 0, 1, 1, LIGHTFLAG_REALTIMEMODE);
+			R_Shadow_UpdateWorldLight(R_Shadow_NewWorldLight(), origin, angles, color, radius, (pflags & PFLAGS_CORONA_2) != 0, style, (pflags & PFLAGS_NOSHADOW_1) == 0, skin >= 16 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", skin) : NULL, 0.25, 0, 1, 1, LIGHTFLAG_REALTIMEMODE);
 	}
 	if (entfiledata)
 		Mem_Free(entfiledata);
@@ -5391,7 +5392,15 @@ static void R_Shadow_EditLights_Save_f(cmd_state_t *cmd)
 {
 	if (!cl.worldmodel)
 		return;
-	R_Shadow_SaveWorldLights();
+	float shift_x = 0;
+	float shift_y = 0;
+	float shift_z = 0;
+	if (Cmd_Argc (cmd) >= 4) {
+		shift_x = atof(Cmd_Argv (cmd, 1));
+		shift_y = atof(Cmd_Argv (cmd, 2));
+		shift_z = atof(Cmd_Argv (cmd, 3));
+	}
+	R_Shadow_SaveWorldLights(shift_x, shift_y, shift_z);
 }
 
 static void R_Shadow_EditLights_ImportLightEntitiesFromMap_f(cmd_state_t *cmd)

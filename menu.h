@@ -33,6 +33,8 @@ enum m_state_e {
 	m_singleplayer,
 	m_load,
 	m_save,
+	m_load2,
+	m_save2,
 	m_multiplayer,
 	m_setup,
 	m_options_nova,
@@ -52,6 +54,7 @@ enum m_state_e {
 	m_modlist,
 	m_video_nova,
 	m_maps,
+	m_zdev,
 };
 
 extern enum m_state_e m_state;
@@ -114,6 +117,13 @@ extern qbool menu_is_csqc;
 #endif
 
 int SList_Tiebreaker_Bias (const char *s);
+
+#ifdef CONFIG_MENU
+extern int m_load2_oldload_cursor; // Need to reset dynamic texture in menu.  DYNAMICTEX_Q3_END
+extern qbool m_load2_scroll_is_blocked;
+#endif
+
+#define DOUBLE_CLICK_0_5 0.5 // Windows double-click time
 
 #endif // ! MENU_H
 

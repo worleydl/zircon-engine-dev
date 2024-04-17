@@ -427,31 +427,27 @@ void CL_ParseEntityLump(char *entdata)
 		if (com_token[0] == '}')
 			break; // end of worldspawn
 		if (com_token[0] == '_')
-			strlcpy (key, com_token + 1, sizeof (key));
+			c_strlcpy (key, com_token + 1);
 		else
 			strlcpy (key, com_token, sizeof (key));
 		while (key[strlen(key)-1] == ' ') // remove trailing spaces
 			key[strlen(key)-1] = 0;
 		if (!COM_ParseToken_Simple(&data, false, false, true))
 			return; // error
-		strlcpy (value, com_token, sizeof (value));
-		if (String_Does_Match("sky", key))
-		{
+		c_strlcpy (value, com_token);
+		if (String_Does_Match("sky", key)) {
 			loadedsky = true;
 			R_SetSkyBox(value);
 		}
-		else if (String_Does_Match("skyname", key)) // non-standard, introduced by QuakeForge... sigh.
-		{
+		else if (String_Does_Match("skyname", key)) { // non-standard, introduced by QuakeForge... sigh.
 			loadedsky = true;
 			R_SetSkyBox(value);
 		}
-		else if (String_Does_Match("qlsky", key)) // non-standard, introduced by QuakeLives (EEK)
-		{
+		else if (String_Does_Match("qlsky", key)) { // non-standard, introduced by QuakeLives (EEK)
 			loadedsky = true;
 			R_SetSkyBox(value);
 		}
-		else if (String_Does_Match("fog", key))
-		{
+		else if (String_Does_Match("fog", key)) {
 			FOG_clear(); // so missing values get good defaults
 			r_refdef.fog_start = 0;
 			r_refdef.fog_alpha = 1;
@@ -530,7 +526,7 @@ static void CL_SetupWorldModel(void)
 	// make sure the cl.worldname and related cvars are set up now that we know the world model name
 	// set up csqc world for collision culling
 	if (cl.worldmodel) {
-		c_strlcpy(cl.worldname, cl.worldmodel->model_name);
+		c_strlcpy (cl.worldname, cl.worldmodel->model_name);
 		FS_StripExtension(cl.worldname, cl.worldnamenoextension, sizeof(cl.worldnamenoextension));
 		c_strlcpy (cl.worldbasename, String_Does_Start_With_PRE (cl.worldnamenoextension, "maps/") ? 
 			cl.worldnamenoextension + 5 : cl.worldnamenoextension);
@@ -593,7 +589,7 @@ static qbool QW_CL_CheckOrDownloadFile(const char *filename)
 	qfile_t *file;
 
 	// see if the file already exists
-	file = FS_OpenVirtualFile(filename, true);
+	file = FS_OpenVirtualFile(filename, fs_quiet_true);
 	if (file) {
 		FS_Close(file);
 		return true;
@@ -1468,7 +1464,7 @@ static void CL_ParseServerInfo (int is_qw)
 	int nummodels, numsounds;
 
 	// if we start loading a level and a video is still playing, stop it
-	CL_VideoStop();
+	CL_VideoStop (REASON_NEW_MAP_1);
 
 	Con_DPrintLinef ("Serverinfo packet received.");
 	Collision_Cache_Reset(true);
@@ -1793,7 +1789,7 @@ gamedir_change:
 				((cl_autodemo_delete.integer & 0x2) ? 0x1 : 0)
 			);
 
-			cls.demofile = FS_OpenRealFile(demofile, "wb", false);
+			cls.demofile = FS_OpenRealFile(demofile, "wb", fs_quiet_FALSE); // WRITE-EON - demo reocrd for autodemo
 			if (cls.demofile) {
 				cls.forcetrack = -1;
 				FS_Printf (cls.demofile, "%d" NEWLINE, cls.forcetrack);
@@ -1833,7 +1829,7 @@ void CL_ValidateState(entity_state_t *s)
 		model = CL_GetModelByIndex(s->modelindex);
 		if (model && model->type && s->frame >= model->numframes)
 			Con_DPrintLinef ("CL_ValidateState: no such frame %d in " QUOTED_S " (which has %d frames)", s->frame, model->model_name, model->numframes);
-		if (model && model->type && s->skin > 0 && s->skin >= model->numskins && !(s->lightpflags & PFLAGS_FULLDYNAMIC))
+		if (model && model->type && s->skin > 0 && s->skin >= model->numskins && !(s->lightpflags & PFLAGS_FULLDYNAMIC_128))
 			Con_DPrintLinef ("CL_ValidateState: no such skin %d in " QUOTED_S " (which has %d skins)", s->skin, model->model_name, model->numskins);
 	}
 }
@@ -2010,6 +2006,7 @@ static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_
 		ent->state_baseline.colormod[0] = cls.storr[2];
 		ent->state_baseline.colormod[1] = cls.storr[3];
 		ent->state_baseline.colormod[2] = cls.storr[4];
+
 		cs_effects_additive1_fullbright2 = cls.storr[5];
 		ent->state_baseline.scale = cls.storr[6];
 
@@ -2017,6 +2014,8 @@ static void CL_ParseBaseline (entity_t *ent, int is_large_model_index, int fitz_
 			Flag_Add_To (ent->state_baseline.effects, EF_ADDITIVE_32);
 		if (Have_Flag (cs_effects_additive1_fullbright2, EF_SHORTY_FULLBRIGHT_2))
 			Flag_Add_To (ent->state_baseline.effects, EF_FULLBRIGHT);
+		if (Have_Flag (cs_effects_additive1_fullbright2, EF_SHORTY_NOSHADOW_4))
+			Flag_Add_To (ent->state_baseline.effects, EF_NOSHADOW);
 		cls.storr[0] = 0; // Clear the store immediately.
 	} // Baker: ZIRCON_EXT_STATIC_ENT_ALPHA_COLORMOD_SCALE_32
 
@@ -2063,7 +2062,7 @@ static void CL_ParseClientdata (void)
 								PROTOCOL_DARKPLACES5)) {
 		cl.stats[STAT_VIEWHEIGHT] = DEFAULT_VIEWHEIGHT;
 		cl.stats[STAT_ITEMS] = 0;
-		cl.stats[STAT_VIEWZOOM] = 255;
+		cl.stats[STAT_VIEWZOOM_21] = 255;
 	}
 	cl.idealpitch = 0;
 	cl.mpunchangle[0][0] = 0;
@@ -2205,16 +2204,16 @@ static void CL_ParseClientdata (void)
 	if (Have_Flag (bits, SU_VIEWZOOM_S19) &&
 		false == isin2(cls.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999)) {
 		if (isin3 (cls.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4) )
-			cl.stats[STAT_VIEWZOOM] = MSG_ReadByte(&cl_message);
+			cl.stats[STAT_VIEWZOOM_21] = MSG_ReadByte(&cl_message);
 		else {
 			if (developer_qw.integer)
-				Con_PrintLinef ("STAT_VIEWZOOM");
-			cl.stats[STAT_VIEWZOOM] = (unsigned short) MSG_ReadShort(&cl_message);
+				Con_PrintLinef ("STAT_VIEWZOOM_21");
+			cl.stats[STAT_VIEWZOOM_21] = (unsigned short) MSG_ReadShort(&cl_message);
 	}
 	}
 
 	// viewzoom interpolation
-	cl.mviewzoom[0] = (float) max(cl.stats[STAT_VIEWZOOM], 2) * (1.0f / 255.0f);
+	cl.mviewzoom[0] = (float) max(cl.stats[STAT_VIEWZOOM_21], 2) * (1.0f / 255.0f);
 }
 
 /*
@@ -2400,7 +2399,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_WIZSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_wizhit, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_wizhit, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_KNIGHTSPIKE:
@@ -2408,7 +2407,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_KNIGHTSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_knighthit, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_knighthit, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_SPIKE:
@@ -2417,16 +2416,16 @@ static void CL_ParseTempEntity(void)
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_SPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 			else
 			{
 				rnd = rand() & 3;
 				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 			}
 			break;
 		case TE_SPIKEQUAD:
@@ -2435,16 +2434,16 @@ static void CL_ParseTempEntity(void)
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_SPIKEQUAD, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 			else
 			{
 				rnd = rand() & 3;
 				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 			}
 			break;
 		case TE_SUPERSPIKE:
@@ -2453,16 +2452,16 @@ static void CL_ParseTempEntity(void)
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_SUPERSPIKE, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 			else
 			{
 				rnd = rand() & 3;
 				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 			}
 			break;
 		case TE_SUPERSPIKEQUAD:
@@ -2471,16 +2470,16 @@ static void CL_ParseTempEntity(void)
 			CL_FindNonSolidLocation(pos, pos, 4);
 			CL_ParticleEffect(EFFECT_TE_SUPERSPIKEQUAD, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
 			if (rand() % 5)
-				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+				S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 			else
 			{
 				rnd = rand() & 3;
 				if (rnd == 1)
-					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 				else if (rnd == 2)
-					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 				else
-					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 			}
 			break;
 			// LadyHavoc: added for improved blood splatters
@@ -2565,16 +2564,16 @@ static void CL_ParseTempEntity(void)
 			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOT)
 			{
 				if (rand() % 5)
-					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 				else
 				{
 					rnd = rand() & 3;
 					if (rnd == 1)
-						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 					else if (rnd == 2)
-						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 					else
-						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 				}
 			}
 			break;
@@ -2587,16 +2586,16 @@ static void CL_ParseTempEntity(void)
 			if (cl_sound_ric_gunshot.integer & RIC_GUNSHOTQUAD)
 			{
 				if (rand() % 5)
-					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+					S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 				else
 				{
 					rnd = rand() & 3;
 					if (rnd == 1)
-						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric1, pos, 1, 1, q_is_forceloop_false);
 					else if (rnd == 2)
-						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric2, pos, 1, 1, q_is_forceloop_false);
 					else
-						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1);
+						S_StartSound(-1, 0, cl.sfx_ric3, pos, 1, 1, q_is_forceloop_false);
 				}
 			}
 			break;
@@ -2606,7 +2605,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 10);
 			CL_ParticleEffect(EFFECT_TE_EXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_EXPLOSIONQUAD:
@@ -2614,7 +2613,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 10);
 			CL_ParticleEffect(EFFECT_TE_EXPLOSIONQUAD, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_EXPLOSION3:
@@ -2627,7 +2626,7 @@ static void CL_ParseTempEntity(void)
 			CL_ParticleExplosion(pos);
 			Matrix4x4_CreateTranslate(&tempmatrix, pos[0], pos[1], pos[2]);
 			CL_AllocLightFlash(NULL, &tempmatrix, 350, color[0], color[1], color[2], 700, 0.5, NULL, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_EXPLOSIONRGB:
@@ -2640,7 +2639,7 @@ static void CL_ParseTempEntity(void)
 			color[2] = MSG_ReadByte(&cl_message) * (2.0f / 255.0f);
 			Matrix4x4_CreateTranslate(&tempmatrix, pos[0], pos[1], pos[2]);
 			CL_AllocLightFlash(NULL, &tempmatrix, 350, color[0], color[1], color[2], 700, 0.5, NULL, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_TAREXPLOSION:
@@ -2648,7 +2647,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 10);
 			CL_ParticleEffect(EFFECT_TE_TAREXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_SMALLFLASH:
@@ -2728,7 +2727,7 @@ static void CL_ParseTempEntity(void)
 			color[2] = tempcolor[2] * (2.0f / 255.0f);
 			Matrix4x4_CreateTranslate(&tempmatrix, pos[0], pos[1], pos[2]);
 			CL_AllocLightFlash(NULL, &tempmatrix, 350, color[0], color[1], color[2], 700, 0.5, NULL, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_TEI_G3:
@@ -2750,7 +2749,7 @@ static void CL_ParseTempEntity(void)
 			MSG_ReadVector(&cl_message, pos, cls.protocol);
 			CL_FindNonSolidLocation(pos, pos, 10);
 			CL_ParticleEffect(EFFECT_TE_TEI_BIGEXPLOSION, 1, pos, pos, vec3_origin, vec3_origin, NULL, 0);
-			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1);
+			S_StartSound(-1, 0, cl.sfx_r_exp3, pos, 1, 1, q_is_forceloop_false);
 			break;
 
 		case TE_TEI_PLASMAHIT:

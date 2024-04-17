@@ -310,6 +310,67 @@ static void S_ConvertPaintBuffer(portable_sampleframe_t *painted_ptr, void *rb_p
 }
 
 
+
+
+/*
+===============================================================================
+
+UNDERWATER EFFECT
+
+Muffles the intensity of sounds when the player is underwater
+
+===============================================================================
+*/
+
+static struct
+{
+	float intensity;
+	float alpha;
+	float accum[SND_LISTENERS_8];
+}
+underwater = {0.f, 1.f, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}};
+
+void S_SetUnderwaterIntensity(void)
+{
+	float target = cl.view_underwater ? bound(0.f, snd_waterfx.value, 2.f) : 0.f;
+
+	if (underwater.intensity < target)
+	{
+		underwater.intensity += cl.realframetime * 4.f;
+		underwater.intensity = min(underwater.intensity, target);
+	}
+	else if (underwater.intensity > target)
+	{
+		underwater.intensity -= cl.realframetime * 4.f;
+		underwater.intensity = max(underwater.intensity, target);
+	}
+
+	underwater.alpha = underwater.intensity ? exp(-underwater.intensity * log(12.f)) : 1.f;
+}
+
+static void S_UnderwaterFilter(int endtime)
+{
+	int i;
+	int sl;
+
+	if (!underwater.intensity)
+	{
+		if (endtime > 0)
+			for (sl = 0; sl < SND_LISTENERS_8; sl++)
+				underwater.accum[sl] = paintbuffer[endtime-1].sample[sl];
+		return;
+	}
+
+	for (i = 0; i < endtime; i++)
+		for (sl = 0; sl < SND_LISTENERS_8; sl++)
+		{
+			underwater.accum[sl] += underwater.alpha * (paintbuffer[i].sample[sl] - underwater.accum[sl]);
+			paintbuffer[i].sample[sl] = underwater.accum[sl];
+		}
+}
+
+
+
 /*
 ===============================================================================
 
@@ -341,7 +402,7 @@ void S_MixToBuffer(void *stream, unsigned int bufferframes)
 #define S_FETCHBUFFERSIZE 4096
 	float fetchsampleframes[S_FETCHBUFFERSIZE*2];
 	const float *fetchsampleframe;
-	float vol[SND_LISTENERS];
+	float vol[SND_LISTENERS_8];
 	float lerp[2];
 	float sample[3];
 	double posd;
@@ -379,12 +440,12 @@ void S_MixToBuffer(void *stream, unsigned int bufferframes)
 			// (note: this still may get some old and some new values!)
 			posd = ch->position;
 			speedd = ch->mixspeed * sfx->format.speed / snd_renderbuffer->format.speed;
-			for (i = 0;i < SND_LISTENERS;i++)
+			for (i = 0;i < SND_LISTENERS_8;i++)
 				vol[i] = ch->volume[i];
 
 			// check total volume level, because we can skip some code on silent sounds but other code must still run (position updates mainly)
 			maxvol = 0;
-			for (i = 0;i < SND_LISTENERS;i++)
+			for (i = 0;i < SND_LISTENERS_8;i++)
 				if (vol[i] > maxvol)
 					maxvol = vol[i];
 			switch(snd_renderbuffer->format.width)
@@ -485,7 +546,7 @@ void S_MixToBuffer(void *stream, unsigned int bufferframes)
 					if (sfx->format.channels == 2)
 					{
 						// music is stereo
-#if SND_LISTENERS != 8
+#if SND_LISTENERS_8 != 8
 #error the following code only supports up to 8 channels, update it
 #endif
 						if (snd_speakerlayout.channels > 2)
@@ -531,7 +592,7 @@ void S_MixToBuffer(void *stream, unsigned int bufferframes)
 					else if (sfx->format.channels == 1)
 					{
 						// most sounds are mono
-#if SND_LISTENERS != 8
+#if SND_LISTENERS_8 != 8
 #error the following code only supports up to 8 channels, update it
 #endif
 						if (snd_speakerlayout.channels > 2)
@@ -579,6 +640,9 @@ void S_MixToBuffer(void *stream, unsigned int bufferframes)
 		}
 
 		S_SoftClipPaintBuffer(paintbuffer, totalmixframes, snd_renderbuffer->format.width, snd_renderbuffer->format.channels);
+
+		S_UnderwaterFilter(totalmixframes);
+
 
 #ifdef CONFIG_VIDEO_CAPTURE
 		if (!snd_usethreadedmixing)

@@ -924,7 +924,7 @@ void SCR_CaptureVideo_Ogg_BeginVideo(void)
 	char vabuf[1024];
 	cls.capturevideo.format = CAPTUREVIDEOFORMAT_OGG_VORBIS_THEORA;
 	cls.capturevideo.formatextension = "ogv";
-	cls.capturevideo.videofile = FS_OpenRealFile(va(vabuf, sizeof(vabuf), "%s.%s", cls.capturevideo.basename, cls.capturevideo.formatextension), "wb", false);
+	cls.capturevideo.videofile = FS_OpenRealFile(va(vabuf, sizeof(vabuf), "%s.%s", cls.capturevideo.basename, cls.capturevideo.formatextension), "wb", fs_quiet_FALSE);
 	cls.capturevideo.endvideo = SCR_CaptureVideo_Ogg_EndVideo;
 	cls.capturevideo.videoframes = SCR_CaptureVideo_Ogg_VideoFrames;
 	cls.capturevideo.soundframe = SCR_CaptureVideo_Ogg_SoundFrame;

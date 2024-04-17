@@ -160,10 +160,10 @@ typedef struct q3shaderinfo_layer_s
 {
 	int alphatest;
 	int clampmap;
-	float framerate;
-	int numframes;
+	float animframerate;
+	int sh_numframes;
 	int dptexflags;
-	char **texturename;
+	char **sh_ptexturename; // Baker: An animmap uses sh_ptexturename[0] sh_ptexturename[1] ...
 	int blendfunc[2];
 	q3shaderinfo_layer_rgbgen_t rgbgen;
 	q3shaderinfo_layer_alphagen_t alphagen;
@@ -262,7 +262,7 @@ shader_t;
 typedef struct texture_shaderpass_s
 {
 	qbool alphatest; // FIXME: handle alphafunc properly
-	float framerate;
+	float animframerate;
 	int numframes;
 	struct skinframe_s *skinframes[TEXTURE_MAXFRAMES_64];
 	int blendfunc[2];

@@ -150,7 +150,7 @@ STAT_TOTALMONSTERS, // changes in some mods
 STAT_SECRETS, // this makes svc_foundsecret unnecessary
 STAT_MONSTERS, // this makes svc_killedmonster unnecessary
 STAT_VIEWHEIGHT, // sent just for FTEQW clients
-STAT_VIEWZOOM, // this rarely changes
+STAT_VIEWZOOM_21, // this rarely changes
 -1,
 };
 

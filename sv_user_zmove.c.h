@@ -65,7 +65,7 @@ void SV_UpdateToReliableMessages_Zircon_Warp_Think (void)
 
 	if (host_client->zircon_warp_sequence_cleared) { // ZMOVE_WARP: SV TO CL
 		if (host_client->zircon_warp_sequence) {
-			int j = 5; // Not supposed to ever happen
+			//int j = 5; // Not supposed to ever happen
 		}
 		host_client->zircon_warp_sequence_cleared --;
 		if (host_client->zircon_warp_sequence_cleared == 0) {

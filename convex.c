@@ -20,10 +20,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// Baker: I am not seeing this referenced in the source.
+// convex.c
+
 #include <math.h>
 #include "convex.h"
 
-void convex_builder_initialize(convex_builder_state_t* b, float epsilon)
+void convex_builder_initialize(convex_builder_state_t *b, float epsilon)
 {
 	b->numcorners = 0;
 	b->numfaces = 0;
@@ -36,7 +39,7 @@ void convex_builder_initialize(convex_builder_state_t* b, float epsilon)
 //
 // this could be a little more efficient if we kept track of edges during the
 // build, but I think it may be more numerically stable this way
-void convex_builder_add_point(convex_builder_state_t* b, float x, float y, float z)
+void convex_builder_add_point(convex_builder_state_t *b, float x, float y, float z)
 {
 	int i, j, l;
 	convex_corner_t corner;
@@ -86,7 +89,7 @@ void convex_builder_add_point(convex_builder_state_t* b, float x, float y, float
 		// determine which faces will be inside the resulting solid
 		for (i = 0; i < b->numfaces; i++)
 		{
-			convex_face_t* f = b->faces + i;
+			convex_face_t *f = b->faces + i;
 			// face will be removed if it places this corner outside the solid
 			removedface[i] = (f->x * corner.x + f->y * corner.y + f->z * corner.z + f->w * corner.w) > epsilon;
 		}
@@ -194,7 +197,7 @@ void convex_builder_add_point(convex_builder_state_t* b, float x, float y, float
 	b->corners[b->numcorners++] = corner;
 }
 
-int convex_builder_get_planes4f(convex_builder_state_t* b, float* outplanes4f, int maxplanes, int positivew)
+int convex_builder_get_planes4f(convex_builder_state_t *b, float* outplanes4f, int maxplanes, int positivew)
 {
 	int i;
 	int n = b->numfaces < maxplanes ? b->numfaces : maxplanes;
@@ -202,7 +205,7 @@ int convex_builder_get_planes4f(convex_builder_state_t* b, float* outplanes4f, i
 	{
 		for (i = 0; i < n; i++)
 		{
-			const convex_face_t* f = b->faces + i;
+			const convex_face_t *f = b->faces + i;
 			outplanes4f[i * 4 + 0] = f->x;
 			outplanes4f[i * 4 + 1] = f->y;
 			outplanes4f[i * 4 + 2] = f->z;
@@ -213,7 +216,7 @@ int convex_builder_get_planes4f(convex_builder_state_t* b, float* outplanes4f, i
 	{
 		for (i = 0; i < n; i++)
 		{
-			const convex_face_t* f = b->faces + i;
+			const convex_face_t *f = b->faces + i;
 			outplanes4f[i * 4 + 0] = f->x;
 			outplanes4f[i * 4 + 1] = f->y;
 			outplanes4f[i * 4 + 2] = f->z;
@@ -229,7 +232,7 @@ int convex_builder_get_points3f(convex_builder_state_t *b, float* outpoints3f, i
 	int n = b->numcorners < maxpoints ? b->numcorners : maxpoints;
 	for (i = 0; i < n; i++)
 	{
-		const convex_corner_t* c = b->corners + i;
+		const convex_corner_t *c = b->corners + i;
 		outpoints3f[i * 3 + 0] = c->x;
 		outpoints3f[i * 3 + 1] = c->y;
 		outpoints3f[i * 3 + 2] = c->z;

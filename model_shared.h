@@ -400,7 +400,7 @@ typedef struct msurface_s
 	vec3_t maxs;
 
 	// lightmaptexture rebuild information not used in q3bsp
-	msurface_lightmapinfo_t* lightmapinfo; // q1bsp
+	msurface_lightmapinfo_t *lightmapinfo; // q1bsp
 	// fog volume info in q3bsp
 	struct q3deffect_s* effect; // q3bsp
 
@@ -619,7 +619,7 @@ void Mod_BuildVBOs(void);
 // Sets the mod->DrawSky and mod->DrawAddWaterPlanes pointers conditionally based on whether surfaces in this submodel use these features
 // called specifically by brush model loaders when generating submodels
 // automatically called after model loader returns
-void Mod_SetDrawSkyAndWater(model_t* mod);
+void Mod_SetDrawSkyAndWater(model_t *mod);
 
 shadowmesh_t *Mod_ShadowMesh_Alloc(struct mempool_s *mempool, int maxverts, int maxtriangles);
 int Mod_ShadowMesh_AddVertex(shadowmesh_t *mesh, const float *vertex3f);

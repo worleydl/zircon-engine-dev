@@ -63,8 +63,7 @@ interface from being ambiguous.
 struct cmd_state_s;
 struct qfile_s;
 
-typedef struct cvar_s
-{
+typedef struct cvar_s {
 	int flags;
 
 	const char *name;
@@ -96,17 +95,20 @@ typedef struct cvar_hash_s
 	struct cvar_hash_s *next;
 } cvar_hash_t;
 
-typedef struct cvar_state_s
-{
+
+typedef struct cvar_state_s {
 	cvar_t *vars;
-	cvar_hash_t *hashtable[CVAR_HASHSIZE];
-}
-cvar_state_t;
+	cvar_hash_t *hashtable[CVAR_HASHSIZE_65536];
+} cvar_state_t;
+
+#define HashInt16ForString(s) \
+	(CRC_Block((const unsigned char *)s, strlen(s)) % CVAR_HASHSIZE_65536)
+
 
 extern cvar_state_t cvars_all;
 extern cvar_state_t cvars_null; // used by cmd_serverfromclient which intentionally has no cvars available
 
-void Cvar_RegisterVirtual(cvar_t *variable, const char *name );
+void Cvar_RegisterVariableAlias(cvar_t *variable, const char *name );
 
 void Cvar_RegisterCallback(cvar_t *variable, void (*callback)(cvar_t *));
 
@@ -149,7 +151,7 @@ const char *Cvar_CompleteVariable (cvar_state_t *cvars, const char *partial, int
 // attempts to match a partial variable name for command line completion
 // returns NULL if nothing fits
 
-void Cvar_PrintHelp(cvar_t *cvar, const char *name, qbool full);
+void Cvar_PrintHelp(cvar_t *cvar, const char *name, qbool is_print_description);
 
 void Cvar_CompleteCvarPrint (cvar_state_t *cvars, const char *partial, int neededflags, int is_from_nothing);
 

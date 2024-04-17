@@ -44,9 +44,9 @@ rtexturepool_t *r_main_texturepool;
 
 int r_textureframe = 0; ///< used only by R_GetCurrentTexture, incremented per view and per UI render
 
-static qbool r_loadnormalmap;
-static qbool r_loadgloss;
-qbool r_loadfog;
+static qbool r_loadnormalmap; // Baker: only ever set to true .. see gl_main_start
+static qbool r_loadgloss; // Baker: only ever set to true
+qbool r_loadfog; // Baker: always false, never set to true in code
 static qbool r_loaddds;
 static qbool r_savedds;
 static qbool r_gpuskeletal;
@@ -69,7 +69,7 @@ cvar_t r_motionblur_mousefactor = {CF_CLIENT | CF_ARCHIVE, "r_motionblur_mousefa
 cvar_t r_motionblur_mousefactor_minspeed = {CF_CLIENT | CF_ARCHIVE, "r_motionblur_mousefactor_minspeed", "0", "lower value of mouse acceleration when it starts to factor into blur equation"};
 cvar_t r_motionblur_mousefactor_maxspeed = {CF_CLIENT | CF_ARCHIVE, "r_motionblur_mousefactor_maxspeed", "50", "upper value of mouse acceleration when it reaches the peak factor into blur equation"};
 
-cvar_t r_minlight = {CF_CLIENT | CF_ARCHIVE, "r_minlight", "0.5", "light minimum threshold to 10 percent for models [Zircon]"}; // Baker r1490
+cvar_t r_minlight = {CF_CLIENT | CF_ARCHIVE, "r_minlight", "0", "light minimum threshold to 10 percent for models [Zircon]"}; // Baker r1490
 cvar_t r_suppress_minlight = {CF_CLIENT, "r_suppress_minlight", "0", "ignore the value of r_minlight to allow CSQC to control this without stomping user preferences"}; // Baker r1490
 
 cvar_t r_depthfirst = {CF_CLIENT | CF_ARCHIVE, "r_depthfirst", "0", "renders a depth-only version of the scene before normal rendering begins to eliminate overdraw, values: 0 = off, 1 = world depth, 2 = world and model depth"};
@@ -113,6 +113,8 @@ cvar_t r_cullentities_trace_eyejitter = {CF_CLIENT, "r_cullentities_trace_eyejit
 cvar_t r_sortentities = {CF_CLIENT, "r_sortentities", "0", "sort entities before drawing (might be faster)"};
 cvar_t r_speeds = {CF_CLIENT, "r_speeds","0", "displays rendering statistics and per-subsystem timings"};
 cvar_t r_fullbright = {CF_CLIENT, "r_fullbright","0", "makes map very bright and renders faster"};
+cvar_t gl_overbright_world = {CF_CLIENT, "gl_overbright_world","0", "Apply overbright to world model like Quakespasm [Zircon]"};
+cvar_t gl_overbright_models = {CF_CLIENT, "gl_overbright_models","0", "Apply overbright to models like Quakespasm [Zircon]"};
 
 cvar_t r_fullbright_directed = {CF_CLIENT, "r_fullbright_directed", "0", "render fullbright things (unlit worldmodel and EF_FULLBRIGHT entities, but not fullbright shaders) using a constant light direction instead to add more depth while keeping uniform brightness"};
 cvar_t r_fullbright_directed_ambient = {CF_CLIENT, "r_fullbright_directed_ambient", "0.5", "ambient light multiplier for directed fullbright"};
@@ -149,7 +151,7 @@ cvar_t r_celoutlines = {CF_CLIENT | CF_ARCHIVE, "r_celoutlines", "0", "cartoon-s
 
 
 cvar_t r_texture_dds_load = {CF_CLIENT | CF_ARCHIVE, "r_texture_dds_load", "0", "load compressed dds/filename.dds texture instead of filename.tga, if the file exists (requires driver support)"};
-cvar_t r_texture_dds_save = {CF_CLIENT | CF_ARCHIVE, "r_texture_dds_save", "0", "save compressed dds/filename.dds texture when filename.tga is loaded, so that it can be loaded instead next time"};
+cvar_t r_texture_dds_save = {CF_CLIENT | CF_ARCHIVE, "r_texture_dds_save", "0", "save compressed dds/filename.dds texture when filename.tga is loaded, so that it can be loaded instead next time"}; // Baker: This is a way to convert textures to DDS
 
 cvar_t r_textureunits = {CF_CLIENT, "r_textureunits", "32", "number of texture units to use in GL 1.1 and GL 1.3 rendering paths"};
 static cvar_t gl_combine = {CF_CLIENT | CF_READONLY, "gl_combine", "1", "indicates whether the OpenGL 1.3 rendering path is active"};
@@ -390,34 +392,34 @@ static void R_BuildBlankTextures(void)
 	data[1] = 128; // normal Y
 	data[0] = 255; // normal Z
 	data[3] = 255; // height
-	r_texture_blanknormalmap = R_LoadTexture2D(r_main_texturepool, "blankbump", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT, -1, NULL);
+	r_texture_blanknormalmap = R_LoadTexture2D(r_main_texturepool, "blankbump", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT_H400, -1, NULL);
 	data[0] = 255;
 	data[1] = 255;
 	data[2] = 255;
 	data[3] = 255;
-	r_texture_white = R_LoadTexture2D(r_main_texturepool, "blankwhite", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT, -1, NULL);
+	r_texture_white = R_LoadTexture2D(r_main_texturepool, "blankwhite", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT_H400, -1, NULL);
 	data[0] = 128;
 	data[1] = 128;
 	data[2] = 128;
 	data[3] = 255;
-	r_texture_grey128 = R_LoadTexture2D(r_main_texturepool, "blankgrey128", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT, -1, NULL);
+	r_texture_grey128 = R_LoadTexture2D(r_main_texturepool, "blankgrey128", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT_H400, -1, NULL);
 	data[0] = 0;
 	data[1] = 0;
 	data[2] = 0;
 	data[3] = 255;
-	r_texture_black = R_LoadTexture2D(r_main_texturepool, "blankblack", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT, -1, NULL);
+	r_texture_black = R_LoadTexture2D(r_main_texturepool, "blankblack", 1, 1, data, TEXTYPE_BGRA, TEXF_PERSISTENT_H400, -1, NULL);
 }
 
 static void R_BuildNoTexture(void)
 {
-	r_texture_notexture = R_LoadTexture2D(r_main_texturepool, "notexture", 16, 16, Image_GenerateNoTexture(), TEXTYPE_BGRA, TEXF_MIPMAP | TEXF_PERSISTENT, -1, NULL);
+	r_texture_notexture = R_LoadTexture2D(r_main_texturepool, "notexture", 16, 16, Image_GenerateNoTexture(), TEXTYPE_BGRA, TEXF_MIPMAP | TEXF_PERSISTENT_H400, -1, NULL);
 }
 
 static void R_BuildWhiteCube(void)
 {
 	unsigned char data[6*1*1*4];
 	memset(data, 255, sizeof(data));
-	r_texture_whitecube = R_LoadTextureCubeMap(r_main_texturepool, "whitecube", 1, data, TEXTYPE_BGRA, TEXF_CLAMP | TEXF_PERSISTENT, -1, NULL);
+	r_texture_whitecube = R_LoadTextureCubeMap(r_main_texturepool, "whitecube", 1, data, TEXTYPE_BGRA, TEXF_CLAMP | TEXF_PERSISTENT_H400, -1, NULL);
 }
 
 static void R_BuildNormalizationCube(void)
@@ -478,7 +480,7 @@ static void R_BuildNormalizationCube(void)
 			}
 		}
 	}
-	r_texture_normalizationcube = R_LoadTextureCubeMap(r_main_texturepool, "normalcube", NORMSIZE, data, TEXTYPE_BGRA, TEXF_CLAMP | TEXF_PERSISTENT, -1, NULL);
+	r_texture_normalizationcube = R_LoadTextureCubeMap(r_main_texturepool, "normalcube", NORMSIZE, data, TEXTYPE_BGRA, TEXF_CLAMP | TEXF_PERSISTENT_H400, -1, NULL);
 	Mem_Free(data);
 }
 
@@ -533,7 +535,7 @@ static void R_BuildFogTexture(void)
 	}
 	else
 	{
-		r_texture_fogattenuation = R_LoadTexture2D(r_main_texturepool, "fogattenuation", FOGWIDTH, 1, &data1[0][0], TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_CLAMP | TEXF_PERSISTENT, -1, NULL);
+		r_texture_fogattenuation = R_LoadTexture2D(r_main_texturepool, "fogattenuation", FOGWIDTH, 1, &data1[0][0], TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_CLAMP | TEXF_PERSISTENT_H400, -1, NULL);
 		//r_texture_fogintensity = R_LoadTexture2D(r_main_texturepool, "fogintensity", FOGWIDTH, 1, &data2[0][0], TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_CLAMP, NULL);
 	}
 }
@@ -1441,6 +1443,7 @@ void R_GLSL_Restart_f(cmd_state_t *cmd)
 	}
 }
 
+#include "gl_rmain_pak.c.h"
 static void R_GLSL_DumpShader_f(cmd_state_t *cmd)
 {
 	int i, language, mode, dupe;
@@ -1462,7 +1465,7 @@ static void R_GLSL_DumpShader_f(cmd_state_t *cmd)
 			text = modeinfo[mode].builtinstring;
 			if (!text)
 				continue;
-			file = FS_OpenRealFile(modeinfo[mode].filename, "w", false);
+			file = FS_OpenRealFile(modeinfo[mode].filename, "w", fs_quiet_FALSE);  // WRITE-EON r_glsl_dumpshader
 			if (file)
 			{
 				FS_Print(file, "/* The engine may define the following macros:\n");
@@ -1502,7 +1505,7 @@ void R_SetupShader_Generic(rtexture_t *t, qbool usegamma, qbool notrippy, qbool 
 	case RENDERPATH_GLES2:
 		R_SetupShader_SetPermutationGLSL(SHADERMODE_GENERIC, permutation);
 		if (r_glsl_permutation->tex_Texture_First >= 0)
-			R_Mesh_TexBind(r_glsl_permutation->tex_Texture_First, t);
+			R_Mesh_TexBind(r_glsl_permutation->tex_Texture_First, t); // packard, t is trash here
 		if (r_glsl_permutation->tex_Texture_GammaRamps >= 0)
 			R_Mesh_TexBind(r_glsl_permutation->tex_Texture_GammaRamps, r_texture_gammaramps);
 		break;
@@ -2296,6 +2299,7 @@ skinframe_t *R_SkinFrame_FindNextByName( skinframe_t *last, const char *name ) {
 	return NULL;
 }
 
+// Baker: This can add a skin frame
 skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewidth, int compareheight, int comparecrc, qbool add)
 {
 	skinframe_t *item;
@@ -2369,6 +2373,7 @@ skinframe_t *R_SkinFrame_Find(const char *name, int textureflags, int comparewid
 		skinframe->avgcolor[3] = avgcolor[4] / (255.0 * cnt); \
 	}
 
+int q3_shader_did_fallback; // Baker: Stupid global to do warning message for missing textures inside a Q3 shader.
 skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain, qbool fallbacknotexture)
 {
 	skinframe_t *skinframe;
@@ -2378,10 +2383,14 @@ skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool 
 
 	// return an existing skinframe if already loaded
 	skinframe = R_SkinFrame_Find(name, textureflags, 0, 0, 0, false);
-	if (skinframe && skinframe->base)
+	if (skinframe && skinframe->base) {
+		// q3_shader_did_fallback = false;
 		return skinframe;
+	}
 
 	// if the skinframe doesn't exist this will create it
+	// Baker: nmap # gloss noshader path 1
+	//DebugPrintf ("R_SkinFrame_LoadExternal %s skinframe loaded", name);
 	return R_SkinFrame_LoadExternal_SkinFrame(skinframe, name, textureflags, complain, fallbacknotexture);
 }
 
@@ -2406,15 +2415,18 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	if (cls.state == ca_dedicated)
 		return NULL;
 
-	Image_StripImageExtension(name, basename, sizeof(basename));
+	Image_StripImageExtension(name, /*out:*/ basename, sizeof(basename));
 
 	// check for DDS texture file first
 	if (!r_loaddds || !(ddsbase = R_LoadTextureDDSFile(r_main_texturepool, va(vabuf, sizeof(vabuf), "dds/%s.dds", basename), vid.sRGB3D, textureflags, &ddshasalpha, ddsavgcolor, miplevel, false)))
 	{
 		// Not DDS
 		basepixels = loadimagepixelsbgra(name, complain, q_tx_allowfixtrans_true, q_tx_convertsrgb_false, &miplevel);
-		if (basepixels == NULL && fallbacknotexture)
+		
+		if (basepixels == NULL && fallbacknotexture) {
+			q3_shader_did_fallback = true;
 			basepixels = Image_GenerateNoTexture();
+		}
 		if (basepixels == NULL)
 			return NULL;
 	}
@@ -2549,16 +2561,16 @@ skinframe_t *R_SkinFrame_LoadExternal_SkinFrame(skinframe_t *skinframe, const ch
 	}
 
 	mymiplevel = savemiplevel;
-	if (skinframe->gloss == NULL && r_loadgloss && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_gloss", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)))
-	{
+	if (skinframe->gloss == NULL && r_loadgloss && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_gloss", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel))) {
 		skinframe->gloss = R_LoadTexture2D (r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_gloss", skinframe->basename), image_width, image_height, pixels, vid.sRGB3D ? TEXTYPE_SRGB_BGRA : TEXTYPE_BGRA, (TEXF_ALPHA | textureflags) & (gl_texturecompression_gloss.integer && gl_texturecompression.integer ? ~0 : ~TEXF_COMPRESS), mymiplevel, NULL);
 #ifndef USE_GLES2
-		if (r_savedds && skinframe->gloss)
+		if (r_savedds && skinframe->gloss) {
 			R_SaveTextureDDSFile(skinframe->gloss, va(vabuf, sizeof(vabuf), "dds/%s_gloss.dds", skinframe->basename), r_texture_dds_save.integer < 2, true);
+		}
 #endif
 		Mem_Free(pixels);
 		pixels = NULL;
-	}
+	} // no gloss try load
 
 	mymiplevel = savemiplevel;
 	if (skinframe->pants == NULL && (pixels = loadimagepixelsbgra(va(vabuf, sizeof(vabuf), "%s_pants", skinframe->basename), q_tx_complain_false, q_tx_allowfixtrans_false, q_tx_convertsrgb_false, &mymiplevel)))
@@ -2655,12 +2667,11 @@ skinframe_t *R_SkinFrame_LoadInternalBGRA(const char *name, int textureflags,
 	if (developer_loading.integer)
 		Con_PrintLinef ("loading 32bit skin " QUOTED_S, name);
 
-	if (r_loadnormalmap && r_shadow_bumpscale_basetexture.value > 0)
-	{
+	if (r_loadnormalmap && r_shadow_bumpscale_basetexture.value > 0) {
 		unsigned char *a = (unsigned char *)Mem_Alloc(tempmempool, width * height * 8);
 		unsigned char *b = a + width * height * 4;
 		Image_HeightmapToNormalmap_BGRA(skindata, b, width, height, false, r_shadow_bumpscale_basetexture.value);
-		skinframe->nmap = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_nmap", skinframe->basename), width, height, b, TEXTYPE_BGRA, (textureflags | TEXF_ALPHA) & (r_mipnormalmaps.integer ? ~0 : ~TEXF_MIPMAP), -1, NULL);
+		skinframe->nmap = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_nmap", skinframe->basename), width, height, b, TEXTYPE_BGRA, (textureflags | TEXF_ALPHA) & (r_mipnormalmaps.integer /*d: 1*/ ? ~0 : ~TEXF_MIPMAP), -1, NULL);
 		Mem_Free(a);
 	}
 	// Q1SKY Upload occurs here
@@ -2804,7 +2815,7 @@ static void R_SkinFrame_GenerateTexturesFromQPixels(skinframe_t *skinframe, qboo
 		// use either a custom palette or the quake palette
 		Image_Copy8bitBGRA(skindata, a, width * height, palette_bgra_complete);
 		Image_HeightmapToNormalmap_BGRA(a, b, width, height, false, r_shadow_bumpscale_basetexture.value);
-		skinframe->nmap = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_nmap", skinframe->basename), width, height, b, TEXTYPE_BGRA, (skinframe->textureflags | TEXF_ALPHA) & (r_mipnormalmaps.integer ? ~0 : ~TEXF_MIPMAP), -1, NULL);
+		skinframe->nmap = R_LoadTexture2D(r_main_texturepool, va(vabuf, sizeof(vabuf), "%s_nmap", skinframe->basename), width, height, b, TEXTYPE_BGRA, (skinframe->textureflags | TEXF_ALPHA) & (r_mipnormalmaps.integer /*d: 1*/ ? ~0 : ~TEXF_MIPMAP), -1, NULL);
 		Mem_Free(a);
 	}
 
@@ -3156,14 +3167,14 @@ static void gl_main_start(void)
 	r_texture_numcubemaps = 0;
 	r_uniformbufferalignment = 32;
 
-	r_loaddds = r_texture_dds_load.integer != 0;
-	r_savedds = vid.support.ext_texture_compression_s3tc && r_texture_dds_save.integer;
+	r_loaddds = r_texture_dds_load.integer /*d: 0*/ != 0;
+	r_savedds = vid.support.ext_texture_compression_s3tc && r_texture_dds_save.integer /*d: 0*/;
 
 	switch(vid.renderpath)
 	{
 	case RENDERPATH_GL32:
 	case RENDERPATH_GLES2:
-		Cvar_SetValueQuick(&r_textureunits, MAX_TEXTUREUNITS);
+		Cvar_SetValueQuick(&r_textureunits, MAX_TEXTUREUNITS_32);
 		Cvar_SetValueQuick(&gl_combine, 1);
 		Cvar_SetValueQuick(&r_glsl, 1);
 		r_loadnormalmap = true;
@@ -3275,8 +3286,34 @@ static void gl_main_shutdown(void)
 
 	if (r_svbsp.nodes)
 		Mem_Free(r_svbsp.nodes);
+
 	memset(&r_svbsp, 0, sizeof (r_svbsp));
-	R_FreeTexturePool(&r_main_texturepool);
+#if 0 // packard
+		for (pool = gltexturepoolchain; pool; pool = pool->next) {
+			for (glt = pool->gltchain; glt; glt = glt->chain) {
+				// only update already uploaded images
+				if (String_Does_Contain(glt->identifier, "conchars") == false)
+					continue;
+
+				if (glt->texnum) {
+					oldbindtexnum = R_Mesh_TexBound(0, gltexturetypeenums[glt->texturetype]);
+					qglBindTexture(gltexturetypeenums[glt->texturetype], glt->texnum); CHECKGLERROR
+						if (Have_Flag (glt->flags, TEXF_MIPMAP)) {
+							qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MIN_FILTER, xgl_filter_min); CHECKGLERROR
+						} else {
+							qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MIN_FILTER, xgl_filter_mag); CHECKGLERROR
+						}
+					qglTexParameteri(gltexturetypeenums[glt->texturetype], GL_TEXTURE_MAG_FILTER, xgl_filter_mag); CHECKGLERROR
+					qglBindTexture(gltexturetypeenums[glt->texturetype], oldbindtexnum); CHECKGLERROR
+				} // if texnum
+			} // for glt
+		} // for
+		break;
+
+
+#endif
+
+	R_FreeTexturePool (&r_main_texturepool);
 	loadingscreentexture = NULL;
 	r_texture_blanknormalmap = NULL;
 	r_texture_white = NULL;
@@ -3323,7 +3360,7 @@ static void gl_main_newmap(void)
 	R_BufferData_Reset();
 }
 
-void Nehahra_StopMod_f(cmd_state_t* cmd)
+void Nehahra_StopMod_f(cmd_state_t *cmd)
 {
 	// Nothing, just stops a print
 }
@@ -3985,8 +4022,10 @@ static void R_DrawModels(void)
 		rent = r_refdef.scene.entities[i];
 		r_refdef.stats[r_stat_entities]++;
 
-		if (rent->model && rent->model->Draw != NULL)
+		if (rent->model && rent->model->Draw != NULL) {
+			WARP_X_ (R_Mod_Draw)
 			rent->model->Draw(rent);
+		}
 		else
 			R_DrawNoModel(rent);
 	}
@@ -5429,7 +5468,7 @@ void R_UpdateVariables(void)
 				}
 				else
 				{
-					r_texture_gammaramps = R_LoadTexture2D(r_main_texturepool, "gammaramps", RAMPWIDTH, 1, &rampbgr[0][0], TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_CLAMP | TEXF_PERSISTENT, -1, NULL);
+					r_texture_gammaramps = R_LoadTexture2D(r_main_texturepool, "gammaramps", RAMPWIDTH, 1, &rampbgr[0][0], TEXTYPE_BGRA, TEXF_FORCELINEAR | TEXF_CLAMP | TEXF_PERSISTENT_H400, -1, NULL);
 				}
 			}
 		}
@@ -6456,16 +6495,25 @@ static void R_LoadQWSkin(r_qwskincache_t *cache, const char *skinname)
 	cache->skinframe = skinframe;
 }
 
+// Baker: Make sure this has model and ent
+// data available.
 texture_t *R_GetCurrentTexture(texture_t *t)
 {
 	int i, q;
 	const entity_render_t *ent = rsurface.entity;
+
+	// Baker: We had considered doing an update here for DarkPlaces Video
+	// but we didn't use this method and instead use CL_DrawVideo_SCR_DrawScreen
+	//if (ent->model == &cl_meshentitymodels[MESH_UI_1]) {
+	//}
+
 	model_t *model = ent->model; // when calling this, ent must not be NULL
 	q3shaderinfo_layer_tcmod_t *tcmod;
 	float specularscale = 0.0f;
 
-	if (t->update_lastrenderframe == r_textureframe && t->update_lastrenderentity == (void *)ent && !rsurface.forcecurrenttextureupdate)
-		return t->currentframe;
+	if (t->update_lastrenderframe == r_textureframe && t->update_lastrenderentity == (void *)ent 
+		&& !rsurface.forcecurrenttextureupdate)
+		return t->currentframe; // MARCH 4 2024
 	t->update_lastrenderframe = r_textureframe;
 	t->update_lastrenderentity = (void *)ent;
 
@@ -6489,8 +6537,8 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 		}
 		if (s > 0)
 			t = t + s * model->num_surfaces;
-		if (t->animated)
-		{
+
+		if (t->animated) {
 			// use an alternate animation if the entity's frame is not 0,
 			// and only if the texture has an alternate animation
 			if (t->animated == 2) // q2bsp
@@ -6500,7 +6548,7 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 			else
 				t = t->anim_frames[0][(t->anim_total[0] >= 2) ? ((int)(rsurface.shadertime * 5.0f) % t->anim_total[0]) : 0];
 		}
-		texture->currentframe = t;
+		texture->currentframe = t; // MARCH 4
 	}
 
 	// Baker: marker for attempting to examine r9073u
@@ -6527,12 +6575,23 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 			R_LoadQWSkin(&r_qwskincache[i], cl.scores[i].qw_skin);
 		t->currentskinframe = r_qwskincache[i].skinframe;
 		if (t->materialshaderpass && t->currentskinframe == NULL)
-			t->currentskinframe = t->materialshaderpass->skinframes[LoopingFrameNumberFromDouble(rsurface.shadertime * t->materialshaderpass->framerate, t->materialshaderpass->numframes)];
+			t->currentskinframe = t->materialshaderpass->skinframes[LoopingFrameNumberFromDouble(rsurface.shadertime * t->materialshaderpass->animframerate, t->materialshaderpass->numframes)];
 	}
-	else if (t->materialshaderpass && t->materialshaderpass->numframes >= 2)
-		t->currentskinframe = t->materialshaderpass->skinframes[LoopingFrameNumberFromDouble(rsurface.shadertime * t->materialshaderpass->framerate, t->materialshaderpass->numframes)];
+	else if (t->materialshaderpass && t->materialshaderpass->numframes >= 2) {
+		// buttonmap
+		if (t->materialshaderpass->animframerate == 0) {
+			// buttonmap
+			entity_t *real_ent = cl.entities + ent->entitynumber;
+			int buttonmap_frame = (int)real_ent->state_current.frame & 1; // Baker: 0 or 1 for now.
+			t->currentskinframe = t->materialshaderpass->skinframes[buttonmap_frame];
+		} else {
+			t->currentskinframe = t->materialshaderpass->skinframes[LoopingFrameNumberFromDouble(rsurface.shadertime * 
+				t->materialshaderpass->animframerate, t->materialshaderpass->numframes)];
+		}
+	}
+
 	if (t->backgroundshaderpass && t->backgroundshaderpass->numframes >= 2)
-		t->backgroundcurrentskinframe = t->backgroundshaderpass->skinframes[LoopingFrameNumberFromDouble(rsurface.shadertime * t->backgroundshaderpass->framerate, t->backgroundshaderpass->numframes)];
+		t->backgroundcurrentskinframe = t->backgroundshaderpass->skinframes[LoopingFrameNumberFromDouble(rsurface.shadertime * t->backgroundshaderpass->animframerate, t->backgroundshaderpass->numframes)];
 
 	t->currentmaterialflags = t->basematerialflags;
 	t->currentalpha = rsurface.entity->alpha * t->basealpha;
@@ -6720,9 +6779,22 @@ texture_t *R_GetCurrentTexture(texture_t *t)
 			R_tcMod_ApplyToMatrix(&t->currenttexmatrix, tcmod, t->currentmaterialflags);
 
 	t->colormapping = VectorLength2(t->render_colormap_pants) + VectorLength2(t->render_colormap_shirt) >= (1.0f / 1048576.0f);
-	if (t->currentskinframe->qpixels)
+	// Baker hack checking t->currentskinframe
+	if (/*t->currentskinframe && */ t->currentskinframe->qpixels) // Baker hack - is it still needed?
 		R_SkinFrame_GenerateTexturesFromQPixels(t->currentskinframe, t->colormapping);
-	t->basetexture = (!t->colormapping && t->currentskinframe->merged) ? t->currentskinframe->merged : t->currentskinframe->base;
+
+#if 0
+	// t is a texture_t
+	// rtexture_t *rt = t->basetexture;
+	// Baker: We had considered updating DarkPlaces Video here
+	if (rt && rt->dirty_ic) {
+		WARP_X_ (gltexture_t R_RealGetTexture CL_Video_Frame)
+		int texnum = R_GetTexture(rt);
+	}
+#endif
+
+	t->basetexture = (!t->colormapping && t->currentskinframe->merged) ? 
+		t->currentskinframe->merged : t->currentskinframe->base;
 	if (!t->basetexture)
 		t->basetexture = r_texture_notexture;
 	t->pantstexture = t->colormapping ? t->currentskinframe->pants : NULL;
@@ -9999,7 +10071,7 @@ void R_DrawModelSurfaces(entity_render_t *ent, qbool skysurfaces, qbool writedep
 		{
 			if (style->value != r_refdef.scene.lightstylevalue[style->style])
 			{
-				int* list = style->surfacelist;
+				int *list = style->surfacelist;
 				style->value = r_refdef.scene.lightstylevalue[style->style];
 				// Value changed - mark the surfaces belonging to this style chain as dirty
 				for (j = 0; j < style->numsurfaces; j++)
@@ -10127,6 +10199,7 @@ void R_DrawCustomSurface_Texture(texture_t *texture, const matrix4x4_t *texmatri
 	R_DrawModelTextureSurfaceList(1, &surfacelist, is_writedepth, is_prepass, is_ui);
 }
 
+void R_ShaderPrint_f (cmd_state_t *cmd);
 void GL_Main_Init(void)
 {
 	int i;
@@ -10135,6 +10208,12 @@ void GL_Main_Init(void)
 
 	Cmd_AddCommand(CF_CLIENT, "r_glsl_restart", R_GLSL_Restart_f, "unloads GLSL shaders, they will then be reloaded as needed");
 	Cmd_AddCommand(CF_CLIENT, "r_glsl_dumpshader", R_GLSL_DumpShader_f, "dumps the engine internal default.glsl shader into glsl/default.glsl");
+	Cmd_AddCommand(CF_CLIENT, "pak_this_map", R_Pak_This_Map_f, "copies dependencies of a Quake 3 map into specified folder [Zircon]");
+	
+#if 0
+	Cmd_AddCommand(CF_CLIENT, "shadertextparse", R_ShaderTextParse_f, "Parses a block of text on the clipboard [Zircon]");
+#endif
+	Cmd_AddCommand(CF_CLIENT, "shaderprint", R_ShaderPrint_f, "find the text for a shader (first instance) and prints it [Zircon]");
 	// FIXME: the client should set up r_refdef.fog stuff including the fogmasktable
 	if (gamemode == GAME_NEHAHRA)
 	{
@@ -10217,6 +10296,8 @@ void GL_Main_Init(void)
 	Cvar_RegisterVariable(&r_fullbright_directed_pitch);
 	Cvar_RegisterVariable(&r_fullbright_directed_pitch_relative);
 	Cvar_RegisterVariable(&r_fullbright);
+	Cvar_RegisterVariable(&gl_overbright_world);
+	Cvar_RegisterVariable(&gl_overbright_models);
 	Cvar_RegisterVariable(&r_shadows);
 	Cvar_RegisterVariable(&r_shadows_darken);
 	Cvar_RegisterVariable(&r_shadows_drawafterrtlighting);

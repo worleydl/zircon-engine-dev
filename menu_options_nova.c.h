@@ -1,7 +1,7 @@
 // menu_options_nova.c.h
 
 #define		frame_cursor	m_optcursorx
-#define		local_count		moa_count_20
+#define		local_count		moa_count_22
 #define		local_cursor	options_cursorx
 #define 	visiblerows 	m_optn_visiblerows
 
@@ -30,21 +30,22 @@ typedef enum {
 	moa_Status_Bar_13			= 13,
 	moa_Gun_Position_14			= 14,
 	moa_Bobbing_15				= 15,
-	moa_SharpText_16			= 16,
+	moa_OverbrightModels_16		= 16,
+	moa_SharpText_17			= 17,
 
-	moa_Effects_17				= 17,
+	moa_Effects_18				= 18,
 	
-	moa_Video_Mode_18			= 18,
-	moa_Reset_to_defaults_19	= 19,
-	moa_Classic_Menu_20			= 20,
-	local_count					= 21,
+	moa_Video_Mode_19			= 19,
+	moa_Reset_to_defaults_20	= 20,
+	moa_Classic_Menu_21			= 21,
+	moa_count_22/*local_count*/	= 22,
 } moa_e;
 
 
 
 void M_Menu_Options_Nova_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_options_nova);
 	m_entersound = true;
 }
@@ -81,13 +82,14 @@ static void M_Menu_OptionsNova_AdjustSliders (int dir)
 	case_break moa_Status_Bar_13:		{	int c = 3; int x = get_statusbar4_rot(); int j = rotc(c, x ,dir); set_statusbar4 (j);}
 	case_break moa_Gun_Position_14:		{	int c = 2; int x = get_gunpos3_rot(); int j = rotc(c, x ,dir); set_gunpos3 (j);}
 	case_break moa_Bobbing_15:			{   int c = 3; int x = get_bobbing2_rot(); int j = rotc(c, x ,dir); set_bobbing2 (j);}
-	case_break moa_SharpText_16:		Cvar_SetValueQuick (&r_nearest_conchars, !r_nearest_conchars.value);
+	case_break moa_OverbrightModels_16:	{   int c = 3; int x = get_overbright4_rot(); int j = rotc(c, x ,dir); set_overbright4 (j);}
+	case_break moa_SharpText_17:		Cvar_SetValueQuick (&r_nearest_conchars, !r_nearest_conchars.value);
 	
-	case_break moa_Effects_17:			{	int c = 6; int x = get_effects0_rot();  int j = rotc(c, x ,dir); set_effects0 (j);}
+	case_break moa_Effects_18:			{	int c = 6; int x = get_effects0_rot();  int j = rotc(c, x ,dir); set_effects0 (j);}
 	
-	case_break moa_Video_Mode_18:
-	case_break moa_Reset_to_defaults_19:
-	case_break moa_Classic_Menu_20:		break;
+	case_break moa_Video_Mode_19:
+	case_break moa_Reset_to_defaults_20:
+	case_break moa_Classic_Menu_21:		break;
 	} // sw
 }	
 
@@ -157,14 +159,15 @@ static void M_OptionsNova_PrintSlider(const char *s, int enabled, float value, f
 static void M_Options_Nova_Draw (void) 
 {
 	char vabuf[1024];
-	M_Background(320, bound(200, 32 + local_count * 8, vid_conheight.integer), q_darken_true);
+	int calcy = 200;//32 + local_count * 8; // Baker: if this exceeds 200, Quake pic shifts down a little
+	M_Background(320, bound(200, calcy, vid_conheight.integer), q_darken_true);
 	PPX_Start (local_cursor);
 
 	M_DrawPic(16, 4, "gfx/qplaque", NO_HOTSPOTS_0, NA0, NA0);
 	cachepic_t *p0 = Draw_CachePic ("gfx/p_option");
 	M_DrawPic((320-Draw_GetPicWidth(p0))/2, 4, "gfx/p_option", NO_HOTSPOTS_0, NA0, NA0);
 
-	visiblerows = (int)((menu_height - 32) / 8);
+	visiblerows = (int)((menu_height - 32) / 8) + 1; // Baker: Increased by 1 to prevent scrolling
 	drawcur_y = 32 - bound(0, local_cursor - (visiblerows / 2), 
 			max(0, local_count - visiblerows)) * 8;
 
@@ -185,11 +188,12 @@ static void M_Options_Nova_Draw (void)
 	M_OptionsNova_PrintCheckbox	("       Always Run ", true, cl_forwardspeed.value > 200);				// 10
 	M_OptionsNova_PrintCheckbox	("     Invert Mouse ", true, m_pitch.value < 0);						// 11
 	M_OptionsNova_PrintSS		("   Show Framerate ", true, get_showfps5_text(get_showfps5_rot()) );							// 12
-	drawcur_y += 8;
+	drawcur_y += 8; // Baker 20240404 - if we do this ...?
 
 	M_OptionsNova_PrintSS		("       Status Bar ", true, get_statusbar4_text(get_statusbar4_rot()) ) ;							// 13
 	M_OptionsNova_PrintSS		("     Gun Position ", true, get_gunpos3_text(get_gunpos3_rot()) ) ;							// 14
 	M_OptionsNova_PrintSS		("          Bobbing ", true, get_bobbing2_text(get_bobbing2_rot()) ) ;							// 15
+	M_OptionsNova_PrintSS		("Overbright Models ", true, get_overbright4_text(get_overbright4_rot()) ) ;							// 15
 	M_OptionsNova_PrintCheckbox ("       Sharp Text ", true, !!r_nearest_conchars.value);				// 17
 	drawcur_y += 8;
 	M_OptionsNova_PrintSS       ("          Effects ", true, get_effects0_text(get_effects0_rot()));								// 16
@@ -230,20 +234,20 @@ static void M_Options_Nova_Key (cmd_state_t *cmd, int key, int ascii)
 
 		case moa_console_1:
 			menu_state_set_nova (m_none);
-			key_dest = key_game;
+			KeyDest_Set (key_game); // key_dest = key_game;
 			// Baker: The idea here is to open the console
 			Con_ToggleConsole ();
 			break;
 
-		case moa_Video_Mode_18:
+		case moa_Video_Mode_19:
 			M_Menu_Video_Nova_f (cmd);
 			break;
 		
-		case moa_Reset_to_defaults_19:
+		case moa_Reset_to_defaults_20:
 			M_Menu_Reset_f (cmd);
 			break;
 
-		case moa_Classic_Menu_20:
+		case moa_Classic_Menu_21:
 			M_Menu_Options_Classic_f (cmd);
 			break;
 						

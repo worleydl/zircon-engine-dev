@@ -20,7 +20,7 @@ typedef struct host_static_s
 {
 	jmp_buf abortframe;
 	int state;
-	unsigned int framecount; // incremented every frame, never reset (checked by Host_Error_Line and Host_SaveConfig_f)
+	unsigned int superframecount; // Baker: super frame count ... incremented every frame, never reset (checked by Host_Error_Line and Host_SaveConfig_f)
 	double realtime; // the accumulated mainloop time since application started (with filtering), without any slowmo or clamping
 	double dirtytime; // the main loop wall time for this frame, equal to Sys_DirtyTime() at the start of this host frame
 	double sleeptime; // time spent sleeping after the last frame
@@ -51,5 +51,7 @@ void Host_AbortCurrentFrame(void) DP_FUNC_NORETURN;
 void Host_SaveConfig(const char *file);
 
 extern int is_in_loadconfig; // Baker: To not print certain "command not found messages" like "gamma" during gamedir change
+
+extern float host_hoststartup_unique_num;
 
 #endif

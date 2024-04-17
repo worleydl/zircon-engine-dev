@@ -264,7 +264,7 @@ typedef struct {
 
 void *_Thread_CreateBarrier(unsigned int count, const char *filename, int fileline)
 {
-	volatile barrier_t *b = (volatile barrier_t *) Z_Malloc(sizeof(barrier_t));
+	volatile barrier_t *b = (volatile barrier_t *) Z_Malloc_SizeOf(barrier_t);
 #ifdef THREADDEBUG
 	Sys_PrintfToTerminal("%p barrier create(%d) %s:%d\n", b, count, filename, fileline);
 #endif

@@ -14,7 +14,7 @@ int m_color_visiblerows;
 
 void M_Menu_Options_ColorControl_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_options_colorcontrol);
 	m_entersound = true;
 }

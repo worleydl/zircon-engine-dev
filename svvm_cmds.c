@@ -240,6 +240,11 @@ const char *vm_sv_extensions[] = {
 	"ZIRCON_RTLIGHT_BAKE",
 	"ZIRCON_GAMECOMMANDS",
 
+// Baker: Intermap
+	"ZIRCON_INTERMAP_VERSION_1",
+	"ZIRCON_PFLAGS_CORONA_ONLY_RENDERS",
+	
+
 	NULL,
 	//"EXT_CSQC" // not ready yet
 };
@@ -417,7 +422,7 @@ static void VM_SV_sprint(prvm_prog_t *prog)
 {
 	client_t	*client;
 	int			entnum;
-	char string[VM_STRINGTEMP_LENGTH];
+	char string[VM_STRINGTEMP_LENGTH_16384];
 
 	VM_SAFEPARMCOUNTRANGE(2, 8, VM_SV_sprint);
 
@@ -459,7 +464,7 @@ static void VM_SV_centerprint(prvm_prog_t *prog)
 {
 	client_t	*client;
 	int			entnum;
-	char string[VM_STRINGTEMP_LENGTH];
+	char string[VM_STRINGTEMP_LENGTH_16384];
 
 	VM_SAFEPARMCOUNTRANGE(2, 8, VM_SV_centerprint);
 
@@ -1034,7 +1039,7 @@ static void VM_SV_stuffcmd(prvm_prog_t *prog)
 {
 	int		entnum;
 	client_t	*old;
-	char	string[VM_STRINGTEMP_LENGTH];
+	char	string[VM_STRINGTEMP_LENGTH_16384];
 
 	VM_SAFEPARMCOUNTRANGE(2, 8, VM_SV_stuffcmd);
 
@@ -1304,9 +1309,12 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 		VectorAdd(PRVM_serveredictvector(ent, origin), offset, org);
 		trace = SV_TraceLine(org, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
 		VectorSubtract(trace.endpos, offset, trace.endpos);
-		if (trace.startsolid)
-		{
-			Con_DPrintf ("droptofloor at %f %f %f - COULD NOT FIX BADLY PLACED ENTITY\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2]);
+		if (trace.startsolid) {
+			Con_PrintLinef (CON_WARN "droptofloor at " VECTOR3_5d1F " (#%d %s) - COULD NOT FIX BADLY PLACED ENTITY", 
+				VECTOR3_SEND (PRVM_serveredictvector(ent, origin)),
+				PRVM_NUM_FOR_EDICT(ent),
+				PRVM_GetString(prog, PRVM_serveredictstring(ent, classname))
+			);
 			SV_LinkEdict(ent);
 			PRVM_serveredictfloat(ent, flags) = (int)PRVM_serveredictfloat(ent, flags) | FL_ONGROUND;
 			PRVM_serveredictedict(ent, groundentity) = 0;
@@ -1314,7 +1322,13 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 		}
 		else if (trace.fraction < 1)
 		{
-			Con_DPrintf ("droptofloor at %f %f %f - FIXED BADLY PLACED ENTITY\n", PRVM_serveredictvector(ent, origin)[0], PRVM_serveredictvector(ent, origin)[1], PRVM_serveredictvector(ent, origin)[2]);
+			// Baker: This seems randomish.  Had a mine and nothing was wrong with it.
+			// Why can't trace fraction be less than 1?
+			Con_DPrintLinef (CON_WARN "droptofloor at " VECTOR3_5d1F " (#%d %s) - FIXED BADLY PLACED ENTITY", 
+				VECTOR3_SEND (PRVM_serveredictvector(ent, origin)),
+				PRVM_NUM_FOR_EDICT(ent),
+				PRVM_GetString(prog, PRVM_serveredictstring(ent, classname))
+			);
 			VectorCopy (trace.endpos, PRVM_serveredictvector(ent, origin));
 			if (sv_gameplayfix_droptofloorstartsolid_nudgetocorrect.integer)
 				SV_NudgeOutOfSolid(ent);
@@ -1728,6 +1742,8 @@ static void VM_SV_WriteEntity(prvm_prog_t *prog)
 // if failed to read/compress:
 //   IMGNAME \0 \0 \0
 //#501 void(float dest, string name, float maxsize) WritePicture (DP_SV_WRITEPICTURE))
+
+WARP_X_ (VM_CL_ReadPicture)
 static void VM_SV_WritePicture(prvm_prog_t *prog)
 {
 	const char *imgname;
@@ -1818,6 +1834,11 @@ void Maybe_Prestore_Extra_Static_Attributes (prvm_prog_t *prog, prvm_edict_t *en
 		extra_effects ++;
 	}
 
+	if (Have_Flag (i, EF_NOSHADOW)) {
+		Flag_Add_To (cs_effects_additive1_fullbright2, EF_SHORTY_NOSHADOW_4);
+		extra_effects ++;
+	}
+
 	if (extra_effects == 0)
 		return; // NOTHING
 
@@ -1883,7 +1904,7 @@ static void VM_SV_makestatic(prvm_prog_t *prog)
 
 		if (is_rmq) // DPD99
 		{
-			//eval_t* val;
+			//eval_t *val;
 			//val = GetEdictFieldValue(ent, "scale");
 			//if (val)
 			//	ent->scale = ENTSCALE_ENCODE(val->_float);
@@ -1994,8 +2015,8 @@ static void VM_SV_setspawnparms(prvm_prog_t *prog)
 	}
 
 	// copy spawn parms out of the client_t
-	client = svs.clients + i-1;
-	for (i=0 ; i< NUM_SPAWN_PARMS ; i++)
+	client = svs.clients + i - 1;
+	for (i = 0 ; i < NUM_SPAWN_PARMS_16; i ++)
 		(&PRVM_serverglobalfloat(parm1))[i] = client->spawn_parms[i];
 }
 
@@ -2106,7 +2127,7 @@ typedef struct
 	int		fieldoffset;
 }customstat_t;
 
-static customstat_t vm_customstats[MAX_CL_STATS]; // matches the regular stat numbers, but only MIN_VM_STAT to MAX_VM_STAT range is used if things are working properly (can register stats from MAX_VM_STAT to MAX_CL_STATS but will warn)
+static customstat_t vm_customstats[MAX_CL_STATS]; // matches the regular stat numbers, but only MIN_VM_STAT_32 to MAX_VM_STAT_220 range is used if things are working properly (can register stats from MAX_VM_STAT_220 to MAX_CL_STATS but will warn)
 static int vm_customstats_last;
 
 void VM_CustomStats_Clear (void)
@@ -2125,7 +2146,7 @@ void VM_SV_UpdateCustomStats (client_t *client, prvm_edict_t *ent, sizebuf_t *ms
 		float f;
 	} u;
 
-	for(i=MIN_VM_STAT; i<=vm_customstats_last ;i++)
+	for(i=MIN_VM_STAT_32; i<=vm_customstats_last ;i++)
 	{
 		if (!vm_customstats[i].type)
 			continue;
@@ -2188,29 +2209,29 @@ static void VM_SV_AddStat(prvm_prog_t *prog)
 
 	if (i < 0)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%d) may not be less than %d\n", i, MIN_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) may not be less than %d\n", i, MIN_VM_STAT_32);
 		return;
 	}
 
 	if (i >= MAX_CL_STATS)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_CL_STATS (%d), not supported by protocol, and AddStat beyond MAX_VM_STAT (%d) conflicts with engine MOVEVARS\n", i, MAX_CL_STATS, MAX_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_CL_STATS (%d), not supported by protocol, and AddStat beyond MAX_VM_STAT_220 (%d) conflicts with engine MOVEVARS\n", i, MAX_CL_STATS, MAX_VM_STAT_220);
 		return;
 	}
 
 	if (i > (MAX_CL_STATS - 4) && type == 1)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%d) > (MAX_CL_STATS (%d) - 4) with string type won't fit in the protocol, and AddStat beyond MAX_VM_STAT conflicts with engine MOVEVARS\n", i, MAX_CL_STATS);
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) > (MAX_CL_STATS (%d) - 4) with string type won't fit in the protocol, and AddStat beyond MAX_VM_STAT_220 conflicts with engine MOVEVARS\n", i, MAX_CL_STATS);
 		return;
 	}
 
 	// these are hazardous to override but sort of allowed if one wants to be adventurous...  and enjoys warnings.
-	if (i < MIN_VM_STAT)
-		VM_Warning(prog, "PF_SV_AddStat: index (%d) < MIN_VM_STAT (%d) may conflict with engine stats - allowed, but this may break things\n", i, MIN_VM_STAT);
-	else if (i >= MAX_VM_STAT && !sv_gameplayfix_customstats.integer)
-		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_VM_STAT (%d) conflicts with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
-	else if (i > (MAX_VM_STAT - 4) && type == 1 && !sv_gameplayfix_customstats.integer)
-		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_VM_STAT (%d) - 4 with string type won't fit within MAX_VM_STAT, thus conflicting with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
+	if (i < MIN_VM_STAT_32)
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) < MIN_VM_STAT_32 (%d) may conflict with engine stats - allowed, but this may break things\n", i, MIN_VM_STAT_32);
+	else if (i >= MAX_VM_STAT_220 && !sv_gameplayfix_customstats.integer)
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_VM_STAT_220 (%d) conflicts with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT_220);
+	else if (i > (MAX_VM_STAT_220 - 4) && type == 1 && !sv_gameplayfix_customstats.integer)
+		VM_Warning(prog, "PF_SV_AddStat: index (%d) >= MAX_VM_STAT_220 (%d) - 4 with string type won't fit within MAX_VM_STAT_220, thus conflicting with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT_220);
 
 	vm_customstats[i].type		= type;
 	vm_customstats[i].fieldoffset	= off;
@@ -3178,7 +3199,7 @@ string(string key) serverkey
 */
 static void VM_SV_serverkey(prvm_prog_t *prog)
 {
-	char string[VM_STRINGTEMP_LENGTH];
+	char string[VM_STRINGTEMP_LENGTH_16384];
 	VM_SAFEPARMCOUNT(1, VM_SV_serverkey);
 	InfoString_GetValue(svs.serverinfo, PRVM_G_STRING(OFS_PARM0), string, sizeof(string));
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, string);

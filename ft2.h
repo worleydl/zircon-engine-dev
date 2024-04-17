@@ -52,7 +52,7 @@ typedef struct ft2_font_s
 	void           *face;
 
 	// an unordered array of ordered linked lists of glyph maps for a specific size
-	ft2_font_map_t *font_maps[MAX_FONT_SIZES];
+	ft2_font_map_t *font_maps[MAX_FONT_SIZES_16];
 	int             num_sizes;
 
 	// attachments
@@ -68,16 +68,17 @@ typedef struct ft2_font_s
 void            Font_CloseLibrary(void);
 void            Font_Init(void);
 qbool        Font_OpenLibrary(void);
-ft2_font_t*     Font_Alloc(void);
+ft2_font_t *    Font_Alloc(void);
 void            Font_UnloadFont(ft2_font_t *font);
 // IndexForSize suggests to change the width and height if a font size is in a reasonable range
 // for example, you render at a size of 12.4, and a font of size 12 has been loaded
 // in such a case, *outw and *outh are set to 12, which is often a good alternative size
 int             Font_IndexForSize(ft2_font_t *font, float size, float *outw, float *outh);
 ft2_font_map_t *Font_MapForIndex(ft2_font_t *font, int index);
-qbool        Font_LoadFont(const char *name, dp_font_t *dpfnt);
-qbool        Font_GetKerningForSize(ft2_font_t *font, float w, float h, Uchar left, Uchar right, float *outx, float *outy);
-qbool        Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, Uchar left, Uchar right, float *outx, float *outy);
+//qbool			Font_LoadFont(const char *name, dp_font_t *dpfnt);
+qbool Font_LoadFont(const char *name, dp_font_t *dpfnt, const byte *data_in); // Baker
+qbool			Font_GetKerningForSize(ft2_font_t *font, float w, float h, Uchar left, Uchar right, float *outx, float *outy);
+qbool			Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, Uchar left, Uchar right, float *outx, float *outy);
 float           Font_VirtualToRealSize(float sz);
 float           Font_SnapTo(float val, float snapwidth);
 // since this is used on a font_map_t, let's name it FontMap_*

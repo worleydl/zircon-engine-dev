@@ -126,10 +126,10 @@ typedef struct particleeffectinfo_s
 }
 particleeffectinfo_t;
 
-char particleeffectname[MAX_PARTICLEEFFECTNAME][64];
+char particleeffectname[MAX_PARTICLEEFFECTNAME_4096][64];
 
 int numparticleeffectinfo;
-particleeffectinfo_t particleeffectinfo[MAX_PARTICLEEFFECTINFO];
+particleeffectinfo_t particleeffectinfo[MAX_PARTICLEEFFECTINFO_8192];
 
 static int particlepalette[256];
 /*
@@ -319,76 +319,71 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 	particleeffectinfo_t *info = NULL;
 	const char *text = textstart;
 	char argv[16][1024];
-	for (linenumber = 1;;linenumber++)
-	{
+	for (linenumber = 1; ; linenumber ++) {
 		argc = 0;
 		for (arrayindex = 0;arrayindex < 16;arrayindex++)
 			argv[arrayindex][0] = 0;
-		for (;;)
-		{
+
+		for (;;) {
 			if (!COM_ParseToken_Simple(&text, true, false, true))
 				return;
 			if (String_Does_Match(com_token, "\n"))
 				break;
-			if (argc < 16)
-			{
-				strlcpy(argv[argc], com_token, sizeof(argv[argc]));
+			if (argc < 16) {
+				c_strlcpy (argv[argc], com_token);
 				argc++;
 			}
-		}
+		} // while
 		if (argc < 1)
 			continue;
-#define checkparms(n) if (argc != (n)) {Con_Printf ("%s:%d: error while parsing: %s given %d parameters, should be %d parameters\n", filename, linenumber, argv[0], argc, (n));break;}
-#define readints(array, n) checkparms(n+1);for (arrayindex = 0;arrayindex < argc - 1;arrayindex++) array[arrayindex] = strtol(argv[1+arrayindex], NULL, 0)
-#define readfloats(array, n) checkparms(n+1);for (arrayindex = 0;arrayindex < argc - 1;arrayindex++) array[arrayindex] = atof(argv[1+arrayindex])
-#define readint(var) checkparms(2);var = strtol(argv[1], NULL, 0)
-#define readfloat(var) checkparms(2);var = atof(argv[1])
-#define readbool(var) checkparms(2);var = strtol(argv[1], NULL, 0) != 0
-		if (String_Does_Match(argv[0], "effect"))
-		{
+
+#define checkparms(n)			if (argc != (n)) {Con_Printf ("%s:%d: error while parsing: %s given %d parameters, should be %d parameters\n", filename, linenumber, argv[0], argc, (n));break;}
+#define readints(array, n)		checkparms(n+1);for (arrayindex = 0;arrayindex < argc - 1;arrayindex++) array[arrayindex] = strtol(argv[1+arrayindex], NULL, 0)
+#define readfloats(array, n)	checkparms(n+1);for (arrayindex = 0;arrayindex < argc - 1;arrayindex++) array[arrayindex] = atof(argv[1+arrayindex])
+#define readint(var)			checkparms(2);var = strtol(argv[1], NULL, 0)
+#define readfloat(var)			checkparms(2);var = atof(argv[1])
+#define readbool(var)			checkparms(2);var = strtol(argv[1], NULL, 0) != 0
+
+		if (String_Does_Match(argv[0], "effect")) {
 			int effectnameindex;
 			checkparms(2);
-			if (numparticleeffectinfo >= MAX_PARTICLEEFFECTINFO)
-			{
-				Con_Printf ("%s:%d: too many effects!\n", filename, linenumber);
+			if (numparticleeffectinfo >= MAX_PARTICLEEFFECTINFO_8192) {
+				Con_PrintLinef ("%s:%d: too many effects!", filename, linenumber);
 				break;
 			}
-			for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME;effectnameindex++)
-			{
-				if (particleeffectname[effectnameindex][0])
-				{
+			for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME_4096;effectnameindex++) {
+				if (particleeffectname[effectnameindex][0]) {
 					if (String_Does_Match(particleeffectname[effectnameindex], argv[1]))
 						break;
-				}
-				else
-				{
-					strlcpy(particleeffectname[effectnameindex], argv[1], sizeof(particleeffectname[effectnameindex]));
+				} else {
+					c_strlcpy (particleeffectname[effectnameindex], argv[1]);
 					break;
 				}
-			}
+			} // for
+
 			// if we run out of names, abort
-			if (effectnameindex == MAX_PARTICLEEFFECTNAME)
-			{
-				Con_Printf ("%s:%d: too many effects!\n", filename, linenumber);
+			if (effectnameindex == MAX_PARTICLEEFFECTNAME_4096) {
+				Con_PrintLinef ("%s:%d: too many effects!", filename, linenumber);
 				break;
 			}
-			for(i = 0; i < numparticleeffectinfo; ++i)
-			{
+
+			for (i = 0; i < numparticleeffectinfo; ++i) {
 				info = particleeffectinfo + i;
 				if (!(info->flags & PARTICLEEFFECT_DEFINED))
 					if (info->effectnameindex == effectnameindex)
 						break;
-			}
+			} // for
+
 			if (i < numparticleeffectinfo)
 				continue;
+
 			info = particleeffectinfo + numparticleeffectinfo++;
 			// copy entire info from baseline, then fix up the nameindex
 			*info = baselineparticleeffectinfo;
 			info->effectnameindex = effectnameindex;
 			continue;
 		}
-		else if (info == NULL)
-		{
+		else if (info == NULL) {
 			Con_Printf ("%s:%d: command %s encountered before effect\n", filename, linenumber, argv[0]);
 			break;
 		}
@@ -399,74 +394,77 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 		else if (String_Does_Match(argv[0], "type"))
 		{
 			checkparms(2);
-			if (String_Does_Match(argv[1], "alphastatic")) info->particletype = pt_alphastatic;
-			else if (String_Does_Match(argv[1], "static")) info->particletype = pt_static;
-			else if (String_Does_Match(argv[1], "spark")) info->particletype = pt_spark;
-			else if (String_Does_Match(argv[1], "beam")) info->particletype = pt_beam;
-			else if (String_Does_Match(argv[1], "rain")) info->particletype = pt_rain;
-			else if (String_Does_Match(argv[1], "raindecal")) info->particletype = pt_raindecal;
-			else if (String_Does_Match(argv[1], "snow")) info->particletype = pt_snow;
-			else if (String_Does_Match(argv[1], "bubble")) info->particletype = pt_bubble;
-			else if (String_Does_Match(argv[1], "blood")) {info->particletype = pt_blood;info->gravity = 1;}
-			else if (String_Does_Match(argv[1], "smoke")) info->particletype = pt_smoke;
-			else if (String_Does_Match(argv[1], "decal")) info->particletype = pt_decal;
-			else if (String_Does_Match(argv[1], "entityparticle")) info->particletype = pt_entityparticle;
-			else Con_Printf ("%s:%d: unrecognized particle type %s\n", filename, linenumber, argv[1]);
+			if (String_Does_Match(argv[1], "alphastatic"))			info->particletype = pt_alphastatic;
+			else if (String_Does_Match(argv[1], "static"))			info->particletype = pt_static;
+			else if (String_Does_Match(argv[1], "spark"))			info->particletype = pt_spark;
+			else if (String_Does_Match(argv[1], "beam"))			info->particletype = pt_beam;
+			else if (String_Does_Match(argv[1], "rain"))			info->particletype = pt_rain;
+			else if (String_Does_Match(argv[1], "raindecal"))		info->particletype = pt_raindecal;
+			else if (String_Does_Match(argv[1], "snow"))			info->particletype = pt_snow;
+			else if (String_Does_Match(argv[1], "bubble"))			info->particletype = pt_bubble;
+			else if (String_Does_Match(argv[1], "blood")) {
+																	info->particletype = pt_blood;
+																	info->gravity = 1;
+			}
+			else if (String_Does_Match(argv[1], "smoke"))			info->particletype = pt_smoke;
+			else if (String_Does_Match(argv[1], "decal"))			info->particletype = pt_decal;
+			else if (String_Does_Match(argv[1], "entityparticle"))	info->particletype = pt_entityparticle;
+			else Con_PrintLinef ("%s:%d: unrecognized particle type %s", filename, linenumber, argv[1]);
 			info->blendmode = particletype[info->particletype].blendmode;
 			info->orientation = particletype[info->particletype].orientation;
 		}
 		else if (String_Does_Match(argv[0], "blend"))
 		{
 			checkparms(2);
-			if (String_Does_Match(argv[1], "alpha")) info->blendmode = PBLEND_ALPHA;
-			else if (String_Does_Match(argv[1], "add")) info->blendmode = PBLEND_ADD;
-			else if (String_Does_Match(argv[1], "invmod")) info->blendmode = PBLEND_INVMOD;
-			else Con_Printf ("%s:%d: unrecognized blendmode %s\n", filename, linenumber, argv[1]);
+			if (String_Does_Match(argv[1], "alpha"))		info->blendmode = PBLEND_ALPHA;
+			else if (String_Does_Match(argv[1], "add"))		info->blendmode = PBLEND_ADD;
+			else if (String_Does_Match(argv[1], "invmod"))	info->blendmode = PBLEND_INVMOD;
+			else Con_PrintLinef ("%s:%d: unrecognized blendmode %s", filename, linenumber, argv[1]);
 		}
 		else if (String_Does_Match(argv[0], "orientation"))
 		{
 			checkparms(2);
-			if (String_Does_Match(argv[1], "billboard")) info->orientation = PARTICLE_BILLBOARD;
-			else if (String_Does_Match(argv[1], "spark")) info->orientation = PARTICLE_SPARK;
-			else if (String_Does_Match(argv[1], "oriented")) info->orientation = PARTICLE_ORIENTED_DOUBLESIDED;
-			else if (String_Does_Match(argv[1], "beam")) info->orientation = PARTICLE_HBEAM;
-			else Con_Printf ("%s:%d: unrecognized orientation %s\n", filename, linenumber, argv[1]);
+			if (String_Does_Match(argv[1], "billboard"))		info->orientation = PARTICLE_BILLBOARD;
+			else if (String_Does_Match(argv[1], "spark"))		info->orientation = PARTICLE_SPARK;
+			else if (String_Does_Match(argv[1], "oriented"))	info->orientation = PARTICLE_ORIENTED_DOUBLESIDED;
+			else if (String_Does_Match(argv[1], "beam"))		info->orientation = PARTICLE_HBEAM;
+			else Con_PrintLinef ("%s:%d: unrecognized orientation %s", filename, linenumber, argv[1]);
 		}
-		else if (String_Does_Match(argv[0], "color")) {readints(info->color, 2);}
-		else if (String_Does_Match(argv[0], "tex")) {readints(info->tex, 2);}
-		else if (String_Does_Match(argv[0], "size")) {readfloats(info->size, 2);}
-		else if (String_Does_Match(argv[0], "sizeincrease")) {readfloat(info->size[2]);}
-		else if (String_Does_Match(argv[0], "alpha")) {readfloats(info->alpha, 3);}
-		else if (String_Does_Match(argv[0], "time")) {readfloats(info->time, 2);}
-		else if (String_Does_Match(argv[0], "gravity")) {readfloat(info->gravity);}
-		else if (String_Does_Match(argv[0], "bounce")) {readfloat(info->bounce);}
-		else if (String_Does_Match(argv[0], "airfriction")) {readfloat(info->airfriction);}
-		else if (String_Does_Match(argv[0], "liquidfriction")) {readfloat(info->liquidfriction);}
-		else if (String_Does_Match(argv[0], "originoffset")) {readfloats(info->originoffset, 3);}
-		else if (String_Does_Match(argv[0], "relativeoriginoffset")) {readfloats(info->relativeoriginoffset, 3);}
-		else if (String_Does_Match(argv[0], "velocityoffset")) {readfloats(info->velocityoffset, 3);}
-		else if (String_Does_Match(argv[0], "relativevelocityoffset")) {readfloats(info->relativevelocityoffset, 3);}
-		else if (String_Does_Match(argv[0], "originjitter")) {readfloats(info->originjitter, 3);}
-		else if (String_Does_Match(argv[0], "velocityjitter")) {readfloats(info->velocityjitter, 3);}
-		else if (String_Does_Match(argv[0], "velocitymultiplier")) {readfloat(info->velocitymultiplier);}
-		else if (String_Does_Match(argv[0], "lightradius")) {readfloat(info->lightradiusstart);}
-		else if (String_Does_Match(argv[0], "lightradiusfade")) {readfloat(info->lightradiusfade);}
-		else if (String_Does_Match(argv[0], "lighttime")) {readfloat(info->lighttime);}
-		else if (String_Does_Match(argv[0], "lightcolor")) {readfloats(info->lightcolor, 3);}
-		else if (String_Does_Match(argv[0], "lightshadow")) {readbool(info->lightshadow);}
-		else if (String_Does_Match(argv[0], "lightcubemapnum")) {readint(info->lightcubemapnum);}
-		else if (String_Does_Match(argv[0], "lightcorona")) {readints(info->lightcorona, 2);}
-		else if (String_Does_Match(argv[0], "underwater")) {checkparms(1);info->flags |= PARTICLEEFFECT_UNDERWATER;}
-		else if (String_Does_Match(argv[0], "notunderwater")) {checkparms(1);info->flags |= PARTICLEEFFECT_NOTUNDERWATER;}
-		else if (String_Does_Match(argv[0], "trailspacing")) {readfloat(info->trailspacing);if (info->trailspacing > 0) info->countmultiplier = 1.0f / info->trailspacing;}
-		else if (String_Does_Match(argv[0], "stretchfactor")) {readfloat(info->stretchfactor);}
-		else if (String_Does_Match(argv[0], "staincolor")) {readints(info->staincolor, 2);}
-		else if (String_Does_Match(argv[0], "stainalpha")) {readfloats(info->stainalpha, 2);}
-		else if (String_Does_Match(argv[0], "stainsize")) {readfloats(info->stainsize, 2);}
-		else if (String_Does_Match(argv[0], "staintex")) {readints(info->staintex, 2);}
-		else if (String_Does_Match(argv[0], "stainless")) {info->staintex[0] = -2; info->staincolor[0] = (unsigned int)-1; info->staincolor[1] = (unsigned int)-1; info->stainalpha[0] = 1; info->stainalpha[1] = 1; info->stainsize[0] = 2; info->stainsize[1] = 2; }
-		else if (String_Does_Match(argv[0], "rotate")) {readfloats(info->rotate, 4);}
-		else if (String_Does_Match(argv[0], "forcenearest")) {checkparms(1);info->flags |= PARTICLEEFFECT_FORCENEAREST;}
+		else if (String_Does_Match(argv[0], "color"))					{readints(info->color, 2);}
+		else if (String_Does_Match(argv[0], "tex"))						{readints(info->tex, 2);}
+		else if (String_Does_Match(argv[0], "size"))					{readfloats(info->size, 2);}
+		else if (String_Does_Match(argv[0], "sizeincrease"))			{readfloat(info->size[2]);}
+		else if (String_Does_Match(argv[0], "alpha"))					{readfloats(info->alpha, 3);}
+		else if (String_Does_Match(argv[0], "time"))					{readfloats(info->time, 2);}
+		else if (String_Does_Match(argv[0], "gravity"))					{readfloat(info->gravity);}
+		else if (String_Does_Match(argv[0], "bounce"))					{readfloat(info->bounce);}
+		else if (String_Does_Match(argv[0], "airfriction"))				{readfloat(info->airfriction);}
+		else if (String_Does_Match(argv[0], "liquidfriction"))			{readfloat(info->liquidfriction);}
+		else if (String_Does_Match(argv[0], "originoffset"))			{readfloats(info->originoffset, 3);}
+		else if (String_Does_Match(argv[0], "relativeoriginoffset"))	{readfloats(info->relativeoriginoffset, 3);}
+		else if (String_Does_Match(argv[0], "velocityoffset"))			{readfloats(info->velocityoffset, 3);}
+		else if (String_Does_Match(argv[0], "relativevelocityoffset"))	{readfloats(info->relativevelocityoffset, 3);}
+		else if (String_Does_Match(argv[0], "originjitter"))			{readfloats(info->originjitter, 3);}
+		else if (String_Does_Match(argv[0], "velocityjitter"))			{readfloats(info->velocityjitter, 3);}
+		else if (String_Does_Match(argv[0], "velocitymultiplier"))		{readfloat(info->velocitymultiplier);}
+		else if (String_Does_Match(argv[0], "lightradius"))				{readfloat(info->lightradiusstart);}
+		else if (String_Does_Match(argv[0], "lightradiusfade"))			{readfloat(info->lightradiusfade);}
+		else if (String_Does_Match(argv[0], "lighttime"))				{readfloat(info->lighttime);}
+		else if (String_Does_Match(argv[0], "lightcolor"))				{readfloats(info->lightcolor, 3);}
+		else if (String_Does_Match(argv[0], "lightshadow"))				{readbool(info->lightshadow);}
+		else if (String_Does_Match(argv[0], "lightcubemapnum"))			{readint(info->lightcubemapnum);}
+		else if (String_Does_Match(argv[0], "lightcorona"))				{readints(info->lightcorona, 2);}
+		else if (String_Does_Match(argv[0], "underwater"))				{checkparms(1);info->flags |= PARTICLEEFFECT_UNDERWATER;}
+		else if (String_Does_Match(argv[0], "notunderwater"))			{checkparms(1);info->flags |= PARTICLEEFFECT_NOTUNDERWATER;}
+		else if (String_Does_Match(argv[0], "trailspacing"))			{readfloat(info->trailspacing);if (info->trailspacing > 0) info->countmultiplier = 1.0f / info->trailspacing;}
+		else if (String_Does_Match(argv[0], "stretchfactor"))			{readfloat(info->stretchfactor);}
+		else if (String_Does_Match(argv[0], "staincolor"))				{readints(info->staincolor, 2);}
+		else if (String_Does_Match(argv[0], "stainalpha"))				{readfloats(info->stainalpha, 2);}
+		else if (String_Does_Match(argv[0], "stainsize"))				{readfloats(info->stainsize, 2);}
+		else if (String_Does_Match(argv[0], "staintex"))				{readints(info->staintex, 2);}
+		else if (String_Does_Match(argv[0], "stainless"))				{info->staintex[0] = -2; info->staincolor[0] = (unsigned int)-1; info->staincolor[1] = (unsigned int)-1; info->stainalpha[0] = 1; info->stainalpha[1] = 1; info->stainsize[0] = 2; info->stainsize[1] = 2; }
+		else if (String_Does_Match(argv[0], "rotate"))					{readfloats(info->rotate, 4);}
+		else if (String_Does_Match(argv[0], "forcenearest"))			{checkparms(1);info->flags |= PARTICLEEFFECT_FORCENEAREST;}
 		else
 			Con_Printf ("%s:%d: skipping unknown command %s\n", filename, linenumber, argv[0]);
 #undef checkparms
@@ -480,7 +478,7 @@ static void CL_Particles_ParseEffectInfo(const char *textstart, const char *text
 int CL_ParticleEffectIndexForName(const char *name)
 {
 	int i;
-	for (i = 1;i < MAX_PARTICLEEFFECTNAME && particleeffectname[i][0];i++)
+	for (i = 1;i < MAX_PARTICLEEFFECTNAME_4096 && particleeffectname[i][0];i++)
 		if (String_Does_Match(particleeffectname[i], name))
 			return i;
 	return 0;
@@ -488,14 +486,13 @@ int CL_ParticleEffectIndexForName(const char *name)
 
 const char *CL_ParticleEffectNameForIndex(int i)
 {
-	if (i < 1 || i >= MAX_PARTICLEEFFECTNAME)
+	if (i < 1 || i >= MAX_PARTICLEEFFECTNAME_4096)
 		return NULL;
 	return particleeffectname[i];
 }
 
 // MUST match effectnameindex_t in client.h
-static const char *standardeffectnames[EFFECT_TOTAL] =
-{
+static const char *standardeffectnames[EFFECT_TOTAL_36] = {
 	"",
 	"TE_GUNSHOT",
 	"TE_GUNSHOTQUAD",
@@ -534,7 +531,7 @@ static const char *standardeffectnames[EFFECT_TOTAL] =
 	"SVC_PARTICLE"
 };
 
-static void CL_Particles_LoadEffectInfo(const char *customfile)
+static void CL_Particles_LoadEffectInfo (const char *customfile)
 {
 	int i;
 	int filepass;
@@ -542,24 +539,25 @@ static void CL_Particles_LoadEffectInfo(const char *customfile)
 	fs_offset_t filesize;
 	char filename[MAX_QPATH_128];
 	numparticleeffectinfo = 0;
-	memset(particleeffectinfo, 0, sizeof(particleeffectinfo));
-	memset(particleeffectname, 0, sizeof(particleeffectname));
-	for (i = 0;i < EFFECT_TOTAL;i++)
-		strlcpy(particleeffectname[i], standardeffectnames[i], sizeof(particleeffectname[i]));
-	for (filepass = 0;;filepass++)
-	{
-		if (filepass == 0)
-		{
-			if (customfile)
-				strlcpy(filename, customfile, sizeof(filename));
+	memset (particleeffectinfo, 0, sizeof(particleeffectinfo));
+	memset (particleeffectname, 0, sizeof(particleeffectname));
+
+	for (i = 0; i < EFFECT_TOTAL_36; i++)
+		c_strlcpy (particleeffectname[i], standardeffectnames[i]);
+
+	for (filepass = 0; ; filepass++) {
+		if (filepass == 0) {
+			if (customfile) // "effectinfo.txt" <------------- CLIENT
+				c_strlcpy (filename, customfile);
 			else
-				strlcpy(filename, "effectinfo.txt", sizeof(filename));
+				c_strlcpy (filename, "effectinfo.txt");
 		}
 		else if (filepass == 1)
 		{
+			// Baker: start_effectinfo.txt
 			if (!cl.worldbasename[0] || customfile)
 				continue;
-			dpsnprintf(filename, sizeof(filename), "%s_effectinfo.txt", cl.worldnamenoextension);
+			c_dpsnprintf1 (filename, "%s_effectinfo.txt", cl.worldnamenoextension);
 		}
 		else
 			break;
@@ -568,12 +566,222 @@ static void CL_Particles_LoadEffectInfo(const char *customfile)
 			continue;
 		CL_Particles_ParseEffectInfo((const char *)filedata, (const char *)filedata + filesize, filename);
 		Mem_Free(filedata);
-	}
+	} // for
 }
+
+int GetEffectList_Count (const char *s_prefix)
+{
+	//if (!r_refdef.scene.worldmodel || !cl.islocalgame || !cl.worldmodel) {
+	//	return 0;
+	//}
+
+	// Baker: effectinfo is loaded even in disconnect state, Render_Init starts it up
+
+	stringlist_t	matchedSet;
+	stringlistinit  (&matchedSet); // this does not allocate
+
+	WARP_X_ (GetShaderList_Count)
+
+	// We cannot do comparisons here as this list is NOT SORTED nor UNIQUE
+	for (int idx = 0; idx < numparticleeffectinfo; idx ++) {
+		particleeffectinfo_t *info = particleeffectinfo + idx;
+		if (Have_Flag (info->flags, PARTICLEEFFECT_DEFINED) == false)
+			continue;
+
+		char *s_name = particleeffectname[info->effectnameindex];
+
+		if (s_prefix && s_prefix[0] && false == String_Does_Start_With_Caseless (s_name, s_prefix))
+			continue;
+
+		stringlistappend (&matchedSet, s_name);
+	} // for
+
+	// SORT
+	stringlistsort (&matchedSet, fs_make_unique_true);
+
+	int			num_matches = 0;
+
+	for (int idx = 0; idx < matchedSet.numstrings; idx ++) {
+		char *sxy = matchedSet.strings[idx];
+
+		if (String_Does_Start_With_Caseless (sxy, s_prefix) == false)
+			continue;
+
+		SPARTIAL_EVAL_
+
+		num_matches ++;
+	} // for
+
+	stringlistfreecontents (&matchedSet);
+
+	return num_matches;
+}
+
+
+static void CL_EffectInfo_List_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) > 3) {
+		Con_PrintLinef ("Usage: %s [optional partial]", Cmd_Argv(cmd, 0));
+		return;
+	}
+	const char *s_effectpartial = NULL;
+	if (Cmd_Argc(cmd) > 1)
+		s_effectpartial = Cmd_Argv(cmd, 1);
+
+	for (int idx = 0; idx < numparticleeffectinfo; idx ++) {
+		particleeffectinfo_t *info = particleeffectinfo + idx;
+		if (Have_Flag (info->flags, PARTICLEEFFECT_DEFINED) == false)
+			continue;
+		char *s_name = particleeffectname[info->effectnameindex];
+		if (s_effectpartial && false == String_Does_Start_With (s_name, s_effectpartial))
+			continue;
+		Con_PrintLinef ("%04d: %s", idx, s_name);
+	} // for
+
+}
+
+#pragma message ("effectinfo_dump EF_ENFORCERLASERIMPACT loses line number sync -- is it comments or what?  Carriage returns?")
+#pragma message ("We can effectinfo_dump with empty string and check for first line # mismatch")
+
+static void CL_EffectInfo_Dump_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) == 1) {
+		Con_PrintLinef ("Usage: %s [effect name]", Cmd_Argv(cmd, 0));
+		return;
+	}
+
+	char *s_partial = Cmd_Argc(cmd) > 1 ? Cmd_Argv(cmd, 1) : "";
+
+	// Find it -- there can be more than one
+	WARP_X_ (CL_Particles_LoadEffectInfo)
+	fs_offset_t filesize;
+	char *filename = "effectinfo.txt";
+	char s_effectname_current[1024];
+	// TODO: c_dpsnprintf1 (filename, "%s_effectinfo.txt", sv.worldnamenoextension);
+	unsigned char *filedata = FS_LoadFile (filename, tempmempool, fs_quiet_true, &filesize);
+	if (filedata == NULL) {
+		Con_PrintLinef ("Couldn't open " QUOTED_S, filename);
+		return;
+	}
+
+	const char *text = (const char *)filedata;
+	const char *end_of_file_data = (const char *)filedata + filesize;
+	char argv[16][1024];
+	const char *text_at_start_of_effect = NULL; // Only set if we want this one
+	int linenumber_at_start;
+	int num_found = 0;
+	for (int linenumber = 1; ; linenumber ++) {
+		int argc = 0;
+		for (int arrayindex = 0;arrayindex < 16;arrayindex++)
+			argv[arrayindex][0] = 0;
+
+		const char *text_before_this_line = text;
+		while (1) {
+			if (false == COM_ParseToken_Simple(&text, /*newline?*/ true, /*parse backslash?*/ false, /*parse comments?*/ true))
+				goto donex;
+			if (String_Does_Match(com_token, NEWLINE))
+				break; // exit while
+			if (argc < 16) {
+				c_strlcpy (argv[argc], com_token);
+				argc++;
+			}
+		} // while
+		if (argc < 1)
+			continue; // Next line.
+
+		//const char *text1 = text;
+		WARP_X_ (CL_Particles_LoadEffectInfo)
+		if (false == String_Does_Match(argv[0], "effect")) {
+			continue;
+		}
+
+		// END OF CURRENT (PREVIOUS) EFFECT WE WANT TO TEXT CAPTURE
+		if (text_at_start_of_effect) {
+			// Completed an effect
+			size_t slen = text_before_this_line - text_at_start_of_effect;
+			size_t bufsize;
+			char *s_alloc = (char *)core_memdup_z(text_at_start_of_effect, slen, &bufsize);
+			char *whitespace_clean = s_alloc;
+			while (*whitespace_clean) {
+				// Baker: Is it carriage returns that are toxic?
+				// Baker: No tabs are toxic as well
+				if (*whitespace_clean < 32 && *whitespace_clean != NEWLINE_CHAR_10)
+					*whitespace_clean = 32;
+				whitespace_clean ++;
+			}
+
+			WARP_X_ (ShaderText_Alloc , TAB_CHARACTER)
+			//char sbuf[MAX_INPUTLINE_16384 * 4];
+			//Clipboard_Set_Text (s_alloc1);
+
+			Con_PrintLinef ("Line # %04d: %s" NEWLINE "%s",
+				linenumber_at_start,
+				s_effectname_current,
+				s_alloc);
+			freenull_ (s_alloc);
+
+			text_at_start_of_effect = NULL;
+		}
+
+		// START OF NEW EFFECT
+		const char *s_effectname = argv[1];
+		int is_one_we_want = true;
+		if (s_partial && s_partial[0])
+			is_one_we_want = String_Does_Start_With (s_effectname, s_partial);
+
+		if (is_one_we_want) {
+			c_strlcpy (s_effectname_current, s_effectname);
+			num_found ++;
+			linenumber_at_start = linenumber;
+			text_at_start_of_effect = text_before_this_line;
+		}
+	} // for
+
+donex:
+    ; // oblig for gcc
+
+	const char *text_before_this_line = end_of_file_data;
+	// Baker: Finish an effect ... we will need to test last line
+
+	// END OF CURRENT (PREVIOUS) EFFECT WE WANT TO TEXT CAPTURE
+	if (text_at_start_of_effect) {
+		// Completed an effect
+		size_t slen = text_before_this_line - text_at_start_of_effect;
+		size_t bufsize;
+		char *s_alloc = (char *)core_memdup_z(text_at_start_of_effect, slen, &bufsize);
+		char *whitespace_clean = s_alloc;
+		while (*whitespace_clean) {
+			// Baker: Is it carriage returns that are toxic?
+			// Baker: No tabs are toxic as well
+			if (*whitespace_clean < 32 && *whitespace_clean != NEWLINE_CHAR_10)
+				*whitespace_clean = 32;
+			whitespace_clean ++;
+		}
+
+		WARP_X_ (ShaderText_Alloc , TAB_CHARACTER)
+		//char sbuf[MAX_INPUTLINE_16384 * 4];
+		//Clipboard_Set_Text (s_alloc1);
+
+		Con_PrintLinef ("Line # %04d: %s" NEWLINE "%s",
+			linenumber_at_start,
+			s_effectname_current,
+			s_alloc);
+		freenull_ (s_alloc);
+
+		text_at_start_of_effect = NULL;
+	}
+
+	Con_PrintLinef ("Found %d matches", num_found);
+
+
+	Mem_Free(filedata);
+}
+
+
 
 static void CL_Particles_LoadEffectInfo_f(cmd_state_t *cmd)
 {
-	CL_Particles_LoadEffectInfo(Cmd_Argc(cmd) > 1 ? Cmd_Argv(cmd, 1) : NULL);
+	CL_Particles_LoadEffectInfo (Cmd_Argc(cmd) > 1 ? Cmd_Argv(cmd, 1) : NULL);
 }
 
 /*
@@ -581,12 +789,295 @@ static void CL_Particles_LoadEffectInfo_f(cmd_state_t *cmd)
 CL_InitParticles
 ===============
 */
+
+WARP_X_ (Mod_OBJ_Load R_ShaderPrint_f SV_ShowModel_f CL_EffectInfo_Dump_f R_Pak_This_Map_f)
+
+// Stage 1, print the file names
+void CL_OBJModelAdjust_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) == 1) {
+		Con_PrintLinef ("Usage: %s [obj file name] [scale]", Cmd_Argv(cmd, 0));
+		return;
+	}
+
+	int is_write_file = Cmd_Argc(cmd) == 3;
+	float scaleup = 0;
+	if (Cmd_Argc(cmd) == 3) {
+		scaleup = atof (Cmd_Argv(cmd, 2));
+		if (scaleup <= 0) {
+			Con_PrintLinef ("Invalid scale of %f", scaleup);
+			return;
+		}
+		Con_PrintLinef ("Requested scaling: %f", scaleup);
+	}
+
+	//// If model is in memory, tell us about it ...
+	const char *s_filename = Cmd_Argv(cmd, 1);
+
+	char s_filenameout[MAX_QPATH_128];
+	c_strlcpy (s_filenameout, s_filename);
+	File_URL_Edit_Remove_Extension (s_filenameout);	
+	//FS_StripExtension(s_filenameout, s_filename, sizeof(s_filenameout));
+	c_strlcat (s_filenameout, "_out");
+	c_strlcat (s_filenameout, ".obj");
+
+	fs_offset_t filesize;
+	unsigned char *filedata = FS_LoadFile (s_filename, tempmempool, fs_quiet_true, &filesize);
+	
+	if (filedata == NULL) {
+		Con_PrintLinef ("Couldn't open " QUOTED_S, s_filename);
+		return;
+	}
+
+	// For now, we are going to assume they are all consecutive
+	// v 10.232652 2.837899 2.044918
+	// v 10.383495 2.996374 2.016335
+	// v 10.200855 2.837864 2.178474
+	// v 10.323713 2.996374 2.268107
+
+	//#define MAX_VERTS_WE_DO_HERE_65536 65536
+	//double verts[MAX_VERTS_WE_DO_HERE_65536][3];
+
+	const char *text						= (const char *)filedata;
+	const char *text_start					= text;
+	const char *text_before_vertex_section	= NULL;
+	const char *text_after_vertex_section	= NULL;
+	const char *text_end					= text_start + filesize;
+	
+	//int is_in_vertex_section = false;
+
+	const char *s_start_of_line = NULL;
+	int num_vertexs = 0;
+	int num_faces = 0;
+	char argv[16][1024];
+
+	float *obj_v = NULL;
+	int maxv = 0, numv = 0;
+
+	float minz[3] = { 9999999,  9999999,  9999999}; 
+	float maxz[3] = {-9999999, -9999999, -9999999}; 
+	float sizz[3] = {0};
+	float cent[3] = {0};
+
+	for (int linenumber = 1; ; linenumber ++) {
+		int argc = 0;
+		int is_a_vertex = false;
+		int is_eof = false;
+		//size_t arraysz = sizeof(argv); // Expect 16384
+		memset (argv, 0, sizeof(argv));
+
+		s_start_of_line = text;
+
+		// Read a line
+		while (1) {
+			// Baker: We are going false on skip comments to avoid skipping lines inside a multiline comment
+			if (false == COM_ParseToken_Simple(&text, 
+				/*return on newline?*/ true, 
+				/*parse backslash?*/ false, 
+				/*skip comments?*/ false)) {
+				is_eof = true;
+				break;
+			}
+			if (String_Does_Match(com_token, NEWLINE))
+				break; // exit while
+			switch (argc) {
+			case 0: 
+				argc++;
+				if (String_Does_Match (com_token, "v")) {
+					is_a_vertex = true;
+					num_vertexs ++;
+					if (text_before_vertex_section == NULL) {
+						text_before_vertex_section = s_start_of_line;
+					}
+				} // v
+
+				if (String_Does_Match (com_token, "f")) {
+					is_a_vertex = false;
+					num_faces ++;
+				} // v
+				break;
+
+			default:
+				if (is_a_vertex == false)
+					break;
+				if (argc < 16) {
+					c_strlcpy (argv[argc], com_token);
+					argc++;
+				}
+				break;
+			} // switch
+		} // while
+
+		if (is_a_vertex) {
+			if (numv >= maxv) {
+				maxv = Largest(maxv * 2, 1024); // Allocate twice as many but never less than 1024
+				obj_v = (float *)Mem_Realloc(tempmempool, obj_v, maxv * sizeof(float[3]));
+			}
+			
+			obj_v[numv*3+0] = atof(argv[1]);
+			obj_v[numv*3+1] = atof(argv[2]);
+			obj_v[numv*3+2] = atof(argv[3]);
+
+			if (maxz[0] < obj_v[numv*3+0]) maxz[0] = obj_v[numv*3+0];
+			if (maxz[1] < obj_v[numv*3+1]) maxz[1] = obj_v[numv*3+1];
+			if (maxz[2] < obj_v[numv*3+2]) maxz[2] = obj_v[numv*3+2];
+			if (minz[0] > obj_v[numv*3+0]) minz[0] = obj_v[numv*3+0];
+			if (minz[1] > obj_v[numv*3+1]) minz[1] = obj_v[numv*3+1];
+			if (minz[2] > obj_v[numv*3+2]) minz[2] = obj_v[numv*3+2];
+			numv ++;
+		} // vertex
+
+		const char *s_end_of_line = text ? text : text_end;
+		if (is_a_vertex) {
+			text_after_vertex_section = s_end_of_line;
+		}
+
+#if 0 // This is for printing line numbers
+		size_t slen = s_end_of_line - s_start_of_line;
+		size_t bufsize;
+		char *s_line = (char *)core_memdup_z(s_start_of_line, slen, &bufsize);
+		String_Edit_Whitespace_To_Space (s_line);
+		Con_PrintLinef ("%06d: %s", linenumber, s_line);
+#endif
+
+		if (is_eof)
+			break; // EXIT LOOP
+	} // for linenumber
+
+	sizz[0] = maxz[0] - minz[0];
+	sizz[1] = maxz[1] - minz[1];
+	sizz[2] = maxz[2] - minz[2];
+
+	cent[0] = minz[0] + sizz[0] / 2;
+	cent[1] = maxz[1] + sizz[1] / 2;
+	cent[2] = maxz[2] + sizz[2] / 2;
+
+	Con_PrintLinef ("Found %d vertexes", num_vertexs);
+	Con_PrintLinef ("Found %d numv", numv);
+	Con_PrintLinef ("Found %d faces", num_faces);
+
+	Con_PrintLinef ("=======");
+	Con_PrintLinef ("Mins   is " VECTOR3_5d1F, VECTOR3_SEND(minz) );
+	Con_PrintLinef ("Maxs   is " VECTOR3_5d1F, VECTOR3_SEND(maxz) );
+	Con_PrintLinef ("Size   is " VECTOR3_5d1F, VECTOR3_SEND(sizz) );
+	Con_PrintLinef ("Center is " VECTOR3_5d1F, VECTOR3_SEND(cent) );
+	Con_PrintLinef ("=======");
+	
+	Con_PrintLinef ("To center, we subtract " VECTOR3_5d1F, VECTOR3_SEND(cent) );
+	//Con_PrintLinef ("Center is " VECTOR3_5d1F, VECTOR3_SEND(cent) );
+
+
+	int model_idx = SV_ModelIndex (s_filename, /*precache mode*/ 0); // Baker: 0 means we are not precaching
+
+	if (model_idx != 0) {
+		model_t	*mod = SV_GetModelByIndex(model_idx);
+		Con_PrintLinef ("Model is precached as # %d", model_idx);
+		Con_PrintLinef (" mod->surfmesh.num_triangles:   %d", mod->surfmesh.num_triangles);
+		Con_PrintLinef (" mod->surfmesh.num_vertices:    %d", mod->surfmesh.num_vertices);
+	} else { 
+		Con_PrintLinef ("Model is not precached");
+	}
+
+
+	if (text_before_vertex_section == NULL || text_after_vertex_section == NULL) {
+		Con_PrintLinef ("No vertex data found, cannot write");
+		goto file_open_write_fail;
+	}
+
+	if (is_write_file == false) {
+		Con_PrintLinef ("Skipping write file, specify scale to write");
+		goto skip_write_file;
+	}
+
+#if 1
+
+	if (scaleup) {
+		Con_PrintLinef ("Performing scaling ..");
+		float minz[3] = { 9999999,  9999999,  9999999}; 
+		float maxz[3] = {-9999999, -9999999, -9999999}; 
+
+		// Center first ..
+		for (int idx = 0; idx < numv; idx ++) {
+			obj_v[idx*3+0] -= cent[0];
+			obj_v[idx*3+1] -= cent[1];
+			obj_v[idx*3+2] -= cent[2];			
+		} // next
+		for (int idx = 0; idx < numv; idx ++) {
+			obj_v[idx*3+0] *= scaleup;
+			obj_v[idx*3+1] *= scaleup;
+			obj_v[idx*3+2] *= scaleup;
+		} // next
+
+		// Redo centering
+		for (int idx = 0; idx < numv; idx ++) {
+			if (maxz[0] < obj_v[idx*3+0]) maxz[0] = obj_v[idx*3+0];
+			if (maxz[1] < obj_v[idx*3+1]) maxz[1] = obj_v[idx*3+1];
+			if (maxz[2] < obj_v[idx*3+2]) maxz[2] = obj_v[idx*3+2];
+			if (minz[0] > obj_v[idx*3+0]) minz[0] = obj_v[idx*3+0];
+			if (minz[1] > obj_v[idx*3+1]) minz[1] = obj_v[idx*3+1];
+			if (minz[2] > obj_v[idx*3+2]) minz[2] = obj_v[idx*3+2];
+		} // next
+
+
+		sizz[0] = maxz[0] - minz[0];
+		sizz[1] = maxz[1] - minz[1];
+		sizz[2] = maxz[2] - minz[2];
+
+		cent[0] = minz[0] + sizz[0] / 2;
+		cent[1] = maxz[1] + sizz[1] / 2;
+		cent[2] = maxz[2] + sizz[2] / 2;
+
+		Con_PrintLinef ("New:");
+		Con_PrintLinef ("======");
+		Con_PrintLinef ("Mins   is " VECTOR3_5d1F, VECTOR3_SEND(minz) );
+		Con_PrintLinef ("Maxs   is " VECTOR3_5d1F, VECTOR3_SEND(maxz) );
+		Con_PrintLinef ("Size   is " VECTOR3_5d1F, VECTOR3_SEND(sizz) );
+		Con_PrintLinef ("Center is " VECTOR3_5d1F, VECTOR3_SEND(cent) );
+
+	}
+
+	size_t slen_before = text_before_vertex_section - text_start;
+	size_t slen_after = text_end - text_after_vertex_section;
+
+	char *s_before_alloc = (char *)core_memdup_z(text_start, slen_before, q_reply_len_NULL);
+	char *s_after_alloc = (char *)core_memdup_z(text_after_vertex_section, slen_after, q_reply_len_NULL);
+
+	qfile_t *f = FS_OpenRealFile (s_filenameout, "wb", fs_quiet_FALSE); // WRITE-EON obj model adjust
+	if (!f) {
+		Con_PrintLinef ("Couldn't open file " QUOTED_S, s_filenameout);
+		goto file_open_write_fail;
+	}
+
+	Con_PrintLinef ("Writing to " QUOTED_S, s_filenameout);
+
+	FS_Printf (f, "%s", s_before_alloc);
+	for (int idx = 0; idx < numv; idx ++) {
+		FS_Printf (f, "v %f %f %f" NEWLINE, obj_v[idx*3+0], obj_v[idx*3+1], obj_v[idx*3+2]);
+	} // next
+
+	FS_Printf (f, "%s", s_after_alloc);
+
+	freenull_ (s_before_alloc);
+	freenull_ (s_after_alloc);
+	
+	FS_Close (f); f = NULL;
+#endif
+
+skip_write_file:
+file_open_write_fail:
+	Mem_Free(obj_v);
+	Mem_Free(filedata);
+}
+
 void CL_ReadPointFile_f(cmd_state_t *cmd);
 void CL_Particles_Init (void)
 {
 	Cmd_AddCommand(CF_CLIENT, "pointfile", CL_ReadPointFile_f, "display point file produced by qbsp when a leak was detected in the map (a line leading through the leak hole, to an entity inside the level)");
 	Cmd_AddCommand(CF_CLIENT, "cl_particles_reloadeffects", CL_Particles_LoadEffectInfo_f, "reloads effectinfo.txt and maps/levelname_effectinfo.txt (where levelname is the current map) if parameter is given, loads from custom file (no levelname_effectinfo are loaded in this case)");
-
+	Cmd_AddCommand(CF_CLIENT, "effectinfo_dump", CL_EffectInfo_Dump_f, "dumps text of effect, loading text fresh from file effectinfo.txt  [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "effectinfo_list", CL_EffectInfo_List_f, "displays effectinfo names loaded in client memory even without a map [Zircon]"); // Particles loaded in Render_Init
+	Cmd_AddCommand(CF_CLIENT, "objmodeladjust", CL_OBJModelAdjust_f, "center and scale an obj model [model] [scale]"); // Particles loaded in Render_Init
+	
 	Cvar_RegisterVariable (&cl_particles);
 	Cvar_RegisterVariable (&cl_particles_quality);
 	Cvar_RegisterVariable (&cl_particles_alpha);
@@ -1210,7 +1701,7 @@ static void CL_ParticleEffect_Fallback(int effectnameindex, float count, const v
 		float len, dec, qd;
 		int smoke, blood, bubbles, r, color, spawnedcount;
 
-		if (spawndlight && r_refdef.scene.numlights < MAX_DLIGHTS)
+		if (spawndlight && r_refdef.scene.numlights < MAX_DLIGHTS_256)
 		{
 			vec4_t light;
 			Vector4Set(light, 0, 0, 0, 0);
@@ -1423,7 +1914,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 {
 	qbool found = false;
 	char vabuf[1024];
-	if (effectnameindex < 1 || effectnameindex >= MAX_PARTICLEEFFECTNAME || !particleeffectname[effectnameindex][0])
+	if (effectnameindex < 1 || effectnameindex >= MAX_PARTICLEEFFECTNAME_4096 || !particleeffectname[effectnameindex][0])
 	{
 		Con_DPrintf ("Unknown effect number %d received from server\n", effectnameindex);
 		return; // no such effect
@@ -1464,7 +1955,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 		{
 			Vector4Set(avgtint, 1, 1, 1, 1);
 		}
-		for (effectinfoindex = 0, info = particleeffectinfo;effectinfoindex < MAX_PARTICLEEFFECTINFO && info->effectnameindex;effectinfoindex++, info++)
+		for (effectinfoindex = 0, info = particleeffectinfo;effectinfoindex < MAX_PARTICLEEFFECTINFO_8192 && info->effectnameindex;effectinfoindex++, info++)
 		{
 			if ((info->effectnameindex == effectnameindex) && (info->flags & PARTICLEEFFECT_DEFINED))
 			{
@@ -1494,7 +1985,7 @@ static void CL_NewParticlesFromEffectinfo(int effectnameindex, float pcount, con
 						// called when effect starts
 						CL_AllocLightFlash(NULL, &tempmatrix, info->lightradiusstart, info->lightcolor[0]*avgtint[0]*avgtint[3], info->lightcolor[1]*avgtint[1]*avgtint[3], info->lightcolor[2]*avgtint[2]*avgtint[3], info->lightradiusfade, info->lighttime, LightCubemapNumToName(vabuf, sizeof(vabuf), info->lightcubemapnum, info->flags), -1, info->lightshadow, info->lightcorona[0], info->lightcorona[1], 0, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 					}
-					else if (r_refdef.scene.numlights < MAX_DLIGHTS)
+					else if (r_refdef.scene.numlights < MAX_DLIGHTS_256)
 					{
 						// glowing entity
 						// called by CL_LinkNetworkEntity

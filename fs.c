@@ -380,14 +380,14 @@ typedef struct packfile_s
 
 typedef struct pack_s
 {
-	char filename [MAX_OSPATH];
-	char shortname [MAX_QPATH_128];
-	filedesc_t handle;
-	int ignorecase;  ///< PK3 ignores case
-	int numfiles;
-	qbool vpack;
-	qbool dlcache;
-	packfile_t *files;
+	char		filename [MAX_OSPATH];
+	char		shortname [MAX_QPATH_128];
+	filedesc_t	handle;
+	int			ignorecase;  ///< PK3 ignores case
+	int			numfiles;
+	qbool		vpack;
+	qbool		dlcache;
+	packfile_t	*files;
 } pack_t;
 //@}
 
@@ -409,12 +409,12 @@ FUNCTION PROTOTYPES
 */
 
 void FS_Dir_f(cmd_state_t *cmd);
-void FS_Pwd_f(cmd_state_t* cmd); // Baker r3101: pwd command to say the current directory
+void FS_Pwd_f(cmd_state_t *cmd); // Baker r3101: pwd command to say the current directory
 void FS_Ls_f(cmd_state_t *cmd);
 void FS_Which_f(cmd_state_t *cmd);
 
-static searchpath_t *FS_FindFile (const char *name, int* index, qbool quiet);
-static packfile_t* FS_AddFileToPack (const char *name, pack_t* pack,
+static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet);
+static packfile_t *FS_AddFileToPack (const char *name, pack_t *pack,
 									fs_offset_t offset, fs_offset_t packsize,
 									fs_offset_t realsize, int flags);
 
@@ -446,7 +446,7 @@ int fs_is_zircon_galaxy;
 
 // list of active game directories (empty if not running a mod)
 int fs_numgamedirs = 0;
-char fs_gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
+char fs_gamedirs[MAX_GAMEDIRS_16][MAX_QPATH_128];
 
 // list of all gamedirs with modinfo.txt
 gamedir_t *fs_all_gamedirs = NULL;
@@ -507,52 +507,52 @@ static dllhandle_t zlib_dll = NULL;
 #endif
 
 #ifdef _WIN32
-static HRESULT (WINAPI *qSHGetFolderPath) (HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, LPWSTR pszPath);
-static dllfunction_t shfolderfuncs[] =
-{
-	{"SHGetFolderPathW", (void **) &qSHGetFolderPath},
-	{NULL, NULL}
-};
-static const char *shfolderdllnames [] =
-{
-	"shfolder.dll",  // IE 4, or Win NT and higher
-	NULL
-};
-static dllhandle_t shfolder_dll = NULL;
+	static HRESULT (WINAPI *qSHGetFolderPath) (HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, LPWSTR pszPath);
+	static dllfunction_t shfolderfuncs[] =
+	{
+		{"SHGetFolderPathW", (void **) &qSHGetFolderPath},
+		{NULL, NULL}
+	};
+	static const char *shfolderdllnames [] =
+	{
+		"shfolder.dll",  // IE 4, or Win NT and higher
+		NULL
+	};
+	static dllhandle_t shfolder_dll = NULL;
 
-const GUID qFOLDERID_SavedGames = {0x4C5C32FF, 0xBB9D, 0x43b0, {0xB5, 0xB4, 0x2D, 0x72, 0xE5, 0x4E, 0xAA, 0xA4}};
-#define qREFKNOWNFOLDERID const GUID *
-#define qKF_FLAG_CREATE 0x8000
-#define qKF_FLAG_NO_ALIAS 0x1000
-static HRESULT (WINAPI *qSHGetKnownFolderPath) (qREFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath);
-static dllfunction_t shell32funcs[] =
-{
-	{"SHGetKnownFolderPath", (void **) &qSHGetKnownFolderPath},
-	{NULL, NULL}
-};
-static const char *shell32dllnames [] =
-{
-	"shell32.dll",  // Vista and higher
-	NULL
-};
-static dllhandle_t shell32_dll = NULL;
+	const GUID qFOLDERID_SavedGames = {0x4C5C32FF, 0xBB9D, 0x43b0, {0xB5, 0xB4, 0x2D, 0x72, 0xE5, 0x4E, 0xAA, 0xA4}};
+	#define qREFKNOWNFOLDERID const GUID *
+	#define qKF_FLAG_CREATE 0x8000
+	#define qKF_FLAG_NO_ALIAS 0x1000
+	static HRESULT (WINAPI *qSHGetKnownFolderPath) (qREFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath);
+	static dllfunction_t shell32funcs[] =
+	{
+		{"SHGetKnownFolderPath", (void **) &qSHGetKnownFolderPath},
+		{NULL, NULL}
+	};
+	static const char *shell32dllnames [] =
+	{
+		"shell32.dll",  // Vista and higher
+		NULL
+	};
+	static dllhandle_t shell32_dll = NULL;
 
-static HRESULT (WINAPI *qCoInitializeEx)(LPVOID pvReserved, DWORD dwCoInit);
-static void (WINAPI *qCoUninitialize)(void);
-static void (WINAPI *qCoTaskMemFree)(LPVOID pv);
-static dllfunction_t ole32funcs[] =
-{
-	{"CoInitializeEx", (void **) &qCoInitializeEx},
-	{"CoUninitialize", (void **) &qCoUninitialize},
-	{"CoTaskMemFree", (void **) &qCoTaskMemFree},
-	{NULL, NULL}
-};
-static const char *ole32dllnames [] =
-{
-	"ole32.dll", // 2000 and higher
-	NULL
-};
-static dllhandle_t ole32_dll = NULL;
+	static HRESULT (WINAPI *qCoInitializeEx)(LPVOID pvReserved, DWORD dwCoInit);
+	static void (WINAPI *qCoUninitialize)(void);
+	static void (WINAPI *qCoTaskMemFree)(LPVOID pv);
+	static dllfunction_t ole32funcs[] =
+	{
+		{"CoInitializeEx", (void **) &qCoInitializeEx},
+		{"CoUninitialize", (void **) &qCoUninitialize},
+		{"CoTaskMemFree", (void **) &qCoTaskMemFree},
+		{NULL, NULL}
+	};
+	static const char *ole32dllnames [] =
+	{
+		"ole32.dll", // 2000 and higher
+		NULL
+	};
+	static dllhandle_t ole32_dll = NULL;
 #endif
 
 /*
@@ -766,11 +766,10 @@ static int PK3_BuildFileList (pack_t *pack, const pk3_endOfCentralDir_t *eocd)
 		//
 		// 2nd uint8 : external file attributes
 		//    Check bits 3 (file is a directory) and 5 (file is a volume (?))
-		if ((ptr[8] & 0x21) == 0 && (ptr[38] & 0x18) == 0)
+		if ((ptr[8] & 0x21 /*33 decimal*/) == 0 && (ptr[38] & 0x18 /*24 decimal*/) == 0)
 		{
 			// Still enough bytes for the name?
-			if (remaining < namesize || namesize >= (int)sizeof (*pack->files))
-			{
+			if (remaining < namesize || namesize >= (int)sizeof (*pack->files)) {
 				Mem_Free (central_dir);
 				return -1;
 			}
@@ -946,7 +945,7 @@ FS_AddFileToPack
 Add a file to the list of files contained into a package
 ====================
 */
-static packfile_t* FS_AddFileToPack (const char *name, pack_t* pack,
+static packfile_t *FS_AddFileToPack (const char *name, pack_t *pack,
 									 fs_offset_t offset, fs_offset_t packsize,
 									 fs_offset_t realsize, int flags)
 {
@@ -1614,7 +1613,8 @@ void FS_Rescan (void)
 		// On success, zero is returned.  On error, -1 is returned, and
        // errno is set to indicate the error.
 		const char *s_log = va(vabuf, sizeof(vabuf), "%s/zircon_log.log", fs_gamedir);
-		int isok = unlink (s_log) == 0;
+		//int isok = unlink (s_log) == 0;
+		unlink (s_log);
 
 	}
 
@@ -1676,10 +1676,10 @@ qbool FS_ChangeGameDirs(int numgamedirs, char gamedirs[][MAX_QPATH_128], qbool c
 			return true; // already using this set of gamedirs, do nothing
 	}
 
-	if (numgamedirs > MAX_GAMEDIRS)
+	if (numgamedirs > MAX_GAMEDIRS_16)
 	{
 		if (complain)
-			Con_PrintLinef ("That is too many gamedirs (%d > %d)", numgamedirs, MAX_GAMEDIRS);
+			Con_PrintLinef ("That is too many gamedirs (%d > %d)", numgamedirs, MAX_GAMEDIRS_16);
 		return false; // too many gamedirs
 	}
 
@@ -1734,7 +1734,7 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 {
 	int i;
 	int numgamedirs;
-	char gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
+	char gamedirs[MAX_GAMEDIRS_16][MAX_QPATH_128];
 
 	if (Cmd_Argc(cmd) < 2) {
 		if (fs_numgamedirs) {
@@ -1745,14 +1745,14 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 			Con_PrintLinef ("base game      : %s", gamedirname1);
 			return;
 		}
-		
+
 		Con_PrintLinef ("base game: %s", gamedirname1);
 		return;
 	}
 
 	numgamedirs = Cmd_Argc(cmd) - 1;
-	if (numgamedirs > MAX_GAMEDIRS) {
-		Con_PrintLinef ("Too many gamedirs (%d > %d)", numgamedirs, MAX_GAMEDIRS);
+	if (numgamedirs > MAX_GAMEDIRS_16) {
+		Con_PrintLinef ("Too many gamedirs (%d > %d)", numgamedirs, MAX_GAMEDIRS_16);
 		return;
 	}
 
@@ -1760,7 +1760,7 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 		c_strlcpy(gamedirs[i], Cmd_Argv(cmd, i+1) );
 
 	if ((cls.state == ca_connected && !cls.demoplayback) || sv.active) {
-#if 0		
+#if 0
 		// actually, changing during game would work fine, but would be stupid
 		Con_PrintLinef ("Can not change gamedir while client is connected or server is running!");
 		return;
@@ -1775,9 +1775,9 @@ static void FS_GameDir_f(cmd_state_t *cmd)
 
 	// Baker: no server shutdown here in dpbeta?
 	if (sv.active) {
-		// Shutdown?	
+		// Shutdown?
 	}
-	
+
 #ifdef CONFIG_MENU
 	Menu_Resets (); // Cursor to 0 for all the menus
 #endif
@@ -1797,15 +1797,18 @@ static const char *FS_SysCheckGameDir(const char *gamedir, char *buf, size_t buf
 	char vabuf[1024];
 
 	stringlistinit(&list);
+#ifdef _WIN32
+	// We're ok here.  This checks a folder.
+#endif
+
 	listdirectory(&list, gamedir, fs_all_files_empty_string);
 	success = list.numstrings > 0;
 	stringlistfreecontents(&list);
 
-	if (success)
-	{
-		f = FS_SysOpen(va(vabuf, sizeof(vabuf), "%smodinfo.txt", gamedir), "r", fs_nonblocking_false);
-		if (f)
-		{
+	if (success) {
+		va(vabuf, sizeof(vabuf), "%smodinfo.txt", gamedir);
+		f = FS_SysOpen(vabuf, "r", fs_nonblocking_false);
+		if (f) {
 			n = FS_Read (f, buf, buflength - 1);
 			if (n >= 0)
 				buf[n] = 0;
@@ -1838,13 +1841,13 @@ const char *FS_CheckGameDir(const char *gamedir)
 	if (FS_CheckNastyPath(gamedir, true))
 		return NULL;
 
-	ret = FS_SysCheckGameDir(va(vabuf, sizeof(vabuf), "%s%s/", fs_userdir, gamedir), buf, sizeof(buf));
-	if (ret)
-	{
-		if (!*ret)
-		{
+	va(vabuf, sizeof(vabuf), "%s%s/", fs_userdir, gamedir);
+	ret = FS_SysCheckGameDir(vabuf, buf, sizeof(buf));
+	if (ret) {
+		if (!*ret) {
 			// get description from basedir
-			ret = FS_SysCheckGameDir(va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, gamedir), buf, sizeof(buf));
+			va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, gamedir);
+			ret = FS_SysCheckGameDir(vabuf, buf, sizeof(buf));
 			if (ret)
 				return ret;
 			return "";
@@ -1852,7 +1855,9 @@ const char *FS_CheckGameDir(const char *gamedir)
 		return ret;
 	}
 
-	ret = FS_SysCheckGameDir(va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, gamedir), buf, sizeof(buf));
+	WARP_X_ (FS_RealFilePath_Z_Alloc)
+	va(vabuf, sizeof(vabuf), "%s%s/", fs_basedir, gamedir);
+	ret = FS_SysCheckGameDir(vabuf, buf, sizeof(buf));
 	if (ret)
 		return ret;
 
@@ -1874,11 +1879,148 @@ const char *FS_CheckGameDir(const char *gamedir)
 	return fs_checkgamedir_missing;
 }
 
+
+static unsigned char *FS_LoadAndCloseQFile (qfile_t *file, const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer);
+// Return value true if found a total conversion or flex
+static int FS_Baker_ListGameDirs_Is_Total_Conversion (void)
+{
+	char vabuf[1024];
+	stringlist_t all_files_in_basedir_list = {0};
+
+	// Baker: This is not working how I would expect on Windows
+	// It is sending "/" to FindFirstFileW
+	// which is looking through the root directory of my drive checking files
+#ifdef _WIN32 // modlist.txt
+	const char *s_pwd = Sys_Getcwd_SBuf();
+	if (fs_basedir[0] == NULL_CHAR_0)
+		c_strlcpy (vabuf, ""); // Baker: This should work?	
+	else 
+#endif
+	{ 
+		va (vabuf, sizeof(vabuf), "%s/", fs_basedir);
+	}
+	
+	listdirectory (&all_files_in_basedir_list, vabuf, fs_all_files_empty_string); // concats, despite name
+
+	if (fs_userdir[0]) {
+		va (vabuf, sizeof(vabuf), "%s/", fs_userdir);
+		listdirectory (&all_files_in_basedir_list, vabuf, fs_all_files_empty_string);
+	}
+
+	stringlistsort (&all_files_in_basedir_list, fs_make_unique_true);
+
+	WARP_X_ (FS_RealFilePath_Z_Alloc FS_SysFileOrDirectoryType) 
+
+	stringlist_t folders_in_basedir_list = {0};
+	
+	for (int idx = 0; idx < all_files_in_basedir_list.numstrings; idx ++) {
+		const char *s			= all_files_in_basedir_list.strings[idx];
+		//char *sreal_za		= NULL;
+
+		int filetype			= FS_SysFileOrDirectoryType (s);
+		int is_dir				= filetype == FS_FILETYPE_DIRECTORY_2;
+
+		if (filetype == FS_FILETYPE_NONE_0)
+			continue; // Not sure, but bad ...
+
+		if (!is_dir)
+			continue;
+
+		// Baker: bin32/bin64 are for dlls, "downloads" is for QuakeInjector
+		if (String_Isin3 (s, "bin32", "bin64", "downloads"))
+			continue;
+
+		// Gamedir, possible only dir.
+		s = s;
+		stringlistappend (&folders_in_basedir_list, s);
+	} // idx
+
+	stringlistfreecontents (&all_files_in_basedir_list); // Done with that
+
+	char old_fs_gamedir[1024];
+	c_strlcpy (old_fs_gamedir, fs_gamedir);
+	while (folders_in_basedir_list.numstrings == 1) {
+		c_strlcpy (fs_gamedir, folders_in_basedir_list.strings[0]); // We have to do this for file read to work
+
+		c_strlcpy (mod_list_folder_name, folders_in_basedir_list.strings[0]); // "pac"
+
+		mod_list_requires = REQUIRES_WHAT_STANDALONE_1; // Assume standalone
+		c_strlcpy (mod_list_game_window_title, mod_list_folder_name); // Default to folder name.
+		c_strlcpy (mod_list_server_filter_name, mod_list_folder_name); // Default to folder name.
+		Mem_FreeNull_ (mod_list_game_icon_base64_zalloc); // NONE!
+
+		// #contents.pk3 -- if found, this is a classified gamedir mod.
+		va_super (tmp, 1024, "%s/#contents.pk3", mod_list_folder_name); // modinfo.txt except with underscore
+		
+		
+		//qfile_t *f = FS_OpenRealFileReadBinary(tmp, &realpath_za);
+		qfile_t *f = FS_SysOpen (tmp, FS_MODE_READ_BINARY_RB, fs_nonblocking_false);
+		
+		if (!f)
+			break; // Not a #contents mod.
+
+		FS_CloseNULL_ (f);
+
+		// mod_info.txt
+		va_super (tmp2, 1024, "%s/mod_info.txt", mod_list_folder_name); // modinfo.txt except with underscore
+		fs_offset_t filesize;
+//		f = FS_SysOpen (tmp, FS_MODE_READ_BINARY_RB, fs_nonblocking_false);
+//		if (!f)
+//			break;
+		
+		//char *filedata = (char *)FS_LoadAndCloseQFile(f, tmp2, zonemempool, fs_quiet_true, &filesize);
+		char *filedata = (char *)FS_SysLoadFile(tmp2, zonemempool, fs_quiet_true, &filesize);
+		
+		if (!filedata)
+			break;
+
+		// We have modinfo
+
+		// mod_list.pk3 ... note the underscore.  This is not "shitty" modlist.txt that has title.
+		// "game_title" "Packard Man"			// We will take that and substitute "_" for spaces for gamenetworkfiltername, screenshot name
+		// "requirements" "total_conversion"	// "total_conversion", "quake", "flexible"
+		// gameuserdirname= folder we are in
+		// "iconbase64" - a base64 encoded JPEG icon of 48 x 48 https://base64.guru/converter/encode/image/jpg
+
+		const char *s;
+		s = String_Worldspawn_Value_For_Key_Sbuf (filedata, "game_title");
+		if (s) {
+			c_strlcpy (mod_list_game_window_title, s);	
+			c_strlcpy (mod_list_server_filter_name, s);	// Default - underscorized mod_list_game_window_title
+			String_Edit_Replace (mod_list_server_filter_name, sizeof(mod_list_server_filter_name), " ", "_");
+		}
+
+		s = String_Worldspawn_Value_For_Key_Sbuf (filedata, "requirements");
+		if (s) {
+			if (String_Does_Match (s, "total_conversion")) mod_list_requires = REQUIRES_WHAT_STANDALONE_1;
+			else if (String_Does_Match (s, "quake")) mod_list_requires = REQUIRES_WHAT_QUAKE_0;
+			else if (String_Does_Match (s, "flexible")) mod_list_requires = REQUIRES_WHAT_FLEXIBLE_2;
+		} // Haha
+
+		s = String_Worldspawn_Value_For_Key_Sbuf (filedata, "iconbase64");
+		if (s) {
+			mod_list_game_icon_base64_zalloc = Z_StrDup (s);
+		}
+
+		// Format:
+		//gamename = solo_total_conversion;		// I think this is the status bar and menu title
+		//gamedirname1 = solo_total_conversion;  // gamedirname1 ... solo_total_conversion
+		//gamenetworkfiltername = gamescreenshotname = gameuserdirname = solo_total_conversion;
+		//gamenetworkfiltername like DarkPlaces-Quake
+		break;
+	} // while 1
+	c_strlcpy (fs_gamedir, old_fs_gamedir);
+
+	stringlistfreecontents (&folders_in_basedir_list); // Done with that
+
+	return mod_list_folder_name[0] != NULL_CHAR_0;
+}
+
 static void FS_ListGameDirs(void)
 {
 	stringlist_t list, list2;
 	int i;
-	const char *info;
+	const char *game_mod_info;
 	char vabuf[1024];
 
 	fs_all_gamedirs_count = 0;
@@ -1886,41 +2028,62 @@ static void FS_ListGameDirs(void)
 		Mem_Free(fs_all_gamedirs);
 
 	stringlistinit(&list);
-	listdirectory(&list, va(vabuf, sizeof(vabuf), "%s/", fs_basedir), fs_all_files_empty_string);
-	listdirectory(&list, va(vabuf, sizeof(vabuf), "%s/", fs_userdir), fs_all_files_empty_string);
-	stringlistsort(&list, false);
+
+	// Baker: This is not working how I would expect on Windows
+	// It is sending "/" to FindFirstFileW
+	// which is looking through the root directory of my drive checking files
+#ifdef _WIN32 // modlist.txt
+	const char *s_pwd = Sys_Getcwd_SBuf();
+	if (fs_basedir[0])
+		va(vabuf, sizeof(vabuf), "%s/", fs_basedir);
+	else c_strlcpy (vabuf, ""); // Baker: This should work?
+#else
+	va(vabuf, sizeof(vabuf), "%s/", fs_basedir);
+#endif
+
+	listdirectory(&list, vabuf, fs_all_files_empty_string);
+	if (fs_userdir[0]) {
+
+		// Baker: Prevent it from listing if not used.
+		va(vabuf, sizeof(vabuf), "%s/", fs_userdir);
+		listdirectory(&list, vabuf, fs_all_files_empty_string);
+	}
+	stringlistsort(&list, fs_make_unique_true);
 
 	stringlistinit(&list2);
-	for(i = 0; i < list.numstrings; ++i)
-	{
+	for (i = 0; i < list.numstrings; i ++) {
+		const char *s = list.strings[i];
+#if 0
+		// Baker: This is a unique check, we make the sort above do unique
 		if (i)
 			if (String_Does_Match(list.strings[i-1], list.strings[i]))
 				continue;
-		info = FS_CheckGameDir(list.strings[i]);
-		if (!info)
+#endif
+
+		game_mod_info = FS_CheckGameDir(list.strings[i]);
+		if (!game_mod_info)
 			continue;
-		if (info == fs_checkgamedir_missing)
+		if (game_mod_info == fs_checkgamedir_missing)
 			continue;
-		if (!*info)
+		if (!*game_mod_info)
 			continue;
 		stringlistappend(&list2, list.strings[i]);
 	}
 	stringlistfreecontents(&list);
 
 	fs_all_gamedirs = (gamedir_t *)Mem_Alloc(fs_mempool, list2.numstrings * sizeof(*fs_all_gamedirs));
-	for(i = 0; i < list2.numstrings; ++i)
-	{
-		info = FS_CheckGameDir(list2.strings[i]);
+	for (i = 0; i < list2.numstrings; i ++) {
+		game_mod_info = FS_CheckGameDir(list2.strings[i]);
 		// all this cannot happen any more, but better be safe than sorry
-		if (!info)
+		if (!game_mod_info)
 			continue;
-		if (info == fs_checkgamedir_missing)
+		if (game_mod_info == fs_checkgamedir_missing)
 			continue;
-		if (!*info)
+		if (!*game_mod_info)
 			continue;
-		strlcpy(fs_all_gamedirs[fs_all_gamedirs_count].name, list2.strings[i], sizeof(fs_all_gamedirs[fs_all_gamedirs_count].name));
-		strlcpy(fs_all_gamedirs[fs_all_gamedirs_count].description, info, sizeof(fs_all_gamedirs[fs_all_gamedirs_count].description));
-		++fs_all_gamedirs_count;
+		c_strlcpy (fs_all_gamedirs[fs_all_gamedirs_count].name, list2.strings[i]);
+		c_strlcpy (fs_all_gamedirs[fs_all_gamedirs_count].description, game_mod_info);
+		fs_all_gamedirs_count ++;
 	}
 }
 
@@ -2103,7 +2266,7 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 
 #ifdef _WIN32
 	// historical behavior...
-	if (userdirmode == USERDIRMODE_NOHOME && String_Does_Not_Match(gamedirname1, "id1"))
+	if (userdirmode == USERDIRMODE_NOHOME && String_Does_NOT_Match(gamedirname1, "id1"))
 		return 0; // don't bother checking if the basedir folder is writable, it's annoying...  unless it is Quake on Windows where NOHOME is the default preferred and we have to check for an error case
 #endif
 
@@ -2334,7 +2497,7 @@ FS_OpenPackedFile
 Open a packed file using its package file descriptor
 ===========
 */
-static qfile_t *FS_OpenPackedFile (pack_t* pack, int pack_ind)
+static qfile_t *FS_OpenPackedFile (pack_t *pack, int pack_ind)
 {
 	packfile_t *pfile;
 	filedesc_t dup_handle;
@@ -2506,7 +2669,7 @@ Return the searchpath where the file was found (or NULL)
 and the file index in the package if relevant
 ====================
 */
-static searchpath_t *FS_FindFile (const char *name, int* index, qbool quiet)
+static searchpath_t *FS_FindFile (const char *name, int *index, qbool quiet)
 {
 	searchpath_t *search;
 	pack_t *pak;
@@ -2639,7 +2802,7 @@ static qfile_t *FS_OpenReadFile (const char *filename, qbool quiet, qbool nonblo
 
 			if (!mergeslash)
 				mergeslash = filename;
-			
+
 			while (!strncmp(mergestart, "../", 3)) {
 				mergestart += 3;
 				while(mergeslash > filename) {
@@ -2698,6 +2861,11 @@ Open a file in the userpath. The syntax is the same as fopen
 Used for savegame scanning in menu, and all file writing.
 ====================
 */
+// Baker: This is path creating file write
+
+// Baker: This isn't suitable for read.  It only checks fs_gamedir path which if homed could be like "myname"
+// So if fs_gamedir is "myname"
+// What is "quake"?
 qfile_t *FS_OpenRealFile (const char *filepath, const char *mode /*rb or what not*/, qbool quiet)
 {
 	char real_path [MAX_OSPATH];
@@ -2707,13 +2875,61 @@ qfile_t *FS_OpenRealFile (const char *filepath, const char *mode /*rb or what no
 		return NULL;
 	}
 
+	//Con_PrintLinef ("FS_OpenRealFile fs_gamedir " QUOTED_S " " QUOTED_S, fs_gamedir, filepath);
 	dpsnprintf (real_path, sizeof (real_path), "%s/%s", fs_gamedir, filepath); // this is never a vpack
 
 	// If the file is opened in "write", "append", or "read/write" mode,
 	// create directories up to the file.
-	if (mode[0] == 'w' || mode[0] == 'a' || strchr (mode, '+'))
+	if (mode[0] == 'w' || mode[0] == 'a' || strchr(mode, '+'))
 		FS_CreatePath (real_path);
 	return FS_SysOpen (real_path, mode, fs_nonblocking_false);
+}
+
+// We are checking gamedir/filepath
+// Baker: fs_gamedir is something like /home/myname/.zircon/
+// fs_basedir <--- I think this is what we want.
+
+qfile_t *FS_OpenRealFileReadBinary (const char *filepath, char **prealpathname_zalloc)
+{
+	if (FS_CheckNastyPath(filepath, /*isgamedir?*/ false)) {
+		*prealpathname_zalloc = NULL;
+		return NULL;
+	}
+
+	// 0, 1
+	for (int j = 0; j < 2; j ++) {
+		
+		char real_path [MAX_OSPATH];
+
+		//Con_PrintLinef ("FS_OpenRealFile fs_gamedir " QUOTED_S " " QUOTED_S, fs_gamedir, filepath);
+		switch (j) {
+		case 0:
+			// Baker: homedir method
+			WARP_X_ (FS_AddGameDirectory)
+			c_dpsnprintf2 (real_path, "%s/%s", fs_gamedir, filepath); // this is never a vpack
+			break;
+		case 1:
+			c_dpsnprintf3 (real_path, "%s%s/%s", fs_basedir, gamedirname1, filepath); // this is never a vpack
+			break;
+		} // sw
+		
+
+		// If the file is opened in "write", "append", or "read/write" mode,
+		// create directories up to the file.
+		qfile_t *f = FS_SysOpen (real_path, FS_MODE_READ_BINARY_RB, fs_nonblocking_false);
+		if (f) {
+			*prealpathname_zalloc = Z_StrDup (real_path);
+			return f;
+		}
+
+		// Only process once if -nohome (which is windows default for Zircon)
+		if (fs_userdir[0] == 0)
+			break;
+
+	} // for
+
+	*prealpathname_zalloc = NULL;
+	return NULL; // Fail
 }
 
 
@@ -3101,6 +3317,7 @@ int FS_VPrintf (qfile_t *file, const char *format, va_list ap)
 			break;
 		Mem_Free (tempbuff);
 		buff_size *= 2;
+		//Sys_PrintToTerminal (va32 ("Expanding buffer to %f" NEWLINE, (double)buff_size ));
 	}
 
 	len = FILEDESC_WRITE (file->handle, tempbuff, len);
@@ -3307,7 +3524,7 @@ static unsigned char *FS_LoadAndCloseQFile (qfile_t *file, const char *path, mem
 		filesize = file->real_length;
 		if (filesize < 0)
 		{
-			Con_Printf ("FS_LoadFile(" QUOTED_S ", pool, %s, filesizepointer): trying to open a non-regular file\n", path, quiet ? "true" : "false");
+			Con_PrintLinef ("FS_LoadFile(" QUOTED_S ", pool, %s, filesizepointer): trying to open a non-regular file", path, quiet ? "true" : "false");
 			FS_Close(file);
 			return NULL;
 		}
@@ -3316,7 +3533,7 @@ static unsigned char *FS_LoadAndCloseQFile (qfile_t *file, const char *path, mem
 		buf[filesize] = '\0';
 		FS_Read (file, buf, filesize);
 		FS_Close (file);
-		if (developer_loadfile.integer)
+		if (developer_loadingfile_fs.integer)
 			Con_PrintLinef ("loaded file " QUOTED_S " (%u bytes)", path, (unsigned int)filesize);
 	}
 
@@ -3369,7 +3586,7 @@ qbool FS_WriteFileInBlocks (const char *filename, const void *const *data, const
 	size_t i;
 	fs_offset_t lentotal;
 
-	file = FS_OpenRealFile(filename, "wb", false);
+	file = FS_OpenRealFile(filename, "wb", fs_quiet_FALSE);  // WRITE-EON .. IGNORE THIS, SUB PROCESS .. move along
 	if (!file)
 	{
 		Con_PrintLinef ("FS_WriteFile: failed on %s", filename);
@@ -3559,7 +3776,10 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, cons
 	char sgamedironly[MAX_QPATH_128 * 2] = {0};
 	int hit_gamedironly_limiter = false;
 #endif
-	for (i = 0;pattern[i] == '.' || pattern[i] == ':' || pattern[i] == '/' || pattern[i] == '\\';i++)
+	// pattern[i] == '.' || pattern[i] == ':' || pattern[i] == '/' || pattern[i] == '\\'
+
+	// Baker: Checking leading punctuation
+	for (i = 0; isin4 (pattern[i], '.', ':', '/', '\\'); i ++)
 		;
 
 	if (i > 0) {
@@ -3620,7 +3840,7 @@ fssearch_t *FS_Search (const char *pattern, int caseinsensitive, int quiet, cons
 			// look through all the pak file elements
 			pak = searchpath->pack;
 			if (packfile) {
-				if (String_Does_Not_Match(packfile, pak->shortname))
+				if (String_Does_NOT_Match(packfile, pak->shortname))
 					continue;
 			}
 			for (i = 0;i < pak->numfiles;i++)
@@ -3913,6 +4133,353 @@ void FS_Pwd_f(cmd_state_t *cmd)
 	Con_PrintLinef ("Current working directory: %s", s_cwd);
 }
 
+void FS_DirPat_f(cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("Need params");
+		return;
+	}
+
+	Con_PrintLinef ("If successful, the results of *.sav will match windows per gamedir");
+	Con_PrintLinef ("2 is " QUOTED_S, Cmd_Argv(cmd, 2));
+
+	const char *spat = Cmd_Argv(cmd, 1);
+	int do_gamedironly = atoi(Cmd_Argv(cmd, 2)) != 0 ?  fs_gamedironly_true : fs_gamedironly_false;
+
+	Con_PrintLinef ("Trying FS_Search with " QUOTED_S, spat);
+	Con_PrintLinef ("gamedironly %d" , do_gamedironly);
+
+	fssearch_t *t = FS_Search (spat, fs_caseless_true, fs_quiet_true, fs_pakfile_null, do_gamedironly);
+
+	if (!t) Con_PrintLinef ("No search");
+
+	if (t) {
+		for (int idx = 0; idx < t->numfilenames; idx ++) {
+			char *sxy = t->filenames[idx];
+			Con_PrintLinef ("%4d " QUOTED_S, idx, sxy);
+			//Add_SaveFile (sxy); // Get_SavesListGameDirOnly
+		} // for
+	} // t
+
+	FS_FreeSearch_Null_ (t);
+}
+
+
+#ifdef CONFIG_MENU
+void FS_BitAtomize_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("Need a number");
+		return;
+	}
+
+	double dnumber = atof(Cmd_Argv(cmd,1));
+	uint64_t number = dnumber;
+
+	Con_PrintLinef ("Number: %u", number);
+
+	// bust down to bits and then print
+	for (uint64_t j = 0; j < 32; j ++) {
+		uint64_t miney = 1 << j;
+		Con_PrintLinef ("%02d %16.0f %16.0f %x", (int)j, (double)(miney), (double)(number & miney), (unsigned)(number & miney));
+	} // for
+}
+
+
+#if 0
+void FS_Shell_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc (cmd) < 2) {
+		Con_PrintLinef ("shell <command line>");
+		return;
+	}
+
+	const char *s = Cmd_Argv (cmd, 1);
+	int is_ok = Sys_ShellExecute (s);
+	Con_PrintLinef ("Result ok = %d", is_ok);
+}
+#endif
+
+void FS_Parse_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc (cmd) < 2) {
+		Con_PrintLinef ("parse <string> or parse clipboard");
+		return;
+	}
+
+	const char *s_parse = NULL;
+	char *s_alloc = NULL;
+	if (Cmd_Argc (cmd) == 2 && String_Does_Match (Cmd_Argv(cmd, 1), "clipboard")) {
+		s_alloc = Sys_GetClipboardData_Unlimited_Alloc(); // zallocs
+		s_parse = s_alloc;
+
+	} else {
+		s_parse = Cmd_Argv (cmd, 1);
+	}
+
+	const char		*data = s_parse;
+
+	WARP_X_ (String_Worldspawn_Value_For_Key_Sbuf)
+		int idx = 0;
+	while (1) {
+		// Read some data ...
+		if (COM_Parse_Basic(&data) == false)
+			return; // End of data
+
+		// Copy data over, skipping a prefix of '_' in a keyname
+		const char *s_token = &com_token[0];
+
+		Con_PrintLinef ("%4d: " QUOTED_S, idx, s_token);
+		idx ++;
+	} // while
+
+
+	if (s_alloc)
+		Z_Free ((void *)s_alloc);
+}
+
+void FS_Base64Clipboard_f (cmd_state_t *cmd)
+{
+	char *s_alloc = Sys_GetClipboardData_Unlimited_Alloc(); // zallocs
+	if (s_alloc == NULL) {
+		Con_PrintLinef ("No text on clipboard");
+		return;
+	}
+
+	char *s_base64_alloc = base64_encode_calloc ((unsigned char *)s_alloc, strlen(s_alloc), q_reply_len_NULL); // malloc
+
+	Clipboard_Set_Text (s_base64_alloc); // AUTH: base64clipboard cmd
+	Con_PrintLinef ("Set to clipboard %u characters in --> base64 %u characters", (unsigned)strlen(s_alloc), (unsigned)strlen(s_base64_alloc));
+
+	free (s_base64_alloc);
+	Z_Free ((void *)s_alloc);
+}
+
+char *Compresso (char *s);
+void FS_Base64ClipboardCompressed_f (cmd_state_t *cmd)
+{
+	/*cleanupok*/ char *s_alloc = Sys_GetClipboardData_Unlimited_Alloc(); // zallocs
+	if (s_alloc == NULL) {
+		Con_PrintLinef ("No text on clipboard");
+		return;
+	}
+
+	// Baker: We are compressing text here, the OUTPUT is binary
+	size_t data_compressed_size = 0;
+	unsigned char *data_compressed = string_zlib_compress_alloc (s_alloc, &data_compressed_size, SIV_DECOMPRESS_BUFSIZE_16_MB);
+
+	/*cleanupok*/ char *s_base64_alloc = base64_encode_calloc (data_compressed, data_compressed_size, q_reply_len_NULL); // malloc
+
+	Clipboard_Set_Text (s_base64_alloc); // AUTH: base64clipboardcompress
+
+	Con_PrintLinef ("Set to clipboard " PRINTF_INT64 " characters in --> base64 " PRINTF_INT64 " characters",
+		(int64_t)strlen(s_alloc), (int64_t)strlen(s_base64_alloc));
+
+	free (s_base64_alloc);
+	free (data_compressed);
+	Z_Free ((void *)s_alloc);
+
+
+}
+
+void FS_Base64ClipboardDeCompressed_f (cmd_state_t *cmd)
+{
+	/*cleanupok*/ char *s_alloc = Sys_GetClipboardData_Unlimited_Alloc(); // zallocs
+	if (s_alloc == NULL) {
+		Con_PrintLinef ("No text on clipboard");
+		return;
+	}
+
+	//size_t slen = strlen(s_alloc);
+	size_t unbase_datasize;
+	unsigned char *data_unbase64_alloc = base64_decode_calloc (s_alloc, &unbase_datasize); // malloc
+
+	// It is now ready for zip decompression
+	char *s_data_uncompressed = string_zlib_decompress_alloc (data_unbase64_alloc,
+		unbase_datasize, SIV_DECOMPRESS_BUFSIZE_16_MB);
+
+
+
+	Clipboard_Set_Text ((char *)s_data_uncompressed); // AUTH: base64clipboarddecompress
+
+	Con_PrintLinef ("Set to clipboard " PRINTF_INT64 " characters in --> base64 " PRINTF_INT64 " characters",
+		(int64_t)strlen(s_alloc), (int64_t)strlen(s_data_uncompressed));
+
+	free (s_data_uncompressed);
+	free (data_unbase64_alloc);
+	Z_Free ((void *)s_alloc);
+
+
+}
+#endif
+
+void FS_JpegSplit_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("usage:" NEWLINE "%s <folder>", Cmd_Argv(cmd, 0));
+		return;
+	}
+
+	int is_write = Cmd_Argc(cmd) == 3;
+
+	const char *s_folder = Cmd_Argv(cmd, 1); // "zircon_beta_windows_20240116.zip";
+
+	stringlist_t slist = {0};
+
+	WARP_X_ (LoadTGA_BGRA, JPEG_SaveImage_preflipped, Image_CopyAlphaFromBlueBGRA)
+	stringlist_from_dir_pattern (&slist, s_folder, ".tga", q_strip_exten_false);
+
+	Con_PrintLinef ("%d results" NEWLINE, slist.numstrings);
+
+	for (int idx = 0; idx < slist.numstrings; idx ++) {
+		unsigned char *LoadTGA_BGRA (const unsigned char *f, int filesize, int *miplevel);
+		qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, unsigned char *data);
+		void Image_CopyMux(unsigned char *outpixels, const unsigned char *inpixels, int inputwidth, int inputheight, qbool inputflipx, qbool inputflipy, qbool inputflipdiagonal, int numoutputcomponents, int numinputcomponents, int *outputinputcomponentindices);
+
+		char *s_name = slist.strings[idx];
+		fs_offset_t filesize;
+		unsigned char *f = FS_LoadFile(s_name, tempmempool, fs_quiet_true, &filesize);
+
+		Con_PrintLinef ("%4d: size %12d %s", idx, (int)filesize, slist.strings[idx]);
+
+		if (is_write == false)
+			goto free_data_continue;
+
+		char s_name_out[MAX_QPATH_128];
+		c_strlcpy (s_name_out, s_name);
+		File_URL_Edit_Remove_Extension(s_name_out);
+		c_strlcat (s_name_out, ".jpg");
+
+		//int image_width = 0; // These are globals!
+		//int image_height = 0;
+
+		int mymiplevel = 0;
+		WARP_X_ (LoadTGA_BGRA imageformats_textures)
+
+extern int		image_width; // Baker: image globals !!!
+extern int		image_height;
+
+		unsigned char *data_bgra = LoadTGA_BGRA(f, (int)filesize, &mymiplevel);
+
+		int is_alpha_channel = false;
+
+		for (int y = 3; y < image_width * image_height * BGRA_4; y += BGRA_4) {
+			if (data_bgra[y] < 255) {
+				is_alpha_channel = true;
+				break;
+			}
+		} // for
+
+		Con_PrintLinef ("Image has alpha = %d", is_alpha_channel);
+
+		if (data_bgra == NULL) {
+			Con_PrintLinef ("Error loading TGA %s ", s_name);
+			goto free_data_continue;
+		}
+
+#if 0
+		int is_ok_clip =
+			Sys_Clipboard_Set_Image_BGRA_Is_Ok ((unsigned int *)data_bgra, image_width, image_height);
+#endif
+		unsigned char *noalphabuffer_3 = (unsigned char *)Mem_Alloc(tempmempool, image_width * image_height * 3);
+
+		int	indices[4] = {0,1,2,3}; // BGRA
+		if (1 /*jpeg*/) { indices[0] = 2; indices[2] = 0; }
+
+		if (1) {
+			// Part 1: RGB part
+
+			Image_CopyMux (noalphabuffer_3, data_bgra, image_width, image_height,
+				/*flipx*/ false, /*flipy*/ true, /*flipdiagonal*/ false, 3, 4, indices);
+
+			int is_ok = JPEG_SaveImage_preflipped (
+				s_name_out,
+				image_width,
+				image_height,
+				noalphabuffer_3 //data_bgra
+				);
+			if (is_ok == false)
+				Con_PrintLinef ("Error saving JPEG %s ", s_name_out);
+		} // diffuse
+
+		if (is_alpha_channel) {
+			// Part 2: Alpha channel
+			c_strlcpy (s_name_out, s_name);
+			File_URL_Edit_Remove_Extension(s_name_out);
+			c_strlcat (s_name_out, "_alpha");
+			c_strlcat (s_name_out, ".jpg");
+
+			// Copy alpha to rgb
+			for (int y = 0; y < image_width * image_height * BGRA_4; y += BGRA_4) {
+				data_bgra[y + 0] = data_bgra[y + 1] = data_bgra[y + 2] =
+					data_bgra[y + 3];
+			} // for
+
+			Image_CopyMux (noalphabuffer_3, data_bgra, image_width, image_height,
+				/*flipx*/ false, /*flipy*/ true, /*flipdiagonal*/ false, 3, 4, indices);
+
+			int is_ok = JPEG_SaveImage_preflipped (
+				s_name_out,
+				image_width,
+				image_height,
+				noalphabuffer_3 //data_bgra
+				);
+			if (is_ok == false)
+				Con_PrintLinef ("Error saving JPEG %s ", s_name_out);
+		} // diffuse
+
+
+		Mem_Free(noalphabuffer_3); // Baker: it's temppool so ok
+		Mem_Free(data_bgra); // Baker: it's temppool so ok
+
+free_data_continue:
+		Mem_Free(f);
+
+//		if (idx > 20)
+//			break; // One until it works.
+	} // for
+
+	stringlistfreecontents (&slist);
+
+	if (is_write == false) {
+		Con_PrintLinef (CON_BRONZE "testing done", Cmd_Argv(cmd, 0));
+		Con_PrintLinef (CON_BRONZE "TO REALLY RUN CONVERSION:" NEWLINE CON_GREEN "%s %s go " CON_WHITE "// REALLY RUN CONVERSION!", Cmd_Argv(cmd, 0), Cmd_Argv(cmd, 1));
+		Con_PrintLinef (CON_BRONZE "Note that DarkPlaces pattern matching hates periods '.' in path names.");
+		return;
+	}
+
+}
+
+void FS_Zipinfo_f (cmd_state_t *cmd)
+{
+	if (Cmd_Argc(cmd) != 2) {
+		Con_PrintLinef ("usage:" NEWLINE "%s <file>", Cmd_Argv(cmd, 0));
+		return;
+	}
+
+	const char *s_filename = Cmd_Argv(cmd, 1); // "zircon_beta_windows_20240116.zip";
+
+	char fullpath[MAX_OSPATH];
+
+	searchpath_t *search = FS_FindFile (s_filename, fs_package_index_reply_null, fs_quiet_true);
+	if (!search) {
+		Con_PrintLinef ("Did not find file");
+		return;// FS_FILETYPE_NONE_0;
+	}
+
+	if (search->pack && !search->pack->vpack) {
+		Con_PrintLinef ("Can't do zip files in pak or pak3");
+		return; // FS_FILETYPE_FILE_1; // TODO can't check directories in paks yet, maybe later
+	}
+
+	c_dpsnprintf2 (fullpath, "%s%s", search->filename, s_filename);
+
+	Con_PrintLinef ("Real file is: %s", fullpath);
+
+	int is_ok = Zip_List_Print_Is_Ok (fullpath);
+	if (is_ok == false)
+		Con_PrintLinef ("zip info failed");
+}
 
 void FS_Which_f(cmd_state_t *cmd)
 {
@@ -3941,6 +4508,132 @@ void FS_Which_f(cmd_state_t *cmd)
 		Con_PrintLinef ("%s is file %s%s", filename, sp->filename, filename);
 }
 
+char *ShaderText_Alloc (shader_t *myshader, const char *s_shadername, char *s_return_shader, size_t s_return_shader_size);
+
+// Returns null if not found
+
+// Returns relative real path
+char *FS_RealFilePath_Z_Alloc (const char *s_quake_file)
+{	
+	int index; // Why? Don't ask ... move along ...
+	searchpath_t *sp = FS_FindFile (s_quake_file, &index, fs_quiet_true);
+	if (!sp) {
+		//Con_PrintLinef ("%s isn't anywhere", filename);
+		return NULL;
+	}
+	if (sp->pack) {
+		//if (sp->pack->vpack)
+		//	Con_PrintLinef ("%s is in virtual package %sdir", filename, sp->pack->shortname);
+		//else
+		//	Con_PrintLinef ("%s is in package %s", filename, sp->pack->shortname);
+		return NULL;
+	}
+	
+	char sbuf[MAX_OSPATH_EX_1024];
+	c_dpsnprintf2 (sbuf, "%s%s", sp->filename, s_quake_file); // Hmmm.
+	char *s_realpath_zalloc = Z_StrDup (sbuf);//  (char *)z_memdup_z (sp->filename, strlen(sp->filename));
+	return s_realpath_zalloc;
+}
+
+void R_ShaderPrint_f (cmd_state_t *cmd)
+{
+	int is_ok = (cls.state == ca_connected && cls.signon == SIGNONS_4 && cl.worldmodel);
+
+	if (!is_ok) {
+		Con_PrintLinef ("Not connected");
+		return;
+	}
+
+	const char *s_shadername;
+
+	extern cvar_t showtex;
+	char texstring[MAX_QPATH_128];
+	if (Cmd_Argc (cmd) == 1 && showtex.value) {
+		vec3_t org;
+		vec3_t dest;
+		vec3_t temp;
+		trace_t cltrace = {0};
+		int hitnetentity = -1;
+
+
+		Matrix4x4_OriginFromMatrix(&r_refdef.view.matrix, org);
+		VectorSet(temp, 65536, 0, 0);
+		Matrix4x4_Transform(&r_refdef.view.matrix, temp, dest);
+		// clear the traces as we may or may not fill them out, and mark them with an invalid fraction so we know if we did
+		memset(&cltrace, 0, sizeof(cltrace));
+		cltrace.fraction = 2.0;
+
+		trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask, float extend, qbool hitnetworkbrushmodels, int hitnetworkplayers, int *hitnetworkentity, qbool hitcsqcentities, qbool hitsurfaces);
+		cltrace = CL_TraceLine(org, dest, MOVE_HITMODEL, NULL,
+				SUPERCONTENTS_SOLID | SUPERCONTENTS_WATER | SUPERCONTENTS_SLIME |
+				SUPERCONTENTS_LAVA | SUPERCONTENTS_SKY
+			,
+			0,
+			showtex.integer >= 2 ? MATERIALFLAGMASK_TRANSLUCENT : 0, collision_extendmovelength.value,
+			true, false, &hitnetentity, true, true);
+		if (cltrace.hittexture)
+			c_strlcpy (texstring, cltrace.hittexture->name);
+		else
+			c_strlcpy (texstring, "(no texture hit)");
+
+		s_shadername = texstring;
+		goto use_look_at;
+	}
+
+	if (Cmd_Argc (cmd) < 2) {
+		Con_PrintLinef ("usage: %s <shader>" NEWLINE "prints text of first instance of shader and what file it is in", Cmd_Argv(cmd, 0));
+		Con_PrintLinef (" example: %s textures/trak5x_sh/floor_floor2f", Cmd_Argv(cmd, 0));
+		return;
+	}
+
+	s_shadername = Cmd_Argv (cmd, 1);
+
+    shader_t *myshader;
+
+use_look_at:
+	myshader = Mod_LookupQ3Shader(s_shadername);
+
+	if (!myshader) {
+		Con_PrintLinef ("Can't find shader " QUOTED_S, s_shadername);
+		return;
+	}
+
+	//int is_sky = Have_Flag_Strict_Bool (myshader->surfaceparms, Q3SURFACEPARM_SKY);
+	//Con_PrintLinef (CON_BRONZE " Is Sky? = %d", is_sky);
+	Con_PrintLinef ("Found shader " QUOTED_S, s_shadername);
+
+	char filename[MAX_QPATH_128];
+	char *s_shadertext_alloc = ShaderText_Alloc (myshader, s_shadername,
+		filename, sizeof(filename));
+
+	if (!s_shadertext_alloc) {
+		Con_PrintLinef ("Did not find shader text");
+		return;
+	}
+
+	Con_PrintLinef ("Shader file: %s", filename);
+
+	int index; // Why?
+	searchpath_t *sp = FS_FindFile(filename, &index, fs_quiet_true);
+	if (!sp) {
+		Con_PrintLinef ("%s isn't anywhere", filename);
+		return;
+	}
+	if (sp->pack)
+	{
+		if (sp->pack->vpack)
+			Con_PrintLinef ("%s is in virtual package %sdir", filename, sp->pack->shortname);
+		else
+			Con_PrintLinef ("%s is in package %s", filename, sp->pack->shortname);
+	}
+	else
+		Con_PrintLinef ("%s is file %s%s", filename, sp->filename, filename);
+
+	Con_PrintLinef ("Shader text is: " NEWLINE "%s" NEWLINE, s_shadertext_alloc);
+	//Clipboard_Set_Text (shadertextbuf);
+
+	freenull_ (s_shadertext_alloc);
+}
 
 const char *FS_WhichPack(const char *filename)
 {
@@ -4325,14 +5018,16 @@ static void FS_Init_Dir (void)
 	// Add the personal game directory
 	if ((i = Sys_CheckParm("-userdir")) && i < sys.argc - 1) {
 		is_forced = true; // -userdir // Baker r1001: -nohome is the behavior on Windows and Mac
-		dpsnprintf(fs_userdir, sizeof(fs_userdir), "%s/", sys.argv[i+1]);
+		c_dpsnprintf1 (fs_userdir, "%s/", sys.argv[i + 1]);
 	} // if
 	else if (Sys_CheckParm("-nohome"))
 		*fs_userdir = 0; // user wants roaming installation, no userdir
 	else
 	{
 #ifdef DP_FS_USERDIR
-		strlcpy(fs_userdir, DP_FS_USERDIR, sizeof(fs_userdir));
+		// Baker: This is not the norm.
+		// Someone would need to define DP_FS_USERDIR to a path
+		c_strlcpy(fs_userdir, DP_FS_USERDIR);
 #else
 		int dirmode;
 		int highestuserdirmode = USERDIRMODE_COUNT - 1;
@@ -4348,7 +5043,7 @@ static void FS_Init_Dir (void)
 		if (Sys_CheckParm("-mygames")) preferreduserdirmode = USERDIRMODE_MYGAMES;
 		if (Sys_CheckParm("-savedgames")) preferreduserdirmode = USERDIRMODE_SAVEDGAMES;
 		// gather the status of the possible userdirs
-		for (dirmode = 0;dirmode < USERDIRMODE_COUNT;dirmode++)
+		for (dirmode = 0; dirmode < USERDIRMODE_COUNT; dirmode++)
 		{
 			userdirstatus[dirmode] = FS_ChooseUserDir((userdirmode_t)dirmode, fs_userdir, sizeof(fs_userdir));
 			if (userdirstatus[dirmode] == 1)
@@ -4367,10 +5062,12 @@ static void FS_Init_Dir (void)
 			if (userdirstatus[dirmode] == 1)
 				break;
 		// if no existing userdir found, make a new one...
-		if (dirmode == 0 && preferreduserdirmode > 0)
-			for (dirmode = preferreduserdirmode;dirmode > 0;dirmode--)
+		if (dirmode == 0 && preferreduserdirmode > 0) {
+			for (dirmode = preferreduserdirmode; dirmode > 0; dirmode--) {
 				if (userdirstatus[dirmode] >= 0)
 					break;
+			}
+		}
 		// and finally, we picked one...
 		FS_ChooseUserDir((userdirmode_t)dirmode, fs_userdir, sizeof(fs_userdir));
 		Con_DPrintLinef ("userdir %d is the winner", dirmode);
@@ -4396,14 +5093,20 @@ static void FS_Init_Dir (void)
 	if (String_Does_Match(fs_basedir, fs_userdir))
 		fs_userdir[0] = 0;
 
-	FS_ListGameDirs();
+#if 1
+	// Baker: modlist.txt -- Baker this WAS broken on Windows and still is
+	// slightly broken.  And moderately useless even if I invested the time to make it work.
+	// The reason is it only can list the titles.
+	WARP_X_ (fs_all_gamedirs)
+	FS_ListGameDirs(); // modlist.txt
+#endif
+
 
 	p = FS_CheckGameDir(gamedirname1);
 	if (!p || p == fs_checkgamedir_missing)
 		Con_PrintLinef (CON_WARN "WARNING: base gamedir %s%s/ not found!", fs_basedir, gamedirname1);
 
-	if (gamedirname2)
-	{
+	if (gamedirname2) {
 		p = FS_CheckGameDir(gamedirname2);
 		if (!p || p == fs_checkgamedir_missing)
 			Con_PrintLinef (CON_WARN "WARNING: base gamedir %s%s/ not found!", fs_basedir, gamedirname2);
@@ -4412,7 +5115,7 @@ static void FS_Init_Dir (void)
 	// Baker r0009: Use -data directory if no -game specified and id1 does not exist
 #if 1
 	if ( (!p || p == fs_checkgamedir_missing) && !Sys_CheckParm ("-game") && fs_is_zircon_galaxy == false) {
-		
+
 		p = FS_CheckGameDir("data");
 
 		if (p && p != fs_checkgamedir_missing) {
@@ -4428,7 +5131,7 @@ static void FS_Init_Dir (void)
 	// -game <gamedir>
 	// Adds basedir/gamedir as an override game
 	// LadyHavoc: now supports multiple -game directories
-	for (i = 1;i < sys.argc && fs_numgamedirs < MAX_GAMEDIRS;i++)
+	for (i = 1;i < sys.argc && fs_numgamedirs < MAX_GAMEDIRS_16;i++)
 	{
 		if (!sys.argv[i])
 			continue;
@@ -4465,7 +5168,23 @@ void FS_Init_Commands(void)
 	Cmd_AddCommand(CF_SHARED, "fs_rescan", FS_Rescan_f, "rescans filesystem for new pack archives and any other changes");
 	Cmd_AddCommand(CF_SHARED, "path", FS_Path_f, "print searchpath (game directories and archives)");
 	Cmd_AddCommand(CF_SHARED, "dir", FS_Dir_f, "list files in searchpath matching an * filename pattern, one per line");
+#if 1
+	Cmd_AddCommand(CF_SHARED, "dirpat", FS_DirPat_f, "[fssearch_t] list files in searchpath matching an * filename pattern, one per line");
+#endif
 	Cmd_AddCommand(CF_SHARED, "pwd", FS_Pwd_f, "what is current working directory [Zircon]");  // Baker r3101: pwd command to say the current directory
+	Cmd_AddCommand(CF_SHARED, "zipinfo", FS_Zipinfo_f, "zipinfo <file> list files in a zip [Zircon]");
+	Cmd_AddCommand(CF_SHARED, "jpegsplit", FS_JpegSplit_f, "jpegsplit <folder> (test) -- or --  <folder> go (run conversion!) --- load all TGA in supplied folder, write them as .jpg to same directory including any _alpha jpegs.  DarkPlaces pattern matching hates periods '.' in path names, beware! [Zircon]");
+#if 0 // Baker: Too dangerous
+	Cmd_AddCommand(CF_SHARED, "shell", FS_Shell_f, "execute a command line [Zircon]");
+#endif
+#ifdef CONFIG_MENU
+	Cmd_AddCommand(CF_SHARED, "parse", FS_Parse_f, "parse a string or parse clipboard [Zircon]");
+	Cmd_AddCommand(CF_SHARED, "bitatomize", FS_BitAtomize_f, "break an integer down into bits [Zircon]");
+	Cmd_AddCommand(CF_SHARED, "base64clipboard", FS_Base64Clipboard_f, "takes text on clipboard and converts it to base 64 [Zircon]");
+	Cmd_AddCommand(CF_SHARED, "base64compressedclipboard", FS_Base64ClipboardCompressed_f, "takes text on clipboard, zip shrinks it and converts it to base 64 [Zircon]");
+	Cmd_AddCommand(CF_SHARED, "base64decompressedclipboard", FS_Base64ClipboardDeCompressed_f, "takes text on clipboard, zip shrinks it and converts it to base 64 [Zircon]");
+
+#endif
 	Cmd_AddCommand(CF_SHARED, "ls", FS_Ls_f, "list files in searchpath matching an * filename pattern, multiple per line");
 	Cmd_AddCommand(CF_SHARED, "which", FS_Which_f, "accepts a file name as argument and reports where the file is taken from");
 }
@@ -4490,14 +5209,28 @@ void FS_Init(void)
 
 	fs_is_zircon_galaxy = File_Is_Existing_File (
 #ifdef __ANDROID__
-	
+
 		"/sdcard/zircon/"
 #endif
 		"zircon/gfx/qplaque.png"
 	);
 
+#if 1
+	WARP_X_ (gamedirname1 /*when this fucker get set?*/ customgamedirname1)
+
+	// Baker: Find every folder.  If it isn't bin32/bin64/downloads
+	// Check for #contents.pk3
+	if (FS_Baker_ListGameDirs_Is_Total_Conversion ()) { // modlist.txt
+		// Do stuff here?
+		int j = 5;
+		char *s = mod_list_folder_name; // Like "pac"
+	}
+#endif
+
 	// detect gamemode from commandline options or executable name
 	COM_InitGameType();
 
+
 	FS_Init_Dir();
 }
+

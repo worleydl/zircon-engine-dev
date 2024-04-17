@@ -1009,7 +1009,7 @@ float GETTIME_REALTIME = 1; // current time (may be OS specific)
 float GETTIME_HIRES = 2; // like REALTIME, but may reset between QC invocations and thus can be higher precision
 float GETTIME_UPTIME = 3; // time since start of the engine
 //builtin definitions:
-float(float tmr) gettime = #519;
+float(optional float tmr) gettime = #519; // Baker: optional
 //description:
 //some timers to query...
 

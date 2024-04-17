@@ -5,7 +5,7 @@ WARP_X_CALLERS_ (Host_Init -> CL_Init (blocks dedicated from coming here) -> Key
 static void Key_History_Init(void)
 {
 	qfile_t *historyfile;
-	ConBuffer_Init(&history, HIST_TEXTSIZE, HIST_MAXLINES, zonemempool);
+	ConBuffer_Init(&history, HIST_TEXTSIZE, HIST_MAXLINES_4096, zonemempool);
 
 // not necessary for mobile
 // #ifndef DP_MOBILETOUCH Baker: say yes we want!
@@ -199,7 +199,7 @@ static void Key_History_Find_Backwards(void)
 	int i;
 	const char *partial = key_line + 1;
 	char vabuf[1024];
-	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES));
+	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES_4096));
 
 	if (history_line == -1) // editing the "new" line
 		strlcpy(history_savedline, key_line + 1, sizeof(history_savedline));
@@ -234,7 +234,7 @@ static void Key_History_Find_Forwards(void)
 	int i;
 	const char *partial = key_line + 1;
 	char vabuf[1024];
-	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES));
+	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES_4096));
 
 	if (history_line == -1) // editing the "new" line
 		return;
@@ -266,7 +266,7 @@ static void Key_History_Find_All(void)
 	const char *partial = key_line + 1;
 	int i, count = 0;
 	char vabuf[1024];
-	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES));
+	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES_4096));
 	Con_Printf ("History commands containing " QUOTED_S ":\n", key_line + 1);
 
 	if (!*partial)
@@ -289,7 +289,7 @@ static void Key_History_f(cmd_state_t *cmd)
 	char *errchar = NULL;
 	int i = 0;
 	char vabuf[1024];
-	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES));
+	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%d", HIST_MAXLINES_4096));
 
 	if (Cmd_Argc (cmd) > 1)
 	{

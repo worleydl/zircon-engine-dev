@@ -447,7 +447,7 @@ static double m_serverInfoMessageTime;
 void M_Menu_GameOptions_f(cmd_state_t *cmd)
 {
 	int i;
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_gameoptions);
 	m_entersound = true;
 	if (maxplayers == 0)

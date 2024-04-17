@@ -39,7 +39,7 @@ cvar_t *Cvar_FindVar(cvar_state_t *cvars, const char *var_name, int neededflags)
 	cvar_hash_t *hash;
 
 	// use hash lookup to minimize search time
-	hashindex = CRC_Block((const unsigned char *)var_name, strlen(var_name)) % CVAR_HASHSIZE;
+	hashindex = CRC_Block((const unsigned char *)var_name, strlen(var_name)) % CVAR_HASHSIZE_65536;
 	for (hash = cvars->hashtable[hashindex]; hash; hash = hash->next) {
 		if (String_Does_Match (var_name, hash->cvar->name) && (hash->cvar->flags & neededflags))
 			return hash->cvar;
@@ -82,7 +82,7 @@ static cvar_t *Cvar_FindVarLink(cvar_state_t *cvars, const char *var_name, cvar_
 	cvar_hash_t *hash;
 
 	// use hash lookup to minimize search time
-	hashindex = CRC_Block((const unsigned char *)var_name, strlen(var_name)) % CVAR_HASHSIZE;
+	hashindex = CRC_Block((const unsigned char *)var_name, strlen(var_name)) % CVAR_HASHSIZE_65536;
 	if (parent) *parent = NULL;
 	if (prev_alpha) *prev_alpha = NULL;
 	if (link) *link = &cvars->hashtable[hashindex]->cvar;
@@ -234,7 +234,7 @@ int Cvar_CompleteCountPossible(cvar_state_t *cvars, const char *partial, int nee
 		else {
 			for (char **alias = cvar->aliases; alias && *alias; alias++) {
 				if (String_Does_Start_With_Caseless(*alias, partial) && (cvar->flags & neededflags)) {
-					const char *sxy = cvar->name;
+					const char *sxy = *alias; //cvar->name;
 					SPARTIAL_EVAL_
 					h++;
 				}
@@ -280,7 +280,7 @@ const char **Cvar_CompleteBuildList(cvar_state_t *cvars, const char *partial, in
 
 void Cvar_PrintHelp(cvar_t *cvar, const char *name, qbool full)
 {
-	if (String_Does_Not_Match (cvar->name, name))
+	if (String_Does_NOT_Match (cvar->name, name))
 		Con_Printf (CON_BRONZE "%s" CON_WHITE " (alias of " CON_BRONZE "%s" CON_WHITE ")", name, cvar->name); // Baker: purple to bronze.
 	else
 		Con_Printf (CON_BRONZE "%s" CON_WHITE, name);
@@ -312,7 +312,7 @@ static qbool Cvar_IsAutoCvar(cvar_t *var)
 {
 	int i;
 	prvm_prog_t *prog;
-	for (i = 0;i < PRVM_PROG_MAX;i++)
+	for (i = 0;i < PRVM_PROG_MAX_3;i++)
 	{
 		prog = &prvm_prog_list[i];
 		if (prog->loaded && var->globaldefindex[i] >= 0)
@@ -329,7 +329,7 @@ static void Cvar_UpdateAutoCvar(cvar_t *var)
 	const char *s;
 	vec3_t v;
 	prvm_prog_t *prog;
-	for (i = 0;i < PRVM_PROG_MAX;i++)
+	for (i = 0;i < PRVM_PROG_MAX_3;i++)
 	{
 		prog = &prvm_prog_list[i];
 		if (prog->loaded && var->globaldefindex[i] >= 0)
@@ -506,7 +506,7 @@ void Cvar_RegisterCallback(cvar_t *variable, void (*callback)(cvar_t *))
 	variable->callback = callback;
 }
 
-void Cvar_RegisterVirtual(cvar_t *variable, const char *name )
+void Cvar_RegisterVariableAlias(cvar_t *variable, const char *name )
 {
 	cvar_state_t *cvars = &cvars_all;
 	cvar_hash_t *hash;
@@ -517,20 +517,20 @@ void Cvar_RegisterVirtual(cvar_t *variable, const char *name )
 
 	if (!*name)
 	{
-		Con_Printf (CON_WARN "Cvar_RegisterVirtual: invalid virtual cvar name\n");
+		Con_Printf (CON_WARN "Cvar_RegisterVariableAlias: invalid virtual cvar name\n");
 		return;
 	}
 
 	// check for overlap with a command
 	if (Cmd_Exists(cmd_local, name))
 	{
-		Con_Printf (CON_WARN "Cvar_RegisterVirtual: %s is a command\n", name);
+		Con_Printf (CON_WARN "Cvar_RegisterVariableAlias: %s is a command\n", name);
 		return;
 	}
 
 	if (Cvar_FindVar(&cvars_all, name, 0))
 	{
-		Con_Printf (CON_WARN "Cvar_RegisterVirtual: %s is a cvar\n", name);
+		Con_Printf (CON_WARN "Cvar_RegisterVariableAlias: %s is a cvar\n", name);
 		return;
 	}
 
@@ -539,11 +539,11 @@ void Cvar_RegisterVirtual(cvar_t *variable, const char *name )
 	// Also if aliases is NULL this allocates fresh for the correct size, so it's fine to just do this.
 	variable->aliases = (char **)Z_Realloc(variable->aliases, sizeof(char *) * (variable->aliases_size + 2));
 	// Add the new alias, and increment the number of aliases in the list
-	variable->aliases[variable->aliases_size++] = (char *)Z_strdup(name);
+	variable->aliases[variable->aliases_size++] = (char *)Z_StrDup(name);
 
 	// link to head of list in this hash table index
 	hash = (cvar_hash_t *)Z_Malloc(sizeof(cvar_hash_t));
-	hashindex = CRC_Block((const unsigned char *)name, strlen(name)) % CVAR_HASHSIZE;
+	hashindex = CRC_Block((const unsigned char *)name, strlen(name)) % CVAR_HASHSIZE_65536;
 	hash->next = cvars->hashtable[hashindex];
 	cvars->hashtable[hashindex] = hash;
 	hash->cvar = variable;
@@ -575,7 +575,7 @@ static void Cvar_Link(cvar_t *variable, cvar_state_t *cvars)
 
 	// link to head of list in this hash table index
 	hash = (cvar_hash_t *)Z_Malloc(sizeof(cvar_hash_t));
-	hashindex = CRC_Block((const unsigned char *)variable->name, strlen(variable->name)) % CVAR_HASHSIZE;
+	hashindex = CRC_Block((const unsigned char *)variable->name, strlen(variable->name)) % CVAR_HASHSIZE_65536;
 	hash->next = cvars->hashtable[hashindex];
 	hash->cvar = variable;
 	cvars->hashtable[hashindex] = hash;
@@ -678,7 +678,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 	variable->initstate = NULL;
 
 	// Mark it as not an autocvar.
-	for (i = 0;i < PRVM_PROG_MAX;i++)
+	for (i = 0;i < PRVM_PROG_MAX_3;i++)
 		variable->globaldefindex[i] = -1;
 
 	// Safe for Cvar_SetQuick()
@@ -753,7 +753,7 @@ cvar_t *Cvar_Get(cvar_state_t *cvars, const char *name, const char *value, int f
 		cvar->description = cvar_dummy_description; // actually checked by VM_cvar_type
 
 	// Mark it as not an autocvar.
-	for (i = 0;i < PRVM_PROG_MAX;i++)
+	for (i = 0;i < PRVM_PROG_MAX_3;i++)
 		cvar->globaldefindex[i] = -1;
 
 	Cvar_Link(cvar, cvars);
@@ -922,7 +922,7 @@ void Cvar_RestoreInitState(cvar_state_t *cvars)
 			// remove this cvar, it did not exist at init
 			Con_DPrintLinef ("Cvar_RestoreInitState: Destroying cvar " QUOTED_S, c->name);
 			// unlink struct from hash
-			hashindex = CRC_Block((const unsigned char *)c->name, strlen(c->name)) % CVAR_HASHSIZE;
+			hashindex = CRC_Block((const unsigned char *)c->name, strlen(c->name)) % CVAR_HASHSIZE_65536;
 
 			cvar_hash_t *hash_cur, *hash_prev = NULL;
 #if 1
@@ -1076,7 +1076,7 @@ void Cvar_WriteVariables (cvar_state_t *cvars, qfile_t *f)
 			continue; // Not a saved cvar
 
 		// If the string value is different, save
-		int shall_save = String_Does_Not_Match (var->string, var->defstring);
+		int shall_save = String_Does_NOT_Match (var->string, var->defstring);
 
 		// If string value is same
 		// and it is allocated without a default (SETA), save it anyway
@@ -1106,7 +1106,7 @@ void Cvar_WriteVariables_All_Changed (cvar_state_t *cvars, qfile_t *f)
 		//	continue; // Not a saved cvar
 
 		// If the string value is different, save
-		int shall_write = String_Does_Not_Match (var->string, var->defstring);
+		int shall_write = String_Does_NOT_Match (var->string, var->defstring);
 
 		if (shall_write == false)
 			continue;
@@ -1148,7 +1148,8 @@ void Cvar_List_f(cmd_state_t *cmd)
 
 	if (Cmd_Argc(cmd) == 2 && String_Does_Match(Cmd_Argv(cmd, 1), "changed")) {
 		wants_changed = true;
-		partial = va(vabuf, sizeof(vabuf), "*");
+		c_strlcpy (vabuf, "*");
+		partial = vabuf; //va(vabuf, sizeof(vabuf), "%s", "*");
 		ispattern = false;
 	} else
 	if (Cmd_Argc(cmd) > 1) {
@@ -1159,14 +1160,15 @@ void Cvar_List_f(cmd_state_t *cmd)
 	}
 	else
 	{
-		partial = va(vabuf, sizeof(vabuf), "*");
+		c_strlcpy (vabuf, "*");
+		partial = vabuf;//va(vabuf, sizeof(vabuf), "*");
 		ispattern = false;
 	}
 
 	count = 0;
 	for (cvar = cvars->vars; cvar; cvar = cvar->next) {
 		if (matchpattern_with_separator(cvar->name, partial, false, "", false)) {
-			int shall_write = wants_changed == false || String_Does_Not_Match (cvar->string, cvar->defstring);
+			int shall_write = wants_changed == false || String_Does_NOT_Match (cvar->string, cvar->defstring);
 
 			if (shall_write) {
 				Cvar_PrintHelp(cvar, cvar->name, true);
@@ -1175,7 +1177,7 @@ void Cvar_List_f(cmd_state_t *cmd)
 		}
 		for (char **alias = cvar->aliases; alias && *alias; alias++) {
 			if (matchpattern_with_separator(*alias, partial, false, "", false)) {
-			int shall_write = wants_changed == false|| String_Does_Not_Match (cvar->string, cvar->defstring);
+			int shall_write = wants_changed == false|| String_Does_NOT_Match (cvar->string, cvar->defstring);
 				if (shall_write) {
 					Cvar_PrintHelp(cvar, *alias, true);
 					count++;

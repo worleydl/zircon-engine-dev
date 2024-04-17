@@ -14,19 +14,19 @@ void SV_StartDemoRecording(client_t *client, const char *filename, int forcetrac
 	strlcpy(name, filename, sizeof(name));
 	FS_DefaultExtension(name, ".dem", sizeof(name));
 
-	Con_Printf ("Recording demo for # %d (%s) to %s\n", PRVM_NUM_FOR_EDICT(client->edict), client->netaddress, name);
+	Con_PrintLinef ("Recording demo for # %d (%s) to %s", PRVM_NUM_FOR_EDICT(client->edict), client->netaddress, name);
 
 	// Reset discardable flag for every new demo.
 	PRVM_serveredictfloat(client->edict, discardabledemo) = 0;
 
-	client->sv_demo_file = FS_OpenRealFile(name, "wb", false);
-	if (!client->sv_demo_file)
-	{
+	client->sv_demo_file = FS_OpenRealFile(name, "wb", fs_quiet_FALSE); //  WRITE-EON server demo record
+	
+	if (!client->sv_demo_file) {
 		Con_PrintLinef (CON_ERROR "ERROR: couldn't open.");
 		return;
 	}
 
-	FS_Printf(client->sv_demo_file, "%d\n", forcetrack);
+	FS_Printf(client->sv_demo_file, "%d" NEWLINE, forcetrack);
 }
 
 void SV_WriteDemoMessage(client_t *client, sizebuf_t *sendbuffer, qbool clienttoserver)

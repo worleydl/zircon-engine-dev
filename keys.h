@@ -374,13 +374,13 @@ typedef enum keynum_e
 }
 keynum_t;
 
-typedef enum keydest_e { key_game, key_message, key_menu, key_menu_grabbed, key_console, key_void } keydest_t;
+typedef enum keydest_e { key_game, key_message, key_menu, key_menu_grabbed, key_console, key_void } keydest_e;
 
 extern	char		key_line[MAX_INPUTLINE_16384];
 extern	int			key_linepos;
 extern	int			key_sellength;
 extern	qbool		key_insert;	// insert key toggle (for editing)
-extern	keydest_t	key_dest;
+extern	keydest_e	key_dest;
 // key_consoleactive bits
 // user wants console (halfscreen)
 #define KEY_CONSOLEACTIVE_USER_1 1	// Baker: Half screen
@@ -406,6 +406,7 @@ void Key_EventQueue_Unblock(void);
 int Key_AddChar(int unicode, qbool is_console);
 int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicode);
 
+void KeyDest_Set (keydest_e newval);
 
 void Key_History_Write (void); // Baker r1485: close missing history loophole by writing history during gamedir change process
 

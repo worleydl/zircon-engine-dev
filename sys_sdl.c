@@ -34,7 +34,71 @@
 		#pragma comment(lib, "sdl2.lib")
 		#pragma comment(lib, "sdl2main.lib")
 
+		#pragma comment(lib, "shell32.lib")
+
 	#endif // _MSC_VER
+
+	unsigned *Sys_Clipboard_Get_Image_BGRA_Malloc (int *outwidth, int *outheight)
+	{
+	// Was extremely helpful info ... https://sites.google.com/site/michaelleesimons/clipboard
+		byte *ptr = NULL;
+
+		if (OpenClipboard(NULL)) {
+			HBITMAP hBitmap = (HBITMAP)GetClipboardData (CF_BITMAP);
+			BITMAP csBitmap;
+
+			if (hBitmap && GetObject(hBitmap, sizeof(csBitmap), &csBitmap) && csBitmap.bmBitsPixel == BGRA_BPP_32) {
+				// allocate buffer
+				int bufsize = csBitmap.bmWidth * csBitmap.bmHeight * (csBitmap.bmBitsPixel / 8);
+
+				csBitmap.bmBits = ptr = (byte *)malloc (bufsize); // "bmbits buffer"
+				GetBitmapBits((HBITMAP)hBitmap, bufsize, csBitmap.bmBits );
+
+#if 0 // We want BGRA
+				// Convert BGRA --> RGBA, set alpha full since clipboard loses it somehow
+				for (int i = 0; i < bufsize; i += RGBA_4)
+				{
+					byte temp = ptr[i + 0];
+					ptr[i + 0] = ptr[i + 2];
+					ptr[i + 2] = temp;
+					ptr[i + 3] = 255; // Full alpha
+				}
+#endif
+				*outwidth = csBitmap.bmWidth;
+				*outheight = csBitmap.bmHeight;
+			}
+			CloseClipboard ();
+		}
+		return (unsigned *)ptr;
+	}
+
+
+	int Sys_Clipboard_Set_Image_BGRA_Is_Ok (const unsigned *bgra, int width, int height)
+	{
+		HBITMAP hBitmap = CreateBitmap (width, height, 1, 32 /* bits per pixel is 32 */, bgra);
+
+		OpenClipboard (NULL);
+
+		if (EmptyClipboard()) {
+			if ((SetClipboardData (CF_BITMAP, hBitmap)) == NULL) {
+				//logd ("SetClipboardData failed"); // Was fatal.  But for clipboard?  Seriously?
+				return false;
+			}
+		}
+
+		CloseClipboard ();
+		return true;
+	}
+#else
+	int Sys_Clipboard_Set_Image_BGRA_Is_Ok (const unsigned *bgra, int width, int height)
+	{
+		return false;
+	}
+
+	unsigned *Sys_Clipboard_Get_Image_BGRA_Malloc (int *outwidth, int *outheight)
+	{
+		return NULL;
+	}
 
 #endif //  _WIN32
 
@@ -91,16 +155,13 @@ void Sys_Error (const char *error, ...)
 
 #ifdef _WIN32
 	#ifdef _DEBUG
-	void Sys_PrintToTerminal2(const char *text)
-	{
-	//	DWORD dummy;
-		extern HANDLE houtput;
-
-		OutputDebugString(text);
-		OutputDebugString("\n");
-	//	if ((houtput != 0) && (houtput != INVALID_HANDLE_VALUE))
-	//		WriteFile(houtput, text, (DWORD) strlen(text), &dummy, NULL);
-	}
+		void DebugPrintf (const char *fmt, ...)
+		{
+			VA_EXPAND_ALLOC (text, text_slen, bufsiz, fmt);
+			OutputDebugString (text);
+			OutputDebugString ("\n");
+			VA_EXPAND_ALLOC_FREE (text);
+		}
 	#endif
 #endif
 
@@ -385,6 +446,20 @@ char *Sys_GetClipboardData_Alloc (void)
 	return data;
 }
 
+char *Sys_GetClipboardData_Unlimited_Alloc (void)
+{
+	char *data = NULL;
+	char *cliptext;
+
+	cliptext = SDL_GetClipboardText();
+	if (cliptext != NULL) {
+		data = Z_StrDup (cliptext);
+		SDL_free(cliptext);
+	}
+
+	return data;
+}
+
 // Baker r8001: zircon_command_line.txt support
 #define MAX_NUM_Q_ARGVS_50	50
 static int fake_argc; char *fake_argv[MAX_NUM_Q_ARGVS_50];
@@ -434,7 +509,12 @@ int main (int argc, char *argv[])
 			"zircon_command_line.txt";
 
 		if (File_Exists (s_fp)) {
-			size_t s_temp_size = 0; const char *s_temp = (const char *)File_To_String_Alloc (s_fp, &s_temp_size);
+			size_t s_temp_size = 0; char *s_temp = (char *)File_To_String_Alloc (s_fp, &s_temp_size);
+			if (String_Does_Contain (s_temp, "//")) {
+				char *s_start = (char *)strstr ( s_temp, "//");
+				*s_start = 0; // null it out
+
+			}
 			c_strlcpy (cmdline_fake, "quake_engine "); // arg0 is engine and ignored by Sys_CheckParm
 			if (s_temp) {
 				c_strlcat (cmdline_fake, s_temp);
@@ -498,6 +578,170 @@ void Sys_SDL_Delay (unsigned int milliseconds)
 {
 	SDL_Delay(milliseconds);
 }
+
+#ifdef _WIN32
+sys_handle_t System_Process_Create (const char *path_to_file_unix, const char *args_not_unix_but_your_os, /*optional*/ const char *working_directory_url_unix)
+{
+	char	windows_path_to_file[MAX_OSPATH];
+	char	windows_working_dir[MAX_OSPATH];
+
+	// Sanity check
+	if (File_Exists (path_to_file_unix) == false) {
+		// logd ("path_to_file_unix " QUOTED_S " doesn't exist", path_to_file_unix);
+		return NULL;
+	}
+
+	if (working_directory_url_unix && File_Exists (working_directory_url_unix) == false) {
+		// logd ("working_directory_url_unix " QUOTED_S " doesn't exist", working_directory_url_unix);
+		return NULL;
+	}
+
+	// 1. Construct windows version: dest: windows_path_to_file src: path_to_file_unix (supplied)
+	c_strlcpy (windows_path_to_file, path_to_file_unix);
+	File_URL_Edit_SlashesBack_Like_Windows (windows_path_to_file); // Need to "Windows-ize" for WIN32 call
+
+	// If working directory specified, use that otherwise use binary's path as working dir
+	if (working_directory_url_unix) {
+		c_strlcpy (windows_working_dir, working_directory_url_unix); // So we can Windows-ize the path (c:/mypath --> c:\mypath)
+		// UNIX slashes supplied by function
+	}
+	else  // No working directory provided, working directory is the path of the windows_path_to_file
+	{
+		c_strlcpy (windows_working_dir, windows_path_to_file);
+		File_URL_Edit_Reduce_To_Parent_Path (windows_working_dir); // Strip off file name to parent path.
+		File_URL_Edit_SlashesBack_Like_Windows (windows_working_dir);
+		// Converted binary path to Unix Slashes
+	}
+
+	if (String_Does_End_With_Caseless (windows_working_dir, "/")) { // TRAILING SLASH REMOVER except we own windows_working_dir
+		int slen = (int)strlen (windows_working_dir);
+		if (slen <= (int)sizeof(windows_working_dir /*1024*/)) { // Otherwise it is truncated ... which is bad.
+			windows_working_dir[slen - 1] = 0; // String len is 10, we null at 9 to reduce length to 8.
+		}
+	} // May 18 2020 - Remove trailing slash V2
+
+
+	{
+		STARTUPINFO si = {0};
+		PROCESS_INFORMATION pi;
+		char 		command_line[1024];
+		int ret;
+
+		// Construct command line ...
+		c_dpsnprintf2 (command_line, QUOTED_S " " "%s", windows_path_to_file, args_not_unix_but_your_os);
+		
+		//logd ("Process command line (native format) " QUOTED_S, command_line); // Get rid of this after testing
+		si.cb = sizeof(si);
+		si.wShowWindow = SW_HIDE /*SW_SHOWMINNOACTIVE*/;
+		si.dwFlags = STARTF_USESHOWWINDOW;
+
+		ret = CreateProcess (
+			NULL, 					//  _In_opt_     LPCTSTR lpApplicationName,
+			command_line,			//  _Inout_opt_  LPTSTR lpCommandLine,
+			NULL,					//  _In_opt_     LPSECURITY_ATTRIBUTES lpProcessAttributes,
+			NULL,					//  _In_opt_     LPSECURITY_ATTRIBUTES lpThreadAttributes,
+			FALSE,					//  _In_         BOOL bInheritHandles,
+			GetPriorityClass(GetCurrentProcess()),
+									//  _In_         DWORD dwCreationFlags,
+			NULL,					//  _In_opt_     LPVOID lpEnvironment,
+			windows_working_dir,	//  _In_opt_     LPCTSTR lpCurrentDirectory,
+			&si, 					//  _In_         LPSTARTUPINFO lpStartupInfo,
+			&pi						//  _Out_        LPPROCESS_INFORMATION lpProcessInformation
+		);
+
+		if (ret) return pi.hProcess; // Return the handle
+	}
+	//logd ("Create process failed");
+	return 0;
+}
+
+// Don't give this a null pid
+int System_Process_Is_Still_Running_Neg1_Error (sys_handle_t pid, /*reply*/ int *p_exit_code)
+{
+	DWORD ExitCode;
+
+	// DEBUG_ASSERT (pid);
+	if (pid == NULL)
+		return not_found_neg1;
+
+	if (GetExitCodeProcess((HANDLE)pid, &ExitCode) == false) {
+		return not_found_neg1; // Error
+	}
+
+	if (ExitCode == STILL_ACTIVE) // 0x00000103L
+		return true; // Still running
+
+	NOT_MISSING_ASSIGN (p_exit_code, ExitCode);
+
+	return false; // No longer running; completed
+}
+
+
+// ?
+qbool System_Process_Terminate_Did_Terminate_Console_App (sys_handle_t pid)
+{
+	if (TerminateProcess ((HANDLE)pid, 0))
+		return true;
+
+	return false;
+}
+
+
+qbool System_Process_Close_Did_Close (sys_handle_t pid)
+{
+	// Send WM_CLOSE to ask process to quit
+	if (CloseHandle ( (HANDLE)pid)) {
+		return true;
+	}
+
+	return false;
+}
+
+
+#include <shellapi.h>
+qbool Sys_ShellExecute (const char *s)
+{
+	
+//	char s_cmd[MAX_INPUTLINE_16384];
+
+	int result = (int)ShellExecute (NULL, 
+             NULL, 
+             s /*"C:\\WINDOWS\\System32\\CALC.EXE"*/,
+             NULL,
+             NULL,
+             SW_SHOWDEFAULT);
+
+	// If the function succeeds, it returns a value greater than 32. 
+	return (result > 32);
+
+}
+
+#else
+#if 0
+///////////////////////////////////////////////////////////////////////////////
+//  SYSTEM OS: PROCESSES
+///////////////////////////////////////////////////////////////////////////////
+
+// Changes working directory
+// execlp, realpath, waitpid
+sys_handle_t System_Process_Create (const char *path_to_file_unix, const char *args_not_unix_but_your_os, optional const char* working_directory_url_unix)
+{
+	return (sys_handle_t)0;
+}
+
+// April 25 2021 - TODO
+int System_Process_Is_Still_Running_Neg1_Error (sys_handle_t pid, reply EXIT_CODE_ZERO_IS_OK *p_exit_code)
+{
+	return false; // No longer running; completed
+}
+
+cbool System_Process_Close_Did_Close (sys_handle_t pid)
+{
+	return 0;
+}
+#endif
+
+#endif
 
 // Baker r3102: "folder" command
 #ifdef _WIN32

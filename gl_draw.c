@@ -27,28 +27,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ft2.h"
 #include "ft2_fontdefs.h"
 
-struct cachepic_s
-{
-	// size of pic
-	int width, height;
-	// this flag indicates that it should be loaded and unloaded on demand
-	int autoload;
-	// texture flags to upload with
-	int texflags;
-	// texture may be freed after a while
-	int lastusedframe;
-	// renderable texture
-	skinframe_t *skinframe;
-	// used for hash lookups
-	struct cachepic_s *chain;
-	// flags - CACHEPICFLAG_NEWPIC for example
-	unsigned int cacheflags;
-	// name of pic
-	char name[MAX_QPATH_128];
-};
 
 dp_fonts_t dp_fonts;
-static mempool_t *fonts_mempool = NULL;
+/*static */mempool_t *fonts_mempool = NULL;
 
 #if 0 // FFA
 const char *g_p_selbeyond;
@@ -305,7 +286,7 @@ cachepic_t *Draw_NewPic(const char *picname, int width, int height, unsigned cha
 	pic->cacheflags |= (texflags & TEXF_FORCENEAREST) ? CACHEPICFLAG_NEAREST : 0;
 	pic->width = width;
 	pic->height = height;
-	pic->skinframe = R_SkinFrame_LoadInternalBGRA(picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, 0, 0, 0, vid.sRGB2D, /*q1skyload*/ false);
+	pic->skinframe = R_SkinFrame_LoadInternalBGRA (picname, texflags | TEXF_FORCE_RELOAD, pixels_bgra, width, height, 0, 0, 0, vid.sRGB2D, /*q1skyload*/ false);
 	pic->lastusedframe = draw_frame;
 	return pic;
 }
@@ -318,12 +299,10 @@ void Draw_FreePic(const char *picname)
 	// this doesn't really free the pic, but does free its texture
 	crc = CRC_Block((unsigned char *)picname, strlen(picname));
 	hashkey = ((crc >> 8) ^ crc) % CACHEPICHASHSIZE;
-	for (pic = cachepichash[hashkey];pic;pic = pic->chain)
-	{
-		if (String_Does_Match (picname, pic->name) && pic->skinframe)
-		{
+	for (pic = cachepichash[hashkey];pic;pic = pic->chain) {
+		if (String_Does_Match (picname, pic->name) && pic->skinframe) {
 			Con_DPrintLinef ("Draw_FreePic(" QUOTED_S "): frame %d: freeing pic", picname, draw_frame);
-			R_SkinFrame_PurgeSkinFrame(pic->skinframe);
+			R_SkinFrame_PurgeSkinFrame (pic->skinframe);
 			return;
 		}
 	}
@@ -331,7 +310,7 @@ void Draw_FreePic(const char *picname)
 
 static float snap_to_pixel_x(float x, float roundUpAt);
 extern int con_linewidth; // to force rewrapping
-void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, float voffset)
+void LoadFontDP(qbool override, const char *name, dp_font_t *fnt, float scale, float voffset)
 {
 	int i, ch;
 	float maxwidth;
@@ -368,28 +347,27 @@ void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, flo
 		fnt->ft2 = NULL;
 	}
 
-	if (fnt->req_face != -1)
-	{
-		if (!Font_LoadFont(fnt->texpath, fnt))
-			Con_DPrintf ("Failed to load font-file for '%s', it will not support as many characters.\n", fnt->texpath);
+	if (fnt->req_face != -1) {
+		if (false == Font_LoadFont(fnt->texpath, fnt, DATA_NULL))
+			Con_DPrintLinef ("Failed to load font-file for " QUOTED_S ", it will not support as many characters.", fnt->texpath);
 	}
 
-	fnt->pic = Draw_CachePic_Flags(fnt->texpath, CACHEPICFLAG_QUIET | CACHEPICFLAG_NOCOMPRESSION | 
-		(r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0) | 
+	fnt->pic_font = Draw_CachePic_Flags(fnt->texpath, CACHEPICFLAG_QUIET | CACHEPICFLAG_NOCOMPRESSION |
+		(r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0) |
 		CACHEPICFLAG_FAILONMISSING_256);
-	if (!Draw_IsPicLoaded(fnt->pic))
+	if (!Draw_IsPicLoaded(fnt->pic_font))
 	{
-		for (i = 0; i < MAX_FONT_FALLBACKS; ++i)
+		for (i = 0; i < MAX_FONT_FALLBACKS_3; ++i)
 		{
 			if (!fnt->fallbacks[i][0])
 				break;
-			fnt->pic = Draw_CachePic_Flags(fnt->fallbacks[i], CACHEPICFLAG_QUIET | CACHEPICFLAG_NOCOMPRESSION | (r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0) | CACHEPICFLAG_FAILONMISSING_256);
-			if (Draw_IsPicLoaded(fnt->pic))
+			fnt->pic_font = Draw_CachePic_Flags(fnt->fallbacks[i], CACHEPICFLAG_QUIET | CACHEPICFLAG_NOCOMPRESSION | (r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0) | CACHEPICFLAG_FAILONMISSING_256);
+			if (Draw_IsPicLoaded(fnt->pic_font))
 				break;
 		}
-		if (!Draw_IsPicLoaded(fnt->pic))
+		if (!Draw_IsPicLoaded(fnt->pic_font))
 		{
-			fnt->pic = Draw_CachePic_Flags("gfx/conchars", CACHEPICFLAG_NOCOMPRESSION | (r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0));
+			fnt->pic_font = Draw_CachePic_Flags("gfx/conchars", CACHEPICFLAG_NOCOMPRESSION | (r_nearest_conchars.integer ? CACHEPICFLAG_NEAREST : 0));
 			strlcpy(widthfile, "gfx/conchars.width", sizeof(widthfile));
 		}
 		else
@@ -460,7 +438,7 @@ void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, flo
 
 	if (fnt->ft2)
 	{
-		for (i = 0; i < MAX_FONT_SIZES; ++i)
+		for (i = 0; i < MAX_FONT_SIZES_16; ++i)
 		{
 			ft2_font_map_t *map = Font_MapForIndex(fnt->ft2, i);
 			if (!map)
@@ -488,14 +466,14 @@ dp_font_t *FindFont(const char *title, qbool allocate_new)
 	int i, oldsize;
 
 	// find font
-	for(i = 0; i < dp_fonts.maxsize; ++i)
+	for(i = 0; i < dp_fonts.maxsize_font; ++i)
 		if (String_Does_Match(dp_fonts.f[i].title, title))
 			return &dp_fonts.f[i];
 	// if not found - try allocate
 	if (allocate_new)
 	{
 		// find any font with empty title
-		for(i = 0; i < dp_fonts.maxsize; ++i)
+		for(i = 0; i < dp_fonts.maxsize_font; ++i)
 		{
 			if (String_Does_Match(dp_fonts.f[i].title, ""))
 			{
@@ -504,17 +482,17 @@ dp_font_t *FindFont(const char *title, qbool allocate_new)
 			}
 		}
 		// if no any 'free' fonts - expand buffer
-		oldsize = dp_fonts.maxsize;
-		dp_fonts.maxsize = dp_fonts.maxsize + FONTS_EXPAND;
+		oldsize = dp_fonts.maxsize_font;
+		dp_fonts.maxsize_font = dp_fonts.maxsize_font + FONTS_EXPAND;
 		if (developer_font.integer)
-			Con_Printf ("FindFont: enlarging fonts buffer (%d -> %d)\n", oldsize, dp_fonts.maxsize);
-		dp_fonts.f = (dp_font_t *)Mem_Realloc(fonts_mempool, dp_fonts.f, sizeof(dp_font_t) * dp_fonts.maxsize);
+			Con_PrintLinef ("FindFont: enlarging fonts buffer (%d -> %d)", oldsize, dp_fonts.maxsize_font);
+		dp_fonts.f = (dp_font_t *)Mem_Realloc(fonts_mempool, dp_fonts.f, sizeof(dp_font_t) * dp_fonts.maxsize_font);
 		// relink ft2 structures
 		for(i = 0; i < oldsize; ++i)
 			if (dp_fonts.f[i].ft2)
 				dp_fonts.f[i].ft2->settings = &dp_fonts.f[i].settings;
 		// register a font in first expanded slot
-		strlcpy(dp_fonts.f[oldsize].title, title, sizeof(dp_fonts.f[oldsize].title));
+		c_strlcpy (dp_fonts.f[oldsize].title, title);
 		return &dp_fonts.f[oldsize];
 	}
 	return NULL;
@@ -554,30 +532,31 @@ static void LoadFont_f(cmd_state_t *cmd)
 	float sz, scale, voffset;
 	char mainfont[MAX_QPATH_128];
 
-	if (Cmd_Argc(cmd) < 2)
-	{
-		Con_Printf ("Available font commands:\n");
-		for(i = 0; i < dp_fonts.maxsize; ++i)
+	if (Cmd_Argc(cmd) < 2) {
+		Con_PrintLinef ("Available font commands:");
+		for (i = 0; i < dp_fonts.maxsize_font; ++i) {
 			if (dp_fonts.f[i].title[0])
-				Con_Printf ("  loadfont %s gfx/tgafile[...] [custom switches] [sizes...]\n", dp_fonts.f[i].title);
-		Con_Printf ("A font can simply be gfx/tgafile, or alternatively you\n"
-			   "can specify multiple fonts and faces\n"
-			   "Like this: gfx/vera-sans:2,gfx/fallback:1\n"
-			   "to load face 2 of the font gfx/vera-sans and use face 1\n"
-			   "of gfx/fallback as fallback font.\n"
-			   "You can also specify a list of font sizes to load, like this:\n"
-			   "loadfont console gfx/conchars,gfx/fallback 8 12 16 24 32\n"
-			   "In many cases, 8 12 16 24 32 should be a good choice.\n"
-			   "custom switches:\n"
-			   " scale x : scale all characters by this amount when rendering (doesnt change line height)\n"
-			   " voffset x : offset all chars vertical when rendering, this is multiplied to character height\n"
-			);
+				Con_PrintLinef ("  loadfont %s gfx/tgafile[...] [custom switches] [sizes...]", dp_fonts.f[i].title);
+		} // for
+
+		Con_Printf ("A font can simply be gfx/tgafile, or alternatively you" NEWLINE
+		   "can specify multiple fonts and faces" NEWLINE
+		   "Like this: gfx/vera-sans:2,gfx/fallback:1" NEWLINE
+		   "to load face 2 of the font gfx/vera-sans and use face 1" NEWLINE
+		   "of gfx/fallback as fallback font." NEWLINE
+		   "You can also specify a list of font sizes to load, like this:" NEWLINE
+		   "loadfont console gfx/conchars,gfx/fallback 8 12 16 24 32" NEWLINE
+		   "In many cases, 8 12 16 24 32 should be a good choice." NEWLINE
+		   "custom switches:" NEWLINE
+		   " scale x : scale all characters by this amount when rendering (doesnt change line height)" NEWLINE
+		   " voffset x : offset all chars vertical when rendering, this is multiplied to character height"
+		);
 		return;
-	}
-	f = FindFont(Cmd_Argv(cmd, 1), true);
-	if (f == NULL)
-	{
-		Con_Printf ("font function not found\n");
+	} // args < 2
+
+	f = FindFont (Cmd_Argv(cmd, 1), /*allocnew?*/ true);
+	if (f == NULL) {
+		Con_PrintLinef ("font function not found");
 		return;
 	}
 
@@ -608,7 +587,7 @@ static void LoadFont_f(cmd_state_t *cmd)
 		mainfont[c - filelist] = 0;
 	}
 
-	for(i = 0; i < MAX_FONT_FALLBACKS; ++i)
+	for(i = 0; i < MAX_FONT_FALLBACKS_3; ++i)
 	{
 		c = strchr(filelist, ',');
 		if (!c)
@@ -634,11 +613,11 @@ static void LoadFont_f(cmd_state_t *cmd)
 			memcpy(f->fallbacks[i], filelist, c - filelist);
 			f->fallbacks[i][c - filelist] = 0;
 		}
-	}
+	} // MAX_FONT_FALLBACKS_3
 
 	// for now: by default load only one size: the default size
 	f->req_sizes[0] = 0;
-	for(i = 1; i < MAX_FONT_SIZES; ++i)
+	for(i = 1; i < MAX_FONT_SIZES_16; ++i)
 		f->req_sizes[i] = -1;
 
 	scale = 1;
@@ -678,9 +657,9 @@ static void LoadFont_f(cmd_state_t *cmd)
 				if (j != sizes)
 					continue; // sz already in req_sizes, don't add it again
 
-				if (sizes == MAX_FONT_SIZES)
+				if (sizes == MAX_FONT_SIZES_16)
 				{
-					Con_PrintLinef (CON_WARN "Warning: specified more than %d different font sizes, exceding ones are ignored", MAX_FONT_SIZES);
+					Con_PrintLinef (CON_WARN "Warning: specified more than %d different font sizes, exceding ones are ignored", MAX_FONT_SIZES_16);
 					sizes = -1;
 					continue;
 				}
@@ -690,7 +669,7 @@ static void LoadFont_f(cmd_state_t *cmd)
 		}
 	}
 
-	LoadFont(true, mainfont, f, scale, voffset);
+	LoadFontDP (/*override?*/ true, mainfont, f, scale, voffset);
 }
 
 /*
@@ -710,9 +689,12 @@ static void gl_draw_start(void)
 	font_start();
 
 	// load default font textures
-	for(i = 0; i < dp_fonts.maxsize; ++i)
-		if (dp_fonts.f[i].title[0])
-			LoadFont(false, va(vabuf, sizeof(vabuf), "gfx/font_%s", dp_fonts.f[i].title), &dp_fonts.f[i], 1, 0);
+	for(i = 0; i < dp_fonts.maxsize_font; i ++) {
+		if (dp_fonts.f[i].title[0]) {
+			va(vabuf, sizeof(vabuf), "gfx/font_%s", dp_fonts.f[i].title);
+			LoadFontDP (/*override?*/ false, vabuf, &dp_fonts.f[i], scale_1_0, /*voffset*/ 0);
+		}
+	}
 }
 
 static void gl_draw_shutdown(void)
@@ -755,14 +737,14 @@ void GL_Draw_Init (void)
 	Cvar_RegisterVariable(&r_textcontrast);
 	Cvar_RegisterVariable(&r_nearest_2d);
 	Cvar_RegisterVariable(&r_nearest_conchars);
-	
+
 	Cvar_RegisterCallback(&r_nearest_conchars, R_Nearest_Conchars_Callback);
 
 	// allocate fonts storage
-	fonts_mempool = Mem_AllocPool("FONTS", 0, NULL);
-	dp_fonts.maxsize = MAX_FONTS;
-	dp_fonts.f = (dp_font_t *)Mem_Alloc(fonts_mempool, sizeof(dp_font_t) * dp_fonts.maxsize);
-	memset(dp_fonts.f, 0, sizeof(dp_font_t) * dp_fonts.maxsize);
+	fonts_mempool = Mem_AllocPool ("FONTS", 0, NULL);
+	dp_fonts.maxsize_font = MAX_FONTS_AT_START_16;
+	dp_fonts.f = (dp_font_t *)Mem_Alloc(fonts_mempool, sizeof(dp_font_t) * dp_fonts.maxsize_font);
+	memset (dp_fonts.f, 0, sizeof(dp_font_t) * dp_fonts.maxsize_font);
 
 	// assign starting font names
 	strlcpy(FONT_DEFAULT->title, "default", sizeof(FONT_DEFAULT->title));
@@ -850,13 +832,21 @@ void DrawQ_Pic(float x, float y, cachepic_t *pic, float width, float height, flo
 	int e0, e1, e2, e3;
 	if (!pic)
 		pic = Draw_CachePic("white");
-	// make sure pic is loaded - we don't use the texture here, Mod_Mesh_GetTexture looks up the skinframe by name
+	// make sure pic is loaded - we don't use the texture here, Mod_Mesh_GetTexture
+	// looks up the skinframe by name
 	Draw_GetPicTexture(pic);
 	if (width == 0)
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW), true);
+
+	texture_t *mm = Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags,
+		MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX |
+		MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW);
+
+
+
+	surf = Mod_Mesh_AddSurface(mod, mm, true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x        , y         , 0, 0, 0, -1, 0, 0, 0, 0, red, green, blue, alpha);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y         , 0, 0, 0, -1, 1, 0, 0, 0, red, green, blue, alpha);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y + height, 0, 0, 0, -1, 1, 1, 0, 0, red, green, blue, alpha);
@@ -898,6 +888,23 @@ void DrawQ_Fill(float x, float y, float width, float height, float red, float gr
 	DrawQ_Pic(x, y, Draw_CachePic("white"), width, height, red, green, blue, alpha, flags);
 }
 
+void DrawQ_Fill_Box (float x, float y, float width, float height, float red, float green, float blue, float alpha, int flags, int thickness)
+{
+	// TOP
+	DrawQ_Pic(x, y, Draw_CachePic("white"), width - thickness, thickness, red, green, blue, alpha, flags);
+
+	// RIGHT
+	DrawQ_Pic(x + width - thickness, y, Draw_CachePic("white"), thickness, height - thickness, red, green, blue, alpha, flags);
+
+	// BOTTOM
+	DrawQ_Pic(x + thickness, y + height - thickness, Draw_CachePic("white"), width - thickness, thickness, red, green, blue, alpha, flags);
+
+	// LEFT
+	DrawQ_Pic(x, y + thickness, Draw_CachePic("white"), thickness, height - thickness, red, green, blue, alpha, flags);
+
+}
+
+
 /// color tag printing
 static const vec4_t string_colors[] =
 {
@@ -907,9 +914,9 @@ static const vec4_t string_colors[] =
 	// LadyHavoc: note: Doom3 uses white for [0] and [7]
 	/*0*/		{0.0, 0.0, 0.0, 1.0}, // black 0
 	/*1*/		{1.0, 0.0, 0.0, 1.0}, // red 1											//{0.75, 0.50, 0.50, 1.0}, // Baker 1007 soft purple
-	
+
 	/*2*/		{0.0, 1.0, 0.0, 1.0}, // green 2
-	
+
 	/*3*/		{1.03, 0.5, 0.36, 1.0}, // Baker 1007 bronzey Baker 1007 3
 				// US: 143 69 50
 				// MV: 143 67 51
@@ -958,7 +965,7 @@ static void DrawQ_GetTextColor(float color[4], int colorindex, float r, float g,
 // returns 0 otherwise
 static int RGBstring_to_colorindex(const char *str)
 {
-	Uchar ch; 
+	Uchar ch;
 	int ind = 0x0001 << 4;
 	do {
 		if (*str <= '9' && *str >= '0')
@@ -980,7 +987,7 @@ static int RGBstring_to_colorindex(const char *str)
 // NOTE: this function always draws exactly one character if maxwidth <= 0
 float DrawQ_TextWidth_UntilWidth_TrackColors_Scale(const char *text, size_t *maxlen, float w, float h, float sw, float sh, int *outcolor, qbool ignorecolorcodes, const dp_font_t *fnt, float maxwidth)
 {
-	// Baker: renamed to text_start2 
+	// Baker: renamed to text_start2
 	const char *text_start2 = text;
 	int colorindex;
 	size_t i;
@@ -1168,8 +1175,8 @@ float DrawQ_String_Scale(float startx, float starty, const char *text, size_t ma
 	msurface_t *surf = NULL;
 	int e0, e1, e2, e3;
 	int tw, th;
-	tw = Draw_GetPicWidth(fnt->pic);
-	th = Draw_GetPicHeight(fnt->pic);
+	tw = Draw_GetPicWidth(fnt->pic_font);
+	th = Draw_GetPicHeight(fnt->pic_font);
 
 	if (!h) h = w;
 	if (!h) {
@@ -1343,7 +1350,7 @@ baker_font:
 					u = 0.0625f * thisw - (1.0f / tw);
 					v = 0.0625f - (1.0f / th);
 				}
-				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, fnt->pic->name, flags, (r_nearest_conchars.value ? TEXF_FORCENEAREST : 0) | TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW), true);
+				surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, fnt->pic_font->name, flags, (r_nearest_conchars.value ? TEXF_FORCENEAREST : 0) | TEXF_ALPHA | TEXF_CLAMP, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW), true);
 				e0 = Mod_Mesh_IndexForVertex(mod, surf, x         , y   , 10, 0, 0, -1, s  , t  , 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e1 = Mod_Mesh_IndexForVertex(mod, surf, x+dw*thisw, y   , 10, 0, 0, -1, s+u, t  , 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
 				e2 = Mod_Mesh_IndexForVertex(mod, surf, x+dw*thisw, y+dh, 10, 0, 0, -1, s+u, t+v, 0, 0, DrawQ_Color[0], DrawQ_Color[1], DrawQ_Color[2], DrawQ_Color[3]);
@@ -1494,7 +1501,124 @@ void DrawQ_SuperPic(float x, float y, cachepic_t *pic, float width, float height
 		width = pic->width;
 	if (height == 0)
 		height = pic->height;
-	surf = Mod_Mesh_AddSurface(mod, Mod_Mesh_GetTexture(mod, pic->name, flags, pic->texflags, MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW), true);
+	// Baker: pic->name is dpv?
+
+	// Baker CPIF -- if there is a supplied pic
+	// I don't think we are supposed to use
+	texture_t *tex;
+
+	if (pic) {
+		//WARP_X_ (R_MakeTextureDynamic)
+		//tex = pic->skinframe->base;
+		//R_GetCurrentTexture (
+
+		// Ok .. is this our own texture?
+		tex = Mod_Mesh_GetTexture (
+			mod,
+			pic->name,
+			flags,
+			pic->texflags,
+			MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW
+		);
+	} else {
+		tex = Mod_Mesh_GetTexture (
+			mod,
+			pic->name,
+			flags,
+			pic->texflags,
+			MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW
+		);
+	}
+	surf = Mod_Mesh_AddSurface(mod, tex, /*batchwithprevioussurface ?*/ true);
+	e0 = Mod_Mesh_IndexForVertex(mod, surf, x        , y         , 0, 0, 0, -1, s1, t1, 0, 0, r1, g1, b1, a1);
+	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y         , 0, 0, 0, -1, s2, t2, 0, 0, r2, g2, b2, a2);
+	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y + height, 0, 0, 0, -1, s4, t4, 0, 0, r4, g4, b4, a4);
+	e3 = Mod_Mesh_IndexForVertex(mod, surf, x        , y + height, 0, 0, 0, -1, s3, t3, 0, 0, r3, g3, b3, a3);
+	Mod_Mesh_AddTriangle(mod, surf, e0, e1, e2);
+	Mod_Mesh_AddTriangle(mod, surf, e0, e2, e3);
+}
+
+// 1. Try to use the provided one
+// 2. If that fails, try a builtin one?
+WARP_X_ (CL_UpdateScreen_SCR_DrawScreen  R_Shadow_MakeTextures )
+WARP_X_ (skinframe_t texture_t -> skinframe_t CL_DrawVideo_SCR_DrawScreen)
+
+// Baker: The model here is CL_Mesh_UI, which is cl_meshentitymodels[MESH_UI_1]
+
+//extern int did_create;
+
+// Baker: videotex is used to transport video->width/video->height
+void DrawQ_SuperPic_Video (void *videotex, float x, float y,
+					 cachepic_t *pic, float width, float height,
+					 float s1, float t1, float r1, float g1, float b1, float a1, float s2, float t2, float r2, float g2, float b2, float a2, float s3, float t3, float r3, float g3, float b3, float a3, float s4, float t4, float r4, float g4, float b4, float a4, int flags)
+{
+	//texture_t *videotex = (texture_t *)_videotex;
+	model_t *mod = CL_Mesh_UI();
+	msurface_t *surf;
+	int e0, e1, e2, e3;
+	if (!pic)
+		pic = Draw_CachePic("white");
+	// make sure pic is loaded - we don't use the texture here,
+	// Mod_Mesh_GetTexture looks up the skinframe by name
+	Draw_GetPicTexture(pic);
+	if (width == 0)
+		width = pic->width;
+	if (height == 0)
+		height = pic->height;
+
+	texture_t *tex;
+	rtexture_t *rt = Draw_GetPicTexture(pic /*video->cpif*/);
+
+	WARP_X_ (CL_Video_Frame)
+
+	if (1) {
+		
+		// Baker: videotex gets created here
+		tex = Mod_Mesh_GetTexture (
+			mod,
+			pic->name,
+			flags,
+			pic->texflags,
+			MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW
+		);
+	}
+
+	if (rt->dirty_ic) {
+		skinframe_t *skinframe = tex->materialshaderpass->skinframes[0];
+		int textureflags= skinframe->textureflags;
+		R_SkinFrame_PurgeSkinFrame(skinframe);
+		textureflags &= ~TEXF_FORCE_RELOAD;
+
+		skinframe->stain = NULL;
+		skinframe->merged = NULL;
+		skinframe->base = NULL;
+		skinframe->pants = NULL;
+		skinframe->shirt = NULL;
+		skinframe->nmap = NULL;
+		skinframe->gloss = NULL;
+		skinframe->glow = NULL;
+		skinframe->fog = NULL;
+		skinframe->reflect = NULL;
+		skinframe->hasalpha = false;
+
+		extern rtexturepool_t *r_main_texturepool;
+		extern byte *is_q3_shader_video_tex_vimagedata;
+		
+		// Baker: Similar to our Q1SKY fix upload fix
+		skinframe->base = skinframe->merged =
+			R_LoadTexture2D(
+				r_main_texturepool,
+				skinframe->basename,
+				((texture_t *)(videotex))->width, ((texture_t *)videotex)->height, is_q3_shader_video_tex_vimagedata,
+				TEXTYPE_BGRA,
+				textureflags,
+				-1,
+				NULL
+		);
+		rt->dirty_ic = false;
+	}
+
+	surf = Mod_Mesh_AddSurface(mod, tex, /*batchwithprevioussurface ?*/ true);
 	e0 = Mod_Mesh_IndexForVertex(mod, surf, x        , y         , 0, 0, 0, -1, s1, t1, 0, 0, r1, g1, b1, a1);
 	e1 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y         , 0, 0, 0, -1, s2, t2, 0, 0, r2, g2, b2, a2);
 	e2 = Mod_Mesh_IndexForVertex(mod, surf, x + width, y + height, 0, 0, 0, -1, s4, t4, 0, 0, r4, g4, b4, a4);
@@ -1576,8 +1700,7 @@ void DrawQ_FlushUI(void)
 	if (mod->num_surfaces == 0)
 		return;
 
-	if (!r_draw2d.integer && !r_draw2d_force)
-	{
+	if (!r_draw2d.integer && !r_draw2d_force) {
 		Mod_Mesh_Reset(mod);
 		return;
 	}
@@ -1592,3 +1715,5 @@ void DrawQ_FlushUI(void)
 
 	Mod_Mesh_Reset(mod);
 }
+
+

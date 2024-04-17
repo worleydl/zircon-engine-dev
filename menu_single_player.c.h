@@ -12,7 +12,7 @@ static int	m_singleplayer_cursor;
 
 void M_Menu_SinglePlayer_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_singleplayer);
 	m_entersound = true;
 }
@@ -51,7 +51,7 @@ static void M_SinglePlayer_Key (cmd_state_t *cmd, int key, int ascii)
 
 		switch (local_cursor) {
 		case 0:
-			key_dest = key_game;
+			KeyDest_Set (key_game); // key_dest = key_game;
 			if (sv.active)
 				Cbuf_AddTextLine (cmd, "disconnect");
 			Cbuf_AddTextLine (cmd, "maxplayers 1");

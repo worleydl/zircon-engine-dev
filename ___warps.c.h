@@ -1,5 +1,18 @@
 // ___warps.c.h -- current business -- and business is good!
 
+SIV checklist:
+
+sv_intermap_siv_list --
+// 1. Allocated when?					When we write a .siv
+
+// map is always a new game, changelevel is always a continued game.
+
+// 2. Cleared when?						// "map" because that is a new game.
+										// "loadgame" can stomp it.
+										// "restart" should reload it, although ...
+										// "changelevel" updates it
+
+
 What is the reply to "prespawn"
 
 

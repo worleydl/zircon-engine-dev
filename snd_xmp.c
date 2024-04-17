@@ -437,8 +437,8 @@ static void XMP_GetSamplesFloat(channel_t *ch, sfx_t *sfx, int firstsampleframe,
 {
 	int i, len = numsampleframes * sfx->format.channels;
 	int f = sfx->format.width * sfx->format.channels; // bytes per frame in the buffer
-	xmp_stream_perchannel_t* per_ch = (xmp_stream_perchannel_t *)ch->fetcher_data;
-	xmp_stream_persfx_t* per_sfx = (xmp_stream_persfx_t *)sfx->fetcher_data;
+	xmp_stream_perchannel_t *per_ch = (xmp_stream_perchannel_t *)ch->fetcher_data;
+	xmp_stream_persfx_t *per_sfx = (xmp_stream_persfx_t *)sfx->fetcher_data;
 	const short *buf;
 	int newlength, done;
 	unsigned int format = 0;
@@ -577,7 +577,7 @@ XMP_FreeSfx
 */
 static void XMP_FreeSfx(sfx_t *sfx)
 {
-	xmp_stream_persfx_t* per_sfx = (xmp_stream_persfx_t *)sfx->fetcher_data;
+	xmp_stream_persfx_t *per_sfx = (xmp_stream_persfx_t *)sfx->fetcher_data;
 	// free the complete file we were keeping around
 	Mem_Free(per_sfx->file);
 	// free the file information structure
@@ -598,7 +598,7 @@ qbool XMP_LoadModFile(const char *filename, sfx_t *sfx)
 	fs_offset_t filesize;
 	unsigned char *data;
 	xmp_context xc;
-	xmp_stream_persfx_t* per_sfx;
+	xmp_stream_persfx_t *per_sfx;
 	struct xmp_module_info mi;
 
 #ifndef LINK_TO_LIBXMP

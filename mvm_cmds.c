@@ -117,15 +117,15 @@ static void VM_M_setkeydest(prvm_prog_t *prog)
 	{
 	case 0:
 		// key_game
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		break;
 	case 2:
 		// key_menu
-		key_dest = key_menu;
+		KeyDest_Set (key_menu); // key_dest = key_menu;
 		break;
 	case 3:
 		// key_menu_grabbed
-		key_dest = key_menu_grabbed;
+		KeyDest_Set (key_menu_grabbed); // key_dest = key_menu_grabbed;
 		break;
 	case 1:
 		// key_message
@@ -226,8 +226,7 @@ static void VM_M_getgamedirinfo(prvm_prog_t *prog)
 
 	PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
 
-	if (nr >= 0 && nr < fs_all_gamedirs_count)
-	{
+	if (nr >= 0 && nr < fs_all_gamedirs_count) {
 		if (item == 0)
 			PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, fs_all_gamedirs[nr].name );
 		else if (item == 1)
@@ -952,18 +951,18 @@ void VM_cin_open(prvm_prog_t *prog)
 	const char *file;
 	const char *name;
 
-	VM_SAFEPARMCOUNT( 2, VM_cin_open );
+	VM_SAFEPARMCOUNT(2, VM_cin_open);
 
-	file = PRVM_G_STRING( OFS_PARM0 );
-	name = PRVM_G_STRING( OFS_PARM1 );
+	file = PRVM_G_STRING(OFS_PARM0);
+	name = PRVM_G_STRING(OFS_PARM1);
 
-	VM_CheckEmptyString(prog,  file );
-    VM_CheckEmptyString(prog,  name );
+	VM_CheckEmptyString(prog, file);
+    VM_CheckEmptyString(prog, name);
 
-	if ( CL_OpenVideo( file, name, MENUOWNER, "" ) )
-		PRVM_G_FLOAT( OFS_RETURN ) = 1;
+	if (CL_Cin_OpenVideo(file, name, VID_OWNER_MENU_1, "") )
+		PRVM_G_FLOAT(OFS_RETURN) = 1;
 	else
-		PRVM_G_FLOAT( OFS_RETURN ) = 0;
+		PRVM_G_FLOAT(OFS_RETURN) = 0;
 }
 
 /*
@@ -979,10 +978,10 @@ void VM_cin_close(prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNT( 1, VM_cin_close );
 
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
+	name = PRVM_G_STRING(OFS_PARM0);
+	VM_CheckEmptyString(prog, name);
 
-	CL_CloseVideo( CL_GetVideoByName( name ) );
+	CL_CloseVideo (CL_GetVideoByName(name));
 }
 
 /*
@@ -991,22 +990,22 @@ VM_cin_setstate
 void cin_setstate(string name, float type)
 ========================
 */
-void VM_cin_setstate(prvm_prog_t *prog)
+void VM_cin_setstate (prvm_prog_t *prog)
 {
 	const char *name;
 	clvideostate_t 	state;
 	clvideo_t		*video;
 
-	VM_SAFEPARMCOUNT( 2, VM_cin_setstate );
+	VM_SAFEPARMCOUNT (2, VM_cin_setstate);
 
 	name = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString(prog,  name );
 
-	state = (clvideostate_t)((int)PRVM_G_FLOAT( OFS_PARM1 ));
+	state = (clvideostate_t)((int)PRVM_G_FLOAT(OFS_PARM1));
 
-	video = CL_GetVideoByName( name );
-	if ( video && state > CLVIDEO_UNUSED && state < CLVIDEO_STATECOUNT )
-		CL_SetVideoState( video, state );
+	video = CL_GetVideoByName(name);
+	if ( video && state > CLVIDEO_UNUSED_0 && state < CLVIDEO_STATECOUNT_6)
+		CL_SetVideoState (video, state );
 }
 
 /*
@@ -1023,14 +1022,14 @@ void VM_cin_getstate(prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNT( 1, VM_cin_getstate );
 
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
+	name = PRVM_G_STRING(OFS_PARM0);
+	VM_CheckEmptyString(prog, name);
 
-	video = CL_GetVideoByName( name );
+	video = CL_GetVideoByName(name);
 	if ( video )
-		PRVM_G_FLOAT( OFS_RETURN ) = (int)video->state;
+		PRVM_G_FLOAT(OFS_RETURN) = (int)video->state;
 	else
-		PRVM_G_FLOAT( OFS_RETURN ) = 0;
+		PRVM_G_FLOAT(OFS_RETURN) = 0;
 }
 
 /*
@@ -1045,14 +1044,14 @@ void VM_cin_restart(prvm_prog_t *prog)
 	const char *name;
 	clvideo_t		*video;
 
-	VM_SAFEPARMCOUNT( 1, VM_cin_restart );
+	VM_SAFEPARMCOUNT(1, VM_cin_restart);
 
-	name = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString(prog,  name );
+	name = PRVM_G_STRING(OFS_PARM0);
+	VM_CheckEmptyString(prog, name);
 
-	video = CL_GetVideoByName( name );
-	if ( video )
-		CL_RestartVideo( video );
+	video = CL_GetVideoByName(name);
+	if (video)
+		CL_RestartVideo(video);
 }
 
 static void VM_M_registercommand(prvm_prog_t *prog)

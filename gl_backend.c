@@ -144,7 +144,7 @@ typedef struct gl_state_s
 	qbool alphatocoverage;
 	int scissortest;
 	unsigned int unit;
-	gltextureunit_t units[MAX_TEXTUREUNITS];
+	gltextureunit_t units[MAX_TEXTUREUNITS_32];
 	float color4f[4];
 	int lockrange_first;
 	int lockrange_count;
@@ -1058,7 +1058,7 @@ void R_Mesh_SetRenderTargets(int fbo, rtexture_t *depthtexture, rtexture_t *colo
 	// unbind any matching textures immediately, otherwise D3D will complain about a bound texture being used as a render target
 	for (j = 0;j < 5;j++)
 		if (textures[j])
-			for (i = 0;i < MAX_TEXTUREUNITS;i++)
+			for (i = 0;i < MAX_TEXTUREUNITS_32;i++)
 				if (gl_state.units[i].texture == textures[j])
 					R_Mesh_TexBind(i, NULL);
 	// set up framebuffer object or render targets for the active rendering API
@@ -1136,7 +1136,7 @@ static void GL_Backend_ResetState(void)
 		qglEnableVertexAttribArray(GLSLATTRIB_POSITION);
 		qglDisableVertexAttribArray(GLSLATTRIB_COLOR);
 		qglVertexAttrib4f(GLSLATTRIB_COLOR, 1, 1, 1, 1);
-		gl_state.unit = MAX_TEXTUREUNITS;
+		gl_state.unit = MAX_TEXTUREUNITS_32;
 		CHECKGLERROR
 		break;
 	}
@@ -1986,8 +1986,8 @@ void R_Mesh_ColorPointer(int components, int gltype, size_t stride, const void *
 void R_Mesh_TexCoordPointer(unsigned int unitnum, int components, int gltype, size_t stride, const void *pointer, const r_meshbuffer_t *vertexbuffer, size_t bufferoffset)
 {
 	gltextureunit_t *unit = gl_state.units + unitnum;
-	if (unitnum >= MAX_TEXTUREUNITS)
-		Sys_Error ("R_Mesh_TexCoordPointer: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS);
+	if (unitnum >= MAX_TEXTUREUNITS_32)
+		Sys_Error ("R_Mesh_TexCoordPointer: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS_32);
 	// update array settings
 	// note: there is no need to check bufferobject here because all cases
 	// that involve a valid bufferobject also supply a texcoord array
@@ -2035,8 +2035,8 @@ void R_Mesh_TexCoordPointer(unsigned int unitnum, int components, int gltype, si
 int R_Mesh_TexBound(unsigned int unitnum, int id)
 {
 	gltextureunit_t *unit = gl_state.units + unitnum;
-	if (unitnum >= MAX_TEXTUREUNITS)
-		Sys_Error ("R_Mesh_TexCoordPointer: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS);
+	if (unitnum >= MAX_TEXTUREUNITS_32)
+		Sys_Error ("R_Mesh_TexCoordPointer: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS_32);
 	if (id == GL_TEXTURE_2D)
 		return unit->t2d;
 	if (id == GL_TEXTURE_3D)
@@ -2064,7 +2064,7 @@ void R_Mesh_ClearBindingsForTexture(int texnum)
 	gltextureunit_t *unit;
 	unsigned int unitnum;
 	// unbind the texture from any units it is bound on - this prevents accidental reuse of certain textures whose bindings can linger far too long otherwise (e.g. bouncegrid which is a 3D texture) and confuse the driver later.
-	for (unitnum = 0; unitnum < MAX_TEXTUREUNITS; unitnum++)
+	for (unitnum = 0; unitnum < MAX_TEXTUREUNITS_32; unitnum++)
 	{
 		unit = gl_state.units + unitnum;
 		if (unit->texture && unit->texture->texnum == texnum)
@@ -2072,19 +2072,24 @@ void R_Mesh_ClearBindingsForTexture(int texnum)
 	}
 }
 
+// packard .. tex is trash here ..
 void R_Mesh_TexBind(unsigned int unitnum, rtexture_t *tex)
 {
 	gltextureunit_t *unit = gl_state.units + unitnum;
 	int texnum;
-	if (unitnum >= MAX_TEXTUREUNITS)
-		Sys_Error ("R_Mesh_TexBind: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS);
+	if (unitnum >= MAX_TEXTUREUNITS_32)
+		Sys_Error ("R_Mesh_TexBind: unitnum %d > max units %d\n", unitnum, MAX_TEXTUREUNITS_32);
 	switch(vid.renderpath)
 	{
 	case RENDERPATH_GL32:
 	case RENDERPATH_GLES2:
 		if (tex)
 		{
+			// Q: Does this ever hit? YES (LoadingScreen, for instance)
 			texnum = R_GetTexture(tex);
+//			if (texnum == 176) {
+//				int j = 5;
+//			}
 			switch (tex->gltexturetypeenum)
 			{
 			case GL_TEXTURE_2D:
@@ -2121,7 +2126,7 @@ void R_Mesh_ResetTextureState(void)
 	
 	BACKENDACTIVECHECK
 
-	for (unitnum = 0;unitnum < MAX_TEXTUREUNITS;unitnum++)
+	for (unitnum = 0;unitnum < MAX_TEXTUREUNITS_32;unitnum++)
 		R_Mesh_TexBind(unitnum, NULL);
 #endif
 }

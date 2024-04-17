@@ -653,7 +653,7 @@ qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 	if (snd_streaming.integer && (snd_streaming.integer >= 2 || sfx->total_length > max(sizeof(ogg_stream_perchannel_t), snd_streaming_length.value * sfx->format.speed)))
 	{
 		// large sounds use the OGG fetcher to decode the file on demand (but the entire file is held in memory)
-		ogg_stream_persfx_t* per_sfx;
+		ogg_stream_persfx_t *per_sfx;
 		if (developer_loading.integer >= 2)
 			Con_PrintLinef ("Ogg sound file " QUOTED_S " will be streamed", filename);
 		per_sfx = (ogg_stream_persfx_t *)Mem_Alloc(snd_mempool, sizeof(*per_sfx));

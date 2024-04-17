@@ -171,7 +171,7 @@ Wrapped lines get the isContinuation flag set and are continuationWidth less wid
 The sum of the return values of the processLine function will be returned.
 ==============
 */
-int COM_Wordwrap(const char *string, size_t length, float continuationWidth, float maxWidth, COM_WordWidthFunc_t wordWidth, void *passthroughCW, COM_LineProcessorFunc processLine, void *passthroughPL)
+int COM_Wordwrap_Num_Rows_Drawn(const char *string, size_t length, float continuationWidth, float maxWidth, COM_WordWidthFunc_t wordWidth, void *passthroughCW, COM_LineProcessorFunc processLine, void *passthroughPL)
 {
 	// Logic is as follows:
 	//
@@ -459,6 +459,9 @@ COM_ParseToken_Simple
 Parse a token out of a string
 ==============
 */
+
+// Baker: Returns false on failure, true on success
+// Baker: Comment aware quote grouping white space delimited parsing
 int COM_ParseToken_Simple(const char **datapointer, qbool returnnewline, qbool parsebackslash, qbool parsecomments)
 {
 	int len;
@@ -677,6 +680,7 @@ COM_ParseToken_QuakeC
 Parse a token out of a string
 ==============
 */
+// Baker: Returns true if got one
 int COM_ParseToken_QuakeC(const char **datapointer, qbool returnnewline)
 {
 	int len;
@@ -1009,13 +1013,13 @@ void COM_Init_Commands (void)
 	Cvar_RegisterVariable (&registered);
 	Cvar_RegisterVariable (&cmdline);
 	Cvar_RegisterVariable(&cl_playermodel);
-	Cvar_RegisterVirtual(&cl_playermodel, "_cl_playermodel");
+	Cvar_RegisterVariableAlias(&cl_playermodel, "_cl_playermodel");
 	Cvar_RegisterVariable(&cl_playerskin);
-	Cvar_RegisterVirtual(&cl_playerskin, "_cl_playerskin");
+	Cvar_RegisterVariableAlias(&cl_playerskin, "_cl_playerskin");
 
 	// reconstitute the command line for the cmdline externally visible cvar
 	n = 0;
-	for (j = 0; (j < MAX_NUM_ARGVS) && (j < sys.argc); j++) {
+	for (j = 0; (j < MAX_NUM_ARGVS_50) && (j < sys.argc); j++) {
 		i = 0;
 		if (strstr(sys.argv[j], " "))
 		{
@@ -1177,6 +1181,7 @@ char * dpstrcasestr(const char *s, const char *find)
 					return (NULL);
 			} while ((char)tolower((unsigned char)sc) != c);
 		} while (strncasecmp(s, find, len) != 0);
+		//} while (String_Does_Start_With_Caseless (s, find, len) != 0);
 		s--;
 	}
 	return ((char *)s);
@@ -1188,7 +1193,7 @@ char * dpstrcasestr(const char *s, const char *find)
 /* Written by Kent Irwin, irwin@leland.stanford.edu.  I am
    responsible for bugs */
 
-char *dpstrrstr(const char *s1, const char *s2)
+char *dp_strstr_reverse(const char *s1, const char *s2)
 {
 	const char *sc2, *psc1, *ps1;
 
@@ -1206,6 +1211,36 @@ char *dpstrrstr(const char *s1, const char *s2)
 				return ((char *)ps1);
 	}
 	return ((char *)NULL);
+}
+
+// Notes: There are 32 static temp buffers which are cycled.  Best for short-lived vars in non-recursive functions.
+
+#define CORE_STRINGS_VA_ROTATING_BUFFERS_COUNT_32 32
+#define BUF_SIZE_1024 1024
+char *va32 (const char *format, ...)
+{
+
+	static char 	buffers[CORE_STRINGS_VA_ROTATING_BUFFERS_COUNT_32][BUF_SIZE_1024];
+	static size_t 	sizeof_a_buffer 	= sizeof(buffers[0]);
+	static size_t 	num_buffers			= sizeof(buffers) / sizeof(buffers[0]);
+	static size_t 	cycle = 0;
+
+	char			*buffer_to_use = buffers[cycle];
+	va_list 		args;
+
+	va_start 		(args, format);
+
+	//int result = 
+	dpvsnprintf (buffer_to_use, BUF_SIZE_1024, format, args);
+
+	va_end 			(args);
+
+	// Cycle through to next buffer for next time function is called
+	if (++cycle >= num_buffers)
+		cycle = 0;
+
+	return buffer_to_use;
+#undef BUF_SIZE_1024
 }
 
 int dpsnprintf (char *buffer, size_t buffersize, const char *format, ...)
@@ -1682,6 +1717,8 @@ static void base64_3to4(const unsigned char *in, unsigned char *out, int bytes)
 	out[3] = (bytes > 2) ? o3 : '=';
 }
 
+
+
 size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen)
 {
 	size_t blocks, i;
@@ -1707,3 +1744,409 @@ char *dpreplacechar (char *s_edit, int ch_find, int ch_replace)
 	return String_Edit_Replace_Char (s_edit, ch_find, ch_replace, /*reply count*/ NULL);
 }
 
+#include "zip.c.h"
+
+static const char *base64_chars =
+             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+             "abcdefghijklmnopqrstuvwxyz"
+             "0123456789+/";
+
+
+static inline int is_base64(unsigned char c) {
+  return (isalnum(c) || (c == '+') || (c == '/'));
+}
+
+//static size_t base64_encode_length (size_t slen)
+//{
+//    return ((slen + 2) / 3 * 4) + 1; // +1 for null
+//}
+
+
+char *base64_encode_calloc (const unsigned char *data, size_t in_len, /*reply*/ size_t *numbytes)
+{
+	const unsigned char *src;
+	int outlen = (in_len + 2) / 3 * 4;
+	unsigned char *out = (unsigned char *)calloc (outlen + 1 /* for the null*/, ONE_SIZEOF_CHAR_1);
+	unsigned char *dst = out;
+	int remaining;
+
+	for (src = data, dst = out, remaining = in_len; remaining > 0; dst += 4, src +=3, remaining -= 3) {
+		dst[0] = /* can't fail */      base64_chars[((src[0] & 0xfc) >> 2)];
+		dst[1] = /* can't fail */      base64_chars[((src[0] & 0x03) << 4) + ((src[1] & 0xf0) >> 4)];
+		dst[2] = remaining < 2 ? '=' : base64_chars[((src[1] & 0x0f) << 2) + ((src[2] & 0xc0) >> 6)];
+		dst[3] = remaining < 3 ? '=' : base64_chars[((src[2] & 0x3f)     )];
+	}
+
+	if (dst - out != outlen) {
+		Con_PrintLinef ("base64_encode_a: dst - out != outlen");
+	}
+	NOT_MISSING_ASSIGN(numbytes, dst-out);
+	return (char *)out;
+}
+
+
+/* aaaack but it's fast and const should make it shared text page. */
+static const unsigned char pr2six[256] =
+{
+    /* ASCII table */
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
+    64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
+    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+};
+
+static int sBase64decode_len(const char *bufcoded)
+{
+    int nbytesdecoded;
+    register const unsigned char *bufin;
+    register int nprbytes;
+
+    bufin = (const unsigned char *) bufcoded;
+    while (pr2six[*(bufin++)] <= 63);
+
+    nprbytes = (bufin - (const unsigned char *) bufcoded) - 1;
+    nbytesdecoded = ((nprbytes + 3) / 4) * 3;
+
+    return nbytesdecoded + 1;
+}
+
+unsigned char *base64_decode_calloc (const char *encoded_string, /*reply*/ size_t *numbytes)
+{
+	size_t outlen = sBase64decode_len (encoded_string);
+	RETURNING_ALLOC___ char *_ret = (char *)calloc (outlen, ONE_SIZEOF_CHAR_1);
+	char *ret = _ret; // ret is increased writing bytes as we go, while _ret stays the same
+	size_t in_len = strlen(encoded_string);
+	int i = 0;
+	int j = 0;
+	int in_ = 0;
+	unsigned char char_array_4[4], char_array_3[3] = {0}; // gcc says char_array_3 used uninitialized, but scenario looks impossible
+
+
+	while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
+		char_array_4[i++] = encoded_string[in_]; in_++;
+		if (i ==4) {
+			for (i = 0; i < 4; i++)
+				//char_array_4[i] = base64_chars.find(char_array_4[i]);
+				char_array_4[i] = (int)(strchr (base64_chars, char_array_4[i]) - base64_chars);
+
+			char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+			for (i = 0; (i < 3); i++)
+				*ret++ = char_array_3[i];
+
+			i = 0;
+		}
+	}
+
+	if (i) {
+		for (j = i; j <4; j++)
+			char_array_4[j] = 0;
+
+		for (j = 0; j <4; j++)
+			//char_array_4[j] = base64_chars.find(char_array_4[j]);
+			char_array_4[j] = (int)(strchr (base64_chars, char_array_4[j]) - base64_chars);
+
+		char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+		char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+		char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+		for (j = 0; (j < i - 1); j++)
+			*ret++ = char_array_3[j];
+	}
+
+
+	NOT_MISSING_ASSIGN(numbytes, (ret - _ret));
+	RETURNING___ return (unsigned char *)_ret;
+}
+
+
+
+
+
+unsigned char *string_zlib_compress_alloc (const char *s_text_to_compress, /*reply*/ size_t *size_out, size_t buffersize)
+{
+	size_t data_zipped_bufsize = buffersize; // Like 16 MB
+	unsigned char *data_zipped_alloc = (unsigned char *)calloc (1, data_zipped_bufsize);//16384 * 1024, 1); // 16 MB .. largest save file I see is 320 KB
+    // original string len = 36
+    size_t slen = strlen(s_text_to_compress);
+
+    Con_DPrintLinef ("Uncompressed size is: " PRINTF_INT64, (int64_t)slen);
+    //Con_PrintLinef ("Uncompressed string is: %s\n", a);
+
+    // STEP 1.
+    // deflate a into b. (that is, compress a into b)
+    
+    // zlib struct
+    z_stream defstream;
+    defstream.zalloc = Z_NULL;
+    defstream.zfree = Z_NULL;
+    defstream.opaque = Z_NULL;
+    // setup "a" as the input and "b" as the compressed output
+    defstream.avail_in = (unsigned int)slen + ONE_CHAR_1; // size of input, string + terminator
+    defstream.next_in = (unsigned char*)s_text_to_compress; // input char array
+    defstream.avail_out = data_zipped_bufsize; //(unsigned int)sizeof(b); // size of output
+    defstream.next_out = (unsigned char *)data_zipped_alloc; // output char array
+    
+    // the actual compression work.
+    deflateInit(&defstream, Z_BEST_COMPRESSION);
+    deflate(&defstream, Z_FINISH);
+    deflateEnd(&defstream);
+
+	
+     
+    // This is one way of getting the size of the output
+	size_t outsize1 = strlen((char *)data_zipped_alloc) ;
+	size_t outsize2 = (unsigned int)(defstream.next_out - data_zipped_alloc);
+    Con_DPrintLinef ("Compressed size strlen is:   " PRINTF_INT64, (int64_t)outsize1);
+	Con_DPrintLinef ("Compressed size ptr math is: " PRINTF_INT64, (int64_t)outsize2);
+    //Con_PrintLinef ("Compressed string is: %s\n", b);
+
+	(*size_out) = outsize2;
+
+	return data_zipped_alloc; // NOTE -- NOT NULL TERMINATED!!!
+}
+    //printf("\n----------\n\n");
+
+// Baker: This decompresses to text.
+char *string_zlib_decompress_alloc (unsigned char *data_binary_of_compressed_text, size_t datasize, size_t buffersize)
+{
+	size_t s_unzipped_bufsize = buffersize; // Like 16 MB
+	char *s_unzipped_alloc = (char *)calloc (1, s_unzipped_bufsize);//16384 * 1024, 1); // 16 MB .. largest save file I see is 320 KB
+    // original string len = 36
+    
+
+    z_stream infstream;
+    infstream.zalloc = Z_NULL;
+    infstream.zfree = Z_NULL;
+    infstream.opaque = Z_NULL;
+    // setup "b" as the input and "c" as the compressed output
+    infstream.avail_in = datasize; // size of input
+    infstream.next_in =  data_binary_of_compressed_text; // input char array
+    infstream.avail_out = (unsigned int)s_unzipped_bufsize; // size of output
+    infstream.next_out = (unsigned char *)s_unzipped_alloc; // output char array
+     
+    // the actual DE-compression work.
+    inflateInit(&infstream);
+    inflate(&infstream, Z_NO_FLUSH);
+    inflateEnd(&infstream);
+    // 
+    //printf("Uncompressed size is: %lu\n", strlen(c));
+    //printf("Uncompressed string is: %s\n", c);
+    //
+
+    //// make sure uncompressed is exactly equal to original.
+    //assert(strcmp(a,c)==0);
+	size_t outsize1 = strlen(s_unzipped_alloc) ;
+	size_t outsize2 = (unsigned int)(infstream.next_out - (unsigned char *)s_unzipped_alloc);
+    Con_DPrintLinef ("DeCompressed size strlen is:   " PRINTF_INT64, (int64_t)outsize1);
+	Con_DPrintLinef ("DeCompressed size ptr math is: " PRINTF_INT64, (int64_t)outsize2);
+	return s_unzipped_alloc;
+}
+
+	#ifdef _WIN32
+	// The performance decreases once really large sizes are hit.  But how often are we going to be dealing with super-massive strings.
+	char *_length_vsnprintf (qbool just_test, /*reply*/ int *created_length, /*reply*/ size_t *created_bufsize, const char *fmt, va_list args)
+	{
+		size_t bufsize = 8; // Was 2.  Set to 8 which is a defacto 16.
+		char *buffer = NULL;
+		int length = -1;
+
+		// We need a length of 1 greater
+		//while (length == -1 || (size_t)length >= bufsize) {
+		while (length == -1 || length >= (int)bufsize) {
+			bufsize = bufsize * 2;
+			buffer = (char *)realloc (buffer, bufsize);
+	//		logd ("c_vsnprintf_alloc: buffer size %d", bufsize);
+
+			// For _vsnprintf, if the number of bytes to write exceeds buffer, then count bytes are written
+			// and ñ1 is returned.
+			//ISSUE_X_ (2, "_vsnprintf appears to be returning incorrect string length for vr 137, it returns 96?", "It seems it is affected by null characters.")
+			// September 14 2021: According to stackoverflow it is possible we need to re-initialize the args???
+			//  But performing experimental, this does not seem to be true.
+			// Plus we have extensively used this function for several years with countless combinations of strings
+			// What is more likely is that the null character in the string affected the result.
+			length = _vsnprintf (buffer, bufsize, fmt, args);
+
+			//if (length == -1 || (size_t)length >= bufsize) {
+			//	//va_end(args);
+			//	//va_start(args, fmt);
+			//	//continue;
+			//}
+		}
+
+		// Reduce the allocation to a 16 padded size, which has nothing to do with alignment but rather our stringa spec.
+		// To decrease reallocation for small string changes but using a blocksize.  Leave alignment to calloc/malloc.
+
+		if (just_test)
+			free  (buffer);
+		else
+		{
+			bufsize = roundup_16 (length + ONE_SIZEOF_NULL_TERM_1);
+			buffer = (char *)realloc (buffer, bufsize); // Reduce the allocation.
+		}
+
+	//	logd ("c_vsnprintf_alloc: '%s'" NEWLINE "Length is %d", buffer, length);
+		NOT_MISSING_ASSIGN(created_length, length);
+		NOT_MISSING_ASSIGN(created_bufsize, bufsize);
+		return buffer;
+	}
+
+
+	#else // Non-Windows
+
+	// The performance decreases once really large sizes are hit.  But how often are we going to be dealing with super-massive strings.
+	char *_length_vsnprintf (qbool just_test, /*reply*/ int *created_length, /*reply*/ size_t *created_bufsize, const char *fmt, va_list args)
+	{
+		va_list args_copy;
+		va_copy (args_copy, args);
+		int length = vsnprintf(NULL, 0, fmt, args_copy);
+
+		//Sys_PrintToTerminal (va32 ("Length for vsnprintf is %f" NEWLINE, (double)length ));
+
+		va_end (args_copy);
+		size_t bufsize = roundup_16 (length + ONE_SIZEOF_NULL_TERM_1);
+		char *buffer = NULL;
+
+		if (false == just_test) {
+			va_list args_copy;
+			buffer = (char *)calloc(bufsize, ONE_SIZEOF_CHAR_1);
+			va_copy (args_copy, args);
+			int length2 = vsnprintf (buffer, length + ONE_SIZEOF_NULL_TERM_1, fmt, args_copy); // I'm not sure this null terminates?
+			va_end (args_copy);
+
+			//buffer[length] = 0;
+		}
+
+		//	logd ("c_vsnprintf_alloc: '%s'" NEWLINE "Length is %d", buffer, length);
+		NOT_MISSING_ASSIGN(created_length, length);
+		NOT_MISSING_ASSIGN(created_bufsize, bufsize);
+		return buffer;
+	}
+#endif
+
+
+
+// Destroys.  Returns null.  No string table.
+void BakerString_Destroy_And_Null_It (baker_string_t **pdst)
+{
+	baker_string_t *dst = (*pdst);
+	const char *old_string_to_free = dst->string; //iif(dst->bufsize, dst->string, NULL);
+
+	if (old_string_to_free) free ((void *)old_string_to_free);
+	free (dst);
+	(*pdst) = NULL;
+}
+
+// Baker: No acquire buffer here.  No custom allocation.
+baker_string_t *BakerString_Create_Alloc (const char *s)
+{
+	baker_string_t *dst_out = (baker_string_t *)calloc (1, sizeof(baker_string_t));
+	dst_out->string = strdup ("");
+	dst_out->bufsize = 1;
+	return dst_out; // Allocated
+}
+
+
+void *z_memdup_z (const void *src, size_t len)
+{
+	size_t bufsize_made = len + 1;
+	unsigned char *zbuf = (unsigned char *) Z_Malloc(bufsize_made);
+	memcpy (zbuf, src, len);
+	return zbuf;
+}
+
+void *core_memdup_z (const void *src, size_t len, /*modify*/ size_t *bufsize_made_out)
+{	
+	size_t bufsize_made = len + 1;
+
+	void *buf = calloc (1, bufsize_made); // Because we are a wrapper
+	memcpy (buf, src, len);
+	NOT_MISSING_ASSIGN (bufsize_made_out, bufsize_made);
+	return buf;
+}
+
+// Baker: No support for zero sized uninitialized buffer
+void BakerString_Set (baker_string_t *dst, int s_len, const char *s)
+{
+	const char *old_string_to_free = iif(dst->bufsize, dst->string, NULL);
+	dst->string = (const char *)core_memdup_z (s, s_len, &dst->bufsize); // a size + 1 null term copy
+	dst->length = s_len;
+
+	free ((void *)old_string_to_free);
+	return;
+}
+
+// Baker: Do not have string to cat be inside the string receiving cat. This version does not allow that.
+void BakerString_Cat_No_Collide (/*modify*/ baker_string_t *dst, size_t s_len, const char *s)
+{
+	int new_len				= dst->length + s_len;
+
+	// Sys_PrintToTerminal (va32 ("BakerString_Cat_No_Collide is %f" NEWLINE, (double)s_len));
+
+	if (s_len == 0) {
+		// Baker: Nothing to do
+		return;
+	}
+		
+	size_t bufsize_current	= dst->bufsize;
+	size_t bufsize_needed	= new_len + ONE_CHAR_1; // +1 for null term
+
+	Sys_PrintToTerminal (va32 ("BCAT Length for bufsize_needed is %f" NEWLINE, (double)bufsize_needed ));
+
+	if (bufsize_current >= bufsize_needed) { // Buffer size if big enough
+		// Cat to end
+		const char *s_beyond			= &dst->string[dst->length];
+			  char *s_null_term_point	= (unconstanting char *) &dst->string[new_len]; // M
+
+		// dst->bufsize is unchanged, no realloc was needed
+		dst->length = new_len;
+
+		memcpy ((void *)s_beyond, &s[0], s_len); // Catty cat
+		s_null_term_point[0] = 0;
+		return;
+	} else {
+		// Baker: The 128 is to reduce the frequency of reallocations in the event of many small concats
+		const char *s_new				= (const char *)realloc ((void *)dst->string, (bufsize_needed += /*evil*/ 128)); // UNTRACKED REALLOC
+
+		
+
+		dst->string = s_new; 
+		
+		const char *s_beyond			= &dst->string[dst->length]; // After updated
+			  char *s_null_term_point	= (unconstanting char *) &dst->string[new_len]; // M
+
+		dst->bufsize = bufsize_needed;
+		dst->length = new_len;
+
+		memcpy ((void *)s_beyond, &s[0], s_len); // Catty cat
+		s_null_term_point[0] = 0;
+
+		return;
+	}
+}
+
+// Returns the seconds since midnight 1970
+double File_Time (const char *path_to_file)
+{
+	struct stat st_buf = {0};
+
+	int status = stat (path_to_file, &st_buf );
+	if (status != 0)
+		return 0;
+
+	return (double)st_buf.st_mtime;
+}

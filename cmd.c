@@ -329,6 +329,20 @@ void Cbuf_AddTextLine (cmd_state_t *cmd, const char *text)
 	Cbuf_AddText (cmd, vabuf);
 }
 
+WARP_X_ (CL_ForwardToServerf)
+void Cbuf_AddTextLinef (cmd_state_t *cmd, const char *fmt, ...)
+{
+	va_list		argptr;
+	char		msg[MAX_INPUTLINE_16384];
+
+	va_start		(argptr, fmt);
+	dpvsnprintf		(msg, sizeof(msg), fmt, argptr);
+	va_end			(argptr);
+
+	Cbuf_AddTextLine (cmd, msg);
+}
+
+
 /*
 ============
 Cbuf_InsertText
@@ -818,7 +832,7 @@ static unsigned char *MemAllocString (const char *s)
 {
 	mempool_t *pool = tempmempool;
 	int			slen = strlen(s);
-	
+
 	unsigned char *buf = (unsigned char *)Mem_Alloc (pool, slen + ONE_CHAR_1);
 	memcpy (buf, s, slen);
 	buf[slen] = '\0';
@@ -826,7 +840,7 @@ static unsigned char *MemAllocString (const char *s)
 	return buf;
 }
 
-static char *s_default_cfg = 
+static char *s_default_cfg =
 	""																		NEWLINE
 	"// load keybindings"													NEWLINE
 	"//"																	NEWLINE
@@ -935,7 +949,7 @@ static char *s_default_cfg =
 	;
 
 #if 0
-static char *s_quake_rc = 
+static char *s_quake_rc =
 		"// load the base configuration"					NEWLINE
 		"exec default.cfg"									NEWLINE
 		""													NEWLINE
@@ -1249,7 +1263,7 @@ static void Cmd_Alias_f (cmd_state_t *cmd)
 	}
 
 	s = Cmd_Argv(cmd, 1);
-	if (strlen(s) >= MAX_ALIAS_NAME)
+	if (strlen(s) >= MAX_ALIAS_NAME_32)
 	{
 		Con_Print("Alias name is too long\n");
 		return;
@@ -2186,12 +2200,12 @@ int Cmd_CompleteCountPossible (cmd_state_t *cmd, const char *partial, int is_fro
 const char **Cmd_CompleteBuildList (cmd_state_t *cmd, const char *partial, int is_from_nothing)
 {
 	cmd_function_t *func;
-	size_t len = 0;
+	//size_t len = 0;
 	size_t bpos = 0;
 	size_t sizeofbuf = (Cmd_CompleteCountPossible (cmd, partial, is_from_nothing) + 1) * sizeof (const char *);
 	const char **buf;
 
-	len = strlen(partial);
+	//len = strlen(partial);
 	buf = (const char **)Mem_Alloc(tempmempool, sizeofbuf + sizeof (const char *));
 	// Loop through the functions lists and print all matches
 	for (func = cmd->userdefined->qc_functions; func; func = func->next) {
@@ -2310,12 +2324,12 @@ int Cmd_CompleteAliasCountPossible (cmd_state_t *cmd, const char *partial, int i
 const char **Cmd_CompleteAliasBuildList (cmd_state_t *cmd, const char *partial, int is_from_nothing)
 {
 	cmd_alias_t *alias;
-	size_t len = 0;
+	//size_t len = 0;
 	size_t bpos = 0;
 	size_t sizeofbuf = (Cmd_CompleteAliasCountPossible (cmd, partial, is_from_nothing) + 1) * sizeof (const char *);
 	const char **buf;
 
-	len = strlen(partial);
+	//len = strlen(partial);
 	buf = (const char **)Mem_Alloc(tempmempool, sizeofbuf + sizeof (const char *));
 	// Loop through the alias list and print all matches
 	for (alias = cmd->userdefined->alias; alias; alias = alias->next)
@@ -2494,7 +2508,7 @@ void Cmd_ExecuteString (cmd_state_t *cmd, const char *text, cmd_source_t src, qb
 	}
 
 // check cvars
-	if (!Cvar_Command(cmd) && host.framecount > 0) {
+	if (!Cvar_Command(cmd) && host.superframecount > 0) {
 		if (is_in_loadconfig && String_Does_Match (s_command_wanted, "gamma")) {
 			// Baker: Sick of "unknown command gamma" during Quake gamedir change startup
 			// Do not print
@@ -2511,13 +2525,16 @@ done:
 
 int Cmd_Is_Lead_Word_A_Command_Cvar_Alias (cmd_state_t *cmd, const char *text)
 {
-	Cmd_TokenizeString (cmd, text);
+// Baker: a command like "disconnect; menu_load" .. we are getting "disconnect;" as the lead word.
+	const char *t = text;
+	int got_token = COM_ParseToken_QuakeC (&t, /*returnnewline?*/ false);
+
+	//Cmd_TokenizeString (cmd, text);
+	const char *s_command_wanted = com_token;
 
 // execute the command line
-	if (!Cmd_Argc(cmd))
+	if (got_token == false)
 		return 0; // no tokens
-
-	const char *s_command_wanted = Cmd_Argv(cmd, 0);
 
 // check functions
 
@@ -2550,8 +2567,8 @@ int Cmd_Is_Lead_Word_A_Command_Cvar_Alias (cmd_state_t *cmd, const char *text)
 	WARP_X_ (what is flags mask )
 	if (Cvar_FindVar(cmd->cvars, s_command_wanted, cmd->cvars_flagsmask) )
 		return true;
-	
-	
+
+
 	return false;
 }
 
@@ -2583,7 +2600,7 @@ int Cmd_CheckParm (cmd_state_t *cmd, const char *parm)
 
 
 
-void Cmd_SaveInitState(void)
+void Cmd_Host_Init_SaveInitState(void)
 {
 	cmd_iter_t *cmd_iter;
 	for (cmd_iter = cmd_iter_all; cmd_iter->cmd; cmd_iter++) {
@@ -2700,7 +2717,7 @@ void Cmd_Init(void)
 	cmd_buf_t *cbuf;
 	cbuf_mempool = Mem_AllocPool("Command buffer", 0, NULL);
 	cbuf = (cmd_buf_t *)Mem_Alloc(cbuf_mempool, sizeof(cmd_buf_t));
-	cbuf->maxsize = CMDBUFSIZE;
+	cbuf->maxsize = CMDBUFSIZE_0_6_MB;
 	cbuf->lock = Thread_CreateMutex();
 	cbuf->wait = false;
 	host.cbuf = cbuf;

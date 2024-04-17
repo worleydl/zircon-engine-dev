@@ -486,7 +486,7 @@ void(float step) movetogoal				= #67;
 
 string(string s) precache_file		= #68;	// no effect except for -copy
 void(entity e) makestatic		= #69;
-void(string s) changelevel = #70;
+void changelevel(string s, optional string startspot) = #70; // Baker: intermap support
 
 //#71 was removed
 

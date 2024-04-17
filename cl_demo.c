@@ -148,10 +148,10 @@ void CL_CutDemo (unsigned char **buf, fs_offset_t *filesize)
 	*filesize = 0;
 
 	FS_Close(cls.demofile);
-	*buf = FS_LoadFile(cls.demoname, tempmempool, false, filesize);
+	*buf = FS_LoadFile(cls.demoname, tempmempool, fs_quiet_FALSE, filesize);
 
 	// restart the demo recording
-	cls.demofile = FS_OpenRealFile(cls.demoname, "wb", false);
+	cls.demofile = FS_OpenRealFile(cls.demoname, "wb", fs_quiet_FALSE); // WRITE-EON  CL_CutDemo
 	if (!cls.demofile)
 		Sys_Error ("failed to reopen the demo file");
 	FS_Printf(cls.demofile, "%d\n", cls.forcetrack);
@@ -424,7 +424,7 @@ void CL_Record_f(cmd_state_t *cmd)
 
 	// open the demo file
 	Con_PrintLinef ("recording to %s.", name);
-	cls.demofile = FS_OpenRealFile(name, "wb", false);
+	cls.demofile = FS_OpenRealFile(name, "wb", fs_quiet_FALSE); // WRITE-EON record demo
 	if (!cls.demofile) {
 		Con_PrintLinef (CON_ERROR "ERROR: couldn't open.");
 		return;
@@ -449,7 +449,7 @@ void CL_PlayDemo(const char *demo)
 	// open the demo file
 	strlcpy (name, demo, sizeof (name));
 	FS_DefaultExtension (name, ".dem", sizeof (name));
-	f = FS_OpenVirtualFile(name, false);
+	f = FS_OpenVirtualFile(name, fs_quiet_FALSE);
 	if (!f)
 	{
 		Con_PrintLinef (CON_ERROR "ERROR: couldn't open %s.", name);
@@ -554,8 +554,7 @@ static void CL_FinishTimeDemo (void)
 	{
 		++benchmark_runs;
 		i = Sys_CheckParm("-benchmarkruns");
-		if (i && i + 1 < sys.argc)
-		{
+		if (i && i + 1 < sys.argc) {
 			static benchmarkhistory_t *history = NULL;
 			if (!history)
 				history = (benchmarkhistory_t *)Z_Malloc(sizeof(*history) * atoi(sys.argv[i + 1]));
@@ -649,7 +648,7 @@ void CL_TimeDemo_f(cmd_state_t *cmd)
 // all the loading time doesn't get counted
 
 	// instantly hide console and deactivate it
-	key_dest = key_game;
+	KeyDest_Set (key_game); // key_dest = key_game;
 	key_consoleactive = 0;
 	scr_con_current = 0;
 
@@ -682,7 +681,7 @@ static void CL_Startdemos_f(cmd_state_t *cmd)
 	if (cl_startdemos.value == 0) {
 		// Baker: What this is trying to do is close the menu and the console
 		// and set key_game.  Now .. why are we doing this though?
-//		key_dest = key_game;
+//		KeyDest_Set (key_game); // key_dest = key_game;
 //		menu_state_set_nova (m_none);
 //		Con_CloseConsole_If_Client ();
 		return;

@@ -30,10 +30,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TYPE_GAME 2
 #define TYPE_BOTH 3
 
+static const char *menu_current_working_directory;
+
 static cvar_t forceqmenu = {CF_CLIENT, "forceqmenu", "0", "enables the quake menu instead of the quakec menu.dat (if present)"};
 static cvar_t menu_progs = {CF_CLIENT, "menu_progs", "menu.dat", "name of quakec menu.dat file"};
 static cvar_t menu_options_colorcontrol_correctionvalue = {CF_CLIENT, "menu_options_colorcontrol_correctionvalue", "0.5", "intensity value that matches up to white/black dither pattern, should be 0.5 for linear color"};
 
+stringlist_t menu_keylist_txt;
 static void M_Init(void);
 
 // Baker: For showfps in Zircon
@@ -67,9 +70,13 @@ static unsigned int *menuplyr_translated;
 enum m_state_e m_state;
 char m_return_reason[128];
 
+static void M_ZDev_Key(cmd_state_t *cmd, int key, int ascii);
+static void M_ZDev_Draw (void);
+
 void M_Menu_Main_f(cmd_state_t *cmd);
 	void M_Menu_SinglePlayer_f(cmd_state_t *cmd);
 		void M_Menu_Load_f(cmd_state_t *cmd);
+		void M_Menu_Load2_f(cmd_state_t *cmd);
 		void M_Menu_Save_f(cmd_state_t *cmd);
 	void M_Menu_MultiPlayer_f(cmd_state_t *cmd);
 		void M_Menu_Setup_f(cmd_state_t *cmd);
@@ -94,6 +101,7 @@ void M_Menu_ModList_f(cmd_state_t *cmd);
 static void M_Main_Draw (void);
 	static void M_SinglePlayer_Draw (void);
 		static void M_Load_Draw (void);
+		static void M_Load2_Draw (void);
 		static void M_Save_Draw (void);
 	static void M_MultiPlayer_Draw (void);
 		static void M_Setup_Draw (void);
@@ -119,6 +127,7 @@ static void M_ModList_Draw (void);
 static void M_Main_Key(cmd_state_t *cmd, int key, int ascii);
 	static void M_SinglePlayer_Key(cmd_state_t *cmd, int key, int ascii);
 		static void M_Load_Key(cmd_state_t *cmd, int key, int ascii);
+		static void M_Load2_Key(cmd_state_t *cmd, int key, int ascii);
 		static void M_Save_Key(cmd_state_t *cmd, int key, int ascii);
 	static void M_MultiPlayer_Key(cmd_state_t *cmd, int key, int ascii);
 		static void M_Setup_Key(cmd_state_t *cmd, int key, int ascii);
@@ -499,8 +508,10 @@ static void M_Background(int width, int height, int shall_darken)
 	menu_y = (vid_conheight.integer - menu_height) * 0.5;
 	//DrawQ_Fill(menu_x, menu_y, menu_width, menu_height, 0, 0, 0, 0.5, 0);
 
-	if (shall_darken) {
-		DrawQ_Fill(0, 0, vid_conwidth.integer, vid_conheight.integer, 0, 0, 0, 0.5, 0);
+	if (shall_darken == 2) {
+		DrawQ_Fill(0, 0, vid_conwidth.integer, vid_conheight.integer, q_rgba_alpha75_black_4_parms, DRAWFLAG_NORMAL_0);
+	} else if (shall_darken) {
+		DrawQ_Fill(0, 0, vid_conwidth.integer, vid_conheight.integer, q_rgba_alpha50_black_4_parms, DRAWFLAG_NORMAL_0);
 	}
 }
 
@@ -529,12 +540,23 @@ static void M_Print(float cx, float cy, const char *str)
 	DrawQ_String(menu_x + cx, menu_y + cy, str, 0, 8, 8, 1, 1, 1, 1, 0, NULL, true, FONT_MENU);
 }
 
+static void M_Print16(float cx, float cy, const char *str)
+{
+	DrawQ_String(menu_x + cx, menu_y + cy, str, 0, 16, 16, 1, 1, 1, 1, 0, NULL, true, FONT_MENU);
+}
+//
+//static void M_PrintBronzey16(float cx, float cy, const char *str)
+//{
+//	DrawQ_String(menu_x + cx, menu_y + cy, str, 0, 16, 16, /*rgb*/ 1.03, 0.5, 0.36, 1, 0, NULL, true, FONT_MENU);
+//}
+
 // Handful of users, like server browser column header
 //  Ping Players  Name
 static void M_PrintBronzey(float cx, float cy, const char *str)
 {
 	DrawQ_String(menu_x + cx, menu_y + cy, str, 0, 8, 8, /*rgb*/ 1.03, 0.5, 0.36, 1, 0, NULL, true, FONT_MENU);
 }
+
 
 static void M_PrintRed(float cx, float cy, const char *str)
 {
@@ -716,7 +738,7 @@ static void PPX_DrawSel_End (void)
 		float height	= r.height	/ ymag;
 
 		float redx = 0.5 + 0.2 * sin(host.realtime * M_PI);
-		DrawQ_Fill(left, top, width, height, /*rgb*/ redx, 0, 0, /*a*/ 0.5, DRAWFLAG_ADDITIVE);
+		DrawQ_Fill (left, top, width, height, /*rgb*/ redx, 0, 0, /*a*/ 0.5, DRAWFLAG_ADDITIVE);
 	} // if
 }
 
@@ -794,7 +816,6 @@ M_ToggleMenu
 static void M_ToggleMenu(int mode)
 {
 	m_entersound = true;
-
 	if ((key_dest != key_menu && key_dest != key_menu_grabbed) || m_state != m_main)
 	{
 		if (mode == 0) {
@@ -826,7 +847,7 @@ static void M_ToggleMenu(int mode)
 	{
 		if (mode == 1)
 			return; // the menu is on, and we want it on
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		menu_state_set_nova (m_none);
 	}
 }
@@ -849,7 +870,7 @@ static void M_Demo_Draw (void)
 
 static void M_Menu_Demos_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_demo);
 	m_entersound = true;
 }
@@ -867,7 +888,7 @@ static void M_Demo_Key (cmd_state_t *cmd, int key, int ascii)
 	case K_ENTER:
 		S_LocalSound ("sound/misc/menu2.wav");
 		menu_state_set_nova (m_none);
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "playdemo %s", NehahraDemos[demo_cursor].name));
 		return;
 
@@ -937,7 +958,7 @@ int m_resetdef_prevstate;
 
 void M_Menu_Reset_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	m_resetdef_prevstate = m_state;
 	menu_state_set_nova (m_reset);
 	m_entersound = true;
@@ -992,7 +1013,7 @@ static void M_Reset_Draw (void)
 
 void M_Menu_Credits_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_credits);
 	m_entersound = true;
 }
@@ -1032,33 +1053,37 @@ void M_KeyEvent (int key, int ascii, qbool downevent)
 	if (!downevent)
 		return;
 
-	switch (m_state){
+	switch (m_state) {
 	case m_none: return;
-	case m_main: M_Main_Key(cmd, key, ascii); return;
-	case m_demo: M_Demo_Key(cmd, key, ascii); return;
-	case m_singleplayer: M_SinglePlayer_Key(cmd, key, ascii); return;
-	case m_load: M_Load_Key(cmd, key, ascii); return;
-	case m_save: M_Save_Key(cmd, key, ascii); return;
-	case m_multiplayer: M_MultiPlayer_Key(cmd, key, ascii); return;
-	case m_setup: M_Setup_Key(cmd, key, ascii); return;
-	case m_options_nova:			M_Options_Nova_Key (cmd, key, ascii);				return;
-	case m_options_classic:			M_Options_Classic_Key (cmd, key, ascii);					return;
-	case m_options_effects: M_Options_Effects_Key(cmd, key, ascii); return;
-	case m_options_graphics: M_Options_Graphics_Key(cmd, key, ascii); return;
-	case m_options_colorcontrol: M_Options_ColorControl_Key(cmd, key, ascii); return;
+	case m_main: 					M_Main_Key(cmd, key, ascii); 				return;
+	case m_demo: 					M_Demo_Key(cmd, key, ascii); 				return;
+	case m_singleplayer: 			M_SinglePlayer_Key(cmd, key, ascii); 		return;
+	case m_load: 					M_Load_Key(cmd, key, ascii); 				return;
+	case m_save: 					M_Save_Key(cmd, key, ascii); 				return;
+	case m_load2: 					M_Load2_Key(cmd, key, ascii); 				return;
+	case m_save2: 					/*M_Save2_Key(cmd, key, ascii); */			return;
+	
+	case m_multiplayer: 			M_MultiPlayer_Key(cmd, key, ascii); 		return;
+	case m_setup: 					M_Setup_Key(cmd, key, ascii); 				return;
+	case m_options_nova:			M_Options_Nova_Key (cmd, key, ascii);		return;
+	case m_options_classic:			M_Options_Classic_Key (cmd, key, ascii);	return;
+	case m_options_effects: 		M_Options_Effects_Key(cmd, key, ascii); 	return;
+	case m_options_graphics: 		M_Options_Graphics_Key(cmd, key, ascii); 	return;
+	case m_options_colorcontrol: 	M_Options_ColorControl_Key(cmd, key, ascii);return;
 
-	case m_keys: M_Keys_Key(cmd, key, ascii); return;
-	case m_reset: M_Reset_Key(cmd, key, ascii); return;
-	case m_video_classic:					M_Video_Classic_Key (cmd, key, ascii);					return;
-	case m_video_nova:				M_Video_Nova_Key (cmd, key, ascii);				return;
-	case m_help: M_Help_Key(cmd, key, ascii); return;
-	case m_credits: M_Credits_Key(cmd, key, ascii); return;
-	case m_quit: M_Quit_Key(cmd, key, ascii); return;
-	case m_lanconfig: M_LanConfig_Key(cmd, key, ascii); return;
-	case m_gameoptions: M_GameOptions_Key(cmd, key, ascii); return;
-	case m_slist: M_ServerList_Key(cmd, key, ascii); return;
-	case m_modlist:	M_ModList_Key(cmd, key, ascii); return;
-	case m_maps:					M_Maps_Key (cmd, key, ascii);					return;
+	case m_keys: 					M_Keys_Key(cmd, key, ascii); 				return;
+	case m_reset: 					M_Reset_Key(cmd, key, ascii); 				return;
+	case m_video_classic:			M_Video_Classic_Key (cmd, key, ascii);		return;
+	case m_video_nova:				M_Video_Nova_Key (cmd, key, ascii);			return;
+	case m_help: 					M_Help_Key(cmd, key, ascii); 				return;
+	case m_credits: 				M_Credits_Key(cmd, key, ascii); 			return;
+	case m_quit: 					M_Quit_Key(cmd, key, ascii); 				return;
+	case m_lanconfig: 				M_LanConfig_Key(cmd, key, ascii); 			return;
+	case m_gameoptions: 			M_GameOptions_Key(cmd, key, ascii); 		return;
+	case m_slist: 					M_ServerList_Key(cmd, key, ascii); 			return;
+	case m_modlist:					M_ModList_Key(cmd, key, ascii); 			return;
+	case m_maps:					M_Maps_Key (cmd, key, ascii);				return;
+	case m_zdev:					M_ZDev_Key (cmd, key, ascii);				return;
 	} // sw
 
 }
@@ -1097,31 +1122,34 @@ void M_Draw (void)
 	hotspotx_count = 0;
 
 	switch (m_state) {
-	case m_none: break;
-	case m_main: M_Main_Draw (); break;
-	case m_demo: M_Demo_Draw (); break;
-	case m_singleplayer: M_SinglePlayer_Draw (); break;
-	case m_load: M_Load_Draw (); break;
-	case m_save: M_Save_Draw (); break;
-	case m_multiplayer: M_MultiPlayer_Draw (); break;
-	case m_setup: M_Setup_Draw (); break;
-	case m_options_nova:			M_Options_Nova_Draw (); 		break;
-	case m_options_classic:			M_Options_Classic_Draw ();		break;
-	case m_options_effects: M_Options_Effects_Draw (); break;
-	case m_options_graphics: M_Options_Graphics_Draw (); break;
-	case m_options_colorcontrol: M_Options_ColorControl_Draw (); break;
-	case m_keys: M_Keys_Draw (); break;
-	case m_reset: M_Reset_Draw (); break;
-	case m_video_classic:			M_Video_Classic_Draw ();				break;
-	case m_video_nova:				M_Video_Nova_Draw ();			break;
-	case m_help: M_Help_Draw (); break;
-	case m_credits: M_Credits_Draw (); break;
-	case m_quit: M_Quit_Draw (); break;
-	case m_lanconfig: M_LanConfig_Draw (); break;
-	case m_gameoptions: M_GameOptions_Draw (); break;
-	case m_slist: M_ServerList_Draw (); break;
-	case m_modlist: M_ModList_Draw (); break;
-	case m_maps:					M_Maps_Draw ();					break;
+	case m_none:					break;
+	case m_main:					M_Main_Draw ();						break;
+	case m_demo:					M_Demo_Draw ();						break;
+	case m_singleplayer:			M_SinglePlayer_Draw ();				break;
+	case m_load:					M_Load_Draw ();						break;
+	case m_save:					M_Save_Draw ();						break;
+	case m_load2:					M_Load2_Draw ();					break;
+	case m_save2:					/*M_Save2_Draw ();*/				break;
+	case m_multiplayer:				M_MultiPlayer_Draw ();				break;
+	case m_setup:					M_Setup_Draw ();					break;
+	case m_options_nova:			M_Options_Nova_Draw (); 			break;
+	case m_options_classic:			M_Options_Classic_Draw ();			break;
+	case m_options_effects:			M_Options_Effects_Draw ();			break;
+	case m_options_graphics:		M_Options_Graphics_Draw ();			break;
+	case m_options_colorcontrol:	M_Options_ColorControl_Draw ();		break;
+	case m_keys:					M_Keys_Draw ();						break;
+	case m_reset:					M_Reset_Draw ();					break;
+	case m_video_classic:			M_Video_Classic_Draw ();			break;
+	case m_video_nova:				M_Video_Nova_Draw ();				break;
+	case m_help:					M_Help_Draw ();						break;
+	case m_credits:					M_Credits_Draw ();					break;
+	case m_quit:					M_Quit_Draw ();						break;
+	case m_lanconfig:				M_LanConfig_Draw ();				break;
+	case m_gameoptions:				M_GameOptions_Draw ();				break;
+	case m_slist:					M_ServerList_Draw ();				break;
+	case m_modlist:					M_ModList_Draw ();					break;
+	case m_maps:					M_Maps_Draw ();						break;
+	case m_zdev:					M_ZDev_Draw ();						break;
 	}
 
 	if (m_entersound) {
@@ -1145,7 +1173,9 @@ static int M_GetServerListEntryCategory(const serverlist_entry_t *entry)
 #include "menu_main.c.h"
 #include "menu_main_zirc.c.h"
 	#include "menu_single_player.c.h"
+		#include "menu_saveload2.c.h"
 		#include "menu_saveload.c.h"
+		#include "menu_zdev.c.h"
 
 	#include "menu_multiplayer.c.h"
 		#include "menu_lan.c.h"
@@ -1181,7 +1211,7 @@ void Menu_Resets(void)
 		m_singleplayer_cursor =
 		load_cursor =
 		m_multiplayer_cursor =
-		mapscursor					=
+		m_maplist_cursor					=
 		options_colorcontrol_cursor =
 		options_effects_cursor =
 		options_graphics_cursor =
@@ -1191,7 +1221,6 @@ void Menu_Resets(void)
 		video2_cursor = 0;
 		setup_cursor = 0;
 	lanConfig_cursor = -1;
-
 }
 
 
@@ -1209,13 +1238,35 @@ void menu_state_set_nova(int ee)
 void M_Shutdown(void)
 {
 	// reset key_dest
-	key_dest = key_game;
+	KeyDest_Set (key_game); // key_dest = key_game;
 }
+
+WARP_X_ (sv_intermap_siv_list)	
+
 
 static void M_Init(void)
 {
 	menuplyr_load = true;
 	menuplyr_pixels = NULL;
+
+	menu_current_working_directory = Sys_Getcwd_SBuf();
+
+	if (menu_keylist_txt.numstrings)
+		stringlistfreecontents (&menu_keylist_txt);
+
+	char *s_keylist_alloc = (char *)FS_LoadFile("menu_keylist.txt", tempmempool, fs_quiet_true, fs_size_ptr_null);
+
+	if (s_keylist_alloc) {
+		const char *t = s_keylist_alloc;
+		while (COM_Parse_Basic (&t)) {
+			stringlistappend (&menu_keylist_txt, com_token);
+		} // while
+		
+#if 0
+		int j = menu_keylist_txt.numstrings;
+#endif
+		Mem_Free(s_keylist_alloc);
+	}
 
 	Cmd_AddCommand(CF_CLIENT, "menu_main", M_Menu_Main_f, "open the main menu");
 	Cmd_AddCommand(CF_CLIENT, "menu_singleplayer", M_Menu_SinglePlayer_f, "open the singleplayer menu");
@@ -1237,4 +1288,7 @@ static void M_Init(void)
 	Cmd_AddCommand(CF_CLIENT, "menu_quit", M_Menu_Quit_f, "open the quit menu");
 
 	Cmd_AddCommand(CF_CLIENT, "menu_credits", M_Menu_Credits_f, "open the credits menu");
+
+	Cmd_AddCommand(CF_CLIENT, "zdev", M_Menu_ZDev_f, "open the loadgame menu");
 }
+

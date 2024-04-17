@@ -83,6 +83,7 @@ WARP_X_ (EF_ROCKET)
 
 #define EF_SHORTY_ADDITIVE_1	1
 #define EF_SHORTY_FULLBRIGHT_2	2
+#define EF_SHORTY_NOSHADOW_4	4
 
 #define EF_ADDITIVE_32			32			// 5	EF_QEX_PENTALIGHT FIGHTS	EF_ADDITIVE 32
 #define EF_BLUE_64				64			// 6	EF_QEX_CANDLELIGHT FIGHTS EF_BLUE
@@ -117,9 +118,9 @@ WARP_X_ (EF_ROCKET)
 #define INTEF_FLAG2QW_2				2
 
 // flags for the pflags field of entities
-#define PFLAGS_NOSHADOW				1
-#define PFLAGS_CORONA				2
-#define PFLAGS_FULLDYNAMIC			128		// must be set or the light fields are ignored
+#define PFLAGS_NOSHADOW_1				1
+#define PFLAGS_CORONA_2				2
+#define PFLAGS_FULLDYNAMIC_128			128		// must be set or the light fields are ignored
 
 // if the high bit of the servercmd is set, the low bits are fast update flags:
 #define U_MOREBITS_1				(1<<0)		// 1

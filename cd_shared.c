@@ -119,7 +119,7 @@ static int CDAudio_GetAudioDiskInfo (void)
 static void CDAudio_Play_byName (const char *trackname, qbool looping, qbool tryreal, float startposition)
 {
 	unsigned int track;
-	sfx_t* sfx;
+	sfx_t *sfx;
 	char filename[MAX_QPATH_128];
 
 	CL_StartVideo();

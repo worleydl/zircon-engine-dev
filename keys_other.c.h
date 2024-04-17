@@ -20,13 +20,13 @@ static void Key_Message (cmd_state_t *cmd, int key, int ascii)
 		else
 			CL_ForwardToServerf ("%s %s", chat_mode ? "say_team" : "say ", chat_buffer);
 
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		chat_bufferpos = Key_ClearEditLine(false);
 		return;
 	}
 
 	if (key == K_ESCAPE) {
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		chat_bufferpos = Key_ClearEditLine(false);
 		return;
 	}
@@ -461,31 +461,33 @@ void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bi
 
 void VID_Alt_Enter_f (void) // Baker: ALT-ENTER
 {
-	if (cls.state == ca_disconnected) 
+	if (cls.state == ca_disconnected)
 		goto ok_to_restart;
-	
+
 	// Baker: If there is no map loaded, never block ALT-ENTER.
 	if (!cl.worldmodel) {
 		goto ok_to_restart;
 	}
 
 	// Baker: This is to prevent crash that can occur during map load if ALT-ENTER is hit early in map load.
-	if (!scr_loading && cls.signon == SIGNONS_4 && cls.world_frames && cls.world_start_realtime) {
-		// Baker: Not working so far ...
-		double dirtytime = Sys_DirtyTime ();
-		double delta_time = dirtytime - cls.world_start_realtime;
-		if (delta_time > 1 /*seconds ALT-ENTER*/) {
-			goto ok_to_restart;
+	if (developer.value) {
+		if (!scr_loading && cls.signon == SIGNONS_4 && cls.world_frames && cls.world_start_realtime) {
+			// Baker: Not working so far ...
+			double dirtytime = Sys_DirtyTime ();
+			double delta_time = dirtytime - cls.world_start_realtime;
+			if (delta_time > 1 /*seconds ALT-ENTER*/) {
+				goto ok_to_restart;
+			}
+	
+			Con_PrintLinef ("ALT-ENTER: Please wait %1.1f seconds ...", 1.0 - delta_time);
+	
+			return; // Not ok
 		}
-		
-		Con_PrintLinef ("ALT-ENTER: Please wait %1.1f seconds ...", 1.0 - delta_time);
-
+	
+		Con_DPrintLinef ("Ignored ALT-ENTER because loading state or not fully connected");
+	
 		return; // Not ok
 	}
-
-	Con_DPrintLinef ("Ignored ALT-ENTER because loading state or not fully connected");
-
-	return; // Not ok
 
 ok_to_restart:
 
@@ -515,7 +517,7 @@ Should NOT be called during an interrupt!
 ===================
 */
 static char tbl_keyascii[MAX_KEYS];
-static keydest_t tbl_keydest[MAX_KEYS];
+static keydest_e tbl_keydest[MAX_KEYS];
 
 typedef struct eventqueueitem_s
 {
@@ -556,6 +558,8 @@ void Key_EventQueue_Unblock(void)
 }
 
 
+#include "keys_other_select.c.h"
+
 // Baker r0001 - ALT-ENTER support
 
 qbool ignore_enter_up = false;
@@ -566,7 +570,7 @@ void Key_Event (int key, int ascii, qbool down)
 	cmd_state_t *cmd = cmd_local;
 	const char *bind;
 	qbool q;
-	keydest_t keydest = key_dest;
+	keydest_e keydest = key_dest;
 	char vabuf[1024];
 
 	if (key < 0 || key >= MAX_KEYS)
@@ -671,19 +675,35 @@ void Key_Event (int key, int ascii, qbool down)
 			return;
 		}
 
+		extern int cl_videoplaying;
+		#pragma message ("When we get cin_open working .. make sure this is ok")
+		if (cl_videoplaying) { // K_ESCAPE .. Baker: We want it to stop the video
+			CL_VideoStop (REASON_USER_ESCAPE_2);
+			return; // And do nothing else, including do not toggle menu
+		}
+
+		// Baker: This is K_ESCAPE ONLY!
 		switch (keydest) {
 			case key_console:
-				if (down) {
+				while (down) {
+					if (g_consel.a.drag_state > drag_state_none_0 /*K_ESCAPE*/) {
+						Consel_MouseReset ("ESC while in console with selection");
+						break; // break the while
+					}
 					if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4)) {
 						Flag_Remove_From (key_consoleactive, KEY_CONSOLEACTIVE_USER_1);
 #ifdef CONFIG_MENU
-						MR_ToggleMenu(1); // conexit
+						WARP_X_ (M_ToggleMenu)
+						Consel_MouseReset ("Forced MR_ToggleMenu Pressed key while in console"); MR_ToggleMenu(1); // conexit .. K_ESCAPE in console comes here
 #endif
 					}
-					else
+					else {
+						// K_ESC can come here if in console
 						Con_ToggleConsole (); // Baker: We are in the console, a key is pressed and the console is not forced (we are connected)
 											  //  So the user has the console open and now we close it.
-				}
+					}
+					break; // break while 1
+				} // while 
 				break;
 
 			case key_message:
@@ -704,7 +724,7 @@ void Key_Event (int key, int ascii, qbool down)
 #ifdef CONFIG_MENU
 				if (!q && down) {
 					WARP_X_ (M_ToggleMenu)
-					MR_ToggleMenu(1); // conexit
+					Consel_MouseReset ("User key did it");  MR_ToggleMenu (1); // conexit
 				}
 #endif
 				break;
@@ -726,7 +746,7 @@ void Key_Event (int key, int ascii, qbool down)
 				// button commands add keynum as a parm
 				if (bind[0] == '+')
 					Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "%s %d", bind, key));
-				else 
+				else
 				{
 					Cbuf_AddTextLine (cmd, bind);
 				}
@@ -737,9 +757,18 @@ void Key_Event (int key, int ascii, qbool down)
 	}
 
 #if 1
+	if (key_consoleactive && isin1(key, K_MOUSE1)) {
+		int mouse_action_happened = Consel_Key_Event_Check_Did_Action (down);
+		if (mouse_action_happened == TREAT_MOUSEUP_2) {
+			Consel_MouseReset ("MR_ToggleMenu MOUSE1 UP"); MR_ToggleMenu(1); // MOUSE1 UP
+			return;
+		} else 
+		if (mouse_action_happened == TREAT_CONSUMED_MOUSE_ACTION_1) return; // GET OUT
+	} // End select cursor
+
 	// Baker: If we are disconnected or fully connected open menu (don't open menu during signon process -- but does that achieve that?  And does it matter?).
-	if (down && 
-		isin2(key, K_MOUSE1, K_MOUSE2) && 
+	if (down &&
+		isin2(key, K_MOUSE1, K_MOUSE2) &&
 		(keydest == key_console || (keydest == key_game && cls.demoplayback)) &&
 		(cls.state != ca_connected ||
 		(cls.state == ca_connected && cls.signon == SIGNONS_4))) { // KEY_EVENT
@@ -748,9 +777,9 @@ void Key_Event (int key, int ascii, qbool down)
 		if (Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_USER_1)) // conexit
 			Con_ToggleConsole();
 
-		WARP_X_ (M_ToggleMenu) // Goes to M_ToggleMenu without CSQC 
+		WARP_X_ (M_ToggleMenu) // Goes to M_ToggleMenu without CSQC
 #ifdef CONFIG_MENU
-		MR_ToggleMenu(1);
+		Consel_MouseReset ("MR_ToggleMenu MOUSE1"); MR_ToggleMenu(1); // MOUSE1
 #endif
 		return;
 	}
@@ -766,10 +795,10 @@ void Key_Event (int key, int ascii, qbool down)
 		// con_closeontoggleconsole enables toggleconsole keys to close the
 		// console, as long as they are not the color prefix character
 		// (special exemption for german keyboard layouts)
-		if (con_closeontoggleconsole.integer && 
-			bind && 
-			String_Does_Start_With (bind, "toggleconsole") && 
-			Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER_1) && 
+		if (con_closeontoggleconsole.integer &&
+			bind &&
+			String_Does_Start_With (bind, "toggleconsole") &&
+			Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_USER_1) &&
 			(con_closeontoggleconsole.integer >= ((ascii != STRING_COLOR_TAG) ? 2 : 3) || key_linepos == 1))
 		{
 			Con_ToggleConsole (); // Baker: This is high priority toggle console, right?
@@ -786,9 +815,9 @@ void Key_Event (int key, int ascii, qbool down)
 	// handle toggleconsole in menu too
 	if (keydest == key_menu)
 	{
-		if (down && con_closeontoggleconsole.integer && 
-			bind && 
-			String_Does_Start_With(bind, "toggleconsole") && 
+		if (down && con_closeontoggleconsole.integer &&
+			bind &&
+			String_Does_Start_With(bind, "toggleconsole") &&
 			ascii != STRING_COLOR_TAG)
 		{
 			Cbuf_AddTextLine (cmd, "toggleconsole");  // Deferred to next frame so we're not sending the text event to the console.
@@ -838,7 +867,7 @@ void Key_Event (int key, int ascii, qbool down)
 						Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "%s %d", bind, key));
 					}
 					else
-					{ 
+					{
 						Cbuf_AddTextLine (cmd, bind);
 					}
 				} else if (bind[0] == '+' && !down && keydown[key] == 0) {
@@ -859,7 +888,9 @@ void Key_ReleaseAll(void)
 	extern kbutton_t	in_left, in_right, in_forward, in_back;
 	extern kbutton_t	in_lookup, in_lookdown, in_moveleft, in_moveright;
 	extern kbutton_t	in_strafe, in_speed, in_jump, in_attack, in_use;
-	extern kbutton_t	in_up, in_down;
+#if 0 // gcc unused
+    extern kbutton_t	in_up, in_down;
+#endif // 0
 	// LadyHavoc: added 6 new buttons
 	extern kbutton_t	in_button3, in_button4, in_button5, in_button6, in_button7, in_button8;
 	//even more
@@ -920,7 +951,7 @@ void Key_ReleaseAll(void)
 
 }
 
-void Key_ReleaseAll_f(cmd_state_t* cmd)
+void Key_ReleaseAll_f(cmd_state_t *cmd)
 {
 	Key_ReleaseAll ();
 }

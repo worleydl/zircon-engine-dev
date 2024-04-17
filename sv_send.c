@@ -505,7 +505,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 		// tenebrae's EF_FULLDYNAMIC conflicts with Q2's EF_NODRAW_16
 		if (effects & 16) {
 			effects &= ~16;
-			lightpflags |= PFLAGS_FULLDYNAMIC;
+			lightpflags |= PFLAGS_FULLDYNAMIC_128;
 		}
 		// tenebrae's EF_GREEN conflicts with DP's EF_ADDITIVE
 		if (effects & 32)
@@ -515,7 +515,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 			light[1] = (int)(1.0*256);
 			light[2] = (int)(0.2*256);
 			light[3] = 200;
-			lightpflags |= PFLAGS_FULLDYNAMIC;
+			lightpflags |= PFLAGS_FULLDYNAMIC_128;
 		}
 	}
 	else if (sv.is_qex) { // AURA 10.3
@@ -528,7 +528,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 		} // if
 	} // qex
 	specialvisibilityradius = 0;
-	if (lightpflags & PFLAGS_FULLDYNAMIC)
+	if (lightpflags & PFLAGS_FULLDYNAMIC_128)
 		specialvisibilityradius = max(specialvisibilityradius, light[3]);
 	if (glowsize)
 		specialvisibilityradius = max(specialvisibilityradius, glowsize * 4);
@@ -1374,7 +1374,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	// cache weapon model name and index in client struct to save time
 	// (this search can be almost 1% of cpu time!)
 	s = PRVM_GetString(prog, PRVM_serveredictstring(ent, weaponmodel));
-	if (String_Does_Not_Match(s, client->weaponmodel)) {
+	if (String_Does_NOT_Match(s, client->weaponmodel)) {
 		c_strlcpy(client->weaponmodel, s);
 		client->weaponmodelindex = SV_ModelIndex(s, 1);
 	}
@@ -1426,7 +1426,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	stats[STAT_ROCKETS] = (int)PRVM_serveredictfloat(ent, ammo_rockets);
 	stats[STAT_CELLS] = (int)PRVM_serveredictfloat(ent, ammo_cells);
 	stats[STAT_ACTIVEWEAPON] = (int)PRVM_serveredictfloat(ent, weapon);
-	stats[STAT_VIEWZOOM] = viewzoom;
+	stats[STAT_VIEWZOOM_21] = viewzoom;
 	stats[STAT_TOTALSECRETS] = (int)PRVM_serverglobalfloat(total_secrets);
 	stats[STAT_TOTALMONSTERS] = (int)PRVM_serverglobalfloat(total_monsters);
 	// the QC bumps these itself by sending svc_'s, so we have to keep them
@@ -1579,7 +1579,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		MSG_WriteShort (msg, stats[STAT_CELLS]);
 		MSG_WriteShort (msg, stats[STAT_ACTIVEWEAPON]);
 		if (bits & SU_VIEWZOOM_S19) // PROTOCOL DP 5
-			MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM], 65535));
+			MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM_21], 65535));
 	}
 	else if (isin10 (sv.protocol, 
 				PROTOCOL_QUAKE, 
@@ -1615,9 +1615,9 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		// Baker: collision with SU_FITZ_SHELLS2_S19
 		if (Have_Flag (bits, SU_VIEWZOOM_S19)) {
 			if (isin3 (sv.protocol, PROTOCOL_DARKPLACES2, PROTOCOL_DARKPLACES3, PROTOCOL_DARKPLACES4))
-				MSG_WriteByte (msg, bound(0, stats[STAT_VIEWZOOM], 255));
+				MSG_WriteByte (msg, bound(0, stats[STAT_VIEWZOOM_21], 255));
 			else
-				MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM], 65535));
+				MSG_WriteShort (msg, bound(0, stats[STAT_VIEWZOOM_21], 65535));
 		}
 
 

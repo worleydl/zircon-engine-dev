@@ -223,15 +223,15 @@ static mempool_t *font_mempool= NULL;
 /// FreeType library handle
 static FT_Library font_ft2lib = NULL;
 
-#define POSTPROCESS_MAXRADIUS 8
+#define POSTPROCESS_MAXRADIUS_8 8
 typedef struct
 {
 	unsigned char *buf, *buf2;
 	int bufsize, bufwidth, bufheight, bufpitch;
 	float blur, outline, shadowx, shadowy, shadowz;
 	int padding_t, padding_b, padding_l, padding_r, blurpadding_lt, blurpadding_rb, outlinepadding_t, outlinepadding_b, outlinepadding_l, outlinepadding_r;
-	unsigned char circlematrix[2*POSTPROCESS_MAXRADIUS+1][2*POSTPROCESS_MAXRADIUS+1];
-	unsigned char gausstable[2*POSTPROCESS_MAXRADIUS+1];
+	unsigned char circlematrix[2*POSTPROCESS_MAXRADIUS_8+1][2*POSTPROCESS_MAXRADIUS_8+1];
+	unsigned char gausstable[2*POSTPROCESS_MAXRADIUS_8+1];
 }
 font_postprocess_t;
 static font_postprocess_t pp;
@@ -403,17 +403,15 @@ void font_start(void)
 	}
 }
 
+// Baker: This unloads specific dpfonts.
 void font_shutdown(void)
 {
-	int i;
-	for (i = 0; i < dp_fonts.maxsize; ++i)
-	{
-		if (dp_fonts.f[i].ft2)
-		{
-			Font_UnloadFont(dp_fonts.f[i].ft2);
+	for (int i = 0; i < dp_fonts.maxsize_font; i ++) {
+		if (dp_fonts.f[i].ft2) {
+			Font_UnloadFont (dp_fonts.f[i].ft2);
 			dp_fonts.f[i].ft2 = NULL;
 		}
-	}
+	} // for
 	Font_CloseLibrary();
 }
 
@@ -423,14 +421,14 @@ void font_newmap(void)
 
 void Font_Init(void)
 {
-	Cvar_RegisterVariable(&r_font_nonpoweroftwo);
-	Cvar_RegisterVariable(&r_font_disable_freetype);
-	Cvar_RegisterVariable(&r_font_use_alpha_textures);
-	Cvar_RegisterVariable(&r_font_size_snapping);
-	Cvar_RegisterVariable(&r_font_kerning);
-	Cvar_RegisterVariable(&r_font_diskcache);
-	Cvar_RegisterVariable(&r_font_compress);
-	Cvar_RegisterVariable(&developer_font);
+	Cvar_RegisterVariable (&r_font_nonpoweroftwo);
+	Cvar_RegisterVariable (&r_font_disable_freetype);
+	Cvar_RegisterVariable (&r_font_use_alpha_textures);
+	Cvar_RegisterVariable (&r_font_size_snapping);
+	Cvar_RegisterVariable (&r_font_kerning);
+	Cvar_RegisterVariable (&r_font_diskcache);
+	Cvar_RegisterVariable (&r_font_compress);
+	Cvar_RegisterVariable (&developer_font);
 
 	// let's open it at startup already
 	Font_OpenLibrary();
@@ -496,9 +494,9 @@ float Font_SnapTo(float val, float snapwidth)
 	return floor(val / snapwidth + 0.5f) * snapwidth;
 }
 
-static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font);
+static qbool Font_LoadFile (const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font, const byte *data_in); // Baker added data_in
 static qbool Font_LoadSize(ft2_font_t *font, float size, qbool check_only);
-qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
+qbool Font_LoadFont(const char *name, dp_font_t *dpfnt, const byte *data_in)
 {
 	int s, count, i;
 	ft2_font_t *ft2, *fbfont, *fb;
@@ -513,21 +511,18 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 
 	// check if a fallback font has been specified, if it has been, and the
 	// font fails to load, use the image font as main font
-	for (i = 0; i < MAX_FONT_FALLBACKS; ++i)
-	{
+	for (i = 0; i < MAX_FONT_FALLBACKS_3; ++i) {
 		if (dpfnt->fallbacks[i][0])
 			break;
 	}
 
-	if (!Font_LoadFile(name, dpfnt->req_face, &dpfnt->settings, ft2))
-	{
-		if (i >= MAX_FONT_FALLBACKS)
-		{
+	if (false == Font_LoadFile(name, dpfnt->req_face, &dpfnt->settings, ft2, DATA_NULL)) {
+		if (i >= MAX_FONT_FALLBACKS_3) {
 			dpfnt->ft2 = NULL;
 			Mem_Free(ft2);
 			return false;
 		}
-		strlcpy(ft2->name, name, sizeof(ft2->name));
+		c_strlcpy (ft2->name, name);
 		ft2->image_font = true;
 		ft2->has_kerning = false;
 	}
@@ -538,47 +533,45 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 
 	// attempt to load fallback fonts:
 	fbfont = ft2;
-	for (i = 0; i < MAX_FONT_FALLBACKS; ++i)
-	{
+	for (i = 0; i < MAX_FONT_FALLBACKS_3; i ++) {
 		if (!dpfnt->fallbacks[i][0])
 			break;
-		if (! (fb = Font_Alloc()) )
-		{
+
+		if (! (fb = Font_Alloc()) ) {
 			Con_PrintLinef (CON_ERROR "Failed to allocate font for fallback %d of font %s", i, name);
 			break;
 		}
 
-		if (!Font_LoadFile(dpfnt->fallbacks[i], dpfnt->fallback_faces[i], &dpfnt->settings, fb))
-		{
-			if (!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.tga", dpfnt->fallbacks[i])))
-			if (!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.png", dpfnt->fallbacks[i])))
-			if (!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.jpg", dpfnt->fallbacks[i])))
-			if (!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.pcx", dpfnt->fallbacks[i])))
+		if (false == Font_LoadFile(dpfnt->fallbacks[i], dpfnt->fallback_faces[i], &dpfnt->settings, fb, DATA_NULL)) {
+			if (false == FS_FileExists(va(vabuf, sizeof(vabuf), "%s.tga", dpfnt->fallbacks[i])) )
+			if (false == FS_FileExists(va(vabuf, sizeof(vabuf), "%s.png", dpfnt->fallbacks[i])))
+			if (false == FS_FileExists(va(vabuf, sizeof(vabuf), "%s.jpg", dpfnt->fallbacks[i])))
+			if (false == FS_FileExists(va(vabuf, sizeof(vabuf), "%s.pcx", dpfnt->fallbacks[i])))
 				Con_PrintLinef (CON_ERROR "Failed to load font %s for fallback %d of font %s", dpfnt->fallbacks[i], i, name);
 			Mem_Free(fb);
 			continue;
-		}
+		} // if didn't load font
 		count = 0;
-		for (s = 0; s < MAX_FONT_SIZES && dpfnt->req_sizes[s] >= 0; ++s)
-		{
-			if (Font_LoadSize(fb, Font_VirtualToRealSize(dpfnt->req_sizes[s]), true))
-				++count;
+
+		for (s = 0; s < MAX_FONT_SIZES_16 && dpfnt->req_sizes[s] >= 0; s ++) {
+			if (Font_LoadSize(fb, Font_VirtualToRealSize(dpfnt->req_sizes[s]), /*check only?*/ true))
+				count ++;
 		}
-		if (!count)
-		{
+
+		if (count == 0) {
 			Con_PrintLinef (CON_ERROR "Failed to allocate font for fallback %d of font %s", i, name);
 			Font_UnloadFont(fb);
 			Mem_Free(fb);
 			break;
 		}
+
 		// at least one size of the fallback font loaded successfully
 		// link it:
 		fbfont->next = fb;
 		fbfont = fb;
-	}
+	} // for MAX_FONT_FALLBACKS_3
 
-	if (fbfont == ft2 && ft2->image_font)
-	{
+	if (fbfont == ft2 && ft2->image_font) {
 		// no fallbacks were loaded successfully:
 		dpfnt->ft2 = NULL;
 		Mem_Free(ft2);
@@ -586,13 +579,12 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 	}
 
 	count = 0;
-	for (s = 0; s < MAX_FONT_SIZES && dpfnt->req_sizes[s] >= 0; ++s)
-	{
-		if (Font_LoadSize(ft2, Font_VirtualToRealSize(dpfnt->req_sizes[s]), false))
-			++count;
+	for (s = 0; s < MAX_FONT_SIZES_16 && dpfnt->req_sizes[s] >= 0; s++) {
+		if (Font_LoadSize(ft2, Font_VirtualToRealSize(dpfnt->req_sizes[s]), /*check only?*/ false))
+			count ++;
 	}
-	if (!count)
-	{
+
+	if (count == 0) {
 		// loading failed for every requested size
 		Font_UnloadFont(ft2);
 		Mem_Free(ft2);
@@ -600,69 +592,72 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 		return false;
 	}
 
-	//Con_Printf ("%d sizes loaded\n", count);
+	//Con_PrintLinef ("%d sizes loaded", count);
 	dpfnt->ft2 = ft2;
 	return true;
 }
 
-static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font)
+// Baker: So who knows the font index then?
+static qbool Font_LoadFile (const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font, const byte *data_in)
 {
 	size_t namelen;
 	char filename[MAX_QPATH_128];
 	int status;
 	size_t i;
-	const unsigned char *data;
+	const byte *data;
 	fs_offset_t datasize;
 
-	memset(font, 0, sizeof(*font));
+	memset (font, 0, sizeof(*font));
 
-	if (!Font_OpenLibrary())
-	{
-		if (!r_font_disable_freetype.integer)
-		{
-			Con_PrintLinef (CON_WARN "WARNING: can't open load font %s"
-				   "You need the FreeType2 DLL to load font files\n",
-				   name);
+	if (false == Font_OpenLibrary()) {
+		if (!r_font_disable_freetype.integer /*d: 1*/) {
+			Con_PrintLinef (CON_WARN	"WARNING: can't open load font %s." NEWLINE 
+										"You need the FreeType2 DLL to load font files" NEWLINE, name
+			);
 		}
 		return false;
-	}
+	} // couldn't open font library or "r_font_disable_freetype 0"
 
 	font->settings = settings;
 
+	if (data_in) {
+		data = data_in;
+
+	}
+
 	namelen = strlen(name);
-	if (namelen + 5 > sizeof(filename))
-	{
-		Con_PrintLinef (CON_WARN "WARNING: too long font name. Cannot load this.");
+	if (namelen + 5 > sizeof(filename)) {
+		Con_PrintLinef (CON_WARN "WARNING: too long font name. Cannot load " QUOTED_S ".", name);
 		return false;
 	}
 
 	// try load direct file
 	memcpy(filename, name, namelen+1);
-	data = fontfilecache_LoadFile(filename, false, &datasize);
+	data = fontfilecache_LoadFile(filename, fs_quiet_FALSE, &datasize);
 	// try load .ttf
 	if (!data)
 	{
 		memcpy(filename + namelen, ".ttf", 5);
-		data = fontfilecache_LoadFile(filename, false, &datasize);
+		data = fontfilecache_LoadFile(filename, fs_quiet_FALSE, &datasize);
 	}
 	// try load .otf
 	if (!data)
 	{
 		memcpy(filename + namelen, ".otf", 5);
-		data = fontfilecache_LoadFile(filename, false, &datasize);
+		data = fontfilecache_LoadFile(filename, fs_quiet_FALSE, &datasize);
 	}
-	// try load .pfb/afm
+	// try load .pfb/afm // Baker: AFM = Adobe Font Metric, PFB is a  Adobe Type I Font
 	if (!data)
 	{
 		ft2_attachment_t afm;
 
 		memcpy(filename + namelen, ".pfb", 5);
-		data = fontfilecache_LoadFile(filename, false, &datasize);
+		data = fontfilecache_LoadFile(filename, fs_quiet_FALSE, &datasize);
 
 		if (data)
 		{
 			memcpy(filename + namelen, ".afm", 5);
-			afm.data = fontfilecache_LoadFile(filename, false, &afm.size);
+			afm.data = fontfilecache_LoadFile(filename, fs_quiet_FALSE, &afm.size);
 
 			if (afm.data)
 				Font_Attach(font, &afm);
@@ -673,8 +668,10 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 		// FS_LoadFile being not-quiet should print an error :)
 		return false;
 	}
-	Con_DPrintf ("Loading font %s face %d...\n", filename, _face);
+	
+	Con_DPrintLinef ("Loading font %s face %d...", filename, _face);
 
+	// Baker: This must be where it uses the data
 	status = qFT_New_Memory_Face(font_ft2lib, (FT_Bytes)data, datasize, _face, (FT_Face*)&font->face);
 	if (status && _face != 0)
 	{
@@ -683,8 +680,7 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 		status = qFT_New_Memory_Face(font_ft2lib, (FT_Bytes)data, datasize, _face, (FT_Face*)&font->face);
 	}
 	font->data = data;
-	if (status)
-	{
+	if (status) {
 		Con_PrintLinef (CON_ERROR "ERROR: can't create face for %s" NEWLINE
 			   "Error %d", // TODO: error strings
 			   name, status);
@@ -693,16 +689,15 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 	}
 
 	// add the attachments
-	for (i = 0; i < font->attachmentcount; ++i)
-	{
+	for (i = 0; i < font->attachmentcount; i ++) {
 		FT_Open_Args args;
-		memset(&args, 0, sizeof(args));
+		memset (&args, 0, sizeof(args));
 		args.flags = FT_OPEN_MEMORY;
 		args.memory_base = (const FT_Byte*)font->attachments[i].data;
 		args.memory_size = font->attachments[i].size;
 		if (qFT_Attach_Stream((FT_Face)font->face, &args))
 			Con_PrintLinef (CON_ERROR "Failed to add attachment %u to %s", (unsigned)i, font->name);
-	}
+	} // for
 
 	strlcpy(font->name, name, sizeof(font->name));
 	font->image_font = false;
@@ -713,7 +708,7 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 static void Font_Postprocess_Update(ft2_font_t *fnt, int bpp, int w, int h)
 {
 	int needed, x, y;
-	float gausstable[2*POSTPROCESS_MAXRADIUS+1];
+	float gausstable[2*POSTPROCESS_MAXRADIUS_8+1];
 	qbool need_gauss  = (!pp.buf || pp.blur != fnt->settings->blur || pp.shadowz != fnt->settings->shadowz);
 	qbool need_circle = (!pp.buf || pp.outline != fnt->settings->outline || pp.shadowx != fnt->settings->shadowx || pp.shadowy != fnt->settings->shadowy);
 	pp.blur = fnt->settings->blur;
@@ -721,12 +716,12 @@ static void Font_Postprocess_Update(ft2_font_t *fnt, int bpp, int w, int h)
 	pp.shadowx = fnt->settings->shadowx;
 	pp.shadowy = fnt->settings->shadowy;
 	pp.shadowz = fnt->settings->shadowz;
-	pp.outlinepadding_l = bound(0, ceil(pp.outline - pp.shadowx), POSTPROCESS_MAXRADIUS);
-	pp.outlinepadding_r = bound(0, ceil(pp.outline + pp.shadowx), POSTPROCESS_MAXRADIUS);
-	pp.outlinepadding_t = bound(0, ceil(pp.outline - pp.shadowy), POSTPROCESS_MAXRADIUS);
-	pp.outlinepadding_b = bound(0, ceil(pp.outline + pp.shadowy), POSTPROCESS_MAXRADIUS);
-	pp.blurpadding_lt = bound(0, ceil(pp.blur - pp.shadowz), POSTPROCESS_MAXRADIUS);
-	pp.blurpadding_rb = bound(0, ceil(pp.blur + pp.shadowz), POSTPROCESS_MAXRADIUS);
+	pp.outlinepadding_l = bound(0, ceil(pp.outline - pp.shadowx), POSTPROCESS_MAXRADIUS_8);
+	pp.outlinepadding_r = bound(0, ceil(pp.outline + pp.shadowx), POSTPROCESS_MAXRADIUS_8);
+	pp.outlinepadding_t = bound(0, ceil(pp.outline - pp.shadowy), POSTPROCESS_MAXRADIUS_8);
+	pp.outlinepadding_b = bound(0, ceil(pp.outline + pp.shadowy), POSTPROCESS_MAXRADIUS_8);
+	pp.blurpadding_lt = bound(0, ceil(pp.blur - pp.shadowz), POSTPROCESS_MAXRADIUS_8);
+	pp.blurpadding_rb = bound(0, ceil(pp.blur + pp.shadowz), POSTPROCESS_MAXRADIUS_8);
 	pp.padding_l = pp.blurpadding_lt + pp.outlinepadding_l;
 	pp.padding_r = pp.blurpadding_rb + pp.outlinepadding_r;
 	pp.padding_t = pp.blurpadding_lt + pp.outlinepadding_t;
@@ -734,20 +729,20 @@ static void Font_Postprocess_Update(ft2_font_t *fnt, int bpp, int w, int h)
 	if (need_gauss)
 	{
 		float sum = 0;
-		for(x = -POSTPROCESS_MAXRADIUS; x <= POSTPROCESS_MAXRADIUS; ++x)
-			gausstable[POSTPROCESS_MAXRADIUS+x] = (pp.blur > 0 ? exp(-(pow(x + pp.shadowz, 2))/(pp.blur*pp.blur * 2)) : (floor(x + pp.shadowz + 0.5) == 0));
+		for(x = -POSTPROCESS_MAXRADIUS_8; x <= POSTPROCESS_MAXRADIUS_8; ++x)
+			gausstable[POSTPROCESS_MAXRADIUS_8+x] = (pp.blur > 0 ? exp(-(pow(x + pp.shadowz, 2))/(pp.blur*pp.blur * 2)) : (floor(x + pp.shadowz + 0.5) == 0));
 		for(x = -pp.blurpadding_rb; x <= pp.blurpadding_lt; ++x)
-			sum += gausstable[POSTPROCESS_MAXRADIUS+x];
-		for(x = -POSTPROCESS_MAXRADIUS; x <= POSTPROCESS_MAXRADIUS; ++x)
-			pp.gausstable[POSTPROCESS_MAXRADIUS+x] = floor(gausstable[POSTPROCESS_MAXRADIUS+x] / sum * 255 + 0.5);
+			sum += gausstable[POSTPROCESS_MAXRADIUS_8+x];
+		for(x = -POSTPROCESS_MAXRADIUS_8; x <= POSTPROCESS_MAXRADIUS_8; ++x)
+			pp.gausstable[POSTPROCESS_MAXRADIUS_8+x] = floor(gausstable[POSTPROCESS_MAXRADIUS_8+x] / sum * 255 + 0.5);
 	}
 	if (need_circle)
 	{
-		for(y = -POSTPROCESS_MAXRADIUS; y <= POSTPROCESS_MAXRADIUS; ++y)
-			for(x = -POSTPROCESS_MAXRADIUS; x <= POSTPROCESS_MAXRADIUS; ++x)
+		for(y = -POSTPROCESS_MAXRADIUS_8; y <= POSTPROCESS_MAXRADIUS_8; ++y)
+			for(x = -POSTPROCESS_MAXRADIUS_8; x <= POSTPROCESS_MAXRADIUS_8; ++x)
 			{
 				float d = pp.outline + 1 - sqrt(pow(x + pp.shadowx, 2) + pow(y + pp.shadowy, 2));
-				pp.circlematrix[POSTPROCESS_MAXRADIUS+y][POSTPROCESS_MAXRADIUS+x] = (d >= 1) ? 255 : (d <= 0) ? 0 : floor(d * 255 + 0.5);
+				pp.circlematrix[POSTPROCESS_MAXRADIUS_8+y][POSTPROCESS_MAXRADIUS_8+x] = (d >= 1) ? 255 : (d <= 0) ? 0 : floor(d * 255 + 0.5);
 			}
 	}
 	pp.bufwidth = w + pp.padding_l + pp.padding_r;
@@ -804,7 +799,7 @@ static void Font_Postprocess(ft2_font_t *fnt, unsigned char *imagedata, int pitc
 					for(my = y1; my <= y2; ++my)
 						for(mx = x1; mx <= x2; ++mx)
 						{
-							cur = pp.circlematrix[POSTPROCESS_MAXRADIUS+my][POSTPROCESS_MAXRADIUS+mx] * (int)imagedata[(x+mx) * bpp + pitch * (y+my) + (bpp - 1)];
+							cur = pp.circlematrix[POSTPROCESS_MAXRADIUS_8+my][POSTPROCESS_MAXRADIUS_8+mx] * (int)imagedata[(x+mx) * bpp + pitch * (y+my) + (bpp - 1)];
 							if (cur > highest)
 								highest = cur;
 						}
@@ -823,7 +818,7 @@ static void Font_Postprocess(ft2_font_t *fnt, unsigned char *imagedata, int pitc
 						int mx;
 						int blurred = 0;
 						for(mx = x1; mx <= x2; ++mx)
-							blurred += pp.gausstable[POSTPROCESS_MAXRADIUS+mx] * (int)pp.buf[(x+mx) + pp.bufpitch * y];
+							blurred += pp.gausstable[POSTPROCESS_MAXRADIUS_8+mx] * (int)pp.buf[(x+mx) + pp.bufpitch * y];
 						pp.buf2[x + pp.bufpitch * y] = bound(0, blurred, 65025) / 255;
 					}
 
@@ -836,7 +831,7 @@ static void Font_Postprocess(ft2_font_t *fnt, unsigned char *imagedata, int pitc
 						int my;
 						int blurred = 0;
 						for(my = y1; my <= y2; ++my)
-							blurred += pp.gausstable[POSTPROCESS_MAXRADIUS+my] * (int)pp.buf2[x + pp.bufpitch * (y+my)];
+							blurred += pp.gausstable[POSTPROCESS_MAXRADIUS_8+my] * (int)pp.buf2[x + pp.bufpitch * (y+my)];
 						pp.buf[x + pp.bufpitch * y] = bound(0, blurred, 65025) / 255;
 					}
 			}
@@ -902,7 +897,7 @@ static qbool Font_LoadSize(ft2_font_t *font, float size, qbool check_only)
 	if (size < 2) // bogus sizes are not allowed - and they screw up our allocations
 		return false;
 
-	for (map_index = 0; map_index < MAX_FONT_SIZES; ++map_index)
+	for (map_index = 0; map_index < MAX_FONT_SIZES_16; ++map_index)
 	{
 		if (!font->font_maps[map_index])
 			break;
@@ -912,7 +907,7 @@ static qbool Font_LoadSize(ft2_font_t *font, float size, qbool check_only)
 			return true;
 	}
 
-	if (map_index >= MAX_FONT_SIZES)
+	if (map_index >= MAX_FONT_SIZES_16)
 		return false;
 
 	if (check_only) {
@@ -1004,7 +999,7 @@ int Font_IndexForSize(ft2_font_t *font, float _fsize, float *outw, float *outh)
 			fsize_y = fsize_x;
 	}
 
-	for (m = 0; m < MAX_FONT_SIZES; ++m)
+	for (m = 0; m < MAX_FONT_SIZES_16; ++m)
 	{
 		if (!maps[m])
 			continue;
@@ -1030,7 +1025,7 @@ int Font_IndexForSize(ft2_font_t *font, float _fsize, float *outw, float *outh)
 
 ft2_font_map_t *Font_MapForIndex(ft2_font_t *font, int index)
 {
-	if (index < 0 || index >= MAX_FONT_SIZES)
+	if (index < 0 || index >= MAX_FONT_SIZES_16)
 		return NULL;
 	return font->font_maps[index];
 }
@@ -1066,7 +1061,7 @@ qbool Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, U
 	ft2_font_map_t *fmap;
 	if (!font->has_kerning || !r_font_kerning.integer)
 		return false;
-	if (map_index < 0 || map_index >= MAX_FONT_SIZES)
+	if (map_index < 0 || map_index >= MAX_FONT_SIZES_16)
 		return false;
 	fmap = font->font_maps[map_index];
 	if (!fmap)
@@ -1144,8 +1139,7 @@ void Font_UnloadFont(ft2_font_t *font)
 	if (font->next)
 		Font_UnloadFont(font->next);
 
-	if (font->attachments && font->attachmentcount)
-	{
+	if (font->attachments && font->attachmentcount) {
 		for (i = 0; i < (int)font->attachmentcount; ++i) {
 			if (font->attachments[i].data)
 				fontfilecache_Free(font->attachments[i].data);
@@ -1153,27 +1147,27 @@ void Font_UnloadFont(ft2_font_t *font)
 		Mem_Free(font->attachments);
 		font->attachmentcount = 0;
 		font->attachments = NULL;
-	}
-	for (i = 0; i < MAX_FONT_SIZES; ++i)
-	{
-		if (font->font_maps[i])
-		{
+	} // attachments
+
+	for (i = 0; i < MAX_FONT_SIZES_16; ++i) {
+		if (font->font_maps[i]) {
 			UnloadMapRec(font->font_maps[i]);
 			font->font_maps[i] = NULL;
 		}
-	}
-#ifndef DP_FREETYPE_STATIC
+	} // for font sizes
+
+#ifndef DP_FREETYPE_STATIC // Baker: Unclear whether or not this is defined
 	if (ft2_dll)
 #else
 	if (!r_font_disable_freetype.integer)
 #endif
 	{
-		if (font->face)
-		{
+		if (font->face) {
 			qFT_Done_Face((FT_Face)font->face);
 			font->face = NULL;
 		}
 	}
+
 	if (font->data) {
 	    fontfilecache_Free(font->data);
 	    font->data = NULL;
@@ -1635,9 +1629,10 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 				data[x*4+0] = data[x*4+2];
 				data[x*4+2] = b;
 			}
+			// WRITE-EON
 			Image_WriteTGABGRA(va(vabuf, sizeof(vabuf), "%s.tga", map_identifier), w, h, data);
 #ifndef USE_GLES2
-			if (r_font_compress.integer && Draw_IsPicLoaded(map->pic))
+			if (r_font_compress.integer /*d: 0*/ && Draw_IsPicLoaded(map->pic))
 				R_SaveTextureDDSFile(Draw_GetPicTexture(map->pic), va(vabuf, sizeof(vabuf), "dds/%s.dds", map_identifier), r_texture_dds_save.integer < 2, true);
 #endif
 		}
@@ -1663,7 +1658,7 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 
 qbool Font_LoadMapForIndex(ft2_font_t *font, int map_index, Uchar _ch, ft2_font_map_t **outmap)
 {
-	if (map_index < 0 || map_index >= MAX_FONT_SIZES)
+	if (map_index < 0 || map_index >= MAX_FONT_SIZES_16)
 		return false;
 	// the first map must have been loaded already
 	if (!font->font_maps[map_index])

@@ -1248,7 +1248,7 @@ const float STAT_KILLEDMONSTERS = 14;
 const float STAT_ITEMS = 15;	/* self.items | (self.items2<<23). In order to decode this stat properly, you need to use getstatbits(STAT_ITEMS,0,23) to read self.items, and getstatbits(STAT_ITEMS,23,11) to read self.items2 or getstatbits(STAT_ITEMS,28,4) to read the visible part of serverflags, whichever is applicable. */
 const float STAT_VIEWHEIGHT = 16;	/* player.view_ofs_z */
 const float STAT_VIEW2 = 20;	/* This stat contains the number of the entity in the server's .view2 field. */
-const float STAT_VIEWZOOM = 21;	/* Scales fov and sensitiity. Part of DP_VIEWZOOM. */
+const float STAT_VIEWZOOM_21 = 21;	/* Scales fov and sensitiity. Part of DP_VIEWZOOM. */
 #endif
 #if defined(CSQC) || defined(SSQC)
 const float STAT_USER = 32;	/* Custom user stats start here (lower values are reserved for engine use). */

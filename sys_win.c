@@ -361,7 +361,7 @@ WinMain
 ==================
 */
 HINSTANCE	global_hInstance;
-const char	*argv[MAX_NUM_ARGVS];
+const char	*argv[MAX_NUM_ARGVS_50];
 char		program_name[MAX_OSPATH];
 
 // Baker 1015
@@ -403,7 +403,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}
 
 	// FIXME: this tokenizer is rather redundent, call a more general one
-	while (*com_cmdline && (sys.argc < MAX_NUM_ARGVS))
+	while (*com_cmdline && (sys.argc < MAX_NUM_ARGVS_50))
 	{
 		while (*com_cmdline && ISWHITESPACE(*com_cmdline))
 			com_cmdline++;

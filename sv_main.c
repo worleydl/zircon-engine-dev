@@ -31,13 +31,15 @@ client_t *host_client;
 static void SV_SaveEntFile_f(cmd_state_t *cmd);
 static void SV_StartDownload_f(cmd_state_t *cmd);
 static void SV_Download_f(cmd_state_t *cmd);
-static void SV_VM_Setup(void);
+static void SV_SpawnServer_VM_Setup (const char *sv_progs_dat /*progs.dat*/);
 extern cvar_t net_connecttimeout;
 
 cvar_t sv_worldmessage = {CF_SERVER | CF_READONLY, "sv_worldmessage", "", "title of current level"};
 cvar_t sv_worldname = {CF_SERVER | CF_READONLY, "sv_worldname", "", "name of current worldmodel"};
 cvar_t sv_worldnamenoextension = {CF_SERVER | CF_READONLY, "sv_worldnamenoextension", "", "name of current worldmodel without extension"};
 cvar_t sv_worldbasename = {CF_SERVER | CF_READONLY, "sv_worldbasename", "", "name of current worldmodel without maps/ prefix or extension"};
+
+cvar_t sv_save_screenshots = {CF_SERVER, "sv_save_screenshots", "1", "save screenshots to savegames [Zircon]"};
 
 cvar_t sv_disablenotify = {CF_SERVER, "sv_disablenotify", "0", "suppress broadcast prints when certain cvars are changed (CF_NOTIFY flag in engine code)"};
 cvar_t coop = {CF_SERVER, "coop","0", "coop mode, 0 = no coop, 1 = coop mode, multiple players playing through the singleplayer game (coop mode also shuts off deathmatch)"};
@@ -128,7 +130,7 @@ cvar_t sv_gameplayfix_nudgeoutofsolid = {CF_SERVER, "sv_gameplayfix_nudgeoutofso
 #endif
 
 
-cvar_t sv_gameplayfix_fiendjumpfix = {CF_SERVER, "sv_gameplayfix_fiendjumpfix", "1", "DarkPlaces Beta fiend or dog stuck in air during jump fix [Zircon]"};
+cvar_t sv_gameplayfix_fiendjumpfix = {CF_SERVER, "sv_gameplayfix_fiendjumpfix", "0", "DarkPlaces Beta fiend or dog stuck in air during jump fix [Zircon]"}; // Quake 1.5 has sliding corpses if this is enabled, so sadly must default to 0.
 cvar_t sv_gameplayfix_monsterinterpolate = {CF_SERVER, "sv_gameplayfix_monsterinterpolate", "1", "Scrag interpolation.  Force interpolation via RENDER_STEP for all FL_MONSTER entities. [Zircon]"};
 
 
@@ -210,7 +212,7 @@ cvar_t scratch3 = {CF_SERVER, "scratch3", "0", "unused cvar in quake, can be use
 cvar_t scratch4 = {CF_SERVER, "scratch4", "0", "unused cvar in quake, can be used by mods"};
 cvar_t temp1 = {CF_SERVER, "temp1","0", "general cvar for mods to use, in stock id1 this selects which death animation to use on players (0 = random death, other values select specific death scenes)"};
 
-cvar_t campaign = {CF_SERVER, "campaign","0", "Rerelease [Zircon]" }; // AURA 10.0 
+cvar_t campaign = {CF_SERVER, "campaign","0", "Rerelease [Zircon]" }; // AURA 10.0
 cvar_t horde = {CF_SERVER, "horde","0", "Rerelease [Zircon]" }; // AURA
 cvar_t scr_usekfont = {CF_SERVER, "scr_usekfont","0", "Rerelease [Zircon]" }; // AURA
 
@@ -246,8 +248,12 @@ cvar_t sv_mapformat_is_quake3 = {CF_SERVER, "sv_mapformat_is_quake3", "0", "indi
 
 cvar_t sv_writepicture_quality = {CF_SERVER | CF_ARCHIVE, "sv_writepicture_quality", "10", "WritePicture quality offset (higher means better quality, but slower)"};
 
+
 server_t sv;
 server_static_t svs;
+WARP_X_ (sv.intermap_startspot)
+stringlist_t sv_intermap_siv_list;  // /.siv string list
+//char char sv_siv_map_list[MAX_INPUTLINE_16384];
 
 mempool_t *sv_mempool = NULL;
 
@@ -255,7 +261,7 @@ extern cvar_t host_timescale;
 extern float		scr_centertime_off;
 
 // MUST match effectnameindex_t in client.h
-static const char *standardeffectnames[EFFECT_TOTAL] =
+static const char *standardeffectnames[EFFECT_TOTAL_36] =
 {
 	"",
 	"TE_GUNSHOT",
@@ -473,7 +479,7 @@ static void SV_AreaStats_f(cmd_state_t *cmd)
 	World_PrintAreaStats(&sv.world, "server");
 }
 
-static void SV_ServerOptions (void)
+static void SV_Init_ServerOptions (void)
 {
 	int i;
 
@@ -531,7 +537,9 @@ static void SV_SaveEntFile_f(cmd_state_t *cmd)
 		Con_PrintLinef ("Not running a server");
 		return;
 	}
-	FS_WriteFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), sv.worldmodel->brush.entities, (fs_offset_t)strlen(sv.worldmodel->brush.entities));
+	va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension);
+	FS_WriteFile(vabuf, sv.worldmodel->brush.entities, (fs_offset_t)strlen(sv.worldmodel->brush.entities));
+	Con_PrintLinef ("Wrote " QUOTED_S, vabuf);
 }
 
 
@@ -544,7 +552,7 @@ static void SV_InsertHints (client_t *client, sizebuf_t *sb, qbool is_early_game
 {
 	char vabuf[1024];
 	const char *sv_hint_string;
-	
+
 	Con_DPrintLinef ("Send hints ... Early? = %d", is_early_gamedir_only);
 
 	// Must send gamedir change very early. Other hints must occur AFTER
@@ -568,7 +576,7 @@ static void SV_InsertHints (client_t *client, sizebuf_t *sb, qbool is_early_game
 	//}
 
 	if (is_early_gamedir_only == false) {
-		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "skill %d" NEWLINE, skill.integer);		
+		sv_hint_string = va(vabuf, sizeof(vabuf), HINT_MESSAGE_PREFIX "skill %d" NEWLINE, skill.integer);
 		Con_DPrintLinef	("Sending: " QUOTED_S, sv_hint_string); // No newline, hint_string already has one
 		MSG_WriteByte	(sb, svc_stufftext);
 		MSG_WriteString (sb, sv_hint_string);
@@ -731,7 +739,7 @@ void SV_SendServerinfo (client_t *client)
 
 	MSG_WriteByte (&client->netconnection->message, svc_serverinfo);
 	MSG_WriteLong (&client->netconnection->message, Protocol_NumberForEnum(sv.protocol));
-	
+
 	if (sv.protocol == PROTOCOL_FITZQUAKE999) { // DPD99
 		// mh - now send protocol flags so that the client knows the protocol features to expect
 		MSG_WriteLong (&client->netconnection->message, PRFL_RMQ_SHORTANGLE_USED | PRFL_RMQ_INT32COORD_USED);
@@ -804,9 +812,9 @@ void SV_ConnectClient (int clientnum, netconn_t *netconnection)
 	client = svs.clients + clientnum;
 
 // set up the client_t
-	if (sv.loadgame)
+	if (sv.loadgame) // .siv ok
 	{
-		float backupparms[NUM_SPAWN_PARMS];
+		float backupparms[NUM_SPAWN_PARMS_16];
 		memcpy(backupparms, client->spawn_parms, sizeof(backupparms));
 		memset(client, 0, sizeof(*client));
 		memcpy(client->spawn_parms, backupparms, sizeof(backupparms));
@@ -847,14 +855,14 @@ void SV_ConnectClient (int clientnum, netconn_t *netconnection)
 	client->rate = 1000000000;
 	client->connecttime = host.realtime;
 
-	if (!sv.loadgame)
+	if (sv.loadgame == false) // .siv ok
 	{
 		// call the progs to get default spawn parms for the new client
 		// set self to world to intentionally cause errors with broken SetNewParms code in some mods
 		PRVM_serverglobalfloat(time) = sv.time;
 		PRVM_serverglobaledict(self) = 0;
 		prog->ExecuteProgram(prog, PRVM_serverfunction(SetNewParms), "QC function SetNewParms is missing");
-		for (i=0 ; i<NUM_SPAWN_PARMS ; i++)
+		for (i = 0 ; i < NUM_SPAWN_PARMS_16; i ++)
 			client->spawn_parms[i] = (&PRVM_serverglobalfloat(parm1))[i];
 
 		// set up the entity for this client (including .colormap, .team, etc)
@@ -1003,7 +1011,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 	// (which the master uses for filtering empty/full servers)
 	NetConn_Heartbeat(1);
 
-	if (sv.loadgame)
+	if (sv.loadgame) // .sv ok
 	{
 		for (i = 0;i < svs.maxclients;i++)
 			if (svs.clients[i].active && !svs.clients[i].spawned)
@@ -1011,7 +1019,7 @@ void SV_DropClient(qbool leaving, const char *fmt, ... )
 		if (i == svs.maxclients)
 		{
 			Con_PrintLinef ("Loaded game, everyone rejoined - unpausing");
-			sv.paused = sv.loadgame = false; // we're basically done with loading now
+			sv.paused = sv.loadgame = false; // .siv ok we're basically done with loading now
 		}
 	}
 }
@@ -1068,7 +1076,7 @@ static void Download_CheckExtensions(cmd_state_t *cmd)
 
 	// first reset them all
 	host_client->download_deflate = false;
-	
+
 	for(i = 2; i < argc; ++i)
 	{
 		if (String_Does_Match(Cmd_Argv(cmd, i), "deflate"))
@@ -1082,11 +1090,11 @@ static void Download_CheckExtensions(cmd_state_t *cmd)
 #if 0 // Baker r0104: No one is going to use this insane method to steal Quake in 2023
 		// And the checking for pop.lmp hurts total conversions that have the file just so they can
 		// run properly in a Quake engine.  I bet open sourced X-Men Ravages of Apocalypse has one.
-	if ((whichpack && whichpack2 && String_Does_Match_Caseless(whichpack, whichpack2)) 
+	if ((whichpack && whichpack2 && String_Does_Match_Caseless(whichpack, whichpack2))
 		|| FS_IsRegisteredQuakePack(host_client->download_name))
 	{
-		SV_ClientPrintf("Download rejected: file " QUOTED_S " is part of registered Quake(r)" NEWLINE 
-						"You must purchase Quake(r) from id Software or a retailer to get this file" NEWLINE, 
+		SV_ClientPrintf("Download rejected: file " QUOTED_S " is part of registered Quake(r)" NEWLINE
+						"You must purchase Quake(r) from id Software or a retailer to get this file" NEWLINE,
 						host_client->download_name);
 		SV_ClientCommandsf(NEWLINE "stopdownload" NEWLINE);
 		return;
@@ -1126,7 +1134,7 @@ int SV_ModelIndex(const char *s, int precachemode)
 		{
 			if (precachemode)
 			{
-				if (sv.state != ss_loading && 
+				if (sv.state != ss_loading &&
 					isin13(sv.protocol, 	PROTOCOL_FITZQUAKE666,	PROTOCOL_FITZQUAKE999,
 					PROTOCOL_QUAKE,			PROTOCOL_QUAKEDP,		PROTOCOL_NEHAHRAMOVIE,
 					PROTOCOL_NEHAHRABJP,	PROTOCOL_NEHAHRABJP2,	PROTOCOL_NEHAHRABJP3,
@@ -1194,13 +1202,13 @@ SV_SoundIndex
 int SV_SoundIndex_Count(void)
 {
 	int i, limit = ((sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3) ? 256 : MAX_SOUNDS_4096);
-	
+
 	for (i = 1;i < limit;i++) {
 		if (!sv.sound_precache[i][0]) {
 			return i;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -1210,7 +1218,7 @@ int SV_SoundIndex(const char *s, int precachemode)
 #define is_small_limit isin4 (sv.protocol, PROTOCOL_QUAKE, PROTOCOL_QUAKEDP, PROTOCOL_NEHAHRAMOVIE, PROTOCOL_NEHAHRABJP)
 	int i, limit = is_small_limit ? MAX_SOUNDS_QUAKE_256 : MAX_SOUNDS_4096;
 	char filename[MAX_QPATH_128];
-	
+
 	if (!s || !*s)
 		return 0;
 	// testing
@@ -1220,12 +1228,12 @@ int SV_SoundIndex(const char *s, int precachemode)
 	for (i = 1;i < limit;i++) {
 		if (!sv.sound_precache[i][0]) {
 			if (precachemode) {
-				if (sv.state != ss_loading && 
-					isin13 (sv.protocol, PROTOCOL_FITZQUAKE666, 	PROTOCOL_FITZQUAKE999, 	
-						PROTOCOL_QUAKE, 
-						PROTOCOL_QUAKEDP, 		PROTOCOL_NEHAHRAMOVIE, 	PROTOCOL_NEHAHRABJP, 
-						PROTOCOL_NEHAHRABJP2, 	PROTOCOL_NEHAHRABJP3, 	PROTOCOL_DARKPLACES1, 
-						PROTOCOL_DARKPLACES2, 	PROTOCOL_DARKPLACES3, 	PROTOCOL_DARKPLACES4, 
+				if (sv.state != ss_loading &&
+					isin13 (sv.protocol, PROTOCOL_FITZQUAKE666, 	PROTOCOL_FITZQUAKE999,
+						PROTOCOL_QUAKE,
+						PROTOCOL_QUAKEDP, 		PROTOCOL_NEHAHRAMOVIE, 	PROTOCOL_NEHAHRABJP,
+						PROTOCOL_NEHAHRABJP2, 	PROTOCOL_NEHAHRABJP3, 	PROTOCOL_DARKPLACES1,
+						PROTOCOL_DARKPLACES2, 	PROTOCOL_DARKPLACES3, 	PROTOCOL_DARKPLACES4,
 						PROTOCOL_DARKPLACES5))
 				{
 					Con_PrintLinef ("SV_SoundIndex(" QUOTED_S "): precache_sound can only be done in spawn functions", filename);
@@ -1257,7 +1265,8 @@ SV_ParticleEffectIndex
 
 ================
 */
-int SV_ParticleEffectIndex(const char *name)
+// Baker: particleeffectnum calls
+int SV_ParticleEffectIndex (const char *name)
 {
 	int i, argc, linenumber, effectnameindex;
 	int filepass;
@@ -1268,18 +1277,17 @@ int SV_ParticleEffectIndex(const char *name)
 	//const char *textend;
 	char argv[16][1024];
 	char filename[MAX_QPATH_128];
-	if (!sv.particleeffectnamesloaded)
-	{
+	if (!sv.particleeffectnamesloaded) {
 		sv.particleeffectnamesloaded = true;
-		memset(sv.particleeffectname, 0, sizeof(sv.particleeffectname));
-		for (i = 0;i < EFFECT_TOTAL;i++)
-			strlcpy(sv.particleeffectname[i], standardeffectnames[i], sizeof(sv.particleeffectname[i]));
-		for (filepass = 0;;filepass++)
-		{
-			if (filepass == 0)
-				dpsnprintf(filename, sizeof(filename), "effectinfo.txt");
+		memset (sv.particleeffectname, 0, sizeof(sv.particleeffectname));
+		for (i = 0;i < EFFECT_TOTAL_36;i++)
+			c_strlcpy (sv.particleeffectname[i], standardeffectnames[i]);
+		
+		for (filepass = 0; ; filepass ++) {
+			if (filepass == 0) // "effectinfo.txt" <------------- SERVER
+				c_strlcpy (filename, "effectinfo.txt");
 			else if (filepass == 1)
-				dpsnprintf(filename, sizeof(filename), "%s_effectinfo.txt", sv.worldnamenoextension);
+				c_dpsnprintf1 (filename, "%s_effectinfo.txt", sv.worldnamenoextension);
 			else
 				break;
 			filedata = FS_LoadFile(filename, tempmempool, fs_quiet_true, &filesize);
@@ -1288,53 +1296,47 @@ int SV_ParticleEffectIndex(const char *name)
 			textstart = (const char *)filedata;
 			//textend = (const char *)filedata + filesize;
 			text = textstart;
-			for (linenumber = 1;;linenumber++)
-			{
+			for (linenumber = 1; ; linenumber ++) {
 				argc = 0;
-				for (;;)
-				{
-					if (!COM_ParseToken_Simple(&text, true, false, true) || String_Does_Match(com_token, "\n"))
+				for (;;) {
+					if (!COM_ParseToken_Simple(&text, true, false, true) || 
+						String_Does_Match(com_token, NEWLINE))
 						break;
-					if (argc < 16)
-					{
-						strlcpy(argv[argc], com_token, sizeof(argv[argc]));
+					
+					if (argc < 16) {
+						c_strlcpy(argv[argc], com_token);
 						argc++;
 					}
-				}
+				} // while
 				if (com_token[0] == 0)
 					break; // if the loop exited and it's not a \n, it's EOF
 				if (argc < 1)
 					continue;
-				if (String_Does_Match(argv[0], "effect"))
-				{
-					if (argc == 2)
-					{
-						for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME;effectnameindex++)
-						{
-							if (sv.particleeffectname[effectnameindex][0])
-							{
+				if (String_Does_Match(argv[0], "effect")) {
+					if (argc == 2) {
+						for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME_4096;effectnameindex++) {
+							if (sv.particleeffectname[effectnameindex][0]) {
 								if (String_Does_Match(sv.particleeffectname[effectnameindex], argv[1]))
 									break;
-							}
-							else
-							{
-								strlcpy(sv.particleeffectname[effectnameindex], argv[1], sizeof(sv.particleeffectname[effectnameindex]));
+							} else {
+								c_strlcpy (sv.particleeffectname[effectnameindex], argv[1]);
 								break;
 							}
-						}
+						} // for
 						// if we run out of names, abort
-						if (effectnameindex == MAX_PARTICLEEFFECTNAME) {
+						if (effectnameindex == MAX_PARTICLEEFFECTNAME_4096) {
 							Con_PrintLinef ("%s:%d: too many effects!", filename, linenumber);
 							break;
 						}
 					}
-				}
-			}
+				} // if
+			} // for
 			Mem_Free(filedata);
-		}
-	}
+		} // for filepass
+	} // if not loaded
+
 	// search for the name
-	for (effectnameindex = 1;effectnameindex < MAX_PARTICLEEFFECTNAME && sv.particleeffectname[effectnameindex][0];effectnameindex++)
+	for (effectnameindex = 1; effectnameindex < MAX_PARTICLEEFFECTNAME_4096 && sv.particleeffectname[effectnameindex][0]; effectnameindex ++)
 		if (String_Does_Match(sv.particleeffectname[effectnameindex], name))
 			return effectnameindex;
 	// return 0 if we couldn't find it
@@ -1367,7 +1369,7 @@ static void SV_CreateBaseline (void)
 	prvm_prog_t *prog = SVVM_prog;
 	int i, entnum, large;
 	prvm_edict_t *svent;
-	int			is_fitz = isin2 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999); 
+	int			is_fitz = isin2 (sv.protocol, PROTOCOL_FITZQUAKE666, PROTOCOL_FITZQUAKE999);
 	int			is_rmq	= isin1 (sv.protocol, PROTOCOL_FITZQUAKE999);
 	// LadyHavoc: clear *all* baselines (not just active ones)
 	for (entnum = 0; entnum < prog->max_edicts; entnum++) {
@@ -1400,7 +1402,7 @@ static void SV_CreateBaseline (void)
 			svent->priv.server->baseline.scale = FITZ_ENTSCALE_DEFAULT_16;// .colormap = entnum;
 			}
 #if 000
-			// Baker: I see no evidence this is needed, it'll be zero anyway and DarkPlaces doesn't separately set 
+			// Baker: I see no evidence this is needed, it'll be zero anyway and DarkPlaces doesn't separately set
 			if (is_fitz) {
 				svent->priv.server->baseline.alpha = FITZ_ENTALPHA_DEFAULT_0; //johnfitz -- alpha support
 			}
@@ -1414,7 +1416,7 @@ static void SV_CreateBaseline (void)
 			svent->priv.server->baseline.colormap = 0;
 			svent->priv.server->baseline.modelindex = (int)PRVM_serveredictfloat(svent, modelindex);
 
-		
+
 			if (is_fitz) {
 			svent->priv.server->baseline.alpha = PRVM_serveredictfloat(svent, alpha);// .colormap = entnum;
 			}
@@ -1422,7 +1424,7 @@ static void SV_CreateBaseline (void)
 			svent->priv.server->baseline.scale = FITZ_ENTSCALE_DEFAULT_16;// .colormap = entnum;
 			}
 
-		
+
 #if 000
 			svent->baseline.alpha = svent->alpha; //johnfitz -- alpha support
 			svent->baseline.scale = ENTSCALE_DEFAULT;
@@ -1455,7 +1457,7 @@ static void SV_CreateBaseline (void)
 
 			if (fitz_bits)
 				MSG_WriteByte (&sv.signon, svcfitz_spawnbaseline2);
-			else 
+			else
 				MSG_WriteByte (&sv.signon, svc_spawnbaseline);
 
 			MSG_WriteShort (&sv.signon, entnum);
@@ -1478,7 +1480,7 @@ static void SV_CreateBaseline (void)
 			// Write the colormap, skin, origins, angles ...
 			goto fitzquake_bypass;
 		}
-		
+
 
 		if (large)
 			MSG_WriteByte (&sv.signon, svc_spawnbaseline2);
@@ -1542,7 +1544,7 @@ static void SV_Prepare_CSQC(void)
 
 	svs.csqc_progdata = NULL;
 	svs.csqc_progdata_deflated = NULL;
-	
+
 	sv.csqc_progname[0] = 0;
 	svs.csqc_progdata = FS_LoadFile(csqc_progname.string, sv_mempool, fs_quiet_FALSE, &progsize);
 
@@ -1577,6 +1579,7 @@ Grabs the current state of each client for saving across the
 transition to another level
 ================
 */
+WARP_X_ (SV_Changelevel_f SV_Restart_f VM_changelevel SV_SpawnServer SV_SaveSpawnparms) // Q2X
 void SV_SaveSpawnparms (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
@@ -1584,8 +1587,7 @@ void SV_SaveSpawnparms (void)
 
 	svs.serverflags = (int)PRVM_serverglobalfloat(serverflags);
 
-	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
-	{
+	for (i = 0, host_client = svs.clients; i < svs.maxclients; i++, host_client++) {
 		if (!host_client->active)
 			continue;
 
@@ -1593,9 +1595,9 @@ void SV_SaveSpawnparms (void)
 		PRVM_serverglobalfloat(time) = sv.time;
 		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
 		prog->ExecuteProgram(prog, PRVM_serverfunction(SetChangeParms), "QC function SetChangeParms is missing");
-		for (j=0 ; j<NUM_SPAWN_PARMS ; j++)
+		for (j = 0 ; j < NUM_SPAWN_PARMS_16; j ++)
 			host_client->spawn_parms[j] = (&PRVM_serverglobalfloat(parm1))[j];
-	}
+	} // for
 }
 
 // Returns 1 if we're singleplayer, > 1 if we're a listen server
@@ -1615,8 +1617,23 @@ extern cvar_t prvm_sv_gamecommands; // Baker r7103 gamecommand autocomplete
 extern cvar_t prvm_cl_gamecommands; // Baker r7103 gamecommand autocomplete
 extern cvar_t prvm_sv_progfields;
 
+WARP_X_ (SV_Restart_f SV_Changelevel2_f)
+// SV_SpawnServer_Intermap_SIV_Is_Ok does not call SV_SpawnServer, it is a clone of it.
+#include "sv_main_siv_load.c.h"
+
+void SV_SpawnServer_Intermap_Free (void)
+{
+	// This is called.
+}
+
 WARP_X_ (CL_SetupWorldModel) // Baker: CL_ equivalent
-void SV_SpawnServer (const char *mapshortname, char *sloadgame)
+// Baker: What do we need to do here?
+WARP_X_ (SV_Changelevel_f SV_Restart_f VM_changelevel SV_SpawnServer SV_SaveSpawnparms) // Q2X
+
+WARP_X_CALLERS_ (SV_Loadgame_f SV_Map_f SV_Changelevel_f SV_Restart_f SV_Savegame_f)
+
+// Baker: intermap .siv read never comes here
+void SV_SpawnServer (const char *mapshortname, const char *s_loadgame, const char *s_startspot, const vec3_t startorigin, float totaltimeatstart) // Q2X
 {
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t *ent;
@@ -1629,6 +1646,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	Cvar_SetValueQuick	(&sv_freezenonclients, 0); // Baker r0090: freezeall
 
 #ifdef CONFIG_MENU
+	// Baker: What is cl equivalent?
 	if (cls.state != ca_dedicated) {
 		Cvar_SetValueQuick	(&tool_inspector, 0); // Baker r0106: tool inspector
 		Cvar_SetValueQuick	(&tool_marker, 0); // Baker r0109: tool marker
@@ -1642,15 +1660,15 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 
 	// Baker: a memset 0 occurs several lines down memset (&sv, 0, sizeof(sv)); @ line 1753
 
-	dpsnprintf (modelname, sizeof(modelname), "maps/%s.bsp", mapshortname);
+	c_dpsnprintf1 (modelname, "maps/%s.bsp", mapshortname);
 
 	if (!FS_FileExists(modelname)) {
-		dpsnprintf (modelname, sizeof(modelname), "maps/%s", mapshortname);
+		c_dpsnprintf1 (modelname, "maps/%s", mapshortname);
 		if (!FS_FileExists(modelname)) {
 			Con_PrintLinef ("SpawnServer: no map file named %s", modelname);
 			return;
 		}
-	}
+	} // if
 
 //	SV_LockThreadMutex();
 
@@ -1686,7 +1704,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	// free q3 shaders so that any newly downloaded shaders will be active
 	Mod_FreeQ3Shaders();
 
-	worldmodel = Mod_ForName(modelname, false, developer.integer > 0, NULL);
+	worldmodel = Mod_ForName (modelname, false, developer.integer > 0, NULL);
 	if (!worldmodel || !worldmodel->TraceBox) {
 		Con_PrintLinef ("Couldn't load map %s", modelname);
 
@@ -1694,7 +1712,6 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 			Sys_MakeProcessMean();
 
 //		SV_UnlockThreadMutex();
-
 		return;
 	}
 
@@ -1714,8 +1731,8 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 //
 // tell all connected clients that we are going to a new level
 //
-				WARP_X_ (CL_Reconnect_f)
-#if 0 // Baker: Doombringer moved
+	WARP_X_ (CL_Reconnect_f)
+#if 0 // Baker: Doombringer moved UP ^^^
 	if (sv.active) {
 		client_t *client;
 		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++) {
@@ -1740,13 +1757,13 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 		// Baker: At least notify what is happening ...
 		// Yes standard Quake will zero out deathmatch with coop 1 also ...
 		Con_PrintLinef (QUOTED_STR("coop") " is " QUOTED_S ", setting deathmatch 0", coop.string);
-		Cvar_SetValueQuick(&deathmatch, 0);
-		Cvar_SetValueQuick(&campaign, 0);
+		Cvar_SetValueQuick (&deathmatch, 0);
+		Cvar_SetValueQuick (&campaign, 0);
 	}
 	else if (!deathmatch.integer)
-		Cvar_SetValueQuick(&campaign, 1);
+		Cvar_SetValueQuick (&campaign, 1);
 	else
-		Cvar_SetValueQuick(&campaign, 0);
+		Cvar_SetValueQuick (&campaign, 0);
 	// LadyHavoc: it can be useful to have skills outside the range 0-3...
 	//current_skill = bound(0, (int)(skill.value + 0.5), 3);
 	//Cvar_SetValue ("skill", (float)current_skill);
@@ -1755,10 +1772,11 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 //
 // set up the new server
 //
+	SV_SpawnServer_Intermap_Free ();
 	memset (&sv, 0, sizeof(sv));
 
 	// tell SV_Frame() to reset its timers
-	sv.spawnframe = host.framecount;
+	sv.spawnframe = host.superframecount;
 	sv.zirconprotcolextensions_sv = sv_pext.integer ? CLIENT_SUPPORTED_ZIRCON_EXT : 0;
 	if (sv_players_walk_thru_players.integer == 0)
 		Flag_Remove_From (sv.zirconprotcolextensions_sv, ZIRCON_EXT_WALKTHROUGH_PLAYERS_IS_ACTIVE_128);
@@ -1774,28 +1792,71 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	// level's data which is no longer valiud
 	cls.signon = SIGNON_ZERO; // SV_SPAWNSERVER - Baker: interesting
 
-	Cvar_SetValueQuick(&halflifebsp, worldmodel->brush.ishlbsp);
-	Cvar_SetValueQuick(&sv_mapformat_is_quake2, worldmodel->brush.isq2bsp);
-	Cvar_SetValueQuick(&sv_mapformat_is_quake3, worldmodel->brush.isq3bsp);
+	// Baker: How does it know brush already?  Set above worldmodel
+	Cvar_SetValueQuick (&halflifebsp, worldmodel->brush.ishlbsp);
+	Cvar_SetValueQuick (&sv_mapformat_is_quake2, worldmodel->brush.isq2bsp);
+	Cvar_SetValueQuick (&sv_mapformat_is_quake3, worldmodel->brush.isq3bsp);
 
 	if (*sv_random_seed.string) {
 		srand(sv_random_seed.integer);
 		Con_PrintLinef (CON_WARN "NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.", sv_random_seed.integer);
 	}
 
-	SV_VM_Setup();
-
-	sv.active = true;
+	// Baker: Moved this up
 
 	// set level base name variables for later use
 	c_strlcpy (sv.name, mapshortname);
+	c_strlcpy (sv.intermap_startspot, s_startspot); // .CROSS first enter map "SV_SpawnServer"
+	VectorCopy (startorigin, sv.intermap_startorigin); // .CROSS first enter map "SV_SpawnServer"
+	sv.intermap_totaltimeatstart = totaltimeatstart;
+	sv.intermap_totaltimeatlastexit = 0; // We are here for first time
+	sv.intermap_surplustime = 0; // No surplus on new map.
+
 	c_strlcpy (sv.worldname, modelname);
 	FS_StripExtension(sv.worldname, sv.worldnamenoextension, sizeof(sv.worldnamenoextension));
-	strlcpy(sv.worldbasename, !strncmp(sv.worldnamenoextension, "maps/", 5) ? sv.worldnamenoextension + 5 : sv.worldnamenoextension, sizeof(sv.worldbasename));
+	c_strlcpy (sv.worldbasename, String_Does_Start_With_PRE(sv.worldnamenoextension, "maps/"/*, 5*/) ?
+		sv.worldnamenoextension + 5 : sv.worldnamenoextension);
 	//Cvar_SetQuick(&sv_worldmessage, sv.worldmessage); // set later after QC is spawned
 	Cvar_SetQuick(&sv_worldname, sv.worldname);
 	Cvar_SetQuick(&sv_worldnamenoextension, sv.worldnamenoextension);
 	Cvar_SetQuick(&sv_worldbasename, sv.worldbasename);
+
+	const char *s_progs = sv_progs.string; // What about save game map load?
+	char *s_entities = NULL;
+	int s_entities_was_allocated = false;
+
+	// Baker: .siv read no longer comes here.
+	//if (is_intermap_siv_read) {
+	//	// Baker: intermap loads NO entities from the map
+	//	goto intermap_no_load_entities;
+	//}
+
+	// Baker: Twice for now ... fix in future ...load replacement entity file if found
+	if (sv_entpatch.integer &&
+		(s_entities = (char *)FS_LoadFile(va(vabuf, sizeof(vabuf), "%s.ent", sv.worldnamenoextension), tempmempool, fs_quiet_true, fs_size_ptr_null))) {
+		Con_PrintLinef ("Loaded %s.ent for sv_progs check", sv.worldnamenoextension);
+		s_entities_was_allocated = true;
+	}
+	else
+		s_entities = worldmodel->brush.entities;
+
+	const char *s_sv_progs_for_map = String_Worldspawn_Value_For_Key_Sbuf (s_entities, "sv_progs");
+
+	if (s_sv_progs_for_map) {
+		Con_PrintLinef ("Map sv_progs key: " QUOTED_S " loading progs", s_sv_progs_for_map);
+		s_progs = s_sv_progs_for_map;
+	}
+
+	if (s_entities_was_allocated)
+		Mem_Free(s_entities);
+
+intermap_no_load_entities:
+	// Baker: Problem ... we need worldspawn keys from .siv file
+	// in particular the "sv_progs" "progs.day"
+
+	SV_SpawnServer_VM_Setup(s_progs);
+
+	sv.active = true;
 
 	sv.protocol = Protocol_EnumForName(sv_protocolname.string);
 	if (sv.protocol == PROTOCOL_UNKNOWN_0) {
@@ -1825,7 +1886,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 
 	sv.state = ss_loading;
 	prog->allowworldwrites = true;
-	sv.paused = false;
+	sv.paused = false; // .siv?
 
 	sv.time = 1.0;
 
@@ -1838,15 +1899,15 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 //
 // clear world interaction links
 //
-	World_SetSize(&sv.world, sv.worldname, sv.worldmodel->normalmins, sv.worldmodel->normalmaxs, prog);
-	World_Start(&sv.world);
+	World_SetSize	(&sv.world, sv.worldname, sv.worldmodel->normalmins, sv.worldmodel->normalmaxs, prog);
+	World_Start		(&sv.world);
 
-	strlcpy(sv.sound_precache[0], "", sizeof(sv.sound_precache[0]));
+	c_strlcpy (sv.sound_precache[0], "");
 
-	strlcpy(sv.model_precache[0], "", sizeof(sv.model_precache[0]));
-	strlcpy(sv.model_precache[1], sv.worldname, sizeof(sv.model_precache[1]));
-	for (i = 1;i < sv.worldmodel->brush.numsubmodels && i+1 < MAX_MODELS_8192;i++) {
-		dpsnprintf(sv.model_precache[i+1], sizeof(sv.model_precache[i+1]), "*%d", i);
+	c_strlcpy(sv.model_precache[0], "");
+	c_strlcpy(sv.model_precache[1], sv.worldname);
+	for (i = 1; i < sv.worldmodel->brush.numsubmodels && i + 1 < MAX_MODELS_8192;i++) {
+		c_dpsnprintf1 (sv.model_precache[i+1], "*%d", i);
 		sv.models[i+1] = Mod_ForName (sv.model_precache[i+1], false, false, sv.worldname);
 	}
 	if (i < sv.worldmodel->brush.numsubmodels)
@@ -1859,14 +1920,14 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 	ent = PRVM_EDICT_NUM(0);
 	memset (ent->fields.fp, 0, prog->entityfields * sizeof(prvm_vec_t));
 	ent->free = false;
-	PRVM_serveredictstring(ent, model) = PRVM_SetEngineString(prog, sv.worldname);
-	PRVM_serveredictfloat(ent, modelindex) = 1;		// world model
-	PRVM_serveredictfloat(ent, solid) = SOLID_BSP_4;
-	PRVM_serveredictfloat(ent, movetype) = MOVETYPE_PUSH;
-	VectorCopy(sv.world.mins, PRVM_serveredictvector(ent, mins));
-	VectorCopy(sv.world.maxs, PRVM_serveredictvector(ent, maxs));
-	VectorCopy(sv.world.mins, PRVM_serveredictvector(ent, absmin));
-	VectorCopy(sv.world.maxs, PRVM_serveredictvector(ent, absmax));
+	PRVM_serveredictstring	(ent, model) = PRVM_SetEngineString(prog, sv.worldname);
+	PRVM_serveredictfloat	(ent, modelindex) = 1;		// world model
+	PRVM_serveredictfloat	(ent, solid) = SOLID_BSP_4;
+	PRVM_serveredictfloat	(ent, movetype) = MOVETYPE_PUSH;
+	VectorCopy				(sv.world.mins, PRVM_serveredictvector(ent, mins));
+	VectorCopy				(sv.world.maxs, PRVM_serveredictvector(ent, maxs));
+	VectorCopy				(sv.world.mins, PRVM_serveredictvector(ent, absmin));
+	VectorCopy				(sv.world.maxs, PRVM_serveredictvector(ent, absmax));
 
 	if (coop.value)
 		PRVM_serverglobalfloat(coop) = coop.integer;
@@ -1877,6 +1938,39 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 
 // serverflags are for cross level information (sigils)
 	PRVM_serverglobalfloat(serverflags) = svs.serverflags;
+	if (sv.intermap_startspot[0]) {
+		int v_startspot_offset = PRVM_ED_FindGlobalOffset(prog, "startspot");
+		if (v_startspot_offset >= 0) {
+			PRVM_GLOBALFIELDSTRING(v_startspot_offset) = PRVM_SetEngineString(prog, sv.intermap_startspot);
+		} // if
+		int v_totaltimeatstart_offset = PRVM_ED_FindGlobalOffset(prog, "totaltimeatstart");
+		if (v_totaltimeatstart_offset >= 0) {
+			//VectorCopy(v, PRVM_GLOBALFIELDVECTOR(prog->globaldefs[var->globaldefindex[i]].ofs));
+			PRVM_GLOBALFIELDFLOAT(v_totaltimeatstart_offset) = sv.intermap_totaltimeatstart; 
+			//PRVM_GLOBALFIELDVECTOR(v_startspot_offset) = PRVM_SetEngineString(prog, sv.intermap_startorigin);
+		} // if
+		int v_totaltimeatlastexit_offset = PRVM_ED_FindGlobalOffset(prog, "totaltimeatlastexit");
+		if ( v_totaltimeatlastexit_offset >= 0) {
+			//VectorCopy(v, PRVM_GLOBALFIELDVECTOR(prog->globaldefs[var->globaldefindex[i]].ofs));
+			PRVM_GLOBALFIELDFLOAT(v_totaltimeatstart_offset) = sv.intermap_totaltimeatlastexit;
+			//PRVM_GLOBALFIELDVECTOR(v_startspot_offset) = PRVM_SetEngineString(prog, sv.intermap_startorigin);
+		} // if
+		int v_surplustime_offset = PRVM_ED_FindGlobalOffset(prog, "surplustime");
+		if ( v_surplustime_offset >= 0) {
+			//VectorCopy(v, PRVM_GLOBALFIELDVECTOR(prog->globaldefs[var->globaldefindex[i]].ofs));
+			PRVM_GLOBALFIELDFLOAT(v_surplustime_offset) = sv.intermap_surplustime;
+			//PRVM_GLOBALFIELDVECTOR(v_startspot_offset) = PRVM_SetEngineString(prog, sv.intermap_startorigin);
+		} // if
+		int v_startorigin_offset = PRVM_ED_FindGlobalOffset(prog, "startorigin");
+		if (v_startorigin_offset >= 0) {
+			//VectorCopy(v, PRVM_GLOBALFIELDVECTOR(prog->globaldefs[var->globaldefindex[i]].ofs));
+			VectorCopy(sv.intermap_startorigin, PRVM_GLOBALFIELDVECTOR(v_startorigin_offset) );
+			//PRVM_GLOBALFIELDVECTOR(v_startspot_offset) = PRVM_SetEngineString(prog, sv.intermap_startorigin);
+		} // if
+	}
+
+	// intermap_map_set
+
 
 	// we need to reset the spawned flag on all connected clients here so that
 	// their thinks don't run during startup (before PutClientInServer)
@@ -1899,7 +1993,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 
 #if 1  // Baker r9067: loadgame precaches "precache at any time models and sounds"
 	// Baker r9067: Only a host is client situation requires this fix.
-	if (sloadgame && host_isclient.integer) {
+	if (s_loadgame && host_isclient.integer) {
 		// read extended data if present
 		// the extended data is stored inside a /* */ comment block, which the
 		// parser intentionally skips, so we have to check for it manually here
@@ -1951,7 +2045,7 @@ void SV_SpawnServer (const char *mapshortname, char *sloadgame)
 			// set up client info that normally requires networking
 
 			// copy spawn parms out of the client_t
-			for (j=0 ; j< NUM_SPAWN_PARMS ; j++)
+			for (j = 0 ; j < NUM_SPAWN_PARMS_16; j ++)
 				(&PRVM_serverglobalfloat(parm1))[j] = host_client->spawn_parms[j];
 
 			// call the spawn function
@@ -1994,13 +2088,13 @@ void SV_Shutdown(void)
 	if (!sv.active)
 		goto end;
 
-	Con_DPrintf ("SV_Shutdown\n");
+	Con_DPrintLinef ("SV_Shutdown");
 
 	NetConn_Heartbeat(2);
 	NetConn_Heartbeat(2);
 
 // make sure all the clients know we're disconnecting
-	World_End(&sv.world);
+	World_End(&sv.world); // Baker: ODE (if it still works)
 	if (prog->loaded)
 	{
 		if (PRVM_serverfunction(SV_Shutdown))
@@ -2013,7 +2107,7 @@ void SV_Shutdown(void)
 	}
 	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
 		if (host_client->active)
-			SV_DropClient(false, "Server shutting down"); // server shutdown
+			SV_DropClient(q_is_leaving_false, "Server shutting down"); // server shutdown
 
 	NetConn_CloseServerPorts();
 
@@ -2193,7 +2287,7 @@ static qbool PR_HasGlobal_Float_With_Value (prvm_prog_t *prog, const char *name,
 	if (g && (g->type & ~DEF_SAVEGLOBAL) == ev_float) {
 		//float fval = PRVM_gameglobalfloat( PRVM_serveredictfloat(host_client->edict, items)
 		return true;
-		
+
 	}
 	return false;
 }
@@ -2264,9 +2358,9 @@ static void PR_PatchRereleaseBuiltins (prvm_prog_t *prog)
 	// name
 	// first statement
 	// patch statement
-	// VM_SV_tracebox,					// #90 
+	// VM_SV_tracebox,					// #90
 	// { "centerprint", -90, -73 },
-	// VM_SV_centerprint,				// #73 void(entity client, strings) centerprint (QUAKE) 
+	// VM_SV_centerprint,				// #73 void(entity client, strings) centerprint (QUAKE)
 
 	//{ "ex_centerprint", 0, -73 },
 	// Quake's centerprint is #73
@@ -2301,7 +2395,7 @@ static void PR_PatchRereleaseBuiltins (prvm_prog_t *prog)
 #endif
 }
 
-static void SV_VM_Setup(void)
+static void SV_SpawnServer_VM_Setup (const char *sv_progs_dat /*progs.dat*/)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	PRVM_Prog_Init (prog, cmd_local);
@@ -2341,13 +2435,13 @@ static void SV_VM_Setup(void)
 	prog->ExecuteProgram        = SVVM_ExecuteProgram;
 
 	// AURA PR
-	PRVM_Prog_Load(prog, sv_progs.string /*progs.dat*/, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
+	PRVM_Prog_Load(prog, sv_progs_dat /*sv_progs.string*/ /*progs.dat*/, NULL, 0, SV_REQFUNCS, sv_reqfuncs, SV_REQFIELDS, sv_reqfields, SV_REQGLOBALS, sv_reqglobals);
 
 	// AURA 10.6
 	{
-		int is_rerelease = PR_HasGlobal_Float_With_Value (prog, "EF_QUADLIGHT", 0 /*EF_QEX_QUADLIGHT*/) && 
+		int is_rerelease = PR_HasGlobal_Float_With_Value (prog, "EF_QUADLIGHT", 0 /*EF_QEX_QUADLIGHT*/) &&
 			(PR_HasGlobal_Float_With_Value (prog, "EF_PENTLIGHT", 0 /*EF_QEX_PENTALIGHT*/) || PR_HasGlobal_Float_With_Value (prog, "EF_PENTALIGHT", 0 /*EF_QEX_PENTALIGHT*/));
-		
+
 		if (is_rerelease) {
 			// AURA -- demos can still do bad things
 			// AURA -- default.cfg (?)
@@ -2496,7 +2590,8 @@ static void SV_VM_Setup(void)
 //		PRVM_ED_FindGlobalOffset_FromStruct(globalvars_t, SetChangeParms);
 	}
 	else
-		Con_DPrintLinef ("%s: %s system vars have been modified (CRC %d != engine %d), will not load in other engines", prog->name, sv_progs.string, prog->progs_crc, PROGHEADER_CRC);
+		Con_DPrintLinef ("%s: %s system vars have been modified (CRC %d != engine %d)"
+		", will not load in other engines", prog->name /*prog->name = "server"*/, sv_progs_dat /*sv_progs.string*/, prog->progs_crc, PROGHEADER_CRC);
 
 #if 1
 	int ofs = PRVM_ED_FindFieldOffset (prog, "jump_flag");
@@ -2544,7 +2639,7 @@ double SV_Frame(double time)
 	qbool reporting = false;
 
 	// reset timer after level change
-	if (host.framecount == sv.spawnframe || host.framecount == sv.spawnframe + 1)
+	if (host.superframecount == sv.spawnframe || host.superframecount == sv.spawnframe + 1)
 		sv_timer = time = host.sleeptime = 0;
 
 	if (!svs.threaded)
@@ -2659,7 +2754,7 @@ double SV_Frame(double time)
 			++sv.perf_acc_offset_samples;
 			sv.perf_acc_offset += offset;
 			sv.perf_acc_offset_squared += offset * offset;
-			
+
 			if (sv.perf_acc_offset_max < offset)
 				sv.perf_acc_offset_max = offset;
 		}
@@ -2918,12 +3013,16 @@ void SV_Init (void)
 	Cvar_RegisterVariable(&sv_worldnamenoextension);
 	Cvar_RegisterVariable(&sv_worldbasename);
 
+	Cvar_RegisterVariable(&sv_save_screenshots);
+
 	Cvar_RegisterVariable (&csqc_enable); // Baker r0101; csqc_enable
 	Cvar_RegisterVariable (&csqc_progname);
 	Cvar_RegisterVariable (&csqc_progcrc);
 	Cvar_RegisterVariable (&csqc_progsize);
 	Cvar_RegisterVariable (&csqc_usedemoprogs);
 
+	
+	
 	Cmd_AddCommand(CF_SHARED, "sv_saveentfile", SV_SaveEntFile_f, "save map entities to .ent file (to allow external editing)");
 	Cmd_AddCommand(CF_SHARED, "sv_areastats", SV_AreaStats_f, "prints statistics on entity culling during collision traces");
 	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "sv_startdownload", SV_StartDownload_f, "begins sending a file to the client (network protocol use only)");
@@ -2944,17 +3043,17 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&pr_checkextension);
 	Cvar_RegisterVariable (&samelevel);
 	Cvar_RegisterVariable (&skill);
-	
+
 	Cvar_RegisterVariable (&host_timescale);
 	Cvar_RegisterCallback (&host_timescale, Host_Timescale_c);
 
-	Cvar_RegisterVirtual (&host_timescale, "slowmo"); // Baker Quake Combat+ and presumably Quake 1.5 use this cvar, so it lives.
-	//Cvar_RegisterVirtual (&host_timescale, "timescale");
+	Cvar_RegisterVariableAlias (&host_timescale, "slowmo"); // Baker Quake Combat+ and presumably Quake 1.5 use this cvar, so it lives.
+	//Cvar_RegisterVariableAlias (&host_timescale, "timescale");
 
 	Cvar_RegisterVariable (&sv_pext);
 	Cvar_RegisterVariable (&sv_allow_zircon_move);
 	Cvar_RegisterVariable (&sv_players_walk_thru_players);
-	
+
 	Cvar_RegisterVariable (&sv_accelerate);
 	Cvar_RegisterVariable (&sv_aim);
 	Cvar_RegisterVariable (&sv_airaccel_qw);
@@ -2970,7 +3069,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_aircontrol_power);
 	Cvar_RegisterVariable (&sv_aircontrol_penalty);
 	Cvar_RegisterVariable (&sv_altnoclipmove); // Baker r0085: FitzQuake noclipping
-	
+
 	Cvar_RegisterVariable (&sv_allowdownloads);
 	Cvar_RegisterVariable (&sv_allowdownloads_archive);
 	Cvar_RegisterVariable (&sv_allowdownloads_config);
@@ -2983,7 +3082,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_clmovement_minping);
 	Cvar_RegisterVariable (&sv_clmovement_minping_disabletime);
 	Cvar_RegisterVariable (&sv_clmovement_inputtimeout);
-	
+
 	Cvar_RegisterVariable (&sv_clmovement_soundreliable);
 	Cvar_RegisterVariable (&sv_cullentities_nevercullbmodels);
 	Cvar_RegisterVariable (&sv_cullentities_pvs);
@@ -3027,7 +3126,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_gameplayfix_slidemoveprojectiles);
 	Cvar_RegisterVariable (&sv_gameplayfix_fiendjumpfix);
 	Cvar_RegisterVariable (&sv_gameplayfix_monsterinterpolate);
-	
+
 	Cvar_RegisterVariable (&sv_gameplayfix_stepdown);
 	Cvar_RegisterVariable (&sv_gameplayfix_stepmultipletimes);
 	Cvar_RegisterVariable (&sv_gameplayfix_nostepmoveonsteepslopes);
@@ -3057,7 +3156,7 @@ void SV_Init (void)
 
 	Cvar_RegisterVariable (&sv_random_seed);
 	Cvar_RegisterVariable (&host_limitlocal);
-	Cvar_RegisterVirtual(&host_limitlocal, "sv_ratelimitlocalplayer");
+	Cvar_RegisterVariableAlias(&host_limitlocal, "sv_ratelimitlocalplayer");
 	Cvar_RegisterVariable (&sv_sound_land);
 	Cvar_RegisterVariable (&sv_sound_watersplash);
 	Cvar_RegisterVariable (&sv_stepheight);
@@ -3140,6 +3239,6 @@ void SV_Init (void)
 
 	sv_mempool = Mem_AllocPool("server", 0, NULL);
 
-	SV_ServerOptions();
+	SV_Init_ServerOptions();
 	Cvar_Callback(&sv_netport);
 }

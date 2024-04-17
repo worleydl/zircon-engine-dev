@@ -172,7 +172,7 @@ qbool Sys_LoadSelf(dllhandle_t *handle);
  * \param handle
  * \param fcts
  */
-qbool Sys_LoadDependency (const char **dllnames, dllhandle_t* handle, const dllfunction_t *fcts);
+qbool Sys_LoadDependency (const char **dllnames, dllhandle_t *handle, const dllfunction_t *fcts);
 
 /*! Loads a library.
  * \param name a string of the library filename
@@ -181,7 +181,7 @@ qbool Sys_LoadDependency (const char **dllnames, dllhandle_t* handle, const dllf
  */
 qbool Sys_LoadLibrary(const char *name, dllhandle_t *handle);
 
-void Sys_FreeLibrary (dllhandle_t* handle);
+void Sys_FreeLibrary (dllhandle_t *handle);
 void *Sys_GetProcAddress (dllhandle_t handle, const char *name);
 
 int Sys_CheckParm (const char *parm);
@@ -208,7 +208,10 @@ void Sys_PrintfToTerminal (const char *fmt, ...) DP_FUNC_PRINTF(1);
 	// Baker: This prints output to the Visual Studio debug console
 	// I use it for console debugging during times that console printing
 	// not workable for feedback
-	void Sys_PrintToTerminal2(const char *text);
+	//void Sys_PrintToTerminal2(const char *text);
+	void DebugPrintf (const char *fmt, ...);
+#else
+	#define DebugPrintf(fmt, ...)
 #endif
 
 
@@ -251,8 +254,12 @@ void Sys_Sleep(int microseconds);
 /// Perform Key_Event () callbacks until the input que is empty
 void Sys_SendKeyEvents (void);
 
-char *Sys_GetClipboardData_Alloc (void);
+char *Sys_GetClipboardData_Alloc (void); // Baker: max size is 16384
 int Sys_SetClipboardData(const char *text_to_clipboard);
+
+#ifdef CONFIG_MENU
+char *Sys_GetClipboardData_Unlimited_Alloc (void);
+#endif
 
 extern qbool sys_supportsdlgetticks;
 unsigned int Sys_SDL_GetTicks (void); // wrapper to call SDL_GetTicks
@@ -264,6 +271,22 @@ void Sys_MakeProcessNice (void);
 void Sys_MakeProcessMean (void);
 
 #define MAX_OSPATH_EX_1024 1024 // Baker: Hopefully large enough
+#define MAX_QPATHX2_256 256 // Baker: Hopefully large enough
+
+typedef void *sys_handle_t; // Baker
+#ifdef _WIN32
+
+
+	// Baker: This is the hide the window form ..
+	// What is the start a window and run it form?
+	sys_handle_t System_Process_Create (const char *path_to_file_unix, const char *args_not_unix_but_your_os, /*optional*/ const char *working_directory_url_unix);
+	int System_Process_Is_Still_Running_Neg1_Error (sys_handle_t pid, /*reply*/ int *p_exit_code);
+	qbool System_Process_Terminate_Did_Terminate_Console_App (sys_handle_t pid);
+	qbool System_Process_Close_Did_Close (sys_handle_t pid);
+	qbool Sys_ShellExecute (const char *s);
+	int Sys_Clipboard_Set_Image_BGRA_Is_Ok (const unsigned *bgra, int width, int height);
+	unsigned *Sys_Clipboard_Get_Image_BGRA_Malloc (int *outwidth, int *outheight);
+#endif // _WIN32
 
 
 #endif // !SYS_H

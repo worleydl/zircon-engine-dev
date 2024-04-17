@@ -1015,7 +1015,8 @@ lhnetsocket_t *LHNET_OpenSocket_Connectionless(lhnetaddress_t *address)
 								//	}
 								//}
 
-								int res = setsockopt(lhnetsocket->inetsocket,
+								// int res =
+								setsockopt(lhnetsocket->inetsocket,
 									SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i));
 #ifdef IP_TOS // Baker: This is the default
 								{
@@ -1655,7 +1656,9 @@ int UDP6_GetHostNameIP (char *namebuf, size_t namebuf_size, char *ipbuf, size_t 
 		memset (&addy, 0, sizeof(addy));
 		addy.addresstype = LHNETADDRESSTYPE_INET6;
 		addy.port = 0;
+	#if 0 // gcc unused
 		int sz = sizeof(addy.storage);
+	#endif
 		memcpy (addy.storage, local, sizeof(addy.storage));
 		int length;
 		strlcpy (ipbuf, UDP_AddrToString((struct qsockaddr*)local->ai_addr, false), ipbuf_size);

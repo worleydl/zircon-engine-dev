@@ -70,6 +70,9 @@ static void Mod_SpriteSetupTexture(texture_t *texture, skinframe_t *skinframe, q
 	texture->basealpha = 1.0f;
 	if (fullbright)
 		texture->basematerialflags |= MATERIALFLAG_FULLBRIGHT;
+	else {
+		texture->basematerialflags |= MATERIALFLAG_BAKER_LIT_SPRITE;
+	}
 	if (additive)
 		texture->basematerialflags |= MATERIALFLAG_ADD | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
 	else if (skinframe->hasalpha)
@@ -149,6 +152,7 @@ static void Mod_Sprite_SharedSetup(const unsigned char *datapointer, int version
 	loadmodel->sprite.sprdata_frames = (mspriteframe_t *)Mem_Alloc(loadmodel->mempool, sizeof(mspriteframe_t) * realframes);
 	loadmodel->num_textures = realframes;
 	loadmodel->num_texturesperskin = 1;
+
 	loadmodel->data_textures = (texture_t *)Mem_Alloc(loadmodel->mempool, sizeof(texture_t) * loadmodel->num_textures);
 
 	datapointer = (unsigned char *)startframes;

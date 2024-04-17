@@ -603,6 +603,7 @@ JPEG_LoadImage
 Load a JPEG image into a BGRA buffer
 ====================
 */
+WARP_X_ ()
 unsigned char *JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *miplevel)
 {
 	struct jpeg_decompress_struct cinfo;
@@ -831,7 +832,7 @@ qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, un
 	}
 
 	// Open the file
-	file = FS_OpenRealFile(filename, "wb", true);
+	file = FS_OpenRealFile(filename, "wb", fs_quiet_true); // WRITE-EON jpeg pre flipped
 	if (!file)
 		return false;
 
@@ -940,7 +941,7 @@ size_t JPEG_SaveImage_to_Buffer (char *jpegbuf, size_t jpegsize, int width, int 
 	// No DLL = no JPEGs
 	if (!jpeg_dll)
 	{
-		Con_Print("You need the libjpeg library to save JPEG images\n");
+		Con_PrintLinef ("You need the libjpeg library to save JPEG images");
 		return false;
 	}
 

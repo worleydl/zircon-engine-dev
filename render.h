@@ -204,6 +204,8 @@ extern cvar_t r_drawviewmodel;
 extern cvar_t r_drawworld;
 extern cvar_t r_speeds;
 extern cvar_t r_fullbright;
+extern cvar_t gl_overbright_models;
+extern cvar_t gl_overbright_world;
 extern cvar_t r_wateralpha;
 extern cvar_t r_waterdeform; // Baker r0083
 extern cvar_t r_dynamic;
@@ -376,8 +378,8 @@ typedef struct r_refdef_scene_s {
 	qbool expandtempentities;
 
 	// renderable dynamic lights
-	rtlight_t *lights[MAX_DLIGHTS];
-	rtlight_t templights[MAX_DLIGHTS];
+	rtlight_t *lights[MAX_DLIGHTS_256];
+	rtlight_t templights[MAX_DLIGHTS_256];
 	int numlights;
 
 	// intensities for light styles right now, controls rtlights
@@ -996,7 +998,7 @@ void R_BuildLightMap(const entity_render_t *ent, msurface_t *surface, int combin
 void R_Water_AddWaterPlane(msurface_t *surface, int entno);
 int R_Shadow_GetRTLightInfo(unsigned int lightindex, float *origin, float *radius, float *color);
 dp_font_t *FindFont(const char *title, qbool allocate_new);
-void LoadFont(qbool override, const char *name, dp_font_t *fnt, float scale, float voffset);
+void LoadFontDP(qbool override, const char *name, dp_font_t *fnt, float scale, float voffset);
 
 #if 123
 	void VM_CL_AddPolygonsToMeshQueue(struct prvm_prog_s *prog);

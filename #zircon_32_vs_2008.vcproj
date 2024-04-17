@@ -199,7 +199,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="./xtra/SDK/SDL2-devel-2.0.8-mingw/SDL2-2.0.8/i686-w64-mingw32/include"
-				PreprocessorDefinitions="CORE_SDL;CONFIG_MENU;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
+				PreprocessorDefinitions="CONFIG_VIDEO_CAPTURE;CORE_SDL;CONFIG_MENU;_DEBUG;_WINDOWS;WIN32_LEAN_AND_MEAN;_FILE_OFFSET_BITS=64;__KERNEL_STRICT_NAMES;CONFIG_CD;USEODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -421,6 +421,10 @@
 			</File>
 			<File
 				RelativePath=".\gl_rmain.c"
+				>
+			</File>
+			<File
+				RelativePath=".\gl_rmain_pak.c.h"
 				>
 			</File>
 			<File
@@ -676,6 +680,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\sv_main_siv_load.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\sv_save.c"
 				>
 			</File>
@@ -700,10 +708,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sys_win.c"
-				>
-			</File>
-			<File
 				RelativePath=".\taskqueue.c"
 				>
 			</File>
@@ -720,10 +724,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\thread_win.c"
-				>
-			</File>
-			<File
 				RelativePath=".\utf8lib.c"
 				>
 			</File>
@@ -737,10 +737,6 @@
 			</File>
 			<File
 				RelativePath=".\vid_shared.c"
-				>
-			</File>
-			<File
-				RelativePath=".\vid_wgl.c"
 				>
 			</File>
 			<File
@@ -1026,10 +1022,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\menu_maps.c.h"
-				>
-			</File>
-			<File
 				RelativePath=".\menu_modlist.c.h"
 				>
 			</File>
@@ -1051,10 +1043,6 @@
 			</File>
 			<File
 				RelativePath=".\menu_quit.c.h"
-				>
-			</File>
-			<File
-				RelativePath=".\menu_saveload.c.h"
 				>
 			</File>
 			<File
@@ -1364,6 +1352,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\baker_gif_decode.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\baker_jpeg_decode.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\cl_ents5.c"
 				>
 			</File>
@@ -1408,6 +1404,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cl_screen_gif.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cl_screen_utils.c.h"
+				>
+			</File>
+			<File
 				RelativePath=".\console.c"
 				>
 			</File>
@@ -1421,6 +1425,10 @@
 			</File>
 			<File
 				RelativePath=".\jack_scripts.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\keys_other_select.c.h"
 				>
 			</File>
 			<File
@@ -1441,6 +1449,22 @@
 			</File>
 			<File
 				RelativePath=".\menu_slist.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\menu_slist_support.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\menu_zdev.c.h"
+				>
+			</File>
+			<File
+				RelativePath=".\model_shared_q3shader_loop.c.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\quak\id1\video\rum.dpsubs"
 				>
 			</File>
 			<File
@@ -1503,7 +1527,31 @@
 					>
 				</File>
 				<File
+					RelativePath=".\miniz.h"
+					>
+				</File>
+				<File
 					RelativePath=".\dpdefs\progsdefs.qc"
+					>
+				</File>
+				<File
+					RelativePath=".\zip.c.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="menu"
+				>
+				<File
+					RelativePath=".\menu_maps.c.h"
+					>
+				</File>
+				<File
+					RelativePath=".\menu_saveload.c.h"
+					>
+				</File>
+				<File
+					RelativePath=".\menu_saveload2.c.h"
 					>
 				</File>
 			</Filter>

@@ -86,7 +86,7 @@ mempool_t;
 #define Mem_Memalign(pool,alignment,size) _Mem_Alloc(pool, NULL, size, alignment, __FILE__, __LINE__)
 #define Mem_Realloc(pool,data,size) _Mem_Alloc(pool, data, size, 16, __FILE__, __LINE__)
 #define Mem_Free(mem) _Mem_Free(mem, __FILE__, __LINE__)
-#define Mem_strdup(pool, s) _Mem_strdup(pool, s, __FILE__, __LINE__)
+#define Mem_strdup(pool, s) (char *)_Mem_strdup(pool, s, __FILE__, __LINE__)
 #define Mem_CheckSentinels(data) _Mem_CheckSentinels(data, __FILE__, __LINE__)
 #if MEMPARANOIA
 #define Mem_CheckSentinelsGlobal()  _Mem_CheckSentinelsGlobal(__FILE__, __LINE__)
@@ -143,10 +143,43 @@ void Memory_Shutdown (void);
 void Memory_Init_Commands (void);
 
 extern mempool_t *zonemempool;
+
+#define Z_Malloc_SizeOf_Count(sizeofthis, count) Mem_Alloc(zonemempool, sizeof(sizeofthis) * (count))
+#define Z_Malloc_SizeOf(sizeofthis) Mem_Alloc(zonemempool, sizeof(sizeofthis))
 #define Z_Malloc(size) Mem_Alloc(zonemempool, size)
 #define Z_Realloc(data, size) Mem_Realloc(zonemempool, data, size)
-#define Z_strdup(s) Mem_strdup(zonemempool, s)
+#define Z_StrDup(s) (char *)Mem_strdup(zonemempool, s)
 #define Z_Free(data) Mem_Free(data)
+
+#define Z_FreeNull_(v) \
+	if (v) { \
+		Z_Free ((void *)v); \
+		v = NULL;\
+	} // ender
+
+#define Mem_TempAlloc(size)			Mem_Alloc(tempmempool, size)
+#define Mem_TempAlloc_Bytes(size)	(unsigned char *)Mem_Alloc(tempmempool, size)
+#define Mem_TempAlloc_Char(size)	(char *)Mem_Alloc(tempmempool, size)
+
+#define WARP_X_(...)			// For warp without including code  see also: SPECIAL_POS___
+WARP_X_ (Z_Malloc)
+#define Mem_ZMalloc_Bytes(size)		(unsigned char *)Mem_Alloc(zonemempool, size)
+#define Mem_ZMalloc_Char(size)		(char *)Mem_Alloc(zonemempool, size)
+#define Mem_ZMalloc_RGBA_4(size)	(unsigned int *)Mem_Alloc(zonemempool, size)
+#define Mem_ZMalloc_SizeOf(thing)	Mem_Alloc(zonemempool, sizeof(thing))
+
+WARP_X_ (z_memdup_z)
+#define Mem_FreeNull_(v) \
+	if (v) { \
+		Mem_Free((void *)v); \
+		v = NULL; \
+	} // ender
+
+#define FS_CloseNULL_(v) \
+	if (v) { \
+		FS_Close (v); \
+		v = NULL; \
+	}
 
 extern struct cvar_s developer_memory;
 extern struct cvar_s developer_memorydebug;

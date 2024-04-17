@@ -63,7 +63,7 @@ struct cmd_state_s;
 // if done on the client
 #define CF_CLIENTCLOSECONSOLE   0 //(1<<12)
 
-#define CF_MAXFLAGSVAL          ((1<<12) - 1)    // used to determine if flags is valid
+#define CF_MAXFLAGSVAL          ((1<<12) - 1)    // used to determine if flags is valid (Baker: 4095)
 // for internal use only!
 #define CF_REGISTERED (1<<29)  // created by Cvar_RegisterVariable()
 #define CF_DEFAULTSET (1<<30)
@@ -83,7 +83,7 @@ typedef enum cmd_source_s
 typedef struct cmd_alias_s
 {
 	struct cmd_alias_s *next;
-	char name[MAX_ALIAS_NAME];
+	char name[MAX_ALIAS_NAME_32];
 	char *value;
 	qbool initstate; // indicates this command existed at init
 	char *initialvalue; // backup copy of value at init
@@ -194,8 +194,8 @@ void Cbuf_Unlock(cmd_buf_t *cbuf);
  * the text is added to the end of the command buffer.
  */
 void Cbuf_AddText (cmd_state_t *cmd, const char *text);
-void Cbuf_AddTextLine(cmd_state_t* cmd, const char *text);
-
+void Cbuf_AddTextLine (cmd_state_t *cmd, const char *text);
+void Cbuf_AddTextLinef (cmd_state_t *cmd, const char *fmt, ...) DP_FUNC_PRINTF(2);
 
 /*! when a command wants to issue other commands immediately, the text is
  * inserted at the beginning of the buffer, before any remaining unexecuted
@@ -229,7 +229,7 @@ void Cmd_Init(void);
 void Cmd_Shutdown(void);
 
 // called by Host_Init, this marks cvars, commands and aliases with their init values
-void Cmd_SaveInitState(void);
+void Cmd_Host_Init_SaveInitState(void);
 // called by FS_GameDir_f, this restores cvars, commands and aliases to init values
 void Cmd_RestoreInitState(void);
 

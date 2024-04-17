@@ -499,7 +499,7 @@ downloadx_sv_start_download:
 		}
 	}
 
-	host_client->download_file = FS_OpenVirtualFile(host_client->download_name, true);
+	host_client->download_file = FS_OpenVirtualFile(host_client->download_name, fs_quiet_true);
 	if (!host_client->download_file) {
 		SV_ClientPrintf		("Download rejected: server could not open the file " QUOTED_S NEWLINE, host_client->download_name);
 		SV_ClientCommandsf	(NEWLINE "stopdownload" NEWLINE);

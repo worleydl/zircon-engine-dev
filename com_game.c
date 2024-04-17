@@ -21,6 +21,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "darkplaces.h"
 #include "com_game.h"
 
+#if 1 // modlist.txt
+	char		mod_list_folder_name[1024]; // modlist.txt
+	char		mod_list_game_window_title[1024]; // modlist.txt
+	char		mod_list_server_filter_name[1024]; // modlist.txt
+	char		*mod_list_game_icon_base64_zalloc;
+	int			mod_list_requires;
+
+	//WARP_X_ (REQUIRES_WHAT_QUAKE_0)
+
+	stringlist_t	baker_gamelist_names_ignore_char1; // char1 is our enum
+#endif
+
+
 // Game mods
 
 gamemode_t gamemode;
@@ -50,7 +63,7 @@ typedef struct gamemode_info_s
 } gamemode_info_t;
 
 static const gamemode_info_t gamemode_info [GAME_COUNT] =
-{// game            basegame          prog_name        cmdline            gamename          gamenetworkfilername    basegame  modgame      screenshot      userdir             // commandline option
+{// game						basegame					prog_name				cmdline						gamename					gamenetworkfiltername    basegame  modgame      screenshot      userdir             // commandline option
 #ifdef OBJECTN
 { GAME_NORMAL,          GAME_NORMAL,        "",            "-objectn",          "ObjectN",          "ObjectN",          "data",    NULL,      "ObjectN",      "ObjectN"      },
 #else
@@ -112,6 +125,7 @@ void COM_InitGameType (void)
 			index = i;
 
 	// check commandline options for keywords
+	// Baker: This is looking for the hardcoded stuff ...
 	for (i = 0;i < (int)(sizeof (gamemode_info) / sizeof (gamemode_info[0]));i++)
 		if (Sys_CheckParm (gamemode_info[i].cmdline))
 			index = i;
@@ -162,15 +176,21 @@ static void COM_SetGameType(int index)
 	gamename = gamemode_info[index].gamename;
 	gamenetworkfiltername = gamemode_info[index].gamenetworkfiltername;
 
-	gamedirname1 = gamemode_info[index].gamedirname1;
+	gamedirname1 = gamemode_info[index].gamedirname1; // modlist.txt
 	gamedirname2 = gamemode_info[index].gamedirname2;
 
 	gamescreenshotname = gamemode_info[index].gamescreenshotname;
 	gameuserdirname = gamemode_info[index].gameuserdirname;
 	if (fs_is_zircon_galaxy) {
 		gamename = "Zircon X";
-		gamedirname1 = "zircon";
+		gamedirname1 = "zircon";  // modlist.txt
 		gamenetworkfiltername = gamescreenshotname = gameuserdirname = "Zircon";
+	} else if (mod_list_folder_name[0]) {
+		gamename = mod_list_game_window_title; // "Packard Man"
+		gamedirname1 = mod_list_folder_name;  // "pac" modlist.txt
+		gamenetworkfiltername = mod_list_server_filter_name; // "Packard_Man"
+		gamescreenshotname = gameuserdirname = mod_list_server_filter_name; // "Packard_Man"
+		int j = 5;
 	}
 
 	if (gamemode == com_startupgamemode)
@@ -180,7 +200,7 @@ static void COM_SetGameType(int index)
 		if ((t = Sys_CheckParm("-customgamenetworkfiltername")) && t + 1 < sys.argc)
 			gamenetworkfiltername = sys.argv[t+1];
 		if ((t = Sys_CheckParm("-customgamedirname1")) && t + 1 < sys.argc)
-			gamedirname1 = sys.argv[t+1];
+			gamedirname1 = sys.argv[t+1];  // modlist.txt
 		if ((t = Sys_CheckParm("-customgamedirname2")) && t + 1 < sys.argc)
 			gamedirname2 = *sys.argv[t+1] ? sys.argv[t+1] : NULL;
 		if ((t = Sys_CheckParm("-customgamescreenshotname")) && t + 1 < sys.argc)
@@ -193,8 +213,7 @@ static void COM_SetGameType(int index)
 		Con_Printf ("Game is %s using base gamedirs %s %s", gamename, gamedirname1, gamedirname2);
 	else
 		Con_Printf ("Game is %s using base gamedir %s", gamename, gamedirname1);
-	for (i = 0;i < fs_numgamedirs;i++)
-	{
+	for (i = 0;i < fs_numgamedirs; i ++) {
 		if (i == 0)
 			Con_Printf (", with mod gamedirs");
 		Con_Printf (" %s", fs_gamedirs[i]);
@@ -213,5 +232,5 @@ static void COM_SetGameType(int index)
 		gamenetworkfiltername = gamenetworkfilternamebuffer;
 	}
 
-	Con_Printf ("gamename for server filtering: %s\n", gamenetworkfiltername);
+	Con_PrintLinef ("gamename for server filtering: %s", gamenetworkfiltername);
 }

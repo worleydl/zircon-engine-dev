@@ -519,16 +519,16 @@ static int SCR_DrawQWDownload(int offset)
 		double dur = Sys_DirtyTime () - cls.qw_downloadstarttime;
 		cls.qw_downloadspeedrate = chunked_receivedbytes / dur;
 
-		c_dpsnprintf4(temp, CON_CYAN "(FTE) Downloading " CON_WHITE "%s %3d%% (%d) at %d bytes/s", cls.qw_downloadname, 
-		cls.qw_downloadpercent, 
+		c_dpsnprintf4(temp, CON_CYAN "(FTE) Downloading " CON_WHITE "%s %3d%% (%d) at %d bytes/s", cls.qw_downloadname,
+		cls.qw_downloadpercent,
 		chunked_receivedbytes, cls.qw_downloadspeedrate);
 	} else
 	if (cls.protocol == PROTOCOL_QUAKEWORLD) {
-		c_dpsnprintf4(temp, "Downloading %s %3d%% (%d) at %d bytes/s", cls.qw_downloadname, 
+		c_dpsnprintf4(temp, "Downloading %s %3d%% (%d) at %d bytes/s", cls.qw_downloadname,
 			cls.qw_downloadpercent, cls.qw_downloadmemorycursize, cls.qw_downloadspeedrate);
 	}
 	else
-		c_dpsnprintf5(temp, "Downloading %s %3d%% (%d/%d) at %d bytes/s", cls.qw_downloadname, cls.qw_downloadpercent, 
+		c_dpsnprintf5(temp, "Downloading %s %3d%% (%d/%d) at %d bytes/s", cls.qw_downloadname, cls.qw_downloadpercent,
 		cls.qw_downloadmemorycursize, cls.qw_downloadmemorymaxsize, cls.qw_downloadspeedrate);
 	len = (int)strlen(temp);
 	x = (vid_conwidth.integer - DrawQ_TextWidth(temp, len, size, size, true, FONT_INFOBAR)) / 2;
@@ -727,10 +727,15 @@ int scr_skip_once;
 WARP_X_ (CL_UpdateScreen_SCR_DrawScreen)
 void SCR_DrawConsole (void)
 {
+	g_consel.draww.console_draw_frame = 0;// was_consoledrawn = false; // Until we know otherwise .. what is superframe?
+
+	if (cl_videoplaying)
+		return; // Baker: Don't draw console during video playback
+
 	static int mfirst;
 	int effective_loading = scr_loadingscreen_barheight.integer;
-	if (!effective_loading && 
-		scr_loading && 
+	if (!effective_loading &&
+		scr_loading &&
 		cl_signon_start_time &&
 		((Sys_DirtyTime() - cl_signon_start_time) > 1.5) )
 		effective_loading = 8;
@@ -751,7 +756,7 @@ void SCR_DrawConsole (void)
 	if (Have_Flag (key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4)) {
 		// full screen
 		#if 1
-			if (cls.state == ca_connected && in_range (2, cls.signon, 3) && 
+			if (cls.state == ca_connected && in_range (2, cls.signon, 3) &&
 				scr_loading) {
 					if (!cls.qw_downloadname[0])
 						goto no_draw_0;
@@ -806,673 +811,12 @@ void CL_Screen_Shutdown(void)
 }
 
 
-/*
-==================
-SCR_ScreenShot_f
-==================
-*/
-void SCR_ScreenShot_f (cmd_state_t *cmd)
-{
-	static int shotnumber;
-	static char old_prefix_name[MAX_QPATH_128];
-	char prefix_name[MAX_QPATH_128];
-	char filename[MAX_QPATH_128];
-	unsigned char *buffer1;
-	unsigned char *buffer2;
-	qbool jpeg = (scr_screenshot_jpeg.integer != 0);
-	qbool png = (scr_screenshot_png.integer != 0) && !jpeg;
-	char vabuf[1024];
+// Baker: A lot of utility-like commands I made
+// and screenshots/video code was making the real action hard to
+// find so I separated it out into the following file ...
 
-	if (Cmd_Argc(cmd) == 2) {
-		const char *ext;
-		c_strlcpy(filename, Cmd_Argv(cmd, 1));
-		ext = FS_FileExtension(filename);
-		if (String_Does_Match_Caseless(ext, "jpg"))
-		{
-			jpeg = true;
-			png = false;
-		}
-		else if (String_Does_Match_Caseless(ext, "tga"))
-		{
-			jpeg = false;
-			png = false;
-		}
-		else if (String_Does_Match_Caseless(ext, "png"))
-		{
-			jpeg = false;
-			png = true;
-		}
-		else
-		{
-			Con_Printf ("screenshot: supplied filename must end in .jpg or .tga or .png\n");
-			return;
-		}
-	}
-	else if (scr_screenshot_timestamp.integer)
-	{
-		int shotnumber100;
+#include "cl_screen_utils.c.h"
 
-		// TODO maybe make capturevideo and screenshot use similar name patterns?
-		if (scr_screenshot_name_in_mapdir.integer && cl.worldbasename[0])
-			dpsnprintf(prefix_name, sizeof(prefix_name), "%s/%s%s", cl.worldbasename, scr_screenshot_name.string, Sys_TimeString("%Y%m%d%H%M%S"));
-		else
-			dpsnprintf(prefix_name, sizeof(prefix_name), "%s%s", scr_screenshot_name.string, Sys_TimeString("%Y%m%d%H%M%S"));
-
-		// find a file name to save it to
-		for (shotnumber100 = 0;shotnumber100 < 100;shotnumber100++)
-			if (!FS_SysFileExists(va(vabuf, sizeof(vabuf), "%s/screenshots/%s-%02d.tga", fs_gamedir, prefix_name, shotnumber100))
-			 && !FS_SysFileExists(va(vabuf, sizeof(vabuf), "%s/screenshots/%s-%02d.jpg", fs_gamedir, prefix_name, shotnumber100))
-			 && !FS_SysFileExists(va(vabuf, sizeof(vabuf), "%s/screenshots/%s-%02d.png", fs_gamedir, prefix_name, shotnumber100)))
-				break;
-		if (shotnumber100 >= 100)
-		{
-			Con_Print("Couldn't create the image file - already 100 shots taken this second!\n");
-			return;
-		}
-
-		dpsnprintf(filename, sizeof(filename), "screenshots/%s-%02d.%s", prefix_name, shotnumber100, jpeg ? "jpg" : png ? "png" : "tga");
-	}
-	else
-	{
-		// TODO maybe make capturevideo and screenshot use similar name patterns?
-		if (scr_screenshot_name_in_mapdir.integer && cl.worldbasename[0])
-			dpsnprintf(prefix_name, sizeof(prefix_name), "%s/%s", cl.worldbasename, Sys_TimeString(scr_screenshot_name.string));
-		else
-			dpsnprintf(prefix_name, sizeof(prefix_name), "%s", Sys_TimeString(scr_screenshot_name.string));
-
-		// if prefix changed, gamedir or map changed, reset the shotnumber so
-		// we scan again
-		// FIXME: should probably do this whenever FS_Rescan or something like that occurs?
-		if (strcmp(old_prefix_name, prefix_name))
-		{
-			dpsnprintf(old_prefix_name, sizeof(old_prefix_name), "%s", prefix_name );
-			shotnumber = 0;
-		}
-
-		// find a file name to save it to
-		for (;shotnumber < 1000000;shotnumber++)
-			if (!FS_SysFileExists(va(vabuf, sizeof(vabuf), "%s/screenshots/%s%06d.tga", fs_gamedir, prefix_name, shotnumber))
-			 && !FS_SysFileExists(va(vabuf, sizeof(vabuf), "%s/screenshots/%s%06d.jpg", fs_gamedir, prefix_name, shotnumber))
-			 && !FS_SysFileExists(va(vabuf, sizeof(vabuf), "%s/screenshots/%s%06d.png", fs_gamedir, prefix_name, shotnumber)))
-				break;
-		if (shotnumber >= 1000000)
-		{
-			Con_Print("Couldn't create the image file - you already have 1000000 screenshots!\n");
-			return;
-		}
-
-		dpsnprintf(filename, sizeof(filename), "screenshots/%s%06d.%s", prefix_name, shotnumber, jpeg ? "jpg" : png ? "png" : "tga");
-
-		shotnumber++;
-	}
-
-	buffer1 = (unsigned char *)Mem_Alloc(tempmempool, vid.width * vid.height * 4);
-	buffer2 = (unsigned char *)Mem_Alloc(tempmempool, vid.width * vid.height * (scr_screenshot_alpha.integer ? 4 : 3));
-
-	if (SCR_ScreenShot (filename, buffer1, buffer2, 0, 0, vid.width, vid.height, false, false, false, jpeg, png, true, scr_screenshot_alpha.integer != 0))
-		Con_PrintLinef ("Wrote %s", filename);
-	else
-	{
-		Con_PrintLinef (CON_ERROR "Unable to write %s", filename);
-		if (jpeg || png)
-		{
-			if (SCR_ScreenShot (filename, buffer1, buffer2, 0, 0, vid.width, vid.height, false, false, false, false, false, true, scr_screenshot_alpha.integer != 0))
-			{
-				strlcpy(filename + strlen(filename) - 3, "tga", 4);
-				Con_PrintLinef ("Wrote %s", filename);
-			}
-		}
-	}
-
-	Mem_Free (buffer1);
-	Mem_Free (buffer2);
-}
-
-#ifdef CONFIG_VIDEO_CAPTURE
-static void SCR_CaptureVideo_BeginVideo(void)
-{
-	double r, g, b;
-	unsigned int i;
-	int width = cl_capturevideo_width.integer, height = cl_capturevideo_height.integer;
-	if (cls.capturevideo.active)
-		return;
-	memset(&cls.capturevideo, 0, sizeof(cls.capturevideo));
-	// soundrate is figured out on the first SoundFrame
-
-	if (width == 0 && height != 0)
-		width = (int) (height * (double)vid.width / ((double)vid.height * vid_pixelheight.value)); // keep aspect
-	if (width != 0 && height == 0)
-		height = (int) (width * ((double)vid.height * vid_pixelheight.value) / (double)vid.width); // keep aspect
-
-	if (width < 2 || width > vid.width) // can't scale up
-		width = vid.width;
-	if (height < 2 || height > vid.height) // can't scale up
-		height = vid.height;
-
-	// ensure it's all even; if not, scale down a little
-	if (width % 1)
-		--width;
-	if (height % 1)
-		--height;
-
-	cls.capturevideo.width = width;
-	cls.capturevideo.height = height;
-	cls.capturevideo.active = true;
-	cls.capturevideo.framerate = bound(1, cl_capturevideo_fps.value, 1001) * bound(1, cl_capturevideo_framestep.integer, 64);
-	cls.capturevideo.framestep = cl_capturevideo_framestep.integer;
-	cls.capturevideo.soundrate = S_GetSoundRate();
-	cls.capturevideo.soundchannels = S_GetSoundChannels();
-	cls.capturevideo.startrealtime = host.realtime;
-	cls.capturevideo.frame = cls.capturevideo.lastfpsframe = 0;
-	cls.capturevideo.starttime = cls.capturevideo.lastfpstime = host.realtime;
-	cls.capturevideo.soundsampleframe = 0;
-	cls.capturevideo.is_realtime = cl_capturevideo_realtime.integer != 0;
-	cls.capturevideo.screenbuffer = (unsigned char *)Mem_Alloc(tempmempool, vid.width * vid.height * 4);
-	cls.capturevideo.outbuffer = (unsigned char *)Mem_Alloc(tempmempool, width * height * (4+4) + 18);
-	dpsnprintf(cls.capturevideo.basename, sizeof(cls.capturevideo.basename), "video/%s%03i", Sys_TimeString(cl_capturevideo_nameformat.string), cl_capturevideo_number.integer);
-	Cvar_SetValueQuick(&cl_capturevideo_number, cl_capturevideo_number.integer + 1);
-
-	/*
-	for (i = 0;i < 256;i++)
-	{
-		unsigned char j = (unsigned char)bound(0, 255*pow(i/255.0, gamma), 255);
-		cls.capturevideo.rgbgammatable[0][i] = j;
-		cls.capturevideo.rgbgammatable[1][i] = j;
-		cls.capturevideo.rgbgammatable[2][i] = j;
-	}
-	*/
-/*
-R = Y + 1.4075 * (Cr - 128);
-G = Y + -0.3455 * (Cb - 128) + -0.7169 * (Cr - 128);
-B = Y + 1.7790 * (Cb - 128);
-Y = R *  .299 + G *  .587 + B *  .114;
-Cb = R * -.169 + G * -.332 + B *  .500 + 128.;
-Cr = R *  .500 + G * -.419 + B * -.0813 + 128.;
-*/
-
-	// identity gamma table
-	BuildGammaTable16(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, cls.capturevideo.vidramp, 256);
-	BuildGammaTable16(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, cls.capturevideo.vidramp + 256, 256);
-	BuildGammaTable16(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, cls.capturevideo.vidramp + 256*2, 256);
-	if (scr_screenshot_gammaboost.value != 1)
-	{
-		double igamma = 1 / scr_screenshot_gammaboost.value;
-		for (i = 0;i < 256 * 3;i++)
-			cls.capturevideo.vidramp[i] = (unsigned short) (0.5 + pow(cls.capturevideo.vidramp[i] * (1.0 / 65535.0), igamma) * 65535.0);
-	}
-
-	for (i = 0;i < 256;i++)
-	{
-		r = 255*cls.capturevideo.vidramp[i]/65535.0;
-		g = 255*cls.capturevideo.vidramp[i+256]/65535.0;
-		b = 255*cls.capturevideo.vidramp[i+512]/65535.0;
-		// NOTE: we have to round DOWN here, or integer overflows happen. Sorry for slightly wrong looking colors sometimes...
-		// Y weights from RGB
-		cls.capturevideo.rgbtoyuvscaletable[0][0][i] = (short)(r *  0.299);
-		cls.capturevideo.rgbtoyuvscaletable[0][1][i] = (short)(g *  0.587);
-		cls.capturevideo.rgbtoyuvscaletable[0][2][i] = (short)(b *  0.114);
-		// Cb weights from RGB
-		cls.capturevideo.rgbtoyuvscaletable[1][0][i] = (short)(r * -0.169);
-		cls.capturevideo.rgbtoyuvscaletable[1][1][i] = (short)(g * -0.332);
-		cls.capturevideo.rgbtoyuvscaletable[1][2][i] = (short)(b *  0.500);
-		// Cr weights from RGB
-		cls.capturevideo.rgbtoyuvscaletable[2][0][i] = (short)(r *  0.500);
-		cls.capturevideo.rgbtoyuvscaletable[2][1][i] = (short)(g * -0.419);
-		cls.capturevideo.rgbtoyuvscaletable[2][2][i] = (short)(b * -0.0813);
-		// range reduction of YCbCr to valid signal range
-		cls.capturevideo.yuvnormalizetable[0][i] = 16 + i * (236-16) / 256;
-		cls.capturevideo.yuvnormalizetable[1][i] = 16 + i * (240-16) / 256;
-		cls.capturevideo.yuvnormalizetable[2][i] = 16 + i * (240-16) / 256;
-	}
-
-	if (cl_capturevideo_ogg.integer)
-	{
-		if (SCR_CaptureVideo_Ogg_Available())
-		{
-			SCR_CaptureVideo_Ogg_BeginVideo();
-			return;
-		}
-		else
-			Con_Print("cl_capturevideo_ogg: libraries not available. Capturing in AVI instead.\n");
-	}
-
-	SCR_CaptureVideo_Avi_BeginVideo();
-}
-
-void SCR_CaptureVideo_EndVideo(void)
-{
-	if (!cls.capturevideo.active)
-		return;
-	cls.capturevideo.active = false;
-
-	Con_Printf ("Finishing capture of %s.%s (%d frames, %d audio frames)\n", cls.capturevideo.basename, cls.capturevideo.formatextension, cls.capturevideo.frame, cls.capturevideo.soundsampleframe);
-
-	if (cls.capturevideo.videofile)
-	{
-		cls.capturevideo.endvideo();
-	}
-
-	if (cls.capturevideo.screenbuffer)
-	{
-		Mem_Free (cls.capturevideo.screenbuffer);
-		cls.capturevideo.screenbuffer = NULL;
-	}
-
-	if (cls.capturevideo.outbuffer)
-	{
-		Mem_Free (cls.capturevideo.outbuffer);
-		cls.capturevideo.outbuffer = NULL;
-	}
-
-	memset(&cls.capturevideo, 0, sizeof(cls.capturevideo));
-}
-
-static void SCR_ScaleDownBGRA(unsigned char *in, int inw, int inh, unsigned char *out, int outw, int outh)
-{
-	// TODO optimize this function
-
-	int x, y;
-	float area;
-
-	// memcpy is faster than me
-	if (inw == outw && inh == outh)
-	{
-		memcpy(out, in, 4 * inw * inh);
-		return;
-	}
-
-	// otherwise: a box filter
-	area = (float)outw * (float)outh / (float)inw / (float)inh;
-	for(y = 0; y < outh; ++y)
-	{
-		float iny0 =  y    / (float)outh * inh; int iny0_i = (int) floor(iny0);
-		float iny1 = (y+1) / (float)outh * inh; int iny1_i = (int) ceil(iny1);
-		for(x = 0; x < outw; ++x)
-		{
-			float inx0 =  x    / (float)outw * inw; int inx0_i = (int) floor(inx0);
-			float inx1 = (x+1) / (float)outw * inw; int inx1_i = (int) ceil(inx1);
-			float r = 0, g = 0, b = 0, alpha = 0;
-			int xx, yy;
-
-			for(yy = iny0_i; yy < iny1_i; ++yy)
-			{
-				float ya = min(yy+1, iny1) - max(iny0, yy);
-				for(xx = inx0_i; xx < inx1_i; ++xx)
-				{
-					float a = ya * (min(xx+1, inx1) - max(inx0, xx));
-					r += a * in[4*(xx + inw * yy)+0];
-					g += a * in[4*(xx + inw * yy)+1];
-					b += a * in[4*(xx + inw * yy)+2];
-					alpha += a * in[4*(xx + inw * yy)+3];
-				}
-			}
-
-			out[4*(x + outw * y)+0] = (unsigned char) (r * area);
-			out[4*(x + outw * y)+1] = (unsigned char) (g * area);
-			out[4*(x + outw * y)+2] = (unsigned char) (b * area);
-			out[4*(x + outw * y)+3] = (unsigned char) (alpha * area);
-		}
-	}
-}
-
-static void SCR_CaptureVideo_VideoFrame(int newframestepframenum)
-{
-	int x = 0, y = 0;
-	int width = cls.capturevideo.width, height = cls.capturevideo.height;
-
-	if (newframestepframenum == cls.capturevideo.framestepframe)
-		return;
-
-	CHECKGLERROR
-	// speed is critical here, so do saving as directly as possible
-
-	GL_ReadPixelsBGRA(x, y, vid.width, vid.height, cls.capturevideo.screenbuffer);
-
-	SCR_ScaleDownBGRA (cls.capturevideo.screenbuffer, vid.width, vid.height, cls.capturevideo.outbuffer, width, height);
-
-	cls.capturevideo.videoframes(newframestepframenum - cls.capturevideo.framestepframe);
-	cls.capturevideo.framestepframe = newframestepframenum;
-
-	if (cl_capturevideo_printfps.integer)
-	{
-		char buf[80];
-		double t = host.realtime;
-		if (t > cls.capturevideo.lastfpstime + 1)
-		{
-			double fps1 = (cls.capturevideo.frame - cls.capturevideo.lastfpsframe) / (t - cls.capturevideo.lastfpstime + 0.0000001);
-			double fps  = (cls.capturevideo.frame                                ) / (t - cls.capturevideo.starttime   + 0.0000001);
-			dpsnprintf(buf, sizeof(buf), "capturevideo: (%.1fs) last second %.3ffps, total %.3ffps\n", cls.capturevideo.frame / cls.capturevideo.framerate, fps1, fps);
-			Sys_PrintToTerminal(buf);
-			cls.capturevideo.lastfpstime = t;
-			cls.capturevideo.lastfpsframe = cls.capturevideo.frame;
-		}
-	}
-}
-
-void SCR_CaptureVideo_SoundFrame(const portable_sampleframe_t *paintbuffer, size_t length)
-{
-	cls.capturevideo.soundsampleframe += (int)length;
-	cls.capturevideo.soundframe(paintbuffer, length);
-}
-
-static void SCR_CaptureVideo(void)
-{
-	int newframenum;
-	if (cl_capturevideo.integer)
-	{
-		if (!cls.capturevideo.active)
-			SCR_CaptureVideo_BeginVideo();
-		if (cls.capturevideo.framerate != cl_capturevideo_fps.value * cl_capturevideo_framestep.integer)
-		{
-			Con_Printf ("You can not change the video framerate while recording a video.\n");
-			Cvar_SetValueQuick(&cl_capturevideo_fps, cls.capturevideo.framerate / (double) cl_capturevideo_framestep.integer);
-		}
-		// for AVI saving we have to make sure that sound is saved before video
-		if (cls.capturevideo.soundrate && !cls.capturevideo.soundsampleframe)
-			return;
-		if (cls.capturevideo.is_realtime)
-		{
-			// preserve sound sync by duplicating frames when running slow
-			newframenum = (int)((host.realtime - cls.capturevideo.startrealtime) * cls.capturevideo.framerate);
-		}
-		else
-			newframenum = cls.capturevideo.frame + 1;
-		// if falling behind more than one second, stop
-		if (newframenum - cls.capturevideo.frame > 60 * (int)ceil(cls.capturevideo.framerate))
-		{
-			Cvar_SetValueQuick(&cl_capturevideo, 0);
-			Con_Printf ("video saving failed on frame %d, your machine is too slow for this capture speed.\n", cls.capturevideo.frame);
-			SCR_CaptureVideo_EndVideo();
-			return;
-		}
-		// write frames
-		SCR_CaptureVideo_VideoFrame(newframenum / cls.capturevideo.framestep);
-		cls.capturevideo.frame = newframenum;
-		if (cls.capturevideo.error)
-		{
-			Cvar_SetValueQuick(&cl_capturevideo, 0);
-			Con_Printf ("video saving failed on frame %d, out of disk space? stopping video capture.\n", cls.capturevideo.frame);
-			SCR_CaptureVideo_EndVideo();
-		}
-	}
-	else if (cls.capturevideo.active)
-		SCR_CaptureVideo_EndVideo();
-}
-#endif
-
-/*
-===============
-R_Envmap_f
-
-Grab six views for environment mapping tests
-===============
-*/
-struct envmapinfo_s
-{
-	float angles[3];
-	const char *name;
-	qbool flipx, flipy, flipdiagonaly;
-}
-envmapinfo[12] =
-{
-	{{  0,   0, 0}, "rt", false, false, false},
-	{{  0, 270, 0}, "ft", false, false, false},
-	{{  0, 180, 0}, "lf", false, false, false},
-	{{  0,  90, 0}, "bk", false, false, false},
-	{{-90, 180, 0}, "up",  true,  true, false},
-	{{ 90, 180, 0}, "dn",  true,  true, false},
-
-	{{  0,   0, 0}, "px",  true,  true,  true},
-	{{  0,  90, 0}, "py", false,  true, false},
-	{{  0, 180, 0}, "nx", false, false,  true},
-	{{  0, 270, 0}, "ny",  true, false, false},
-	{{-90, 180, 0}, "pz", false, false,  true},
-	{{ 90, 180, 0}, "nz", false, false,  true}
-};
-
-static void R_Envmap_f (cmd_state_t *cmd)
-{
-	int j, size;
-	char filename[MAX_QPATH_128], basename[MAX_QPATH_128];
-	unsigned char *buffer1;
-	unsigned char *buffer2;
-	r_rendertarget_t *rt;
-
-	if (Cmd_Argc(cmd) != 3)
-	{
-		Con_Print("envmap <basename> <size>: save out 6 cubic environment map images, usable with loadsky, note that size must one of 128, 256, 512, or 1024 and can't be bigger than your current resolution\n");
-		return;
-	}
-
-	if (cls.state != ca_connected) {
-		Con_PrintLinef ("envmap: No map loaded");
-		return;
-	}
-
-	c_strlcpy (basename, Cmd_Argv(cmd, 1));
-	size = atoi(Cmd_Argv(cmd, 2));
-
-	if (size != 128 && size != 256 && size != 512 && size != 1024)
-	{
-		Con_Print("envmap: size must be one of 128, 256, 512, or 1024\n");
-		return;
-	}
-	if (size > vid.width || size > vid.height)
-	{
-		Con_Print("envmap: your resolution is not big enough to render that size\n");
-		return;
-	}
-
-	r_refdef.envmap = true;
-
-	R_UpdateVariables();
-
-	r_refdef.view.x = 0;
-	r_refdef.view.y = 0;
-	r_refdef.view.z = 0;
-	r_refdef.view.width = size;
-	r_refdef.view.height = size;
-	r_refdef.view.depth = 1;
-	r_refdef.view.useperspective = true;
-	r_refdef.view.isoverlay = false;
-	r_refdef.view.ismain = true;
-
-	r_refdef.view.frustum_x = 1; // tan(45 * M_PI / 180.0);
-	r_refdef.view.frustum_y = 1; // tan(45 * M_PI / 180.0);
-	r_refdef.view.ortho_x = 90; // abused as angle by VM_CL_R_SetView
-	r_refdef.view.ortho_y = 90; // abused as angle by VM_CL_R_SetView
-
-	buffer1 = (unsigned char *)Mem_Alloc(tempmempool, size * size * 4);
-	buffer2 = (unsigned char *)Mem_Alloc(tempmempool, size * size * 3);
-
-	// TODO: use TEXTYPE_COLORBUFFER16F and output to .exr files as well?
-	rt = R_RenderTarget_Get(size, size, TEXTYPE_DEPTHBUFFER24STENCIL8, true, TEXTYPE_COLORBUFFER, TEXTYPE_UNUSED, TEXTYPE_UNUSED, TEXTYPE_UNUSED);
-	CL_UpdateEntityShading();
-	for (j = 0;j < 12;j++)
-	{
-		dpsnprintf(filename, sizeof(filename), "env/%s%s.tga", basename, envmapinfo[j].name);
-		Matrix4x4_CreateFromQuakeEntity(&r_refdef.view.matrix, r_refdef.view.origin[0], r_refdef.view.origin[1], r_refdef.view.origin[2], envmapinfo[j].angles[0], envmapinfo[j].angles[1], envmapinfo[j].angles[2], 1);
-		r_refdef.view.quality = 1;
-		r_refdef.view.clear = true;
-		R_Mesh_Start();
-		R_RenderView(rt->fbo, rt->depthtexture, rt->colortexture[0], 0, 0, size, size);
-		R_Mesh_Finish();
-		SCR_ScreenShot(filename, buffer1, buffer2, 0, vid.height - (r_refdef.view.y + r_refdef.view.height), size, size, envmapinfo[j].flipx, envmapinfo[j].flipy, envmapinfo[j].flipdiagonaly, false, false, false, false);
-	}
-
-	Mem_Free (buffer1);
-	Mem_Free (buffer2);
-
-	r_refdef.envmap = false;
-}
-
-//=============================================================================
-
-void SHOWLMP_decodehide(void)
-{
-	int i;
-	char *lmplabel;
-	lmplabel = MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring));
-	for (i = 0;i < cl.num_showlmps;i++)
-		if (cl.showlmps[i].isactive && strcmp(cl.showlmps[i].label, lmplabel) == 0)
-		{
-			cl.showlmps[i].isactive = false;
-			return;
-		}
-}
-
-void SHOWLMP_decodeshow(void)
-{
-	int k;
-	char lmplabel[256], picname[256];
-	float x, y;
-	strlcpy (lmplabel,MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (lmplabel));
-	strlcpy (picname, MSG_ReadString(&cl_message, cl_readstring, sizeof(cl_readstring)), sizeof (picname));
-	if (gamemode == GAME_NEHAHRA) // LadyHavoc: nasty old legacy junk
-	{
-		x = MSG_ReadByte(&cl_message);
-		y = MSG_ReadByte(&cl_message);
-	}
-	else
-	{
-		x = MSG_ReadShort(&cl_message);
-		y = MSG_ReadShort(&cl_message);
-	}
-	if (!cl.showlmps || cl.num_showlmps >= cl.max_showlmps)
-	{
-		showlmp_t *oldshowlmps = cl.showlmps;
-		cl.max_showlmps += 16;
-		cl.showlmps = (showlmp_t *) Mem_Alloc(cls.levelmempool, cl.max_showlmps * sizeof(showlmp_t));
-		if (oldshowlmps)
-		{
-			if (cl.num_showlmps)
-				memcpy(cl.showlmps, oldshowlmps, cl.num_showlmps * sizeof(showlmp_t));
-			Mem_Free(oldshowlmps);
-		}
-	}
-	for (k = 0;k < cl.max_showlmps;k++)
-		if (cl.showlmps[k].isactive && String_Does_Match(cl.showlmps[k].label, lmplabel))
-			break;
-	if (k == cl.max_showlmps)
-		for (k = 0;k < cl.max_showlmps;k++)
-			if (!cl.showlmps[k].isactive)
-				break;
-	cl.showlmps[k].isactive = true;
-	strlcpy (cl.showlmps[k].label, lmplabel, sizeof (cl.showlmps[k].label));
-	strlcpy (cl.showlmps[k].pic, picname, sizeof (cl.showlmps[k].pic));
-	cl.showlmps[k].x = x;
-	cl.showlmps[k].y = y;
-	cl.num_showlmps = max(cl.num_showlmps, k + 1);
-}
-
-void SHOWLMP_drawall(void)
-{
-	int i;
-	for (i = 0;i < cl.num_showlmps;i++)
-		if (cl.showlmps[i].isactive)
-			DrawQ_Pic(cl.showlmps[i].x, cl.showlmps[i].y, Draw_CachePic_Flags (cl.showlmps[i].pic, CACHEPICFLAG_NOTPERSISTENT), 0, 0, 1, 1, 1, 1, 0);
-}
-
-/*
-==============================================================================
-
-						SCREEN SHOTS
-
-==============================================================================
-*/
-
-// buffer1: 4*w*h
-// buffer2: 3*w*h (or 4*w*h if screenshotting alpha too)
-qbool SCR_ScreenShot(char *filename, unsigned char *buffer1, unsigned char *buffer2, int x, int y, int width, int height, qbool flipx, qbool flipy, qbool flipdiagonal, qbool jpeg, qbool png, qbool gammacorrect, qbool keep_alpha)
-{
-	int	indices[4] = {0,1,2,3}; // BGRA
-	qbool ret;
-
-	GL_ReadPixelsBGRA(x, y, width, height, buffer1);
-
-	if (gammacorrect && (scr_screenshot_gammaboost.value != 1))
-	{
-		int i;
-		double igamma = 1.0 / scr_screenshot_gammaboost.value;
-		unsigned short vidramp[256 * 3];
-		// identity gamma table
-		BuildGammaTable16(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, vidramp, 256);
-		BuildGammaTable16(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, vidramp + 256, 256);
-		BuildGammaTable16(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, vidramp + 256*2, 256);
-		if (scr_screenshot_gammaboost.value != 1)
-		{
-			for (i = 0;i < 256 * 3;i++)
-				vidramp[i] = (unsigned short) (0.5 + pow(vidramp[i] * (1.0 / 65535.0), igamma) * 65535.0);
-		}
-		for (i = 0;i < width*height*4;i += 4)
-		{
-			buffer1[i] = (unsigned char) (vidramp[buffer1[i] + 512] * 255.0 / 65535.0 + 0.5); // B
-			buffer1[i+1] = (unsigned char) (vidramp[buffer1[i+1] + 256] * 255.0 / 65535.0 + 0.5); // G
-			buffer1[i+2] = (unsigned char) (vidramp[buffer1[i+2]] * 255.0 / 65535.0 + 0.5); // R
-			// A
-		}
-	}
-
-	if (keep_alpha && !jpeg)
-	{
-		if (!png)
-			flipy = !flipy; // TGA: not preflipped
-		Image_CopyMux (buffer2, buffer1, width, height, flipx, flipy, flipdiagonal, 4, 4, indices);
-		if (png)
-			ret = PNG_SaveImage_preflipped (filename, width, height, true, buffer2);
-		else
-			ret = Image_WriteTGABGRA(filename, width, height, buffer2);
-	}
-	else
-	{
-		if (jpeg)
-		{
-			indices[0] = 2;
-			indices[2] = 0; // RGB
-		}
-		Image_CopyMux (buffer2, buffer1, width, height, flipx, flipy, flipdiagonal, 3, 4, indices);
-		if (jpeg)
-			ret = JPEG_SaveImage_preflipped (filename, width, height, buffer2);
-		else if (png)
-			ret = PNG_SaveImage_preflipped (filename, width, height, false, buffer2);
-		else
-			ret = Image_WriteTGABGR_preflipped (filename, width, height, buffer2);
-	}
-
-	return ret;
-}
-
-//=============================================================================
-
-int scr_numtouchscreenareas;
-scr_touchscreenarea_t scr_touchscreenareas[128];
-
-static void SCR_DrawTouchscreenOverlay(void)
-{
-	int i;
-	scr_touchscreenarea_t *a;
-	cachepic_t *pic;
-	for (i = 0, a = scr_touchscreenareas;i < scr_numtouchscreenareas;i++, a++)
-	{
-		if (vid_touchscreen_outlinealpha.value > 0 && a->rect[0] >= 0 && a->rect[1] >= 0 && a->rect[2] >= 4 && a->rect[3] >= 4)
-		{
-			DrawQ_Fill(a->rect[0] +              2, a->rect[1]                 , a->rect[2] - 4,          1    , 1, 1, 1, vid_touchscreen_outlinealpha.value * (0.5f + 0.5f * a->active), 0);
-			DrawQ_Fill(a->rect[0] +              1, a->rect[1] +              1, a->rect[2] - 2,          1    , 1, 1, 1, vid_touchscreen_outlinealpha.value * (0.5f + 0.5f * a->active), 0);
-			DrawQ_Fill(a->rect[0]                 , a->rect[1] +              2,          2    , a->rect[3] - 2, 1, 1, 1, vid_touchscreen_outlinealpha.value * (0.5f + 0.5f * a->active), 0);
-			DrawQ_Fill(a->rect[0] + a->rect[2] - 2, a->rect[1] +              2,          2    , a->rect[3] - 2, 1, 1, 1, vid_touchscreen_outlinealpha.value * (0.5f + 0.5f * a->active), 0);
-			DrawQ_Fill(a->rect[0] +              1, a->rect[1] + a->rect[3] - 2, a->rect[2] - 2,          1    , 1, 1, 1, vid_touchscreen_outlinealpha.value * (0.5f + 0.5f * a->active), 0);
-			DrawQ_Fill(a->rect[0] +              2, a->rect[1] + a->rect[3] - 1, a->rect[2] - 4,          1    , 1, 1, 1, vid_touchscreen_outlinealpha.value * (0.5f + 0.5f * a->active), 0);
-		}
-		pic = a->pic ? Draw_CachePic_Flags(a->pic, CACHEPICFLAG_FAILONMISSING_256) : NULL;
-		if (Draw_IsPicLoaded(pic))
-			DrawQ_Pic(a->rect[0], a->rect[1], pic, a->rect[2], a->rect[3], 1, 1, 1, vid_touchscreen_overlayalpha.value * (0.5f + 0.5f * a->active), 0);
-		if (a->text && a->text[0])
-		{
-			int textwidth = DrawQ_TextWidth(a->text, 0, a->textheight, a->textheight, false, FONT_CHAT);
-			DrawQ_String(a->rect[0] + (a->rect[2] - textwidth) * 0.5f, a->rect[1] + (a->rect[3] - a->textheight) * 0.5f, a->text, 0, a->textheight, a->textheight, 1.0f, 1.0f, 1.0f, vid_touchscreen_overlayalpha.value, 0, NULL, false, FONT_CHAT);
-		}
-	}
-}
 
 void R_ClearScreen(qbool fogcolor)
 {
@@ -1492,6 +836,9 @@ void R_ClearScreen(qbool fogcolor)
 	// clear the screen
 	GL_Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | (vid.stencil ? GL_STENCIL_BUFFER_BIT : 0), clearcolor, 1.0f, 0);
 }
+
+
+
 
 int r_stereo_side;
 extern cvar_t v_isometric;
@@ -1604,7 +951,7 @@ void SCR_EndLoadingPlaque(void)
 
 void SCR_PushLoadingScreen (const char *msg, float len_in_parent)
 {
-	loadingscreenstack_t *s = (loadingscreenstack_t *) Z_Malloc(sizeof(loadingscreenstack_t));
+	loadingscreenstack_t *s = (loadingscreenstack_t *) Z_Malloc_SizeOf(loadingscreenstack_t);
 	s->prev = loadingscreenstack;
 	loadingscreenstack = s;
 
@@ -1698,8 +1045,8 @@ static void SCR_DrawLoadingStack(void)
 	float colors[16];
 
 	int effective_loading = scr_loadingscreen_barheight.integer;
-	if (!effective_loading && 
-		scr_loading && 
+	if (!effective_loading &&
+		scr_loading &&
 		cl_signon_start_time &&
 		((Sys_DirtyTime() - cl_signon_start_time) > 1.5) )
 		effective_loading = 8;
@@ -1719,7 +1066,7 @@ static void SCR_DrawLoadingStack(void)
 		verts[1] = verts[4] = vid_conheight.integer - effective_loading;
 		verts[3] = verts[6] = vid_conwidth.integer * loadingscreenstack->absolute_loading_amount_min;
 		verts[7] = verts[10] = vid_conheight.integer;
-		
+
 #if _MSC_VER >= 1400
 #define sscanf sscanf_s
 #endif
@@ -1746,7 +1093,7 @@ qbool R_Stereo_Active(void)
 
 static void SCR_DrawLoadingScreen(void)
 {
-	cachepic_t* loadingscreenpic;
+	cachepic_t *loadingscreenpic;
 	float loadingscreenpic_vertex3f[12];
 	float loadingscreenpic_texcoord2f[8];
 	float x, y, w, h, sw, sh, f;
@@ -1850,7 +1197,7 @@ void scale_360_calc (void)
         return;
 
 doitanyway:
-	if (old_vid_kickme) old_vid_kickme--;    
+	if (old_vid_kickme) old_vid_kickme--;
 
     old_vid_width				  = vid.width;
 	old_vid_height                = vid.height;
@@ -1909,11 +1256,11 @@ cldraw2d3:
 		Cvar_SetValueQuick (&vid_conwidth,  vid.width);
 		Cvar_SetValueQuick (&vid_conheight, vid.height);
 	} else if (1 /*vid_conscale_auto.integer*/) {
-		// So CSQC can receive scaleauto without skip a frame			
+		// So CSQC can receive scaleauto without skip a frame
 		Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
 		Cvar_SetValueQuick (&vid_conheight, scale_height_360);
 	}
-	
+
 	// bound viewsize
 	if (scr_viewsize.value < 30)
 		Cvar_SetValueQuick(&scr_viewsize, 30);
@@ -1961,16 +1308,16 @@ entity_t *find_e_render (entity_render_t *exy, int *enumy)
 
 void CL_Tool_Inspector (void)
 {
-	SV_LockThreadMutex (); // 
+	SV_LockThreadMutex (); //
 
 	int conwidth_2d_phase = scale_width_360;
 	int conheight_2d_phase = scale_height_360;
 
 	WARP_X_ (PRVM_ED_Write)
-				
+
 	prvm_prog_t *prog = SVVM_prog;
 //	vec_t vieworigin;
-	
+
 //	Matrix4x4_OriginFromMatrix(&r_refdef.view.matrix, vieworigin);
 
 	stringlist_t	matchedSet;
@@ -1980,11 +1327,11 @@ void CL_Tool_Inspector (void)
 		if (!r_refdef.viewcache.entityvisible[ent_num])
 			continue;
 		entity_render_t *e_this = r_refdef.scene.entities[ent_num];
-		
+
 		if (e_this->model && e_this->model->Draw != NULL) {
 			int edict_num = 0;
 			entity_t *e = find_e_render(e_this, &edict_num);
-			
+
 			if (e) {
 				prvm_edict_t *ed = PRVM_EDICT_NUM(edict_num);
 				if (ed->free == false) {
@@ -2000,8 +1347,8 @@ void CL_Tool_Inspector (void)
 					if (ismap) {
 						prvm_vec_t *v1 = PRVM_serveredictvector(ed, absmin);
 						prvm_vec_t *v2 = PRVM_serveredictvector(ed, absmax);
-						vec3_t e_box_center = { (v1[0] + v2[0])/2.0, 
-							          (v1[1] + v2[1])/2.0, 
+						vec3_t e_box_center = { (v1[0] + v2[0])/2.0,
+							          (v1[1] + v2[1])/2.0,
 									  (v1[2] + v2[2])/2.0
 								};
 						Math_Project (e_box_center, v_screen2d);
@@ -2013,10 +1360,10 @@ void CL_Tool_Inspector (void)
 					dist = VectorLength (dist3);
 					// Dist is d(P1,P2) = (x2 x1)2 + (y2 y1)2 + (z2 z1)2
 					// Sort
-					
+
 					char s_descr[64];
 					c_dpsnprintf2 (s_descr, "%08.1f %d", dist, (int)edict_num);
-					char *s_this = Z_strdup (s_descr); 
+					char *s_this = Z_StrDup (s_descr);
 					stringlistappend (&matchedSet, s_this);
 
 
@@ -2027,7 +1374,7 @@ void CL_Tool_Inspector (void)
 
 	// SORT
 	stringlistsort (&matchedSet, fs_make_unique_false);
-	
+
 	// Reverse so furthest away prints first, closest prints last.
 	for (int idx = matchedSet.numstrings - 1; idx >= 0; idx --) {
 		char *sxy = matchedSet.strings[idx];
@@ -2041,13 +1388,13 @@ void CL_Tool_Inspector (void)
 
 		vec3_t v_screen2d= {0};
 		int ismap = s_mdl && s_mdl[0] == '*';
-		float dist;
+		//gcc float dist;
 		vec3_t dist3;
 		if (ismap) {
 			prvm_vec_t *v1 = PRVM_serveredictvector(ed, absmin);
 			prvm_vec_t *v2 = PRVM_serveredictvector(ed, absmax);
-			vec3_t e_box_center = { (v1[0] + v2[0])/2.0, 
-				          (v1[1] + v2[1])/2.0, 
+			vec3_t e_box_center = { (v1[0] + v2[0])/2.0,
+				          (v1[1] + v2[1])/2.0,
 						  (v1[2] + v2[2])/2.0
 					};
 			Math_Project (e_box_center, v_screen2d);
@@ -2056,7 +1403,7 @@ void CL_Tool_Inspector (void)
 			Math_Project (e_orig, v_screen2d);
 			VectorSubtract(e_orig, r_refdef.view.origin, dist3);
 		}
-		dist = VectorLength (dist3);
+		//gcc dist = VectorLength (dist3);
 		// Dist is d(P1,P2) = (x2 x1)2 + (y2 y1)2 + (z2 z1)2
 		// Sort
 #if 1
@@ -2068,7 +1415,7 @@ void CL_Tool_Inspector (void)
 					char vuf[64];
 					char vuf2[64];
 					char vuf3[64];
-					
+
 					c_dpsnprintf1 (vuf, "edict %d", edict_num);
 					c_dpsnprintf1 (vuf2, "%s", s_cls);
 					c_dpsnprintf1 (vuf3, "%s", s_mdl);
@@ -2077,12 +1424,12 @@ void CL_Tool_Inspector (void)
 					int width_row	= 8 * larger * vid_conwidth.value/conwidth_2d_phase;
 					int height_row	= 8 * 1 * vid_conheight.value/conheight_2d_phase;
 					int height_tot	= height_row * 3;
-					
+
 					int x	= v_screen2d[0] - width_row / 2.0;
 					int y0	= v_screen2d[1] - height_row / 2.0;
 					int y1	= y0 + height_row;
 					int y2	= y1 + height_row;
-					
+
 					DrawQ_Fill		(x,y0, width_row, height_tot, /*rgba:*/ 0, 0, 0, 1.0, DRAWFLAG_NORMAL_0);
 					DrawQ_String	(x,y0, vuf,  0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
 					DrawQ_String	(x,y1, vuf2, 0, /*scale x y*/ height_row, height_row, /*rgba:*/ 1, 1, 1, 1, DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
@@ -2090,13 +1437,13 @@ void CL_Tool_Inspector (void)
 #endif
 
 
-	}	
+	}
 
 	stringlistfreecontents (&matchedSet);
 
 	if (tool_inspector.integer > 1)
 		Cvar_SetValueQuick (&tool_inspector, 1);
-	
+
 	SV_UnlockThreadMutex ();
 }
 #endif
@@ -2127,18 +1474,46 @@ void CL_Tool_Marker (void)
 	int width_row	= (8 * ONE_CHAR_1 * 3) * vid_conwidth.value/conwidth_2d_phase;
 	int height_row	= (8 * ONE_CHAR_1 * 1) * vid_conheight.value/conheight_2d_phase;
 	int height_tot	= height_row * 3;
-	
+
 	int x	= v_screen2d[0] - width_row / 2.0;
 	int y0	= v_screen2d[1] - height_row / 2.0;
 	int y1	= y0 + height_row;
 	//int y2	= y1 + height_row;
-	
+
 	DrawQ_Fill		(x, y0, width_row, height_tot, /*rgba:*/ 0, 0, 1.0, 1.0, DRAWFLAG_NORMAL_0);
-	DrawQ_String	(x + height_row, y1, "X", 0, /*scale x y*/ height_row, height_row, 
-		/*rgba:*/ 1, 1, 1, 1.0, 
+	DrawQ_String	(x + height_row, y1, "X", 0, /*scale x y*/ height_row, height_row,
+		/*rgba:*/ 1, 1, 1, 1.0,
 		DRAWFLAG_NORMAL_0, q_outcolor_null, q_ignore_color_codes_true, FONT_CENTERPRINT);
 
 }
+
+void Canvas_Finish (void)
+{
+	// Baker: Not seeing DrawQ_Start anywhere in existing code for, so not here either.
+	// CL_UpdateScreen_SCR_DrawScreen
+	DrawQ_Finish();
+	R_Mesh_Finish();
+}
+
+void Canvas_Start_With_Size (int width, int height)
+{
+	Cvar_SetValueQuick (&vid_conwidth,  width);
+	Cvar_SetValueQuick (&vid_conheight, height);
+
+//baker_really_do_this:
+//	SCR_SetUpToDrawConsole(); // conlines measurement and stuff
+
+	// Start a new draw, this time without fullscreen
+	//Draw_Frame();						// Looks like frees unused pics
+	r_viewport_t viewport;
+
+	R_Viewport_InitOrtho(&viewport, &identitymatrix, 0, 0, vid.width, vid.height, 0, 0, vid_conwidth.integer, vid_conheight.integer, -10, 100, NULL);
+	R_Mesh_SetRenderTargets(0, NULL, NULL, NULL, NULL, NULL);
+	R_SetViewport(&viewport);
+
+	R_Mesh_Start();
+}
+
 
 WARP_X_CALLERS_ (sure)
 static void CL_UpdateScreen_SCR_DrawScreen(void)
@@ -2234,7 +1609,7 @@ drawstart:
 			cl.csqc_vidvars.drawworld = r_drawworld.integer != 0; // Baker: r_drawworld sometimes ignored fix.
 
 			// Prepare the scene mesh for rendering - this is lightning beams and other effects rendered as normal surfaces
-			CL_MeshEntities_Scene_FinalizeRenderEntity();
+			CL_MeshEntities_Scene_FinalizeRenderEntity(); // Baker: 3D mesh only
 
 			CL_UpdateEntityShading();
 			R_RenderView(0, NULL, NULL, r_refdef.view.x, r_refdef.view.y, r_refdef.view.width, r_refdef.view.height);
@@ -2261,21 +1636,27 @@ draw9wrap3d:
 baker_draw_phase_2:
 	if (CLVM_prog->loaded && csqc_full_width_height.integer) {
 		// CSQC loaded and wants full screen
+#if 1
+		// Finish the drawing performed above -- 3d, possibly CSQC 2D stuff too?
+		Canvas_Finish (); // DrawQ_Finish R_Mesh_Finish
+		Canvas_Start_With_Size (scale_width_360, scale_height_360);
+#else
 		DrawQ_Finish();
 		R_Mesh_Finish();
 		Cvar_SetValueQuick (&vid_conwidth,  scale_width_360);
 		Cvar_SetValueQuick (&vid_conheight, scale_height_360);
+#endif
 
 baker_really_do_this:
 		SCR_SetUpToDrawConsole(); // conlines measurement and stuff
 
 		// Start a new draw, this time without fullscreen
-		//Draw_Frame();						// Looks like frees unused pics
-		r_viewport_t viewport;
+		// Draw_Frame();			// Looks like frees unused pics
+		r_viewport_t viewporta;
 
-		R_Viewport_InitOrtho(&viewport, &identitymatrix, 0, 0, vid.width, vid.height, 0, 0, vid_conwidth.integer, vid_conheight.integer, -10, 100, NULL);
+		R_Viewport_InitOrtho(&viewporta, &identitymatrix, 0, 0, vid.width, vid.height, 0, 0, vid_conwidth.integer, vid_conheight.integer, -10, 100, NULL);
 		R_Mesh_SetRenderTargets(0, NULL, NULL, NULL, NULL, NULL);
-		R_SetViewport(&viewport);
+		R_SetViewport(&viewporta);
 
 		R_Mesh_Start();
 
@@ -2329,8 +1710,8 @@ d2go:
 	// draw 2D stuff
 
 	if (!scr_con_current && Have_Flag(key_consoleactive, KEY_CONSOLEACTIVE_FORCED_4) == false) {
-		if (isin2(key_dest, key_game, key_message) && 
-			!r_letterbox.value && 
+		if (isin2(key_dest, key_game, key_message) &&
+			!r_letterbox.value &&
 			!scr_loading)
 			Con_DrawNotify();	// only draw notify in game
 	} // if
@@ -2354,10 +1735,31 @@ d2go:
 menu:
 #ifdef CONFIG_MENU
 	WARP_X_(M_Draw; MP_Draw /*csqc*/)
-		if (!scr_loading)
-			MR_Draw();
+		if (scr_loading == false) {
+			// Baker: We have a developer tools menu that sometimes wants a full canvas
+			// If so we complete the UI draw -> set canvas to "fullscreen"
+			// and then draw and then set the canvas back.
+
+			int is_full_canvas = MVM_prog->loaded == false && isin1 (m_state, m_zdev);
+
+			switch (is_full_canvas) {
+			case true:
+				// Baker: CSQC added to mesh ui.
+				Canvas_Finish ();
+				Canvas_Start_With_Size (vid.width, vid.height);
+				MR_Draw (); // MENUOIC
+				Canvas_Finish ();
+				Canvas_Start_With_Size (scale_width_360, scale_height_360);
+				break;
+
+			case false:
+				MR_Draw (); // MENUOIC
+				break;
+			} // sw
 #endif
-	CL_DrawVideo();
+		}
+
+	CL_DrawVideo_SCR_DrawScreen();
 	R_Shadow_EditLights_DrawSelectedLightProperties();
 
 	if (scr_loading)
@@ -2422,7 +1824,7 @@ void CL_UpdateScreen(void)
 	vec3_t vieworigin;
 	static double drawscreenstart = 0.0;
 	double drawscreendelta;
-	r_viewport_t viewport;
+	r_viewport_t viewportic;
 
 	// TODO: Move to a better place.
 	cl_punchangle_applied = 0;
@@ -2546,9 +1948,9 @@ baker_bypass_console_calcs_do_later:
 	// The idea here is to give csqc the entirety of the screen
 
 bang:
-	R_Viewport_InitOrtho(&viewport, &identitymatrix, 0, 0, vid.width, vid.height, 0, 0, vid_conwidth.integer, vid_conheight.integer, -10, 100, NULL);
+	R_Viewport_InitOrtho(&viewportic, &identitymatrix, 0, 0, vid.width, vid.height, 0, 0, vid_conwidth.integer, vid_conheight.integer, -10, 100, NULL);
 	R_Mesh_SetRenderTargets(0, NULL, NULL, NULL, NULL, NULL);
-	R_SetViewport(&viewport);
+	R_SetViewport(&viewportic);
 	GL_ScissorTest(false);
 	GL_ColorMask(1,1,1,1);
 	GL_DepthMask(true);
@@ -2618,9 +2020,9 @@ cldraw2d4:
 		// Not active window or console shown
 		VID_SetMouse(q_mouse_relative_false, q_mouse_hidecursor_false);
 	}
-	else if (key_dest == key_menu || 
-			key_dest == key_menu_grabbed || 
-			scr_loading || 
+	else if (key_dest == key_menu ||
+			key_dest == key_menu_grabbed ||
+			scr_loading ||
 			(key_dest == key_game && cls.demoplayback)) { // Baker 8081 mouse cursor shows during demo playback.
 #ifdef CONFIG_MENU
 		if (menu_is_csqc == false) {
@@ -2648,7 +2050,7 @@ cldraw2d4:
 
 	// Baker r9006: Kleskby ALT-TAB fix for certain international keyboards.
 #ifdef WIN32
-	if (vid_fullscreen.integer && GetAsyncKeyState(VK_MENU) && GetAsyncKeyState(VK_TAB)) { //KleskBY Alt-Tab Fix 
+	if (vid_fullscreen.integer && GetAsyncKeyState(VK_MENU) && GetAsyncKeyState(VK_TAB)) { //KleskBY Alt-Tab Fix
 		ShowWindow(FindWindowA("SDL_app", NULL), SW_MINIMIZE);
 	} // if
 #endif
@@ -2656,7 +2058,69 @@ cldraw2d4:
 
 void CL_Screen_NewMap(void)
 {
+	// Baker: This is called, but empty.
+	// Did DarkPlaces Beta have this, or did I add this function
+	// and ... then didn't do anything? (Yet?)
 }
+
+
+
+#include "cl_screen_gif.c.h"
+
+
+void Dynamic_Baker_Texture2D_Prep (dynamic_baker_texture_t *fill, int is_dirty, const char *name, bgra4 *vimagedata, int in_pic_width, int in_pic_height)
+{
+	fill->modelui	= CL_Mesh_UI ();
+	fill->pic		= Draw_CachePic_Flags(name, CACHEPICFLAG_NOTPERSISTENT | CACHEPICFLAG_QUIET);
+
+	DYNAMICTEX_Q3_START (vimagedata);
+	fill->tex = Mod_Mesh_GetTexture (
+		fill->modelui,
+		fill->pic->name,
+		DRAWFLAG_NORMAL_0, // DRAWFLAG_MODULATE and such
+		fill->pic->texflags, // TEXF_CLAMP and such
+		MATERIALFLAG_WALL | MATERIALFLAG_VERTEXCOLOR | MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW
+	);
+	DYNAMICTEX_Q3_END ();
+
+	if (is_dirty) {
+		extern rtexturepool_t *r_main_texturepool;
+		
+		skinframe_t *skinframe		= fill->tex->materialshaderpass->skinframes[0];
+		int			textureflags	= skinframe->textureflags;
+
+		R_SkinFrame_PurgeSkinFrame(skinframe);
+		textureflags &= ~TEXF_FORCE_RELOAD;
+
+		skinframe->stain = NULL;
+		skinframe->merged = NULL;
+		skinframe->base = NULL;
+		skinframe->pants = NULL;
+		skinframe->shirt = NULL;
+		skinframe->nmap = NULL;
+		skinframe->gloss = NULL;
+		skinframe->glow = NULL;
+		skinframe->fog = NULL;
+		skinframe->reflect = NULL;
+		skinframe->hasalpha = false;
+
+		// Baker: Similar to our Q1SKY fix upload fix
+		skinframe->base = skinframe->merged =
+			R_LoadTexture2D (
+				r_main_texturepool,
+				skinframe->basename,
+				in_pic_width, 
+				in_pic_height,
+				(byte *)vimagedata,
+				TEXTYPE_BGRA,
+				textureflags,
+				/*miplevel*/ -1,
+				/*palette*/ NULL
+		);
+	} // is dirty
+}
+
+
 
 void CL_Screen_Init(void)
 {
@@ -2713,6 +2177,7 @@ void CL_Screen_Init(void)
 	Cvar_RegisterVariable (&scr_screenshot_name_in_mapdir);
 	Cvar_RegisterVariable (&scr_screenshot_alpha);
 	Cvar_RegisterVariable (&scr_screenshot_timestamp);
+
 #ifdef CONFIG_VIDEO_CAPTURE
 	Cvar_RegisterVariable (&cl_capturevideo);
 	Cvar_RegisterVariable (&cl_capturevideo_demo_stop);
@@ -2726,6 +2191,7 @@ void CL_Screen_Init(void)
 	Cvar_RegisterVariable (&cl_capturevideo_ogg);
 	Cvar_RegisterVariable (&cl_capturevideo_framestep);
 #endif
+
 	Cvar_RegisterVariable (&tool_inspector);
 	Cvar_RegisterVariable (&tool_marker); // Baker r0109: tool marker
 
@@ -2741,14 +2207,16 @@ void CL_Screen_Init(void)
 	Cvar_RegisterVariable (&scr_stipple);
 	Cvar_RegisterVariable (&scr_refresh);
 	Cvar_RegisterVariable (&net_graph);
-	Cvar_RegisterVirtual( &net_graph, "shownetgraph");
+	Cvar_RegisterVariableAlias( &net_graph, "shownetgraph");
 	Cvar_RegisterVariable (&cl_demo_mousegrab);
 	Cvar_RegisterVariable (&timedemo_screenshotframelist);
 	Cvar_RegisterVariable (&vid_touchscreen_outlinealpha);
 	Cvar_RegisterVariable (&vid_touchscreen_overlayalpha);
 	Cvar_RegisterVariable (&r_speeds_graph);
+
 	for (i = 0;i < (int)(sizeof(r_speeds_graph_filter)/sizeof(r_speeds_graph_filter[0]));i++)
 		Cvar_RegisterVariable(&r_speeds_graph_filter[i]);
+
 	Cvar_RegisterVariable (&r_speeds_graph_length);
 	Cvar_RegisterVariable (&r_speeds_graph_seconds);
 	Cvar_RegisterVariable (&r_speeds_graph_x);
@@ -2762,9 +2230,20 @@ void CL_Screen_Init(void)
 	if (Sys_CheckParm ("-noconsole"))
 		Cvar_SetQuick(&scr_conforcewhiledisconnected, "0");
 
-	Cmd_AddCommand(CF_CLIENT, "sizeup",SCR_SizeUp_f, "increase view size (increases viewsize cvar)");
-	Cmd_AddCommand(CF_CLIENT, "sizedown",SCR_SizeDown_f, "decrease view size (decreases viewsize cvar)");
-	Cmd_AddCommand(CF_CLIENT, "screenshot",SCR_ScreenShot_f, "takes a screenshot of the next rendered frame");
+	Cmd_AddCommand(CF_CLIENT, "sizeup", SCR_SizeUp_f, "increase view size (increases viewsize cvar)");
+	Cmd_AddCommand(CF_CLIENT, "sizedown", SCR_SizeDown_f, "decrease view size (decreases viewsize cvar)");
+	Cmd_AddCommand(CF_CLIENT, "screenshot", SCR_ScreenShot_f, "takes a screenshot of the next rendered frame");
+#ifdef CONFIG_MENU
+#if 0
+	void M_Dump_f (cmd_state_t *cmd);
+	Cmd_AddCommand(CF_CLIENT, "mdump", M_Dump_f, "");
+#endif
+	Cmd_AddCommand(CF_CLIENT, "jpegdecodeclipstring", SCR_jpegdecodeclipstring_f, "puts a screenshot base64 encoded jpeg string on the clipboard [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "jpegshotclip", SCR_jpegshotclip_f, "puts a screenshot base64 encoded jpeg string on the clipboard [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "clipimagetobase64string", SCR_clipimagetobase64string_f, "take image from clipboard and put a base64 string on clipboard [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "jpegextractfromsave", SCR_jpegextract_from_savegame_f, "extract a jpeg from a save and copy to clipboard [Zircon]");
+	Cmd_AddCommand(CF_CLIENT, "gifclip", SCR_gifclip_f, "extract a jpeg from a save and copy to clipboard [Zircon]");
+#endif
 	Cmd_AddCommand(CF_CLIENT, "envmap", R_Envmap_f, "render a cubemap (skybox) of the current scene");
 	Cmd_AddCommand(CF_CLIENT, "infobar", SCR_InfoBar_f, "display a text in the infobar (usage: infobar expiretime string)");
 
@@ -2774,3 +2253,4 @@ void CL_Screen_Init(void)
 
 	scr_initialized = true;
 }
+

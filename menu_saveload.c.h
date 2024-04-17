@@ -1,4 +1,4 @@
-// menu_saveload.h
+// menu_saveload.c.h
 
 #define 	local_count		MAX_SAVEGAMES_20
 #define		local_cursor	load_cursor
@@ -9,7 +9,7 @@
 
 static int		load_cursor;		///< 0 < load_cursor < MAX_SAVEGAMES_20
 
-static char	m_filenames[local_count][SAVEGAME_COMMENT_LENGTH+1];
+static char		m_filenames[local_count][SAVEGAME_COMMENT_LENGTH_39+1];
 static int		loadable[local_count];
 
 static void M_ScanSaves (void)
@@ -17,16 +17,16 @@ static void M_ScanSaves (void)
 	int		i, j;
 	size_t	len;
 	char	name[MAX_OSPATH];
-	char	buf[SAVEGAME_COMMENT_LENGTH + 256];
+	char	buf[SAVEGAME_COMMENT_LENGTH_39 + 256];
 	const char *t;
 	qfile_t	*f;
 //	int		version;
 
 	for (i = 0 ; i < local_count ; i ++) {
-		strlcpy (m_filenames[i], "--- UNUSED SLOT ---", sizeof(m_filenames[i]));
+		c_strlcpy (m_filenames[i], "--- UNUSED SLOT ---");
 		loadable[i] = false;
-		dpsnprintf (name, sizeof(name), "s%d.sav", (int)i);
-		f = FS_OpenRealFile (name, "rb", false);
+		c_dpsnprintf1 (name, "s%d.sav", (int)i);
+		f = FS_OpenRealFile (name, "rb", fs_quiet_FALSE); // Baker: ScanSaves are from real file!!!
 		if (!f)
 			continue;
 		// read enough to get the comment
@@ -35,14 +35,14 @@ static void M_ScanSaves (void)
 		buf[len] = 0;
 		t = buf;
 		// version
-		COM_ParseToken_Simple(&t, false, false, true);
+		COM_Parse_Basic (&t);
 		//version = atoi(com_token);
 		// description
-		COM_ParseToken_Simple(&t, false, false, true);
-		strlcpy (m_filenames[i], com_token, sizeof (m_filenames[i]));
+		COM_Parse_Basic (&t);
+		c_strlcpy (m_filenames[i], com_token);
 
 	// change _ back to space
-		for (j=0 ; j<SAVEGAME_COMMENT_LENGTH ; j++)
+		for (j=0 ; j<SAVEGAME_COMMENT_LENGTH_39 ; j++)
 			if (m_filenames[i][j] == '_')
 				m_filenames[i][j] = ' ';
 		loadable[i] = true;
@@ -52,9 +52,14 @@ static void M_ScanSaves (void)
 
 void M_Menu_Load_f(cmd_state_t *cmd)
 {
+	if (sv_save_screenshots.integer) {
+		M_Menu_Load2_f (cmd);
+		return;
+	}
+
 	m_entersound = true;
 	menu_state_set_nova (m_load);
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	M_ScanSaves ();
 }
 
@@ -63,19 +68,18 @@ void M_Menu_Save_f(cmd_state_t *cmd)
 {
 	if (!sv.active)
 		return;
-#if 1
+
 	// LadyHavoc: allow saving multiplayer games
 	if (cl.islocalgame && cl.intermission)
 		return;
-#else
-	if (cl.intermission)
-		return;
-	if (!cl.islocalgame)
-		return;
-#endif
+
+	if (sv_save_screenshots.integer) {
+		// Baker: The save game menu remains the same
+	}
+
 	m_entersound = true;
 	menu_state_set_nova (m_save);
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	M_ScanSaves ();
 }
 
@@ -156,7 +160,7 @@ static void M_Load_Key(cmd_state_t *cmd, int key, int ascii)
 		if (!loadable[local_cursor])
 			break;
 		menu_state_set_nova (m_none);
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 
 		// issue the load command
 		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "load s%d", local_cursor) );
@@ -240,7 +244,7 @@ static void M_Save_Key(cmd_state_t *cmd, int key, int ascii)
 
 	case K_ENTER:
 		menu_state_set_nova (m_none);
-		key_dest = key_game;
+		KeyDest_Set (key_game); // key_dest = key_game;
 		Cbuf_AddTextLine (cmd, va(vabuf, sizeof(vabuf), "save s%d", local_cursor));
 		break;
 

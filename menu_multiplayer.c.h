@@ -16,7 +16,7 @@ char my_ipv6_address[256];
 
 void M_Menu_MultiPlayer_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_multiplayer);
 	m_entersound = true;
 
@@ -55,11 +55,11 @@ static void M_MultiPlayer_Key(cmd_state_t *cmd, int key, int ascii)
 		M_Menu_Main_f(cmd);
 		break;
 
-	case K_MOUSE1: 
-		if (hotspotx_hover == not_found_neg1) 
-			break; 
-		
-		local_cursor = hotspotx_hover; 
+	case K_MOUSE1:
+		if (hotspotx_hover == not_found_neg1)
+			break;
+
+		local_cursor = hotspotx_hover;
 		// fall thru
 
 	case K_ENTER:
@@ -69,7 +69,7 @@ static void M_MultiPlayer_Key(cmd_state_t *cmd, int key, int ascii)
 		case 1:
 #if 1
 			{
-				static int		lanConfig_cursor;
+                extern int		lanConfig_cursor;
 				lanConfig_cursor = 1; // M_Menu_LanConfig_f
 				Cbuf_AddTextLine (cmd, "stopdemo");
 				M_Menu_ServerList_f(cmd);

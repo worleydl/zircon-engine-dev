@@ -57,24 +57,46 @@ command from the console.  Active clients are kicked off.
 */
 static void SV_Map_f(cmd_state_t *cmd)
 {
+	char startspot[MAX_QPATH_128] = {0};
 	char level[MAX_QPATH_128];
 
 	// Baker r1202: "map" command with no params says map name
-	if (Cmd_Argc(cmd) != 2) {
-		// Baker: If we are on a map, print the name of the map
-		if (sv.active) {
-			Con_PrintLinef ("map is %s", sv.name);
-			if (cl.worldmodel)
-				Con_DPrintLinef ("cl wateralpha support? %d", cl.worldmodel->brush.supportwateralpha);
-		}
-		else if (!sv.active && cls.state == ca_connected && cls.signon == SIGNONS_4) {
-			Con_PrintLinef ("map is %s", cl.worldbasename);
-			if (cl.worldmodel)
-				Con_DPrintLinef ("cl wateralpha support? %d", cl.worldmodel->brush.supportwateralpha);
-		} else {
-			Con_PrintLinef ("map <levelname> : start a new game (kicks off all players)");
-		}
+	if (isin3(Cmd_Argc(cmd),1, 2, 3) == false) {
+		Con_PrintLinef ("map <levelname> : start a new game (kicks off all players)");
 		return;
+	}
+
+	if (Cmd_Argc(cmd) < 2) {
+		// Baker: If we are on a map, print the name of the map
+
+		if (cls.state == ca_connected && cls.signon == SIGNONS_4) {
+			Con_PrintLinef ("map is %s" NEWLINE, cl.worldbasename);
+
+			if (cl.worldmodel) {
+				Con_PrintLinef (S_FMT_LEFT_PAD_20 " %s", "supportwateralpha?", cl.worldmodel->brush.supportwateralpha ? "Yes" : "No");
+				Con_PrintLinef (S_FMT_LEFT_PAD_20 " %s", "vis data?", cl.worldmodel->brush.num_pvsclusters != 0 ? "Yes" : "No");
+
+
+				Con_PrintLinef (NEWLINE "Keys" NEWLINE);
+
+				char *entities, entname[MAX_QPATH_128];
+				dpsnprintf (entname, sizeof(entname), "%s.ent", cl.worldnamenoextension);
+				if ((entities = (char *)FS_LoadFile(entname, tempmempool, fs_quiet_true, fs_size_ptr_null))) {
+					String_Worldspawn_Value_For_Key_Con_PrintLine (entities);
+					Mem_Free(entities);
+				} else {
+					String_Worldspawn_Value_For_Key_Con_PrintLine (cl.worldmodel->brush.entities);
+				}
+			} // worldmodel
+		} else if (sv.active) {
+			Con_PrintLinef ("map is %s", sv.name);
+		}
+
+		return;
+	}
+
+	if (Cmd_Argc(cmd) == 3) {
+		c_strlcpy (startspot, Cmd_Argv(cmd, 2));
 	}
 
 	Con_CloseConsole_If_Client ();
@@ -85,14 +107,9 @@ static void SV_Map_f(cmd_state_t *cmd)
 	//	Cvar_Set(&cvars_all, "warpmark", "");
 
 	if (host.hook.Disconnect)
-		host.hook.Disconnect(false, NULL);
+		host.hook.Disconnect(q_is_kicked_false, q_disconnect_message_NULL);
 
 	SV_Shutdown();
-
-	if (host_isclient.integer) {
-
-	}
-
 
 	if (svs.maxclients != svs.maxclients_next) {
 		svs.maxclients = svs.maxclients_next;
@@ -109,7 +126,12 @@ static void SV_Map_f(cmd_state_t *cmd)
 
 	cl_signon_start_time = Sys_DirtyTime (); // map
 
-	SV_SpawnServer(level, q_s_loadgame_NULL);
+	// Baker: Reset the .siv list
+	if (sv_intermap_siv_list.numstrings)
+		stringlistfreecontents (&sv_intermap_siv_list); // .SIV clear "map"
+
+	vec3_t zero_origin = {0,0,0};
+	SV_SpawnServer (level, q_s_loadgame_NULL, startspot[0] ? startspot : q_s_startspot_EmptyString, zero_origin, /*totaltimeatstart*/ 0);
 
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
@@ -122,9 +144,128 @@ SV_Changelevel_f
 Goes to a new map, taking all clients along
 ==================
 */
-static void SV_Changelevel_f(cmd_state_t *cmd)
+WARP_X_ (SV_Loadgame_from SV_Changelevel_f SV_Restart_f VM_changelevel SV_SpawnServer SV_SaveSpawnparms) // Q2X
+static void SV_Changelevel2_f (cmd_state_t *cmd) // Q2X
+{
+	char level_base_name[MAX_QPATH_128];
+	const char *s_level = Cmd_Argv(cmd, 1);
+
+	// Baker: supertime is level_totaltimeatstart + sv.time
+	float supertime = (sv.time - sv.intermap_surplustime) + sv.intermap_totaltimeatstart; // No sv.time is unreliable
+	float level_totaltimeatlastexit = supertime;//sv.intermap_totaltimeatlastexit + sv.time;
+	float level_totaltimeatstart = supertime; // For new level
+	
+
+	if (Cmd_Argc(cmd) != 3) {
+		Con_PrintLinef ("changelevel2 <levelname> <startspot> : continue game on a new level");
+		return;
+	}
+
+	if (!sv.active) {
+		Con_PrintLinef ("You must be running a server to changelevel. Use 'map %s' instead", Cmd_Argv(cmd, 1));
+		return;
+	}
+
+	Con_CloseConsole_If_Client(); // Baker r1003: close console for map/load/etc.
+
+	if (host.hook.ToggleMenu)
+		host.hook.ToggleMenu();
+
+	prvm_prog_t *prog = SVVM_prog;
+	func_t foff = PRVM_ED_FindFunctionOffset(prog, "BeforeExitMap");
+	if (foff) {
+		Con_DPrintLinef ("Calling BeforeExitMap");
+		// PRVM_serverglobalfloat(time) = sv.time;
+		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(PRVM_EDICT_NUM(0));//PRVM_EDICT_TO_PROG(host_client->edict);
+		prog->ExecuteProgram(prog, foff, "QC function BeforeExitMap is missing");
+	}
+
+	SV_SaveSpawnparms ();
+
+	c_strlcpy (level_base_name, s_level);
+
+	const char *s_startspot = Cmd_Argv(cmd, 2);
+	// SaveGamestate
+	{
+		// Baker: Server issued the changelevel, it already had the opportunity
+		// to clean up entities.
+
+		// Baker: Add to the .siv list or update the .siv list
+#if 1
+		int siv_idx = stringlist_find_index (&sv_intermap_siv_list, sv.worldbasename);
+		char *s_siv_alloc = NULL;
+		if (siv_idx == not_found_neg1) {
+			// ADD - we have not been to this map
+			stringlistappend (&sv_intermap_siv_list, sv.worldbasename); // .SIV ADD NEW WORLDNAME (changelevel2)
+			
+		} else {
+			// UPDATE / STOMP
+			stringlist_replace_at_index (&sv_intermap_siv_list, siv_idx, sv.worldbasename); // .SIV REPLACE WORLDNAME (changelevel2)
+		}
+		SV_Savegame_to (SVVM_prog, &s_siv_alloc, q_savefile_NULL, q_is_siv_write_true, level_totaltimeatlastexit);
+
+		if (siv_idx == not_found_neg1) {
+			// ADD - we have not been to this map
+			stringlistappend (&sv_intermap_siv_list, s_siv_alloc); // .SIV ADD NEW WORLD DATA changelevel2
+			
+		} else {
+			// UPDATE / STOMP
+			stringlist_replace_at_index (&sv_intermap_siv_list, siv_idx + 1, s_siv_alloc); // .SIV REPLACE WORLD DATA changelevel2
+		}
+		Z_Free (s_siv_alloc);
+
+#else
+		char	name_with_dot_siv[MAX_QPATH_128];
+		c_dpsnprintf2 (name_with_dot_siv, "intermap/%s_%s.siv", s_startspot, sv.worldbasename); // SAVE
+
+		SV_Savegame_to (SVVM_prog, q_savestring_NULL, name_with_dot_siv, q_is_intermap_true);
+#endif
+	}
+
+	// Load game state
+	{
+		WARP_X_ (SV_Loadgame_f)
+#if 1
+		int siv_idx = stringlist_find_index (&sv_intermap_siv_list, level_base_name);
+		//char *s_siv_alloc = NULL;
+		//c_strlcpy (sv.intermap_startspot, s_startspot); // .CROSS startspot SV_SpawnServer_Intermap_SIV_Is_Ok
+
+		if (siv_idx == not_found_neg1) {
+			// ADD - we have not been to this map
+			vec3_t zero_origin = {0,0,0};
+			SV_SpawnServer (level_base_name, q_s_loadgame_NULL, s_startspot, zero_origin, level_totaltimeatstart);
+		} else {
+			// UPDATE / STOMP
+			char *s_data = sv_intermap_siv_list.strings[siv_idx + 1];
+			vec3_t zero_origin = {0,0,0};
+			int is_ok = SV_SpawnServer_Intermap_SIV_Is_Ok (level_base_name, s_data, s_startspot, zero_origin, level_totaltimeatstart); // .SIV USE CHANGELEVEL2
+			if (is_ok == false) {
+				// Baker: If no save for the area, first time entering load from bsp
+				Con_PrintLinef ("SIV spawn map error");
+			}
+
+		}
+
+#else
+		char	name_with_dot_siv[MAX_QPATH_128];
+		c_dpsnprintf2 (name_with_dot_siv, "intermap/%s_%s.siv", s_startspot, level_base_name); // LOAD
+		int is_ok = SV_SpawnServer_Intermap_SIV_Is_Ok (level_base_name, name_with_dot_siv, s_startspot);
+		if (is_ok == false) {
+			// Baker: If no save for the area, first time entering load from bsp
+			SV_SpawnServer (level_base_name, q_s_loadgame_NULL, s_startspot);
+		}
+#endif
+
+	}
+
+	if (sv.active && host.hook.ConnectLocal != NULL)
+		host.hook.ConnectLocal();
+}
+
+static void SV_Changelevel_f (cmd_state_t *cmd) // Q2X
 {
 	char level[MAX_QPATH_128];
+	const char *s_level = Cmd_Argv(cmd, 1);
 
 	if (Cmd_Argc(cmd) != 2) {
 		Con_PrintLinef ("changelevel <levelname> : continue game on a new level");
@@ -142,8 +283,30 @@ static void SV_Changelevel_f(cmd_state_t *cmd)
 		host.hook.ToggleMenu();
 
 	SV_SaveSpawnparms ();
-	c_strlcpy (level, Cmd_Argv(cmd, 1) );
-	SV_SpawnServer(level, q_s_loadgame_NULL);
+	c_strlcpy (level, s_level);
+
+	int have_intermap = false;
+	prvm_prog_t *prog = SVVM_prog;
+	int v_enable_intermap_offset = PRVM_ED_FindGlobalOffset(prog, "enable_intermap");
+	if (v_enable_intermap_offset >= 0) {
+		float val = PRVM_GLOBALFIELDFLOAT(v_enable_intermap_offset);
+		if (val != 0)
+			have_intermap = true;
+	} // if
+	if (have_intermap || sv_intermap_siv_list.numstrings) {
+		// Regular changelevel does not save the map state <-- I think this is ok
+		// Regular changelevel does not load the .siv data (?) <-- I'm not sure this is ok.
+		// #pragma message ("This does not print ... error instead?")
+		// Con_PrintLinef (CON_RED, "Warning .SIV data destroyed with regular changelevel");
+		stringlistfreecontents (&sv_intermap_siv_list); // .SIV clear regular "changelevel"
+	}
+
+	vec3_t zero_origin = {0,0,0};
+	// Baker: At the moment, we expect changelevel2 everywhere if that is used.
+	// I don't think mixing and matching is a good idea,
+	// but if there is mix and match --- the idea would be 
+	// some maps are fresh and loaded from bsp everytime.
+	SV_SpawnServer (level, q_s_loadgame_NULL, q_s_startspot_EmptyString, zero_origin, /*totaltimeatstart*/ 0);
 
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
@@ -156,9 +319,16 @@ SV_Restart_f
 Restarts the current server for a dead player
 ==================
 */
-static void SV_Restart_f(cmd_state_t *cmd)
+WARP_X_ (SV_Changelevel_f SV_Changelevel2_f SV_Restart_f VM_changelevel SV_SpawnServer SV_SaveSpawnparms) // Q2X
+static void SV_Restart_f (cmd_state_t *cmd)
 {
-	char mapname[MAX_QPATH_128];
+	// Baker: How does this work for a loadgame?
+	char level_base_name[MAX_QPATH_128];
+	char level_startspot[64] = {0};
+	vec3_t level_startorigin = {0,0,0};
+	float level_totaltimeatstart = 0;
+	float level_totaltimeatlastexit = 0;
+	float level_surplustime = 0;
 
 	if (Cmd_Argc(cmd) != 1) {
 		Con_PrintLinef ("restart : restart current level");
@@ -175,8 +345,37 @@ static void SV_Restart_f(cmd_state_t *cmd)
 	if (host.hook.ToggleMenu)
 		host.hook.ToggleMenu();
 
-	strlcpy(mapname, sv.name, sizeof(mapname));
-	SV_SpawnServer(mapname, q_s_loadgame_NULL);
+	c_strlcpy (level_base_name, sv.name); 
+	c_strlcpy (level_startspot, sv.intermap_startspot); // .CROSS startspot "restart"
+	VectorCopy (sv.intermap_startorigin, level_startorigin); // .CROSS startorigin "restart"
+	level_totaltimeatstart = sv.intermap_totaltimeatstart;
+	level_totaltimeatlastexit = sv.intermap_totaltimeatlastexit;
+	level_surplustime = sv.intermap_surplustime;
+
+
+	// Baker: Extra considerations here.
+	// Was it an intermap load game?
+	if (sv.was_intermap_loaded_from_siv) {
+		WARP_X_ (SV_Changelevel2_f)
+		int siv_idx = stringlist_find_index (&sv_intermap_siv_list, level_base_name);
+		//char *s_siv_alloc = NULL;
+		if (siv_idx == not_found_neg1) {
+			// ADD - we have not been to this map
+			Con_PrintLinef ("SIV restart map error - somehow did not find .siv data for a map loaded from .siv");
+			SV_SpawnServer (level_base_name, q_s_loadgame_NULL, level_startspot, level_startorigin, level_totaltimeatstart);			
+		} else {
+			// UPDATE / STOMP
+			char *s_data = sv_intermap_siv_list.strings[siv_idx + 1];
+			int is_ok = SV_SpawnServer_Intermap_SIV_Is_Ok (level_base_name, s_data, level_startspot, level_startorigin, level_totaltimeatstart); // .SIV USE RESTART
+			if (is_ok == false) {
+				// Baker: If no save for the area, first time entering load from bsp
+				Con_PrintLinef ("SIV restart map error");
+			}
+
+		}
+
+	} else
+		SV_SpawnServer (level_base_name, q_s_loadgame_NULL, level_startspot, level_startorigin, level_totaltimeatstart);
 
 	if (sv.active && host.hook.ConnectLocal != NULL)
 		host.hook.ConnectLocal();
@@ -188,25 +387,29 @@ static void SV_Restart_f(cmd_state_t *cmd)
 static void SV_DisableCheats_c(cvar_t *var)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	int i = 0;
 
-	if (var->value == 0)
-	{
-		while (svs.clients[i].edict)
-		{
-			if (((int)PRVM_serveredictfloat(svs.clients[i].edict, flags) & FL_GODMODE))
-				PRVM_serveredictfloat(svs.clients[i].edict, flags) = (int)PRVM_serveredictfloat(svs.clients[i].edict, flags) ^ FL_GODMODE;
-			if (((int)PRVM_serveredictfloat(svs.clients[i].edict, flags) & FL_NOTARGET))
-				PRVM_serveredictfloat(svs.clients[i].edict, flags) = (int)PRVM_serveredictfloat(svs.clients[i].edict, flags) ^ FL_NOTARGET;
-			if (PRVM_serveredictfloat(svs.clients[i].edict, movetype) == MOVETYPE_NOCLIP ||
-				PRVM_serveredictfloat(svs.clients[i].edict, movetype) == MOVETYPE_FLY)
-			{
+	if (prog->loaded && var->value == 0) {
+		// bones - sv_cheats: fix two segfaults when setting it to 0
+		for (int i = 0; i < svs.maxclients; i ++) {
+			int newflags;
+			if (Have_Flag((int)PRVM_serveredictfloat(svs.clients[i].edict, flags), FL_GODMODE)) {
+				 newflags = PRVM_serveredictfloat(svs.clients[i].edict, flags);
+				 Flag_Remove_From (newflags, FL_GODMODE);
+				 PRVM_serveredictfloat(svs.clients[i].edict, flags) = newflags;
+			}
+
+			if (Have_Flag((int)PRVM_serveredictfloat(svs.clients[i].edict, flags), FL_NOTARGET)) {
+				 newflags = PRVM_serveredictfloat(svs.clients[i].edict, flags);
+				 Flag_Remove_From (newflags, FL_NOTARGET);
+				 PRVM_serveredictfloat(svs.clients[i].edict, flags) = newflags;
+			}
+
+			if (isin2 (PRVM_serveredictfloat(svs.clients[i].edict, movetype), MOVETYPE_NOCLIP, MOVETYPE_FLY)) {
 				noclip_anglehack = false;
 				PRVM_serveredictfloat(svs.clients[i].edict, movetype) = MOVETYPE_WALK;
 			}
-			i++;
-		}
-	}
+		} // for
+	} // if
 }
 
 /*
@@ -856,7 +1059,7 @@ static void SV_Status_f(cmd_state_t *cmd)
 		if (svs.clients[i].active)
 			players++;
 	print ("host:     %s" NEWLINE, Cvar_VariableString (&cvars_all, "hostname", CF_SERVER));
-	print ("version:  %s build %s (gamename %s) (extensions %x) (zmove on? %d)" NEWLINE, 
+	print ("version:  %s build %s (gamename %s) (extensions %x) (zmove on? %d)" NEWLINE,
 		gamename, buildstring, gamenetworkfiltername, sv.zirconprotcolextensions_sv, Have_Zircon_Ext_Flag_SV_Hard(ZIRCON_EXT_FREEMOVE_4)
 		);
 	print ("protocol: %d (%s) %s" NEWLINE, Protocol_NumberForEnum(sv.protocol), Protocol_NameForEnum(sv.protocol), sv.is_qex ? "(remaster)" : "" ); // AURA 5.0
@@ -949,7 +1152,7 @@ void SV_Name(int clientnum)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	PRVM_serveredictstring(host_client->edict, netname) = PRVM_SetEngineString(prog, host_client->name);
-	if (String_Does_Not_Match(host_client->old_name, host_client->name))
+	if (String_Does_NOT_Match(host_client->old_name, host_client->name))
 	{
 		// Baker: CON_WHITE because name may have color
 		if (host_client->begun)
@@ -988,7 +1191,7 @@ static void SV_Name_f(cmd_state_t *cmd)
 	if (cmd->source == src_local)
 		return;
 
-	if (host.realtime < host_client->nametime && String_Does_Not_Match (newName, host_client->name)) {
+	if (host.realtime < host_client->nametime && String_Does_NOT_Match (newName, host_client->name)) {
 		SV_ClientPrintf ("You can't change name more than once every %.1f seconds!" NEWLINE, max(0.0f, sv_namechangetimer.value));
 		return;
 	}
@@ -1187,7 +1390,7 @@ static void SV_Kick_f(cmd_state_t *cmd)
 		if (Cmd_Argc(cmd) > 2)
 		{
 			message = Cmd_Args(cmd);
-			COM_ParseToken_Simple(&message, false, false, true);
+			COM_Parse_Basic (&message);
 			if (byNumber)
 			{
 				message++;							// skip the #
@@ -1539,7 +1742,7 @@ static void SV_ShowModel_f (cmd_state_t *cmd)
 	if (Cmd_Argc(cmd) < 2) {
 		print (	"Usage: showmodel [model] [frame number] [z adjust] [scale]" NEWLINE
 				"Show a model by spawning an entity" NEWLINE
-				"Example: showmodel progs/player.mdl /*frame*/ 0 /*z adjust*/ -5 /*scale*/ 2" NEWLINE 
+				"Example: showmodel progs/player.mdl /*frame*/ 0 /*z adjust*/ -5 /*scale*/ 2" NEWLINE
 		);
 		return;
 	}
@@ -1559,7 +1762,7 @@ static void SV_ShowModel_f (cmd_state_t *cmd)
 
 	// Spawn where the player is aiming. We need a view matrix first.
 	if (cmd->source == src_client) {
-		vec3_t org, temp; //, temp, dest;
+		vec3_t org;// temp; //, temp, dest;
 		matrix4x4_t view;
 		//trace_t trace;
 		char s_origin_buffer[128];
@@ -1568,7 +1771,7 @@ static void SV_ShowModel_f (cmd_state_t *cmd)
 		SV_GetEntityMatrix(prog, host_client->edict, &view, true);
 
 		Matrix4x4_OriginFromMatrix	(&view, org);
-		VectorSet					(temp, 65536, 0, 0);
+		//VectorSet					(temp, 65536, 0, 0);
 
 		vec3_t forward;
 		vec3_t yawangles;
@@ -1583,7 +1786,7 @@ static void SV_ShowModel_f (cmd_state_t *cmd)
 		c_dpsnprintf3 (s_angles_buffer, "%g %g %g", cl.viewangles[0], -cl.viewangles[1], cl.viewangles[2]);
 
 		PRVM_ED_ParseEpair(prog, ed, PRVM_ED_FindField(prog, "origin"), s_origin_buffer, /*parse backslash*/ false);
-		PRVM_ED_ParseEpair(prog, ed, PRVM_ED_FindField(prog, "angles"), s_angles_buffer, /*parse backslash*/ false);		
+		PRVM_ED_ParseEpair(prog, ed, PRVM_ED_FindField(prog, "angles"), s_angles_buffer, /*parse backslash*/ false);
 
 		haveorigin = true;
 	}
@@ -1604,7 +1807,7 @@ static void SV_ShowModel_f (cmd_state_t *cmd)
 	WARP_X_ (VMX_SV_precache_model, VMX_SV_setmodel)
 	void VMX_SV_precache_model (prvm_prog_t *prog, const char *s_model);
 	void VMX_SV_setmodel (prvm_prog_t *prog, prvm_edict_t *e, const char *s_model);
-	
+
 	VMX_SV_precache_model	(prog, s_modelname);
 	VMX_SV_setmodel			(prog, ed, s_modelname);
 	// Baker: The origin should be set.
@@ -1814,6 +2017,7 @@ static void SV_Ent_Remove_All_f(cmd_state_t *cmd)
 		print ("Removed %d of " QUOTED_S NEWLINE, rmcount, Cmd_Argv(cmd, 1));
 }
 
+
 void SV_InitOperatorCommands(void)
 {
 	Cvar_RegisterVariable(&sv_cheats);
@@ -1827,6 +2031,7 @@ void SV_InitOperatorCommands(void)
 	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "map", SV_Map_f, "kick everyone off the server and start a new level"); // Baker r1003: close console for map/load/etc.
 	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "restart", SV_Restart_f, "restart current level"); // Baker r1003: close console for map/load/etc.
 	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "changelevel", SV_Changelevel_f, "change to another level, bringing along all connected clients"); // Baker r1003: close console for map/load/etc.
+	Cmd_AddCommand(CF_SHARED | CF_CLIENTCLOSECONSOLE, "changelevel2", SV_Changelevel2_f, "change to another level, bringing along all connected clients"); // Baker r1003: close console for map/load/etc.
 	Cmd_AddCommand(CF_SHARED | CF_SERVER_FROM_CLIENT, "say", SV_Say_f, "send a chat message to everyone on the server");
 	Cmd_AddCommand(CF_SERVER_FROM_CLIENT, "say_team", SV_Say_Team_f, "send a chat message to your team on the server");
 	Cmd_AddCommand(CF_SHARED | CF_SERVER_FROM_CLIENT, "tell", SV_Tell_f, "send a chat message to only one person on the server");
@@ -1840,6 +2045,7 @@ void SV_InitOperatorCommands(void)
 	Cmd_AddCommand(CF_SHARED, "viewnext", SV_Viewnext_f, "change to next animation frame of viewthing entity in current level");
 	Cmd_AddCommand(CF_SHARED, "viewprev", SV_Viewprev_f, "change to previous animation frame of viewthing entity in current level");
 	Cmd_AddCommand(CF_SHARED, "maxplayers", SV_MaxPlayers_f, "sets limit on how many players (or bots) may be connected to the server at once");
+	Cmd_AddCommand(CF_SHARED, "siv", SV_Siv_f, "List intermap .siv (entity saves) stored or siv [number] to copy one to the clipboard [Zircon]");
 	host.hook.SV_SendCvar = SV_SendCvar_f;
 
 	// commands that do not have automatic forwarding from cmd_local, these are internal details of the network protocol and not of interest to users (if they know what they are doing they can still use a generic "cmd prespawn" or similar)

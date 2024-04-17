@@ -182,6 +182,14 @@ void Sys_Shared_Init(void);
 // debug protocol exploits.
 #define DEMOMSG_CLIENT_TO_SERVER 0x80000000
 
+// Baker: model_t is defined late in the includes.
+typedef struct {
+	model_t		*modelui;
+	cachepic_t	*pic;
+	texture_t	*tex;
+} dynamic_baker_texture_t;
+
+void Dynamic_Baker_Texture2D_Prep (dynamic_baker_texture_t *fill, int is_dirty, const char *name, bgra4 *vimagedata, int in_pic_width, int in_pic_height);
 
 
 #endif // ! QUAKEDEF_H

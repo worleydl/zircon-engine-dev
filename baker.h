@@ -11,6 +11,7 @@
 #define PLUS1(x)							(x+1)
 #define UNPLUS1(YOUR_PLUS_1)				((YOUR_PLUS_1) - 1)
 
+#define unconstanting			// Baker: Used to mark a cast specifically to unconst
 
 WARP_X_ (dpsnprintf)
 WARP_X_ (Partial_Reset String_Does_Have_Uppercase)
@@ -23,7 +24,7 @@ WARP_X_ (String_Does_Have_Uppercase)
 #if defined(_WIN32) || defined(_WIN64)
  	# define PLATFORM_WINDOWS
 #else
-	
+
 #endif // !_WIN32 _WIN64
 
 #ifdef __GNUC__ // Clang has GNUC defined, yes or no?  Sounds like it does.  Confirm yes or no.  October 2 2020
@@ -35,7 +36,7 @@ WARP_X_ (String_Does_Have_Uppercase)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-//  DATA TYPES: Baker  
+//  DATA TYPES: Baker
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef unsigned char byte;
@@ -66,7 +67,12 @@ typedef struct _crect_t_s {
 #define not_found_neg1					-1				// strstrofs more legible
 
 #define RGBA_4							4				// Used to indicate a 4 x is bytes per pixel
-#define RGB_3							3				// Used to indicate a 3 x is bytes per pixel 
+#define BGRA_4							4				// Used to indicate a 4 x is bytes per pixel
+#define BGRA_BPP_32						32				// Used to indicate a 4 x is bytes per pixel
+#define RGBA_BPP_32						32				// Used to indicate a 4 x is bytes per pixel
+#define RGB_BPP_24						24				// Used to indicate a 4 x is bytes per pixel
+#define BGR_BPP_24						24				// Used to indicate a 4 x is bytes per pixel
+#define RGB_3							3				// Used to indicate a 3 x is bytes per pixel
 
 #define NULL_CHAR_0						0
 #define SPACE_CHAR_32					32
@@ -79,6 +85,8 @@ typedef struct _crect_t_s {
 
 #define	CARRIAGE_RETURN					"\r"
 #define	NEWLINE							"\n"
+#define	TAB_CHARACTER					"\t"
+#define SPACE_CHARACTER					" "
 
 ///////////////////////////////////////////////////////////////////////////////
 //  HUMAN READABLE MACROS: Baker
@@ -86,7 +94,7 @@ typedef struct _crect_t_s {
 
 // Baker
 #define Flag_Remove_From(x,flag)				x = (x) - ((x) & (flag))
-#define Flag_Toggle(x,flag)						x = ((x) ^= (flag))
+#define Flag_Toggle(x,flag)						x = ((x) ^ (flag))
 #define Flag_Mask_To_Only(x,flag)				x = ((x) & (flag))
 #define Flag_Add_To(x,flag)						x |= (flag)
 #define Have_Flag(x,flag)						((x) & (flag))
@@ -158,6 +166,8 @@ typedef struct _crect_t_s {
 //  DEV STRING: Baker
 ///////////////////////////////////////////////////////////////////////////////
 
+WARP_X_ (PRINTF_INT64)
+
 #define	 QUOTED_STR(s_literal)		"\"" s_literal "\""		// QUOTED_STR("maxplayers") -- LITERAL STRING (Unused but keep, move along ...)
 
 #define  QUOTED_F					"\"%f\""		//       quoted  Endangered?
@@ -168,11 +178,30 @@ typedef struct _crect_t_s {
 #define  SINGLE_QUOTED_S			"'%s'"			// single quoted
 
 	// %WIDTH.TRUNCs <--- yes the .20 truncates.
+#define S_FMT_LEFT_PAD_16			"%-16.16s"		// Negative means left pad or right pad?  LEFT  The .20 truncates at 20, right?
+#define S_FMT_RIGHT_PAD_16			"%16.16s"		// Negative means left pad or right pad?  LEFT  The 20 pads the .20 truncs
+
 #define S_FMT_LEFT_PAD_20			"%-20.20s"		// Negative means left pad or right pad?  LEFT  The .20 truncates at 20, right?
 #define S_FMT_RIGHT_PAD_20			"%20.20s"		// Negative means left pad or right pad?  LEFT  The 20 pads the .20 truncs
 
 #define S_FMT_LEFT_PAD_40			"%-40.40s"		// Negative means left pad or right pad?  LEFT  The .20 truncates at 20, right?
 #define S_FMT_RIGHT_PAD_40			"%40.40s"		// Negative means left pad or right pad?  LEFT  The 20 pads the .20 truncs
+
+// See also: PRIuPTR PRIx64	"llX" PRIx32 "lX" PRINTF_INT64 "%I64d"
+// Baker: We are going to cast size_t to int64_t .. move along ...
+WARP_X_ (PRINTF_INT64)
+//#if defined(_MSC_VER) || defined(__MINGW32__) //__MINGW32__ should goes before __GNUC__
+//  #define SIZE_T_ZU_F				"%Iu"	size_t
+//  #define SSIZE_T_ZD_F				"%Id"	ssize_t
+//  #define PTRDIFF_T_ZD_F			"%Id"	
+////  #define PRIu64							uint64_t
+//#elif defined(__GNUC__)
+//  #define SIZE_T_ZU_F				"%zu"
+//  #define SSIZE_T_ZD_F				"%zd"
+//  #define PTRDIFF_T_ZD_F			"%zd"
+//#else
+//	FIX ME -- Mac?
+//#endif
 
 #define VECTOR3_5d1F				"%5.1f %5.1f %5.1f"
 #define VECTOR3_SEND(v)				(v)[0], (v)[1], (v)[2]
@@ -181,9 +210,9 @@ typedef struct _crect_t_s {
 //  INTERNAL MACROS: Baker
 ///////////////////////////////////////////////////////////////////////////////
 
-#define case_break						break; { } case							// MVP.  Used tons.  default: much come first in switch. 
+#define case_break						break; { } case							// MVP.  Used tons.  default: much come first in switch.
 
-#define STRINGIFY(x)					#x		
+#define STRINGIFY(x)					#x
 
 #define freenull_(x)					if (x) { free (x); x = NULL; }
 #define setstr(x,y)						freenull_ (x) x = strdup(y);
@@ -205,16 +234,17 @@ typedef struct _crect_t_s {
 /*internalish*/ size_t File_Length2 (const char *path_to_file, requiredx int *p_is_existing);
 
 ///////////////////////////////////////////////////////////////////////////////
-//  SYSTEM STUFF: Baker - why here, though? 
+//  SYSTEM STUFF: Baker - why here, though?
 ///////////////////////////////////////////////////////////////////////////////
 
 int Sys_Clipboard_Set_Image (unsigned *rgba, int width, int height);
 int Sys_Clipboard_Set_Text (const char *text_to_clipboard);
 int Sys_Folder_Open_Folder_Must_Exist (const char *path_to_file);
-SBUF___ const char *Sys_Binary_URL_SBuf (void); // 
+SBUF___ const char *Sys_Binary_URL_SBuf (void); //
 
 SBUF___ char *Sys_Getcwd_SBuf (void);
 
+#define roundup_16(n) (((n) + 15) & ~15)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  AUTOCOMPLETION: Baker
@@ -253,8 +283,17 @@ SBUF___ char *Sys_Getcwd_SBuf (void);
 		} // Ender
 
 
-
+#define iif(_cond, trueval, falseval)	((_cond) ? (trueval) : (falseval))
 WARP_X_ (Partial_Reset String_Does_Have_Uppercase)
+
+#define Math_IsOdd(_yourint) ((_yourint) & 1 ) // IS_EVEN IS_ODD ODD EVEN
+
+#ifdef _DEBUG
+	#define c_assert(x) assert(x)
+#else
+	#define c_assert(x)
+#endif
+
 #endif // ! __BAKER_H__
 
 

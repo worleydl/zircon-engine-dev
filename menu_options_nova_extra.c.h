@@ -7,6 +7,16 @@ extern cvar_t cl_bobmodel_speed;
 extern cvar_t cl_bobmodel_classic;
 extern cvar_t cl_bob;
 
+
+const char *get_overbright4_text (int level)
+{
+	switch (level) {
+	default:
+	case  0:	return "DarkPlaces";
+	case  1:	return "Quakespasm";
+	}
+}
+
 const char *get_bobbing2_text (int level)
 {
 	switch (level) {
@@ -24,6 +34,22 @@ int get_bobbing2_rot()
 	return 0;
 }
 
+// Get the current level.  DarkPlaces 0, Quakespasm 1
+int get_overbright4_rot()
+{
+	if (gl_overbright_models.value) return 1;	// Off
+	return 0;
+}
+
+
+static void set_overbright4 (int level)
+{
+	switch (level) {
+	default:
+	case 0:  Cbuf_AddTextLine (cmd_local, "gl_overbright_models 0"); break; // DarkPlaces
+	case 1:  Cbuf_AddTextLine (cmd_local, "gl_overbright_models 1"); break; // Quakespasm
+	} // sw
+}
 
 static void set_bobbing2 (int level)
 {
@@ -147,7 +173,7 @@ static void set_statusbar4 (int level)
 }
 
 
-// Gun position
+// Show fps
 const char *get_showfps5_text (int level)
 {
 	switch (level) {

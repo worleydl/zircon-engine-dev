@@ -1692,12 +1692,12 @@ cl_deathscoreboard.integer && cl.scores[cl.playerentity-1].qw_spectator == false
 			}
 
 			Sbar_DrawString ((320 - 8 -3 ) - (int)strlen(vabuf) * 8, -24, vabuf);
-		}
+		} // clock
 
+	} // dead
 }
-}
 
-
+extern int cl_videoplaying;
 void Sbar_Draw (void)
 {
 	cachepic_t *pic;
@@ -1719,7 +1719,7 @@ void Sbar_Draw (void)
 		else										{	SBar_Quake ();	}  // Quake and others
 	}
 
-	if (cl.csqc_vidvars.drawcrosshair && crosshair.integer >= 1 && !cl.intermission && !r_letterbox.value) {
+	if (cl.csqc_vidvars.drawcrosshair && crosshair.integer >= 1 && !cl_videoplaying && !cl.intermission && !r_letterbox.value) {
 		pic = Draw_CachePic (va(vabuf, sizeof(vabuf), "gfx/crosshair%d", crosshair.integer));
 		DrawQ_Pic((vid_conwidth.integer - Draw_GetPicWidth(pic) * crosshair_size.value) * 0.5f, (vid_conheight.integer - Draw_GetPicHeight(pic) * crosshair_size.value) * 0.5f, pic, Draw_GetPicWidth(pic) * crosshair_size.value, Draw_GetPicHeight(pic) * crosshair_size.value, crosshair_color_red.value, crosshair_color_green.value, crosshair_color_blue.value, crosshair_color_alpha.value, 0);
 	}
@@ -1982,19 +1982,6 @@ void Sbar_Init (void)
 
 	Cvar_RegisterVariable(&showpos); // Baker r7082 showpos showangles
 	Cvar_RegisterVariable(&showangles); // Baker r7082 showpos showangles
-
-#if 0	
-	Cvar_RegisterVirtual(&showfps, "cl_showfps");
-	Cvar_RegisterVirtual(&showsound, "cl_showsound");
-	Cvar_RegisterVirtual(&showblur, "cl_showblur");
-	Cvar_RegisterVirtual(&showspeed, "cl_showspeed");
-	Cvar_RegisterVirtual(&showtopspeed, "cl_showtopspeed");
-	Cvar_RegisterVirtual(&showtime, "cl_showtime");
-	Cvar_RegisterVirtual(&showtime_format, "vshowtime_format");
-	Cvar_RegisterVirtual(&showdate, "cl_showdate");
-	Cvar_RegisterVirtual(&showdate_format, "cl_showdate_format");
-	Cvar_RegisterVirtual(&showtex, "cl_showtex");
-#endif
 
 	Cvar_RegisterVariable(&sbar_alpha_bg);
 	Cvar_RegisterVariable(&sbar_alpha_fg);

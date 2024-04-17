@@ -68,6 +68,7 @@ int (*qLibAvW_PlayVideo)(void *stream, void *file, avwCallbackIoRead *IoRead, av
 int (*qLibAvW_PlaySeekNextFrame)(void *stream);
 int (*qLibAvW_PlayGetFrameImage)(void *stream, int pixel_format, void *imagedata, int imagewidth, int imageheight, int scaler);
 
+// dumpbin, use the /exports
 static dllfunction_t libavwfuncs[] =
 {
 	{"LibAvW_Init",                (void **) &qLibAvW_Init },
@@ -168,7 +169,7 @@ static int libavw_decodeframe(void *stream, void *imagedata, unsigned int Rmask,
 	if (!s->sndstarted)
 	{
 		if (s->sfx != NULL)
-			s->sndchan = S_StartSound(-1, 0, s->sfx, vec3_origin, 1.0f, 0);
+			s->sndchan = S_StartSound(-1, 0, s->sfx, vec3_origin, 1.0f, 0, q_is_forceloop_false);
 		s->sndstarted = 1;
 	}
 
@@ -272,7 +273,7 @@ void *LibAvW_OpenVideo(clvideo_t *video, char *filename, const char **errorstrin
 	s->sndchan = -1;
 
 	// open file
-	s->file = FS_OpenVirtualFile(filename, true);
+	s->file = FS_OpenVirtualFile(filename, fs_quiet_true);
 	if (!s->file)
 	{
 		FS_StripExtension(filename, filebase, sizeof(filebase));
@@ -280,7 +281,7 @@ void *LibAvW_OpenVideo(clvideo_t *video, char *filename, const char **errorstrin
 		for (i = 0; libavw_extensions[i] != NULL; i++)
 		{
 			dpsnprintf(check, sizeof(check), "%s.%s", filebase, libavw_extensions[i]);
-			s->file = FS_OpenVirtualFile(check, true);
+			s->file = FS_OpenVirtualFile(check, fs_quiet_true);
 			if (s->file)
 				break;
 		}

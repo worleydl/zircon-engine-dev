@@ -34,14 +34,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 float con_cursorspeed = 4;
 
 // lines up from bottom to display
-int con_backscroll;
+int con_backscroll; // Baker: This is # of console text lines of backscroll
 
 conbuffer_t con;
 void *con_mutex = NULL;
 
-#define CON_LINES(i) CONBUFFER_LINES(&con, i)
-#define CON_LINES_LAST CONBUFFER_LINES_LAST(&con)
-#define CON_LINES_COUNT CONBUFFER_LINES_COUNT(&con)
+#define CON_LINES(i)		CONBUFFER_LINES(&con, i)
+#define CON_LINES_LAST		CONBUFFER_LINES_LAST(&con)
+#define CON_LINES_COUNT		CONBUFFER_LINES_COUNT(&con)
 
 cvar_t con_notifytime = {CF_CLIENT | CF_ARCHIVE, "con_notifytime","3", "how long notify lines last, in seconds"};
 cvar_t con_notify = {CF_CLIENT | CF_ARCHIVE, "con_notify","4", "how many notify lines to show"};
@@ -81,7 +81,7 @@ static void Con_Pos_f(cmd_state_t *cmd)
 			cl.entities[cl.playerentity].state_current.angles[1],
 			cl.entities[cl.playerentity].state_current.angles[2]
 			);
-			Clipboard_Set_Text (vabuf); // "pos"
+			Clipboard_Set_Text (vabuf); // AUTH: "pos"
 			Con_PrintLinef ("pos to clipboard: " NEWLINE "%s", vabuf);
 	} else {
 		Con_PrintLinef ("No entities");
@@ -174,9 +174,9 @@ void ConBuffer_Init(conbuffer_t *buf, int textsize, int maxlines, mempool_t *mem
 {
 	buf->active = true;
 	buf->textsize = textsize;
-	buf->text = (char *) Mem_Alloc(mempool, textsize);
+	buf->textcon = (char *) Mem_Alloc(mempool, textsize);
 	buf->maxlines = maxlines;
-	buf->lines = (con_lineinfo_t *) Mem_Alloc(mempool, maxlines * sizeof(*buf->lines));
+	buf->clines = (con_lineinfo_t *) Mem_Alloc(mempool, maxlines * sizeof(*buf->clines));
 	buf->lines_first = 0;
 	buf->lines_count = 0;
 }
@@ -287,12 +287,12 @@ ConBuffer_Shutdown
 void ConBuffer_Shutdown(conbuffer_t *buf)
 {
 	buf->active = false;
-	if (buf->text)
-		Mem_Free(buf->text);
-	if (buf->lines)
-		Mem_Free(buf->lines);
-	buf->text = NULL;
-	buf->lines = NULL;
+	if (buf->textcon)
+		Mem_Free(buf->textcon);
+	if (buf->clines)
+		Mem_Free(buf->clines);
+	buf->textcon = NULL;
+	buf->clines = NULL;
 }
 
 /*
@@ -358,20 +358,20 @@ static char *ConBuffer_BytesLeft(conbuffer_t *buf, int len)
 	if (len > buf->textsize)
 		return NULL;
 	if (buf->lines_count == 0)
-		return buf->text;
+		return buf->textcon;
 	else
 	{
-		char *firstline_start = buf->lines[buf->lines_first].start;
-		char *lastline_onepastend = CONBUFFER_LINES_LAST(buf).start + CONBUFFER_LINES_LAST(buf).len;
+		char *firstline_start = buf->clines[buf->lines_first].pstart;
+		char *lastline_onepastend = CONBUFFER_LINES_LAST(buf).pstart + CONBUFFER_LINES_LAST(buf).line_strlen;
 		// the buffer is cyclic, so we first have two cases...
 		if (firstline_start < lastline_onepastend) // buffer is contiguous
 		{
 			// put at end?
-			if (len <= buf->text + buf->textsize - lastline_onepastend)
+			if (len <= buf->textcon + buf->textsize - lastline_onepastend)
 				return lastline_onepastend;
 			// put at beginning?
-			else if (len <= firstline_start - buf->text)
-				return buf->text;
+			else if (len <= firstline_start - buf->textcon)
+				return buf->textcon;
 			else
 				return NULL;
 		}
@@ -418,11 +418,11 @@ void ConBuffer_AddLine(conbuffer_t *buf, const char *line, int len, int mask)
 	//fprintf(stderr, "Now have %d lines (%d -> %d).\n", buf->lines_count, buf->lines_first, CON_LINES_LAST);
 
 	p = &CONBUFFER_LINES_LAST(buf);
-	p->start = putpos;
-	p->len = len;
+	p->pstart = putpos;
+	p->line_strlen = len;
 	p->addtime = cl.time;
 	p->mask = mask;
-	p->height = -1; // calculate when needed
+	p->line_num_rows_height = -1; // calculate when needed
 }
 
 int ConBuffer_FindPrevLine(conbuffer_t *buf, int mask_must, int mask_mustnot, int start)
@@ -449,8 +449,8 @@ const char *ConBuffer_GetLine(conbuffer_t *buf, int i)
 {
 	static char copybuf[MAX_INPUTLINE_16384]; // client only
 	con_lineinfo_t *l = &CONBUFFER_LINES(buf, i);
-	size_t sz = l->len+1 > sizeof(copybuf) ? sizeof(copybuf) : l->len+1;
-	strlcpy(copybuf, l->start, sz);
+	size_t sz = l->line_strlen+1 > sizeof(copybuf) ? sizeof(copybuf) : l->line_strlen+1;
+	strlcpy(copybuf, l->pstart, sz);
 	return copybuf;
 }
 
@@ -567,7 +567,7 @@ static void Log_Open (void)
 	if (logfile != NULL || log_file.string[0] == '\0')
 		return;
 
-	logfile = FS_OpenRealFile(log_file.string, "a", false);
+	logfile = FS_OpenRealFile(log_file.string, "a", fs_quiet_FALSE); // WRITE-EON debug log
 	if (logfile != NULL)
 	{
 		strlcpy (crt_log_file, log_file.string, sizeof (crt_log_file));
@@ -699,7 +699,7 @@ void Log_ConPrint (const char *msg)
 			FS_Print (logfile, sanitizedmsg);
 			Mem_Free(sanitizedmsg);
 		}
-		else 
+		else
 		{
 			FS_Print (logfile, msg);
 		}
@@ -718,7 +718,7 @@ void Log_Printf (const char *logfilename, const char *fmt, ...)
 {
 	qfile_t *file;
 
-	file = FS_OpenRealFile(logfilename, "a", true);
+	file = FS_OpenRealFile(logfilename, "a", fs_quiet_true);
 	if (file != NULL)
 	{
 		va_list argptr;
@@ -748,17 +748,18 @@ void Con_ToggleConsole (void)
 			return; // only allow the key bind to turn off console
 
 	// toggle the 'user wants console' bit
-	Flag_Toggle (key_consoleactive, KEY_CONSOLEACTIVE_USER_1);
+	Flag_Toggle (key_consoleactive, KEY_CONSOLEACTIVE_USER_1); Consel_MouseReset("Con_ToggleConsole");
 
-#if 1 // Baker 1013.1	
+#if 1 // Baker 1013.1
 	// Baker: Key_ClearEditLine returns 1, calls Partial_Reset_Undo_Selection_Reset, key_linepos to 1, clears text
 	key_linepos = Key_ClearEditLine(true); // SEL/UNDO Con_ToggleConsole calls Partial_Reset_Undo_Selection_Reset
 
 	// Baker: This is the only real place both of these variables are reset
 	// Everything calls Con_ToggleConsole
-	SET___ con_backscroll = 0; history_line = -1; 
+	SET___ con_backscroll = 0; history_line = -1;
 #endif
 
+	Consel_MouseReset ("Con_ToggleConsole");
 	Con_ClearNotify(); // Baker: Really?  Do other engines do that?  No.  But's not a big deal.
 }
 
@@ -799,7 +800,7 @@ static void Con_MsgCmdMode(cmd_state_t *cmd, signed char mode)
 {
 	if (cls.demoplayback && mode >= 0)
 		return;
-	key_dest = key_message;
+	KeyDest_Set (key_message); // key_dest = key_message;
 	chat_mode = mode;
 	if (Cmd_Argc(cmd) > 1) {
 		c_dpsnprintf1(chat_buffer, "%s ", Cmd_Args(cmd));
@@ -864,7 +865,7 @@ void Con_CheckResize (void)
 	con_linewidth = width;
 
 	for(i = 0; i < CON_LINES_COUNT; ++i)
-		CON_LINES(i).height = -1; // recalculate when next needed
+		CON_LINES(i).line_num_rows_height = -1; // recalculate when next needed
 
 	Con_ClearNotify();
 	con_backscroll = 0;
@@ -890,10 +891,10 @@ static void Con_ConDump_f(cmd_state_t *cmd)
 	int i;
 	qfile_t *file;
 	if (Cmd_Argc(cmd) != 2) {
-		Con_Printf("usage: condump <filename>\n");
+		Con_PrintLinef ("usage: condump <filename>");
 		return;
 	}
-	file = FS_OpenRealFile(Cmd_Argv(cmd, 1), "w", false);
+	file = FS_OpenRealFile(Cmd_Argv(cmd, 1), "w", fs_quiet_FALSE); // WRITE-EON condump
 	if (!file) {
 		Con_PrintLinef (CON_ERROR "condump: unable to write file " QUOTED_S, Cmd_Argv(cmd, 1));
 		return;
@@ -904,16 +905,16 @@ static void Con_ConDump_f(cmd_state_t *cmd)
 		if (condump_stripcolors.integer)
 		{
 			// sanitize msg
-			size_t len = CON_LINES(i).len;
+			size_t len = CON_LINES(i).line_strlen;
 			char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
-			memcpy (sanitizedmsg, CON_LINES(i).start, len);
+			memcpy (sanitizedmsg, CON_LINES(i).pstart, len);
 			SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
 			FS_Write(file, sanitizedmsg, strlen(sanitizedmsg));
 			Mem_Free(sanitizedmsg);
 		}
-		else 
+		else
 		{
-			FS_Write(file, CON_LINES(i).start, CON_LINES(i).len);
+			FS_Write(file, CON_LINES(i).pstart, CON_LINES(i).line_strlen);
 		}
 		FS_Write(file, "\n", 1);
 	}
@@ -929,9 +930,17 @@ static void Con_Copy_Ents_f(void)
 		Con_PrintLinef ("Not running a server");
 		return;
 	}
-	const char *s_ents = sv.worldmodel->brush.entities; // , (fs_offset_t)strlen(sv.worldmodel->brush.entities));
-	Clipboard_Set_Text(s_ents); // copy ents
-	Con_PrintLinef ("Entities copied console to clipboard");
+
+	char *entities, entname[MAX_QPATH_128];
+	dpsnprintf (entname, sizeof(entname), "%s.ent", sv.worldnamenoextension);
+	if ((entities = (char *)FS_LoadFile(entname, tempmempool, fs_quiet_true, fs_size_ptr_null))) {
+		Clipboard_Set_Text(entities); // AUTH: Copy ents
+		Mem_Free(entities);
+		Con_PrintLinef ("Entities from .ent copied console to clipboard");
+	} else {
+		Clipboard_Set_Text(sv.worldmodel->brush.entities); // AUTH: copy ents
+		Con_PrintLinef ("Entities from .bsp copied console to clipboard");
+	}
 }
 
 // Copy "showtex" current texture
@@ -956,26 +965,26 @@ static void Con_Copy_Tex_f(void)
 	// clear the traces as we may or may not fill them out, and mark them with an invalid fraction so we know if we did
 	memset(&cltrace, 0, sizeof(cltrace));
 	cltrace.fraction = 2.0;
-	
+
 	trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask, float extend, qbool hitnetworkbrushmodels, int hitnetworkplayers, int *hitnetworkentity, qbool hitcsqcentities, qbool hitsurfaces);
-	cltrace = CL_TraceLine(org, dest, MOVE_HITMODEL, NULL, 
-			SUPERCONTENTS_SOLID | SUPERCONTENTS_WATER | SUPERCONTENTS_SLIME | 
+	cltrace = CL_TraceLine(org, dest, MOVE_HITMODEL, NULL,
+			SUPERCONTENTS_SOLID | SUPERCONTENTS_WATER | SUPERCONTENTS_SLIME |
 			SUPERCONTENTS_LAVA | SUPERCONTENTS_SKY
-		, 
-		0, 
-		showtex.integer >= 2 ? MATERIALFLAGMASK_TRANSLUCENT : 0, collision_extendmovelength.value, 
+		,
+		0,
+		showtex.integer >= 2 ? MATERIALFLAGMASK_TRANSLUCENT : 0, collision_extendmovelength.value,
 		true, false, &hitnetentity, true, true);
 	if (cltrace.hittexture)
 		c_strlcpy (texstring, cltrace.hittexture->name);
 	else
 		c_strlcpy (texstring, "(no texture hit)");
 
-	Clipboard_Set_Text (texstring); // copy tex
+	Clipboard_Set_Text (texstring); // AUTH: copy tex
 	Con_PrintLinef ("texturename " QUOTED_S " copied console to clipboard", texstring);
 }
 
 WARP_X_(Con_ConDump_f)
-void Con_Copy_f(cmd_state_t* cmd)
+void Con_Copy_f(cmd_state_t *cmd)
 {
 	int j;
 
@@ -995,10 +1004,37 @@ void Con_Copy_f(cmd_state_t* cmd)
 	}
 
 	if (con_mutex) Thread_LockMutex(con_mutex);
-	int tle = 1;
+#if 1
+	baker_string_t *k_console = BakerString_Create_Alloc ("");
+	char sanitized_msg_buf[MAX_INPUTLINE_16384];
 	for (j = 0; j < CON_LINES_COUNT; ++j) {
 		// sanitize msg
-		con_lineinfo_t* cc = &CON_LINES(j);
+		con_lineinfo_t *cc = &CON_LINES(j);
+		if (Have_Flag(cc->mask, CON_MASK_DEVELOPER) && !developer.integer)
+			continue;
+
+		size_t len = CON_LINES(j).line_strlen;
+//		if (len >= sizeof(sanitized_msg_buf)) {
+	//		int j = 5;
+		//}
+		//char *sanitizedmsg = (char *)Mem_Alloc (tempmempool, len + 1);
+		memcpy (sanitized_msg_buf, CON_LINES(j).pstart, len);
+		sanitized_msg_buf[len] = 0;
+
+		SanitizeString (sanitized_msg_buf, sanitized_msg_buf); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
+		BakerString_Cat_No_Collide (k_console, strlen(sanitized_msg_buf), sanitized_msg_buf);
+		BakerString_Cat_No_Collide (k_console, STRINGLEN(NEWLINE), NEWLINE);
+		//strlcat (s_msg_alloc, sanitizedmsg, total_length_required);
+		//strlcat (s_msg_alloc, "\n", total_length_required);
+		//Mem_Free(sanitizedmsg);
+	} // for
+
+
+#else
+	int total_length_required = ONE_CHAR_1;
+	for (j = 0; j < CON_LINES_COUNT; ++j) {
+		// sanitize msg
+		con_lineinfo_t *cc = &CON_LINES(j);
 		if (Have_Flag(cc->mask, CON_MASK_DEVELOPER) && !developer.integer)
 			continue;
 
@@ -1006,13 +1042,13 @@ void Con_Copy_f(cmd_state_t* cmd)
 		char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
 		memcpy(sanitizedmsg, CON_LINES(j).start, len);
 		SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
-		tle += ((int)strlen(sanitizedmsg) + ONE_CHAR_1);
+		total_length_required += ((int)strlen(sanitizedmsg) + ONE_CHAR_1);
 		Mem_Free(sanitizedmsg);
 	}
-	char *s_msg_alloc = (char *)calloc(tle, 1);
+	char *s_msg_alloc = (char *)calloc(total_length_required, 1);
 	for (j = 0; j < CON_LINES_COUNT; ++j) {
 		// sanitize msg
-		con_lineinfo_t* cc = &CON_LINES(j);
+		con_lineinfo_t *cc = &CON_LINES(j);
 		if (Have_Flag(cc->mask, CON_MASK_DEVELOPER) && !developer.integer)
 			continue;
 
@@ -1020,19 +1056,63 @@ void Con_Copy_f(cmd_state_t* cmd)
 		char *sanitizedmsg = (char *)Mem_Alloc(tempmempool, len + 1);
 		memcpy(sanitizedmsg, CON_LINES(j).start, len);
 		SanitizeString(sanitizedmsg, sanitizedmsg); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
-		strlcat(s_msg_alloc, sanitizedmsg, tle);
-		strlcat(s_msg_alloc, "\n", tle);
+		strlcat (s_msg_alloc, sanitizedmsg, total_length_required);
+		strlcat (s_msg_alloc, "\n", total_length_required);
 		Mem_Free(sanitizedmsg);
 	}
+#endif
 	if (con_mutex) Thread_UnlockMutex(con_mutex);
+#if 1
+	Clipboard_Set_Text (k_console->string); // AUTH: Con_Copy_f
+	BakerString_Destroy_And_Null_It (&k_console);
+#else
 	Clipboard_Set_Text (s_msg_alloc); // Con_Copy_f
-	Con_PrintLinef ("Copied console to clipboard");
-
 	freenull_(s_msg_alloc);
+#endif
+	Con_PrintLinef ("Copied console to clipboard");
+}
+
+WARP_X_ (Con_Copy_f)
+void Consel_Copy (void)
+{
+	if (con_mutex) Thread_LockMutex(con_mutex);
+
+	baker_string_t *k_console = BakerString_Create_Alloc ("");
+	char sanitized_msg_buf[MAX_INPUTLINE_16384];
+	for (int j = 0; j < CON_LINES_COUNT; j ++) {
+		// sanitize msg
+		con_lineinfo_t *cc = &CON_LINES(j);
+		int realidx = CON_TRUEIDX (j);
+		int in_the_range1 = 
+			(g_consel.a.mousedown_end_row_index > g_consel.a.mousedown_row_index) ?
+			in_range (g_consel.a.mousedown_row_index,realidx, g_consel.a.mousedown_end_row_index) :
+			in_range (g_consel.a.mousedown_end_row_index,realidx, g_consel.a.mousedown_row_index);
+
+		if (in_the_range1 == false)
+			continue;
+
+		if (Have_Flag(cc->mask, CON_MASK_DEVELOPER) && !developer.integer)
+			continue;
+
+		size_t len = CON_LINES(j).line_strlen;
+		memcpy (sanitized_msg_buf, CON_LINES(j).pstart, len);
+		sanitized_msg_buf[len] = 0;
+
+		SanitizeString (sanitized_msg_buf, sanitized_msg_buf); // SanitizeString's in pointer is always ahead of the out pointer, so this should work.
+		BakerString_Cat_No_Collide (k_console, strlen(sanitized_msg_buf), sanitized_msg_buf);
+		BakerString_Cat_No_Collide (k_console, STRINGLEN(NEWLINE), NEWLINE);
+	} // for
+
+	if (con_mutex) Thread_UnlockMutex(con_mutex);
+
+	Clipboard_Set_Text (k_console->string); // AUTH: Con_Copy_f
+	BakerString_Destroy_And_Null_It (&k_console);
+
+	//Con_PrintLinef ("Copied selected console text to clipboard");
 }
 
 // Baker r3102: "folder" command
-static void Con_Folder_f(cmd_state_t* cmd)
+static void Con_Folder_f(cmd_state_t *cmd)
 {
 #ifdef __ANDROID__
 	Con_PrintLinef ("folder opening not supported for this build");
@@ -1150,10 +1230,10 @@ static void Con_PrintToHistory(const char *txt, int mask)
 	//   \r deletes current line and makes a new one
 
 	static int cr_pending = 0;
-	static char buf[CON_TEXTSIZE]; // con_mutex
+	static char buf[CON_TEXTSIZE_1_MB]; // con_mutex
 	static int bufpos = 0;
 
-	if (!con.text) // FIXME uses a non-abstracted property of con
+	if (!con.textcon) // FIXME uses a non-abstracted property of con
 		return;
 
 	for(; *txt; ++txt)
@@ -1467,13 +1547,13 @@ void Con_MaskPrint(int additionalmask, const char *msg)
 									else g -= 87;
 									if (isdigit(b)) b -= '0';
 									else b -= 87;
-									
+
 									color = Sys_Con_NearestColor(r * 17, g * 17, b * 17);
 									in += 3; // 3 only, the switch down there does the fourth
 								}
 								else
 									color = in[1];
-								
+
 								switch(color)
 								{
 									case STRING_COLOR_TAG:
@@ -1677,7 +1757,7 @@ void Con_PrintLinef (const char *fmt, ...)
 
 	// Baker: We are doing -4 to ensure room for newline
 	// TODO: Check that dpvsnprintf handles UTF-8 truncation properly?
-	//  Nope. vsnprintf can truncate anywhere ...  
+	//  Nope. vsnprintf can truncate anywhere ...
 	va_start(argptr,fmt);
 	dpvsnprintf(msg, /*size*/ MAX_INPUTLINE_16384 - 4, fmt, argptr);
 	va_end(argptr);
@@ -1755,7 +1835,7 @@ void Con_DPrintLinef(const char *fmt, ...)
 
 	// Baker: We are doing -4 to ensure room for newline
 	// TODO: Check that dpvsnprintf handles UTF-8 truncation properly?
-	//  Nope. vsnprintf can truncate anywhere ...  
+	//  Nope. vsnprintf can truncate anywhere ...
 	va_start(argptr, fmt);
 	dpvsnprintf(msg, /*size*/ MAX_INPUTLINE_16384 - 4, fmt, argptr);
 	va_end(argptr);
@@ -1788,7 +1868,7 @@ Modified by EvilTypeGuy eviltypeguy@qeradiant.com
 */
 
 // FFA extern const char *g_p_selbeyond;
-// FFA extern int g_p_selbeyond_x; 
+// FFA extern int g_p_selbeyond_x;
 
 static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 {
@@ -1858,7 +1938,8 @@ static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 			}
 	}
 
-	if (!is_console) {
+	if (is_console == false) {
+		// Baker: Chat mode ...
 		prefix_start = x;
 		x += DrawQ_TextWidth(prefix, 0, inputsize, inputsize, false, fnt);
 	}
@@ -1868,7 +1949,7 @@ static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 	xo = 0;
 
 	if (linepos > 0)
-		xo = DrawQ_TextWidth_UntilWidth_TrackColors(text, &len_out, 
+		xo = DrawQ_TextWidth_UntilWidth_TrackColors(text, &len_out,
 			inputsize, inputsize, &col_out, false, fnt, 1000000000);
 
 	text_start = x + (vid_conwidth.value - x) * 0.95 - xo; // scroll
@@ -1885,14 +1966,14 @@ static void Con_DrawInput (qbool is_console, float x, float v, float inputsize)
 
 baker_font_setup_here:
 
-#if 0 // // FFA 
+#if 0 // // FFA
 	// Baker the additional chars is onlu when linepos is in there
 	if (0 && is_console && key_sellength) {
 		int xcharpos0		= key_sellength > 0 ? key_linepos - key_sellength : key_linepos;
 		int xcharlength		= key_sellength > 0 ? key_sellength :  - key_sellength;
 		int xcharbeyond		= xcharpos0 + xcharlength;
 		char *s_ptr_beyond	= &text[xcharbeyond];
-		
+
 		g_p_selbeyond		= s_ptr_beyond;
 		g_p_selbeyond_x		= 0;
 	} else {
@@ -1908,7 +1989,7 @@ baker_font_setup_here:
 		text_slen + 3,		// draw length in chars, might be altered above
 		inputsize,			// width con_textsize.value or chatmode uses notifysize
 		inputsize,			// height
-		1.0, 1.0, 1.0, 1.0, // rgba 
+		1.0, 1.0, 1.0, 1.0, // rgba
 		0,					// flags
 		NULL,				// color reply
 		false,				// ignore color codes
@@ -1932,6 +2013,8 @@ baker_font_setup_here:
 			memcpy(text, curbuf, len);
 			text[len] = 0;
 		}
+
+		// Baker: This is either console or chatmode
 		if (is_console) {
 			// Selection would be DRAWFLAG_ADDITIVE
 			// Baker r0003: Thin cursor / no text overwrite mode
@@ -1941,14 +2024,16 @@ baker_font_setup_here:
 			con_textsize.value * 1/*(6/8.0)*/, /*rgb*/ 0.75, 0.75, 0.75, /*a*/ 1.0, DRAWFLAG_NORMAL_0);	// h
 		} else {
 			// Baker: Is this always chat mode?  Yes
-			DrawQ_String (text_start + xo, v, text, 0, inputsize, 
+			DrawQ_String (text_start + xo, v, text, 0, inputsize,
 				inputsize, 1.0, 1.0, 1.0, 1.0, 0, &col_out, false, fnt);
 		}
 
 	} // cursor visible
 
 	if (is_console && key_sellength) {
+#if 0 // gcc unused
 		float draw_start = text_start + xo; // Baker: should always be accurate
+#endif
 		// Baker: What happens if we try to put UTF8 in a name?
 		// How can we input UTF8 into DarkPlaces without the clipboard?
 		// Baker: It's a bit more complex .. DarkPlaces supports ^xFC3 RGB color codes
@@ -2091,7 +2176,8 @@ static int Con_DrawNotifyRect(int mask_must, int mask_mustnot, float maxage, flo
 
 		// WE FOUND ONE!
 		// Calculate its actual height...
-		mylines = COM_Wordwrap(l->start, l->len, continuationWidth, width, Con_WordWidthFunc, &ti, Con_CountLineFunc, &ti);
+		// Baker: So darkplaces will wordwrap super long text lines of notify text.
+		mylines = COM_Wordwrap_Num_Rows_Drawn(l->pstart, l->line_strlen, continuationWidth, width, Con_WordWidthFunc, &ti, Con_CountLineFunc, &ti);
 		if (lines + mylines >= maxlines)
 		{
 			nskip = lines + mylines - maxlines;
@@ -2119,7 +2205,7 @@ static int Con_DrawNotifyRect(int mask_must, int mask_mustnot, float maxage, flo
 		if (maxage && (l->addtime < t - maxage))
 			continue;
 
-		COM_Wordwrap(l->start, l->len, continuationWidth, width, Con_WordWidthFunc, &ti, Con_DisplayLineFunc, &ti);
+		COM_Wordwrap_Num_Rows_Drawn (l->pstart, l->line_strlen, continuationWidth, width, Con_WordWidthFunc, &ti, Con_DisplayLineFunc, &ti);
 	}
 
 	return lines;
@@ -2228,18 +2314,18 @@ Con_LineHeight
 Returns the height of a given console line; calculates it if necessary.
 ================
 */
-static int Con_LineHeight(int lineno)
+int Con_LineHeight(int lineno)
 {
 	con_lineinfo_t *li = &CON_LINES(lineno);
-	if (li->height == -1)
+	if (li->line_num_rows_height == -1)
 	{
 		float width = vid_conwidth.value;
 		con_text_info_t ti;
 		ti.fontsize = con_textsize.value;
 		ti.font = FONT_CONSOLE;
-		li->height = COM_Wordwrap(li->start, li->len, 0, width, Con_WordWidthFunc, &ti, Con_CountLineFunc, NULL);
+		li->line_num_rows_height = COM_Wordwrap_Num_Rows_Drawn(li->pstart, li->line_strlen, 0, width, Con_WordWidthFunc, &ti, Con_CountLineFunc, NULL);
 	}
-	return li->height;
+	return li->line_num_rows_height;
 }
 
 /*
@@ -2251,7 +2337,8 @@ If alpha is 0, the line is not drawn, but still wrapped and its height
 returned.
 ================
 */
-static int Con_DrawConsoleLine(int mask_must, int mask_mustnot, float y, int lineno, float ymin, float ymax)
+static int Con_DrawConsoleLine_Num_Rows_Drawn(int mask_must, int mask_mustnot, float y, int lineno, 
+							   float ymin, float ymax)
 {
 	float width = vid_conwidth.value;
 	con_text_info_t ti;
@@ -2272,7 +2359,7 @@ static int Con_DrawConsoleLine(int mask_must, int mask_mustnot, float y, int lin
 	ti.ymax = ymax;
 	ti.width = width;
 
-	return COM_Wordwrap (li->start, li->len, 0, width, Con_WordWidthFunc, &ti, Con_DisplayLineFunc, &ti);
+	return COM_Wordwrap_Num_Rows_Drawn (li->pstart, li->line_strlen, 0, width, Con_WordWidthFunc, &ti, Con_DisplayLineFunc, &ti);
 }
 
 /*
@@ -2283,7 +2370,7 @@ Calculates the last visible line index and how much to show of it based on
 con_backscroll.
 ================
 */
-static void Con_LastVisibleLine(int mask_must, int mask_mustnot, int *last, int *limitlast)
+static void Con_LastVisibleLine (int mask_must, int mask_mustnot, int *last_row_number, int *limitlast)
 {
 	int lines_seen = 0;
 	int i;
@@ -2291,18 +2378,27 @@ static void Con_LastVisibleLine(int mask_must, int mask_mustnot, int *last, int 
 	if (con_backscroll < 0)
 		con_backscroll = 0;
 
-	*last = 0;
+	*last_row_number = 0;
+
+	// Baker: con
+	// con.lines which appears to be a pointer into text con.text?
+	WARP_X_ (con)
 
 	// now count until we saw con_backscroll actual lines
-	for(i = CON_LINES_COUNT - 1; i >= 0; --i)
+	for (i = CON_LINES_COUNT - 1; i >= 0; --i)
 	if ((CON_LINES(i).mask & mask_must) == mask_must)
 	if ((CON_LINES(i).mask & mask_mustnot) == 0) {
 		int h = Con_LineHeight(i);
 
 		// line is the last visible line?
-		*last = i;
+		*last_row_number = i;
 		if (lines_seen + h > con_backscroll && lines_seen <= con_backscroll) {
 			*limitlast = lines_seen + h - con_backscroll;
+
+			// Baker: I have not seen limitlast set to anything except 1
+			//if (*limitlast > 1) {
+			//	int j= 5;
+			//}
 			return;
 		}
 
@@ -2324,16 +2420,19 @@ The typing input line at the bottom should only be drawn if typing is allowed
 ================
 */
 WARP_X_ (CL_UpdateScreen_SCR_DrawScreen -> SCR_DrawConsole)
-void Con_DrawConsole (int lines)
+
+consel_t g_consel;
+
+void Con_DrawConsole (int lines_in_pixels)
 {
 	float alpha, alpha0;
 	double sx, sy;
-	int mask_must = 0;
-	int mask_mustnot = (developer.integer>0) ? 0 : CON_MASK_DEVELOPER;
+	const int mask_must_0 = 0;
+	int mask_mustnot_dev = (developer.integer>0) ? 0 : CON_MASK_DEVELOPER;
 	cachepic_t *conbackpic;
 	unsigned int conbackflags;
 
-	if (lines <= 0)
+	if (lines_in_pixels <= 0)
 		return;
 
 	if (con_mutex) Thread_LockMutex(con_mutex);
@@ -2341,56 +2440,57 @@ void Con_DrawConsole (int lines)
 	if (con_backscroll < 0)
 		con_backscroll = 0;
 
-	con_vislines = lines;
+	con_vislines = lines_in_pixels;
 
 	r_draw2d_force = true;
 
 // draw the background
 	alpha0 = cls.signon == SIGNONS_4 ? scr_conalpha.value : 1.0f; // DrawConsole -  always full alpha when not in game
-	if ((alpha = alpha0 * scr_conalphafactor.value) > 0)
-	{
-		sx = scr_conscroll_x.value;
-		sy = scr_conscroll_y.value;
+	if ((alpha = alpha0 * scr_conalphafactor.value /*d: 1*/) > 0) {
+		sx = scr_conscroll_x.value /*d: 0*/;
+		sy = scr_conscroll_y.value /*d: 0*/;
 		conbackflags = CACHEPICFLAG_FAILONMISSING_256; // So console is readable when game content is missing
 		if (sx != 0 || sy != 0)
 			conbackflags &= CACHEPICFLAG_NOCLAMP;
-		conbackpic = scr_conbrightness.value >= 0.01f ? Draw_CachePic_Flags("gfx/conback", conbackflags) : NULL;
+		conbackpic = scr_conbrightness.value /*d: 1*/>= 0.01f ? Draw_CachePic_Flags("gfx/conback", conbackflags) : NULL;
 		sx *= host.realtime; sy *= host.realtime;
 		sx -= floor(sx); sy -= floor(sy);
 		if (Draw_IsPicLoaded(conbackpic))
-			DrawQ_SuperPic(0, lines - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
+			DrawQ_SuperPic(0, lines_in_pixels - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
 					0 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					1 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					0 + sx, 1 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					1 + sx, 1 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					0);
 		else
-			DrawQ_Fill(0, lines - vid_conheight.integer, vid_conwidth.integer, vid_conheight.integer, 0.0f, 0.0f, 0.0f, alpha, 0);
+			DrawQ_Fill (0, lines_in_pixels - vid_conheight.integer, vid_conwidth.integer, vid_conheight.integer, 0.0f, 0.0f, 0.0f, alpha, 0);
 	}
-	if ((alpha = alpha0 * scr_conalpha2factor.value) > 0)
-	{
+
+	// gfx/conback2 - Xonotic does use this
+	if ((alpha = alpha0 * scr_conalpha2factor.value /*d: 0*/) > 0) {
 		sx = scr_conscroll2_x.value;
 		sy = scr_conscroll2_y.value;
 		conbackpic = Draw_CachePic_Flags("gfx/conback2", (sx != 0 || sy != 0) ? CACHEPICFLAG_NOCLAMP : 0);
 		sx *= host.realtime; sy *= host.realtime;
 		sx -= floor(sx); sy -= floor(sy);
 		if (Draw_IsPicLoaded(conbackpic))
-			DrawQ_SuperPic(0, lines - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
+			DrawQ_SuperPic(0, lines_in_pixels - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
 					0 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					1 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					0 + sx, 1 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					1 + sx, 1 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					0);
 	}
-	if ((alpha = alpha0 * scr_conalpha3factor.value) > 0)
-	{
+
+	// gfx/conback3 - Xonotic does use this
+	if ((alpha = alpha0 * scr_conalpha3factor.value /*d: 0*/) > 0) {
 		sx = scr_conscroll3_x.value;
 		sy = scr_conscroll3_y.value;
 		conbackpic = Draw_CachePic_Flags("gfx/conback3", (sx != 0 || sy != 0) ? CACHEPICFLAG_NOCLAMP : 0);
 		sx *= host.realtime; sy *= host.realtime;
 		sx -= floor(sx); sy -= floor(sy);
 		if (Draw_IsPicLoaded(conbackpic))
-			DrawQ_SuperPic(0, lines - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
+			DrawQ_SuperPic(0, lines_in_pixels - vid_conheight.integer, conbackpic, vid_conwidth.integer, vid_conheight.integer,
 					0 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					1 + sx, 0 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
 					0 + sx, 1 + sy, scr_conbrightness.value, scr_conbrightness.value, scr_conbrightness.value, alpha,
@@ -2401,39 +2501,81 @@ void Con_DrawConsole (int lines)
 	// Baker r0003: Thin cursor / no text overwrite mode
 	DrawQ_String (/*x*/ vid_conwidth.integer -
 							DrawQ_TextWidth (
-								engineversionshort , 0, con_textsize.value, con_textsize.value, 
+								engineversionshort , 0, con_textsize.value, con_textsize.value,
 								q_ignore_color_codes_true /* Baker corrected*/, FONT_CONSOLE
-							), 
-			/*y*/ lines - con_textsize.value, 
-			/*string*/ engineversionshort, 
-			q_text_maxlen_0, 
+							),
+
+			// Baker: Last row lines_in_pixels like 405 - height of a row.
+			/*y*/ lines_in_pixels - con_textsize.value,
+			/*string*/ engineversionshort,
+			q_text_maxlen_0,
 			/*scalex*/ con_textsize.value, //bronzey
-			/*scaley*/ con_textsize.value, /*rgba*/ 0.90, 0.90, 0.90, 1.0, /*flags outcolor*/ DRAWFLAG_NORMAL_0, 
+			/*scaley*/ con_textsize.value, /*rgba*/ 0.90, 0.90, 0.90, 1.0, /*flags outcolor*/ DRAWFLAG_NORMAL_0,
 			q_outcolor_null, q_ignore_color_codes_true, FONT_CONSOLE); // Baker 1007.2
 
 // draw the text
 
 	if (CON_LINES_COUNT > 0) {
-		int i, last, limitlast;
-		float y;
+		int lineno_in_conbuffer, last, limitlast;
+		float y_pixels;
 		float ymax = con_vislines - 2 * con_textsize.value;
 
-		Con_LastVisibleLine (mask_must, mask_mustnot, &last, &limitlast); // Baker: Sets last variable
+		Con_LastVisibleLine (mask_must_0, mask_mustnot_dev, &last, &limitlast); // Baker: Sets last variable
 
-		y = ymax - con_textsize.value;
+		y_pixels = ymax - con_textsize.value;
 
 		if (limitlast)
-			y += (CON_LINES(last).height - limitlast) * con_textsize.value;
-		i = last;
+			y_pixels += (CON_LINES(last).line_num_rows_height - limitlast) * con_textsize.value;
+
+		// Baker: Ok what is this "last"
+		lineno_in_conbuffer = last; // Get things like 387 
+
+		// Baker: i goes like 387 then goes 386, 385, 384 ...
+		// We are drawing from bottom of screen up and then stopping ...
+		g_consel.draww.console_draw_frame = host.superframecount;// was_consoledrawn = true;
+		g_consel.draww.draw_row_last_index = last;
+		g_consel.draww.draw_row_top_pixel_y = y_pixels;
+
+		if (g_consel.draww.conscalewidth != vid_conwidth.value)
+			g_consel.draww.conscalewidth = vid_conwidth.value;
+		if (g_consel.draww.conscaleheight != vid_conheight.value)
+			g_consel.draww.conscaleheight = vid_conheight.value;
+
+		int in_select = key_consoleactive && g_consel.a.drag_state > drag_state_awaiting_threshold_1;
 
 		while (1) {
-			y -= Con_DrawConsoleLine (mask_must, mask_mustnot, y, i, 0, ymax) * con_textsize.value;
-			if (i == 0)
+			// Baker: I hope Con_DrawConsoleLine returns 1 always
+			con_lineinfo_t *li = &CON_LINES(lineno_in_conbuffer);
+			
+			int advance_rows = 
+				Con_DrawConsoleLine_Num_Rows_Drawn (mask_must_0, mask_mustnot_dev, y_pixels, lineno_in_conbuffer, 0, ymax);
+
+			//if (li->line_num_rows_height == -1)
+			li->line_num_rows_height = advance_rows;
+			
+			if (in_select && advance_rows) {
+				int realidx = CON_TRUEIDX (lineno_in_conbuffer);
+				int in_the_range1 = 
+					(g_consel.a.mousedown_end_row_index > g_consel.a.mousedown_row_index) ?
+					in_range (g_consel.a.mousedown_row_index,realidx, g_consel.a.mousedown_end_row_index) :
+					in_range (g_consel.a.mousedown_end_row_index,realidx, g_consel.a.mousedown_row_index);
+
+				if (in_the_range1) {
+					int x = 0;
+					int y = y_pixels - (advance_rows - 1) * con_textsize.value;
+					int w = vid_conwidth.integer;
+					int h = advance_rows * con_textsize.value;
+					DrawQ_Fill (x, y, w, h, /*rgb*/ 0.5, 0.5, 0.5, /*a*/ 0.5, DRAWFLAG_ADDITIVE);	// h
+				}
+			} // in_select
+
+			y_pixels -= advance_rows * con_textsize.value;
+			if (lineno_in_conbuffer == 0)
 				break; // top of console buffer
-			if (y < 0)
+			if (y_pixels < 0)
 				break; // top of console window
 			limitlast = 0;
-			i --;
+			lineno_in_conbuffer --;
 		} // while
 	} // if
 
@@ -2894,6 +3036,8 @@ static int Nicks_AddLastColor(char *buffer, int pos)
 // is_console better be true, this is not made for chat mode
 // is_from_nothing means someone did "map " and pressed CTRL-SPACE
 //       and we are autocompleting from thin air completing from 100% of context (so if would be all maps, for instance)
+
+int GetEffectList_Count (const char *s_prefix);
 int Con_CompleteCommandLine_Zircon(cmd_state_t *cmd, qbool is_console, qbool is_shifted, qbool is_from_nothing)
 {
 	autocomplete_t *ac = &_g_autocomplete;
@@ -2932,10 +3076,10 @@ int Con_CompleteCommandLine_Zircon(cmd_state_t *cmd, qbool is_console, qbool is_
 			break;
 	}
 	search_partial_offset ++;
-		
+
 	ac->search_partial_offset = search_partial_offset;
 	ac->p_text_partial_start = &key_line[ac->search_partial_offset];		// what we wish to find
-	
+
 	ac->p_text_beyond_autocomplete = &key_line[key_linepos];
 	setstr (ac->text_after_autocomplete_a, ac->p_text_beyond_autocomplete);
 
@@ -2954,12 +3098,12 @@ exit_possible:
 		}
 
 		// This process only works because we null terminated at cursor
-		setstr (ac->s_search_partial_a, ac->p_text_partial_start); 
+		setstr (ac->s_search_partial_a, ac->p_text_partial_start);
 
 		char *start_command = &key_line[1]; // After bracket "]map e2"
-		char *s_last_semicolon_before = dpstrrstr(&key_line[1], ";"); // dpstrrstr is REVERSE strstr
+		char *s_last_semicolon_before = dp_strstr_reverse(&key_line[1], ";"); // dp_strstr_reverse is REVERSE strstr
 
-		// "color 4; map e2" --> in this situation, s_command0 is "map" not "color" 
+		// "color 4; map e2" --> in this situation, s_command0 is "map" not "color"
 		if (s_last_semicolon_before)
 			start_command = String_Skip_WhiteSpace_Including_Space(&s_last_semicolon_before[1]);
 
@@ -2975,15 +3119,15 @@ exit_possible:
 			setstr (ac->s_command0_a, start_command); // Length?
 			space[0] = saved;
 		}
-	
+
 		ac->is_at_first_arg = ac->s_command0_a && &space[1] == ac->p_text_partial_start;
-		
+
 		// Determine search type
 		char *command = ac->s_command0_a;
 		if (ac->is_at_first_arg) {
-			
-				 if (String_Isin2 (command, "map", "changelevel") )					ac->searchtype = 1;
-			else if (String_Isin2 (command, "save", "load" ) )						ac->searchtype = 2;
+
+				 if (String_Isin3 (command, "map", "changelevel", "changelevel2") )	ac->searchtype = 1;
+			else if (String_Isin3 (command, "save", "load", "jpegextract" ) )		ac->searchtype = 2;
 			else if (String_Isin3 (command, "playdemo", "record", "timedemo") )		ac->searchtype = 3;
 			else if (String_Isin2 (command, "game", "gamdir")		)				ac->searchtype = 4;
 			else if (String_Isin2 (command, "exec", "saveconfig")	)				ac->searchtype = 5;
@@ -2999,11 +3143,17 @@ exit_possible:
 			else if (String_Isin1 (command, "play") /**/)							ac->searchtype = 15;
 			else if (String_Isin1 (command, "r_replacemaptexture") /**/)			ac->searchtype = 16;
 			else if (String_Isin2 (command, "bind","unbind") /**/)					ac->searchtype = 17;
-			else if (String_Isin3 (command, "folder","dir","ls") /**/)				ac->searchtype = 18;
+			else if (String_Isin4 (command, "folder","dir","ls", "jpegsplit") /**/)	ac->searchtype = 18;
 			else if (String_Isin1 (command, "cvarlist") /**/)						ac->searchtype = 20;
 			else if (String_Isin1 (command, "sv_protocolname") /**/)				ac->searchtype = 21;
 			else if (String_Isin1 (command, "loadfont"))							ac->searchtype = 22;
-			else if (String_Isin1 (command, "showmodel") /**/)						ac->searchtype = 23;
+			else if (String_Isin2 (command, "showmodel", "objmodeladjust") /**/)	ac->searchtype = 23;
+			else if (String_Isin1 (command, "envmap") /**/)							ac->searchtype = 24;
+			else if (String_Isin1 (command, "zipinfo") /**/)						ac->searchtype = 25;
+			else if (String_Isin1 (command, "parse") /**/)							ac->searchtype = 26;
+			else if (String_Isin1 (command, "shaderprint") /**/)					ac->searchtype = 27;
+			else if (String_Isin2 (command, "effectinfo_dump", "effectinfo_list"))	ac->searchtype = 28;
+			else if (String_Isin1 (command, "playvideo"))							ac->searchtype = 29;
 		}
 		else if (ac->s_command0_a) {
 			// We are 2nd argument or further down (or someone typed multiple spaces that's on them)
@@ -3020,7 +3170,7 @@ exit_possible:
 
 autocomplete_go:
 
-	// Reset these 
+	// Reset these
 	freenull_(ac->s_match_after_a);		freenull_(ac->s_match_alphalast_a);
 	freenull_(ac->s_match_alphatop_a);	freenull_(ac->s_match_before_a);
 
@@ -3036,10 +3186,10 @@ autocomplete_go:
 
 		switch (ac->searchtype) {
 		case 1:  GetMapList				(s, q_reply_buf_NULL, q_reply_size_0, q_is_menu_fill_false, q_is_zautocomplete_true, is_quiet);	break;
-		case 2:  GetFileList_Count		(s, ".sav", q_strip_exten_true); break;
-		case 3:  GetFileList_Count		(s, ".dem", q_strip_exten_true); break;
+		case 2:  GetFileList_Count		(/*folder*/ NULL, s, ".sav", q_strip_exten_true); break;
+		case 3:  GetFileList_Count		(/*folder*/ NULL, s, ".dem", q_strip_exten_true); break;
 		case 4:  GetModList_Count		(s);	break; // game
-		case 5:  GetFileList_Count		(s, ".cfg", q_strip_exten_false); break;
+		case 5:  GetFileList_Count		(/*folder*/ NULL, s, ".cfg", q_strip_exten_false); break;
 		case 6:  GetSkyList_Count		(s);	break;
 		case 7:  GetTexMode_Count		(s);	break;
 		case 8:  GetCommad_Count		(s, "ents,tex"); break;
@@ -3049,20 +3199,26 @@ autocomplete_go:
 		case 12: GetGameCommands_Count  (s, prvm_cl_gamecommands.string);	break; // Baker r7103 gamecommand autocomplete
 //		case 13: GetGameCommands_Count  (s, prvm_menu_gamecommands.string);	break;
 		case 14: GetModelList_Count		(s);	break; // modelprecache, modeldecompile
-		case 15: GetSoundList_Count		(s);	break; // "play" sound command 
+		case 15: GetSoundList_Count		(s);	break; // "play" sound command
 		case 16: GetTexWorld_Count		(s);	break; // r_replacemaptexture arg1 world textures
 		case 17: GetKeyboardList_Count	(s);	break; // "bind", "unbind"
 		case 18: GetFolderList_Count	(s);	break; // "dir", "ls", "folder"
 		case 19: GetTexGeneric_Count	(s);	break; // r_replacemaptexture arg2 general textures
-		case 20: GetAny1_Count			(s, "changed"); break; // cvarlist "changed"
+		case 20: GetCommad_Count		(s, "audit,changed,owned,newdefault"); break; // cvarlist "changed"
 		case 21: GetCommad_Count		(s, "666,999,dp7,quake"); break; // sv_protocolname
 		case 22: GetCommad_Count		(s, "centerprint,chat,console,default,infobar,menu,notify,sbar"); break;
 		case 23: GetShowModelList_Count	(s);	break;
+		case 24: GetCommad_Count		(s, "auto"); break;
+		case 25: GetFileList_Count		(/*folder*/ NULL, s, ".zip", q_strip_exten_false); break;
+		case 26: GetCommad_Count		(s, "clipboard"); break;
+		case 27: GetShaderList_Count	(s); break;
+		case 28: GetEffectList_Count	(s); break;
+		case 29: GetVideoList_Count		(s /*".gif;*.jpg;*.dpv"*/); break;
 		} // switch
 
 		if (ac->s_match_alphatop_a == NULL) {
 exit_possible2:
-			must_end_autocomplete = "No possible matches"; 
+			must_end_autocomplete = "No possible matches";
 			goto exit_out; // No possible matches
 		}
 		goto search_completed;
@@ -3163,8 +3319,8 @@ one_match_skip:
 		key_linepos += fill_len;
 
 		// if there is only one match, add a space after it
-		int is_only_one = oldspartial == NULL 
-			&& String_Does_Match (ac->s_match_alphalast_a, ac->s_match_alphatop_a);  
+		int is_only_one = oldspartial == NULL
+			&& String_Does_Match (ac->s_match_alphalast_a, ac->s_match_alphatop_a);
 		if (key_linepos < (int)sizeof(key_line) - 1 && is_only_one) {
 			// Only first partial complete shall do this
 //			key_line[key_linepos ++] = ' ';
@@ -3483,7 +3639,7 @@ nicks:
 					if ((*listitem)[cmd_len] != cxtext[cmd_len])
 						goto done;
 				} // for
-			} // if 
+			} // if
 		} // for i
 
 		// all possible matches share this character, so we continue...
@@ -3556,7 +3712,7 @@ Con_Init
 void Con_Init (void)
 {
 	con_linewidth = 80;
-	ConBuffer_Init(&con, CON_TEXTSIZE, CON_MAXLINES, zonemempool);
+	ConBuffer_Init(&con, CON_TEXTSIZE_1_MB, CON_MAXLINES_16384, zonemempool);
 	if (Thread_HasThreads())
 		con_mutex = Thread_CreateMutex();
 
@@ -3632,7 +3788,7 @@ void Con_Init (void)
 #ifdef CONFIG_MENU
 	// Client
 	Cmd_AddCommand (CF_CLIENT, "copy", Con_Copy_f, "copy console history to clipboard scrubbing color colors based on condump_stripcolors.integer [Zircon]"); // Baker r3101: "copy" and "copy ents"
-	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command	
+	Cmd_AddCommand (CF_CLIENT, "folder", Con_Folder_f, "open gamedir folder [Zircon]"); // Baker r3102: "folder" command
 	Cmd_AddCommand (CF_CLIENT, "jack_scripts", Con_Jack_Scripts_f, "Update scripts/shaderlist.txt and write .shader copies to gamedir/_jack_shaders folder [Zircon]"); // Baker r7105
 #else
 	// Dedicated server

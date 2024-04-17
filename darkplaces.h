@@ -24,6 +24,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef DARKPLACES_H
 #define DARKPLACES_H
 
+typedef unsigned char byte;
+typedef unsigned int rgba4;
+typedef unsigned char rgb3;
+typedef unsigned char ubpalette1;
+typedef unsigned int bgra4;
+
 //WARP_X_ (CL_InitCommands infostring)
 extern const char *buildstring;
 extern const char *buildmajor;
@@ -31,7 +37,7 @@ extern const char *buildstringshort; // Baker r8002: Zircon console name
 extern char engineversion[128];
 extern char engineversionshort[128]; // Baker r8002: Zircon console name
 
-
+extern int globs;
 
 #ifdef __APPLE__
 # include <TargetConditionals.h>
@@ -55,11 +61,14 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #include "com_infostring.h"
 #include "baker.h"
 
+
+
 // Baker: Function call clarity ...
 
 #define ALL_FLAGS_ANTIZERO				(~0)
 
 #define fs_caseless_true				true
+#define fs_caseless_false				false
 #define fs_quiet_true					true
 #define fs_quiet_FALSE					false
 
@@ -81,24 +90,45 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define fs_gamedironly_false			false
 #define fs_gamedironly_true				true
 
+#define	q_is_dirty_true					true
+#define	q_is_dirty_false				false
+
 //#define fs_loadinfo_in_null			NULL
 //#define fs_loadinfo_out_null			NULL
 #define q_is_large_modelindex_true		true
 #define q_is_large_modelindex_false		false
 #define q_is_large_soundindex_false		false
 #define q_is_large_soundindex_true		true
+#define q_unghosted_true				true
 #define q_undo_action_normal_0			0
 #define q_undo_action_add_1				1
 #define q_undo_action_delete_neg_1		-1
 #define q_netchange_zero				0
 
+#define q_savefile_NULL					NULL
+#define q_savestring_NULL				NULL
+
+#define q_is_siv_write_true				true
+#define q_is_siv_write_false			false
+
+#define q_is_forceloop_true				true	// Baker: force sound looping.
+#define q_is_forceloop_false			false
 #define q_is_aborted_download_false		false
 #define q_is_aborted_download_true		true
 #define q_alpha_1						1
 
+#define q_rgba_solid_white_4_parms		1.0, 1.0, 1.0, 1.0
+#define q_rgba_solid_gray50_4_parms		0.5, 0.5, 0.5, 1.0
+#define q_rgba_solid_black_4_parms		0.0, 0.0, 0.0, 1.0
+#define q_rgba_alpha50_black_4_parms	0.0, 0.0, 0.0, 0.5
+#define q_rgba_alpha75_black_4_parms	0.0, 0.0, 0.0, 0.75
+#define q_rgba_alpha25_black_4_parms	0.0, 0.0, 0.0, 0.25
+#define q_rgba_solid_gray25_4_parms		0.25, 0.25, 0.25, 1.0
+
 #define q_is_from_nothing_false			false
 #define q_is_from_nothing_true			true
 #define q_s_loadgame_NULL				NULL
+#define q_s_startspot_EmptyString		""
 
 #define q_vm_wildcard_NULL				NULL
 #define q_vm_classname_NULL				NULL
@@ -134,10 +164,16 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_mouse_relative_false			false
 #define q_mouse_hidecursor_false		false
 
-#define q_is_kicked_true				true
+#define q_is_kicked_true				true	// host.hook.Disconnect, CL_DisconnectEx
 #define q_is_kicked_false				false
-#define q_is_leaving_false				false
+#define q_disconnect_message_NULL		NULL
+#define q_is_leaving_false				false	// SV_DropClient
 #define q_is_leaving_true				true
+
+#define scale_1_0						1.0
+#define alpha_1_0						1.0
+
+#define	DATA_NULL						NULL
 
 #define q_tx_complain_false				false
 #define q_tx_complain_true				true
@@ -209,9 +245,6 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 #define q_is_reliable_true				true
 #define q_is_reliable_false				false
 
-
-#define q_disconnect_message_NULL		NULL
-
 #define q_fitz_version_none_0			0
 #define q_fitz_version_1				1
 #define q_fitz_version_2				2
@@ -226,6 +259,14 @@ extern char engineversionshort[128]; // Baker r8002: Zircon console name
 
 #define q_hitsuraces_true				true
 #define q_hitsuraces_false				false
+
+#define q_is_jpeg_false					false
+#define q_is_jpeg_true					true
+#define q_is_png_false					false
+#define q_is_png_true					true
+
+#define q_enabled_true					true	// "unghosted" M_ItemPrint
+#define q_enabled_false					false	// "unghosted" M_ItemPrint
 
 #include "common.h"
 #include "filematch.h"
@@ -243,7 +284,7 @@ extern cvar_t developer;
 extern cvar_t developer_entityparsing;
 extern cvar_t developer_extra;
 extern cvar_t developer_insane;
-extern cvar_t developer_loadfile;
+extern cvar_t developer_loadingfile_fs;
 extern cvar_t developer_loading;
 extern cvar_t developer_stuffcmd;
 extern cvar_t developer_keycode;
@@ -255,4 +296,39 @@ extern cvar_t sessionid;
 
 void LOC_LoadFile (void); // AURA 8.0
 const char *LOC_GetString (const char *s_dollar_key); // AURA 1.2
-#endif
+
+#ifdef _WIN32
+	// Baker: For us let's just, cast size_t and ssize_t to int64_t
+
+	// As I understand it these are actually Windows C run-time specific and GCC uses?
+	// https://stackoverflow.com/questions/9225567/how-to-print-a-int64-t-type-in-c
+	// https://code.google.com/archive/p/msinttypes/downloads Visual Studio
+	#define PRINTF_INT64			"%I64d" // This is stupid int64_t print .. how to do on non-Microsoft?
+	#define PRINTF_UINT64			"%I64u" // This is stupid int64_t print .. how to do on non-Microsoft?
+	#define PRINTF_INT64HEX			"%I64X" // Perhaps
+	#define PRINTF_UINT64			"%I64u" // This is stupid int64_t print .. how to do on non-Microsoft?
+
+
+
+	//#define PRIx64	"llX"		// lower case L	Baker: int64_t but as hex
+	//#define PRIx32	 "lX"
+#else // Non-Windows
+	#define PRINTF_INT64			"%PRId64" // This is stupid int64_t print .. how to do on non-Microsoft?
+	#define PRINTF_UINT64			"%PRIu64" // Perhaps
+	#define PRINTF_INT64HEX			"%PRIx64" // Perhaps
+#endif	
+
+void stringlistappendfssearch (stringlist_t *plist, fssearch_t *t); // t == NULL is ok and handled
+void stringlistappend_search_pattern (stringlist_t *plist, const char *s_pattern);
+
+// Baker: Some compilers don't like variable declaration after a label or other edge cases
+
+#define NULLSTATEMENT() 
+
+#define SAVEGAME_PIC_NAME		"savegamepic"
+#define	SAVEGAME_PIC_WIDTH_512	512
+#define	SAVEGAME_PIC_HEIGHT_320	320
+#define SAVEGAME_JPEG_MAXSIZE_STRING_SIZE (SAVEGAME_PIC_WIDTH_512 * SAVEGAME_PIC_HEIGHT_320 * RGBA_4)
+
+
+#endif // ! 

@@ -20,6 +20,8 @@
 		Boston, MA  02111-1307, USA
 */
 
+// keys.c
+
 #include "quakedef.h"
 #include "cl_video.h"
 #include "utf8lib.h"
@@ -50,7 +52,7 @@ int			key_sellength;			// Number of characters selected
 //int			key_sellength_count;
 
 qbool	key_insert = true;	// insert key toggle (for editing)
-keydest_t	key_dest;
+keydest_e	key_dest;
 int			key_consoleactive;
 char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
 
@@ -220,12 +222,12 @@ int Key_Console_Cursor_Move_Simplex(int cursor_now, int is_shifted)
 	
 	Key_Console_Cursor_Move (delta, is_shifted ? cursor_select : selection_clear); // Reset selection
 
-#ifdef _DEBUG
+#if 0 // def _DEBUG
 	char vabuf[1024];
 	const char *s = va(vabuf, sizeof(vabuf),
 		"START %d LENGTH %d DELTA %d SHIFTED? %d" NEWLINE, 
 		key_linepos, key_sellength, delta, is_shifted);
-	Sys_PrintToTerminal2 (s);
+	DebugPrintf (s);
 #endif
 	return key_linepos; // Changed
 }
@@ -257,6 +259,16 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 
 	// Any non-shift action should clear the selection?
 	// Remember the typing of a normal key needs to stomp the selection
+
+	while (key_consoleactive && g_consel.a.drag_state == drag_state_drag_completed_3) {
+		if (keydown[K_CTRL] && isin1 (key, 'c')) {
+			Consel_Copy ();
+			Consel_MouseReset ("Copy action");
+			return key_linepos;
+		}
+		break; // while
+	} // while
+
 	int ispaste =  (keydown[K_CTRL] && isin1 (key, 'v') ) ||
 					(keydown[K_SHIFT] && isin2 (key, K_INSERT, K_KP_INSERT) );
 
@@ -282,8 +294,12 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 
 			Sys_SetClipboardData (sbuf);
 			// Con_PrintLinef ("Clipboard Set " QUOTED_S, buf);
-			S_LocalSound ("hknight/hit.wav");
+#if 1
+			//Cbuf_AddTextLinef (cmd, "play hknight/hit.wav");
 
+#else // Baker: This caused screen flicker
+			S_LocalSound ("hknight/hit.wav");
+#endif
 			if (!isremoveatom) {
 				return key_linepos;
 			}
@@ -302,7 +318,6 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 		}
 	}
 
-	
 	if (is_console && key == 'a' && KM_CTRL) {
 		// (X) kx: CTRL-A
 		Partial_Reset_Undo_Normal_Selection_Reset ();
@@ -348,7 +363,8 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 				memcpy(line + linepos, cbd, i);
 				linepos += i;
 			}
-			Z_Free(cbd);
+
+			Z_Free(cbd); // Baker: Sys_GetClipboardData_Alloc zallocs!
 		} // CLIPBOARD DATA
 		return linepos;
 	} // CTRL-V PASTE
@@ -637,7 +653,7 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 	if (key == K_HOME || key == K_KP_HOME) {
 		if (is_console && KM_CTRL) {
 			// (X) kx: CTRL-HOME
-			con_backscroll = CON_TEXTSIZE;
+			con_backscroll = CON_TEXTSIZE_1_MB;
 			return linepos;
 		}
 		
@@ -717,9 +733,8 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 
 	if ((key == K_ENTER || key == K_KP_ENTER) && KM_NONE) {
 #if 1
-		// Baker: We want to do this for multiplayer only
-		// cl.islocalgame
-		if (cl_chatmode.value && cls.state == ca_connected && cls.signon == SIGNONS_4) {
+		// Baker: We want to do this for multiplayer only and if there is no demo playback
+		if (cl_chatmode.value && cls.state == ca_connected && cls.signon == SIGNONS_4 && !cls.demoplayback) {
 			const char *s_check_line = &key_line[1]; // skip the "]"
 
 			// 1. Require a non-local game or having svs.maxclients > 1
@@ -947,6 +962,14 @@ add_char:
 }
 
 //============================================================================
+
+void KeyDest_Set (keydest_e newval)
+{
+	if (key_dest != newval) {
+		Consel_MouseMove_Check ();
+		key_dest = newval;
+	}
+}
 
 
 //============================================================================

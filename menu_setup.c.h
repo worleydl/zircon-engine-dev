@@ -24,7 +24,7 @@ extern cvar_t cl_bottomcolor;
 
 void M_Menu_Setup_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_setup);
 	m_entersound = true;
 	strlcpy(setup_myname, cl_name.string, sizeof(setup_myname));

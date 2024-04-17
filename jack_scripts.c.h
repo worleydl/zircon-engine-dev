@@ -65,7 +65,8 @@ void CleanShader (const char *srel) // scripts/mine.shader
 	char *s_clean_sa = NULL, *s_sa = NULL;
 	// J.A.C.K. doesn't know these shaders, we strip to speed up load times
 	const char *scrub_list[] = {
-		"animmap"
+		//"framemap",	// buttonmap
+		"animmap",
 		"dp_camera",
 		"dp_reflect",
 		"dp_reflectcube",
@@ -80,6 +81,18 @@ void CleanShader (const char *srel) // scripts/mine.shader
 		"dprefract",
 		"dpwater",
         "dpoffsetmapping",
+		"qer_alphaFunc",
+// March 1 2024 ...
+		"surfaceparm noimpact",
+		"surfaceparm nolightmap",
+		"distancecull",
+		//"nonsolid",
+
+	};
+
+	// 0 -> 1, 2 -> 3
+	const char *substitute_list[] = {
+		"framemap ",	"map ", // buttonmap
 	};
 
 	char *sfile = String_Find_Skip_Past(srel, "/");// String_Skip_Char(srel, '/');
@@ -90,7 +103,7 @@ void CleanShader (const char *srel) // scripts/mine.shader
 
 	Con_PrintLinef ("Writing %s", swrite);
 
-	qfile_t *f = FS_OpenRealFile(swrite, "wb", false);
+	qfile_t *f = FS_OpenRealFile(swrite, "wb", fs_quiet_FALSE); // WRITE-EON -- Baker: CleanShader for jack_scripts
 
 	if (!f) {
 		Con_PrintLinef ("ERROR: couldn't open.");
@@ -108,10 +121,17 @@ void CleanShader (const char *srel) // scripts/mine.shader
 	sfake_start (s_clean_sa);
 
 	int scrub_list_count = ARRAY_COUNT(scrub_list);
+	int substitute_list_count = ARRAY_COUNT(substitute_list);
 
+	int linenum = 0;
 	// Baker: This looks at each line, if it contains a shader listed above, it doesn't write that line.
 	while (sfake_is_eof() == false) {
 		const char *s_this_line = sfake_getlin();
+		char editbuffer[1024];
+		//Con_PrintLinef ("%04d: %s", linenum, s_this_line);
+		//if (linenum == 293)
+		//	int j = 5;
+		linenum ++;
 		if (!s_this_line) break;
 		int is_ok = true;
 		
@@ -122,6 +142,19 @@ void CleanShader (const char *srel) // scripts/mine.shader
 				break;
 			} // found shader not recognized by J.A.C.K. do not write
 		}  // idx
+
+		// 0 becomes 1, 2 becomes 3.
+		for (int idx = 0; idx < substitute_list_count; idx += 2) {
+			const char *s_replace_this = substitute_list[idx + 0];
+			const char *s_with = substitute_list[idx + 1];
+			if (String_Does_Contain_Caseless (s_this_line, s_replace_this)) {
+				c_strlcpy (editbuffer,  s_this_line);
+				String_Edit_Replace (editbuffer, sizeof(editbuffer), s_replace_this, s_with); 
+				s_this_line = editbuffer; // Write this instead.
+				break; // We can only do 1
+			} // found shader not recognized by J.A.C.K. do not write
+		}  // idx
+
 		if (is_ok) {
 			FS_Printf (f, "%s" NEWLINE, s_this_line);
 		} // else skip that line
@@ -147,7 +180,7 @@ void Con_Jack_Scripts_f(cmd_state_t *cmd)
 	}
 
 	const char *swrite = "scripts/shaderlist.txt";
-	qfile_t *fshadertxt = FS_OpenRealFile(swrite, "wb", false);
+	qfile_t *fshadertxt = FS_OpenRealFile(swrite, "wb", fs_quiet_FALSE); // WRITE-EON -- jack scripts
 	if (fshadertxt) {
 		FS_Printf (fshadertxt, "%s"  NEWLINE, "// Auto-generated from Zircon using " QUOTED_STR("jack_scripts") " command");
 		FS_Printf (fshadertxt, "%s"  NEWLINE, "// q3map uses this.  Map editors usually don't.  DarkPlaces/Zircon don't.");
@@ -157,7 +190,11 @@ void Con_Jack_Scripts_f(cmd_state_t *cmd)
 
 	int j;
 	for (j = 0; j < asearch->numfilenames; j++) {
-		//Con_PrintLinef ("%s", asearch->filenames[j]);
+		const char *s_file = asearch->filenames[j];
+		Con_PrintLinef ("%s", s_file);
+		//if (String_Does_Contain (s_file, "common") == false)
+		//	continue;
+
 		CleanShader (asearch->filenames[j]);
 
 		if (fshadertxt) {

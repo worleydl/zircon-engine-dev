@@ -6,7 +6,7 @@
 //=============================================================================
 /* LAN CONFIG MENU */
 
-static int		lanConfig_cursor = -1;
+int		lanConfig_cursor = -1;
 static int		lanConfig_cursor_table [] = {56 + 16, 76+ 16, 84+ 16, 120+ 16};
 #define NUM_LANCONFIG_CMDS_4	4
 
@@ -16,7 +16,7 @@ static char	lanConfig_joinname[40];
 
 void M_Menu_LanConfig_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_lanconfig);
 	m_entersound = true;
 	if (lanConfig_cursor == -1) {

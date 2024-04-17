@@ -45,12 +45,14 @@ extern char fs_basedir [MAX_OSPATH];
 extern char fs_userdir [MAX_OSPATH];
 
 extern int fs_data_override; // Baker r0009: Super -data override
-extern int fs_is_zircon_galaxy;
+extern int fs_is_zircon_galaxy; // Baker: Explain how we know this?
+// zircon/gfx/qplaque.png
+// 
 
 // list of active game directories (empty if not running a mod)
-#define MAX_GAMEDIRS 16
+#define MAX_GAMEDIRS_16 16
 extern int fs_numgamedirs;
-extern char fs_gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
+extern char fs_gamedirs[MAX_GAMEDIRS_16][MAX_QPATH_128];
 
 typedef struct vfs_s
 {
@@ -58,7 +60,7 @@ typedef struct vfs_s
 	char basedir[MAX_OSPATH];
 	char userdir[MAX_OSPATH];
 	int numgamedirs;
-	char gamedirs[MAX_GAMEDIRS][MAX_QPATH_128];
+	char gamedirs[MAX_GAMEDIRS_16][MAX_QPATH_128];
 } vfs_t;
 
 // ------ Main functions ------ //
@@ -77,6 +79,12 @@ void FS_CreatePath (char *path);
 int FS_SysOpenFD(const char *filepath, const char *mode, qbool nonblocking); // uses absolute path
 qfile_t *FS_SysOpen (const char *filepath, const char *mode, qbool nonblocking); // uses absolute path
 qfile_t *FS_OpenRealFile (const char *filepath, const char *mode, qbool quiet);
+
+// Baker: If successful, prealpathname_zalloc is set to the real path used
+// We use this to allow us to check date and time of save files to see how old they are
+// for the user
+qfile_t *FS_OpenRealFileReadBinary (const char *filepath, char **prealpathname_zalloc);
+
 qfile_t *FS_OpenVirtualFile (const char *filepath, qbool quiet);
 qfile_t *FS_FileFromData (const unsigned char *data, const size_t size, qbool quiet);
 int FS_Close (qfile_t *file);
@@ -128,6 +136,11 @@ fssearch_t;
 
 fssearch_t *FS_Search(const char *pattern, int caseinsensitive, int quiet, const char *packfile, int isgamedironly);
 void FS_FreeSearch(fssearch_t *search);
+#define FS_FreeSearch_Null_(t) \
+	if (t) { \
+		FS_FreeSearch(t); \
+		t = NULL; \
+	} // Ender
 
 unsigned char *FS_LoadFile (const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer);
 unsigned char *FS_SysLoadFile (const char *path, mempool_t *pool, qbool quiet, fs_offset_t *filesizepointer);
@@ -162,5 +175,33 @@ void FS_Shutdown(void);
 void FS_Init_Commands(void);
 
 extern int fs_have_qex;
+
+#define FS_MODE_WRITE_TEXT_W_DO_NOT_USE			"w" // We don't want to use this.  We want binary, text mode may mess with the newlines.
+#define FS_MODE_WRITE_BINARY_WB					"wb"
+#define FS_MODE_APPEND_BINARY_AB				"ab"
+#define FS_MODE_READ_BINARY_RB					"rb"
+#define FS_MODE_READ_AND_WRITE_BINARY_R_PLUS_B	"r+b"
+
+
+// Baker: Flex_Writef writes to either file *f or strcats to a higher performance "baker_string_t"
+// that supports much faster string concatentation
+void Flex_Writef (const char *fmt, ...) DP_FUNC_PRINTF(1);
+
+
+char *FS_RealFilePath_Z_Alloc (const char *s_quake_file); // returns NULL if not a real file or not found
+
+extern char mod_list_folder_name[1024];			// modlist.txt .. 
+extern char mod_list_game_window_title[1024];		// modlist.txt
+extern char mod_list_server_filter_name[1024];	// modlist.txt
+extern char *mod_list_game_icon_base64_zalloc;	// Permanent!
+
+extern int	mod_list_requires;				// g_requires_quake 0 = YES, 1 = STANDAALONE, 2 = FLEXIBLE.
+
+#define REQUIRES_WHAT_QUAKE_0		0		// DEFAULT
+#define REQUIRES_WHAT_STANDALONE_1	1
+#define REQUIRES_WHAT_FLEXIBLE_2	2
+
+extern stringlist_t baker_gamelist_names_ignore_char1; // char1 is our enum
+
 
 #endif

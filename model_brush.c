@@ -1952,15 +1952,16 @@ regularo:
 	} // for each texture
 
 	// sequence the animations
-	for (i = 0;i < nummiptex;i++)
-	{
+	for (i = 0;i < nummiptex; i ++) {
+		// Baker "+" textures
 		tx = loadmodel->data_textures + i;
 		if (!tx || tx->name[0] != '+' || tx->name[1] == 0 || tx->name[2] == 0)
 			continue;
 		num = tx->name[1];
-		if ((num < '0' || num > '9') && (num < 'a' || num > 'j'))
-		{
-			Con_Printf ("Bad animating texture %s\n", tx->name);
+
+		//if ((num < '0' || num > '9') && (num < 'a' || num > 'j')) {
+		if (false == in_range ('0', num, '9') && false == in_range('a', num, 'j')) {
+			Con_PrintLinef ("Bad animating texture %s", tx->name);
 			continue;
 		}
 		if (tx->anim_total[0] || tx->anim_total[1])
@@ -1970,8 +1971,7 @@ regularo:
 		memset(anims, 0, sizeof(anims));
 		memset(altanims, 0, sizeof(altanims));
 
-		for (j = i;j < nummiptex;j++)
-		{
+		for (j = i; j < nummiptex; j ++) {
 			tx2 = loadmodel->data_textures + j;
 			if (!tx2 || tx2->name[0] != '+' || strcmp(tx2->name+2, tx->name+2))
 				continue;
@@ -1985,8 +1985,7 @@ regularo:
 		}
 
 		max = altmax = 0;
-		for (j = 0;j < 10;j++)
-		{
+		for (j = 0; j < 10; j ++) {
 			if (anims[j])
 				max = j + 1;
 			if (altanims[j])
@@ -1995,22 +1994,20 @@ regularo:
 		//Con_PrintLinef ("linking animation %s (%d:%d frames)", tx->name, max, altmax);
 
 		incomplete = false;
-		for (j = 0;j < max;j++)
-		{
-			if (!anims[j])
-			{
+		for (j = 0; j < max; j ++) {
+			if (!anims[j]) {
 				Con_PrintLinef ("Missing frame %d of %s", j, tx->name);
 				incomplete = true;
 			}
 		}
-		for (j = 0;j < altmax;j++)
-		{
-			if (!altanims[j])
-			{
+
+		for (j = 0;j < altmax;j++) {
+			if (!altanims[j]) {
 				Con_PrintLinef ("Missing altframe %d of %s", j, tx->name);
 				incomplete = true;
 			}
 		}
+
 		if (incomplete)
 			continue;
 
@@ -2063,8 +2060,7 @@ regularo:
 				// the primary/alternate are reversed here
 				tx2->anim_total[0] = altmax;
 				tx2->anim_total[1] = max;
-				for (k = 0;k < 10;k++)
-				{
+				for (k = 0; k < 10; k++) {
 					tx2->anim_frames[0][k] = altanims[k];
 					tx2->anim_frames[1][k] = anims[k];
 				}
@@ -3301,7 +3297,7 @@ static void Mod_Q1BSP_LoadMapBrushes(void)
 				}
 				for (;;)
 				{
-					if (!COM_ParseToken_Simple(&data, false, false, true))
+					if (!COM_Parse_Basic (&data))
 						return; // error
 					if (com_token[0] == '}')
 						break; // end of brush
@@ -3310,25 +3306,25 @@ static void Mod_Q1BSP_LoadMapBrushes(void)
 					// FIXME: support hl .map format
 					for (pointnum = 0;pointnum < 3;pointnum++)
 					{
-						COM_ParseToken_Simple(&data, false, false, true);
+						COM_Parse_Basic (&data);
 						for (componentnum = 0;componentnum < 3;componentnum++)
 						{
-							COM_ParseToken_Simple(&data, false, false, true);
+							COM_Parse_Basic (&data);
 							point[pointnum][componentnum] = atof(com_token);
 						}
-						COM_ParseToken_Simple(&data, false, false, true);
+						COM_Parse_Basic (&data);
 					}
-					COM_ParseToken_Simple(&data, false, false, true);
+					COM_Parse_Basic (&data);
 					strlcpy(facetexture, com_token, sizeof(facetexture));
-					COM_ParseToken_Simple(&data, false, false, true);
+					COM_Parse_Basic (&data);
 					//scroll_s = atof(com_token);
-					COM_ParseToken_Simple(&data, false, false, true);
+					COM_Parse_Basic (&data);
 					//scroll_t = atof(com_token);
-					COM_ParseToken_Simple(&data, false, false, true);
+					COM_Parse_Basic (&data);
 					//rotate = atof(com_token);
-					COM_ParseToken_Simple(&data, false, false, true);
+					COM_Parse_Basic (&data);
 					//scale_s = atof(com_token);
-					COM_ParseToken_Simple(&data, false, false, true);
+					COM_Parse_Basic (&data);
 					//scale_t = atof(com_token);
 					TriangleNormal(point[0], point[1], point[2], planenormal);
 					VectorNormalizeDouble(planenormal);
@@ -5195,7 +5191,12 @@ static void Mod_Q3BSP_LoadTextures(lump_t *l)
 	for (i = 0; i < count; i++) {
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
-		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, out + i, in[i].name, q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
+		Mod_LoadTextureFromQ3Shader(loadmodel->mempool, loadmodel->model_name, 
+			out + i, in[i].name, 
+			q_tx_warn_missing_true, 
+			q_tx_fallback_notexture_true, 
+			q_tx_do_external_true, 
+			TEXF_MIPMAP | TEXF_ISWORLD | TEXF_PICMIP | TEXF_COMPRESS, MATERIALFLAG_WALL);
 		// restore the surfaceflags and supercontents
 		out[i].surfaceflags = LittleLong(in[i].surfaceflags);
 		out[i].supercontents = Mod_Q3BSP_SuperContentsFromNativeContents(LittleLong(in[i].contents));
@@ -7405,7 +7406,7 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	mod->brush.isq2bsp = false;
 	mod->brush.isq3bsp = true;
 	mod->brush.skymasking = true;
-	mod->numframes = 2; // although alternate textures are not supported it is annoying to complain about no such frame 1
+	mod->numframes = 2; // although alternate textures are not supported it is annoying to complain about no such frame 1 (buttonmap)
 	mod->numskins = 1;
 
 	header = (q3dheader_t *)buffer;
@@ -7413,8 +7414,8 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 		Host_Error_Line ("Mod_Q3BSP_Load: %s is smaller than its header", mod->model_name);
 
 	i = LittleLong(header->version);
-	if (i != Q3BSPVERSION && i != Q3BSPVERSION_IG && i != Q3BSPVERSION_LIVE)
-		Host_Error_Line ("Mod_Q3BSP_Load: %s has wrong version number (%d, should be %d)", mod->model_name, i, Q3BSPVERSION);
+	if (i != Q3BSPVERSION_46 && i != Q3BSPVERSION_IG_48 && i != Q3BSPVERSION_LIVE_47)
+		Host_Error_Line ("Mod_Q3BSP_Load: %s has wrong version number (%d, should be %d)", mod->model_name, i, Q3BSPVERSION_46);
 
 	mod->soundfromcenter = true;
 	mod->TraceBox = Mod_CollisionBIH_TraceBox;
@@ -7451,7 +7452,7 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	// swap all the lumps
 	header->ident = LittleLong(header->ident);
 	header->version = LittleLong(header->version);
-	lumps = (header->version == Q3BSPVERSION_LIVE) ? Q3HEADER_LUMPS_LIVE : Q3HEADER_LUMPS;
+	lumps = (header->version == Q3BSPVERSION_LIVE_47) ? Q3HEADER_LUMPS_LIVE : Q3HEADER_LUMPS;
 	for (i = 0;i < lumps;i++)
 	{
 		j = (header->lumps[i].fileofs = LittleLong(header->lumps[i].fileofs));
@@ -7496,7 +7497,7 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 	Mod_Q3BSP_LoadEntities(&header->lumps[Q3LUMP_ENTITIES]);
 	Mod_Q3BSP_LoadTextures(&header->lumps[Q3LUMP_TEXTURES]);
 	Mod_Q3BSP_LoadPlanes(&header->lumps[Q3LUMP_PLANES]);
-	if (header->version == Q3BSPVERSION_IG)
+	if (header->version == Q3BSPVERSION_IG_48)
 		Mod_Q3BSP_LoadBrushSides_IG(&header->lumps[Q3LUMP_BRUSHSIDES]);
 	else
 		Mod_Q3BSP_LoadBrushSides(&header->lumps[Q3LUMP_BRUSHSIDES]);
@@ -7654,7 +7655,7 @@ static void Mod_Q3BSP_Load(model_t *mod, void *buffer, void *bufferend)
 int Mod_IBSP_Load(model_t *mod, void *buffer, void *bufferend)
 {
 	int i = LittleLong(((int *)buffer)[1]);
-	if (i == Q3BSPVERSION || i == Q3BSPVERSION_IG || i == Q3BSPVERSION_LIVE)
+	if (i == Q3BSPVERSION_46 || i == Q3BSPVERSION_IG_48 || i == Q3BSPVERSION_LIVE_47)
 		Mod_Q3BSP_Load(mod,buffer, bufferend);
 	else if (i == Q2BSPVERSION)
 		Mod_Q2BSP_Load(mod,buffer, bufferend);

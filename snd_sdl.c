@@ -110,7 +110,7 @@ Create "snd_renderbuffer" with the proper sound format if the call is successful
 May return a suggested format if the requested format isn't available
 ====================
 */
-qbool SndSys_Init (snd_format_t* fmt)
+qbool SndSys_Init (snd_format_t *fmt)
 {
 	unsigned int buffersize;
 	SDL_AudioSpec wantspec;

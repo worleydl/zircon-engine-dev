@@ -254,7 +254,7 @@ static void VM_CL_pointsound(prvm_prog_t *prog)
 	}
 
 	// Send World Entity as Entity to Play Sound (for CSQC, that is MAX_EDICTS_32768)
-	S_StartSound(MAX_EDICTS_32768, 0, S_FindName(sample), org, fvolume, attenuation);
+	S_StartSound(MAX_EDICTS_32768, 0, S_FindName(sample), org, fvolume, attenuation, q_is_forceloop_false);
 }
 
 // #14 entity() spawn
@@ -1136,7 +1136,7 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 	vec3_t col;
 	int style = -1;
 	const char *cubemapname = NULL;
-	int pflags = PFLAGS_CORONA | PFLAGS_FULLDYNAMIC;
+	int pflags = PFLAGS_CORONA_2 | PFLAGS_FULLDYNAMIC_128;
 	float coronaintensity = 1;
 	float coronasizescale = 0.25;
 	qbool castshadow = true;
@@ -1148,7 +1148,7 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNTRANGE(3, 8, VM_CL_R_AddDynamicLight);
 
 	// if we've run out of dlights, just return
-	if (r_refdef.scene.numlights >= MAX_DLIGHTS)
+	if (r_refdef.scene.numlights >= MAX_DLIGHTS_256)
 		return;
 
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), org);
@@ -1167,8 +1167,8 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 		cubemapname = PRVM_G_STRING(OFS_PARM4);
 	if (prog->argc >= 6)
 		pflags = (int)PRVM_G_FLOAT(OFS_PARM5);
-	coronaintensity = (pflags & PFLAGS_CORONA) != 0;
-	castshadow = (pflags & PFLAGS_NOSHADOW) == 0;
+	coronaintensity = (pflags & PFLAGS_CORONA_2) != 0;
+	castshadow = (pflags & PFLAGS_NOSHADOW_1) == 0;
 
 	VectorScale(PRVM_clientglobalvector(v_forward), radius, forward);
 	VectorScale(PRVM_clientglobalvector(v_right), -radius, left);
@@ -1176,7 +1176,9 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 	Matrix4x4_FromVectors(&matrix, forward, left, up, org);
 
 	R_RTLight_Update(&r_refdef.scene.templights[r_refdef.scene.numlights], false, &matrix, col, style, cubemapname, castshadow, coronaintensity, coronasizescale, ambientscale, diffusescale, specularscale, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
-	r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
+	r_refdef.scene.lights[r_refdef.scene.numlights] = 
+		&r_refdef.scene.templights[r_refdef.scene.numlights];
+	r_refdef.scene.numlights++;
 	t = Sys_DirtyTime() - t;if (t < 0 || t >= 1800) t = 0;
 	prog->functions[PRVM_clientfunction(CSQC_UpdateView)].totaltime -= t;
 }
@@ -1330,8 +1332,7 @@ static void getdrawfontscale(prvm_prog_t *prog, float *sx, float *sy)
 	vec3_t v;
 	*sx = *sy = 1;
 	VectorCopy(PRVM_drawglobalvector(drawfontscale), v);
-	if (VectorLength2(v) > 0)
-	{
+	if (VectorLength2(v) > 0) {
 		*sx = v[0];
 		*sy = v[1];
 	}
@@ -1340,7 +1341,7 @@ static void getdrawfontscale(prvm_prog_t *prog, float *sx, float *sy)
 static dp_font_t *getdrawfont(prvm_prog_t *prog)
 {
 	int f = (int) PRVM_drawglobalfloat(drawfont);
-	if (f < 0 || f >= dp_fonts.maxsize)
+	if (f < 0 || f >= dp_fonts.maxsize_font)
 		return FONT_DEFAULT;
 	return &dp_fonts.f[f];
 }
@@ -1405,6 +1406,11 @@ VM_drawstring
 float	drawstring(vector position, string text, vector scale, vector rgb, float alpha[, float flag])
 =========
 */
+// Baker: Uses drawfont, a CSQC global float
+// What is font limit?
+
+WARP_X_ (getdrawfont)
+
 void VM_drawstring(prvm_prog_t *prog)
 {
 	prvm_vec_t *pos,*scale,*rgb;
@@ -1423,22 +1429,20 @@ void VM_drawstring(prvm_prog_t *prog)
 	if (prog->argc >= 6)
 		flag = (int)PRVM_G_FLOAT(OFS_PARM5);
 
-	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS)
-	{
+	if (flag < DRAWFLAG_NORMAL_0 || flag >=DRAWFLAG_NUMFLAGS) {
 		PRVM_G_FLOAT(OFS_RETURN) = -2;
-		VM_Warning(prog, "VM_drawstring: %s: wrong DRAWFLAG %d !\n",prog->name,flag);
+		VM_WarningLinef (prog, "VM_drawstring: %s: wrong DRAWFLAG %d !",prog->name,flag);
 		return;
 	}
 
-	if (!scale[0] || !scale[1])
-	{
+	if (!scale[0] || !scale[1]) {
 		PRVM_G_FLOAT(OFS_RETURN) = -3;
-		VM_Warning(prog, "VM_drawstring: scale %s is null !\n", (scale[0] == 0) ? ((scale[1] == 0) ? "x and y" : "x") : "y");
+		VM_WarningLinef (prog, "VM_drawstring: scale %s is null !", (scale[0] == 0) ? ((scale[1] == 0) ? "x and y" : "x") : "y");
 		return;
 	}
 
 	if (pos[2] || scale[2])
-		VM_Warning(prog, "VM_drawstring: z value%s from %s discarded\n",(pos[2] && scale[2]) ? "s" : " ",((pos[2] && scale[2]) ? "pos and scale" : (pos[2] ? "pos" : "scale")));
+		VM_WarningLinef (prog, "VM_drawstring: z value%s from %s discarded",(pos[2] && scale[2]) ? "s" : " ",((pos[2] && scale[2]) ? "pos and scale" : (pos[2] ? "pos" : "scale")));
 
 	getdrawfontscale(prog, &sx, &sy);
 	DrawQ_String_Scale(pos[0], pos[1], string, 0, scale[0], scale[1], sx, sy, rgb[0], rgb[1], rgb[2], PRVM_G_FLOAT(OFS_PARM4), flag, NULL, true, getdrawfont(prog));
@@ -1473,7 +1477,7 @@ void VM_drawcolorcodedstring(prvm_prog_t *prog)
 		pos = PRVM_G_VECTOR(OFS_PARM0);
 		string = PRVM_G_STRING(OFS_PARM1);
 		scale = PRVM_G_VECTOR(OFS_PARM2);
-		VectorCopy(PRVM_G_VECTOR(OFS_PARM3), rgb); 
+		VectorCopy(PRVM_G_VECTOR(OFS_PARM3), rgb);
 		alpha = PRVM_G_FLOAT(OFS_PARM4);
 		flag = (int)PRVM_G_FLOAT(OFS_PARM5);
 	}
@@ -1584,7 +1588,7 @@ static float getdrawfontnum(const char *fontname)
 {
 	int i;
 
-	for(i = 0; i < dp_fonts.maxsize; ++i)
+	for(i = 0; i < dp_fonts.maxsize_font; ++i)
 		if (String_Does_Match(dp_fonts.f[i].title, fontname))
 			return i;
 	return -1;
@@ -1628,13 +1632,11 @@ void VM_loadfont(prvm_prog_t *prog)
 
 	// find a font
 	f = NULL;
-	if (prog->argc >= 4)
-	{
+	if (prog->argc >= 4) {
 		i = PRVM_G_FLOAT(OFS_PARM3);
-		if (i >= 0 && i < dp_fonts.maxsize)
-		{
+		if (i >= 0 && i < dp_fonts.maxsize_font) {
 			f = &dp_fonts.f[i];
-			strlcpy(f->title, fontname, sizeof(f->title)); // replace name
+			c_strlcpy(f->title, fontname); // replace name
 		}
 	}
 	if (!f)
@@ -1667,7 +1669,7 @@ void VM_loadfont(prvm_prog_t *prog)
 	}
 
 	// handle fallbacks
-	for(i = 0; i < MAX_FONT_FALLBACKS; ++i)
+	for(i = 0; i < MAX_FONT_FALLBACKS_3; ++i)
 	{
 		c = strchr(filelist, ',');
 		if (!c)
@@ -1696,7 +1698,7 @@ void VM_loadfont(prvm_prog_t *prog)
 	}
 
 	// handle sizes
-	for(i = 0; i < MAX_FONT_SIZES; ++i)
+	for(i = 0; i < MAX_FONT_SIZES_16; ++i)
 		f->req_sizes[i] = -1;
 	for (numsizes = 0,c = sizes;;)
 	{
@@ -1710,9 +1712,9 @@ void VM_loadfont(prvm_prog_t *prog)
 			continue;
 		}
 		// check overflow
-		if (numsizes == MAX_FONT_SIZES)
+		if (numsizes == MAX_FONT_SIZES_16)
 		{
-			VM_Warning(prog, "VM_loadfont: MAX_FONT_SIZES = %d exceeded", MAX_FONT_SIZES);
+			VM_Warning(prog, "VM_loadfont: MAX_FONT_SIZES_16 = %d exceeded", MAX_FONT_SIZES_16);
 			break;
 		}
 		f->req_sizes[numsizes] = sz;
@@ -1732,7 +1734,7 @@ void VM_loadfont(prvm_prog_t *prog)
 		voffset = PRVM_G_FLOAT(OFS_PARM5);
 
 	// load
-	LoadFont(true, mainfont, f, scale, voffset);
+	LoadFontDP (/*override?*/ true, mainfont, f, scale, voffset);
 
 	// return index of loaded font
 	PRVM_G_FLOAT(OFS_RETURN) = (f - dp_fonts.f);
@@ -2536,7 +2538,7 @@ static void VM_CL_ReadPicture (prvm_prog_t *prog)
 
 	if (size)
 	{
-		if (Draw_IsPicLoaded(pic) && !cl_readpicture_force.integer)
+		if (Draw_IsPicLoaded(pic) && !cl_readpicture_force.integer /*d: 0*/)
 		{
 			// texture found and loaded
 			// skip over the jpeg as we don't need it
@@ -2603,8 +2605,16 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 			staticent->render.alpha = 1.0f;
 		if (!staticent->render.scale)
 			staticent->render.scale = 1.0f;
-		if (!VectorLength2(staticent->render.colormod))
-			VectorSet(staticent->render.colormod, 1, 1, 1);
+		if (!VectorLength2(staticent->render.colormod)) {
+			VectorSet(staticent->render.colormod, 1, 1, 1);  // COLORMODUS
+			if (staticent->render.model && staticent->render.model->model_name[0] == '*') {
+				if (gl_overbright_world.integer) {
+					VectorScale (staticent->render.colormod, 2, staticent->render.colormod);
+				}
+			} else if (gl_overbright_models.integer) {
+				VectorScale (staticent->render.colormod, 2, staticent->render.colormod);
+			}
+		}
 		if (!VectorLength2(staticent->render.glowmod))
 			VectorSet(staticent->render.glowmod, 1, 1, 1);
 
@@ -2624,7 +2634,7 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 
 		// either fullbright or lit
 		if (!r_fullbright.integer && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit) { // Baker r1002: Proper Quake behavior for Q1BSP maps with no light data -- all entities in map render fullbright.
-		
+
 			if (!(staticent->render.effects & EF_FULLBRIGHT))
 				staticent->render.crflags |= RENDER_LIGHT;
 		}
@@ -2812,13 +2822,13 @@ static void VM_CL_te_gunshotquad (prvm_prog_t *prog)
 	CL_ParticleEffect(EFFECT_TE_GUNSHOTQUAD, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
 	if (cl_sound_ric_gunshot.integer >= 2)
 	{
-		if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
+		if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1, q_is_forceloop_false);
 		else
 		{
 			rnd = rand() & 3;
-			if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1);
-			else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1);
-			else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1);
+			if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1, q_is_forceloop_false);
+			else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1, q_is_forceloop_false);
+			else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1, q_is_forceloop_false);
 		}
 	}
 }
@@ -2833,13 +2843,13 @@ static void VM_CL_te_spikequad (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_SPIKEQUAD, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
+	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1, q_is_forceloop_false);
 	else
 	{
 		rnd = rand() & 3;
-		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1);
-		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1);
-		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1);
+		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1, q_is_forceloop_false);
+		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1, q_is_forceloop_false);
+		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1, q_is_forceloop_false);
 	}
 }
 
@@ -2853,13 +2863,13 @@ static void VM_CL_te_superspikequad (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_SUPERSPIKEQUAD, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1);
+	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos, 1, 1, q_is_forceloop_false);
 	else
 	{
 		rnd = rand() & 3;
-		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1);
-		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1);
-		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1);
+		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1, q_is_forceloop_false);
+		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1, q_is_forceloop_false);
+		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1, q_is_forceloop_false);
 	}
 }
 
@@ -2872,7 +2882,7 @@ static void VM_CL_te_explosionquad (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 10);
 	CL_ParticleEffect(EFFECT_TE_EXPLOSIONQUAD, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1);
+	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1, q_is_forceloop_false);
 }
 
 // #416 void(vector org) te_smallflash (DP_TE_SMALLFLASH)
@@ -2911,13 +2921,13 @@ static void VM_CL_te_gunshot (prvm_prog_t *prog)
 	CL_ParticleEffect(EFFECT_TE_GUNSHOT, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
 	if (cl_sound_ric_gunshot.integer == 1 || cl_sound_ric_gunshot.integer == 3)
 	{
-		if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
+		if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1, q_is_forceloop_false);
 		else
 		{
 			rnd = rand() & 3;
-			if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1);
-			else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1);
-			else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1);
+			if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1, q_is_forceloop_false);
+			else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1, q_is_forceloop_false);
+			else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1, q_is_forceloop_false);
 		}
 	}
 }
@@ -2932,13 +2942,13 @@ static void VM_CL_te_spike (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_SPIKE, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
+	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1, q_is_forceloop_false);
 	else
 	{
 		rnd = rand() & 3;
-		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1);
-		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1);
-		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1);
+		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1, q_is_forceloop_false);
+		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1, q_is_forceloop_false);
+		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1, q_is_forceloop_false);
 	}
 }
 
@@ -2952,13 +2962,13 @@ static void VM_CL_te_superspike (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_SUPERSPIKE, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1);
+	if (rand() % 5)			S_StartSound(-1, 0, cl.sfx_tink1, pos2, 1, 1, q_is_forceloop_false);
 	else
 	{
 		rnd = rand() & 3;
-		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1);
-		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1);
-		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1);
+		if (rnd == 1)		S_StartSound(-1, 0, cl.sfx_ric1, pos2, 1, 1, q_is_forceloop_false);
+		else if (rnd == 2)	S_StartSound(-1, 0, cl.sfx_ric2, pos2, 1, 1, q_is_forceloop_false);
+		else				S_StartSound(-1, 0, cl.sfx_ric3, pos2, 1, 1, q_is_forceloop_false);
 	}
 }
 
@@ -2971,7 +2981,7 @@ static void VM_CL_te_explosion (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 10);
 	CL_ParticleEffect(EFFECT_TE_EXPLOSION, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1);
+	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1, q_is_forceloop_false);
 }
 
 // #422 void(vector org) te_tarexplosion (DP_TE_STANDARDEFFECTBUILTINS)
@@ -2983,7 +2993,7 @@ static void VM_CL_te_tarexplosion (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 10);
 	CL_ParticleEffect(EFFECT_TE_TAREXPLOSION, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1);
+	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1, q_is_forceloop_false);
 }
 
 // #423 void(vector org) te_wizspike (DP_TE_STANDARDEFFECTBUILTINS)
@@ -2995,7 +3005,7 @@ static void VM_CL_te_wizspike (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_WIZSPIKE, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	S_StartSound(-1, 0, cl.sfx_wizhit, pos2, 1, 1);
+	S_StartSound(-1, 0, cl.sfx_wizhit, pos2, 1, 1, q_is_forceloop_false);
 }
 
 // #424 void(vector org) te_knightspike (DP_TE_STANDARDEFFECTBUILTINS)
@@ -3007,7 +3017,7 @@ static void VM_CL_te_knightspike (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	CL_ParticleEffect(EFFECT_TE_KNIGHTSPIKE, 1, pos2, pos2, vec3_origin, vec3_origin, NULL, 0);
-	S_StartSound(-1, 0, cl.sfx_knighthit, pos2, 1, 1);
+	S_StartSound(-1, 0, cl.sfx_knighthit, pos2, 1, 1, q_is_forceloop_false);
 }
 
 // #425 void(vector org) te_lavasplash (DP_TE_STANDARDEFFECTBUILTINS)
@@ -3048,7 +3058,7 @@ static void VM_CL_te_explosion2 (prvm_prog_t *prog)
 	color[2] = tempcolor[2] * (2.0f / 255.0f);
 	Matrix4x4_CreateTranslate(&tempmatrix, pos2[0], pos2[1], pos2[2]);
 	CL_AllocLightFlash(NULL, &tempmatrix, 350, color[0], color[1], color[2], 700, 0.5, NULL, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
-	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1);
+	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1, q_is_forceloop_false);
 }
 
 
@@ -4157,7 +4167,7 @@ static void VM_ResizePolygons(vmpolygons_t *polys)
 		Mem_Free(oldsortedelement3s);
 }
 
-static void VM_InitPolygons (vmpolygons_t* polys)
+static void VM_InitPolygons_Classic (vmpolygons_t *polys)
 {
 	memset(polys, 0, sizeof(*polys));
 	polys->pool = Mem_AllocPool("VMPOLY", 0, NULL);
@@ -4179,15 +4189,15 @@ static void VM_DrawPolygonCallback (const entity_render_t *ent, const rtlight_t 
 	for (surfacelistindex = 0;surfacelistindex < numsurfaces;)
 	{
 		int numtriangles = 0;
-		rtexture_t *tex = polys->data_triangles[surfacelist[surfacelistindex]].texture;
+		rtexture_t *tex = polys->data_triangles[surfacelist[surfacelistindex]].tri_texture; // packard data_triangles.texture is trash here
 		int drawflag = polys->data_triangles[surfacelist[surfacelistindex]].drawflag;
-		
+
 		DrawQ_ProcessDrawFlag(drawflag, polys->data_triangles[surfacelist[surfacelistindex]].hasalpha);
 		R_SetupShader_Generic(tex, /*gamma trippy texalpha*/ false, false, false);
 		numtriangles = 0;
 		for (;surfacelistindex < numsurfaces;surfacelistindex++)
 		{
-			if (polys->data_triangles[surfacelist[surfacelistindex]].texture != tex || polys->data_triangles[surfacelist[surfacelistindex]].drawflag != drawflag)
+			if (polys->data_triangles[surfacelist[surfacelistindex]].tri_texture != tex || polys->data_triangles[surfacelist[surfacelistindex]].drawflag != drawflag)
 				break;
 			VectorCopy(polys->data_triangles[surfacelist[surfacelistindex]].elements, polys->data_sortedelement3s + 3*numtriangles);
 			numtriangles++;
@@ -4240,9 +4250,8 @@ static void VMPolygons_Store(vmpolygons_t *polys)
 			memcpy(polys->data_vertex3f + polys->num_vertices * 3, polys->begin_vertex[0], polys->begin_vertices * sizeof(float[3]));
 			memcpy(polys->data_color4f + polys->num_vertices * 4, polys->begin_color[0], polys->begin_vertices * sizeof(float[4]));
 			memcpy(polys->data_texcoord2f + polys->num_vertices * 2, polys->begin_texcoord[0], polys->begin_vertices * sizeof(float[2]));
-			for (i = 0;i < polys->begin_vertices-2;i++)
-			{
-				polys->data_triangles[polys->num_triangles].texture = polys->begin_texture;
+			for (i = 0; i < polys->begin_vertices - 2 ; i ++) {
+				polys->data_triangles[polys->num_triangles].tri_texture = polys->begin_texture; // Baker: packard tri_texture set here.
 				polys->data_triangles[polys->num_triangles].drawflag = polys->begin_drawflag;
 				polys->data_triangles[polys->num_triangles].elements[0] = polys->num_vertices;
 				polys->data_triangles[polys->num_triangles].elements[1] = polys->num_vertices + i+1;
@@ -4285,11 +4294,10 @@ void VM_CL_AddPolygonsToMeshQueue (prvm_prog_t *prog)
 
 static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
 {
-
 	const char		*picname;
 	skinframe_t     *sf;
 	vmpolygons_t *polys = &prog->vmpolygons;
-	int tf;
+	int texaflags;
 
 	// TODO instead of using skinframes here (which provides the benefit of
 	// better management of flags, and is more suited for 3D rendering), what
@@ -4298,7 +4306,7 @@ static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_R_PolygonBegin);
 
 	if (!polys->initialized)
-		VM_InitPolygons(polys);
+		VM_InitPolygons_Classic(polys);
 	if (polys->begin_active)
 	{
 		VM_Warning(prog, "VM_CL_R_PolygonBegin: called twice without VM_CL_R_PolygonBegin after first\n");
@@ -4309,21 +4317,21 @@ static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
 	sf = NULL;
 	if (*picname)
 	{
-		tf = TEXF_ALPHA;
+		texaflags = TEXF_ALPHA;
 		if ((int)PRVM_G_FLOAT(OFS_PARM1) & DRAWFLAG_MIPMAP)
-			tf |= TEXF_MIPMAP;
+			texaflags |= TEXF_MIPMAP;
 
 		do
 		{
 			sf = R_SkinFrame_FindNextByName(sf, picname);
 		}
-		while(sf && sf->textureflags != tf);
+		while(sf && sf->textureflags != texaflags);
 
 		if (!sf || !sf->base)
 //new			skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain, qbool fallbacknotexture)
 //old         skinframe_t *R_SkinFrame_LoadExternal(const char *name, int textureflags, qbool complain)
 
-			sf = R_SkinFrame_LoadExternal(picname, tf, q_tx_complain_true, q_tx_fallback_notexture_false /*?*/);
+			sf = R_SkinFrame_LoadExternal(picname, texaflags, q_tx_complain_true, q_tx_fallback_notexture_false /*?*/);
 
 		if (sf)
 			R_SkinFrame_MarkUsed(sf);
@@ -4340,7 +4348,7 @@ static void VM_CL_R_PolygonBegin_Classic (prvm_prog_t *prog)
 void SBar2D_PolygonBegin (prvm_prog_t *prog, const char *texname, float drawflags, float isdraw2d)
 {
 	//prvm_prog_t *prog = CLVM_prog;
-	
+
 	// we need to remember whether this is a 2D or 3D mesh we're adding to
 	model_t *mod = isdraw2d ? CL_Mesh_UI() : CL_Mesh_Scene();
 	prog->polygonbegin_model = mod;
@@ -4362,7 +4370,7 @@ static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 		return;
 	}
 
-	
+
 	const char *texname;
 	int drawflags;
 	qbool draw2d;
@@ -4384,7 +4392,7 @@ static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 		draw2d = prog->polygonbegin_guess2d;
 	}
 
-	
+
 	// we need to remember whether this is a 2D or 3D mesh we're adding to
 // B	mod = draw2d ? CL_Mesh_UI() : CL_Mesh_Scene();
 // B	prog->polygonbegin_model = mod;
@@ -4431,7 +4439,7 @@ static void VM_CL_R_PolygonVertex_Classic (prvm_prog_t *prog)
 void SBar2D_PolygonVertex (prvm_prog_t *prog, float x, float y, float z, float tx, float ty, float tz, float red, float green, float blue, float alpha)
 {
 	float *o;
-	model_t *mod = prog->polygonbegin_model;
+// gcc	model_t *mod = prog->polygonbegin_model;
 
 	if (prog->polygonbegin_maxvertices <= prog->polygonbegin_numvertices)
 	{
@@ -4544,7 +4552,7 @@ void SBar2D_PolygonEnd (prvm_prog_t *prog)
 		materialflags |= MATERIALFLAG_VERTEXCOLOR;
 	if (hasalpha)
 		materialflags |= MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
-	tex = Mod_Mesh_GetTexture(mod, prog->polygonbegin_texname, prog->polygonbegin_drawflags, 
+	tex = Mod_Mesh_GetTexture(mod, prog->polygonbegin_texname, prog->polygonbegin_drawflags,
 		TEXF_ALPHA, materialflags);
 	surf = Mod_Mesh_AddSurface(mod, tex, false);
 	// create triangle fan
@@ -4898,7 +4906,7 @@ string(string key) serverkey
 */
 static void VM_CL_serverkey(prvm_prog_t *prog)
 {
-	char string[VM_STRINGTEMP_LENGTH];
+	char string[VM_STRINGTEMP_LENGTH_16384];
 	VM_SAFEPARMCOUNT(1, VM_CL_serverkey);
 	InfoString_GetValue(cl.qw_serverinfo, PRVM_G_STRING(OFS_PARM0), string, sizeof(string));
 	PRVM_G_INT(OFS_RETURN) = PRVM_SetTempString(prog, string);
@@ -5750,7 +5758,7 @@ VM_CL_ReadCoord,				// #364 float() readcoord (EXT_CSQC)
 VM_CL_ReadAngle,				// #365 float() readangle (EXT_CSQC)
 VM_CL_ReadString,				// #366 string() readstring (EXT_CSQC)
 VM_CL_ReadFloat,				// #367 float() readfloat (EXT_CSQC)
-NULL,						// #368
+NULL,							// #368
 NULL,							// #369
 NULL,							// #370
 NULL,							// #371
@@ -5817,12 +5825,12 @@ VM_CL_te_lightning3,			// #430 void(entity own, vector start, vector end) te_lig
 VM_CL_te_beam,					// #431 void(entity own, vector start, vector end) te_beam (DP_TE_STANDARDEFFECTBUILTINS)
 VM_vectorvectors,				// #432 void(vector dir) vectorvectors (DP_QC_VECTORVECTORS)
 VM_CL_te_plasmaburn,			// #433 void(vector org) te_plasmaburn (DP_TE_PLASMABURN)
-VM_getsurfacenumpoints,		// #434 float(entity e, float s) getsurfacenumpoints (DP_QC_GETSURFACE)
-VM_getsurfacepoint,			// #435 vector(entity e, float s, float n) getsurfacepoint (DP_QC_GETSURFACE)
+VM_getsurfacenumpoints,			// #434 float(entity e, float s) getsurfacenumpoints (DP_QC_GETSURFACE)
+VM_getsurfacepoint,				// #435 vector(entity e, float s, float n) getsurfacepoint (DP_QC_GETSURFACE)
 VM_getsurfacenormal,			// #436 vector(entity e, float s) getsurfacenormal (DP_QC_GETSURFACE)
-VM_getsurfacetexture,		// #437 string(entity e, float s) getsurfacetexture (DP_QC_GETSURFACE)
-VM_getsurfacenearpoint,		// #438 float(entity e, vector p) getsurfacenearpoint (DP_QC_GETSURFACE)
-VM_getsurfaceclippedpoint,	// #439 vector(entity e, float s, vector p) getsurfaceclippedpoint (DP_QC_GETSURFACE)
+VM_getsurfacetexture,			// #437 string(entity e, float s) getsurfacetexture (DP_QC_GETSURFACE)
+VM_getsurfacenearpoint,			// #438 float(entity e, vector p) getsurfacenearpoint (DP_QC_GETSURFACE)
+VM_getsurfaceclippedpoint,		// #439 vector(entity e, float s, vector p) getsurfaceclippedpoint (DP_QC_GETSURFACE)
 NULL,							// #440 void(entity e, string s) clientcommand (KRIMZON_SV_PARSECLIENTCOMMAND)
 VM_tokenize,					// #441 float(string s) tokenize (KRIMZON_SV_PARSECLIENTCOMMAND)
 VM_argv,						// #442 string(float n) argv (KRIMZON_SV_PARSECLIENTCOMMAND)
@@ -5869,13 +5877,13 @@ VM_cvar_defstring,				// #482 string(string s) cvar_defstring (DP_QC_CVAR_DEFSTR
 VM_CL_pointsound,				// #483 void(vector origin, string sample, float volume, float attenuation) pointsound (DP_SV_POINTSOUND)
 VM_strreplace,					// #484 string(string search, string replace, string subject) strreplace (DP_QC_STRREPLACE)
 VM_strireplace,					// #485 string(string search, string replace, string subject) strireplace (DP_QC_STRREPLACE)
-VM_getsurfacepointattribute,// #486 vector(entity e, float s, float n, float a) getsurfacepointattribute
-VM_gecko_create,					// #487 float gecko_create( string name )
-VM_gecko_destroy,					// #488 void gecko_destroy( string name )
+VM_getsurfacepointattribute,	// #486 vector(entity e, float s, float n, float a) getsurfacepointattribute
+VM_gecko_create,				// #487 float gecko_create( string name )
+VM_gecko_destroy,				// #488 void gecko_destroy( string name )
 VM_gecko_navigate,				// #489 void gecko_navigate( string name, string URI )
 VM_gecko_keyevent,				// #490 float gecko_keyevent( string name, float key, float eventtype )
 VM_gecko_movemouse,				// #491 void gecko_mousemove( string name, float x, float y )
-VM_gecko_resize,					// #492 void gecko_resize( string name, float w, float h )
+VM_gecko_resize,				// #492 void gecko_resize( string name, float w, float h )
 VM_gecko_get_texture_extent,	// #493 vector gecko_get_texture_extent( string name )
 VM_crc16,						// #494 float(float caseinsensitive, string s, ...) crc16 = #494 (DP_QC_CRC16)
 VM_cvar_type,					// #495 float(string name) cvar_type = #495; (DP_QC_CVAR_TYPE)
@@ -5895,13 +5903,13 @@ NULL,							// #508
 NULL,							// #509
 VM_uri_escape,					// #510 string(string in) uri_escape = #510;
 VM_uri_unescape,				// #511 string(string in) uri_unescape = #511;
-VM_etof,					// #512 float(entity ent) num_for_edict = #512 (DP_QC_NUM_FOR_EDICT)
+VM_etof,						// #512 float(entity ent) num_for_edict = #512 (DP_QC_NUM_FOR_EDICT)
 VM_uri_get,						// #513 float(string uri, float id, [string post_contenttype, string post_delim, [float buf]]) uri_get = #513; (DP_QC_URI_GET, DP_QC_URI_POST)
-VM_tokenize_console,					// #514 float(string str) tokenize_console = #514; (DP_QC_TOKENIZE_CONSOLE)
-VM_argv_start_index,					// #515 float(float idx) argv_start_index = #515; (DP_QC_TOKENIZE_CONSOLE)
-VM_argv_end_index,						// #516 float(float idx) argv_end_index = #516; (DP_QC_TOKENIZE_CONSOLE)
-VM_buf_cvarlist,						// #517 void(float buf, string prefix, string antiprefix) buf_cvarlist = #517; (DP_QC_STRINGBUFFERS_CVARLIST)
-VM_cvar_description,					// #518 float(string name) cvar_description = #518; (DP_QC_CVAR_DESCRIPTION)
+VM_tokenize_console,			// #514 float(string str) tokenize_console = #514; (DP_QC_TOKENIZE_CONSOLE)
+VM_argv_start_index,			// #515 float(float idx) argv_start_index = #515; (DP_QC_TOKENIZE_CONSOLE)
+VM_argv_end_index,				// #516 float(float idx) argv_end_index = #516; (DP_QC_TOKENIZE_CONSOLE)
+VM_buf_cvarlist,				// #517 void(float buf, string prefix, string antiprefix) buf_cvarlist = #517; (DP_QC_STRINGBUFFERS_CVARLIST)
+VM_cvar_description,			// #518 float(string name) cvar_description = #518; (DP_QC_CVAR_DESCRIPTION)
 VM_gettime,						// #519 float(float timer) gettime = #519; (DP_QC_GETTIME) // Baker: GETTIME_FRAMESTART or host.realtime or ...
 VM_keynumtostring,				// #520 string keynumtostring(float keynum)
 VM_findkeysforcommand,			// #521 string findkeysforcommand(string command[, float bindmap])
@@ -6017,19 +6025,19 @@ NULL,							// #626
 VM_sprintf,                     // #627 string sprintf(string format, ...)
 VM_getsurfacenumtriangles,		// #628 float(entity e, float s) getsurfacenumpoints (DP_QC_GETSURFACETRIANGLE)
 VM_getsurfacetriangle,			// #629 vector(entity e, float s, float n) getsurfacepoint (DP_QC_GETSURFACETRIANGLE)
-VM_setkeybind,						// #630 float(float key, string bind[, float bindmap]) setkeybind
-VM_getbindmaps,						// #631 vector(void) getbindmap
-VM_setbindmaps,						// #632 float(vector bm) setbindmap
+VM_setkeybind,					// #630 float(float key, string bind[, float bindmap]) setkeybind
+VM_getbindmaps,					// #631 vector(void) getbindmap
+VM_setbindmaps,					// #632 float(vector bm) setbindmap
 NULL,							// #633
 NULL,							// #634
 NULL,							// #635
 NULL,							// #636
 NULL,							// #637
-VM_CL_RotateMoves,					// #638
-VM_digest_hex,						// #639
-VM_CL_V_CalcRefdef,					// #640 void(entity e) V_CalcRefdef (DP_CSQC_V_CALCREFDEF)
+VM_CL_RotateMoves,				// #638
+VM_digest_hex,					// #639
+VM_CL_V_CalcRefdef,				// #640 void(entity e) V_CalcRefdef (DP_CSQC_V_CALCREFDEF)
 NULL,							// #641
-VM_coverage,						// #642
+VM_coverage,					// #642
 NULL
 };
 
@@ -6041,21 +6049,23 @@ void VM_Polygons_Reset(prvm_prog_t *prog)
 	vmpolygons_t *polys = &prog->vmpolygons;
 
 	// TODO: replace vm_polygons stuff with a more general debugging polygon system, and make vm_polygons functions use that system
-	if (polys->initialized)
-	{
-		Mem_FreePool(&polys->pool);
+	if (polys->initialized) {
+		Mem_FreePool (&polys->pool);
 		polys->initialized = false;
 	}
+#if 1 // packard
+	memset (&prog->vmpolygons, 0, sizeof(prog->vmpolygons));
+#endif
 }
 #endif // 123
 
-void CLVM_init_cmd(prvm_prog_t *prog)
+void CLVM_init_cmd (prvm_prog_t *prog)
 {
-	VM_Cmd_Init(prog);
+	VM_Cmd_Init (prog);
 
 #if 123
-	VM_Cmd_Init(prog);
-	VM_Polygons_Reset(prog);
+	VM_Cmd_Init (prog);
+	VM_Polygons_Reset (prog);
 #endif
 
 	// DarkPlaces Beta way
@@ -6063,16 +6073,22 @@ void CLVM_init_cmd(prvm_prog_t *prog)
 	prog->polygonbegin_guess2d = false;
 }
 
-void CLVM_reset_cmd(prvm_prog_t *prog)
+
+void CLVM_reset_cmd (prvm_prog_t *prog)
 {
-	World_End(&cl.world);
-	VM_Cmd_Reset(prog);
+	World_End (&cl.world);
+	VM_Cmd_Reset (prog);
 
 #if 123
-	VM_Polygons_Reset(prog);
+	VM_Polygons_Reset (prog);
 #endif // 123
 
 	// DarkPlaces Beta way
 	prog->polygonbegin_model = NULL;
 	prog->polygonbegin_guess2d = 0;
 }
+
+
+
+
+

@@ -22,7 +22,7 @@
 					break;
 
 				case 4:
-					key_dest = key_game;
+					KeyDest_Set (key_game); // key_dest = key_game;
 					if (sv.active)
 						Cbuf_AddTextLine (cmd, "disconnect");
 					Cbuf_AddTextLine (cmd, "playdemo endcred");
@@ -49,7 +49,7 @@
 					break;
 
 				case 3:
-					key_dest = key_game;
+					KeyDest_Set (key_game); // key_dest = key_game;
 					if (sv.active)
 						Cbuf_AddTextLine (cmd, "disconnect");
 					Cbuf_AddTextLine (cmd, "playdemo endcred");
@@ -68,7 +68,7 @@
 					break;
 
 				case 1:
-					key_dest = key_game;
+					KeyDest_Set (key_game); // key_dest = key_game;
 					if (sv.active)
 						Cbuf_AddTextLine (cmd, "disconnect");
 					Cbuf_AddTextLine (cmd, "playdemo endcred");

@@ -138,6 +138,11 @@ void CL_ClearState(void)
 	Mem_EmptyPool(cls.levelmempool);
 	memset (&cl, 0, sizeof(cl));
 
+#if 1 // Baker: 20240407 - Let's clear this
+	// Baker: Why not that whole struct?
+	r_refdef.scene.worldentity = NULL;
+#endif
+
 	S_StopAllSounds();
 
 	// reset the view zoom interpolation
@@ -156,7 +161,7 @@ void CL_ClearState(void)
 	cl.num_static_entities = 0;
 	cl.num_brushmodel_entities = 0;
 
-	cl.stats[STAT_VIEWZOOM] = 255; // Baker r9001: Avoid zoom effect in Quake by correctly reseting cl viewzoom field
+	cl.stats[STAT_VIEWZOOM_21] = 255; // Baker r9001: Avoid zoom effect in Quake by correctly reseting cl viewzoom field
 
 	// tweak these if the game runs out
 	cl.max_csqcrenderentities = 0;
@@ -164,7 +169,7 @@ void CL_ClearState(void)
 	cl.max_static_entities = MAX_STATICENTITIES;
 	cl.max_effects = MAX_EFFECTS;
 	cl.max_beams = MAX_BEAMS;
-	cl.max_dlights = MAX_DLIGHTS;
+	cl.max_dlights = MAX_DLIGHTS_256;
 	cl.max_lightstyle = MAX_LIGHTSTYLES_256;
 	cl.max_brushmodel_entities = MAX_EDICTS_32768;
 	cl.max_particles = MAX_PARTICLES_INITIAL; // grows dynamically
@@ -358,10 +363,11 @@ static void CL_ToggleMenu_Hook(void)
 {
 #ifdef CONFIG_MENU
 	// remove menu
-	if (key_dest == key_menu || key_dest == key_menu_grabbed)
-		MR_ToggleMenu(0);
+	if (key_dest == key_menu || key_dest == key_menu_grabbed) {
+		Consel_MouseReset ("MR_ToggleMenu"); MR_ToggleMenu(0);
+	}
 #endif
-	key_dest = key_game;
+	KeyDest_Set (key_game); // key_dest = key_game;
 }
 
 extern cvar_t rcon_secure;
@@ -574,7 +580,7 @@ static void CL_Connect_f(cmd_state_t *cmd)
 	CL_EstablishConnection (Cmd_Argv(cmd, 1), /*first arg #*/ 2);
 }
 
-void CL_Disconnect_f(cmd_state_t *cmd)
+void CL_Disconnect_f (cmd_state_t *cmd)
 {
 	Cmd_Argc(cmd) < 1 ? CL_Disconnect() : CL_DisconnectEx (q_is_kicked_false, Cmd_Argv(cmd, 1));
 }
@@ -1042,7 +1048,7 @@ void CL_RelinkLightFlashes(void)
 
 	if (r_dynamic.integer)
 	{
-		for (i = 0, dl = cl.dlights;i < cl.num_dlights && r_refdef.scene.numlights < MAX_DLIGHTS;i++, dl++)
+		for (i = 0, dl = cl.dlights;i < cl.num_dlights && r_refdef.scene.numlights < MAX_DLIGHTS_256;i++, dl++)
 		{
 			if (dl->radius)
 			{
@@ -1196,7 +1202,19 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 	e->render.scale = e->state_current.scale * (1.0f / 16.0f); // FIXME: interpolate?
 	e->render.crflags = e->state_current.sflags;
 	e->render.effects = e->state_current.effects;
-	VectorScale(e->state_current.colormod, (1.0f / 32.0f), e->render.colormod);
+	VectorScale(e->state_current.colormod, (1.0f / 32.0f), e->render.colormod);  // OVERBRIGHT
+	if (e->render.model && e->render.model->model_name[0] == '*') {
+		if (gl_overbright_world.integer){ 
+			VectorScale (e->render.colormod, 2, e->render.colormod);
+		}
+	} else if (gl_overbright_models.integer >= 2) {
+		// Not .bsp
+		VectorScale (e->render.colormod, 2, e->render.colormod);
+	} else if (gl_overbright_models.integer && e->render.model && !e->render.model->brushq1.vertexes) {
+		// Not .bsp
+		VectorScale (e->render.colormod, 2, e->render.colormod);
+	}
+
 	VectorScale(e->state_current.glowmod, (1.0f / 32.0f), e->render.glowmod);
 	if (e >= cl.entities && e < cl.entities + cl.num_entities)
 		e->render.entitynumber = e - cl.entities;
@@ -1329,7 +1347,7 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 		}
 	}
 	// if model is alias or this is a tenebrae-like dlight, reverse pitch direction
-	else if (e->state_current.lightpflags & PFLAGS_FULLDYNAMIC)
+	else if (e->state_current.lightpflags & PFLAGS_FULLDYNAMIC_128)
 		angles[0] = -angles[0];
 		// NOTE: this must be synced to SV_GetPitchSign!
 
@@ -1414,7 +1432,8 @@ static void CL_UpdateNetworkEntity(entity_t *e, int recursionlimit, qbool interp
 	if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE_32 | EF_NODEPTHTEST))
 	 && (e->render.alpha >= 1)
 	 && !(e->render.crflags & RENDER_VIEWMODEL)
-	 && (!(e->render.crflags & RENDER_EXTERIORMODEL) || (!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
+	 && (!(e->render.crflags & RENDER_EXTERIORMODEL) || 
+		(!cl.intermission && cls.protocol != PROTOCOL_NEHAHRAMOVIE && !cl_noplayershadow.integer)))
 		e->render.crflags |= RENDER_SHADOW;
 	if (e->render.crflags & RENDER_VIEWMODEL)
 		e->render.crflags |= RENDER_NOSELFSHADOW;
@@ -1724,7 +1743,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 			CL_ParticleTrail(EFFECT_EF_STARDUST, 1, origin, origin, vec3_origin, vec3_origin, NULL, 0, true, false, NULL, NULL, 1);
 	}
 	// muzzleflash fades over time, and is offset a bit
-	if (e->persistent.muzzleflash > 0 && r_refdef.scene.numlights < MAX_DLIGHTS)
+	if (e->persistent.muzzleflash > 0 && r_refdef.scene.numlights < MAX_DLIGHTS_256)
 	{
 		vec3_t v2;
 		vec3_t color;
@@ -1769,7 +1788,7 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		VectorMA(dlightcolor, (1.0f / 255.0f), palette_rgb[e->state_current.glowcolor], dlightcolor);
 	}
 	// custom rtlight
-	if ((e->state_current.lightpflags & PFLAGS_FULLDYNAMIC) && r_refdef.scene.numlights < MAX_DLIGHTS)
+	if (Have_Flag (e->state_current.lightpflags, PFLAGS_FULLDYNAMIC_128) && r_refdef.scene.numlights < MAX_DLIGHTS_256)
 	{
 		matrix4x4_t dlightmatrix;
 		vec4_t light;
@@ -1782,11 +1801,55 @@ static void CL_LinkNetworkEntity(entity_t *e)
 		// FIXME: add ambient/diffuse/specular scales as an extension ontop of TENEBRAE_GFX_DLIGHTS?
 		Matrix4x4_Normalize(&dlightmatrix, &e->render.matrix);
 		Matrix4x4_Scale(&dlightmatrix, light[3], 1);
-		R_RTLight_Update(&r_refdef.scene.templights[r_refdef.scene.numlights], false, &dlightmatrix, light, e->state_current.lightstyle, e->state_current.skin > 0 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", e->state_current.skin) : NULL, !(e->state_current.lightpflags & PFLAGS_NOSHADOW), (e->state_current.lightpflags & PFLAGS_CORONA) != 0, 0.25, 0, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
+		R_RTLight_Update (
+			&r_refdef.scene.templights[r_refdef.scene.numlights], 
+			/*isstatic*/ false, 
+			&dlightmatrix, 
+			light, 
+			e->state_current.lightstyle, 
+			e->state_current.skin > 0 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", e->state_current.skin) : NULL, !(e->state_current.lightpflags & PFLAGS_NOSHADOW_1), 
+			(e->state_current.lightpflags & PFLAGS_CORONA_2) != 0, 
+			0.25, 
+			0, 
+			1, // diffuse
+			1, // specular
+			LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE
+		);
+		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
+	}
+	else if (Have_Flag (e->state_current.lightpflags, PFLAGS_CORONA_2) && r_refdef.scene.numlights < MAX_DLIGHTS_256)
+	{
+		// Baker: This is not having PFLAGS_FULLDYNAMIC_128 but having PFLAGS_CORONA_2
+		matrix4x4_t dlightmatrix;
+		vec4_t light;
+		VectorScale(e->state_current.light, (1.0f / 256.0f), light);
+		light[3] = e->state_current.light[3];
+		if (light[0] == 0 && light[1] == 0 && light[2] == 0)
+			VectorSet(light, 1, 1, 1);
+		if (light[3] == 0)
+			light[3] = 350;
+		// FIXME: add ambient/diffuse/specular scales as an extension ontop of TENEBRAE_GFX_DLIGHTS?
+		Matrix4x4_Normalize(&dlightmatrix, &e->render.matrix);
+		Matrix4x4_Scale(&dlightmatrix, light[3], 1);
+		R_RTLight_Update (
+			&r_refdef.scene.templights[r_refdef.scene.numlights], 
+			/*isstatic*/ false, 
+			&dlightmatrix, 
+			light, 
+			e->state_current.lightstyle, 
+			NULL /*e->state_current.skin > 0 ? va(vabuf, sizeof(vabuf), "cubemaps/%d", e->state_current.skin) : NULL*/, // Baker: No cube map for you
+			false, //!(e->state_current.lightpflags & PFLAGS_NOSHADOW_1),  // No shadow for you
+			(e->state_current.lightpflags & PFLAGS_CORONA_2) != 0, 
+			e->state_current.scale,// 0.25, // Hmmm.  Corona size is always 0.25?
+			0, 
+			0, // diffuse <=============================== BAKER: WE SET ZERO
+ 			0, // specular<=============================== BAKER: WE SET ZERO
+			LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE
+		);
 		r_refdef.scene.lights[r_refdef.scene.numlights] = &r_refdef.scene.templights[r_refdef.scene.numlights];r_refdef.scene.numlights++;
 	}
 	// make the glow dlight
-	else if (dlightradius > 0 && (dlightcolor[0] || dlightcolor[1] || dlightcolor[2]) && !(e->render.crflags & RENDER_VIEWMODEL) && r_refdef.scene.numlights < MAX_DLIGHTS) {
+	else if (dlightradius > 0 && (dlightcolor[0] || dlightcolor[1] || dlightcolor[2]) && !(e->render.crflags & RENDER_VIEWMODEL) && r_refdef.scene.numlights < MAX_DLIGHTS_256) {
 		matrix4x4_t dlightmatrix;
 		Matrix4x4_Normalize(&dlightmatrix, &e->render.matrix);
 		// hack to make glowing player light shine on their gun
@@ -1823,7 +1886,12 @@ static void CL_RelinkWorld(void)
 	if (!r_fullbright.integer /*0*/ && r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit)
 		ent->render.crflags |= RENDER_LIGHT;
 
-	VectorSet(ent->render.colormod, 1, 1, 1);
+	VectorSet(ent->render.colormod, 1, 1, 1);  // OVERBRIGHT
+
+	if (gl_overbright_world.integer) {
+		VectorScale (ent->render.colormod, 2, ent->render.colormod);
+	}
+
 	VectorSet(ent->render.glowmod, 1, 1, 1);
 	ent->render.allowdecals = true;
 	CL_UpdateRenderEntity(&ent->render);
@@ -1855,7 +1923,15 @@ static void CL_RelinkStaticEntities(void)
 		// hide player shadow during intermission or nehahra movie
 		if (!(e->render.effects & (EF_NOSHADOW | EF_ADDITIVE_32 | EF_NODEPTHTEST)) && (e->render.alpha >= 1))
 			e->render.crflags |= RENDER_SHADOW;
-		VectorSet(e->render.colormod, 1, 1, 1);
+		VectorSet(e->render.colormod, 1, 1, 1);  // OVERBRIGHT
+		if (e->render.model && e->render.model->model_name[0] == '*') {
+			if (gl_overbright_world.integer) {
+				VectorScale (e->render.colormod, 2, e->render.colormod);
+			}
+		} else if (gl_overbright_models.integer) {
+			VectorScale (e->render.colormod, 2, e->render.colormod);
+		}
+
 		VectorSet(e->render.glowmod, 1, 1, 1);
 		VM_FrameBlendFromFrameGroupBlend(e->render.frameblend, e->render.framegroupblend, e->render.model, cl.time);
 		e->render.allowdecals = true;
@@ -2008,7 +2084,7 @@ void CL_RelinkBeams(void)
 
 		if (b->lightning)
 		{
-			if (cl_beams_lightatend.integer && r_refdef.scene.numlights < MAX_DLIGHTS)
+			if (cl_beams_lightatend.integer && r_refdef.scene.numlights < MAX_DLIGHTS_256)
 			{
 				// FIXME: create a matrix from the beam start/end orientation
 				vec3_t dlightcolor;
@@ -2441,7 +2517,7 @@ static void CL_Locs_Save_f(cmd_state_t *cmd)
 	}
 	dpsnprintf(locfilename, sizeof(locfilename), "%s.loc", cl.worldnamenoextension);
 
-	outfile = FS_OpenRealFile(locfilename, "w", false);
+	outfile = FS_OpenRealFile(locfilename, "w", fs_quiet_FALSE); // WRITE-EON Locs save
 	if (!outfile)
 		return;
 	// if any boxes are used then this is a proquake-format loc file, which
@@ -2667,11 +2743,19 @@ static void CL_MeshEntities_Shutdown(void)
 {
 	int i;
 	entity_t *ent;
-	for(i = 0; i < NUM_MESHENTITIES_2; i++)
-	{
+	for(i = 0; i < NUM_MESHENTITIES_2; i++) {
 		ent = cl_meshentities + i;
 		Mod_Mesh_Destroy(ent->render.model);
 	}
+#if 1 // Let's destroy classic if applicable
+	if (CLVM_prog) {
+		// Baker: Go through the textures and try to kill them?
+		//DebugPrintf ("VM_Polygons_Reset");
+		VM_Polygons_Reset (CLVM_prog);
+	}
+
+
+#endif
 }
 
 void CL_MeshEntities_Init(void)
@@ -2688,7 +2772,11 @@ void CL_MeshEntities_Init(void)
 		ent->render.crflags = RENDER_SHADOW | RENDER_LIGHT;
 		ent->render.framegroupblend[0].lerp = 1;
 		ent->render.frameblend[0].lerp = 1;
-		VectorSet(ent->render.colormod, 1, 1, 1);
+		VectorSet(ent->render.colormod, 1, 1, 1);  // OVERBRIGHT
+		if (gl_overbright_models.integer) {
+			VectorScale (ent->render.colormod, 2, ent->render.colormod);
+		}
+
 		VectorSet(ent->render.glowmod, 1, 1, 1);
 		VectorSet(ent->render.custommodellight_ambient, 1, 1, 1);
 		VectorSet(ent->render.custommodellight_diffuse, 0, 0, 0);
@@ -2720,7 +2808,7 @@ void CL_MeshEntities_Scene_Clear(void)
 
 void CL_MeshEntities_Scene_AddRenderEntity(void)
 {
-	entity_t* ent = &cl_meshentities[MESH_SCENE_0];
+	entity_t *ent = &cl_meshentities[MESH_SCENE_0];
 	r_refdef.scene.entities[r_refdef.scene.numentities++] = &ent->render;
 }
 
@@ -2858,6 +2946,7 @@ lightme:
 		}
 		else if (r_refdef.scene.worldmodel && r_refdef.scene.worldmodel->lit &&
 			r_refdef.scene.worldmodel->brush.LightPoint) {
+
 lightme2:
 traditional:
 				R_CompleteLightPoint(a, c, dir, shadingorigin, LP_LIGHTMAP, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
@@ -2885,7 +2974,7 @@ traditional:
 						}
 					}
 				} // if minlight
-		} else if (r_fullbright_directed.integer)
+		} else if (r_fullbright_directed.integer /*d: 0*/ )
 			CL_UpdateEntityShading_GetDirectedFullbright(a, c, dir);
 		else
 			R_CompleteLightPoint(a, c, dir, shadingorigin, LP_LIGHTMAP, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
@@ -2936,6 +3025,7 @@ void CL_UpdateEntityShading(void)
 }
 
 qbool vid_opened = false;
+// Baker: This is renderer restart "start video".  Sort of like VID_Init
 void CL_StartVideo(void)
 {
 	if (!vid_opened && cls.state != ca_dedicated)
@@ -2946,7 +3036,7 @@ void CL_StartVideo(void)
 		NetConn_UpdateSockets();
 #endif
 		VID_Start();
-		CDAudio_Startup();
+//		CDAudio_Startup();
 	}
 }
 
@@ -2974,8 +3064,9 @@ double CL_Frame (double time)
 	if (cl_timer > 0.1)
 		cl_timer = 0.1;
 
-	if (cls.state != ca_dedicated && (cl_timer > 0 || cls.timedemo || ((vid_activewindow ? cl_maxfps : cl_maxidlefps).value < 1)))
-	{
+	if (cls.state != ca_dedicated && (cl_timer > 0 || cls.timedemo || ((vid_activewindow ? cl_maxfps : cl_maxidlefps).value < 1))) {
+
+		// Baker: New frame?
 		qbool is_hosting_multiplayer_server = sv.active && svs.maxclients > 1;
 
 		R_TimeReport("---");
@@ -3175,7 +3266,7 @@ void CL_Init (void)
 		VID_Init();
 		Render_Init();
 		S_Init();
-		CDAudio_Init();
+		//CDAudio_Init();
 		Key_Init();
 		V_Init();
 

@@ -8,9 +8,9 @@
 
 //Q3 bsp stuff
 
-#define Q3BSPVERSION		46
-#define Q3BSPVERSION_LIVE	47
-#define Q3BSPVERSION_IG		48
+#define Q3BSPVERSION_46			46
+#define Q3BSPVERSION_LIVE_47	47	// Quake Live but better known as Enemy Territory
+#define Q3BSPVERSION_IG_48		48	// Iron-Grid: Warlord
 
 // FTE:
 //#define BSPVERSION_Q3	46

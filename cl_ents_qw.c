@@ -421,7 +421,7 @@ void EntityFrameQW_CL_ReadFrame(qbool delta)
 #endif
 #if 1 // Baseline expansion
 			if (newnum >= cl.max_entities) {
-				int is_delta = newnum == oldnum;
+				//int is_delta = newnum == oldnum;
 				//if (cl.num_entities <= newnum) {
 					cl.num_entities = newnum + 1;
 					if (cl.max_entities < newnum + 1)

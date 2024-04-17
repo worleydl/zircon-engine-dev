@@ -21,6 +21,8 @@
 
 */
 
+// image_png.h
+
 #ifndef PNG_H
 #define PNG_H
 
@@ -34,6 +36,8 @@ void PNG_CloseLibrary (void);
 
 unsigned char *PNG_LoadImage_BGRA (const unsigned char *f, int filesize, int *miplevel);
 qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbool has_alpha, unsigned char *data);
+
+void *Image_Save_PNG_Memory_Alloc (const unsigned *rgba, int width, int height, /*required*/ size_t *png_length, const char *description);
 
 #endif // ! PNG_H
 

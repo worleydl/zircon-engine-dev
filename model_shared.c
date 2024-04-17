@@ -48,7 +48,7 @@ static modloader_t loader[] =
 	{NULL, "IDPO", 4, Mod_IDP0_Load},
 	{NULL, "IDP2", 4, Mod_IDP2_Load},
 	{NULL, "IDP3", 4, Mod_IDP3_Load},
-	{NULL, "IDSP", 4, Mod_IDSP_Load},
+	{NULL, "IDSP", 4, Mod_IDSP_Load}, // Baker: SPRITE
 	{NULL, "IDS2", 4, Mod_IDS2_Load},
 	{NULL, "\035", 1, Mod_Q1BSP_Load},
 	{NULL, "\036", 1, Mod_HLBSP_Load},
@@ -67,7 +67,7 @@ static modloader_t loader[] =
 static mempool_t *mod_mempool;
 static memexpandablearray_t models;
 
-static mempool_t* q3shaders_mem;
+static mempool_t *q3shaders_mem;
 typedef struct q3shader_hash_entry_s
 {
   shader_t shader;
@@ -80,7 +80,7 @@ typedef struct q3shader_data_s
   q3shader_hash_entry_t hash[Q3SHADER_HASH_SIZE];
   memexpandablearray_t char_ptrs;
 } q3shader_data_t;
-static q3shader_data_t* q3shader_data;
+static q3shader_data_t *q3shader_data;
 
 WARP_X_CALLERS_ ()
 static void mod_start(void)
@@ -1066,7 +1066,7 @@ void Mod_ShadowMesh_AddMesh(shadowmesh_t *mesh, const float *vertex3f, int numtr
 	for (i = 0;i < numtris;i++)
 	{
 #if 1 // Signed-off-by: bones_was_here <bones_was_here@xonotic.au>
-		if ((mesh->numtriangles * 3 + 2) * sizeof(int) + 1 >= 
+		if ((mesh->numtriangles * 3 + 2) * sizeof(int) + 1 >=
 			((memheader_t *)((unsigned char *)mesh->element3i - sizeof(memheader_t)))->size)
 		{
 			// FIXME: we didn't allocate enough space for all the tris, see R_Mod_CompileShadowMap
@@ -1429,14 +1429,14 @@ void Mod_FreeQ3Shaders(void)
 	Mem_FreePool(&q3shaders_mem);
 }
 
-static void Q3Shader_AddToHash (shader_t* shader)
+static void Q3Shader_AddToHash (shader_t *shader)
 {
 	unsigned short hash = CRC_Block_CaseInsensitive ((const unsigned char *)shader->name, strlen (shader->name));
-	q3shader_hash_entry_t* entry = q3shader_data->hash + (hash % Q3SHADER_HASH_SIZE);
-	q3shader_hash_entry_t* lastEntry = NULL;
+	q3shader_hash_entry_t *entry = q3shader_data->hash + (hash % Q3SHADER_HASH_SIZE);
+	q3shader_hash_entry_t *lastEntry = NULL;
 	do
 	{
-		if (strcasecmp (entry->shader.name, shader->name) == 0)
+		if (String_Does_Match_Caseless (entry->shader.name, shader->name))
 		{
 			// redeclaration
 			if (shader->dpshaderkill)
@@ -1473,7 +1473,7 @@ static void Q3Shader_AddToHash (shader_t* shader)
 		if (lastEntry->shader.name[0] != 0)
 		{
 			/* Add to chain */
-			q3shader_hash_entry_t* newEntry = (q3shader_hash_entry_t*)
+			q3shader_hash_entry_t *newEntry = (q3shader_hash_entry_t*)
 			  Mem_ExpandableArray_AllocRecord (&q3shader_data->hash_entries);
 
 			while (lastEntry->chain != NULL) lastEntry = lastEntry->chain;
@@ -1515,28 +1515,71 @@ void Mod_LoadQ3Shaders(void)
 		q3shaders_mem, sizeof (char **), 256);
 
 	// parse custinfoparms.txt
+	// Baker: Blood Omnicide uses this file as such ...
+	// Surfaceflags
+	// The shader checks for these keywords shader.surfaceflags
+	// Script example?
+	//models/pushables/stone1
+	//{
+	//	dp_glossexponentmod 0.25
+	//	surfaceparm stone
+	//	dpmeshcollisions
+	//	{
+	//		map models/pushables/stone1
+	//	}
+	//	{
+	//		map $lightmap
+	//	}
+	//}
+
+	//{
+	//grass 0x00000001 // 1 = NODAMAGE
+	//ice 0x00000002 // 2 = SLICK
+	//dirt 0x00000003 // 3 = SLICK + NODAMAGE
+	//wood 0x00000008 // 8 = LADDER
+	//oldwood 0x00000009 // 9 = LADDER + NODAMAGE
+	//ground 0x0000000a // 10 = LADDER + SLICK
+	//sand 0x0000000b // 11 = LADDER + SLICK + NODAMAGE
+	//dullmetal 0x00000040 // 64 = FLESH
+	//brookwater 0x00000041 // 65 = FLESH + NODAMAGE
+	//glass 0x00000042 // 66 = FLESH + SLICK
+	//fur 0x00000043 // 67 = FLESH + SLICK + NODAMAGE
+	//marble 0x00000048 // 72 = FLESH + LADDER
+	//hay 0x00000049 // 73 = FLESH + LADDER + NODAMAGE
+	//slate 0x0000004a // 74 = FLESH + LADDER + SLICK
+	//flesh 0x0000004b // 75 = FLESH + LADDER + SLICK + NODAMAGE
+	//metal 0x00001000 // 4096 = METALSTEPS
+	//oldmetal 0x00001001 // 4097 = METALSTEPS + NODAMAGE
+	//stone 0x00001002 // 4098 = METALSTEPS + SLICK
+	//oldstone 0x00001003 // 4099 = METALSTEPS + SLICK + NODAMAGE
+	//plant 0x00001008 // 4104 = METALSTEPS + LADDER
+	//}
+
+
 	numcustsurfaceflags = 0;
 	if ((text = f = (char *)FS_LoadFile("scripts/custinfoparms.txt", tempmempool, fs_quiet_FALSE, fs_size_ptr_null)) != NULL)
 	{
-		if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-			Con_DPrintLinef ("scripts/custinfoparms.txt: contentflags section parsing error - expected \"{\", found " QUOTED_S, com_token);
+		//if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
+		if (!COM_ParseToken_QuakeC(&text, false) || String_Does_NOT_Match(com_token, "{")) {
+			Con_DPrintLinef ("scripts/custinfoparms.txt: contentflags section parsing error - expected " 
+								QUOTED_STR("{") ", found " QUOTED_S, com_token);
+		}
 		else
 		{
 			while (COM_ParseToken_QuakeC(&text, false))
 				if (String_Does_Match_Caseless(com_token, "}"))
 					break;
 			// custom surfaceflags section
-			if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
-				Con_DPrintLinef ("scripts/custinfoparms.txt: surfaceflags section parsing error - expected \"{\", found " QUOTED_S, com_token);
+			//if (!COM_ParseToken_QuakeC(&text, false) || strcasecmp(com_token, "{"))
+			if (!COM_ParseToken_QuakeC(&text, false) || false == String_Does_NOT_Match(com_token, "{"))
+				Con_DPrintLinef ("scripts/custinfoparms.txt: surfaceflags section parsing error - expected " QUOTED_STR("{") ", found " QUOTED_S, com_token);
 			else
 			{
-				while(COM_ParseToken_QuakeC(&text, false))
-				{
+				while(COM_ParseToken_QuakeC(&text, false)) {
 					if (String_Does_Match_Caseless(com_token, "}"))
 						break;
 					// register surfaceflag
-					if (numcustsurfaceflags >= 256)
-					{
+					if (numcustsurfaceflags >= 256) {
 						Con_PrintLinef ("scripts/custinfoparms.txt: surfaceflags section parsing error - max 256 surfaceflags exceeded");
 						break;
 					}
@@ -1550,7 +1593,7 @@ void Mod_LoadQ3Shaders(void)
 					else
 						custsurfaceflags[numcustsurfaceflags] = 0;
 					numcustsurfaceflags++;
-				}
+				} // while
 			}
 		}
 		Mem_Free(f);
@@ -1603,483 +1646,15 @@ void Mod_LoadQ3Shaders(void)
 			// WHEN ADDING DEFAULTS HERE, REMEMBER TO PUT DEFAULTS IN ALL LOADERS
 			// JUST GREP FOR "specularscalemod = 1".
 
-			strlcpy(shader.name, com_token, sizeof(shader.name));
-			if (!COM_ParseToken_QuakeC(&text, false) || String_Does_Not_Match(com_token, "{")) {
-				Con_DPrintLinef ("%s parsing error - expected \"{\", found " QUOTED_S, search->filenames[fileindex], com_token);
+			c_strlcpy(shader.name, com_token);
+			if (!COM_ParseToken_QuakeC(&text, false) || String_Does_NOT_Match(com_token, "{")) {
+				Con_DPrintLinef ("%s parsing error - expected " QUOTED_STR ("{") ", found " QUOTED_S, search->filenames[fileindex], com_token);
 				break;
 			}
-			while (COM_ParseToken_QuakeC(&text, false)) {
-				if (String_Does_Match_Caseless(com_token, "}"))
-					break;
-				if (String_Does_Match_Caseless(com_token, "{")) {
-					static q3shaderinfo_layer_t dummy;
-					if (shader.numlayers < Q3SHADER_MAXLAYERS_8) {
-						layer = shader.layers + shader.numlayers++;
-					} else {
-						// parse and process it anyway, just don't store it (so a map $lightmap or such stuff still is found)
-						memset(&dummy, 0, sizeof(dummy));
-						layer = &dummy;
-					}
-					layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITY;
-					layer->alphagen.alphagen = Q3ALPHAGEN_IDENTITY;
-					layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
-					layer->blendfunc[0] = GL_ONE;
-					layer->blendfunc[1] = GL_ZERO;
-					while (COM_ParseToken_QuakeC(&text, false)) {
-						if (String_Does_Match_Caseless(com_token, "}"))
-							break;
-						if (String_Does_Match_Caseless(com_token, NEWLINE))
-							continue;
-						numparameters = 0;
-						for (j = 0; String_Does_Not_Match(com_token, NEWLINE) && String_Does_Not_Match(com_token, "}");j++) {
-							if (j < TEXTURE_MAXFRAMES_64 + 4) {
-								// remap dp_water to dpwater, dp_reflect to dpreflect, etc.
-								if (j == 0 && String_Does_Start_With_Caseless(com_token, "dp_")) dpsnprintf(parameter[j], sizeof(parameter[j]), "dp%s", &com_token[3]);
-								else strlcpy(parameter[j], com_token, sizeof(parameter[j]));
-
-								numparameters = j + 1;
-							}
-							if (!COM_ParseToken_QuakeC(&text, true))
-								break;
-						} // j
-						//for (j = numparameters;j < TEXTURE_MAXFRAMES_64 + 4;j++)
-						//	parameter[j][0] = 0;
-						if (developer_insane.integer) {
-							Con_DPrintf ("%s %d: ", shader.name, shader.numlayers - 1);
-							for (j = 0;j < numparameters;j++)
-								Con_DPrintf (" %s", parameter[j]);
-							Con_DPrint("\n");
-						}
-						if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "blendfunc")) {
-							if (numparameters == 2) {
-								if (String_Does_Match_Caseless(parameter[1], "add")) {
-									layer->blendfunc[0] = GL_ONE;
-									layer->blendfunc[1] = GL_ONE;
-								} else if (String_Does_Match_Caseless(parameter[1], "addalpha")) {
-									layer->blendfunc[0] = GL_SRC_ALPHA;
-									layer->blendfunc[1] = GL_ONE;
-								} else if (String_Does_Match_Caseless(parameter[1], "filter")) {
-									layer->blendfunc[0] = GL_DST_COLOR;
-									layer->blendfunc[1] = GL_ZERO;
-								} else if (String_Does_Match_Caseless(parameter[1], "blend")) {
-									layer->blendfunc[0] = GL_SRC_ALPHA;
-									layer->blendfunc[1] = GL_ONE_MINUS_SRC_ALPHA;
-								}
-							} else if (numparameters == 3) {
-								int k;
-								for (k = 0;k < 2;k++) {
-									if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE")) layer->blendfunc[k] = GL_ONE;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ZERO")) layer->blendfunc[k] = GL_ZERO;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_SRC_COLOR")) layer->blendfunc[k] = GL_SRC_COLOR;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_SRC_ALPHA")) layer->blendfunc[k] = GL_SRC_ALPHA;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_DST_COLOR")) layer->blendfunc[k] = GL_DST_COLOR;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_DST_ALPHA")) layer->blendfunc[k] = GL_DST_ALPHA;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_SRC_COLOR")) layer->blendfunc[k] = GL_ONE_MINUS_SRC_COLOR;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_SRC_ALPHA")) layer->blendfunc[k] = GL_ONE_MINUS_SRC_ALPHA;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_DST_COLOR")) layer->blendfunc[k] = GL_ONE_MINUS_DST_COLOR;
-									else if (String_Does_Match_Caseless(parameter[k+1], "GL_ONE_MINUS_DST_ALPHA")) layer->blendfunc[k] = GL_ONE_MINUS_DST_ALPHA;
-									else layer->blendfunc[k] = GL_ONE; // default in case of parsing error
-								} // k
-							} // if
-						} // if
-						if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "alphafunc"))
-							layer->alphatest = true;
-						if (numparameters >= 2 && (String_Does_Match_Caseless(parameter[0], "map") || String_Does_Match_Caseless(parameter[0], "clampmap"))) {
-							if (String_Does_Match_Caseless(parameter[0], "clampmap"))
-								layer->clampmap = true;
-							layer->numframes = 1;
-							layer->framerate = 1;
-							layer->texturename = (char **)Mem_ExpandableArray_AllocRecord (&q3shader_data->char_ptrs);
-							layer->texturename[0] = Mem_strdup (q3shaders_mem, parameter[1]);
-							if (String_Does_Match_Caseless(parameter[1], "$lightmap"))
-								shader.lighting = true;
-						} else if (numparameters >= 3 && (String_Does_Match_Caseless(parameter[0], "animmap") || String_Does_Match_Caseless(parameter[0], "animclampmap"))) {
-							layer->numframes = min(numparameters - 2, TEXTURE_MAXFRAMES_64);
-							layer->framerate = atof(parameter[1]);
-							layer->texturename = (char **) Mem_Alloc (q3shaders_mem, sizeof (char *) * layer->numframes);
-							for (i = 0;i < layer->numframes;i++)
-								layer->texturename[i] = Mem_strdup (q3shaders_mem, parameter[i + 2]);
-						} else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "rgbgen")) {
-							for (i = 0;i < numparameters - 2 && i < Q3RGBGEN_MAXPARMS_3;i++)
-								layer->rgbgen.parms[i] = atof(parameter[i+2]);
-							     if (String_Does_Match_Caseless(parameter[1], "identity"))         layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "const"))            layer->rgbgen.rgbgen = Q3RGBGEN_CONST;
-							else if (String_Does_Match_Caseless(parameter[1], "entity"))           layer->rgbgen.rgbgen = Q3RGBGEN_ENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "exactvertex"))      layer->rgbgen.rgbgen = Q3RGBGEN_VERTEX; // Baker: Q3RGBGEN_EXACTVERTEX;
-							else if (String_Does_Match_Caseless(parameter[1], "identitylighting")) layer->rgbgen.rgbgen = Q3RGBGEN_IDENTITYLIGHTING;
-							else if (String_Does_Match_Caseless(parameter[1], "lightingdiffuse"))  layer->rgbgen.rgbgen = Q3RGBGEN_LIGHTINGDIFFUSE;
-							else if (String_Does_Match_Caseless(parameter[1], "oneminusentity"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "oneminusvertex"))   layer->rgbgen.rgbgen = Q3RGBGEN_ONEMINUSVERTEX;
-							else if (String_Does_Match_Caseless(parameter[1], "vertex"))           layer->rgbgen.rgbgen = Q3RGBGEN_VERTEX;
-							else if (String_Does_Match_Caseless(parameter[1], "wave")) {
-								layer->rgbgen.rgbgen = Q3RGBGEN_WAVE;
-								layer->rgbgen.wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[2]);
-								for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS_4;i++)
-									layer->rgbgen.waveparms[i] = atof(parameter[i+3]);
-							}
-							else Con_DPrintf ("%s parsing warning: unknown rgbgen %s\n", search->filenames[fileindex], parameter[1]);
-						}
-						else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "alphagen")) {
-							for (i = 0;i < numparameters - 2 && i < Q3ALPHAGEN_MAXPARMS_1; i++) {
-								layer->alphagen.parms[i] = atof(parameter[i+2]);
-							}
-							     if (String_Does_Match_Caseless(parameter[1], "identity"))         layer->alphagen.alphagen = Q3ALPHAGEN_IDENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "const"))            layer->alphagen.alphagen = Q3ALPHAGEN_CONST;
-							else if (String_Does_Match_Caseless(parameter[1], "entity"))           layer->alphagen.alphagen = Q3ALPHAGEN_ENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "lightingspecular")) layer->alphagen.alphagen = Q3ALPHAGEN_LIGHTINGSPECULAR;
-							else if (String_Does_Match_Caseless(parameter[1], "oneminusentity"))   layer->alphagen.alphagen = Q3ALPHAGEN_ONEMINUSENTITY;
-							else if (String_Does_Match_Caseless(parameter[1], "oneminusvertex"))   layer->alphagen.alphagen = Q3ALPHAGEN_ONEMINUSVERTEX;
-							else if (String_Does_Match_Caseless(parameter[1], "portal"))           layer->alphagen.alphagen = Q3ALPHAGEN_PORTAL;
-							else if (String_Does_Match_Caseless(parameter[1], "vertex"))           layer->alphagen.alphagen = Q3ALPHAGEN_VERTEX;
-							else if (String_Does_Match_Caseless(parameter[1], "wave")) {
-								layer->alphagen.alphagen = Q3ALPHAGEN_WAVE;
-								layer->alphagen.wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[2]);
-								for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS_4;i++)
-									layer->alphagen.waveparms[i] = atof(parameter[i+3]);
-							}
-							else Con_DPrintf ("%s parsing warning: unknown alphagen %s\n", search->filenames[fileindex], parameter[1]);
-						}
-						else if (numparameters >= 2 && (String_Does_Match_Caseless(parameter[0], "texgen") || String_Does_Match_Caseless(parameter[0], "tcgen"))) {
-							// observed values: tcgen environment
-							// no other values have been observed in real shaders
-							for (i = 0;i < numparameters - 2 && i < Q3TCGEN_MAXPARMS_6;i++)
-								layer->tcgen.parms[i] = atof(parameter[i+2]);
-							     if (String_Does_Match_Caseless(parameter[1], "base"))        layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
-							else if (String_Does_Match_Caseless(parameter[1], "texture"))     layer->tcgen.tcgen = Q3TCGEN_TEXTURE;
-							else if (String_Does_Match_Caseless(parameter[1], "environment")) layer->tcgen.tcgen = Q3TCGEN_ENVIRONMENT;
-							else if (String_Does_Match_Caseless(parameter[1], "lightmap"))    layer->tcgen.tcgen = Q3TCGEN_LIGHTMAP;
-							else if (String_Does_Match_Caseless(parameter[1], "vector"))      layer->tcgen.tcgen = Q3TCGEN_VECTOR;
-							else Con_DPrintf ("%s parsing warning: unknown tcgen mode %s\n", search->filenames[fileindex], parameter[1]);
-						}
-						else if (numparameters >= 2 && String_Does_Match_Caseless(parameter[0], "tcmod")) {
-
-							// observed values:
-							// tcmod rotate #
-							// tcmod scale # #
-							// tcmod scroll # #
-							// tcmod stretch sin # # # #
-							// tcmod stretch triangle # # # #
-							// tcmod transform # # # # # #
-							// tcmod turb # # # #
-							// tcmod turb sin # # # #  (this is bogus)
-							// no other values have been observed in real shaders
-							for (tcmodindex = 0;tcmodindex < Q3MAXTCMODS_8;tcmodindex++)
-								if (!layer->tcmods[tcmodindex].tcmod)
-									break;
-							if (tcmodindex < Q3MAXTCMODS_8) {
-								for (i = 0;i < numparameters - 2 && i < Q3TCMOD_MAXPARMS_6;i++)
-									layer->tcmods[tcmodindex].parms[i] = atof(parameter[i+2]);
-
-									 if (String_Does_Match_Caseless(parameter[1], "entitytranslate")) layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ENTITYTRANSLATE;
-								else if (String_Does_Match_Caseless(parameter[1], "rotate"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_ROTATE;
-								else if (String_Does_Match_Caseless(parameter[1], "scale")) {
-									layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCALE;
-								}
-//#pragma message ("TCMod scale issue with Quake Combat+")
-								else if (String_Does_Match_Caseless(parameter[1], "scroll"))          layer->tcmods[tcmodindex].tcmod = Q3TCMOD_SCROLL;
-								else if (String_Does_Match_Caseless(parameter[1], "page"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_PAGE;
-								else if (String_Does_Match_Caseless(parameter[1], "stretch"))
-								{
-									layer->tcmods[tcmodindex].tcmod = Q3TCMOD_STRETCH;
-									layer->tcmods[tcmodindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[2]);
-									for (i = 0;i < numparameters - 3 && i < Q3WAVEPARMS_4;i++)
-										layer->tcmods[tcmodindex].waveparms[i] = atof(parameter[i+3]);
-								}
-								else if (String_Does_Match_Caseless(parameter[1], "transform"))       layer->tcmods[tcmodindex].tcmod = Q3TCMOD_TRANSFORM;
-								else if (String_Does_Match_Caseless(parameter[1], "turb"))            layer->tcmods[tcmodindex].tcmod = Q3TCMOD_TURBULENT;
-								else Con_DPrintf ("%s parsing warning: unknown tcmod mode %s\n", search->filenames[fileindex], parameter[1]);
-							}
-							else
-								Con_DPrintf ("%s parsing warning: too many tcmods on one layer\n", search->filenames[fileindex]);
-						}
-						// break out a level if it was a closing brace (not using the character here to not confuse vim)
-						if (String_Does_Match_Caseless(com_token, "}"))
-							break;
-					}
-					if (layer->rgbgen.rgbgen == Q3RGBGEN_LIGHTINGDIFFUSE || layer->rgbgen.rgbgen == Q3RGBGEN_VERTEX)
-						shader.lighting = true;
-					if (layer->alphagen.alphagen == Q3ALPHAGEN_VERTEX) {
-						if (layer == shader.layers + 0) {
-							// vertex controlled transparency
-							shader.vertexalpha = true;
-						} else {
-							// multilayer terrain shader or similar
-							shader.textureblendalpha = true;
-							if (mod_q3shader_force_terrain_alphaflag.integer)
-								shader.layers[0].dptexflags |= TEXF_ALPHA;
-						}
-					} // if
-
-					if (mod_q3shader_force_addalpha.integer) {
-						// for a long while, DP treated GL_ONE GL_ONE as GL_SRC_ALPHA GL_ONE
-						// this cvar brings back this behaviour
-						if (layer->blendfunc[0] == GL_ONE && layer->blendfunc[1] == GL_ONE)
-							layer->blendfunc[0] = GL_SRC_ALPHA;
-					}
-
-					layer->dptexflags = 0;
-					if (layer->alphatest)
-						layer->dptexflags |= TEXF_ALPHA;
-					switch(layer->blendfunc[0]) {
-						case GL_SRC_ALPHA:
-						case GL_ONE_MINUS_SRC_ALPHA:
-							layer->dptexflags |= TEXF_ALPHA;
-							break;
-					} // sw
-					switch(layer->blendfunc[1]) {
-						case GL_SRC_ALPHA:
-						case GL_ONE_MINUS_SRC_ALPHA:
-							layer->dptexflags |= TEXF_ALPHA;
-							break;
-					} // sw
-					if (!(shader.surfaceparms & Q3SURFACEPARM_NOMIPMAPS))
-						layer->dptexflags |= TEXF_MIPMAP;
-					if (!(shader.textureflags & Q3TEXTUREFLAG_NOPICMIP))
-						layer->dptexflags |= TEXF_PICMIP | TEXF_COMPRESS;
-					if (layer->clampmap)
-						layer->dptexflags |= TEXF_CLAMP;
-					continue;
-				}
-				numparameters = 0;
-				for (j = 0;strcasecmp(com_token, "\n") && strcasecmp(com_token, "}");j++) {
-					if (j < TEXTURE_MAXFRAMES_64 + 4)
-					{
-						// remap dp_water to dpwater, dp_reflect to dpreflect, etc.
-						if (j == 0 && !strncasecmp(com_token, "dp_", 3))
-							dpsnprintf(parameter[j], sizeof(parameter[j]), "dp%s", &com_token[3]);
-						else
-							strlcpy(parameter[j], com_token, sizeof(parameter[j]));
-						numparameters = j + 1;
-					}
-					if (!COM_ParseToken_QuakeC(&text, true))
-						break;
-				}
-				//for (j = numparameters;j < TEXTURE_MAXFRAMES_64 + 4;j++)
-				//	parameter[j][0] = 0;
-				if (fileindex == 0 && String_Does_Match_Caseless(com_token, "}"))
-					break;
-				if (developer_insane.integer) {
-					Con_DPrintf ("%s: ", shader.name);
-					for (j = 0;j < numparameters;j++)
-						Con_DPrintf (" %s", parameter[j]);
-					Con_DPrint("\n");
-				}
-				if (numparameters < 1)
-					continue;
-				if (String_Does_Match_Caseless(parameter[0], "surfaceparm") && numparameters >= 2) {
-					if (String_Does_Match_Caseless(parameter[1], "alphashadow")) shader.surfaceparms |= Q3SURFACEPARM_ALPHASHADOW;
-					else if (String_Does_Match_Caseless(parameter[1], "areaportal")) shader.surfaceparms |= Q3SURFACEPARM_AREAPORTAL;
-					else if (String_Does_Match_Caseless(parameter[1], "botclip")) shader.surfaceparms |= Q3SURFACEPARM_BOTCLIP;
-					else if (String_Does_Match_Caseless(parameter[1], "clusterportal")) shader.surfaceparms |= Q3SURFACEPARM_CLUSTERPORTAL;
-					else if (String_Does_Match_Caseless(parameter[1], "detail")) shader.surfaceparms |= Q3SURFACEPARM_DETAIL;
-					else if (String_Does_Match_Caseless(parameter[1], "donotenter")) shader.surfaceparms |= Q3SURFACEPARM_DONOTENTER;
-					else if (String_Does_Match_Caseless(parameter[1], "dust")) shader.surfaceparms |= Q3SURFACEPARM_DUST;
-					else if (String_Does_Match_Caseless(parameter[1], "hint")) shader.surfaceparms |= Q3SURFACEPARM_HINT;
-					else if (String_Does_Match_Caseless(parameter[1], "fog")) shader.surfaceparms |= Q3SURFACEPARM_FOG;
-					else if (String_Does_Match_Caseless(parameter[1], "lava")) shader.surfaceparms |= Q3SURFACEPARM_LAVA;
-					else if (String_Does_Match_Caseless(parameter[1], "lightfilter")) shader.surfaceparms |= Q3SURFACEPARM_LIGHTFILTER;
-					else if (String_Does_Match_Caseless(parameter[1], "lightgrid")) shader.surfaceparms |= Q3SURFACEPARM_LIGHTGRID;
-					else if (String_Does_Match_Caseless(parameter[1], "metalsteps")) shader.surfaceparms |= Q3SURFACEPARM_METALSTEPS;
-					else if (String_Does_Match_Caseless(parameter[1], "nodamage")) shader.surfaceparms |= Q3SURFACEPARM_NODAMAGE;
-					else if (String_Does_Match_Caseless(parameter[1], "nodlight")) shader.surfaceparms |= Q3SURFACEPARM_NODLIGHT;
-					else if (String_Does_Match_Caseless(parameter[1], "nodraw")) shader.surfaceparms |= Q3SURFACEPARM_NODRAW;
-					else if (String_Does_Match_Caseless(parameter[1], "nodrop")) shader.surfaceparms |= Q3SURFACEPARM_NODROP;
-					else if (String_Does_Match_Caseless(parameter[1], "noimpact")) shader.surfaceparms |= Q3SURFACEPARM_NOIMPACT;
-					else if (String_Does_Match_Caseless(parameter[1], "nolightmap")) shader.surfaceparms |= Q3SURFACEPARM_NOLIGHTMAP;
-					else if (String_Does_Match_Caseless(parameter[1], "nomarks")) shader.surfaceparms |= Q3SURFACEPARM_NOMARKS;
-					else if (String_Does_Match_Caseless(parameter[1], "nomipmaps")) shader.surfaceparms |= Q3SURFACEPARM_NOMIPMAPS;
-					else if (String_Does_Match_Caseless(parameter[1], "nonsolid")) shader.surfaceparms |= Q3SURFACEPARM_NONSOLID;
-					else if (String_Does_Match_Caseless(parameter[1], "origin")) shader.surfaceparms |= Q3SURFACEPARM_ORIGIN;
-					else if (String_Does_Match_Caseless(parameter[1], "playerclip")) shader.surfaceparms |= Q3SURFACEPARM_PLAYERCLIP;
-					else if (String_Does_Match_Caseless(parameter[1], "sky")) shader.surfaceparms |= Q3SURFACEPARM_SKY;
-					else if (String_Does_Match_Caseless(parameter[1], "slick")) shader.surfaceparms |= Q3SURFACEPARM_SLICK;
-					else if (String_Does_Match_Caseless(parameter[1], "slime")) shader.surfaceparms |= Q3SURFACEPARM_SLIME;
-					else if (String_Does_Match_Caseless(parameter[1], "structural")) shader.surfaceparms |= Q3SURFACEPARM_STRUCTURAL;
-					else if (String_Does_Match_Caseless(parameter[1], "trans")) shader.surfaceparms |= Q3SURFACEPARM_TRANS;
-					else if (String_Does_Match_Caseless(parameter[1], "water")) shader.surfaceparms |= Q3SURFACEPARM_WATER;
-					else if (String_Does_Match_Caseless(parameter[1], "pointlight")) shader.surfaceparms |= Q3SURFACEPARM_POINTLIGHT;
-					else if (String_Does_Match_Caseless(parameter[1], "antiportal")) shader.surfaceparms |= Q3SURFACEPARM_ANTIPORTAL;
-					else if (String_Does_Match_Caseless(parameter[1], "skip"))
-						; // shader.surfaceparms |= Q3SURFACEPARM_SKIP; FIXME we don't have enough #defines for this any more, and the engine doesn't need this one anyway
-					else
-					{
-						// try custom surfaceparms
-						for (j = 0; j < numcustsurfaceflags; j++) {
-							if (String_Does_Match_Caseless(custsurfaceparmnames[j], parameter[1])) {
-								shader.surfaceflags |= custsurfaceflags[j];
-								break;
-							}
-						}
-						// failed all
-						if (j == numcustsurfaceflags)
-							Con_DPrintLinef ("%s parsing warning: unknown surfaceparm " QUOTED_S, search->filenames[fileindex], parameter[1]);
-					}
-				} // surfaceparm
-				else if (String_Does_Match_Caseless(parameter[0], "dpshadow")) shader.dpshadow = true;
-				else if (String_Does_Match_Caseless(parameter[0], "dpnoshadow")) shader.dpnoshadow = true;
-				else if (String_Does_Match_Caseless(parameter[0], "dpnortlight")) shader.dpnortlight = true;
-				else if (String_Does_Match_Caseless(parameter[0], "dpreflectcube")) strlcpy(shader.dpreflectcube, parameter[1], sizeof(shader.dpreflectcube));
-				else if (String_Does_Match_Caseless(parameter[0], "dpmeshcollisions")) shader.dpmeshcollisions = true;
-				// this sets dpshaderkill to true if dpshaderkillifcvarzero was used, and to false if dpnoshaderkillifcvarzero was used
-				else if (((dpshaderkill = String_Does_Match_Caseless(parameter[0], "dpshaderkillifcvarzero")) || String_Does_Match_Caseless(parameter[0], "dpnoshaderkillifcvarzero")) && numparameters >= 2) {
-					if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) == 0.0f)
-						shader.dpshaderkill = dpshaderkill;
-				}
-				// this sets dpshaderkill to true if dpshaderkillifcvar was used, and to false if dpnoshaderkillifcvar was used
-				else if (((dpshaderkill = String_Does_Match_Caseless(parameter[0], "dpshaderkillifcvar")) || String_Does_Match_Caseless(parameter[0], "dpnoshaderkillifcvar")) && numparameters >= 2) {
-					const char *op = NULL;
-					if (numparameters >= 3)
-						op = parameter[2];
-					if (!op) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) != 0.0f)
-							shader.dpshaderkill = dpshaderkill;
-					} else if (numparameters >= 4 && String_Does_Match(op, "==")) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) == atof(parameter[3]))
-							shader.dpshaderkill = dpshaderkill;
-					} else if (numparameters >= 4 && String_Does_Match(op, "!=")) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) != atof(parameter[3]))
-							shader.dpshaderkill = dpshaderkill;
-					} else if (numparameters >= 4 && String_Does_Match(op, ">")) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) > atof(parameter[3]))
-							shader.dpshaderkill = dpshaderkill;
-					} else if (numparameters >= 4 && String_Does_Match(op, "<")) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) < atof(parameter[3]))
-							shader.dpshaderkill = dpshaderkill;
-					} else if (numparameters >= 4 && String_Does_Match(op, ">=")) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) >= atof(parameter[3]))
-							shader.dpshaderkill = dpshaderkill;
-					} else if (numparameters >= 4 && String_Does_Match(op, "<=")) {
-						if (Cvar_VariableValue(&cvars_all, parameter[1], ~0) <= atof(parameter[3]))
-							shader.dpshaderkill = dpshaderkill;
-					} else {
-						Con_DPrintLinef ("%s parsing warning: unknown dpshaderkillifcvar op " QUOTED_S ", or not enough arguments", search->filenames[fileindex], op);
-					}
-				} else if (String_Does_Match_Caseless(parameter[0], "sky") && numparameters >= 2) {
-					// some q3 skies don't have the sky parm set
-					shader.surfaceparms |= Q3SURFACEPARM_SKY;
-					strlcpy(shader.skyboxname, parameter[1], sizeof(shader.skyboxname));
-				} else if (String_Does_Match_Caseless(parameter[0], "skyparms") && numparameters >= 2) {
-					// some q3 skies don't have the sky parm set
-					shader.surfaceparms |= Q3SURFACEPARM_SKY;
-					if (!atoi(parameter[1]) && strcasecmp(parameter[1], "-"))
-						strlcpy(shader.skyboxname, parameter[1], sizeof(shader.skyboxname));
-				} else if (String_Does_Match_Caseless(parameter[0], "cull") && numparameters >= 2) {
-					if (String_Does_Match_Caseless(parameter[1], "disable") || String_Does_Match_Caseless(parameter[1], "none") || String_Does_Match_Caseless(parameter[1], "twosided"))
-						shader.textureflags |= Q3TEXTUREFLAG_TWOSIDED;
-				} else if (String_Does_Match_Caseless(parameter[0], "nomipmaps")) shader.surfaceparms |= Q3SURFACEPARM_NOMIPMAPS;
-				else if (String_Does_Match_Caseless(parameter[0], "nopicmip")) shader.textureflags |= Q3TEXTUREFLAG_NOPICMIP;
-				else if (String_Does_Match_Caseless(parameter[0], "polygonoffset")) shader.textureflags |= Q3TEXTUREFLAG_POLYGONOFFSET;
-				else if (String_Does_Match_Caseless(parameter[0], "dppolygonoffset")) {
-					shader.textureflags |= Q3TEXTUREFLAG_POLYGONOFFSET;
-					if (numparameters >= 2)
-					{
-						shader.biaspolygonfactor = atof(parameter[1]);
-						if (numparameters >= 3)
-							shader.biaspolygonoffset = atof(parameter[2]);
-						else
-							shader.biaspolygonoffset = 0;
-					}
-				} else if (String_Does_Match_Caseless(parameter[0], "dptransparentsort") && numparameters >= 2) {
-					shader.textureflags |= Q3TEXTUREFLAG_TRANSPARENTSORT;
-					if (String_Does_Match_Caseless(parameter[1], "sky"))
-						shader.transparentsort = TRANSPARENTSORT_SKY;
-					else if (String_Does_Match_Caseless(parameter[1], "distance"))
-						shader.transparentsort = TRANSPARENTSORT_DISTANCE;
-					else if (String_Does_Match_Caseless(parameter[1], "hud"))
-						shader.transparentsort = TRANSPARENTSORT_HUD;
-					else
-						Con_DPrintLinef ("%s parsing warning: unknown dptransparentsort category " QUOTED_S ", or not enough arguments", search->filenames[fileindex], parameter[1]);
-				} else if (String_Does_Match_Caseless(parameter[0], "dprefract") && numparameters >= 5) {
-					shader.textureflags |= Q3TEXTUREFLAG_REFRACTION;
-					shader.refractfactor = atof(parameter[1]);
-					Vector4Set(shader.refractcolor4f, atof(parameter[2]), atof(parameter[3]), atof(parameter[4]), 1);
-				} else if (String_Does_Match_Caseless(parameter[0], "dpreflect") && numparameters >= 6) {
-					shader.textureflags |= Q3TEXTUREFLAG_REFLECTION;
-					shader.reflectfactor = atof(parameter[1]);
-					Vector4Set(shader.reflectcolor4f, atof(parameter[2]), atof(parameter[3]), atof(parameter[4]), atof(parameter[5]));
-				} else if (String_Does_Match_Caseless(parameter[0], "dpcamera")) {
-					shader.textureflags |= Q3TEXTUREFLAG_CAMERA;
-				} else if (String_Does_Match_Caseless(parameter[0], "dpwater") && numparameters >= 12) {
-					shader.textureflags |= Q3TEXTUREFLAG_WATERSHADER;
-					shader.reflectmin = atof(parameter[1]);
-					shader.reflectmax = atof(parameter[2]);
-					shader.refractfactor = atof(parameter[3]);
-					shader.reflectfactor = atof(parameter[4]);
-					Vector4Set(shader.refractcolor4f, atof(parameter[5]), atof(parameter[6]), atof(parameter[7]), 1);
-					Vector4Set(shader.reflectcolor4f, atof(parameter[8]), atof(parameter[9]), atof(parameter[10]), 1);
-					shader.r_water_wateralpha = atof(parameter[11]);
-				} else if (String_Does_Match_Caseless(parameter[0], "dpwaterscroll") && numparameters >= 3) {
-					shader.r_water_waterscroll[0] = 1/atof(parameter[1]);
-					shader.r_water_waterscroll[1] = 1/atof(parameter[2]);
-				} else if (String_Does_Match_Caseless(parameter[0], "dpglossintensitymod") && numparameters >= 2) {
-					shader.specularscalemod = atof(parameter[1]);
-				} else if (String_Does_Match_Caseless(parameter[0], "dpglossexponentmod") && numparameters >= 2) {
-					shader.specularpowermod = atof(parameter[1]);
-				} else if (String_Does_Match_Caseless(parameter[0], "dprtlightambient") && numparameters >= 2) {
-					shader.rtlightambient = atof(parameter[1]);
-				} else if (String_Does_Match_Caseless(parameter[0], "dpoffsetmapping") && numparameters >= 2) {
-					if (String_Does_Match_Caseless(parameter[1], "disable") || String_Does_Match_Caseless(parameter[1], "none") || String_Does_Match_Caseless(parameter[1], "off")) shader.offsetmapping = OFFSETMAPPING_OFF;
-					else if (String_Does_Match_Caseless(parameter[1], "default") || String_Does_Match_Caseless(parameter[1], "normal")) shader.offsetmapping = OFFSETMAPPING_DEFAULT;
-					else if (String_Does_Match_Caseless(parameter[1], "linear")) shader.offsetmapping = OFFSETMAPPING_LINEAR;
-					else if (String_Does_Match_Caseless(parameter[1], "relief")) shader.offsetmapping = OFFSETMAPPING_RELIEF;
-					if (numparameters >= 3)
-						shader.offsetscale = atof(parameter[2]);
-					if (numparameters >= 5) {
-						if (String_Does_Match_Caseless(parameter[3], "bias")) shader.offsetbias = atof(parameter[4]);
-						else if (String_Does_Match_Caseless(parameter[3], "match")) shader.offsetbias = 1.0f - atof(parameter[4]);
-						else if (String_Does_Match_Caseless(parameter[3], "match8")) shader.offsetbias = 1.0f - atof(parameter[4]) / 255.0f;
-						else if (String_Does_Match_Caseless(parameter[3], "match16")) shader.offsetbias = 1.0f - atof(parameter[4]) / 65535.0f;
-					} // numparameters >= 5
-				}
-				else if (String_Does_Match_Caseless(parameter[0], "deformvertexes") && numparameters >= 2) {
-					int deformindex;
-					for (deformindex = 0;deformindex < Q3MAXDEFORMS_4;deformindex++)
-						if (!shader.deforms[deformindex].deform)
-							break;
-					if (deformindex < Q3MAXDEFORMS_4) {
-						for (i = 0;i < numparameters - 2 && i < Q3DEFORM_MAXPARMS_3;i++)
-							shader.deforms[deformindex].parms[i] = atof(parameter[i+2]);
-						     if (String_Does_Match_Caseless(parameter[1], "projectionshadow")) shader.deforms[deformindex].deform = Q3DEFORM_PROJECTIONSHADOW;
-						else if (String_Does_Match_Caseless(parameter[1], "autosprite"      )) shader.deforms[deformindex].deform = Q3DEFORM_AUTOSPRITE;
-						else if (String_Does_Match_Caseless(parameter[1], "autosprite2"     )) shader.deforms[deformindex].deform = Q3DEFORM_AUTOSPRITE2;
-						else if (String_Does_Match_Caseless(parameter[1], "text0"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT0;
-						else if (String_Does_Match_Caseless(parameter[1], "text1"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT1;
-						else if (String_Does_Match_Caseless(parameter[1], "text2"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT2;
-						else if (String_Does_Match_Caseless(parameter[1], "text3"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT3;
-						else if (String_Does_Match_Caseless(parameter[1], "text4"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT4;
-						else if (String_Does_Match_Caseless(parameter[1], "text5"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT5;
-						else if (String_Does_Match_Caseless(parameter[1], "text6"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT6;
-						else if (String_Does_Match_Caseless(parameter[1], "text7"           )) shader.deforms[deformindex].deform = Q3DEFORM_TEXT7;
-						else if (String_Does_Match_Caseless(parameter[1], "bulge"           )) shader.deforms[deformindex].deform = Q3DEFORM_BULGE;
-						else if (String_Does_Match_Caseless(parameter[1], "normal"          )) shader.deforms[deformindex].deform = Q3DEFORM_NORMAL;
-						else if (String_Does_Match_Caseless(parameter[1], "wave"            ))
-						{
-							shader.deforms[deformindex].deform = Q3DEFORM_WAVE;
-							shader.deforms[deformindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[3]);
-							for (i = 0;i < numparameters - 4 && i < Q3WAVEPARMS_4;i++)
-								shader.deforms[deformindex].waveparms[i] = atof(parameter[i+4]);
-						}
-						else if (String_Does_Match_Caseless(parameter[1], "move"))
-						{
-							shader.deforms[deformindex].deform = Q3DEFORM_MOVE;
-							shader.deforms[deformindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[5]);
-							for (i = 0;i < numparameters - 6 && i < Q3WAVEPARMS_4;i++)
-								shader.deforms[deformindex].waveparms[i] = atof(parameter[i+6]);
-						}
-#if 1 // Baker r0084: roundwave deformation
-						else if (String_Does_Match_Caseless(parameter[1], "roundwave"))
-						{
-							shader.deforms[deformindex].deform = Q3DEFORM_ROUNDWAVE;
-							shader.deforms[deformindex].parms2[0] = atof(parameter[5]); // offsetx
-							shader.deforms[deformindex].parms2[1] = atof(parameter[6]); // offsety
-							shader.deforms[deformindex].parms2[2] = atof(parameter[7]); // offsetz
-							shader.deforms[deformindex].wavefunc = Mod_LoadQ3Shaders_EnumerateWaveFunc(parameter[8]);
-							for (i = 0;i < numparameters - 9 && i < Q3WAVEPARMS_4;i++)
-								shader.deforms[deformindex].waveparms[i] = atof(parameter[i+9]);
-						}
-#endif
-					}
-				}
+			while (COM_ParseToken_QuakeC(&text, /*retnewline?*/ false)) {
+				// Baker: Separated out the 500 lines of code to separate file
+				// to make it easier to work with.
+				#include "model_shared_q3shader_loop.c.h"
 			} // while
 			// hide this shader if a cvar said it should be killed
 			if (shader.dpshaderkill)
@@ -2101,7 +1676,7 @@ void Mod_LoadQ3Shaders(void)
 shader_t *Mod_LookupQ3Shader(const char *name)
 {
 	unsigned short hash;
-	q3shader_hash_entry_t* entry;
+	q3shader_hash_entry_t *entry;
 	if (!q3shaders_mem)
 		Mod_LoadQ3Shaders();
 
@@ -2118,7 +1693,7 @@ shader_t *Mod_LookupQ3Shader(const char *name)
 texture_shaderpass_t *Mod_CreateShaderPass(mempool_t *mempool, skinframe_t *skinframe)
 {
 	texture_shaderpass_t *shaderpass = (texture_shaderpass_t *)Mem_Alloc(mempool, sizeof(*shaderpass));
-	shaderpass->framerate = 0.0f;
+	shaderpass->animframerate = 0.0f;
 	shaderpass->numframes = 1;
 	shaderpass->blendfunc[0] = GL_ONE;
 	shaderpass->blendfunc[1] = GL_ZERO;
@@ -2135,8 +1710,8 @@ texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(mempool_t *mempool, 
 	int j;
 	texture_shaderpass_t *shaderpass = (texture_shaderpass_t *)Mem_Alloc(mempool, sizeof(*shaderpass));
 	shaderpass->alphatest = layer->alphatest != 0;
-	shaderpass->framerate = layer->framerate;
-	shaderpass->numframes = layer->numframes;
+	shaderpass->animframerate = layer->animframerate;
+	shaderpass->numframes = layer->sh_numframes;
 	shaderpass->blendfunc[0] = layer->blendfunc[0];
 	shaderpass->blendfunc[1] = layer->blendfunc[1];
 	shaderpass->rgbgen = layer->rgbgen;
@@ -2144,8 +1719,8 @@ texture_shaderpass_t *Mod_CreateShaderPassFromQ3ShaderLayer(mempool_t *mempool, 
 	shaderpass->tcgen = layer->tcgen;
 	for (j = 0; j < Q3MAXTCMODS_8 && layer->tcmods[j].tcmod != Q3TCMOD_NONE; j++)
 		shaderpass->tcmods[j] = layer->tcmods[j];
-	for (j = 0; j < layer->numframes; j++)
-		shaderpass->skinframes[j] = R_SkinFrame_LoadExternal(layer->texturename[j], texflags, q_tx_complain_false, q_tx_fallback_notexture_true);
+	for (j = 0; j < layer->sh_numframes; j++)
+		shaderpass->skinframes[j] = R_SkinFrame_LoadExternal(layer->sh_ptexturename[j], texflags, q_tx_complain_false, q_tx_fallback_notexture_true);
 	return shaderpass;
 }
 
@@ -2275,9 +1850,8 @@ nothing                GL_ZERO GL_ONE
 			int endofprelayers = 0;
 			int firstpostlayer = 0;
 			int shaderpassindex = 0;
-			for (i = 0; i < shader->numlayers; i++)
-			{
-				if (shader->layers[i].texturename != NULL && String_Does_Match_Caseless(shader->layers[i].texturename[0], "$lightmap"))
+			for (i = 0; i < shader->numlayers; i ++) {
+				if (shader->layers[i].sh_ptexturename != NULL && String_Does_Match_Caseless(shader->layers[i].sh_ptexturename[0], "$lightmap"))
 					lightmaplayer = i;
 				if (shader->layers[i].rgbgen.rgbgen == Q3RGBGEN_VERTEX)
 					rgbgenvertexlayer = i;
@@ -2295,7 +1869,7 @@ nothing                GL_ZERO GL_ONE
 				// terrain blend or certain other effects involving alphatest over a regular layer
 				terrainbackgroundlayer = 0;
 				materiallayer = 1;
-				// terrain may be vertex lit (in which case both layers are rgbGen vertex) or 
+				// terrain may be vertex lit (in which case both layers are rgbGen vertex) or
 				// lightmapped (in which ase the third layer is lightmap)
 				firstpostlayer = lightmaplayer >= 0 ? lightmaplayer + 1 : materiallayer + 1;
 			}
@@ -2466,7 +2040,7 @@ nothing                GL_ZERO GL_ONE
 			texture->basematerialflags |= MATERIALFLAG_MESHCOLLISIONS;
 		if (shader->dpshaderkill && developer_extra.integer)
 			Con_DPrintLinef ("^1%s:^7 killing shader ^3" QUOTED_S " because of cvar", modelname, name);
-	}
+	} // End shader
 	else if (String_Does_Match(texture->name, "noshader") || !texture->name[0])
 	{
 		if (developer_extra.integer)
@@ -2483,25 +2057,24 @@ nothing                GL_ZERO GL_ONE
 	}
 	else
 	{
+		// Baker: This is the non-shader path (shader not found)
+		// Baker: "success is set to true before we ever get here.
 		if (developer_extra.integer)
 			Con_DPrintLinef ("^1%s:^7 No shader found for texture ^3" QUOTED_S, modelname, texture->name);
-		if (texture->surfaceflags & Q3SURFACEFLAG_NODRAW)
-		{
+
+		if (texture->surfaceflags & Q3SURFACEFLAG_NODRAW) {
 			texture->basematerialflags = MATERIALFLAG_NODRAW | MATERIALFLAG_NOSHADOW;
 			texture->supercontents = SUPERCONTENTS_SOLID;
 		}
-		else if (texture->surfaceflags & Q3SURFACEFLAG_SKY)
-		{
+		else if (texture->surfaceflags & Q3SURFACEFLAG_SKY) {
 			texture->basematerialflags = MATERIALFLAG_SKY;
 			texture->supercontents = SUPERCONTENTS_SKY;
-		}
-		else
-		{
+		} else {
 			texture->basematerialflags = defaultmaterialflags;
 			texture->supercontents = SUPERCONTENTS_SOLID | SUPERCONTENTS_OPAQUE;
 		}
-		if (cls.state == ca_dedicated)
-		{
+		
+		if (cls.state == ca_dedicated) {
 			texture->materialshaderpass = NULL;
 			success = false;
 		}
@@ -2510,10 +2083,30 @@ nothing                GL_ZERO GL_ONE
 #if 1
 			if (fallback || shall_do_external)
 			{
-				skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
+				// Baker: Old one didn't have fallback
+				extern int q3_shader_did_fallback;
+				extern int is_q3_shader_video_tex;
+				extern byte *is_q3_shader_video_tex_vimagedata;
+				
+				q3_shader_did_fallback = false;
+				skinframe_t *skinframe;
+				
+				if (is_q3_shader_video_tex) {
+					skinframe = R_SkinFrame_LoadInternalBGRA(texture->name, 
+						TEXF_FORCE_RELOAD  /*TEXF_MIPMAP | TEXF_ALPHA*/, 
+						is_q3_shader_video_tex_vimagedata, image_width, image_height, 
+						/*compare w/h/crc/srgb*/ 0, 0, 0, false, /*q1skyload*/ false); // TODO what sRGB argument to put here?
+				} else {
+					// Baker: nmap # gloss noshader path 0
+					skinframe = R_SkinFrame_LoadExternal(texture->name,
+						defaulttexflags, q_tx_complain_false, fallback);
+
+				}
+
 				if (skinframe)
 				{
-					texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(mempool, skinframe);
+					texture->materialshaderpass = texture->shaderpasses[0] = 
+						Mod_CreateShaderPass(mempool, skinframe);
 					if (texture->materialshaderpass->skinframes[0]->hasalpha)
 						texture->basematerialflags |= MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
 					if (texture->q2contents)
@@ -2521,11 +2114,18 @@ nothing                GL_ZERO GL_ONE
 				}
 				else
 					success = false;
+
+				if (q3_shader_did_fallback) {
+					if (warnmissing)
+						Con_PrintLinef (CON_RED "%s:" CON_WHITE " could not load texture " CON_BRONZE QUOTED_S, loadmodel->model_name, texture->name);
+
+				}
 			}
 			else
 				success = false;
-			if (!success && warnmissing)
-				Con_PrintLinef ("^1%s:^7 could not load texture " CON_BRONZE QUOTED_S, loadmodel->model_name, texture->name);
+			if (!success)
+				if (warnmissing)
+					Con_PrintLinef (CON_RED "%s:" CON_WHITE " could not load texture " CON_BRONZE QUOTED_S, loadmodel->model_name, texture->name);
 #else
 			// HEREON
 			skinframe_t *skinframe = R_SkinFrame_LoadExternal(texture->name, defaulttexflags, q_tx_complain_false, fallback);
@@ -2559,14 +2159,14 @@ nothing                GL_ZERO GL_ONE
 void Mod_LoadCustomMaterial(mempool_t *mempool, texture_t *texture, const char *name, int supercontents, int materialflags, skinframe_t *skinframe)
 {
 	if (!(materialflags & (MATERIALFLAG_WALL | MATERIALFLAG_SKY)))
-		Con_DPrintf ("^1Custom texture ^3" QUOTED_S " does not have MATERIALFLAG_WALL set\n", texture->name);
+		Con_DPrintLinef (CON_RED "Custom texture " CON_ERROR QUOTED_S " does not have MATERIALFLAG_WALL set", texture->name);
 
 	strlcpy(texture->name, name, sizeof(texture->name));
 	texture->basealpha = 1.0f;
 	texture->basematerialflags = materialflags;
 	texture->supercontents = supercontents;
 
-	texture->offsetmapping = (mod_noshader_default_offsetmapping.value) ? OFFSETMAPPING_DEFAULT : OFFSETMAPPING_OFF;
+	texture->offsetmapping = (mod_noshader_default_offsetmapping.value /*d: 1*/) ? OFFSETMAPPING_DEFAULT : OFFSETMAPPING_OFF;
 	texture->offsetscale = 1;
 	texture->offsetbias = 0;
 	texture->specularscalemod = 1;
@@ -2577,7 +2177,7 @@ void Mod_LoadCustomMaterial(mempool_t *mempool, texture_t *texture, const char *
 	// JUST GREP FOR "specularscalemod = 1".
 
 	if (developer_extra.integer)
-		Con_DPrintLinef ("^1Custom texture ^3" QUOTED_S, texture->name);
+		Con_DPrintLinef (CON_RED "Custom texture " CON_BRONZE " " QUOTED_S, texture->name);
 	if (skinframe)
 		texture->materialshaderpass = texture->shaderpasses[0] = Mod_CreateShaderPass(mempool, skinframe);
 
@@ -2664,7 +2264,7 @@ tag_torso,
 				else
 					wordsoverflow = true;
 			}
-			while (COM_ParseToken_QuakeC(&data, true) && String_Does_Not_Match(com_token, NEWLINE));
+			while (COM_ParseToken_QuakeC(&data, true) && String_Does_NOT_Match(com_token, NEWLINE));
 			if (wordsoverflow) {
 				Con_PrintLinef ("Mod_LoadSkinFiles: parsing error in file \"%s_%d.skin\" on line #%d: line with too many statements, skipping", loadmodel->model_name, i, line);
 				continue;
@@ -2788,7 +2388,7 @@ void Mod_VertexRangeFromElements(int numelements, const int *elements, int *firs
 		*lastvertexpointer = lastvertex;
 }
 
-void Mod_SetDrawSkyAndWater(model_t* mod)
+void Mod_SetDrawSkyAndWater(model_t *mod)
 {
 	int j;
 	uint64_t basematerialflags = 0;
@@ -2808,16 +2408,16 @@ void Mod_SetDrawSkyAndWater(model_t* mod)
 typedef struct Mod_MakeSortedSurfaces_qsortsurface_s
 {
 	int surfaceindex;
-	q3deffect_t* effect;
-	texture_t* texture;
-	rtexture_t* lightmaptexture;
+	q3deffect_t *effect;
+	texture_t *texture;
+	rtexture_t *lightmaptexture;
 }
 Mod_MakeSortedSurfaces_qsortsurface_t;
 
 static int Mod_MakeSortedSurfaces_qsortfunc(const void *a, const void *b)
 {
-	const Mod_MakeSortedSurfaces_qsortsurface_t* l = (Mod_MakeSortedSurfaces_qsortsurface_t*)a;
-	const Mod_MakeSortedSurfaces_qsortsurface_t* r = (Mod_MakeSortedSurfaces_qsortsurface_t*)b;
+	const Mod_MakeSortedSurfaces_qsortsurface_t *l = (Mod_MakeSortedSurfaces_qsortsurface_t*)a;
+	const Mod_MakeSortedSurfaces_qsortsurface_t *r = (Mod_MakeSortedSurfaces_qsortsurface_t*)b;
 	if (l->effect < r->effect)
 		return -1;
 	if (l->effect > r->effect)
@@ -4371,7 +3971,10 @@ void Mod_Mesh_Reset(model_t *mod)
 	mod->num_surfaces = 0;
 	mod->surfmesh.num_vertices = 0;
 	mod->surfmesh.num_triangles = 0;
-	memset(mod->surfmesh.data_vertexhash, -1, mod->surfmesh.num_vertexhashsize * sizeof(*mod->surfmesh.data_vertexhash));
+
+	// Baker: Yes, it really does try to memset 0 for a NULL!  DarkPlaces Beta comment was right
+	if (mod->surfmesh.data_vertexhash)
+		memset(mod->surfmesh.data_vertexhash, -1, mod->surfmesh.num_vertexhashsize * sizeof(*mod->surfmesh.data_vertexhash));
 	mod->DrawSky = NULL; // will be set if a texture needs it
 	mod->DrawAddWaterPlanes = NULL; // will be set if a texture needs it
 }
@@ -4381,22 +3984,31 @@ texture_t *Mod_Mesh_GetTexture(model_t *mod, const char *name, int defaultdrawfl
 	int i;
 	texture_t *t;
 	int drawflag = defaultdrawflags & DRAWFLAG_MASK;
+
+	// Is it existing?
 	for (i = 0, t = mod->data_textures; i < mod->num_textures; i++, t++)
-		if (String_Does_Match(t->name, name) && t->mesh_drawflag == drawflag && t->mesh_defaulttexflags == defaulttexflags && t->mesh_defaultmaterialflags == defaultmaterialflags)
+		if (String_Does_Match(t->name, name) && t->mesh_drawflag == drawflag 
+			&& t->mesh_defaulttexflags == defaulttexflags 
+			&& t->mesh_defaultmaterialflags == defaultmaterialflags)
 			return t;
-	if (mod->max_textures <= mod->num_textures)
-	{
+
+	// NEW - UnlinkVideoTexture
+	WARP_X_ (DrawQ_SuperPic_Video cl_video_shutdown SuspendVideo)
+
+	if (mod->num_textures >= mod->max_textures) {
+		// REALLOC
 		texture_t *oldtextures = mod->data_textures;
 		mod->max_textures = max(mod->max_textures * 2, 1024);
-		mod->data_textures = (texture_t *)Mem_Realloc(mod->mempool, mod->data_textures, mod->max_textures * sizeof(*mod->data_textures));
+		mod->data_textures = (texture_t *)Mem_Realloc(mod->mempool, 
+			mod->data_textures, mod->max_textures * sizeof(*mod->data_textures));
 		// update the pointers
 		for (i = 0; i < mod->num_surfaces; i++)
 			mod->data_surfaces[i].texture = mod->data_textures + (mod->data_surfaces[i].texture - oldtextures);
 	}
 	t = &mod->data_textures[mod->num_textures++];
-	
-	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name, 
-		q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true, 
+
+	Mod_LoadTextureFromQ3Shader(mod->mempool, mod->model_name, t, name,
+		q_tx_warn_missing_true, q_tx_fallback_notexture_true, q_tx_do_external_true,
 		defaulttexflags, defaultmaterialflags);
 
 	t->mesh_drawflag = drawflag;

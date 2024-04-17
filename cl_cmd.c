@@ -917,18 +917,18 @@ void CL_InitCommands(void)
 	 */
 	Cvar_RegisterVariable(&cl_name);
 	if ((0)) // TODO: if (gamemode == GAME_QUAKEWORLD)
-		Cvar_RegisterVirtual(&cl_name, "name");
+		Cvar_RegisterVariableAlias(&cl_name, "name");
 	else
 		Cmd_AddCommand(CF_CLIENT, "name", CL_Name_f, "change your player name");
 
 	//Cvar_RegisterCallback(&cl_name, CL_Name_c);
 
 	Cvar_RegisterVariable(&cl_rate);
-	Cvar_RegisterVirtual(&cl_rate, "_cl_rate");
+	Cvar_RegisterVariableAlias(&cl_rate, "_cl_rate");
 	Cvar_RegisterVariable(&cl_rate_burstsize);
-	Cvar_RegisterVirtual(&cl_rate_burstsize, "_cl_rate_burstsize");
+	Cvar_RegisterVariableAlias(&cl_rate_burstsize, "_cl_rate_burstsize");
 	Cvar_RegisterVariable(&cl_pmodel);
-	Cvar_RegisterVirtual(&cl_pmodel, "_cl_pmodel");
+	Cvar_RegisterVariableAlias(&cl_pmodel, "_cl_pmodel");
 	Cvar_RegisterVariable(&cl_color);
 	Cvar_RegisterCallback(&cl_color, CL_Color_c);
 	Cvar_RegisterVariable(&cl_topcolor);

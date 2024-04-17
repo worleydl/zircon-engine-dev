@@ -1,3 +1,5 @@
+// image.c
+
 
 #include "quakedef.h"
 #include "image.h"
@@ -1009,6 +1011,7 @@ imageformat_t imageformats_dq[] =
 	{NULL, NULL}
 };
 
+// TGA -> PNG -> JPG -> PCX ->WAL
 imageformat_t imageformats_textures[] =
 {
 	{"%s.tga", LoadTGA_BGRA},
@@ -1123,7 +1126,7 @@ unsigned char *loadimagepixelsbgra (const char *filename, qbool complain, qbool 
 					*miplevel = mymiplevel;
 				//if (developer_memorydebug.integer)
 				//	Mem_CheckSentinelsGlobal();
-				if (allowFixtrans && r_fixtrans_auto.integer)
+				if (allowFixtrans && r_fixtrans_auto.integer /*d: 0*/)
 				{
 					int n = fixtransparentpixels(data, image_width, image_height);
 					if (n)
@@ -2102,4 +2105,32 @@ unsigned char *Image_GetEmbeddedPicBGRA(const char *name)
 	if (String_Does_Match(name, "gfx/colorcontrol/ditherpattern"))
 		return Image_GenerateDitherPattern();
 	return NULL;
+}
+
+// Baker: image_width, image_height globals for size
+bgra4 *Jpeg_Base64_BGRA_Decode_ZAlloc (const char *s_jpeg_string_base64)
+{
+	// 1. Decode the base64 string to binary data.
+	size_t jpeg_datasize;
+	unsigned char *jpeg_data_malloc = base64_decode_calloc (s_jpeg_string_base64, &jpeg_datasize); // malloc
+	
+	if (!jpeg_data_malloc) {
+		// Baker: Can this happen?
+		return NULL;
+	}
+
+	// FF D8
+	bgra4 *jpeg_bgra_data_zalloc = NULL;
+	if (jpeg_datasize < 2 || jpeg_data_malloc[0] != 0xFF || jpeg_data_malloc[1] != 0xD8) {
+		// Header fail
+		goto cleanup;
+	}
+
+	jpeg_bgra_data_zalloc = (bgra4 *)JPEG_LoadImage_BGRA(jpeg_data_malloc, jpeg_datasize, /*mipevel*/ NULL);
+
+cleanup:
+
+	freenull_ (jpeg_data_malloc);	// jpeg binary that we get pixels from
+
+	return jpeg_bgra_data_zalloc;
 }

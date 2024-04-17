@@ -45,8 +45,8 @@ void   u8_Init(void);
 
 size_t u8_strlen(const char *);
 size_t u8_strnlen(const char *, size_t);
-int    u8_byteofs(const char *, size_t, size_t*);
-int    u8_charidx(const char *, size_t, size_t*);
+int    u8_byteofs(const char *, size_t, size_t *);
+int    u8_charidx(const char *, size_t, size_t *);
 size_t u8_bytelen(const char *, size_t);
 size_t u8_prevbyte(const char *, size_t);
 Uchar  u8_getchar_utf8_enabled(const char *, const char **);
@@ -57,7 +57,7 @@ size_t u8_wcstombs(char *, const Uchar *, size_t);
 size_t u8_COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid);
 
 // returns a static buffer, use this for inlining
-char  *u8_encodech(Uchar ch, size_t*, char *buf16);
+char  *u8_encodech(Uchar ch, size_t *, char *buf16);
 
 size_t u8_strpad(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth);
 size_t u8_strpad_colorcodes(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth);

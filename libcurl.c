@@ -543,7 +543,7 @@ static void Curl_EndDownload(downloadinfo *di, CurlStatus status, CURLcode error
 			if (di->stream)
 			{
 				FS_Close(di->stream);
-				di->stream = FS_OpenRealFile(di->filename, "wb", false);
+				di->stream = FS_OpenRealFile(di->filename, "wb", false); // WRITE-EON curl end download
 			}
 
 			if (di->callback)
@@ -1047,7 +1047,7 @@ static qbool Curl_Begin(const char *URL, const char *extraheaders, double maxspe
 				else
 				{
 					// never resume these
-					qfile_t *f = FS_OpenRealFile(fn, "wb", false);
+					qfile_t *f = FS_OpenRealFile(fn, "wb", fs_quiet_FALSE); // WRITE-EON - Curl begin
 					if (f)
 						FS_Close(f);
 				}
@@ -1563,11 +1563,11 @@ void Curl_Init_Commands(void)
 	Cvar_RegisterVariable (&curl_maxspeed);
 	Cvar_RegisterVariable (&curl_useragent);
 	Cvar_RegisterVariable (&curl_useragent_append);
-	Cvar_RegisterVirtual  (&curl_enabled,          "cl_curl_enabled");
-	Cvar_RegisterVirtual  (&curl_maxdownloads,     "cl_curl_maxdownloads");
-	Cvar_RegisterVirtual  (&curl_maxspeed,         "cl_curl_maxspeed");
-	Cvar_RegisterVirtual  (&curl_useragent,        "cl_curl_useragent");
-	Cvar_RegisterVirtual  (&curl_useragent_append, "cl_curl_useragent_append");
+	Cvar_RegisterVariableAlias  (&curl_enabled,          "cl_curl_enabled");
+	Cvar_RegisterVariableAlias  (&curl_maxdownloads,     "cl_curl_maxdownloads");
+	Cvar_RegisterVariableAlias  (&curl_maxspeed,         "cl_curl_maxspeed");
+	Cvar_RegisterVariableAlias  (&curl_useragent,        "cl_curl_useragent");
+	Cvar_RegisterVariableAlias  (&curl_useragent_append, "cl_curl_useragent_append");
 
 	Cvar_RegisterVariable (&sv_curl_defaulturl);
 	Cvar_RegisterVariable (&sv_curl_serverpackages);

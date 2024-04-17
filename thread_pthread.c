@@ -28,9 +28,9 @@ void *_Thread_CreateMutex(const char *filename, int fileline)
 #ifdef THREADRECURSIVE
 	pthread_mutexattr_t    attr;
 #endif
-	pthread_mutex_t *mutexp = (pthread_mutex_t *) Z_Malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_t *mutexp = (pthread_mutex_t *) Z_Malloc_SizeOf(pthread_mutex_t);
 #ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p mutex create %s:%d\n" , mutexp, filename, fileline);
+	Sys_PrintfToTerminal("%p mutex create %s:%d" NEWLINE, mutexp, filename, fileline);
 #endif
 #ifdef THREADRECURSIVE
 	pthread_mutexattr_init(&attr);
@@ -73,7 +73,7 @@ int _Thread_UnlockMutex(void *mutex, const char *filename, int fileline)
 
 void *_Thread_CreateCond(const char *filename, int fileline)
 {
-	pthread_cond_t *condp = (pthread_cond_t *) Z_Malloc(sizeof(pthread_cond_t));
+	pthread_cond_t *condp = (pthread_cond_t *) Z_Malloc_SizeOf(pthread_cond_t);
 	pthread_cond_init(condp, NULL);
 #ifdef THREADDEBUG
 	Sys_PrintfToTerminal("%p cond create %s:%d\n"   , condp, filename, fileline);
@@ -121,7 +121,7 @@ int _Thread_CondWait(void *cond, void *mutex, const char *filename, int fileline
 
 void *_Thread_CreateThread(int (*fn)(void *), void *data, const char *filename, int fileline)
 {
-	pthread_t *threadp = (pthread_t *) Z_Malloc(sizeof(pthread_t));
+	pthread_t *threadp = (pthread_t *) Z_Malloc_SizeOf(pthread_t);
 #ifdef THREADDEBUG
 	Sys_PrintfToTerminal("%p thread create %s:%d\n"   , threadp, filename, fileline);
 #endif
@@ -149,7 +149,7 @@ int _Thread_WaitThread(void *thread, int retval, const char *filename, int filel
 #ifdef PTHREAD_BARRIER_SERIAL_THREAD
 void *_Thread_CreateBarrier(unsigned int count, const char *filename, int fileline)
 {
-	pthread_barrier_t *b = (pthread_barrier_t *) Z_Malloc(sizeof(pthread_barrier_t));
+	pthread_barrier_t *b = (pthread_barrier_t *) Z_Malloc_SizeOf(pthread_barrier_t);
 #ifdef THREADDEBUG
 	Sys_PrintfToTerminal("%p barrier create(%d) %s:%d\n", b, count, filename, fileline);
 #endif
@@ -186,7 +186,7 @@ typedef struct {
 
 void *_Thread_CreateBarrier(unsigned int count, const char *filename, int fileline)
 {
-	volatile barrier_t *b = (volatile barrier_t *) Z_Malloc(sizeof(barrier_t));
+	volatile barrier_t *b = (volatile barrier_t *) Z_Malloc_SizeOf(barrier_t);
 #ifdef THREADDEBUG
 	Sys_PrintfToTerminal("%p barrier create(%d) %s:%d\n", b, count, filename, fileline);
 #endif

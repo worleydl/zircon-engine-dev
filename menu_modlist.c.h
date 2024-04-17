@@ -105,7 +105,7 @@ static void ModList_Enable (void)
 
 void M_Menu_ModList_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_modlist);
 	m_entersound = true;
 	local_cursor = 0;

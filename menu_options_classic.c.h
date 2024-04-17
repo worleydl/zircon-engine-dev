@@ -53,13 +53,12 @@ typedef enum {
 	moc_crosshair_blue_29		= 29,
 	moc_crosshair_alpha_30		= 30,
 	moc_crosshair_size_31		= 31,
-
 	moc_count_32				= 32,
 } moc_e;
 
 void M_Menu_Options_Classic_f(cmd_state_t *cmd)
 {
-	key_dest = key_menu;
+	KeyDest_Set (key_menu); // key_dest = key_menu;
 	menu_state_set_nova (m_options_classic);
 	m_entersound = true;
 }
@@ -207,7 +206,7 @@ static void M_Options_Classic_Draw (void)
 	M_Options_PrintSlider ( "        Crosshair Blue", true, crosshair_color_blue.value, 0, 1);
 	M_Options_PrintSlider ( "       Crosshair Alpha", true, crosshair_color_alpha.value, 0, 1);
 	M_Options_PrintSlider ( "        Crosshair Size", true, crosshair_size.value, 0.25, 8);
-	
+
 	PPX_DrawSel_End ();
 }
 
@@ -239,7 +238,7 @@ static void M_Options_Classic_Key(cmd_state_t *cmd, int key, int ascii)
 
 		case moc_console_1:
 			menu_state_set_nova (m_none);
-			key_dest = key_game;
+			KeyDest_Set (key_game); // key_dest = key_game;
  			// Baker: The idea here is to open the console
 			Con_ToggleConsole ();
 			break;

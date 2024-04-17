@@ -159,7 +159,7 @@ sndinitstat SNDDMA_InitDirect (void);
 SndSys_BuildWaveFormat
 ==================
 */
-static qbool SndSys_BuildWaveFormat (const snd_format_t* requested, WAVEFORMATEXTENSIBLE* fmt_ptr)
+static qbool SndSys_BuildWaveFormat (const snd_format_t *requested, WAVEFORMATEXTENSIBLE* fmt_ptr)
 {
 	WAVEFORMATEX* pfmtex;
 
@@ -221,7 +221,7 @@ SndSys_InitDirectSound
 DirectSound 5 support
 ==================
 */
-static sndinitstat SndSys_InitDirectSound (const snd_format_t* requested)
+static sndinitstat SndSys_InitDirectSound (const snd_format_t *requested)
 {
 	DSBUFFERDESC			dsbuf;
 	DSBCAPS					dsbcaps;
@@ -435,7 +435,7 @@ SndSys_InitMmsystem
 Crappy windows multimedia base
 ==================
 */
-static qbool SndSys_InitMmsystem (const snd_format_t* requested)
+static qbool SndSys_InitMmsystem (const snd_format_t *requested)
 {
 	WAVEFORMATEXTENSIBLE format;
 	int				i;
