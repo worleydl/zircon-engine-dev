@@ -4,63 +4,6 @@
 #include "cdaudio.h"
 #include "image.h"
 
-#ifdef _WIN32
-	//#include <XInput.h>
-	#define XINPUT_GAMEPAD_DPAD_UP          0x0001
-	#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
-	#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
-	#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
-	#define XINPUT_GAMEPAD_START            0x0010
-	#define XINPUT_GAMEPAD_BACK             0x0020
-	#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
-	#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
-	#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
-	#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
-	#define XINPUT_GAMEPAD_A                0x1000
-	#define XINPUT_GAMEPAD_B                0x2000
-	#define XINPUT_GAMEPAD_X                0x4000
-	#define XINPUT_GAMEPAD_Y                0x8000
-	#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE  7849
-	#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-	#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD    30
-	#define XUSER_INDEX_ANY                 0x000000FF
-
-	typedef struct xinput_gamepad_s
-	{
-		WORD wButtons;
-		BYTE bLeftTrigger;
-		BYTE bRightTrigger;
-		SHORT sThumbLX;
-		SHORT sThumbLY;
-		SHORT sThumbRX;
-		SHORT sThumbRY;
-	}
-	xinput_gamepad_t;
-	
-	typedef struct xinput_state_s
-	{
-		DWORD dwPacketNumber;
-		xinput_gamepad_t Gamepad;
-	}
-	xinput_state_t;
-	
-	typedef struct xinput_keystroke_s
-	{
-	    WORD    VirtualKey;
-	    WCHAR   Unicode;
-	    WORD    Flags;
-	    BYTE    UserIndex;
-	    BYTE    HidCode;
-	}
-	xinput_keystroke_t;
-	
-	DWORD (WINAPI *qXInputGetState)(DWORD index, xinput_state_t *state);
-	DWORD (WINAPI *qXInputGetKeystroke)(DWORD index, DWORD reserved, xinput_keystroke_t *keystroke);
-	
-	qbool vid_xinputinitialized = false;
-	int vid_xinputindex = -1;
-#endif // _WIN32 xinput
-
 // global video state
 viddef_t vid;
 
@@ -79,9 +22,6 @@ qbool vid_activewindow = true;
 
 vid_joystate_t vid_joystate;
 
-#ifdef _WIN32
-cvar_t joy_xinputavailable = {CF_CLIENT | CF_READONLY, "joy_xinputavailable", "0", "indicates which devices are being reported by the Windows XInput API (first controller = 1, second = 2, third = 4, fourth = 8, added together)"};
-#endif
 cvar_t joy_active = {CF_CLIENT | CF_READONLY, "joy_active", "0", "indicates that a joystick is active (detected and enabled)"};
 cvar_t joy_detected = {CF_CLIENT | CF_READONLY, "joy_detected", "0", "number of joysticks detected by engine"};
 cvar_t joy_enable = {CF_CLIENT | CF_ARCHIVE, "joy_enable", "0", "enables joystick support"};
@@ -106,24 +46,6 @@ cvar_t joy_sensitivityyaw = {CF_CLIENT, "joy_sensitivityyaw", "-1", "movement mu
 cvar_t joy_sensitivityroll = {CF_CLIENT, "joy_sensitivityroll", "1", "movement multiplier"};
 cvar_t joy_axiskeyevents = {CF_CLIENT | CF_ARCHIVE, "joy_axiskeyevents", "0", "generate uparrow/leftarrow etc. keyevents for joystick axes, use if your joystick driver is not generating them"};
 cvar_t joy_axiskeyevents_deadzone = {CF_CLIENT | CF_ARCHIVE, "joy_axiskeyevents_deadzone", "0.5", "deadzone value for axes"};
-cvar_t joy_x360_axisforward = {CF_CLIENT, "joy_x360_axisforward", "1", "which joystick axis to query for forward/backward movement"};
-cvar_t joy_x360_axisside = {CF_CLIENT, "joy_x360_axisside", "0", "which joystick axis to query for right/left movement"};
-cvar_t joy_x360_axisup = {CF_CLIENT, "joy_x360_axisup", "-1", "which joystick axis to query for up/down movement"};
-cvar_t joy_x360_axispitch = {CF_CLIENT, "joy_x360_axispitch", "3", "which joystick axis to query for looking up/down"};
-cvar_t joy_x360_axisyaw = {CF_CLIENT, "joy_x360_axisyaw", "2", "which joystick axis to query for looking right/left"};
-cvar_t joy_x360_axisroll = {CF_CLIENT, "joy_x360_axisroll", "-1", "which joystick axis to query for tilting head right/left"};
-cvar_t joy_x360_deadzoneforward = {CF_CLIENT, "joy_x360_deadzoneforward", "0.266", "deadzone tolerance, suggested values are in the range 0 to 0.01"};
-cvar_t joy_x360_deadzoneside = {CF_CLIENT, "joy_x360_deadzoneside", "0.266", "deadzone tolerance, suggested values are in the range 0 to 0.01"};
-cvar_t joy_x360_deadzoneup = {CF_CLIENT, "joy_x360_deadzoneup", "0.266", "deadzone tolerance, suggested values are in the range 0 to 0.01"};
-cvar_t joy_x360_deadzonepitch = {CF_CLIENT, "joy_x360_deadzonepitch", "0.266", "deadzone tolerance, suggested values are in the range 0 to 0.01"};
-cvar_t joy_x360_deadzoneyaw = {CF_CLIENT, "joy_x360_deadzoneyaw", "0.266", "deadzone tolerance, suggested values are in the range 0 to 0.01"};
-cvar_t joy_x360_deadzoneroll = {CF_CLIENT, "joy_x360_deadzoneroll", "0.266", "deadzone tolerance, suggested values are in the range 0 to 0.01"};
-cvar_t joy_x360_sensitivityforward = {CF_CLIENT, "joy_x360_sensitivityforward", "1", "movement multiplier"};
-cvar_t joy_x360_sensitivityside = {CF_CLIENT, "joy_x360_sensitivityside", "1", "movement multiplier"};
-cvar_t joy_x360_sensitivityup = {CF_CLIENT, "joy_x360_sensitivityup", "1", "movement multiplier"};
-cvar_t joy_x360_sensitivitypitch = {CF_CLIENT, "joy_x360_sensitivitypitch", "-1", "movement multiplier"};
-cvar_t joy_x360_sensitivityyaw = {CF_CLIENT, "joy_x360_sensitivityyaw", "-1", "movement multiplier"};
-cvar_t joy_x360_sensitivityroll = {CF_CLIENT, "joy_x360_sensitivityroll", "1", "movement multiplier"};
 
 // VorteX: more info cvars, mostly set in VID_CheckExtensions
 cvar_t gl_info_vendor = {CF_CLIENT | CF_READONLY, "gl_info_vendor", "", "indicates brand of graphics chip"};
@@ -913,46 +835,7 @@ qbool VID_JoyBlockEmulatedKeys(int keycode)
 
 void VID_Shared_BuildJoyState_Begin(vid_joystate_t *joystate)
 {
-#ifdef _WIN32
-	xinput_state_t xinputstate;
-#endif
 	memset(joystate, 0, sizeof(*joystate));
-#ifdef _WIN32
-	if (vid_xinputindex >= 0 && qXInputGetState && qXInputGetState(vid_xinputindex, &xinputstate) == S_OK)
-	{
-		joystate->is360 = true;
-		joystate->button[ 0] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0;
-		joystate->button[ 1] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
-		joystate->button[ 2] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
-		joystate->button[ 3] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
-		joystate->button[ 4] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0;
-		joystate->button[ 5] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
-		joystate->button[ 6] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0;
-		joystate->button[ 7] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
-		joystate->button[ 8] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0;
-		joystate->button[ 9] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
-		joystate->button[10] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
-		joystate->button[11] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0;
-		joystate->button[12] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0;
-		joystate->button[13] = (xinputstate.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0;
-		joystate->button[14] = xinputstate.Gamepad.bLeftTrigger >= XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
-		joystate->button[15] = xinputstate.Gamepad.bRightTrigger >= XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
-		joystate->button[16] = xinputstate.Gamepad.sThumbLY < -16384;
-		joystate->button[17] = xinputstate.Gamepad.sThumbLY >  16384;
-		joystate->button[18] = xinputstate.Gamepad.sThumbLX < -16384;
-		joystate->button[19] = xinputstate.Gamepad.sThumbLX >  16384;
-		joystate->button[20] = xinputstate.Gamepad.sThumbRY < -16384;
-		joystate->button[21] = xinputstate.Gamepad.sThumbRY >  16384;
-		joystate->button[22] = xinputstate.Gamepad.sThumbRX < -16384;
-		joystate->button[23] = xinputstate.Gamepad.sThumbRX >  16384;
-		joystate->axis[ 4] = xinputstate.Gamepad.bLeftTrigger * (1.0f / 255.0f);
-		joystate->axis[ 5] = xinputstate.Gamepad.bRightTrigger * (1.0f / 255.0f);
-		joystate->axis[ 0] = xinputstate.Gamepad.sThumbLX * (1.0f / 32767.0f);
-		joystate->axis[ 1] = xinputstate.Gamepad.sThumbLY * (1.0f / 32767.0f);
-		joystate->axis[ 2] = xinputstate.Gamepad.sThumbRX * (1.0f / 32767.0f);
-		joystate->axis[ 3] = xinputstate.Gamepad.sThumbRY * (1.0f / 32767.0f);
-	}
-#endif
 }
 
 void VID_Shared_BuildJoyState_Finish(vid_joystate_t *joystate)
@@ -1010,110 +893,30 @@ static int joybuttonkey[MAXJOYBUTTON][2] =
 	{K_JOY_UP, K_UPARROW}, {K_JOY_DOWN, K_DOWNARROW}, {K_JOY_RIGHT, K_RIGHTARROW}, {K_JOY_LEFT, K_LEFTARROW},
 };
 
-static int joybuttonkey360[][2] =
-{
-	{K_X360_DPAD_UP, K_UPARROW},
-	{K_X360_DPAD_DOWN, K_DOWNARROW},
-	{K_X360_DPAD_LEFT, K_LEFTARROW},
-	{K_X360_DPAD_RIGHT, K_RIGHTARROW},
-	{K_X360_START, K_ESCAPE},
-	{K_X360_BACK, K_ESCAPE},
-	{K_X360_LEFT_THUMB, 0},
-	{K_X360_RIGHT_THUMB, 0},
-	{K_X360_LEFT_SHOULDER, 0},
-	{K_X360_RIGHT_SHOULDER, 0},
-	{K_X360_A, K_ENTER},
-	{K_X360_B, K_ESCAPE},
-	{K_X360_X, 0},
-	{K_X360_Y, 0},
-	{K_X360_LEFT_TRIGGER, 0},
-	{K_X360_RIGHT_TRIGGER, 0},
-	{K_X360_LEFT_THUMB_DOWN, K_DOWNARROW},
-	{K_X360_LEFT_THUMB_UP, K_UPARROW},
-	{K_X360_LEFT_THUMB_LEFT, K_LEFTARROW},
-	{K_X360_LEFT_THUMB_RIGHT, K_RIGHTARROW},
-	{K_X360_RIGHT_THUMB_DOWN, 0},
-	{K_X360_RIGHT_THUMB_UP, 0},
-	{K_X360_RIGHT_THUMB_LEFT, 0},
-	{K_X360_RIGHT_THUMB_RIGHT, 0},
-};
-
 double vid_joybuttontimer[MAXJOYBUTTON];
 void VID_ApplyJoyState(vid_joystate_t *joystate)
 {
 	int j;
 	int c = joy_axiskeyevents.integer != 0;
-	if (joystate->is360)
-	{
-#if 0
-		// keystrokes (chatpad)
-		// DOES NOT WORK - no driver support in xinput1_3.dll :(
-		xinput_keystroke_t keystroke;
-		while (qXInputGetKeystroke && qXInputGetKeystroke(XUSER_INDEX_ANY, 0, &keystroke) == S_OK)
-			Con_Printf ("XInput KeyStroke: VirtualKey %d, Unicode %d, Flags %x, UserIndex %d, HidCode %d\n", keystroke.VirtualKey, keystroke.Unicode, keystroke.Flags, keystroke.UserIndex, keystroke.HidCode);
-#endif
 
-		// emit key events for buttons
-		for (j = 0;j < (int)(sizeof(joybuttonkey360)/sizeof(joybuttonkey360[0]));j++)
-			VID_KeyEventForButton(vid_joystate.button[j] != 0, joystate->button[j] != 0, joybuttonkey360[j][c], &vid_joybuttontimer[j]);
+	// emit key events for buttons
+	for (j = 0;j < MAXJOYBUTTON;j++)
+		VID_KeyEventForButton(vid_joystate.button[j] != 0, joystate->button[j] != 0, joybuttonkey[j][c], &vid_joybuttontimer[j]);
 
-		// axes
-		cl.mcmd.clx_forwardmove += VID_JoyState_GetAxis(joystate, joy_x360_axisforward.integer, joy_x360_sensitivityforward.value, joy_x360_deadzoneforward.value) * cl_forwardspeed.value;
-		cl.mcmd.clx_sidemove    += VID_JoyState_GetAxis(joystate, joy_x360_axisside.integer, joy_x360_sensitivityside.value, joy_x360_deadzoneside.value) * cl_sidespeed.value;
-		cl.mcmd.clx_upmove      += VID_JoyState_GetAxis(joystate, joy_x360_axisup.integer, joy_x360_sensitivityup.value, joy_x360_deadzoneup.value) * cl_upspeed.value;
-		cl.viewangles[0]   += VID_JoyState_GetAxis(joystate, joy_x360_axispitch.integer, joy_x360_sensitivitypitch.value, joy_x360_deadzonepitch.value) * cl.realframetime * cl_pitchspeed.value;
-		cl.viewangles[1]   += VID_JoyState_GetAxis(joystate, joy_x360_axisyaw.integer, joy_x360_sensitivityyaw.value, joy_x360_deadzoneyaw.value) * cl.realframetime * cl_yawspeed.value;
-		//cl.viewangles[2]   += VID_JoyState_GetAxis(joystate, joy_x360_axisroll.integer, joy_x360_sensitivityroll.value, joy_x360_deadzoneroll.value) * cl.realframetime * cl_rollspeed.value;
-	}
-	else
-	{
-		// emit key events for buttons
-		for (j = 0;j < MAXJOYBUTTON;j++)
-			VID_KeyEventForButton(vid_joystate.button[j] != 0, joystate->button[j] != 0, joybuttonkey[j][c], &vid_joybuttontimer[j]);
-
-		// axes
-		cl.mcmd.clx_forwardmove += VID_JoyState_GetAxis(joystate, joy_axisforward.integer, joy_sensitivityforward.value, joy_deadzoneforward.value) * cl_forwardspeed.value;
-		cl.mcmd.clx_sidemove    += VID_JoyState_GetAxis(joystate, joy_axisside.integer, joy_sensitivityside.value, joy_deadzoneside.value) * cl_sidespeed.value;
-		cl.mcmd.clx_upmove      += VID_JoyState_GetAxis(joystate, joy_axisup.integer, joy_sensitivityup.value, joy_deadzoneup.value) * cl_upspeed.value;
-		cl.viewangles[0]   += VID_JoyState_GetAxis(joystate, joy_axispitch.integer, joy_sensitivitypitch.value, joy_deadzonepitch.value) * cl.realframetime * cl_pitchspeed.value;
-		cl.viewangles[1]   += VID_JoyState_GetAxis(joystate, joy_axisyaw.integer, joy_sensitivityyaw.value, joy_deadzoneyaw.value) * cl.realframetime * cl_yawspeed.value;
-		//cl.viewangles[2]   += VID_JoyState_GetAxis(joystate, joy_axisroll.integer, joy_sensitivityroll.value, joy_deadzoneroll.value) * cl.realframetime * cl_rollspeed.value;
-	}
+	// axes
+	cl.mcmd.clx_forwardmove += VID_JoyState_GetAxis(joystate, joy_axisforward.integer, joy_sensitivityforward.value, joy_deadzoneforward.value) * cl_forwardspeed.value;
+	cl.mcmd.clx_sidemove    += VID_JoyState_GetAxis(joystate, joy_axisside.integer, joy_sensitivityside.value, joy_deadzoneside.value) * cl_sidespeed.value;
+	cl.mcmd.clx_upmove      += VID_JoyState_GetAxis(joystate, joy_axisup.integer, joy_sensitivityup.value, joy_deadzoneup.value) * cl_upspeed.value;
+	cl.viewangles[0]   += VID_JoyState_GetAxis(joystate, joy_axispitch.integer, joy_sensitivitypitch.value, joy_deadzonepitch.value) * cl.realframetime * cl_pitchspeed.value;
+	cl.viewangles[1]   += VID_JoyState_GetAxis(joystate, joy_axisyaw.integer, joy_sensitivityyaw.value, joy_deadzoneyaw.value) * cl.realframetime * cl_yawspeed.value;
+	//cl.viewangles[2]   += VID_JoyState_GetAxis(joystate, joy_axisroll.integer, joy_sensitivityroll.value, joy_deadzoneroll.value) * cl.realframetime * cl_rollspeed.value;
 
 	vid_joystate = *joystate;
 }
 
 int VID_Shared_SetJoystick(int index)
 {
-#ifdef _WIN32
-	int i;
-	int xinputcount = 0;
-	int xinputindex = -1;
-	int xinputavailable = 0;
-	xinput_state_t state;
-	// detect available XInput controllers
-	for (i = 0;i < 4;i++)
-	{
-		if (qXInputGetState && qXInputGetState(i, &state) == S_OK)
-		{
-			xinputavailable |= 1<<i;
-			if (index == xinputcount)
-				xinputindex = i;
-			xinputcount++;
-		}
-	}
-	if (joy_xinputavailable.integer != xinputavailable)
-		Cvar_SetValueQuick(&joy_xinputavailable, xinputavailable);
-	if (vid_xinputindex != xinputindex)
-	{
-		vid_xinputindex = xinputindex;
-		if (xinputindex >= 0)
-			Con_Printf ("Joystick %d opened (XInput Device %d)\n", index, xinputindex);
-	}
-	return xinputcount;
-#else
 	return 0;
-#endif
 }
 
 
@@ -1282,25 +1085,6 @@ void VID_UpdateGamma(void)
 		++vid_gammatables_serial;
 #undef GAMMACHECK
 }
-
-#ifdef _WIN32
-static dllfunction_t xinputdllfuncs[] =
-{
-	{"XInputGetState", (void **) &qXInputGetState},
-	{"XInputGetKeystroke", (void **) &qXInputGetKeystroke},
-	{NULL, NULL}
-};
-static const char *xinputdllnames [] =
-{
-	"xinput1_3.dll",
-	"xinput1_2.dll",
-	"xinput1_1.dll",
-	NULL
-};
-static dllhandle_t xinputdll_dll = NULL;
-#endif
-
-
 
 static int VID_Mode(int fullscreen, int width, int height, int bpp, float refreshrate, int stereobuffer)
 {
@@ -1670,9 +1454,6 @@ void VID_Shared_Init(void)
 	Cvar_RegisterVariable(&vid_sRGB_fallback);
 
 	Cvar_RegisterVariable(&joy_active);
-#ifdef _WIN32
-	Cvar_RegisterVariable(&joy_xinputavailable);
-#endif
 	Cvar_RegisterVariable(&joy_detected);
 	Cvar_RegisterVariable(&joy_enable);
 	Cvar_RegisterVariable(&joy_index);
@@ -1696,28 +1477,6 @@ void VID_Shared_Init(void)
 	//Cvar_RegisterVariable(&joy_sensitivityroll);
 	Cvar_RegisterVariable(&joy_axiskeyevents);
 	Cvar_RegisterVariable(&joy_axiskeyevents_deadzone);
-	Cvar_RegisterVariable(&joy_x360_axisforward);
-	Cvar_RegisterVariable(&joy_x360_axisside);
-	Cvar_RegisterVariable(&joy_x360_axisup);
-	Cvar_RegisterVariable(&joy_x360_axispitch);
-	Cvar_RegisterVariable(&joy_x360_axisyaw);
-	//Cvar_RegisterVariable(&joy_x360_axisroll);
-	Cvar_RegisterVariable(&joy_x360_deadzoneforward);
-	Cvar_RegisterVariable(&joy_x360_deadzoneside);
-	Cvar_RegisterVariable(&joy_x360_deadzoneup);
-	Cvar_RegisterVariable(&joy_x360_deadzonepitch);
-	Cvar_RegisterVariable(&joy_x360_deadzoneyaw);
-	//Cvar_RegisterVariable(&joy_x360_deadzoneroll);
-	Cvar_RegisterVariable(&joy_x360_sensitivityforward);
-	Cvar_RegisterVariable(&joy_x360_sensitivityside);
-	Cvar_RegisterVariable(&joy_x360_sensitivityup);
-	Cvar_RegisterVariable(&joy_x360_sensitivitypitch);
-	Cvar_RegisterVariable(&joy_x360_sensitivityyaw);
-	//Cvar_RegisterVariable(&joy_x360_sensitivityroll);
-
-#ifdef _WIN32
-	Sys_LoadDependency(xinputdllnames, &xinputdll_dll, xinputdllfuncs);
-#endif
 
 	Cmd_AddCommand(CF_CLIENT, "force_centerview", Force_CenterView_f, "recenters view (stops looking up/down)");
 	Cmd_AddCommand(CF_CLIENT, "vid_restart", VID_Restart_f, "restarts video system (closes and reopens the window, restarts renderer)");

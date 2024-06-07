@@ -344,7 +344,7 @@ static int MapKey( unsigned int sdlkey )
 //	case SDLK_COMPUTER:           return K_COMPUTER;
 //	case SDLK_AC_SEARCH:          return K_AC_SEARCH; // Android button
 //	case SDLK_AC_HOME:            return K_AC_HOME; // Android button
-	case SDLK_AC_BACK:            return K_ESCAPE; // Android button
+//	case SDLK_AC_BACK:            return K_ESCAPE; // Android button
 //	case SDLK_AC_FORWARD:         return K_AC_FORWARD; // Android button
 //	case SDLK_AC_STOP:            return K_AC_STOP; // Android button
 //	case SDLK_AC_REFRESH:         return K_AC_REFRESH; // Android button
