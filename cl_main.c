@@ -29,6 +29,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "snd_main.h"
 #include "cdaudio.h"
 
+extern __declspec(dllimport) float uwp_GetRefreshRate();
+
 // we need to declare some mouse variables here, because the menu system
 // references them even when on a unix system.
 
@@ -3100,7 +3102,7 @@ double CL_Frame (double time)
 		if (vid_activewindow && cl_maxfps.value >= 1 && !cls.timedemo)
 #endif
 		{
-			clframetime = cl.realframetime = max(cl_timer, 1.0 / cl_maxfps.value);
+			clframetime = cl.realframetime = max(cl_timer, 1.0 / uwp_GetRefreshRate());
 			// when running slow, we need to sleep to keep input responsive
 			if (cl_maxfps_alwayssleep.value > 0)
 				Sys_Sleep((int)bound(0, cl_maxfps_alwayssleep.value * 1000, 100000));

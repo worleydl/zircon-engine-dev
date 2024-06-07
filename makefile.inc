@@ -272,7 +272,7 @@ WINDRES ?= windres
 # Link
 # see LDFLAGS_WINCOMMON in makefile
 LDFLAGS_WINSV=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) -mconsole -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
-LDFLAGS_WINSDL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) $(LDFLAGS_UNIXSDL) -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG) $(LIB_SND_XMP) -shared
+LDFLAGS_WINSDL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) $(LDFLAGS_UNIXSDL) -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG) $(LIB_SND_XMP) ../../../../uwp-deps/libuwp.dll -shared
 EXE_WINSV=zircon_beta_windows_dedicated_server.exe
 EXE_WINSDL=zircon_beta_windows_sdl.dll
 EXE_WINSVNEXUIZ=nexuiz-dedicated.exe
