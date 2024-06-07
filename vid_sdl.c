@@ -1541,7 +1541,7 @@ void VID_Init (void)
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		Sys_Error ("Failed to init SDL video subsystem: %s", SDL_GetError());
 	// Baker: Returns -1 on an error or 0 on success.
-	vid_sdl_initjoysticksystem = SDL_InitSubSystem(SDL_INIT_JOYSTICK) >= 0;
+	vid_sdl_initjoysticksystem = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) >= 0;
 	if (!vid_sdl_initjoysticksystem)
 		Con_Printf (CON_ERROR "Failed to init SDL joystick subsystem: %s\n", SDL_GetError());
 

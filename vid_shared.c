@@ -819,8 +819,6 @@ qbool VID_JoyBlockEmulatedKeys(int keycode)
 
 	if (!joy_axiskeyevents.integer)
 		return false;
-	if (vid_joystate.is360)
-		return false;
 	if (keycode != K_UPARROW && keycode != K_DOWNARROW && keycode != K_RIGHTARROW && keycode != K_LEFTARROW)
 		return false;
 
@@ -841,8 +839,6 @@ void VID_Shared_BuildJoyState_Begin(vid_joystate_t *joystate)
 void VID_Shared_BuildJoyState_Finish(vid_joystate_t *joystate)
 {
 	float f, r;
-	if (joystate->is360)
-		return;
 	// emulate key events for thumbstick
 	f = VID_JoyState_GetAxis(joystate, joy_axisforward.integer, 1, joy_axiskeyevents_deadzone.value) * joy_sensitivityforward.value;
 	r = VID_JoyState_GetAxis(joystate, joy_axisside.integer   , 1, joy_axiskeyevents_deadzone.value) * joy_sensitivityside.value;
