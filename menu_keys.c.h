@@ -97,7 +97,7 @@ static int numcommands;
 static const char *(*bindnames)[2];
 
 static int		keys_cursor;
-static int		bind_grab;
+int		bind_grab;
 
 static int		m_keys_prevstate;
 void M_Menu_Keys_f(cmd_state_t *cmd)

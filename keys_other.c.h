@@ -93,6 +93,12 @@ Key_KeynumToString (int keynum, char *tinystr, size_t tinystrlength)
 	if (keynum < 0)
 		return "<KEY NOT FOUND>";
 
+	if (keynum >= K_SDL_CONTROLLER_BUTTON_A)
+	{
+		// The array of names gives us tidy string for binds, whereas SDLGCGetStringForButton has spaces
+		return sdl_gc_bindnames[keynum - K_SDL_CONTROLLER_BUTTON_A];
+	}
+
 	// search overrides first, because some characters are special
 	for (kn = keynames; kn->name; kn++)
 		if (keynum == kn->keynum)

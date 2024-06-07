@@ -370,6 +370,27 @@ typedef enum keynum_e
 	K_MIDINOTE126,
 	K_MIDINOTE127,
 
+ 	// Generic SDL GameController buttons
+ 	K_SDL_CONTROLLER_BUTTON_A,
+ 	K_SDL_CONTROLLER_BUTTON_B,
+ 	K_SDL_CONTROLLER_BUTTON_X,
+ 	K_SDL_CONTROLLER_BUTTON_Y,
+ 	K_SDL_CONTROLLER_BUTTON_BACK,
+ 	K_SDL_CONTROLLER_BUTTON_GUIDE,
+ 	K_SDL_CONTROLLER_BUTTON_START,
+ 	K_SDL_CONTROLLER_BUTTON_LEFTSTICK,
+ 	K_SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+ 	K_SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+ 	K_SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+ 	K_SDL_CONTROLLER_BUTTON_DPAD_UP,
+ 	K_SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+ 	K_SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+ 	K_SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+ 	
+ 	// Virtual buttons via axis threshold
+ 	K_SDL_CONTROLLER_VBUTTON_L_TRIGGER,
+ 	K_SDL_CONTROLLER_VBUTTON_R_TRIGGER,
+
 	MAX_KEYS = MAX_KEY_BINDS
 }
 keynum_t;
@@ -381,6 +402,7 @@ extern	int			key_linepos;
 extern	int			key_sellength;
 extern	qbool		key_insert;	// insert key toggle (for editing)
 extern	keydest_e	key_dest;
+extern  int		bind_grab;
 // key_consoleactive bits
 // user wants console (halfscreen)
 #define KEY_CONSOLEACTIVE_USER_1 1	// Baker: Half screen

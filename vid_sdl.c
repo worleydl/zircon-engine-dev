@@ -111,6 +111,31 @@ static vid_mode_t desktop_mode;
 #define SDLK_PERCENT '%'
 #endif
 
+static int JoyMapKey(unsigned int sdlkey)
+{
+	// Mapping to local key definitions
+	switch(sdlkey)
+	{
+ 		default: return sdlkey; // shouldn't ever hit this
+		case SDL_CONTROLLER_BUTTON_A: return K_SDL_CONTROLLER_BUTTON_A;
+		case SDL_CONTROLLER_BUTTON_B: return K_SDL_CONTROLLER_BUTTON_B;
+		case SDL_CONTROLLER_BUTTON_X: return K_SDL_CONTROLLER_BUTTON_X;
+		case SDL_CONTROLLER_BUTTON_Y: return K_SDL_CONTROLLER_BUTTON_Y;
+		case SDL_CONTROLLER_BUTTON_BACK: return K_SDL_CONTROLLER_BUTTON_BACK;
+		case SDL_CONTROLLER_BUTTON_GUIDE: return K_SDL_CONTROLLER_BUTTON_GUIDE;
+		case SDL_CONTROLLER_BUTTON_START: return K_SDL_CONTROLLER_BUTTON_START;
+		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return K_SDL_CONTROLLER_BUTTON_LEFTSTICK;
+		case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return K_SDL_CONTROLLER_BUTTON_RIGHTSTICK;
+		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return K_SDL_CONTROLLER_BUTTON_LEFTSHOULDER;
+		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return K_SDL_CONTROLLER_BUTTON_RIGHTSHOULDER;
+		case SDL_CONTROLLER_BUTTON_DPAD_UP: return K_SDL_CONTROLLER_BUTTON_DPAD_UP;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return K_SDL_CONTROLLER_BUTTON_DPAD_DOWN;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return K_SDL_CONTROLLER_BUTTON_DPAD_LEFT;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return K_SDL_CONTROLLER_BUTTON_DPAD_RIGHT;
+       }
+}
+
+
 static int MapKey( unsigned int sdlkey )
 {
 	switch(sdlkey)
@@ -1287,6 +1312,58 @@ void Sys_SendKeyEvents( void )
 					Key_Event( K_MWHEELDOWN, 0, true );
 					Key_Event( K_MWHEELDOWN, 0, false );
 				}
+				break;
+			case SDL_CONTROLLERBUTTONDOWN:
+			case SDL_CONTROLLERBUTTONUP:
+				keycode = JoyMapKey(event.cbutton.button);
+
+				// Mappings active for menus only
+				if ( (key_dest == key_menu || key_dest == key_menu_grabbed) && !bind_grab)
+				{
+					switch(keycode)
+					{
+						case K_SDL_CONTROLLER_BUTTON_DPAD_UP:
+							Key_Event(K_UPARROW, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+							break;
+
+						case K_SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+							Key_Event(K_DOWNARROW, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+							break;
+
+						case K_SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+							Key_Event(K_LEFTARROW, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+							break;
+
+						case K_SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+							Key_Event(K_RIGHTARROW, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+							break;
+
+						// A/B usually bind to enter/escape, for exit menu then bind to Y/N
+						case K_SDL_CONTROLLER_BUTTON_A:
+							Key_Event(m_state == m_quit ? Key_StringToKeynum("Y") : K_ENTER, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+							break;
+
+						case K_SDL_CONTROLLER_BUTTON_B:
+							// TODO: this is still triggering an escape press for bindgrab when a user tries to bind b.  the bind is saved but it's annoying
+							Key_Event(m_state == m_quit ? Key_StringToKeynum("N") : K_ESCAPE, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+							break;
+
+
+					}
+				}
+				// Binding or game, send key as is 
+				else {
+					Key_Event(keycode, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+				}
+
+				// Always active mappings
+				switch(keycode)
+				{
+					case K_SDL_CONTROLLER_BUTTON_START:
+						Key_Event(K_ESCAPE, 0, event.type == SDL_CONTROLLERBUTTONDOWN);
+						break;
+				}
+
 				break;
 			case SDL_JOYBUTTONDOWN:
 			case SDL_JOYBUTTONUP:
