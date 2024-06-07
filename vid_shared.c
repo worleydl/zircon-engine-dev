@@ -3,6 +3,7 @@
 #include "quakedef.h"
 #include "cdaudio.h"
 #include "image.h"
+#include "SDL_GameController.h"
 
 // global video state
 viddef_t vid;
@@ -849,6 +850,11 @@ void VID_Shared_BuildJoyState_Finish(vid_joystate_t *joystate)
 	joystate->button[33] = f < 0.0f;
 	joystate->button[34] = r > 0.0f;
 	joystate->button[35] = r < 0.0f;
+
+	// TODO: Should probably check whether it changes instead of always firing
+	Key_Event(K_SDL_CONTROLLER_VBUTTON_L_TRIGGER, 0, joystate->button[SDL_CONTROLLER_BUTTON_MAX]);
+	Key_Event(K_SDL_CONTROLLER_VBUTTON_R_TRIGGER, 0, joystate->button[SDL_CONTROLLER_BUTTON_MAX + 1]);
+
 }
 
 static void VID_KeyEventForButton(qbool oldbutton, qbool newbutton, int key, double *timer)
@@ -882,22 +888,12 @@ static void VID_KeyEventForButton(qbool oldbutton, qbool newbutton, int key, dou
 #if MAXJOYBUTTON != 36
 #error this code must be updated if MAXJOYBUTTON changes!
 #endif
-static int joybuttonkey[MAXJOYBUTTON][2] =
-{
-	{K_JOY1, K_ENTER}, {K_JOY2, K_ESCAPE}, {K_JOY3, 0}, {K_JOY4, 0}, {K_JOY5, 0}, {K_JOY6, 0}, {K_JOY7, 0}, {K_JOY8, 0}, {K_JOY9, 0}, {K_JOY10, 0}, {K_JOY11, 0}, {K_JOY12, 0}, {K_JOY13, 0}, {K_JOY14, 0}, {K_JOY15, 0}, {K_JOY16, 0},
-	{K_AUX1, 0}, {K_AUX2, 0}, {K_AUX3, 0}, {K_AUX4, 0}, {K_AUX5, 0}, {K_AUX6, 0}, {K_AUX7, 0}, {K_AUX8, 0}, {K_AUX9, 0}, {K_AUX10, 0}, {K_AUX11, 0}, {K_AUX12, 0}, {K_AUX13, 0}, {K_AUX14, 0}, {K_AUX15, 0}, {K_AUX16, 0},
-	{K_JOY_UP, K_UPARROW}, {K_JOY_DOWN, K_DOWNARROW}, {K_JOY_RIGHT, K_RIGHTARROW}, {K_JOY_LEFT, K_LEFTARROW},
-};
 
 double vid_joybuttontimer[MAXJOYBUTTON];
 void VID_ApplyJoyState(vid_joystate_t *joystate)
 {
 	int j;
 	int c = joy_axiskeyevents.integer != 0;
-
-	// emit key events for buttons
-	for (j = 0;j < MAXJOYBUTTON;j++)
-		VID_KeyEventForButton(vid_joystate.button[j] != 0, joystate->button[j] != 0, joybuttonkey[j][c], &vid_joybuttontimer[j]);
 
 	// axes
 	cl.mcmd.clx_forwardmove += VID_JoyState_GetAxis(joystate, joy_axisforward.integer, joy_sensitivityforward.value, joy_deadzoneforward.value) * cl_forwardspeed.value;
