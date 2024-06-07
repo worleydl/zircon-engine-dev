@@ -4963,7 +4963,11 @@ static void FS_Init_Dir (void)
 	// Overrides the system supplied base directory (under GAMENAME)
 // COMMANDLINEOPTION: Filesystem: -basedir <path> chooses what base directory the game data is in, inside this there should be a data directory for the game (for example id1)
 	i = Sys_CheckParm ("-basedir");
-	if (i && i < sys.argc-1)
+	if (true) 
+	{
+		strlcpy(fs_basedir, "E:\\quake", sizeof(fs_basedir));
+	}
+	else if (i && i < sys.argc-1)
 	{
 		c_strlcpy (fs_basedir, sys.argv[i+1]);
 		i = (int)strlen (fs_basedir);
@@ -5148,6 +5152,18 @@ static void FS_Init_Dir (void)
 			fs_numgamedirs++;
 		}
 	}
+
+	const char* forcemod = "quake15";
+
+	p = FS_CheckGameDir(forcemod);
+	if (!p)
+		Con_PrintLinef ("WARNING: Nasty -game name rejected: %s", forcemod);
+	if (p == fs_checkgamedir_missing)
+		Con_PrintLinef (CON_WARN "WARNING: -game %s%s/ not found!", fs_basedir, forcemod);
+	// add the gamedir to the list of active gamedirs
+	strlcpy (fs_gamedirs[fs_numgamedirs], forcemod, sizeof(fs_gamedirs[fs_numgamedirs]));
+	fs_numgamedirs++;
+
 
 baker_data_bypass:
 	// generate the searchpath

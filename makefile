@@ -369,7 +369,7 @@ CFLAGS_NET=
 
 ##### GNU Make specific definitions #####
 
-DO_LD=$(CC) -o ../../../$@ $^ $(LDFLAGS)
+DO_LD=$(CC) -o ../../../$@ -Wl,--out-implib=zircon.lib $^ $(LDFLAGS)
 
 
 ##### Definitions shared by all makefiles #####

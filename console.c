@@ -1745,6 +1745,8 @@ void Con_Printf(const char *fmt, ...)
 	dpvsnprintf(msg,sizeof(msg),fmt,argptr);
 	va_end(argptr);
 
+	OutputDebugStringA(msg);
+
 	Con_MaskPrint(CON_MASK_PRINT, msg);
 }
 
@@ -1767,6 +1769,7 @@ void Con_PrintLinef (const char *fmt, ...)
 	msg[s_len + 0] = 10; 	// 0	 ---> 10
 	msg[s_len + 1] = 0; 	// extra ---> 0
 
+	OutputDebugStringA(msg);
 	Con_MaskPrint(CON_MASK_PRINT, msg);
 }
 
@@ -1802,6 +1805,7 @@ void Con_DPrint(const char *msg)
 	if (developer.integer < 0) // at 0, we still add to the buffer but hide
 		return;
 
+	OutputDebugStringA(msg);
 	Con_MaskPrint(CON_MASK_DEVELOPER, msg);
 }
 

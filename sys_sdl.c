@@ -18,6 +18,9 @@
 // Include this BEFORE darkplaces.h because it breaks wrapping
 // _Static_assert. Cloudwalk has no idea how or why so don't ask.
 
+
+// Needed for external launch
+#define SDLMAIN_DECLSPEC __declspec(dllexport)
 #if defined(_MSC_VER) && _MSC_VER < 1900
 	#include <SDL2/SDL.h>
 #else
